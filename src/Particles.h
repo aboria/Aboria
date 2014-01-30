@@ -48,13 +48,11 @@ namespace Aboria {
 //#define DATA_types   (Vect3d)(Vect3d)(bool)(int)(int)
 //#include "Data.h"
 
-template<int DataSize = 1, typename NeighbourSearch = BucketSort>
+template<int DataSize>
 class Particles {
 public:
-	class get_pos_and_clear_dirty;
 	class Value {
 		friend class Particles;
-		friend class get_pos_and_clear_dirty;
 	public:
 		Value(const Vect3d& r, const Vect3d& r0, const bool alive, const size_t id, const size_t saved_index):
 			r(r),
@@ -119,20 +117,25 @@ public:
 		std::vector<size_t> neighbour_indicies;
 		boost::array<double,DataSize> data;
 	};
-	typedef NeighbourSearch NeighbourSearch_type;
-	typedef typename std::vector<Value>::iterator iterator;
-	class get_pos_and_clear_dirty {
-		const Vect3d& operator()(iterator i) {
-			i->dirty = false;
-			return i->get_position();
+
+
+	typedef typename std::vector<Value> data_type;
+	typedef typename data_type::iterator iterator;
+	typedef typename data_type::const_iterator const_iterator;
+	struct get_pos {
+		const Vect3d& operator()(const Value& i) const {
+			return i.get_position();
 		}
 	};
+	typedef BucketSort<const_iterator,get_pos> NeighbourSearch_type;
+
+
 	const int SPECIES_SAVED_INDEX_FOR_NEW_PARTICLE = -1;
 
 
 	Particles():
 		next_id(0),
-		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false))
+		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos())
 	{}
 
 	Value& operator[](std::size_t idx) {
@@ -141,16 +144,13 @@ public:
 	const Value& operator[](std::size_t idx) const {
 		return const_cast<Value>(*this)[idx];
 	}
-	typename std::vector<Value>::iterator begin() {
+	iterator begin() {
 		return data.begin();
 	}
-	typename std::vector<Value>::iterator end() {
+	iterator end() {
 		return data.end();
 	}
-//	template <typename T>
-//	typename neighbour_search_iterator<T> begin_neighbour_search(const T* particles_to_search) {
-//		//return data.begin();
-//	}
+
 	void fill_uniform(const Vect3d low, const Vect3d high, const unsigned int N) {
 		//TODO: assumes a 3d rectangular region
 		boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni(generator, boost::uniform_real<>(0,1));
@@ -216,10 +216,10 @@ public:
 
 	void init_neighbour_search(const Vect3d& low, const Vect3d& high, const double length_scale) {
 		neighbour_search.reset(low,high,length_scale);
-		neighbour_search.embed_points(begin(),end(),get_pos_and_clear_dirty());
+		neighbour_search.embed_points(begin(),end());
 	}
 	void refresh_neighbour_search() {
-		neighbour_search.embed_points(begin(),end(),get_pos_and_clear_dirty());
+		neighbour_search.embed_points(begin(),end());
 	}
 
 	vtkSmartPointer<vtkUnstructuredGrid> get_vtk_grid() {
@@ -243,12 +243,13 @@ public:
 		return grid;
 	}
 private:
-	std::vector<Value> data;
-	NeighbourSearch neighbour_search;
+	data_type data;
+	NeighbourSearch_type neighbour_search;
 	bool dirty;
 	int next_id;
 
 };
+
 
 }
 

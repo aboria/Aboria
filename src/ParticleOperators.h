@@ -11,17 +11,18 @@
 #include "Particles.h"
 #include "Operator.h"
 #include <memory>
+//#include <parallel/algorithm>
 
 namespace Aboria {
 
-template<typename InputType, typename OutputType, typename FunctionType>
+template<int N, typename FunctionType>
 class ForEachParticle {
 public:
-	ForEachParticle(InputType input, OutputType output, FunctionType function):
-		input(input),output(output),function(function) {}
+	ForEachParticle(Particles<N>& output, FunctionType function, const std::string name):
+		output(output),function(function),name(name) {}
 
 	void print(std::ostream& out) const {
-		out << "Particle for_each with function = " <<typeid(FunctionType).name();
+		out << "Particle for_each with function = " <<name;
 	}
 	void execute() {
 		std::for_each(output.begin(),output.end(),function);
@@ -29,19 +30,16 @@ public:
 	void reset() {}
 
 private:
-	InputType input;
-	OutputType output;
+	const std::string name;
+	Particles<N>& output;
 	FunctionType function;
 };
 
 template<int N, typename FunctionType>
 static std::shared_ptr<Operator> for_each(Particles<N>& output, FunctionType function) {
-	return std::shared_ptr<Operator>(new Operator(ForEachParticle<int,Particles<N>,FunctionType>(0,output,function)));
-}
-
-template<typename InputType, int N, typename FunctionType>
-static std::auto_ptr<Operator> for_each(InputType input, Particles<N> output, FunctionType function) {
-	return std::auto_ptr<Operator>(new ForEachParticle<InputType,Particles<N>,FunctionType>(input,output,function));
+	return std::shared_ptr<Operator>(new Operator(
+			ForEachParticle<N,FunctionType>(output,function,typeid(function).name())
+			));
 }
 
 } /* namespace Aboria */

@@ -37,13 +37,13 @@ namespace Aboria {
 
 const int CELL_EMPTY = -1;
 
-
+template<typename T, typename F>
 class BucketSort {
 public:
 	class const_iterator
 	  : public boost::iterator_facade<
 	        const_iterator
-	      , const int
+	      , const typename T::value_type
 	      , boost::forward_traversal_tag
 	    >
 	{
@@ -55,19 +55,25 @@ public:
 		  }
 
 	    void go_to_next_candidate() {
-	    	m_node = bucket_sort->linked_list.begin() + *m_node;
-	    	if (*m_node == CELL_EMPTY) {
-	    		if (surrounding_cell_offset_i == surrounding_cell_offset_end) return;
+	    	if (*m_node != CELL_EMPTY) m_node = bucket_sort->linked_list.begin() + *m_node;
+	    	while ((*m_node == CELL_EMPTY) && (surrounding_cell_offset_i != surrounding_cell_offset_end)) {
+	    		if (self && (surrounding_cell_offset_i == surrounding_cell_offset_end-1)) {
+	    			m_node = cell_i;
+	    			while (*m_node != my_index) {
+	    				m_node = bucket_sort->linked_list.begin() + *m_node;
+	    			}
+	    		} else {
+		    		//std::cout << "going to new_cell with offset = "<<*surrounding_cell_offset_i<<std::endl;
+	    			m_node = cell_i + *surrounding_cell_offset_i;
+	    		}
 	    		surrounding_cell_offset_i++;
 	    	}
-	    	if (surrounding_cell_offset_i != surrounding_cell_offset_end) {
-	    		m_node = cell_i + *surrounding_cell_offset_i;
-	    	} else if (self) {
-	    		m_node = cell_i;
-	    		while (*m_node != my_index) {
-	    	    	m_node = bucket_sort->linked_list.begin() + *m_node;
-	    		}
-	    	}
+//	    	if (surrounding_cell_offset_i == surrounding_cell_offset_end) {
+//	    		std::cout <<"finished all cells"<<std::endl;
+//	    	} else {
+//	    		std::cout <<"*m_node = "<<*m_node<<std::endl;
+//	    	}
+
 	    }
 
 	    explicit const_iterator(const BucketSort* bucket_sort,
@@ -77,18 +83,19 @@ public:
 	      cell_i(bucket_sort->cells.begin() + bucket_sort->find_cell_index(centre)),
 	      my_index(my_index),self(self),
 	      centre(centre),radius2(radius*radius) {
+	    	cell_empty.push_back(CELL_EMPTY);
+	    	m_node = cell_empty.begin();
 	    	surrounding_cell_offset_i = bucket_sort->surrounding_cell_offsets.begin();
 	    	if (self) {
 	    		surrounding_cell_offset_end = surrounding_cell_offset_i
-	    						+ (bucket_sort->surrounding_cell_offsets.size()-1)/2;
+	    						+ (bucket_sort->surrounding_cell_offsets.size()-1)/2 + 1;
 	    	} else {
+	    		//std::cout << "num offsets = "<<bucket_sort->surrounding_cell_offsets.size()<<std::endl;
 	    		surrounding_cell_offset_end = bucket_sort->surrounding_cell_offsets.end();
 	    	}
-	    	m_node = cell_i + *surrounding_cell_offset_i;
-	    	while ((centre-bucket_sort->correct_position_for_periodicity(centre, bucket_sort->positions[*m_node])).squaredNorm()
-	    			> radius2) {
-	    		go_to_next_candidate();
-	    	}
+
+	    	increment();
+
 	    }
 
 	 private:
@@ -99,15 +106,25 @@ public:
 	    }
 
 	    void increment() {
-	    	while ((centre-bucket_sort->correct_position_for_periodicity(centre, bucket_sort->positions[*m_node])).squaredNorm()
-	    			> radius2) {
-	    		go_to_next_candidate();
+	    	go_to_next_candidate();
+	    	while (*m_node != CELL_EMPTY) {
+	    		const Vect3d p = bucket_sort->return_vect3d(bucket_sort->begin_iterator[*m_node]);
+    	    	//std::cout << "testing candidate with position"<<p<<std::endl;
+
+	    		if ((centre-bucket_sort->correct_position_for_periodicity(centre, p)).squaredNorm()
+	    				<= radius2) {
+	    	    	//std::cout << "found candidate with position"<<p<<std::endl;
+	    	    	break;
+	    		} else {
+	    			go_to_next_candidate();
+	    		}
+
 	    	}
 	    }
 
 
-	    const int& dereference() const
-	    { return *m_node; }
+	    const typename T::value_type& dereference() const
+	    { return bucket_sort->begin_iterator[*m_node]; }
 
 	    const BucketSort* bucket_sort;
 	    std::vector<int>::const_iterator m_node;
@@ -123,7 +140,8 @@ public:
 	    std::vector<int>::const_iterator surrounding_cell_offset_i,surrounding_cell_offset_end;
 	};
 
-	BucketSort(Vect3d low, Vect3d high, Vect3b periodic):
+	BucketSort(Vect3d low, Vect3d high, Vect3b periodic, F return_vect3d):
+		return_vect3d(return_vect3d),
 		low(low),high(high),domain_size(high-low),periodic(periodic),
 		empty_cell(CELL_EMPTY) {
 		LOG(2,"Creating bucketsort data structure with lower corner = "<<low<<" and upper corner = "<<high);
@@ -135,8 +153,7 @@ public:
 	inline const Vect3d& get_low() {return low;}
 	inline const Vect3d& get_high() {return high;}
 
-	template<typename T, typename F>
-	void embed_points(const T& begin_iterator, const T& end_iterator, const F& return_vect3d);
+	void embed_points(const T begin_iterator, const T end_iterator);
 	const_iterator find_broadphase_neighbours(const Vect3d& r, const double radius, const int my_index, const bool self) const;
 	const_iterator end() const;
 	Vect3d correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const;
@@ -155,7 +172,8 @@ private:
 		return vect_to_index(celli);
 	}
 
-	std::vector<Vect3d> positions;
+	T begin_iterator,end_iterator;
+	const F return_vect3d;
     std::vector<int> cells;
     std::vector<std::vector<int> > ghosting_indices_pb;
     std::vector<std::pair<int,int> > ghosting_indices_cb;
@@ -173,10 +191,11 @@ private:
 };
 
 template<typename T, typename F>
-void BucketSort::embed_points(const T& begin_iterator, const T& end_iterator, const F& return_vect3d) {
+void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
+	begin_iterator = _begin_iterator;
+	end_iterator = _end_iterator;
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
 	linked_list.assign(n, CELL_EMPTY);
-	positions.resize(n);
 	const bool particle_based = dirty_cells.size() < cells.size();
 	if (particle_based) {
 		for (int i: dirty_cells) {
@@ -189,8 +208,7 @@ void BucketSort::embed_points(const T& begin_iterator, const T& end_iterator, co
 	dirty_cells.clear();
 	int i = 0;
 	for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
-		positions[i] = return_vect3d(it);
-		const int celli = find_cell_index(positions[i]);
+		const int celli = find_cell_index(return_vect3d(*it));
 		const int cell_entry = cells[celli];
 
 		// Insert into own cell
@@ -216,7 +234,114 @@ void BucketSort::embed_points(const T& begin_iterator, const T& end_iterator, co
 		}
 	}
 }
+template<typename T, typename F>
+void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius) {
+	LOG(2,"Resetting bucketsort data structure:");
+	LOG(2,"\tMax interaction radius = "<<_max_interaction_radius);
+	high = _high;
+	low = _low;
+	max_interaction_radius = _max_interaction_radius;
+	Vect3i num_cells_without_ghost = ((high-low)/max_interaction_radius).cast<int>();
+	Vect3d new_high = high;
+	for (int i = 0; i < 3; ++i) {
+		if (num_cells_without_ghost[i]==0) {
+			LOG(2,"\tNote: Dimension "<<i<<" has no length, setting cell side equal to interaction radius.");
+			new_high[i] = low[i] + max_interaction_radius;
+			num_cells_without_ghost[i] = 1;
+		}
+	}
+	num_cells_along_axes = num_cells_without_ghost + Vect3i(3,3,3);
+	LOG(2,"\tNumber of cells along each axis = "<<num_cells_along_axes);
+	cell_size = (new_high-low).cwiseQuotient(num_cells_without_ghost.cast<double>());
+	LOG(2,"\tCell sizes along each axis = "<<cell_size);
+	inv_cell_size = Vect3d(1,1,1).cwiseQuotient(cell_size);
+	num_cells_along_yz = num_cells_along_axes[2]*num_cells_along_axes[1];
+	const unsigned int num_cells = num_cells_along_axes.prod();
+	cells.assign(num_cells, CELL_EMPTY);
+	//TODO: assumed 3d
+	surrounding_cell_offsets.clear();
+	for (int i = -1; i < 2; ++i) {
+		for (int j = -1; j < 2; ++j) {
+			for (int k = -1; k < 2; ++k) {
+				surrounding_cell_offsets.push_back(vect_to_index(Vect3i(i,j,k)));
+			}
+		}
+	}
 
+
+	ghosting_indices_pb.assign(num_cells, std::vector<int>());
+	ghosting_indices_cb.clear();
+	for (int i = 0; i < NDIM; ++i) {
+		if (!periodic[i]) continue;
+		int j,k;
+		switch (i) {
+			case 0:
+				j = 1;
+				k = 2;
+				break;
+			case 1:
+				j = 0;
+				k = 2;
+				break;
+			case 2:
+				j = 0;
+				k = 1;
+				break;
+			default:
+				break;
+		}
+
+		Vect3i tmp;
+		const int n = num_cells_along_axes[i];
+		for (int jj = 0; jj < num_cells_along_axes[j]-2; ++jj) {
+			tmp[j] = jj;
+			for (int kk = 0; kk < num_cells_along_axes[k]-2; ++kk) {
+				tmp[k] = kk;
+				tmp[i] = n-3;
+				const int index_from1 = vect_to_index(tmp);
+				tmp[i] = 0;
+				const int index_to1 = vect_to_index(tmp);
+				ghosting_indices_pb[index_from1].push_back(index_to1);
+				ghosting_indices_cb.push_back(std::pair<int,int>(index_to1,index_from1));
+				tmp[i] = 1;
+				const int index_from2 = vect_to_index(tmp);
+				tmp[i] = n-2;
+				const int index_to2 = vect_to_index(tmp);
+				ghosting_indices_pb[index_from2].push_back(index_to2);
+				ghosting_indices_cb.push_back(std::pair<int,int>(index_to2,index_from2));
+			}
+		}
+	}
+}
+template<typename T, typename F>
+typename BucketSort<T,F>::const_iterator BucketSort<T,F>::find_broadphase_neighbours(const Vect3d& r, const double radius,const int my_index, const bool self) const {
+	return const_iterator(this,r,radius,my_index,self);
+}
+template<typename T, typename F>
+typename BucketSort<T,F>::const_iterator BucketSort<T,F>::end() const {
+	return const_iterator();
+}
+template<typename T, typename F>
+Vect3d BucketSort<T,F>::correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const {
+	Vect3d corrected_r = to_correct_r - source_r;
+	for (int i = 0; i < NDIM; ++i) {
+		if (!periodic[i]) continue;
+		if (corrected_r[i] > cell_size[i]) corrected_r[i] -= domain_size[i];
+		if (corrected_r[i] < -cell_size[i]) corrected_r[i] += domain_size[i];
+	}
+	return corrected_r + source_r;
+}
+
+template<typename T, typename F>
+Vect3d BucketSort<T,F>::correct_position_for_periodicity(const Vect3d& to_correct_r) const {
+	Vect3d corrected_r = to_correct_r;
+	for (int i = 0; i < NDIM; ++i) {
+		if (!periodic[i]) continue;
+		while (corrected_r[i] >= high[i]) corrected_r[i] -= domain_size[i];
+		while (corrected_r[i] < low[i]) corrected_r[i] += domain_size[i];
+	}
+	return corrected_r;
+}
 
 
 
