@@ -22,29 +22,18 @@
  *      Author: robinsonm
  */
 
-#ifndef TYCHE_H_
-#define TYCHE_H_
+#ifndef ABORIA_H_
+#define ABORIA_H_
 
-#include "Species.h"
-#include "Diffusion.h"
-#include "NextSubvolumeMethod.h"
+#include "Operator.h"
 #include "MyRandom.h"
-#include "Boundary.h"
-#include "Geometry.h"
-#include "Reaction.h"
-#include "ReactionEquation.h"
-#include "Run.h"
-#include "Io.h"
-#include "Vector.h"
-#include "Union.h"
-#include "Output.h"
-#include "Control.h"
-#include "Visualisation.h"
+#include "Particles.h"
+#include "ParticleOperators.h"
 
-namespace Tyche {
+namespace Aboria {
 
 void init(int argc, char *argv[]);
-void random_seed(unsigned int);
+void random_seed(unsigned int seed);
 
 }
 

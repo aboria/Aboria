@@ -1,5 +1,5 @@
 /*
- * vector.h   
+ * MyRandom.h
  *
  * Copyright 2012 Martin Robinson
  *
@@ -18,32 +18,20 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with RD_3D.  If not, see <http://www.gnu.org/licenses/>.
  *
- *  Created on: 18 Oct 2012
+ *  Created on: 12 Oct 2012
  *      Author: robinsonm
  */
 
-#ifndef VECTOR_H_
-#define VECTOR_H_
+#ifndef MYRANDOM_H_
+#define MYRANDOM_H_
 
-#include "Eigen/Dense"
+#include <boost/random.hpp>
 
 namespace Aboria {
-typedef Eigen::Vector3d Vect3d;
-typedef Eigen::Vector3i Vect3i;
-typedef Eigen::Matrix<int, 6, 1> Vect6i;
-typedef Eigen::Matrix<bool, 3, 1> Vect3b;
-typedef Eigen::Vector2d Vect2d;
-typedef Eigen::Array2i Array2i;
-typedef Eigen::Array3Xf Array3Xf;
+//typedef boost::minstd_rand base_generator_type;
+typedef boost::mt19937  base_generator_type;
+extern base_generator_type generator;
+}
 
-template<typename T,int N>
-std::ostream& operator<< (std::ostream& out, const Eigen::Matrix<T,N,1>& v) {
-	out << "(";
-	for (int i = 0; i < N; ++i) {
-		out << v[i];
-		if (i != N-1) out << ",";
-	}
-	return out << ")";
-}
-}
-#endif /* VECTOR_H_ */
+
+#endif /* MYRANDOM_H_ */

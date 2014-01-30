@@ -8,7 +8,7 @@
 #include "Geometry.h"
 #include "Constants.h"
 
-namespace Tyche {
+namespace Aboria {
 
 
 std::ostream& operator<< (std::ostream& out, const NullGeometry& b) {

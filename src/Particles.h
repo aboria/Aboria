@@ -22,16 +22,16 @@
  *      Author: robinsonm
  */
 
-#ifndef SPECIES_H_
-#define SPECIES_H_
+#ifndef PARTICLES_H_
+#define PARTICLES_H_
+
+#include "BucketSort.h"
 
 #include <vector>
-#include <boost/foreach.hpp>
-#include <boost/iterator/iterator_facade.hpp>
-#include "MyRandom.h"
+#include <boost/array.hpp>
+//#include <boost/iterator/iterator_facade.hpp>
 #include "Vector.h"
-#include "StructuredGrid.h"
-#include "BucketSort.h"
+#include "MyRandom.h"
 
 #include <vtkUnstructuredGrid.h>
 #include <vtkSmartPointer.h>
@@ -41,12 +41,12 @@
 
 
 
-namespace Tyche {
+namespace Aboria {
 
-#define DATA_typename ParticleInfo
-#define DATA_names   (r)(r0)(alive)(id)(saved_index)
-#define DATA_types   (Vect3d)(Vect3d)(bool)(int)(int)
-#include "Data.h"
+//#define DATA_typename ParticleInfo
+//#define DATA_names   (r)(r0)(alive)(id)(saved_index)
+//#define DATA_types   (Vect3d)(Vect3d)(bool)(int)(int)
+//#include "Data.h"
 
 template<int DataSize = 1, typename NeighbourSearch = BucketSort>
 class Particles {
@@ -106,12 +106,10 @@ public:
 			alive = false;
 		}
 		template<typename T>
-		T::neighbour_iterator get_in_radius(const T& particles, const double radius) {
-			return particles.get_in_geometry(
-					particles.neighbour_search.find_broadphase_neighbours(get_position(), radius, index,false),
-					particles.neighbour_search.end(),
-					Sphere(get_position(),radius)
-			);
+		boost::iterator_range<typename T::NeighbourSearch_type::const_iterator> get_in_radius(const T& particles, const double radius) {
+			return boost::make_iterator_range(
+			 particles.neighbour_search.find_broadphase_neighbours(get_position(), radius, index,false),
+			 particles.neighbour_search.end());
 		}
 	private:
 		Vect3d r,r0;
@@ -121,7 +119,7 @@ public:
 		std::vector<size_t> neighbour_indicies;
 		boost::array<double,DataSize> data;
 	};
-
+	typedef NeighbourSearch NeighbourSearch_type;
 	typedef typename std::vector<Value>::iterator iterator;
 	class get_pos_and_clear_dirty {
 		const Vect3d& operator()(iterator i) {
@@ -139,10 +137,10 @@ public:
 
 	Value& operator[](std::size_t idx) {
 		return data[idx];
-	};
+	}
 	const Value& operator[](std::size_t idx) const {
 		return const_cast<Value>(*this)[idx];
-	};
+	}
 	typename std::vector<Value>::iterator begin() {
 		return data.begin();
 	}
@@ -167,7 +165,6 @@ public:
 				[](Value& p) { return !p.is_alive(); }),
 				std::end(data)
 		);
-
 	}
 	void clear() {
 		data.clear();
@@ -250,77 +247,9 @@ private:
 	NeighbourSearch neighbour_search;
 	bool dirty;
 	int next_id;
+
 };
 
-
-static const StructuredGrid empty_grid;
-
-class Species {
-public:
-	Species(double D):D(D),grid(NULL) {
-		id = species_count++;
-		clear();
-	}
-	Species(double D, const StructuredGrid* grid):D(D),grid(grid)  {
-		id = species_count++;
-		clear();
-	}
-	static std::auto_ptr<Species> New(double D) {
-		return std::auto_ptr<Species>(new Species(D));
-	}
-	void clear() {
-		mols.clear();
-		if (grid!=NULL) copy_numbers.assign(grid->size(),0);
-	}
-	void set_grid(const StructuredGrid* new_grid) {
-		grid = new_grid;
-		if (grid!=NULL) copy_numbers.assign(grid->size(),0);
-	}
-	//void fill_uniform(const Vect3d low, const Vect3d high, const unsigned int N);
-	template<typename T>
-	void fill_uniform(const T& geometry, const unsigned int N);
-	template<typename T>
-	unsigned int count_mols_in(const T& geometry);
-	void get_concentrations(const StructuredGrid& calc_grid, std::vector<double>& mol_concentrations, std::vector<double>& compartment_concentrations) const;
-	void get_concentration(const StructuredGrid& calc_grid, std::vector<double>& concentration) const;
-	void get_concentration(const Vect3d low, const Vect3d high, const Vect3i n, std::vector<double>& concentration) const;
-	vtkSmartPointer<vtkUnstructuredGrid> get_vtk();
-	std::string get_status_string() const;
-	friend std::ostream& operator<<( std::ostream& out, const Species& b ) {
-		return out << b.get_status_string();
-	}
-
-	double D;
-	Particles<1> mols;
-	std::vector<int> copy_numbers;
-	std::vector<int> mol_copy_numbers;
-	const StructuredGrid* grid;
-	int id;
-	std::vector<double> tmpx,tmpy,tmpz;
-private:
-	static int species_count;
-};
-
-template<typename T>
-void Species::fill_uniform(const T& geometry, const unsigned int N) {
-	LOG(2,"Adding "<<N<<" molecules of Species ("<<id<<") within "<<geometry);
-	for(int i=0;i<N;i++) {
-		mols.add_particle(geometry.get_random_point_in());
-	}
-}
-
-template<typename T>
-unsigned int Species::count_mols_in(const T& geometry) {
-	unsigned int count;
-	const int n = mols.size();
-	for (int i = 0; i < n; ++i) {
-		if (geometry.is_in(mols.get_position(i))) count++;
-	}
-	return count;
-}
-
-
-extern Species null_species;
 }
 
 

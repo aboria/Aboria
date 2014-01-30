@@ -25,7 +25,7 @@
 #ifndef CONSTANTS_H_
 #define CONSTANTS_H_
 
-namespace Tyche {
+namespace Aboria {
 const double PI = 3.14159265359;
 const int NDIM = 3;
 }

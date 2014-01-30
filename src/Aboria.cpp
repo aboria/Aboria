@@ -21,11 +21,11 @@
  *  Created on: Mar 28, 2013
  *      Author: mrobins
  */
-
 #include <time.h>
-#include "Tyche.h"
 
-namespace Tyche {
+#include "Aboria.h"
+
+namespace Aboria {
 
 base_generator_type generator;
 
@@ -36,5 +36,4 @@ void init(int argc, char *argv[]) {
 void random_seed(unsigned int seed) {
   generator.seed(seed);
 }
-
 }

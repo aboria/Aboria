@@ -6,10 +6,9 @@
  */
 
 #include "BucketSort.h"
-#include <boost/iterator/iterator_facade.hpp>
 
 
-namespace Tyche {
+namespace Aboria {
 
 void BucketSort::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius) {
 	LOG(2,"Resetting bucketsort data structure:");
@@ -90,17 +89,14 @@ void BucketSort::reset(const Vect3d& _low, const Vect3d& _high, double _max_inte
 	}
 }
 
-BucketSort::const_iterator BucketSort::find_broadphase_neighbours(const Vect3d& r, const int my_index, const bool self) {
-	return BucketSort::const_iterator(cells + find_cell_index(r), linked_list.begin(),
-			surrounding_cell_offsets, my_index, self);
-}
-BucketSort::const_iterator BucketSort::end() {
-	return BucketSort::const_iterator(&empty_cell, linked_list.begin(),
-			std::vector<int>(1,0));
+BucketSort::const_iterator BucketSort::find_broadphase_neighbours(const Vect3d& r, const double radius,const int my_index, const bool self) const {
+	return const_iterator(this,r,radius,my_index,self);
 }
 
-
-Vect3d BucketSort::correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) {
+BucketSort::const_iterator BucketSort::end() const {
+	return const_iterator();
+}
+Vect3d BucketSort::correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const {
 	Vect3d corrected_r = to_correct_r - source_r;
 	for (int i = 0; i < NDIM; ++i) {
 		if (!periodic[i]) continue;
@@ -110,7 +106,7 @@ Vect3d BucketSort::correct_position_for_periodicity(const Vect3d& source_r, cons
 	return corrected_r + source_r;
 }
 
-Vect3d BucketSort::correct_position_for_periodicity(const Vect3d& to_correct_r) {
+Vect3d BucketSort::correct_position_for_periodicity(const Vect3d& to_correct_r) const {
 	Vect3d corrected_r = to_correct_r;
 	for (int i = 0; i < NDIM; ++i) {
 		if (!periodic[i]) continue;

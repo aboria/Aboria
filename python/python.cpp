@@ -26,7 +26,7 @@
 #include <boost/python.hpp>
 #include <boost/python/suite/indexing/vector_indexing_suite.hpp>
 #include <numpy/ndarrayobject.h>
-#include "Tyche.h"
+#include "Aboria.h"
 #include <numpy/arrayobject.h>
 
 #include <vtkUnstructuredGrid.h>

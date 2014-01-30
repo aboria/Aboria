@@ -26,10 +26,12 @@
 #define GEOMETRY_H_
 
 #include "Vector.h"
-#include "MyRandom.h"
 #include "Log.h"
+#include "MyRandom.h"
 
-namespace Tyche {
+#include <memory>
+
+namespace Aboria {
 
 const double GEOMETRY_TOLERANCE = 1.0/1000000.0;
 
@@ -159,15 +161,7 @@ public:
 	AxisAlignedRectangle(const Vect3d _low, const Vect3d _high, const int _normal):
 	   AxisAlignedPlane<DIM>(_low[DIM], _normal),
 	   low(_low),high(_high),
-	   normal_vector(Vect3d::Zero()),
-	   uni1(generator,boost::uniform_real<>(_low[dim_map[DIM][0]],_high[dim_map[DIM][0]])),
-	   uni2(generator,boost::uniform_real<>(_low[dim_map[DIM][1]],_high[dim_map[DIM][1]])),
-	   tri1(generator,boost::triangle_distribution<>(_low[dim_map[DIM][0]],
-			   	   	   	   	   0.5*(_low[dim_map[DIM][0]] + _high[dim_map[DIM][0]]),
-			   	   	   	   	   	   	   	             _high[dim_map[DIM][0]] )),
-	   tri2(generator,boost::triangle_distribution<>(_low[dim_map[DIM][1]],
-			   0.5*(_low[dim_map[DIM][1]] + _high[dim_map[DIM][1]]),
-			   	   	   	   	   				         _high[dim_map[DIM][1]] )) {
+	   normal_vector(Vect3d::Zero()) {
 	   high[DIM] = low[DIM];
 	   normal_vector[DIM] = this->normal;
 	}
@@ -175,16 +169,8 @@ public:
 		AxisAlignedPlane<DIM>(arg),
 		low(arg.low),
 		high(arg.high),
-		normal_vector(arg.normal_vector),
-		uni1(generator,boost::uniform_real<>(arg.low[dim_map[DIM][0]],arg.high[dim_map[DIM][0]])),
-		uni2(generator,boost::uniform_real<>(arg.low[dim_map[DIM][1]],arg.high[dim_map[DIM][1]])),
-		tri1(generator,boost::triangle_distribution<>(arg.low[dim_map[DIM][0]],
-				0.5*(arg.low[dim_map[DIM][0]] + arg.high[dim_map[DIM][0]]),
-				arg.high[dim_map[DIM][0]] )),
-				tri2(generator,boost::triangle_distribution<>(arg.low[dim_map[DIM][1]],
-						0.5*(arg.low[dim_map[DIM][1]] + arg.high[dim_map[DIM][1]]),
-						arg.high[dim_map[DIM][1]] ))
-						{}
+		normal_vector(arg.normal_vector)
+		{}
 
 	static std::auto_ptr<AxisAlignedRectangle<DIM> > New(const Vect3d _low, const Vect3d _high, const int _normal) {
 		return std::auto_ptr<AxisAlignedRectangle<DIM> >(new AxisAlignedRectangle<DIM>(_low,_high,_normal));
@@ -195,18 +181,6 @@ public:
 		low = arg.low;
 		high = arg.high;
 		normal_vector = arg.normal_vector;
-		boost::uniform_real<double>& dist1 = uni1.distribution();
-		boost::uniform_real<double>& dist2 = uni2.distribution();
-		dist1.param(boost::uniform_real<double>::param_type(arg.low[dim_map[DIM][0]],arg.high[dim_map[DIM][0]]));
-		dist2.param(boost::uniform_real<double>::param_type(arg.low[dim_map[DIM][1]],arg.high[dim_map[DIM][1]]));
-		boost::triangle_distribution<double>& dist3 = tri1.distribution();
-		boost::triangle_distribution<double>& dist4 = tri2.distribution();
-		dist3.param(boost::triangle_distribution<double>::param_type(arg.low[dim_map[DIM][0]],
-				0.5*(arg.low[dim_map[DIM][0]] + arg.high[dim_map[DIM][0]]),
-				arg.high[dim_map[DIM][0]] ));
-		dist4.param(boost::triangle_distribution<double>::param_type(arg.low[dim_map[DIM][1]],
-				0.5*(arg.low[dim_map[DIM][1]] + arg.high[dim_map[DIM][1]]),
-				arg.high[dim_map[DIM][1]] ));
 		return *this;
 	}
 
@@ -242,29 +216,6 @@ public:
 				;
 	}
 
-	void get_random_point_and_normal(Vect3d& p, Vect3d& n) {
-	   p = get_random_point();
-	   n = normal_vector;
-	}
-	Vect3d get_random_point() {
-		Vect3d ret;
-		ret[DIM] = this->coord;
-		ret[dim_map[DIM][0]] = uni1();
-		ret[dim_map[DIM][1]] = uni2();
-		return ret;
-	}
-
-	void get_random_point_and_normal_triangle(Vect3d& p, Vect3d& n) {
-		p = get_random_point_triangle();
-		n = normal_vector;
-	}
-	Vect3d get_random_point_triangle() {
-		Vect3d ret;
-		ret[DIM] = this->coord;
-		ret[dim_map[DIM][0]] = tri1();
-		ret[dim_map[DIM][1]] = tri2();
-		return ret;
-	}
 
 	const Vect3d& get_low() const {return low;}
 	const Vect3d& get_high() const {return high;}
@@ -272,8 +223,6 @@ public:
 private:
 	Vect3d low,high,normal_vector;
 
-	boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni1, uni2;
-	boost::variate_generator<base_generator_type&, boost::triangle_distribution<> > tri1, tri2;
 };
 
 typedef AxisAlignedRectangle<0> xrect;
