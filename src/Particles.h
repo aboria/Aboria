@@ -48,7 +48,7 @@ namespace Aboria {
 //#define DATA_types   (Vect3d)(Vect3d)(bool)(int)(int)
 //#include "Data.h"
 
-template<int DataSize>
+template<typename DataType>
 class Particles {
 public:
 	class Value {
@@ -61,6 +61,16 @@ public:
 			id(id),
 			saved_index(saved_index)
 		{}
+		Value(const Value& rhs) {
+			r = rhs.r;
+			r0 = rhs.r0;
+			alive = rhs.alive;
+			id = rhs.id;
+			saved_index = rhs.saved_index;
+			data = rhs.data;
+
+			std::cout <<"copy constructor!!"<<std::endl;
+		}
 		Value& operator=(const Value &rhs) {
 			if (this != &rhs) {
 				r = rhs.r;
@@ -70,26 +80,20 @@ public:
 				saved_index = rhs.saved_index;
 				data = rhs.data;
 			}
+			std::cout <<"copying!!"<<std::endl;
 			return *this;
 		}
 		const Vect3d& get_position() const {
 			return r;
 		}
-		Vect3d& get_position_nonconst() {
-			dirty = true;
-			return r;
-		}
 		const Vect3d& get_old_position() const {
 			return r0;
 		}
-		Vect3d& get_old_position_nonconst() {
-			return r0;
+		const DataType& get_data() const {
+			return data;
 		}
-		const double* get_data() const {
-			return data.data();
-		}
-		double* get_data(const size_t i) {
-			return data.data();
+		DataType& get_data() {
+			return data;
 		}
 		bool is_alive() const {
 			return alive;
@@ -104,20 +108,19 @@ public:
 			alive = false;
 		}
 		template<typename T>
-		boost::iterator_range<typename T::NeighbourSearch_type::const_iterator> get_in_radius(const T& particles, const double radius) {
+		boost::iterator_range<typename std::pointer_traits<T>::element_type::NeighbourSearch_type::const_iterator> get_in_radius(const T particles, const double radius) {
 			return boost::make_iterator_range(
-			 particles.neighbour_search.find_broadphase_neighbours(get_position(), radius, index,false),
-			 particles.neighbour_search.end());
+			 particles->neighbour_search.find_broadphase_neighbours(get_position(), radius, index,false),
+			 particles->neighbour_search.end());
 		}
 	private:
 		Vect3d r,r0;
-		bool alive,dirty;
+		bool alive;
 		std::size_t id;
 		std::size_t index,saved_index;
 		std::vector<size_t> neighbour_indicies;
-		boost::array<double,DataSize> data;
+		DataType data;
 	};
-
 
 	typedef typename std::vector<Value> data_type;
 	typedef typename data_type::iterator iterator;
@@ -135,8 +138,13 @@ public:
 
 	Particles():
 		next_id(0),
-		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos())
+		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
+		searchable(false)
 	{}
+
+	static ptr<Particles<DataType> > New() {
+		return ptr<Particles<DataType> >(new Particles<DataType> ());
+	}
 
 	Value& operator[](std::size_t idx) {
 		return data[idx];
@@ -151,60 +159,27 @@ public:
 		return data.end();
 	}
 
-	void fill_uniform(const Vect3d low, const Vect3d high, const unsigned int N) {
-		//TODO: assumes a 3d rectangular region
-		boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni(generator, boost::uniform_real<>(0,1));
-		const Vect3d dist = high-low;
-		for(int i=0;i<N;i++) {
-			add_particle(Vect3d(uni()*dist[0],uni()*dist[1],uni()*dist[2])+low);
-		}
-	}
+//	void fill_uniform(const Vect3d low, const Vect3d high, const unsigned int N) {
+//		//TODO: assumes a 3d rectangular region
+//		boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni(generator, boost::uniform_real<>(0,1));
+//		const Vect3d dist = high-low;
+//		for(int i=0;i<N;i++) {
+//			add_particle(Vect3d(uni()*dist[0],uni()*dist[1],uni()*dist[2])+low);
+//		}
+//	}
 
 	void delete_particles() {
 		data.erase (std::remove_if( std::begin(data), std::end(data),
 				[](Value& p) { return !p.is_alive(); }),
 				std::end(data)
 		);
+		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
 	void clear() {
 		data.clear();
 	}
 	size_t size() const {
 		return data.size();
-	}
-	void add_particle(const Vect3d& position) {
-		data.push_back(Value(position,position,true, next_id++, SPECIES_SAVED_INDEX_FOR_NEW_PARTICLE));
-	}
-	void add_particle(const Vect3d& position, const Vect3d& old_position) {
-		data.push_back(Value(position,old_position,true, next_id++, SPECIES_SAVED_INDEX_FOR_NEW_PARTICLE));
-	}
-	const Vect3d& get_position(const size_t i) const {
-		return data[i].get_position();
-	}
-	Vect3d& get_position_nonconst(const size_t i) {
-		return data[i].get_position_nonconst();
-	}
-	const Vect3d& get_old_position(const size_t i) const {
-		return data[i].get_old_position();
-	}
-	Vect3d& get_old_position_nonconst(const size_t i) {
-		return data[i].get_old_position_nonconst();
-	}
-	const double* get_data(const size_t i) const {
-		return data[i].get_data();
-	}
-	double* get_data(const size_t i) {
-		return data[i].get_data_nonconst();
-	}
-	bool is_alive(const size_t i) const {
-		return data[i].is_alive();
-	}
-	const size_t& get_id(const size_t i) const {
-		return data[i].get_id();
-	}
-
-	void mark_for_deletion(const size_t i) {
-		data[i].mark_for_deletion();
 	}
 
 	void save_indicies() {
@@ -216,10 +191,34 @@ public:
 
 	void init_neighbour_search(const Vect3d& low, const Vect3d& high, const double length_scale) {
 		neighbour_search.reset(low,high,length_scale);
-		neighbour_search.embed_points(begin(),end());
+		neighbour_search.embed_points(data.cbegin(),data.cend());
+		searchable = true;
 	}
-	void refresh_neighbour_search() {
-		neighbour_search.embed_points(begin(),end());
+	template<typename F>
+	void create_particles(const int n, F f) {
+		data.resize(n);
+		std::for_each(begin(),end(),[&f](Value& i) {
+			i.r = f(i);
+			i.r0 = i.r;
+		});
+		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+	}
+
+	template<typename F>
+	void update_positions(iterator b, iterator e, F f) {
+		std::for_each(b,e,[&f](Value& i) {
+			i.r0 = i.r;
+			i.r = f(i);
+		});
+		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+	}
+	template<typename F>
+	void update_positions(F f) {
+		std::for_each(begin(),end(),[&f](Value& i) {
+			i.r0 = i.r;
+			i.r = f(i);
+		});
+		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
 
 	vtkSmartPointer<vtkUnstructuredGrid> get_vtk_grid() {
@@ -245,7 +244,7 @@ public:
 private:
 	data_type data;
 	NeighbourSearch_type neighbour_search;
-	bool dirty;
+	bool searchable;
 	int next_id;
 
 };

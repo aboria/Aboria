@@ -29,6 +29,8 @@
 #include <memory>
 #include <vector>
 
+#include "Ptr.h"
+
 namespace Aboria {
 
 class Operator {
@@ -75,7 +77,7 @@ private:
 };
 
 
-class OperatorList: public std::vector<Operator> {
+class OperatorList: public std::vector<ptr<Operator> > {
 public:
 
 	void print(std::ostream& out) const {
@@ -88,15 +90,44 @@ public:
 	}
 	void execute() {
 		for (auto i : *this) {
-			i.execute();
+			i->execute();
 		}
 	}
 	void reset() {
 		for (auto i : *this) {
-			i.reset();
+			i->reset();
 		}
 	}
 };
+
+template <typename FunctionType>
+class RepeatOperator {
+public:
+	RepeatOperator(ptr<Operator> op, FunctionType n_func): op(op),n_func(n_func) {}
+	void print(std::ostream& out) const {
+		out << "Repeat Operator (n="<<n_func()<<"): "<<op<<std::endl;
+	}
+	void execute() {
+		const unsigned int n = n_func();
+		for (int i = 0; i < n; ++i) {
+			op->execute();
+		}
+	}
+	void reset() {
+		op->reset();
+	}
+private:
+	ptr<Operator> op;
+	FunctionType n_func;
+};
+
+template<FunctionType>
+ptr<Operator> repeat(ptr<Operator> op, FunctionType f) {
+	return ptr<Operator>(new Operator(
+			RepeatOperator<FunctionType>(op,f)
+	));
+}
+
 
 }
 
