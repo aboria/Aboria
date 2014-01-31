@@ -76,14 +76,14 @@ private:
 template<typename ParticlesType, typename ParticlesTypeNeighbours, typename FunctionType>
 static ptr<Operator> for_each_neigh(ParticlesType output, ParticlesTypeNeighbours neighbours, FunctionType function) {
 	return ptr<Operator>(new Operator(
-			ForEachParticleNeighbourSearch<ParticlesType,FunctionType>(output,neighbours,function,typeid(function).name())
+			ForEachParticleNeighbourSearch<ParticlesType,ParticlesTypeNeighbours,FunctionType>(output,neighbours,function,typeid(function).name())
 	));
 }
 
 template<typename ParticlesType, typename ParticlesTypeNeighbours, typename FunctionType>
 static ptr<Operator> for_each_neigh(ParticlesType output, ParticlesTypeNeighbours neighbours, FunctionType function, const std::string name) {
 	return ptr<Operator>(new Operator(
-			ForEachParticleNeighbourSearch<ParticlesType,FunctionType>(output,neighbours,function,name)
+			ForEachParticleNeighbourSearch<ParticlesType,ParticlesTypeNeighbours,FunctionType>(output,neighbours,function,name)
 	));
 }
 

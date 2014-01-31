@@ -8,6 +8,8 @@
 #ifndef PTR_H_
 #define PTR_H_
 
+#include <memory>
+
 namespace Aboria {
 
 template<class T> using ptr = std::shared_ptr<T>;

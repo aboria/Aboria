@@ -28,16 +28,17 @@
 #include "BucketSort.h"
 
 #include <vector>
-#include <boost/array.hpp>
+//#include <boost/array.hpp>
 //#include <boost/iterator/iterator_facade.hpp>
+#include <boost/range/adaptors.hpp>
 #include "Vector.h"
-#include "MyRandom.h"
+//#include "MyRandom.h"
 
-#include <vtkUnstructuredGrid.h>
-#include <vtkSmartPointer.h>
-#include <vtkIntArray.h>
-#include <vtkDoubleArray.h>
-#include <vtkPointData.h>
+//#include <vtkUnstructuredGrid.h>
+//#include <vtkSmartPointer.h>
+//#include <vtkIntArray.h>
+//#include <vtkDoubleArray.h>
+//#include <vtkPointData.h>
 
 
 
@@ -54,13 +55,7 @@ public:
 	class Value {
 		friend class Particles;
 	public:
-		Value(const Vect3d& r, const Vect3d& r0, const bool alive, const size_t id, const size_t saved_index):
-			r(r),
-			r0(r0),
-			alive(alive),dirty(true),
-			id(id),
-			saved_index(saved_index)
-		{}
+		Value(){}
 		Value(const Value& rhs) {
 			r = rhs.r;
 			r0 = rhs.r0;
@@ -197,9 +192,12 @@ public:
 	template<typename F>
 	void create_particles(const int n, F f) {
 		data.resize(n);
-		std::for_each(begin(),end(),[&f](Value& i) {
+		std::for_each(begin(),end(),[&f,this](Value& i) {
+			i.id = next_id++;
+			i.alive = true;
 			i.r = f(i);
 			i.r0 = i.r;
+
 		});
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
@@ -221,26 +219,26 @@ public:
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
 
-	vtkSmartPointer<vtkUnstructuredGrid> get_vtk_grid() {
-		vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-		vtkSmartPointer<vtkPoints> newPts = vtkSmartPointer<vtkPoints>::New();
-		vtkSmartPointer<vtkIntArray> newInt = vtkSmartPointer<vtkIntArray>::New();
-		newInt->SetName("id");
-		const vtkIdType n = size();
-		newPts->SetNumberOfPoints(n);
-		newInt->SetNumberOfValues(n);
-		for (int i = 0; i < n; ++i) {
-			//std::cout << "adding mol to vtk at position "<<mols.r[i]<<std::endl;
-			newPts->SetPoint(i,get_position(i)[0],get_position(i)[1],get_position(i)[2]);
-			newInt->SetValue(n,get_id(i));
-		}
-		newPts->ComputeBounds();
-
-		grid->SetPoints(newPts);
-		grid->GetPointData()->AddArray(newInt);
-
-		return grid;
-	}
+//	vtkSmartPointer<vtkUnstructuredGrid> get_vtk_grid() {
+//		vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+//		vtkSmartPointer<vtkPoints> newPts = vtkSmartPointer<vtkPoints>::New();
+//		vtkSmartPointer<vtkIntArray> newInt = vtkSmartPointer<vtkIntArray>::New();
+//		newInt->SetName("id");
+//		const vtkIdType n = size();
+//		newPts->SetNumberOfPoints(n);
+//		newInt->SetNumberOfValues(n);
+//		for (int i = 0; i < n; ++i) {
+//			//std::cout << "adding mol to vtk at position "<<mols.r[i]<<std::endl;
+//			newPts->SetPoint(i,get_position(i)[0],get_position(i)[1],get_position(i)[2]);
+//			newInt->SetValue(n,get_id(i));
+//		}
+//		newPts->ComputeBounds();
+//
+//		grid->SetPoints(newPts);
+//		grid->GetPointData()->AddArray(newInt);
+//
+//		return grid;
+//	}
 private:
 	data_type data;
 	NeighbourSearch_type neighbour_search;

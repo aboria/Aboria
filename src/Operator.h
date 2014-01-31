@@ -121,7 +121,7 @@ private:
 	FunctionType n_func;
 };
 
-template<FunctionType>
+template<typename FunctionType>
 ptr<Operator> repeat(ptr<Operator> op, FunctionType f) {
 	return ptr<Operator>(new Operator(
 			RepeatOperator<FunctionType>(op,f)

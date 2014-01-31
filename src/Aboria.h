@@ -26,18 +26,11 @@
 #define ABORIA_H_
 
 #include "Ptr.h"
-#include "Operator.h"
-#include "MyRandom.h"
+//#include "Operator.h"
+//#include "MyRandom.h"
 #include "Particles.h"
-#include "ParticleOperators.h"
-
-namespace Aboria {
-
-
-void init(int argc, char *argv[]);
-void random_seed(unsigned int seed);
-
-}
+#include "PrintTuple.h"
+//#include "ParticleOperators.h"
 
 
 

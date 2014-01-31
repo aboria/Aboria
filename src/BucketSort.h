@@ -165,9 +165,9 @@ private:
 	}
 	inline int find_cell_index(const Vect3d &r) const {
 		const Vect3i celli = ((r-low).cwiseProduct(inv_cell_size) + Vect3d(1.0,1.0,1.0)).cast<int>();
-		ASSERT((celli[0] >= 0) && (celli[0] < num_cells_along_axes[0]), "position is outside of x-range");
-		ASSERT((celli[1] >= 0) && (celli[1] < num_cells_along_axes[1]), "position is outside of y-range");
-		ASSERT((celli[2] >= 0) && (celli[2] < num_cells_along_axes[2]), "position is outside of z-range");
+		ASSERT((celli[0] >= 0) && (celli[0] < num_cells_along_axes[0]), "position is outside of x-range "<<r);
+		ASSERT((celli[1] >= 0) && (celli[1] < num_cells_along_axes[1]), "position is outside of y-range "<<r);
+		ASSERT((celli[2] >= 0) && (celli[2] < num_cells_along_axes[2]), "position is outside of z-range "<<r);
 		//std::cout << " looking in cell " << celli <<" out of total cells " << num_cells_along_axes << " at position " << r<< std::endl;
 		return vect_to_index(celli);
 	}
