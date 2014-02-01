@@ -17,19 +17,28 @@ enum {DEM_FORCE, DEM_VELOCITY, DEM_VELOCITY0};
 typedef std::tuple<Vect3d,Vect3d,Vect3d> DemTuple;
 typedef Particles<DemTuple> DemType;
 
-enum {PARAMS_SPH_DT,PARAMS_DEM_DT,PARAMS_DEM_MASS,PARAMS_DEM_DIAMETER,PARAMS_DEM_K,PARAMS_DEM_GAMMA};
-typedef std::tuple<double,double,double,double,double,double> ParamTuple;
+//enum {PARAMS_SPH_DT,PARAMS_DEM_DT,PARAMS_DEM_MASS,PARAMS_DEM_DIAMETER,PARAMS_DEM_K,PARAMS_DEM_GAMMA};
+//typedef std::tuple<double,double,double,double,double,double> ParamTuple;
+
+struct Params {
+	double sph_dt,dem_dt,dem_mass,dem_diameter,dem_k,dem_gamma;
+};
 
 template<typename GeometryType>
 void dem_start(ptr<DemType> dem,
-		ptr<ParamTuple> params,
+		ptr<Params> params,
 		GeometryType geometry) {
 
-	const double dt = std::get<PARAMS_DEM_DT>(*params);
-	const double dem_diameter = std::get<PARAMS_DEM_DIAMETER>(*params);
-	const double dem_k = std::get<PARAMS_DEM_K>(*params);
-	const double dem_gamma = std::get<PARAMS_DEM_GAMMA>(*params);
-	const double dem_mass = std::get<PARAMS_DEM_MASS>(*params);
+//	const double dt = std::get<PARAMS_DEM_DT>(*params);
+//	const double dem_diameter = std::get<PARAMS_DEM_DIAMETER>(*params);
+//	const double dem_k = std::get<PARAMS_DEM_K>(*params);
+//	const double dem_gamma = std::get<PARAMS_DEM_GAMMA>(*params);
+//	const double dem_mass = std::get<PARAMS_DEM_MASS>(*params);
+	const double dt = params->dem_dt;
+	const double dem_diameter = params->dem_diameter;
+	const double dem_k = params->dem_k;
+	const double dem_gamma = params->dem_gamma;
+	const double dem_mass = params->dem_mass;
 
 
 	dem->update_positions(dem->begin(),dem->end(),[dt](DemType::Value& i) {

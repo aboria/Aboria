@@ -11,26 +11,20 @@ int main(int argc, char **argv) {
 
 	auto sph = SphType::New();
 	auto dem = DemType::New();
-	auto params = ptr<ParamTuple>(new ParamTuple());
+	auto params = ptr<Params>(new Params());
 
 	const double pi = 3.14;
 	const int n = 1000;
 	const double L = 31.0/1000.0;
 	const int ndem = 2;
-	const double dem_diameter = 0.0011;
-	const double dem_gamma = 0.0004;
-	const double dem_k = 1.0e01;
-	const double dem_vol = (1.0/6.0)*pi*pow(dem_diameter,3);
+	params->dem_diameter = 0.0011;
+	params->dem_gamma = 0.0004;
+	params->dem_k = 1.0e01;
+	const double dem_vol = (1.0/6.0)*pi*pow(params->dem_diameter,3);
 	const double dem_dens = 1160.0;
-	const double dem_mass = dem_vol*dem_dens;
-	const double dem_min_reduced_mass = 0.5*dem_mass;
-	const double dem_dt = (1.0/50.0)*PI/sqrt(dem_k/dem_min_reduced_mass-pow(0.5*dem_gamma/dem_min_reduced_mass,2));
-
-	std::get<PARAMS_DEM_DT>(*params) = dem_dt;
-	std::get<PARAMS_DEM_DIAMETER>(*params) = dem_diameter;
-	std::get<PARAMS_DEM_GAMMA>(*params) = dem_gamma;
-	std::get<PARAMS_DEM_K>(*params) = dem_k;
-	std::get<PARAMS_DEM_MASS>(*params) = dem_mass;
+	params->dem_mass = dem_vol*dem_dens;
+	const double dem_min_reduced_mass = 0.5*params->dem_mass;
+	params->dem_dt = (1.0/50.0)*PI/sqrt(params->dem_k/dem_min_reduced_mass-pow(0.5*params->dem_gamma/dem_min_reduced_mass,2));
 
 
 	auto geometry = [params](DemType::Value& i) {

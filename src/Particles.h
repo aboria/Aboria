@@ -34,13 +34,13 @@
 #include "Vector.h"
 //#include "MyRandom.h"
 
-//#include <vtkUnstructuredGrid.h>
-//#include <vtkSmartPointer.h>
-//#include <vtkIntArray.h>
-//#include <vtkDoubleArray.h>
-//#include <vtkPointData.h>
-
-
+#ifndef HAVE_VTK
+#include <vtkUnstructuredGrid.h>
+#include <vtkSmartPointer.h>
+#include <vtkIntArray.h>
+#include <vtkDoubleArray.h>
+#include "vtkPointData.h"
+#endif
 
 namespace Aboria {
 
@@ -219,26 +219,28 @@ public:
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
 
-//	vtkSmartPointer<vtkUnstructuredGrid> get_vtk_grid() {
-//		vtkSmartPointer<vtkUnstructuredGrid> grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-//		vtkSmartPointer<vtkPoints> newPts = vtkSmartPointer<vtkPoints>::New();
-//		vtkSmartPointer<vtkIntArray> newInt = vtkSmartPointer<vtkIntArray>::New();
-//		newInt->SetName("id");
-//		const vtkIdType n = size();
-//		newPts->SetNumberOfPoints(n);
-//		newInt->SetNumberOfValues(n);
-//		for (int i = 0; i < n; ++i) {
-//			//std::cout << "adding mol to vtk at position "<<mols.r[i]<<std::endl;
-//			newPts->SetPoint(i,get_position(i)[0],get_position(i)[1],get_position(i)[2]);
-//			newInt->SetValue(n,get_id(i));
-//		}
-//		newPts->ComputeBounds();
-//
-//		grid->SetPoints(newPts);
-//		grid->GetPointData()->AddArray(newInt);
-//
-//		return grid;
-//	}
+#ifndef HAVE_VTK
+	void  copy_to_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
+		vtkSmartPointer<vtkPoints> points = grid->GetPoints();
+		vtkSmartPointer<vtkIntArray> ids = grid->GetPointData()->GetArray("id");
+		if (!ids) {
+			ids = vtkSmartPointer<vtkIntArray>::New();
+			ids->SetName("id");
+			grid->GetPointData()->AddArray(ids);
+		}
+		const vtkIdType n = size();
+		points->SetNumberOfPoints(n);
+		ids->SetNumberOfValues(n);
+		std::for_each(begin(),end(),[&f](Value& i) {
+			const int index = ?;
+			points->SetPoint(index,i.get_position()[0],i.get_position()[1],i.get_position()[2]);
+			ids->SetValue(index,i.get_id());
+		});
+
+		//points->ComputeBounds();
+		return grid;
+	}
+#endif
 private:
 	data_type data;
 	NeighbourSearch_type neighbour_search;
