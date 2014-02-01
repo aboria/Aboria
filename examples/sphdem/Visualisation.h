@@ -58,6 +58,9 @@ public:
 		orientationWidget->SetInteractor( renderWindowInteractor );
 		//orientationWidget->SetViewport( 0.0, 0.0, 0.4, 0.4 );
 		orientationWidget->SetEnabled( 1 );
+
+		renderWindowInteractor->Initialize();
+
 		//orientationWidget->InteractiveOn();
 
 		//renderWindowInteractor->Initialize();
@@ -86,7 +89,14 @@ public:
 		renderer->AddActor(actor);
 	}
 
-	void s
+	void start_render_loop() {
+		renderWindowInteractor->Start();
+		renderWindowInteractor->EnableRenderOn();
+	}
+	void stop_render_loop() {
+		renderWindowInteractor->EnableRenderOff();
+
+	}
 
 private:
 	vtkSmartPointer<vtkRenderer> renderer;

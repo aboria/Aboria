@@ -231,7 +231,7 @@ public:
 		const vtkIdType n = size();
 		points->SetNumberOfPoints(n);
 		ids->SetNumberOfValues(n);
-		std::for_each(begin(),end(),[&f](Value& i) {
+		std::for_each(begin(),end(),[](Value& i) {
 			const int index = ?;
 			points->SetPoint(index,i.get_position()[0],i.get_position()[1],i.get_position()[2]);
 			ids->SetValue(index,i.get_id());

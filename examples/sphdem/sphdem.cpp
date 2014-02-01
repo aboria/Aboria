@@ -6,6 +6,7 @@
  */
 
 #include "sphdem.h"
+#include "Visualisation.h"
 
 int main(int argc, char **argv) {
 
@@ -60,6 +61,12 @@ int main(int argc, char **argv) {
 		return position;
 	});
 
+	Visualisation vis;
+	auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	dem->copy_to_vtk_grid(grid);
+	vis.glyph_points(grid);
+	vis.start_render_loop();
+
 	const Vect3d min(-2*dem_diameter,-2*dem_diameter,-2*dem_diameter);
 	const Vect3d max(L+2*dem_diameter,L+2*dem_diameter,L+2*dem_diameter);
 	dem->init_neighbour_search(min,max,dem_diameter);
@@ -68,6 +75,9 @@ int main(int argc, char **argv) {
 		std::cout <<"iteration "<<i<<std::endl;
 		dem_start(dem,params,geometry);
 		dem_end(dem,params,geometry);
+		vis.stop_render_loop();
+		dem->copy_to_vtk_grid(grid);
+		vis.start_render_loop();
 	}
 
 
