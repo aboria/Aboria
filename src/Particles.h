@@ -30,7 +30,9 @@
 #include <vector>
 //#include <boost/array.hpp>
 //#include <boost/iterator/iterator_facade.hpp>
+#include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
+#include "Zip.h"
 #include "Vector.h"
 //#include "MyRandom.h"
 
@@ -184,11 +186,33 @@ public:
 		}
 	}
 
-	void init_neighbour_search(const Vect3d& low, const Vect3d& high, const double length_scale) {
-		neighbour_search.reset(low,high,length_scale);
+	void init_neighbour_search(const Vect3d& low, const Vect3d& high, const double length_scale, const Vect3b& periodic) {
+		neighbour_search.reset(low,high,length_scale,periodic);
 		neighbour_search.embed_points(data.cbegin(),data.cend());
 		searchable = true;
 	}
+
+	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic) {
+		std::for_each(begin(),end(),[low,high,periodic](Value& i) {
+			for (int d = 0; d < 3; ++d) {
+				if (periodic[d]) {
+					while (i.r[d]<low[d]) {
+						i.r[d] += (high[d]-low[d]);
+					}
+					while (i.r[d]>=high[d]) {
+						i.r[d] -= (high[d]-low[d]);
+					}
+				} else {
+					if ((i.r[d]<low[d]) || (i.r[d]>=high[d])) {
+						i.mark_for_deletion();
+					}
+				}
+			}
+		});
+		if ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))
+			delete_particles();
+	}
+
 	template<typename F>
 	void create_particles(const int n, F f) {
 		data.resize(n);
@@ -222,7 +246,12 @@ public:
 #ifndef HAVE_VTK
 	void  copy_to_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
 		vtkSmartPointer<vtkPoints> points = grid->GetPoints();
-		vtkSmartPointer<vtkIntArray> ids = grid->GetPointData()->GetArray("id");
+		if (!points) {
+			std::cout <<"creating new points"<<std::endl;
+			points = vtkSmartPointer<vtkPoints>::New();
+			grid->SetPoints(points);
+		}
+		vtkSmartPointer<vtkIntArray> ids = vtkIntArray::SafeDownCast(grid->GetPointData()->GetArray("id"));
 		if (!ids) {
 			ids = vtkSmartPointer<vtkIntArray>::New();
 			ids->SetName("id");
@@ -231,14 +260,14 @@ public:
 		const vtkIdType n = size();
 		points->SetNumberOfPoints(n);
 		ids->SetNumberOfValues(n);
-		std::for_each(begin(),end(),[](Value& i) {
-			const int index = ?;
+		int j = 0;
+		for(auto& i: *this) {
+			const int index = j++;
 			points->SetPoint(index,i.get_position()[0],i.get_position()[1],i.get_position()[2]);
 			ids->SetValue(index,i.get_id());
-		});
+		}
 
 		//points->ComputeBounds();
-		return grid;
 	}
 #endif
 private:

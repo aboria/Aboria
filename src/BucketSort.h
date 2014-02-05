@@ -146,10 +146,11 @@ public:
 		empty_cell(CELL_EMPTY) {
 		LOG(2,"Creating bucketsort data structure with lower corner = "<<low<<" and upper corner = "<<high);
 		const double dx = (high-low).maxCoeff()/10.0;
-		reset(low, high, dx);
+		reset(low, high, dx,periodic);
 	}
 
-	void reset(const Vect3d& low, const Vect3d& high, double _max_interaction_radius);
+	void reset(const Vect3d& low, const Vect3d& high, double _max_interaction_radius, const Vect3b& periodic);
+
 	inline const Vect3d& get_low() {return low;}
 	inline const Vect3d& get_high() {return high;}
 
@@ -181,7 +182,7 @@ private:
 	std::vector<int> linked_list;
 	std::vector<int> neighbr_list;
 	Vect3d low,high,domain_size;
-	const Vect3b periodic;
+	Vect3b periodic;
 	Vect3d cell_size,inv_cell_size;
 	Vect3i num_cells_along_axes;
 	int num_cells_along_yz;
@@ -235,11 +236,12 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	}
 }
 template<typename T, typename F>
-void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius) {
+void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius, const Vect3b& _periodic) {
 	LOG(2,"Resetting bucketsort data structure:");
 	LOG(2,"\tMax interaction radius = "<<_max_interaction_radius);
 	high = _high;
 	low = _low;
+	periodic = _periodic;
 	max_interaction_radius = _max_interaction_radius;
 	Vect3i num_cells_without_ghost = ((high-low)/max_interaction_radius).cast<int>();
 	Vect3d new_high = high;
