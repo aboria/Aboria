@@ -80,7 +80,6 @@ int main(int argc, char **argv) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
 			dem_start(dem,params,geometry);
 			dem_end(dem,params,geometry);
-			dem->enforce_domain(min,max,periodic);
 		}
 		std::cout <<"iteration "<<i<<std::endl;
 

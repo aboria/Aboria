@@ -153,6 +153,7 @@ public:
 
 	inline const Vect3d& get_low() {return low;}
 	inline const Vect3d& get_high() {return high;}
+	inline const Vect3b& get_periodic() {return periodic;}
 
 	void embed_points(const T begin_iterator, const T end_iterator);
 	const_iterator find_broadphase_neighbours(const Vect3d& r, const double radius, const int my_index, const bool self) const;

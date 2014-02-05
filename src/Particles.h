@@ -110,6 +110,10 @@ public:
 			 particles->neighbour_search.find_broadphase_neighbours(get_position(), radius, index,false),
 			 particles->neighbour_search.end());
 		}
+		template<typename T>
+		Vect3d correct_position_for_periodicity(const T particles, const Vect3d& position) {
+			return particles->neighbour_search.correct_position_for_periodicity(r, position);
+		}
 	private:
 		Vect3d r,r0;
 		bool alive;
@@ -192,27 +196,6 @@ public:
 		searchable = true;
 	}
 
-	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic) {
-		std::for_each(begin(),end(),[low,high,periodic](Value& i) {
-			for (int d = 0; d < 3; ++d) {
-				if (periodic[d]) {
-					while (i.r[d]<low[d]) {
-						i.r[d] += (high[d]-low[d]);
-					}
-					while (i.r[d]>=high[d]) {
-						i.r[d] -= (high[d]-low[d]);
-					}
-				} else {
-					if ((i.r[d]<low[d]) || (i.r[d]>=high[d])) {
-						i.mark_for_deletion();
-					}
-				}
-			}
-		});
-		if ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))
-			delete_particles();
-	}
-
 	template<typename F>
 	void create_particles(const int n, F f) {
 		data.resize(n);
@@ -232,7 +215,10 @@ public:
 			i.r0 = i.r;
 			i.r = f(i);
 		});
-		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+		if (searchable) {
+			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
+			neighbour_search.embed_points(data.cbegin(),data.cend());
+		}
 	}
 	template<typename F>
 	void update_positions(F f) {
@@ -240,7 +226,10 @@ public:
 			i.r0 = i.r;
 			i.r = f(i);
 		});
-		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+		if (searchable) {
+			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
+			neighbour_search.embed_points(data.cbegin(),data.cend());
+		}
 	}
 
 #ifndef HAVE_VTK
@@ -271,6 +260,28 @@ public:
 	}
 #endif
 private:
+	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic) {
+		std::for_each(begin(),end(),[low,high,periodic](Value& i) {
+			for (int d = 0; d < 3; ++d) {
+				if (periodic[d]) {
+					while (i.r[d]<low[d]) {
+						i.r[d] += (high[d]-low[d]);
+					}
+					while (i.r[d]>=high[d]) {
+						i.r[d] -= (high[d]-low[d]);
+					}
+				} else {
+					if ((i.r[d]<low[d]) || (i.r[d]>=high[d])) {
+						i.mark_for_deletion();
+					}
+				}
+			}
+		});
+		if ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))
+			delete_particles();
+	}
+
+
 	data_type data;
 	NeighbourSearch_type neighbour_search;
 	bool searchable;

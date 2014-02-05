@@ -54,7 +54,7 @@ void dem_start(ptr<DemType> dem,
 		f = f + geometry(i);
 
 		for (const DemType::Value& j: i.get_in_radius(dem,dem_diameter)) {
-			const Vect3d& rj = j.get_position();
+			const Vect3d& rj = i.correct_position_for_periodicity(dem,j.get_position());
 			const Vect3d& vj = std::get<DEM_VELOCITY>(j.get_data());
 			if (i.get_id()==j.get_id()) return;
 
