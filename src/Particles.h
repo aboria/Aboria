@@ -105,7 +105,7 @@ public:
 			alive = false;
 		}
 		template<typename T>
-		boost::iterator_range<typename std::pointer_traits<T>::element_type::NeighbourSearch_type::const_iterator> get_in_radius(const T particles, const double radius) {
+		boost::iterator_range<typename T::element_type::NeighbourSearch_type::const_iterator> get_in_radius(const T particles, const double radius) {
 			return boost::make_iterator_range(
 			 particles->neighbour_search.find_broadphase_neighbours(get_position(), radius, index,false),
 			 particles->neighbour_search.end());
@@ -132,9 +132,6 @@ public:
 		}
 	};
 	typedef BucketSort<const_iterator,get_pos> NeighbourSearch_type;
-
-
-	const int SPECIES_SAVED_INDEX_FOR_NEW_PARTICLE = -1;
 
 
 	Particles():
@@ -199,7 +196,7 @@ public:
 	template<typename F>
 	void create_particles(const int n, F f) {
 		data.resize(data.size()+n);
-		std::for_each(end()-n,end(),[&f,this](Value& i) {
+		std::for_each(end()-n,end(),[&f,&next_id](Value& i) {
 			i.id = next_id++;
 			i.alive = true;
 			i.r = f(i);

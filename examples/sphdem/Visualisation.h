@@ -53,32 +53,23 @@ void TimerCallbackFunction ( vtkObject* caller,
 
 }
 
-void test(vtkSmartPointer<vtkRenderWindowInteractor> arg) {
+void interactor_loop(vtkSmartPointer<vtkRenderWindowInteractor> arg) {
 	arg->Start();
 }
 
 class Visualisation {
 public:
-	Visualisation(const Vect3d& min, const Vect3d& max):
-		renderWindowInteractor(vtkSmartPointer<vtkRenderWindowInteractor>::New()),
-		renderWindow(vtkSmartPointer<vtkRenderWindow>::New()),
-		renderer(vtkSmartPointer<vtkRenderer>::New()),
-		vertexGlyphFilter(vtkSmartPointer<vtkVertexGlyphFilter>::New()) {
+	Visualisation(const Vect3d& min, const Vect3d& max) {
 
-
-		renderWindow->SetSize(800,600);
+		renderer = vtkSmartPointer<vtkRenderer>::New();
+		renderWindow = vtkSmartPointer<vtkRenderWindow>::New();
+		renderWindowInteractor = vtkSmartPointer<vtkRenderWindowInteractor>::New();
+		vertexGlyphFilter = vtkSmartPointer<vtkVertexGlyphFilter>::New();
 
 		renderWindow->AddRenderer(renderer);
 		renderWindowInteractor->SetRenderWindow(renderWindow);
-		renderWindowInteractor->Initialize();
-		//renderWindowInteractor->SetStillUpdateRate(100);
-		renderWindowInteractor->CreateRepeatingTimer(200);
-		vtkSmartPointer<vtkCallbackCommand> timerCallback =
-				vtkSmartPointer<vtkCallbackCommand>::New();
-		timerCallback->SetCallback ( TimerCallbackFunction );
-		timerCallback->SetClientData(vertexGlyphFilter);
-		renderWindowInteractor->AddObserver ( vtkCommand::TimerEvent, timerCallback );
 
+		renderWindow->SetSize(800,600);
 		renderer->SetBackground(.1,.2,.3); // Background color dark blue
 
 		vtkSmartPointer<vtkAxesActor> axes =
@@ -111,6 +102,17 @@ public:
 		renderer->GetActiveCamera()->SetPosition(mid[0],mid[1] + max[1]-min[1],mid[2]);
 		renderer->GetActiveCamera()->SetViewUp(0,0,1);
 		renderer->ResetCamera();
+
+		renderWindow->Render();
+		renderWindowInteractor->Initialize();
+
+		//renderWindowInteractor->SetStillUpdateRate(100);
+		renderWindowInteractor->CreateRepeatingTimer(200);
+		vtkSmartPointer<vtkCallbackCommand> timerCallback =
+				vtkSmartPointer<vtkCallbackCommand>::New();
+		timerCallback->SetCallback ( TimerCallbackFunction );
+		timerCallback->SetClientData(vertexGlyphFilter);
+		renderWindowInteractor->AddObserver ( vtkCommand::TimerEvent, timerCallback );
 	}
 	void glyph_points(vtkSmartPointer<vtkUnstructuredGrid> grid) {
 
@@ -135,7 +137,7 @@ public:
 	}
 
 	void start_render_loop() {
-		std::thread render_thread(test,renderWindowInteractor);
+		std::thread render_thread(interactor_loop,renderWindowInteractor);
 		render_thread.detach();
 	}
 	void restart_render_loop() {

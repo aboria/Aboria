@@ -102,15 +102,18 @@ public:
 	    friend class boost::iterator_core_access;
 
 	    bool equal(const_iterator const& other) const {
+	    	//std::cout <<" testing equal *m_node = "<<*m_node<<" other.m_node = "<<*(other.m_node)<<std::endl;
 	        return *m_node == *(other.m_node);
 	    }
 
 	    void increment() {
+	    	//std::cout <<" increment "<<std::endl;
 	    	go_to_next_candidate();
 	    	while (*m_node != CELL_EMPTY) {
 	    		const Vect3d p = bucket_sort->return_vect3d(bucket_sort->begin_iterator[*m_node]);
-    	    	//std::cout << "testing candidate with position"<<p<<std::endl;
+
 	    		dx = centre-bucket_sort->correct_position_for_periodicity(centre, p);
+	    		//std::cout << "testing candidate with position "<<p<<" and dx = "<<dx<<std::endl;
 	    		if (dx.squaredNorm() <= radius2) {
 	    	    	//std::cout << "found candidate with position"<<p<<std::endl;
 	    	    	break;
@@ -217,14 +220,15 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 		cells[celli] = i;
 		dirty_cells.push_back(celli);
 		linked_list[i] = cell_entry;
-
+		//std::cout <<"particle in cell "<<celli<<std::endl;
 		// Insert into ghosted cells
 		if (particle_based) {
 			for (int j: ghosting_indices_pb[celli]) {
+				//std::cout <<"particle in cell "<<celli<<" inserting into ghost cell "<<j<<" diff = "<<celli-j<<std::endl;
 				const int cell_entry = cells[j];
 				cells[j] = i;
 				dirty_cells.push_back(j);
-				linked_list[i] = cell_entry;
+				//linked_list[i] = cell_entry;
 			}
 		}
 	}
@@ -242,7 +246,10 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	LOG(2,"\tMax interaction radius = "<<_max_interaction_radius);
 	high = _high;
 	low = _low;
+	domain_size = high-low;
 	periodic = _periodic;
+	LOG(2,"\tPeriodic = "<<periodic);
+
 	max_interaction_radius = _max_interaction_radius;
 	Vect3i num_cells_without_ghost = ((high-low)/max_interaction_radius).cast<int>();
 	Vect3d new_high = high;
@@ -329,8 +336,8 @@ Vect3d BucketSort<T,F>::correct_position_for_periodicity(const Vect3d& source_r,
 	Vect3d corrected_r = to_correct_r - source_r;
 	for (int i = 0; i < NDIM; ++i) {
 		if (!periodic[i]) continue;
-		if (corrected_r[i] > cell_size[i]) corrected_r[i] -= domain_size[i];
-		if (corrected_r[i] < -cell_size[i]) corrected_r[i] += domain_size[i];
+		if (corrected_r[i] > domain_size[i]/2.0) corrected_r[i] -= domain_size[i];
+		else if (corrected_r[i] < -domain_size[i]/2.0) corrected_r[i] += domain_size[i];
 	}
 	return corrected_r + source_r;
 }

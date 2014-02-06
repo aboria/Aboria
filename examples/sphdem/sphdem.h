@@ -57,7 +57,7 @@ void dem_start(ptr<DemType> dem,
 			const Vect3d& dx = std::get<1>(tpl);
 			const DemType::Value& j = std::get<0>(tpl);
 			const Vect3d& vj = std::get<DEM_VELOCITY>(j.get_data());
-			if (i.get_id()==j.get_id()) return;
+			if (i.get_id()==j.get_id()) continue;
 
 			const double r = dx.norm();
 			const double overlap = dem_diameter-r;

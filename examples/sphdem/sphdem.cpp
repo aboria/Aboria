@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 	const int nout = 1000;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
-	const int ndem = 2;
+	const int ndem = 100;
 	params->dem_diameter = 0.0011;
 	params->dem_gamma = 0.0004;
 	params->dem_k = 1.0e01;
@@ -60,29 +60,30 @@ int main(int argc, char **argv) {
 
 		v << 0,0,0;
 		f << 0,0,0;
-		Vect3d position(params->dem_diameter/8,params->dem_diameter/8,dice()*L);
+		Vect3d position(dice()*L,dice()*L,dice()*L);
 		return position;
 	});
-	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
+//	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
+//		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
+//		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
+//
+//		v << 0,0,0;
+//		f << 0,0,0;
+//		Vect3d position(L/2,L-params->dem_diameter/8,L/2);
+//		return position;
+//	});
 
-		v << 0,0,0;
-		f << 0,0,0;
-		Vect3d position(L-params->dem_diameter/8,L-params->dem_diameter/8,dice()*L);
-		return position;
-	});
-
-	const Vect3d min(-2*params->dem_diameter,-2*params->dem_diameter,-2*params->dem_diameter);
-	const Vect3d max(L+2*params->dem_diameter,L+2*params->dem_diameter,L+2*params->dem_diameter);
+	const Vect3d min(0,0,0);
+	const Vect3d max(L,L,L);
 	const Vect3b periodic(true,true,false);
-	Visualisation vis(min,max);
 	auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	dem->copy_to_vtk_grid(grid);
+	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
+
+	Visualisation vis(min,max);
 	vis.glyph_points(grid);
 	vis.start_render_loop();
 
-	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
 			dem_start(dem,params,geometry);
