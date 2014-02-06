@@ -202,7 +202,7 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
 	linked_list.assign(n, CELL_EMPTY);
 	//const bool particle_based = dirty_cells.size() < cells.size();
-	const bool particle_based = true;
+	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
 	if (dirty_cells.size() > cells.size())
 	if (particle_based) {
 		for (int i: dirty_cells) {
