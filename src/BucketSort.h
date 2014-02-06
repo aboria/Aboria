@@ -201,7 +201,9 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	end_iterator = _end_iterator;
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
 	linked_list.assign(n, CELL_EMPTY);
-	const bool particle_based = dirty_cells.size() < cells.size();
+	//const bool particle_based = dirty_cells.size() < cells.size();
+	const bool particle_based = true;
+	if (dirty_cells.size() > cells.size())
 	if (particle_based) {
 		for (int i: dirty_cells) {
 			cells[i] = CELL_EMPTY;
@@ -221,13 +223,23 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 		dirty_cells.push_back(celli);
 		linked_list[i] = cell_entry;
 		//std::cout <<"particle in cell "<<celli<<std::endl;
-		// Insert into ghosted cells
+		// Insert into ghosted cells, support redirection up to 3 layers deep
 		if (particle_based) {
 			for (int j: ghosting_indices_pb[celli]) {
 				//std::cout <<"particle in cell "<<celli<<" inserting into ghost cell "<<j<<" diff = "<<celli-j<<std::endl;
 				const int cell_entry = cells[j];
 				cells[j] = i;
 				dirty_cells.push_back(j);
+				for (int k: ghosting_indices_pb[j]) {
+					const int cell_entry = cells[k];
+					cells[k] = i;
+					dirty_cells.push_back(k);
+					for (int m: ghosting_indices_pb[k]) {
+						const int cell_entry = cells[m];
+						cells[m] = i;
+						dirty_cells.push_back(m);
+					}
+				}
 				//linked_list[i] = cell_entry;
 			}
 		}
@@ -303,9 +315,9 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 
 		Vect3i tmp;
 		const int n = num_cells_along_axes[i];
-		for (int jj = 0; jj < num_cells_along_axes[j]-2; ++jj) {
+		for (int jj = 0; jj < num_cells_along_axes[j]-1; ++jj) {
 			tmp[j] = jj;
-			for (int kk = 0; kk < num_cells_along_axes[k]-2; ++kk) {
+			for (int kk = 0; kk < num_cells_along_axes[k]-1; ++kk) {
 				tmp[k] = kk;
 				tmp[i] = n-3;
 				const int index_from1 = vect_to_index(tmp);

@@ -20,7 +20,7 @@ int main(int argc, char **argv) {
 	const int nout = 1000;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
-	const int ndem = 100;
+	const int ndem = 1;
 	params->dem_diameter = 0.0011;
 	params->dem_gamma = 0.0004;
 	params->dem_k = 1.0e01;
@@ -60,18 +60,20 @@ int main(int argc, char **argv) {
 
 		v << 0,0,0;
 		f << 0,0,0;
-		Vect3d position(dice()*L,dice()*L,dice()*L);
+		//Vect3d position(dice()*L,dice()*L,dice()*L);
+		Vect3d position(params->dem_diameter/3,params->dem_diameter/3,L/2);
+
 		return position;
 	});
-//	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
-//		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
-//		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
-//
-//		v << 0,0,0;
-//		f << 0,0,0;
-//		Vect3d position(L/2,L-params->dem_diameter/8,L/2);
-//		return position;
-//	});
+	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
+		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
+		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
+
+		v << 0,0,0;
+		f << 0,0,0;
+		Vect3d position(L-params->dem_diameter/3,L-params->dem_diameter/3,L/2);
+		return position;
+	});
 
 	const Vect3d min(0,0,0);
 	const Vect3d max(L,L,L);
