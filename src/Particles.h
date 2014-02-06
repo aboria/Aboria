@@ -198,8 +198,8 @@ public:
 
 	template<typename F>
 	void create_particles(const int n, F f) {
-		data.resize(n);
-		std::for_each(begin(),end(),[&f,this](Value& i) {
+		data.resize(data.size()+n);
+		std::for_each(end()-n,end(),[&f,this](Value& i) {
 			i.id = next_id++;
 			i.alive = true;
 			i.r = f(i);

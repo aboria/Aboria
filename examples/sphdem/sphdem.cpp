@@ -54,13 +54,22 @@ int main(int argc, char **argv) {
 	std::default_random_engine generator;
 	std::uniform_real_distribution<double> distribution(0.0,1.0);
 	auto dice = std::bind ( distribution, generator );
-	dem->create_particles(ndem,[ndem,L,&dice](DemType::Value& i) {
+	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
 		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
 		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
 
 		v << 0,0,0;
 		f << 0,0,0;
-		Vect3d position(L/2,L/2,dice()*L);
+		Vect3d position(params->dem_diameter/8,params->dem_diameter/8,dice()*L);
+		return position;
+	});
+	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
+		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
+		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
+
+		v << 0,0,0;
+		f << 0,0,0;
+		Vect3d position(L-params->dem_diameter/8,L-params->dem_diameter/8,dice()*L);
 		return position;
 	});
 
