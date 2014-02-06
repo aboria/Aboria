@@ -53,12 +53,12 @@ void dem_start(ptr<DemType> dem,
 		f << 0,0,0;
 		f = f + geometry(i);
 
-		for (const DemType::Value& j: i.get_in_radius(dem,dem_diameter)) {
-			const Vect3d& rj = i.correct_position_for_periodicity(dem,j.get_position());
+		for (auto tpl: i.get_in_radius(dem,dem_diameter)) {
+			const Vect3d& dx = std::get<1>(tpl);
+			const DemType::Value& j = std::get<0>(tpl);
 			const Vect3d& vj = std::get<DEM_VELOCITY>(j.get_data());
 			if (i.get_id()==j.get_id()) return;
 
-			const Vect3d dx = r-rj;
 			const double r = dx.norm();
 			const double overlap = dem_diameter-r;
 			if (overlap>0) {

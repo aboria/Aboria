@@ -16,16 +16,15 @@ int main(int argc, char **argv) {
 	auto dem = DemType::New();
 	auto params = ptr<Params>(new Params());
 
-	const double pi = 3.14;
 	const int timesteps = 100000;
 	const int nout = 1000;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
-	const int ndem = 100;
+	const int ndem = 2;
 	params->dem_diameter = 0.0011;
 	params->dem_gamma = 0.0004;
 	params->dem_k = 1.0e01;
-	const double dem_vol = (1.0/6.0)*pi*pow(params->dem_diameter,3);
+	const double dem_vol = (1.0/6.0)*PI*pow(params->dem_diameter,3);
 	const double dem_dens = 1160.0;
 	params->dem_mass = dem_vol*dem_dens;
 	const double dem_min_reduced_mass = 0.5*params->dem_mass;
@@ -61,8 +60,7 @@ int main(int argc, char **argv) {
 
 		v << 0,0,0;
 		f << 0,0,0;
-		Vect3d position(dice()*L,dice()*L,dice()*L);
-		std::cout << "creating particle at "<<position<<std::endl;
+		Vect3d position(L/2,L/2,dice()*L);
 		return position;
 	});
 

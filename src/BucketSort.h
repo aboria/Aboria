@@ -43,7 +43,7 @@ public:
 	class const_iterator
 	  : public boost::iterator_facade<
 	        const_iterator
-	      , const typename T::value_type
+	      , const std::tuple<const typename T::value_type&,const Vect3d&>
 	      , boost::forward_traversal_tag
 	    >
 	{
@@ -110,9 +110,8 @@ public:
 	    	while (*m_node != CELL_EMPTY) {
 	    		const Vect3d p = bucket_sort->return_vect3d(bucket_sort->begin_iterator[*m_node]);
     	    	//std::cout << "testing candidate with position"<<p<<std::endl;
-
-	    		if ((centre-bucket_sort->correct_position_for_periodicity(centre, p)).squaredNorm()
-	    				<= radius2) {
+	    		dx = centre-bucket_sort->correct_position_for_periodicity(centre, p);
+	    		if (dx.squaredNorm() <= radius2) {
 	    	    	//std::cout << "found candidate with position"<<p<<std::endl;
 	    	    	break;
 	    		} else {
@@ -123,8 +122,8 @@ public:
 	    }
 
 
-	    const typename T::value_type& dereference() const
-	    { return bucket_sort->begin_iterator[*m_node]; }
+	    const std::tuple<const typename T::value_type&,const Vect3d&> dereference() const
+	    { return std::tie(bucket_sort->begin_iterator[*m_node],dx); }
 
 	    const BucketSort* bucket_sort;
 	    std::vector<int>::const_iterator m_node;
@@ -134,6 +133,7 @@ public:
 	    const bool self;
 	    const Vect3d centre;
 	    const double radius2;
+	    Vect3d dx;
 	    std::vector<int> cell_empty;
 	//    std::vector<Vect3d>::const_iterator positions;
 	//    std::vector<Value>::const_iterator linked_list;
