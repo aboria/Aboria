@@ -5,14 +5,13 @@
  *      Author: mrobins
  */
 
-#include "sphdem.h"
+#include "dem.h"
 #include "Visualisation.h"
 #include <chrono>
 #include <random>
 
 int main(int argc, char **argv) {
 
-	auto sph = SphType::New();
 	auto dem = DemType::New();
 	auto params = ptr<Params>(new Params());
 

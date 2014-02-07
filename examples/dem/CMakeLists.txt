@@ -5,5 +5,5 @@ set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
 include_directories(${VTK_INCLUDE_DIRS} . ../../src ../../eigen3)
 
-add_executable (sphdem sphdem.cpp)
-TARGET_LINK_LIBRARIES(sphdem ${VTK_LIBRARIES})
+add_executable (dem dem.cpp)
+TARGET_LINK_LIBRARIES(dem ${VTK_LIBRARIES})

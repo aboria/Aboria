@@ -1,5 +1,5 @@
 /*
- * sphdem.h
+ * dem.h
  *
  *  Created on: 30 Jan 2014
  *      Author: mrobins
@@ -9,9 +9,6 @@
 #include <tuple>
 using namespace Aboria;
 
-enum {SPH_FORCE, SPH_H, SPH_DENS, SPH_VELOCITY, SPH_VELOCITY0};
-typedef std::tuple<Vect3d,double,double,Vect3d,Vect3d> SphTuple;
-typedef Particles<SphTuple> SphType;
 
 enum {DEM_FORCE, DEM_VELOCITY, DEM_VELOCITY0};
 typedef std::tuple<Vect3d,Vect3d,Vect3d> DemTuple;
