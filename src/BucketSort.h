@@ -77,7 +77,7 @@ public:
 	    }
 
 	    explicit const_iterator(const BucketSort* bucket_sort,
-	    		const Vect3d centre, const double radius,
+	    		const Vect3d centre,
 	    		const int my_index = -1, const bool self = false)
 	    : bucket_sort(bucket_sort),
 	      cell_i(bucket_sort->cells.begin() + bucket_sort->find_cell_index(centre)),
@@ -114,7 +114,11 @@ public:
 
 	    		dx = centre-bucket_sort->correct_position_for_periodicity(centre, p);
 	    		//std::cout << "testing candidate with position "<<p<<" and dx = "<<dx<<std::endl;
-	    		if (dx.squaredNorm() <= radius2) {
+	    		//if (dx.squaredNorm() <= radius2) {
+	    		if ((abs(dx[0]) < bucket_sort->max_interaction_radius) &&
+	    				(abs(dx[1]) < bucket_sort->max_interaction_radius) &&
+	    				(abs(dx[2]) < bucket_sort->max_interaction_radius)) {
+
 	    	    	//std::cout << "found candidate with position"<<p<<std::endl;
 	    	    	break;
 	    		} else {
@@ -159,7 +163,7 @@ public:
 	inline const Vect3b& get_periodic() {return periodic;}
 
 	void embed_points(const T begin_iterator, const T end_iterator);
-	const_iterator find_broadphase_neighbours(const Vect3d& r, const double radius, const int my_index, const bool self) const;
+	const_iterator find_broadphase_neighbours(const Vect3d& r, const int my_index, const bool self) const;
 	const_iterator end() const;
 	Vect3d correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const;
 	Vect3d correct_position_for_periodicity(const Vect3d& to_correct_r) const;
@@ -336,8 +340,8 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	}
 }
 template<typename T, typename F>
-typename BucketSort<T,F>::const_iterator BucketSort<T,F>::find_broadphase_neighbours(const Vect3d& r, const double radius,const int my_index, const bool self) const {
-	return const_iterator(this,r,radius,my_index,self);
+typename BucketSort<T,F>::const_iterator BucketSort<T,F>::find_broadphase_neighbours(const Vect3d& r,const int my_index, const bool self) const {
+	return const_iterator(this,r,my_index,self);
 }
 template<typename T, typename F>
 typename BucketSort<T,F>::const_iterator BucketSort<T,F>::end() const {

@@ -75,7 +75,7 @@ void dem_start(ptr<DemType> dem,
 		f << 0,0,0;
 		f = f + geometry(i);
 
-		for (auto tpl: i.get_in_radius(dem,dem_diameter)) {
+		for (auto tpl: i.get_neighbours(dem)) {
 			const Vect3d& dx = std::get<1>(tpl);
 			const DemType::Value& j = std::get<0>(tpl);
 			const Vect3d& vj = std::get<DEM_VELOCITY>(j.get_data());
@@ -158,7 +158,7 @@ void sphdem_start(ptr<SphType> sph,ptr<DemType> dem,
 		double& h = std::get<SPH_H>(i.get_data());
 		e = 0;
 
-		for (auto tpl: i.get_in_radius(sph,2*h)) {
+		for (auto tpl: i.get_neighbours(dem)) {
 			const Vect3d& dx = std::get<1>(tpl);
 			const double r = dx.norm();
 			e += dem_vol*W(r/h,h);
@@ -167,9 +167,8 @@ void sphdem_start(ptr<SphType> sph,ptr<DemType> dem,
 
 	std::for_each(dem->begin(),dem->end(),[sph](DemType::Value& i) {
 		const Vect3d& r = i.get_position();
-		e = 0;
 
-		for (auto tpl: i.get_in_radius(sph,2*h)) {
+		for (auto tpl: i.get_neighbours(sph)) {
 			const Vect3d& dx = std::get<1>(tpl);
 			const double r = dx.norm();
 
@@ -187,7 +186,7 @@ void sphdem_start(ptr<SphType> sph,ptr<DemType> dem,
 		double& h = std::get<SPH_H>(i.get_data());
 		e = 0;
 
-		for (auto tpl: i.get_in_radius(dem,2*h)) {
+		for (auto tpl: i.get_neighbours(dem)) {
 			const Vect3d& dx = std::get<1>(tpl);
 			const double r = dx.norm();
 			e += dem_vol*W(r/h,h);

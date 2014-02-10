@@ -105,9 +105,9 @@ public:
 			alive = false;
 		}
 		template<typename T>
-		boost::iterator_range<typename T::element_type::NeighbourSearch_type::const_iterator> get_in_radius(const T particles, const double radius) {
+		boost::iterator_range<typename T::element_type::NeighbourSearch_type::const_iterator> get_neighbours(const T particles) {
 			return boost::make_iterator_range(
-			 particles->neighbour_search.find_broadphase_neighbours(get_position(), radius, index,false),
+			 particles->neighbour_search.find_broadphase_neighbours(get_position(), index,false),
 			 particles->neighbour_search.end());
 		}
 		template<typename T>

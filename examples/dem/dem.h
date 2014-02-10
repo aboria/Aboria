@@ -50,7 +50,7 @@ void dem_start(ptr<DemType> dem,
 		f << 0,0,0;
 		f = f + geometry(i);
 
-		for (auto tpl: i.get_in_radius(dem,dem_diameter)) {
+		for (auto tpl: i.get_neighbours(dem)) {
 			const Vect3d& dx = std::get<1>(tpl);
 			const DemType::Value& j = std::get<0>(tpl);
 			const Vect3d& vj = std::get<DEM_VELOCITY>(j.get_data());
