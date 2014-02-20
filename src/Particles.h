@@ -274,8 +274,12 @@ private:
 				}
 			}
 		});
-		if ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))
-			delete_particles();
+		if ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false)) {
+			data.erase (std::remove_if( std::begin(data), std::end(data),
+					[](Value& p) { return !p.is_alive(); }),
+					std::end(data)
+			);
+		}
 	}
 
 

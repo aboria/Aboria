@@ -31,6 +31,7 @@
 #include "Log.h"
 #include <vector>
 #include <iostream>
+#include <set>
 
 
 namespace Aboria {
@@ -55,7 +56,10 @@ public:
 		  }
 
 	    void go_to_next_candidate() {
-	    	if (*m_node != CELL_EMPTY) m_node = bucket_sort->linked_list.begin() + *m_node;
+	    	if (*m_node != CELL_EMPTY) {
+	    		m_node = bucket_sort->linked_list.begin() + *m_node;
+	    		//std::cout << "going to new particle *mnode = "<<*m_node<<std::endl;
+	    	}
 	    	while ((*m_node == CELL_EMPTY) && (surrounding_cell_offset_i != surrounding_cell_offset_end)) {
 	    		if (self && (surrounding_cell_offset_i == surrounding_cell_offset_end-1)) {
 	    			m_node = cell_i;
@@ -200,14 +204,16 @@ private:
 
 template<typename T, typename F>
 void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
+
 	begin_iterator = _begin_iterator;
 	end_iterator = _end_iterator;
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
+	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
 	linked_list.assign(n, CELL_EMPTY);
 	//const bool particle_based = dirty_cells.size() < cells.size();
 	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
-	if (dirty_cells.size() > cells.size())
-	if (particle_based) {
+	if (dirty_cells.size() < cells.size()) {
+	//if (particle_based) {
 		for (int i: dirty_cells) {
 			cells[i] = CELL_EMPTY;
 		}
@@ -225,25 +231,16 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 		cells[celli] = i;
 		dirty_cells.push_back(celli);
 		linked_list[i] = cell_entry;
+		//std::cout << "putting "<<cell_entry<<" into linked list at pos "<<i<<std::endl;
 		//std::cout <<"particle in cell "<<celli<<std::endl;
-		// Insert into ghosted cells, support redirection up to 3 layers deep
+		// Insert into ghosted cells
 		if (particle_based) {
 			for (int j: ghosting_indices_pb[celli]) {
 				//std::cout <<"particle in cell "<<celli<<" inserting into ghost cell "<<j<<" diff = "<<celli-j<<std::endl;
 				const int cell_entry = cells[j];
 				cells[j] = i;
-				dirty_cells.push_back(j);
-				for (int k: ghosting_indices_pb[j]) {
-					const int cell_entry = cells[k];
-					cells[k] = i;
-					dirty_cells.push_back(k);
-					for (int m: ghosting_indices_pb[k]) {
-						const int cell_entry = cells[m];
-						cells[m] = i;
-						dirty_cells.push_back(m);
-					}
-				}
 				//linked_list[i] = cell_entry;
+				dirty_cells.push_back(j);
 			}
 		}
 	}
@@ -327,15 +324,32 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 				tmp[i] = 0;
 				const int index_to1 = vect_to_index(tmp);
 				ghosting_indices_pb[index_from1].push_back(index_to1);
-				ghosting_indices_cb.push_back(std::pair<int,int>(index_to1,index_from1));
+				//ghosting_indices_cb.push_back(std::pair<int,int>(index_to1,index_from1));
 				tmp[i] = 1;
 				const int index_from2 = vect_to_index(tmp);
 				tmp[i] = n-2;
 				const int index_to2 = vect_to_index(tmp);
 				ghosting_indices_pb[index_from2].push_back(index_to2);
-				ghosting_indices_cb.push_back(std::pair<int,int>(index_to2,index_from2));
+				//ghosting_indices_cb.push_back(std::pair<int,int>(index_to2,index_from2));
 			}
 		}
+	}
+	/*
+	 * collapse redirections
+	 */
+	for (int i = 0; i < num_cells; ++i) {
+		std::set<int> ghosting_cells;
+		for (int j: ghosting_indices_pb[i]) {
+			ghosting_cells.insert(j);
+			for (int k: ghosting_indices_pb[j]) {
+				ghosting_cells.insert(k);
+				for (int m: ghosting_indices_pb[k]) {
+					ghosting_cells.insert(m);
+				}
+			}
+		}
+		ghosting_indices_pb[i].resize(ghosting_cells.size());
+		std::copy(ghosting_cells.begin(),ghosting_cells.end(),ghosting_indices_pb[i].begin());
 	}
 }
 template<typename T, typename F>

@@ -47,13 +47,13 @@ void TimerCallbackFunction ( vtkObject* caller,
 
   vtkRenderWindowInteractor *iren =
     static_cast<vtkRenderWindowInteractor*>(caller);
-
   vertexFilter->Modified();
   iren->Render();
 
 }
 
 void interactor_loop(vtkSmartPointer<vtkRenderWindowInteractor> arg) {
+	std::cout << "starting interactor_loop"<<std::endl;
 	arg->Start();
 }
 

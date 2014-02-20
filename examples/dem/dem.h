@@ -29,7 +29,6 @@ void dem_start(ptr<DemType> dem,
 	const double dem_gamma = params->dem_gamma;
 	const double dem_mass = params->dem_mass;
 
-
 	dem->update_positions(dem->begin(),dem->end(),[dt](DemType::Value& i) {
 		const Vect3d& r = i.get_position();
 		Vect3d& f = std::get<DEM_FORCE>(i.get_data());

@@ -28,6 +28,7 @@
 #include "Aboria.h"
 #include "sph_common.h"
 #include <tuple>
+
 using namespace Aboria;
 
 
@@ -43,7 +44,7 @@ typedef Particles<DemTuple> DemType;
 				GET_TUPLE(Vect3d,v0,DEM_VELOCITY0,particle)
 #define REGISTER_NEIGHBOUR_DEM_PARTICLE(tuple) \
 				const Vect3d& dx = std::get<1>(tuple); \
-				const DemType::Value& j = std::get<0>(tuple) \
+				const DemType::Value& j = std::get<0>(tuple); \
 				const Vect3d& rj = j.get_position(); \
 				const GET_TUPLE(Vect3d,fj,DEM_FORCE,j); \
 				const GET_TUPLE(Vect3d,vj,DEM_VELOCITY,j); \
@@ -68,7 +69,7 @@ typedef Particles<SphTuple> SphType;
 
 #define REGISTER_NEIGHBOUR_SPH_PARTICLE(tuple) \
 				const Vect3d& dx = std::get<1>(tuple); \
-				const DemType::Value& j = std::get<0>(tuple) \
+				const DemType::Value& j = std::get<0>(tuple); \
 				const Vect3d& rj = j.get_position(); \
 				GET_TUPLE(Vect3d,fj,SPH_FORCE,j); \
 				GET_TUPLE(Vect3d,vj,SPH_VELOCITY,j); \

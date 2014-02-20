@@ -87,6 +87,7 @@ int main(int argc, char **argv) {
 
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
+			std::this_thread::sleep_for(std::chrono::seconds(1));
 			dem_start(dem,params,geometry);
 			dem_end(dem,params,geometry);
 		}
