@@ -81,21 +81,22 @@ int main(int argc, char **argv) {
 	dem->copy_to_vtk_grid(grid);
 	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
 
-	Visualisation vis(min,max);
-	vis.glyph_points(grid);
-	vis.start_render_loop();
+	//Visualisation vis(min,max);
+	//vis.glyph_points(grid);
+	//vis.start_render_loop();
 
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
-			std::this_thread::sleep_for(std::chrono::seconds(1));
+			//std::this_thread::sleep_for(std::chrono::seconds(1));
 			dem_start(dem,params,geometry);
 			dem_end(dem,params,geometry);
 		}
 		std::cout <<"iteration "<<i<<std::endl;
 
-		vis.stop_render_loop();
+		//vis.stop_render_loop();
 		dem->copy_to_vtk_grid(grid);
-		vis.restart_render_loop();
+		Visualisation::vtkWriteGrid("dem",i,grid);
+		//vis.restart_render_loop();
 	}
 
 

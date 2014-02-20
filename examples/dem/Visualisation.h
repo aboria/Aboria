@@ -35,6 +35,7 @@
 #include <vtkPlot.h>
 #include <vtkContextView.h>
 #include <vtkContextScene.h>
+#include <vtkXMLUnstructuredGridWriter.h>
 
 #include <thread>
 
@@ -134,6 +135,7 @@ public:
 		actor->GetProperty()->SetColor(1.0, 0.0, 0.0);
 		actor->GetProperty()->SetPointSize(10);
 		renderer->AddActor(actor);
+		renderWindow->Render();
 	}
 
 	void start_render_loop() {
@@ -147,6 +149,27 @@ public:
 	void stop_render_loop() {
 		renderWindowInteractor->EnableRenderOff();
 	}
+
+	static void vtkWriteGrid(const char *name, int timestep, vtkSmartPointer<vtkUnstructuredGrid> grid) {
+
+		vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
+				vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+
+#if VTK_MAJOR_VERSION > 5
+		writer->SetInputData(grid);
+#else
+		writer->SetInput(grid);
+#endif
+
+		writer->SetDataModeToBinary();
+
+		char buffer[100];
+		sprintf(buffer,"%s%05d.vtu",name,timestep);
+
+		writer->SetFileName(buffer);
+		writer->Write();
+	}
+
 
 private:
 	vtkSmartPointer<vtkRenderer> renderer;

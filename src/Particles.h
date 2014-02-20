@@ -249,6 +249,7 @@ public:
 		int j = 0;
 		for(auto& i: *this) {
 			const int index = j++;
+			//std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
 			points->SetPoint(index,i.get_position()[0],i.get_position()[1],i.get_position()[2]);
 			ids->SetValue(index,i.get_id());
 		}
