@@ -49,7 +49,7 @@ public:
 	{
 	 public:
 		  const_iterator()
-	      : m_node(),my_index(-1),self(false),radius2(0) {
+	      : m_node(),my_index(-1),self(false) {
 			  cell_empty.push_back(CELL_EMPTY);
 			  m_node = cell_empty.begin();
 		  }
@@ -82,7 +82,7 @@ public:
 	    : bucket_sort(bucket_sort),
 	      cell_i(bucket_sort->cells.begin() + bucket_sort->find_cell_index(centre)),
 	      my_index(my_index),self(self),
-	      centre(centre),radius2(radius*radius) {
+	      centre(centre) {
 	    	cell_empty.push_back(CELL_EMPTY);
 	    	m_node = cell_empty.begin();
 	    	surrounding_cell_offset_i = bucket_sort->surrounding_cell_offsets.begin();
@@ -139,7 +139,6 @@ public:
 	    const int my_index;
 	    const bool self;
 	    const Vect3d centre;
-	    const double radius2;
 	    Vect3d dx;
 	    std::vector<int> cell_empty;
 	//    std::vector<Vect3d>::const_iterator positions;
