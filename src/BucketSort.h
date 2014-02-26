@@ -42,13 +42,21 @@ template<typename T, typename F>
 class BucketSort {
 public:
 	class const_iterator
-	  : public boost::iterator_facade<
-	        const_iterator
-	      , const std::tuple<const typename T::value_type&,const Vect3d&>
-	      , boost::forward_traversal_tag
-	    >
+//	  : public boost::iterator_facade<
+//	        const_iterator
+//	      , const std::tuple<const typename T::value_type&,const Vect3d&>
+//	      , boost::forward_traversal_tag
+//	    >
 	{
 	 public:
+		  typedef std::tuple<const typename T::value_type&,const Vect3d&>* pointer;
+		  typedef std::forward_iterator_tag iterator_category;
+		  typedef std::tuple<const typename T::value_type&,const Vect3d&> value_type;
+		  typedef std::tuple<const typename T::value_type&,const Vect3d&> reference;
+		  typedef std::ptrdiff_t difference_type;
+
+
+
 		  const_iterator()
 	      : m_node(),my_index(-1),self(false) {
 			  cell_empty.push_back(CELL_EMPTY);
@@ -100,6 +108,28 @@ public:
 
 	    	increment();
 
+	    }
+
+	    const std::tuple<const typename T::value_type&,const Vect3d&> operator *() {
+	    	return dereference();
+	    }
+	    const std::tuple<const typename T::value_type&,const Vect3d&> operator ->() {
+	    	return dereference();
+	    }
+	    const_iterator& operator++() {
+	    	increment();
+	    	return *this;
+	   }
+	    const_iterator operator++(int) {
+	    	const_iterator tmp(*this);
+	    	operator++();
+	    	return tmp;
+	    }
+	    inline bool operator==(const const_iterator& rhs) {
+	    	return equal(rhs);
+	    }
+	    inline bool operator!=(const const_iterator& rhs){
+	    	return !operator==(rhs);
 	    }
 
 	 private:

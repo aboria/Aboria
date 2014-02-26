@@ -33,7 +33,7 @@ int main(int argc, char **argv) {
 	auto sph = SphType::New();
 	auto params = ptr<Params>(new Params());
 
-	const int timesteps = 100;
+	const int timesteps = 1000;
 	const int nout = 100;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
@@ -141,6 +141,7 @@ int main(int argc, char **argv) {
 	sph_grid->GetPointData()->AddArray(vis_f);
 	sph_grid->GetPointData()->AddArray(vis_rho);
 
+	std::cout << "starting...."<<std::endl;
 
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {

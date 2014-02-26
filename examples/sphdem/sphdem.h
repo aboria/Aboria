@@ -197,6 +197,8 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		return r + dt/2 * v;
 	});
 
+
+
 //	std::for_each(sph->begin(),sph->end(),[dem](SphType::Value& i) {
 //		REGISTER_SPH_PARTICLE(i);
 //
@@ -322,6 +324,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		}
 
 	});
+
 
 	/*
 	 * 1/2 -> 1 step for velocity
