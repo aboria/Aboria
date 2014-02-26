@@ -18,6 +18,8 @@ struct Params {
 	double sph_dt,dem_dt,dem_mass,dem_diameter,dem_k,dem_gamma;
 };
 
+
+
 template<typename GeometryType>
 void dem_start(ptr<DemType> dem,
 		ptr<Params> params,

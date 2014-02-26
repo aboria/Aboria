@@ -10,16 +10,33 @@
 #include <chrono>
 #include <random>
 
+int calc_part_num(double diam, double L){
+	int num = int(L/diam);
+	return num;
+}
+
 int main(int argc, char **argv) {
 
 	auto dem = DemType::New();
 	auto params = ptr<Params>(new Params());
 
-	const int timesteps = 100000;
+	int timesteps;
+	cin>> timesteps;
 	const int nout = 1000;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
-	const int ndem = 1;
+	const double Lx=L;
+	const double Ly=0.0024;
+	const double Lz=0.0012;
+//	const int ndem = 1;
+/*	const int ndemx = 7;
+	const int ndemy = 7;
+	const int ndemz = 7;
+	const int ndem=ndemx*ndemy*ndemz;
+*/
+
+
+
 	params->dem_diameter = 0.0011;
 	params->dem_gamma = 0.0004;
 	params->dem_k = 1.0e01;
@@ -28,6 +45,13 @@ int main(int argc, char **argv) {
 	params->dem_mass = dem_vol*dem_dens;
 	const double dem_min_reduced_mass = 0.5*params->dem_mass;
 	params->dem_dt = (1.0/50.0)*PI/sqrt(params->dem_k/dem_min_reduced_mass-pow(0.5*params->dem_gamma/dem_min_reduced_mass,2));
+
+
+	const int ndemx = calc_part_num(params->dem_diameter,Lx);
+	const int ndemy = calc_part_num(params->dem_diameter,Ly);
+	const int ndemz = calc_part_num(params->dem_diameter,Lz);
+	const int ndem=ndemx*ndemy*ndemz;
+
 
 
 	auto geometry = [params](DemType::Value& i) {
@@ -49,34 +73,53 @@ int main(int argc, char **argv) {
 		}
 		return acceleration;
 	};
+/*
+//	std::default_random_engine generator;
+//	std::uniform_real_distribution<double> distribution(0.0,1.0);
 
-	std::default_random_engine generator;
-	std::uniform_real_distribution<double> distribution(0.0,1.0);
+	std::uniform_real_distribution<double> distribution(0.0, 1.0);
+	std::random_device rd;
+	std::default_random_engine generator( rd() );
+
 	auto dice = std::bind ( distribution, generator );
+
+	
+
 	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
 		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
 		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
 
-		v << 0,0,0;
+		v << 0,2,1;
 		f << 0,0,0;
-		//Vect3d position(dice()*L,dice()*L,dice()*L);
-		Vect3d position(params->dem_diameter/3,params->dem_diameter/3,L/2);
-
+		
+		Vect3d position(dice()*L-params->dem_diameter/3,dice()*L-params->dem_diameter/3,L/2);
 		return position;
 	});
-	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
+
+		dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
+		Vect3d& v = std::get<DEM_VELOCITY>(dem->i.get_data());
+		Vect3d& f = std::get<DEM_FORCE>(dem->i.get_data());
 
 		v << 0,0,0;
 		f << 0,0,0;
-		Vect3d position(L-params->dem_diameter/3,L-params->dem_diameter/3,L/2);
+		Vect3d position(L/2-params->dem_diameter/3,L/2-params->dem_diameter/3,L/2);
 		return position;
 	});
+*/
 
 	const Vect3d min(0,0,0);
 	const Vect3d max(L,L,L);
 	const Vect3b periodic(true,true,false);
+
+	dem->create_particles_grid(min, max, Vect3i (ndemx,ndemy,ndemz),[](DemType::Value& i) {
+		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
+		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
+
+		v << 0,0,0.4;
+		f << 0,0,0;
+	});
+	
+
 	auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	dem->copy_to_vtk_grid(grid);
 	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
@@ -91,11 +134,11 @@ int main(int argc, char **argv) {
 			dem_start(dem,params,geometry);
 			dem_end(dem,params,geometry);
 		}
-		std::cout <<"iteration "<<i<<std::endl;
+		//std::cout <<"iteration "<<i<<std::endl;
 
 		//vis.stop_render_loop();
 		dem->copy_to_vtk_grid(grid);
-		Visualisation::vtkWriteGrid("dem",i,grid);
+		Visualisation::vtkWriteGrid("vis/dem",i,grid);
 		//vis.restart_render_loop();
 	}
 

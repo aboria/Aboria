@@ -192,6 +192,36 @@ public:
 		neighbour_search.embed_points(data.cbegin(),data.cend());
 		searchable = true;
 	}
+	
+template<typename F>
+	void create_particles_grid( const Vect3d& startpoint, const Vect3d& endpoint, const Vect3i& n, F f) {
+		int index = data.size();
+		int number=n[0]*n[1]*n[2];
+		data.resize(data.size() + number);
+//		Vect3d dx(demdiam,demdiam,demdiam);
+		Vect3d dx((endpoint[0]-startpoint[0])/n[0],(endpoint[1]-startpoint[1])/n[1],(endpoint[2]-startpoint[2])/n[2]);
+		Vect3d low(startpoint[0]+dx[0]/2,startpoint[1]+dx[1]/2,startpoint[2]+dx[2]/2);
+		for(int i = 0; i < n[0]; i++) {
+			for(int j = 0; j < n[1]; j++) {
+				for(int k = 0; k < n[2]; k++) {
+					data[index].id = next_id++;
+					data[index].alive = true;
+
+					data[index].r[0] = low[0] + dx[0]*(i);
+					data[index].r[1] = low[1] + dx[1]*(j);
+					data[index].r[2] = low[2] + dx[2]*(k);
+					data[index].r0 = data[index].r;
+					index++;
+			}}}
+				std::for_each(data.begin(),data.end(),[&f,&next_id](Value& i) {
+f(i);
+std::cout<<i.id;
+	});
+		
+		
+		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+	}
+	
 
 	template<typename F>
 	void create_particles(const int n, F f) {
@@ -201,9 +231,9 @@ public:
 			i.alive = true;
 			i.r = f(i);
 			i.r0 = i.r;
-
 		});
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+
 	}
 
 	template<typename F>
