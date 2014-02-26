@@ -26,7 +26,6 @@
 #define SPH_COMMON_H_
 
 #define _3D_
-const int NDIM=3;
 
 #ifdef _1D_
 const double WCON = 1;
