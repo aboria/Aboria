@@ -207,6 +207,27 @@ public:
 	}
 
 	template<typename F>
+	void create_particles_grid(const Vect3d& min, const Vect3d& max, const Vect3i& n, F f) {
+		const int nparticles = n.prod();
+		int index = data.size();
+		data.resize(data.size()+nparticles);
+		const Vect3d dx = (max-min).cwiseQuotient(n.cast<double>());
+		for (int i = 0; i < n[0]; ++i) {
+			for (int j = 0; j < n[1]; ++j) {
+				for (int k = 0; k < n[2]; ++k) {
+					data[index].r = min + Vect3d(i+0.5,j+0.5,k+0.5).cwiseProduct(dx);
+					data[index].r0 = data[index].r;
+					data[index].id = next_id++;
+					data[index].alive = true;
+					f(data[index]);
+					index++;
+				}
+			}
+		}
+		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+	}
+
+	template<typename F>
 	void update_positions(iterator b, iterator e, F f) {
 		std::for_each(b,e,[&f](Value& i) {
 			i.r0 = i.r;
@@ -245,7 +266,7 @@ public:
 		}
 		const vtkIdType n = size();
 		points->SetNumberOfPoints(n);
-		ids->SetNumberOfValues(n);
+		ids->SetNumberOfTuples(n);
 		int j = 0;
 		for(auto& i: *this) {
 			const int index = j++;

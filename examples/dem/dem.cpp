@@ -81,9 +81,9 @@ int main(int argc, char **argv) {
 	dem->copy_to_vtk_grid(grid);
 	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
 
-	//Visualisation vis(min,max);
-	//vis.glyph_points(grid);
-	//vis.start_render_loop();
+//	Visualisation vis(min,max);
+//	vis.glyph_points(grid);
+//	vis.start_render_loop();
 
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
