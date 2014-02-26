@@ -49,10 +49,10 @@ public:
 //	    >
 	{
 	 public:
-		  typedef std::tuple<const typename T::value_type&,const Vect3d&>* pointer;
+		  typedef const std::tuple<const typename T::value_type&,const Vect3d&>* pointer;
 		  typedef std::forward_iterator_tag iterator_category;
-		  typedef std::tuple<const typename T::value_type&,const Vect3d&> value_type;
-		  typedef std::tuple<const typename T::value_type&,const Vect3d&> reference;
+		  typedef const std::tuple<const typename T::value_type&,const Vect3d&> value_type;
+		  typedef const std::tuple<const typename T::value_type&,const Vect3d&> reference;
 		  typedef std::ptrdiff_t difference_type;
 
 
@@ -110,10 +110,10 @@ public:
 
 	    }
 
-	    const std::tuple<const typename T::value_type&,const Vect3d&> operator *() {
+	    reference operator *() {
 	    	return dereference();
 	    }
-	    const std::tuple<const typename T::value_type&,const Vect3d&> operator ->() {
+	    reference operator ->() {
 	    	return dereference();
 	    }
 	    const_iterator& operator++() {
@@ -163,7 +163,7 @@ public:
 	    }
 
 
-	    const std::tuple<const typename T::value_type&,const Vect3d&> dereference() const
+	    reference dereference() const
 	    { return std::tie(bucket_sort->begin_iterator[*m_node],dx); }
 
 	    const BucketSort* bucket_sort;
