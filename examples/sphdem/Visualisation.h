@@ -139,8 +139,8 @@ public:
 	}
 
 	void start_render_loop() {
-		std::thread render_thread(interactor_loop,renderWindowInteractor);
-		render_thread.detach();
+		//std::thread render_thread(interactor_loop,renderWindowInteractor);
+		//render_thread.detach();
 	}
 	void restart_render_loop() {
 		vertexGlyphFilter->Modified();

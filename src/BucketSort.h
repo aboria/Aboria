@@ -242,38 +242,54 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	linked_list.assign(n, CELL_EMPTY);
 	//const bool particle_based = dirty_cells.size() < cells.size();
 	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
-	if (dirty_cells.size() < cells.size()) {
-	//if (particle_based) {
+	const bool use_dirty = n < cells.size();
+	if (use_dirty) {
 		for (int i: dirty_cells) {
 			cells[i] = CELL_EMPTY;
 		}
+		dirty_cells.clear();
+		int i = 0;
+		for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
+			const int celli = find_cell_index(return_vect3d(*it));
+			const int cell_entry = cells[celli];
+
+			// Insert into own cell
+			cells[celli] = i;
+			dirty_cells.push_back(celli);
+			linked_list[i] = cell_entry;
+
+			// Insert into ghosted cells
+			if (particle_based) {
+				for (int j: ghosting_indices_pb[celli]) {
+					const int cell_entry = cells[j];
+					cells[j] = i;
+					dirty_cells.push_back(j);
+				}
+			}
+		}
 	} else {
 		cells.assign(cells.size(), CELL_EMPTY);
-	}
+		int i = 0;
+		for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
+			const int celli = find_cell_index(return_vect3d(*it));
+			const int cell_entry = cells[celli];
 
-	dirty_cells.clear();
-	int i = 0;
-	for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
-		const int celli = find_cell_index(return_vect3d(*it));
-		const int cell_entry = cells[celli];
-
-		// Insert into own cell
-		cells[celli] = i;
-		dirty_cells.push_back(celli);
-		linked_list[i] = cell_entry;
-		//std::cout << "putting "<<cell_entry<<" into linked list at pos "<<i<<std::endl;
-		//std::cout <<"particle in cell "<<celli<<std::endl;
-		// Insert into ghosted cells
-		if (particle_based) {
-			for (int j: ghosting_indices_pb[celli]) {
-				//std::cout <<"particle in cell "<<celli<<" inserting into ghost cell "<<j<<" diff = "<<celli-j<<std::endl;
-				const int cell_entry = cells[j];
-				cells[j] = i;
-				//linked_list[i] = cell_entry;
-				dirty_cells.push_back(j);
+			// Insert into own cell
+			cells[celli] = i;
+			linked_list[i] = cell_entry;
+			//std::cout << "putting "<<cell_entry<<" into linked list at pos "<<i<<std::endl;
+			//std::cout <<"particle in cell "<<celli<<std::endl;
+			// Insert into ghosted cells
+			if (particle_based) {
+				for (int j: ghosting_indices_pb[celli]) {
+					//std::cout <<"particle in cell "<<celli<<" inserting into ghost cell "<<j<<" diff = "<<celli-j<<std::endl;
+					const int cell_entry = cells[j];
+					cells[j] = i;
+				}
 			}
 		}
 	}
+
 
 	if (!particle_based) {
 		for (std::vector<std::pair<int,int> >::iterator index_pair = ghosting_indices_cb.begin(); index_pair != ghosting_indices_cb.end(); ++index_pair) {
