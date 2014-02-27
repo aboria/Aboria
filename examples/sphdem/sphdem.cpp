@@ -54,7 +54,7 @@ int main(int argc, char **argv) {
 	/*
 	 * sph parameters
 	 */
-	params->sph_hfac = 1.3;
+	params->sph_hfac = 1.5;
 	params->sph_visc = 8.9e-07;
 	params->sph_refd = 1000.0;
 	params->sph_gamma = 7;
@@ -65,10 +65,10 @@ int main(int argc, char **argv) {
 	params->sph_spsound = CSFAC*VMAX;
 	params->sph_prb = pow(params->sph_refd/DENS,params->sph_gamma-1.0)*pow(params->sph_spsound,2)*params->sph_refd/params->sph_gamma;
 	const double psep = L/nx;
-	params->sph_dt = std::min(0.3*params->sph_hfac*psep/params->sph_spsound,0.125*pow(params->sph_hfac*psep,2)/params->sph_visc);
+	params->sph_dt = std::min(0.25*params->sph_hfac*psep/params->sph_spsound,0.125*pow(params->sph_hfac*psep,2)/params->sph_visc);
 	params->sph_mass = DENS*pow(psep,NDIM);
 
-	std::cout << "h = "<<params->sph_hfac*psep<<std::endl;
+	std::cout << "h = "<<params->sph_hfac*psep<<" vmax = "<<VMAX<<std::endl;
 
 
 	/*
