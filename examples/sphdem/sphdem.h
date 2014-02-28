@@ -192,10 +192,11 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		REGISTER_SPH_PARTICLE(i);
 
 		if (!fixed) v += dt/2 * f;
-		rho += dt/2 * dddt;
 		//h = pow(sph_mass/rho,1.0/NDIM);
 		return r + dt/2 * v;
 	});
+
+
 
 //	std::for_each(sph->begin(),sph->end(),[dem](SphType::Value& i) {
 //		REGISTER_SPH_PARTICLE(i);
@@ -280,7 +281,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	sph->update_positions(sph->begin(),sph->end(),[dt,sph_mass,sph_prb,sph_refd,sph_gamma](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
-		rho += dt/2 * dddt;
+		rho += dt * dddt;
 		//h = pow(sph_mass/rho,1.0/NDIM);
 		v0 = v;
 		if (!fixed) v += dt/2 * f;
@@ -322,6 +323,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		}
 
 	});
+
 
 	/*
 	 * 1/2 -> 1 step for velocity

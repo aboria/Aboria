@@ -226,7 +226,7 @@ std::cout<<i.id;
 	template<typename F>
 	void create_particles(const int n, F f) {
 		data.resize(data.size()+n);
-		std::for_each(end()-n,end(),[&f,&next_id](Value& i) {
+		std::for_each(end()-n,end(),[&,&next_id](Value& i) {
 			i.id = next_id++;
 			i.alive = true;
 			i.r = f(i);
