@@ -53,6 +53,8 @@ namespace Aboria {
 
 template<typename DataType>
 class Particles {
+	template<typename T>
+	friend class Particles;
 public:
 	class Value {
 		friend class Particles;
