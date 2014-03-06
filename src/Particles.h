@@ -193,7 +193,7 @@ public:
 		searchable = true;
 	}
 	
-template<typename F>
+/*template<typename F>
 	void create_particles_grid( const Vect3d& startpoint, const Vect3d& endpoint, const Vect3i& n, F f) {
 		int index = data.size();
 		int number=n[0]*n[1]*n[2];
@@ -221,7 +221,7 @@ std::cout<<i.id;
 		
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
-	
+*/	
 
 	template<typename F>
 	void create_particles(const int n, F f) {
@@ -235,6 +235,43 @@ std::cout<<i.id;
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 
 	}
+
+	template<typename F>
+	void create_particles_cylinder(const Vect3d& min, const Vect3d& max, const int n, double dem_diameter, F f) {
+		int shift=0;
+		bool shiftz=false;
+		double radius=(max[0]-min[0])/2-dem_diameter/2;
+		const Vect3d origin(radius,radius,dem_diameter/2);
+		int jmax=radius/(dem_diameter); //number of particles on radius
+		for (int i = 0; i < n; ++i) { //z index
+			radius=(max[0]-min[0])/2-dem_diameter/2;
+			for (int j = 0; j < jmax; ++j) { //radius index
+				radius=radius-dem_diameter;
+				int kmax= radius*2*PI/dem_diameter; //number of particles on circumference
+				
+				double angle=shift*30+180*shiftz; // shift and shiftz avoid that vacuum is concentrated in certain point
+
+						int index = data.size();
+						data.resize(data.size()+kmax);
+				for (int k = 0; k < kmax; ++k) {
+					double d_angle=dem_diameter/radius;
+					angle=angle+d_angle;
+					data[index].r[0] = origin[0] + radius*cos(angle);
+					data[index].r[1] = origin[1] + radius*sin(angle);
+					data[index].r[2] = origin[2] + dem_diameter*i;
+					data[index].r0 = data[index].r;
+					data[index].id = next_id++;
+					data[index].alive = true;
+					f(data[index]);
+					index++;
+				}
+				shift++;
+			}
+			shiftz=!shiftz;
+		}
+		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+	}
+
 
 	template<typename F>
 	void create_particles_grid(const Vect3d& min, const Vect3d& max, const Vect3i& n, F f) {
@@ -255,6 +292,7 @@ std::cout<<i.id;
 			}
 		}
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+
 	}
 
 	template<typename F>
@@ -308,6 +346,8 @@ std::cout<<i.id;
 		//points->ComputeBounds();
 	}
 #endif
+	NeighbourSearch_type neighbour_search;
+
 private:
 	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic) {
 		std::for_each(begin(),end(),[low,high,periodic](Value& i) {
@@ -336,7 +376,6 @@ private:
 
 
 	data_type data;
-	NeighbourSearch_type neighbour_search;
 	bool searchable;
 	int next_id;
 

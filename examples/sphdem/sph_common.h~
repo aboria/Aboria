@@ -26,7 +26,7 @@
 #define SPH_COMMON_H_
 
 #define _3D_
-const int NNDIM=3;
+const int NDIM=3;
 
 #ifdef _1D_
 const double WCON = 1;
@@ -52,54 +52,54 @@ const double WCON_WENDLAND = 21.0/(256.0*PI);
 inline double F(const double q,const double h) {
 #ifdef WENDLAND
          if (q<=2.0) {
-            return (1/pow(h,NNDIM+2))*WCON_WENDLAND*(-4*pow(2-q,3)*(1+2*q) + 2*pow(2-q,4))/q;
+            return (1/pow(h,NDIM+2))*WCON_WENDLAND*(-4*pow(2-q,3)*(1+2*q) + 2*pow(2-q,4))/q;
          } else {
             return 0.0;
          }
 #else
 #ifdef MY_CUBIC
          if (q<=MY_CUBIC_ALPHA) {
-            return -(1/pow(h,NNDIM+2))*WCON_MY_CUBIC*3*(pow(2-q,2) + MY_CUBIC_A*pow(MY_CUBIC_ALPHA-q,2))/q;
+            return -(1/pow(h,NDIM+2))*WCON_MY_CUBIC*3*(pow(2-q,2) + MY_CUBIC_A*pow(MY_CUBIC_ALPHA-q,2))/q;
          } else if (q<=2.0) {
-            return -(1/pow(h,NNDIM+2))*WCON_MY_CUBIC*3*pow(2-q,2)/q;
+            return -(1/pow(h,NDIM+2))*WCON_MY_CUBIC*3*pow(2-q,2)/q;
          } else {
             return 0.0;
          }
 #else
 #ifdef PRICE2
          if (q<=PRICE2_BETA) {
-            return -(1/pow(h,NNDIM+2))*WCON_PRICE2*5*(pow(2-q,4) + PRICE2_A*pow(PRICE2_ALPHA-q,4) + PRICE2_B*pow(PRICE2_BETA-q,4))/q;
+            return -(1/pow(h,NDIM+2))*WCON_PRICE2*5*(pow(2-q,4) + PRICE2_A*pow(PRICE2_ALPHA-q,4) + PRICE2_B*pow(PRICE2_BETA-q,4))/q;
          } else if (q<=PRICE2_ALPHA) {
-            return -(1/pow(h,NNDIM+2))*WCON_PRICE2*5*(pow(2-q,4) + PRICE2_A*pow(PRICE2_ALPHA-q,4))/q;
+            return -(1/pow(h,NDIM+2))*WCON_PRICE2*5*(pow(2-q,4) + PRICE2_A*pow(PRICE2_ALPHA-q,4))/q;
          } else if (q<=2.0) {
-            return -(1/pow(h,NNDIM+2))*WCON_PRICE2*5*pow(2-q,4)/q;
+            return -(1/pow(h,NDIM+2))*WCON_PRICE2*5*pow(2-q,4)/q;
          } else {
             return 0.0;
          }
 #else
 #ifdef QUINTIC
          if (q<=1.0) {
-            return -(1/pow(h,NNDIM+2))*WCON_QUINTIC*5*(pow(3-q,4) - 6*pow(2-q,4) + 15*pow(1-q,4))/q;
+            return -(1/pow(h,NDIM+2))*WCON_QUINTIC*5*(pow(3-q,4) - 6*pow(2-q,4) + 15*pow(1-q,4))/q;
          } else if (q<=2.0) {
-            return -(1/pow(h,NNDIM+2))*WCON_QUINTIC*5*(pow(3-q,4) - 6*pow(2-q,4))/q;
+            return -(1/pow(h,NDIM+2))*WCON_QUINTIC*5*(pow(3-q,4) - 6*pow(2-q,4))/q;
          } else if (q<=3.0) {
-            return -(1/pow(h,NNDIM+2))*WCON_QUINTIC*5*pow(3-q,4)/q;
+            return -(1/pow(h,NDIM+2))*WCON_QUINTIC*5*pow(3-q,4)/q;
          } else {
             return 0.0;
          }
 #else
 #ifdef HANN
          if (q<=2.0) {
-            return (1/pow(h,NNDIM+2))*WCON_HANN*0.5*PI*sin(0.5*PI*(q-2.0))/q;
+            return (1/pow(h,NDIM+2))*WCON_HANN*0.5*PI*sin(0.5*PI*(q-2.0))/q;
          } else {
             return 0.0;
          }
 #else
          if (q<=1.0) {
-             return (1/pow(h,NNDIM+2))*WCON*(-2.0+ 1.5*q);
+             return (1/pow(h,NDIM+2))*WCON*(-2.0+ 1.5*q);
          }
          else if (q<=2.0) {
-            return -(1/pow(h,NNDIM+2))*3.0*(WCON/6.0)*pow(2.0-q,2)/q;
+            return -(1/pow(h,NDIM+2))*3.0*(WCON/6.0)*pow(2.0-q,2)/q;
          }
          else {
             return 0.0;
@@ -177,7 +177,7 @@ inline double F(const double q,const double h) {
       }
 
       inline double W(const double q,const double h) {
-         return (1/pow(h,NNDIM))*K(q,h);
+         return (1/pow(h,NDIM))*K(q,h);
       }
 
 

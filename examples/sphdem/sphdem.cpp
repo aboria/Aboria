@@ -27,6 +27,10 @@
 
 #include <vtkFloatArray.h>
 
+int calc_part_num(double diam, double L){
+	int num = int(L/diam);
+	return num;
+}
 
 int main(int argc, char **argv) {
 	auto dem = DemType::New();
@@ -39,8 +43,8 @@ int main(int argc, char **argv) {
 	const double L = 31.0/1000.0;
 	const int nx = 10;
 
-	/*
-	 * dem parameters
+
+	 /* dem parameters
 	 */
 	params->dem_diameter = 0.0011;
 	params->dem_gamma = 0.0004;
@@ -50,6 +54,8 @@ int main(int argc, char **argv) {
 	params->dem_mass = dem_vol*dem_dens;
 	const double dem_min_reduced_mass = 0.5*params->dem_mass;
 	params->dem_dt = (1.0/50.0)*PI/sqrt(params->dem_k/dem_min_reduced_mass-pow(0.5*params->dem_gamma/dem_min_reduced_mass,2));
+
+	/*
 
 	/*
 	 * sph parameters
@@ -82,6 +88,7 @@ int main(int argc, char **argv) {
 		const double dem_k = params->dem_k;
 		const double dem_gamma = params->dem_gamma;
 		const double dem_mass = params->dem_mass;
+		const double dem_vol = params->dem_vol;
 
 		const double overlap = dem_diameter/2.0-r[2];
 		if (overlap>0) {
@@ -89,6 +96,7 @@ int main(int argc, char **argv) {
 			const Vect3d normal(0,0,1);
 			acceleration += (dem_k*overlap + dem_gamma*overlap_dot)*normal/dem_mass;
 		}
+		
 		return acceleration;
 	};
 
@@ -112,6 +120,11 @@ int main(int argc, char **argv) {
 		dddt = 0;
 		rho = DENS;
 		f << 0,0,0;
+		if ((r[1]<2) || (r[1]>nx-2)){
+			fixed = true;
+		} else {
+			fixed = false;
+		}
 		if (r[2]<0) {
 			fixed = true;
 		} else {
@@ -123,6 +136,7 @@ int main(int argc, char **argv) {
 	auto sph_grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	sph->copy_to_vtk_grid(sph_grid);
 	sph->init_neighbour_search(min,max,2*params->sph_hfac*psep,periodic);
+
 
 //	Visualisation vis(min,max);
 //	vis.glyph_points(sph_grid);
@@ -155,6 +169,9 @@ int main(int argc, char **argv) {
 		vis_v->SetNumberOfTuples(sph->size());
 		vis_f->SetNumberOfTuples(sph->size());
 		vis_rho->SetNumberOfTuples(sph->size());
+		//vis_eps->SetNumberOfTuples(sph->size());		
+
+		
 		int ii = 0;
 		for (SphType::iterator i = sph->begin(); i != sph->end(); i++,ii++) {
 			REGISTER_SPH_PARTICLE((*i));
@@ -163,7 +180,15 @@ int main(int argc, char **argv) {
 			vis_rho->SetValue(ii,rho);
 
 		}
-		Visualisation::vtkWriteGrid("sph",i,sph_grid);
+		
+		sph->copy_to_vtk_grid(sph_grid);
+		Visualisation::vtkWriteGrid("vis/sphdem",i,sph_grid);
+		//vis.restart_render_loop();
+	
+
+		//vis.stop_render_loop();
 		//vis.restart_render_loop();
 	}
+	
+	
 }

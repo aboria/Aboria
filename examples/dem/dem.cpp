@@ -22,7 +22,7 @@ int main(int argc, char **argv) {
 
 	int timesteps;
 	cin>> timesteps;
-	const int nout = 1000;
+	const int nout = 100;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
 	const double Lx=L;
@@ -111,11 +111,11 @@ int main(int argc, char **argv) {
 	const Vect3d max(L,L,L);
 	const Vect3b periodic(true,true,false);
 
-	dem->create_particles_grid(min, max, Vect3i (ndemx,ndemy,ndemz),[](DemType::Value& i) {
+	dem->create_particles_cylinder(min, max, 2,params->dem_diameter,[](DemType::Value& i) {
 		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
 		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
 
-		v << 0,0,0.4;
+		v << 0,0,0;
 		f << 0,0,0;
 	});
 	
