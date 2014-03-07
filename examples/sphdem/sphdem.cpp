@@ -60,7 +60,7 @@ int main(int argc, char **argv) {
 	/*
 	 * sph parameters
 	 */
-	params->sph_hfac = 1.5;
+	params->sph_hfac = 1.3;
 	params->sph_visc = 8.9e-07;
 	params->sph_refd = 1000.0;
 	params->sph_dens = 1000.0;
@@ -119,6 +119,7 @@ int main(int argc, char **argv) {
 		v << 0,0,0;
 		v0 << 0,0,0;
 		dddt = 0;
+		e = 1;
 		rho = params->sph_dens;
 		f << 0,0,0;
 		if ((r[1]<2) || (r[1]>nx-2)){
@@ -155,6 +156,8 @@ int main(int argc, char **argv) {
 
 	std::cout << "starting...."<<std::endl;
 	sph->init_neighbour_search(min,max,2*params->sph_hfac*psep,periodic);
+	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
+
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
 			//std::this_thread::sleep_for(std::chrono::seconds(1));
@@ -164,8 +167,8 @@ int main(int argc, char **argv) {
 		
 		sph->copy_to_vtk_grid(sph_grid);
 		dem->copy_to_vtk_grid(dem_grid);
-		Visualisation::vtkWriteGrid("vis/sph",0,sph_grid);
-		Visualisation::vtkWriteGrid("vis/dem",0,dem_grid);
+		Visualisation::vtkWriteGrid("vis/sph",i,sph_grid);
+		Visualisation::vtkWriteGrid("vis/dem",i,dem_grid);
 	}
 	
 	

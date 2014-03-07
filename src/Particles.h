@@ -207,6 +207,12 @@ public:
 		searchable = true;
 	}
 
+	void reset_neighbour_search(const double length_scale) {
+		neighbour_search.reset(neighbour_search.get_low(),neighbour_search.get_high(),length_scale,neighbour_search.get_periodic());
+		neighbour_search.embed_points(data.cbegin(),data.cend());
+		searchable = true;
+	}
+
 
 	template<typename F>
 	void create_particles(const int n, F f) {

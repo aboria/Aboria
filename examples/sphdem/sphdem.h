@@ -153,6 +153,7 @@ void integrate_dem(const double dt,ptr<DemType> dem,
 		ptr<Params> params,
 		GeometryType geometry) {
 	const int num_it = floor(dt/params->dem_dt);
+	std::cout << "going for "<<num_it<<" dem timesteps"<<std::endl;
 	for (int i = 0; i < num_it; ++i) {
 		dem_timestep(dem,params,geometry);
 	}
@@ -184,7 +185,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	/*
 	 * 0 -> 1/2 step
 	 */
-
+	std::cout << "0 -> 1/2 step"<<std::endl;
 	integrate_dem(dt/2,dem,params,dem_geometry); //update dem positions
 
 	sph->update_positions(sph->begin(),sph->end(),[dt,sph_mass](SphType::Value& i) {
@@ -197,23 +198,28 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	/*
 	 * Calculate omega
 	 */
-	std::for_each(sph->begin(),sph->end(),[&sph_geometry,sph,sph_mass](SphType::Value& i) {
-		REGISTER_SPH_PARTICLE(i);
+	std::cout << "calculate omega"<<std::endl;
 
+	std::for_each(sph->begin(),sph->end(),[sph,sph_mass](SphType::Value& i) {
+		REGISTER_SPH_PARTICLE(i);
+		omega = 0;
 		for (auto tpl: i.get_neighbours(sph)) {
 			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
 			const double r2 = dx.squaredNorm();
-			if (r2 > 4.0*hj*hj) continue;
+			if (r2 > 4.0*h*h) continue;
 			if (r2 == 0) continue;
 			const double r = sqrt(r2);
-			omega -= sph_mass*pow(r,2)*F(r/h,h);
+			omega -= sph_mass*r2*F(r/h,h);
 		}
 		omega *= 1.0/(rho*NDIM);
+		//std::cout << "omega = "<<omega<<" rho = "<<rho<<" ndim = "<<NDIM<<std::endl;
 	});
 
 	/*
 	 * Calculate change in density
 	 */
+	std::cout << "calculate change in density"<<std::endl;
+
 	std::for_each(sph->begin(),sph->end(),[sph,&sph_geometry,sph_mass](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
@@ -234,6 +240,8 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	/*
 	 *  Calculate coupling force on DEM
 	 */
+	std::cout << "calculate coupling force on DEM"<<std::endl;
+
 	std::for_each(dem->begin(),dem->end(),[sph,dem_vol,sph_mass,sph_visc,dem_diameter,sph_dens,dem_mass](DemType::Value& i) {
 		REGISTER_DEM_PARTICLE(i);
 
@@ -267,6 +275,8 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	/*
 	 * 1/2 -> 1 step
 	 */
+	std::cout << "1/2 -> 1 step"<<std::endl;
+
 	integrate_dem(dt/2,dem,params,dem_geometry); //update dem positions
 	std::for_each(sph->begin(),sph->end(),[dt,sph_mass](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
@@ -280,6 +290,14 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		return hi<hj;
 	});
 	const double maxh = std::get<SPH_H>(iterator_to_maxh->get_data());
+	auto iterator_to_minh =
+		    std::min_element(sph->begin(),sph->end(),[](SphType::Value& i, SphType::Value& j){
+			GET_TUPLE(double,hi,SPH_H,i);
+			GET_TUPLE(double,hj,SPH_H,j);
+			return hi<hj;
+		});
+	const double minh = std::get<SPH_H>(iterator_to_minh->get_data());
+
 	sph->reset_neighbour_search(2.0*maxh,[dt,sph_mass,sph_prb,sph_refd,sph_gamma](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 		v0 = v;
@@ -288,11 +306,14 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		pdr2 = press/pow(rho,2);
 		return r + dt/2 * v0;
 	});
+	dem->reset_neighbour_search(2.0*maxh);
 
 
 	/*
 	 * Calculate porosity on SPH
 	 */
+	std::cout << "calcaulte porosity on sph"<<std::endl;
+
 	std::for_each(sph->begin(),sph->end(),[dem,dem_vol](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 		e=1;
@@ -308,10 +329,11 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	/*
 	 *  Calculate shep sum on DEM
 	 */
+	std::cout << "calcaulte shep sum on dem"<<std::endl;
+
 	std::for_each(dem->begin(),dem->end(),[sph,dem_vol,sph_mass](DemType::Value& i) {
 		REGISTER_DEM_PARTICLE(i);
 		s = 0;
-
 		for (auto tpl: i.get_neighbours(sph)) {
 			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
 			const double r2 = dx.squaredNorm();
@@ -325,6 +347,8 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	/*
 	 * Calculate coupling force on SPH
 	 */
+	std::cout << "calculate coupling force on sph"<<std::endl;
+
 	std::for_each(sph->begin(),sph->end(),[dem,dem_mass](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
@@ -339,9 +363,13 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		f0 /= rho;
 	});
 
+	dem->reset_neighbour_search(dem_diameter);
+
 	/*
 	 * acceleration on SPH calculation
 	 */
+	std::cout << "acceleration on SPH"<<std::endl;
+
 	std::for_each(sph->begin(),sph->end(),[sph,&sph_geometry,sph_mass,sph_visc](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
@@ -377,12 +405,18 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	/*
 	 * 1/2 -> 1 step for velocity
 	 */
+	std::cout << "1/2 -> 1 step for velocity"<<std::endl;
+
 	std::for_each(sph->begin(),sph->end(),[dt](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
 		if (!fixed) v = v0 + dt/2 * (f+f0);
 	});
 
+	/*
+	 * sph timestep condition
+	 */
+	params->sph_dt = std::min(0.25*minh/params->sph_spsound,0.125*pow(minh,2)/params->sph_visc);
 }
 
 
