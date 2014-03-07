@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	auto sph = SphType::New();
 	auto params = ptr<Params>(new Params());
 
-	const int timesteps = 1000;
+	const int timesteps = 100;
 	const int nout = 100;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
@@ -63,16 +63,15 @@ int main(int argc, char **argv) {
 	params->sph_hfac = 1.5;
 	params->sph_visc = 8.9e-07;
 	params->sph_refd = 1000.0;
+	params->sph_dens = 1000.0;
 	params->sph_gamma = 7;
-	const double DENS = params->sph_refd;
-	//const double VMAX = sqrt(2*9.81*(1.0+0.5*(1-POROSITY)*(DEM_DENS-DENS)/DENS)*(RMAX[2]-RMIN[2]));
 	const double VMAX = 2.0*sqrt(2*9.81*L);
 	const double CSFAC = 10.0;
 	params->sph_spsound = CSFAC*VMAX;
-	params->sph_prb = pow(params->sph_refd/DENS,params->sph_gamma-1.0)*pow(params->sph_spsound,2)*params->sph_refd/params->sph_gamma;
+	params->sph_prb = pow(params->sph_refd/params->sph_dens,params->sph_gamma-1.0)*pow(params->sph_spsound,2)*params->sph_refd/params->sph_gamma;
 	const double psep = L/nx;
 	params->sph_dt = std::min(0.25*params->sph_hfac*psep/params->sph_spsound,0.125*pow(params->sph_hfac*psep,2)/params->sph_visc);
-	params->sph_mass = DENS*pow(psep,NDIM);
+	params->sph_mass = params->sph_dens*pow(psep,NDIM);
 
 	std::cout << "h = "<<params->sph_hfac*psep<<" vmax = "<<VMAX<<std::endl;
 
@@ -106,19 +105,21 @@ int main(int argc, char **argv) {
 		return acceleration;
 	};
 
-
 	const Vect3d min(0,0,-3.0*psep);
 	const Vect3d max(L,L,L);
 	const Vect3b periodic(true,true,false);
 
-	sph->create_particles_grid(min,max,Vect3i(nx,nx,nx+3),[psep,params,DENS](SphType::Value& i) {
+	/*
+	 * create sph and dem particles
+	 */
+	sph->create_particles_grid(min,max,Vect3i(nx,nx,nx+3),[psep,params](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 		h = params->sph_hfac*psep;
 		omega = 1.0;
 		v << 0,0,0;
 		v0 << 0,0,0;
 		dddt = 0;
-		rho = DENS;
+		rho = params->sph_dens;
 		f << 0,0,0;
 		if ((r[1]<2) || (r[1]>nx-2)){
 			fixed = true;
@@ -132,62 +133,39 @@ int main(int argc, char **argv) {
 		}
 	});
 
+	dem->create_particles(1,[L](DemType::Value& i) {
+		REGISTER_DEM_PARTICLE(i);
+		v << 0,0,0;
+		v0 << 0,0,0;
+		f << 0,0,0;
+		return Vect3d(L/2,L/2,0.75*L);
+	});
 
+
+	/*
+	 * setup output stuff
+	 */
 	auto sph_grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+	auto dem_grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	sph->copy_to_vtk_grid(sph_grid);
-	sph->init_neighbour_search(min,max,2*params->sph_hfac*psep,periodic);
+	dem->copy_to_vtk_grid(dem_grid);
+	Visualisation::vtkWriteGrid("vis/at_start_sph",0,sph_grid);
+	Visualisation::vtkWriteGrid("vis/at_start_dem",0,dem_grid);
 
-
-//	Visualisation vis(min,max);
-//	vis.glyph_points(sph_grid);
-//	vis.start_render_loop();
-	vtkSmartPointer<vtkFloatArray> vis_v = vtkSmartPointer<vtkFloatArray>::New();
-	vtkSmartPointer<vtkFloatArray> vis_f = vtkSmartPointer<vtkFloatArray>::New();
-	vtkSmartPointer<vtkFloatArray> vis_rho = vtkSmartPointer<vtkFloatArray>::New();
-
-	vis_v->SetName("v");
-	vis_f->SetName("f");
-	vis_rho->SetName("rho");
-
-	vis_v->SetNumberOfComponents(3);
-	vis_f->SetNumberOfComponents(3);
-	sph_grid->GetPointData()->AddArray(vis_v);
-	sph_grid->GetPointData()->AddArray(vis_f);
-	sph_grid->GetPointData()->AddArray(vis_rho);
 
 	std::cout << "starting...."<<std::endl;
-
+	sph->init_neighbour_search(min,max,2*params->sph_hfac*psep,periodic);
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
 			//std::this_thread::sleep_for(std::chrono::seconds(1));
 			sphdem(sph,dem,params,sph_geometry,dem_geometry);
 		}
 		std::cout <<"iteration "<<i<<std::endl;
-
-		//vis.stop_render_loop();
-		sph->copy_to_vtk_grid(sph_grid);
-		vis_v->SetNumberOfTuples(sph->size());
-		vis_f->SetNumberOfTuples(sph->size());
-		vis_rho->SetNumberOfTuples(sph->size());
-		//vis_eps->SetNumberOfTuples(sph->size());		
-
-		
-		int ii = 0;
-		for (SphType::iterator i = sph->begin(); i != sph->end(); i++,ii++) {
-			REGISTER_SPH_PARTICLE((*i));
-			vis_v->SetTuple3(ii,v[0],v[1],v[2]);
-			vis_f->SetTuple3(ii,f[0],f[1],f[2]);
-			vis_rho->SetValue(ii,rho);
-
-		}
 		
 		sph->copy_to_vtk_grid(sph_grid);
-		Visualisation::vtkWriteGrid("vis/sphdem",i,sph_grid);
-		//vis.restart_render_loop();
-	
-
-		//vis.stop_render_loop();
-		//vis.restart_render_loop();
+		dem->copy_to_vtk_grid(dem_grid);
+		Visualisation::vtkWriteGrid("vis/sph",0,sph_grid);
+		Visualisation::vtkWriteGrid("vis/dem",0,dem_grid);
 	}
 	
 	

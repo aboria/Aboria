@@ -40,7 +40,7 @@
 #include <vtkUnstructuredGrid.h>
 #include <vtkSmartPointer.h>
 #include <vtkIntArray.h>
-#include <vtkDoubleArray.h>
+#include <vtkFloatArray.h>
 #include "vtkPointData.h"
 #endif
 
@@ -195,40 +195,23 @@ public:
 		searchable = true;
 	}
 	
-/*template<typename F>
-	void create_particles_grid( const Vect3d& startpoint, const Vect3d& endpoint, const Vect3i& n, F f) {
-		int index = data.size();
-		int number=n[0]*n[1]*n[2];
-		data.resize(data.size() + number);
-//		Vect3d dx(demdiam,demdiam,demdiam);
-		Vect3d dx((endpoint[0]-startpoint[0])/n[0],(endpoint[1]-startpoint[1])/n[1],(endpoint[2]-startpoint[2])/n[2]);
-		Vect3d low(startpoint[0]+dx[0]/2,startpoint[1]+dx[1]/2,startpoint[2]+dx[2]/2);
-		for(int i = 0; i < n[0]; i++) {
-			for(int j = 0; j < n[1]; j++) {
-				for(int k = 0; k < n[2]; k++) {
-					data[index].id = next_id++;
-					data[index].alive = true;
 
-					data[index].r[0] = low[0] + dx[0]*(i);
-					data[index].r[1] = low[1] + dx[1]*(j);
-					data[index].r[2] = low[2] + dx[2]*(k);
-					data[index].r0 = data[index].r;
-					index++;
-			}}}
-				std::for_each(data.begin(),data.end(),[&f,&next_id](Value& i) {
-f(i);
-std::cout<<i.id;
-	});
-		
-		
-		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+	template<typename F>
+	void reset_neighbour_search(const double length_scale, F f) {
+		std::for_each(begin(),end(),[&f](Value& i) {
+			i.r0 = i.r;
+			i.r = f(i);
+		});
+		neighbour_search.reset(neighbour_search.get_low(),neighbour_search.get_high(),length_scale,neighbour_search.get_periodic());
+		neighbour_search.embed_points(data.cbegin(),data.cend());
+		searchable = true;
 	}
-*/	
+
 
 	template<typename F>
 	void create_particles(const int n, F f) {
 		data.resize(data.size()+n);
-		std::for_each(end()-n,end(),[&,&next_id](Value& i) {
+		std::for_each(end()-n,end(),[this,&f](Value& i) {
 			i.id = next_id++;
 			i.alive = true;
 			i.r = f(i);
@@ -334,15 +317,40 @@ std::cout<<i.id;
 			ids->SetName("id");
 			grid->GetPointData()->AddArray(ids);
 		}
+		constexpr size_t dn = std::tuple_size<DataType>::value;
+		vtkSmartPointer<vtkFloatArray> datas[dn];
+		for (int i = 0; i < dn; ++i) {
+			char buffer[10];
+			sprintf(buffer,"data%3d",i);
+			datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(buffer));
+			if (!datas[i]) {
+				datas[i] = vtkSmartPointer<vtkFloatArray>::New();
+				datas[i]->SetName(buffer);
+				grid->GetPointData()->AddArray(datas[i]);
+				if (i<4) {
+					datas[i]->SetNumberOfComponents(3);
+				} else {
+					datas[i]->SetNumberOfComponents(1);
+				}
+			}
+		}
 		const vtkIdType n = size();
 		points->SetNumberOfPoints(n);
 		ids->SetNumberOfTuples(n);
+		for (int i = 0; i < dn; ++i) {
+			datas[i]->SetNumberOfTuples(n);
+		}
 		int j = 0;
 		for(auto& i: *this) {
 			const int index = j++;
 			//std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
 			points->SetPoint(index,i.get_position()[0],i.get_position()[1],i.get_position()[2]);
 			ids->SetValue(index,i.get_id());
+			auto v = std::get<0>(i.get_data());datas[0]->SetTuple3(index,v[0],v[1],v[2]);
+			v = std::get<1>(i.get_data());datas[1]->SetTuple3(index,v[0],v[1],v[2]);
+			v = std::get<2>(i.get_data());datas[2]->SetTuple3(index,v[0],v[1],v[2]);
+			v = std::get<3>(i.get_data());datas[3]->SetTuple3(index,v[0],v[1],v[2]);
+			double f = std::get<4>(i.get_data());datas[4]->SetValue(index,f);
 		}
 
 		//points->ComputeBounds();

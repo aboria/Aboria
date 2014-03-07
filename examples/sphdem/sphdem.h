@@ -33,8 +33,8 @@ using namespace Aboria;
 
 
 
-enum {DEM_FORCE, DEM_VELOCITY, DEM_VELOCITY0};
-typedef std::tuple<Vect3d,Vect3d,Vect3d> DemTuple;
+enum {DEM_FORCE, DEM_VELOCITY, DEM_VELOCITY0, DEM_FORCE0,DEM_SHEPSUM};
+typedef std::tuple<Vect3d,Vect3d,Vect3d,Vect3d,double> DemTuple;
 typedef Particles<DemTuple> DemType;
 
 #define GET_TUPLE(type,name,position,particle) type& name = std::get<position>(particle.get_data())
@@ -42,6 +42,8 @@ typedef Particles<DemTuple> DemType;
 				const Vect3d& r = particle.get_position(); \
 				GET_TUPLE(Vect3d,f,DEM_FORCE,particle); \
 				GET_TUPLE(Vect3d,v,DEM_VELOCITY,particle); \
+				GET_TUPLE(Vect3d,f0,DEM_FORCE0,particle); \
+				GET_TUPLE(double,s,DEM_SHEPSUM,particle); \
 				GET_TUPLE(Vect3d,v0,DEM_VELOCITY0,particle)
 #define REGISTER_NEIGHBOUR_DEM_PARTICLE(tuple) \
 				const Vect3d& dx = std::get<1>(tuple); \
@@ -49,11 +51,13 @@ typedef Particles<DemTuple> DemType;
 				const Vect3d& rj = j.get_position(); \
 				const GET_TUPLE(Vect3d,fj,DEM_FORCE,j); \
 				const GET_TUPLE(Vect3d,vj,DEM_VELOCITY,j); \
+				const GET_TUPLE(Vect3d,f0j,DEM_FORCE0,j); \
+				const GET_TUPLE(double,sj,DEM_SHEPSUM,j); \
 				const GET_TUPLE(Vect3d,v0j,DEM_VELOCITY0,j)
 
 
-enum {SPH_FORCE, SPH_VELOCITY, SPH_VELOCITY0, SPH_DENS, SPH_POROSITY, SPH_H, SPH_DDDT,SPH_PDR2,SPH_OMEGA,SPH_FIXED};
-typedef std::tuple<Vect3d,Vect3d,Vect3d,double,double,double,double,double,double,bool> SphTuple;
+enum {SPH_FORCE, SPH_VELOCITY, SPH_VELOCITY0,SPH_FORCE0,SPH_DENS, SPH_POROSITY, SPH_H, SPH_DDDT,SPH_PDR2,SPH_OMEGA,SPH_FIXED};
+typedef std::tuple<Vect3d,Vect3d,Vect3d,Vect3d,double,double,double,double,double,double,bool> SphTuple;
 typedef Particles<SphTuple> SphType;
 
 #define REGISTER_SPH_PARTICLE(particle) \
@@ -67,6 +71,7 @@ typedef Particles<SphTuple> SphType;
 				GET_TUPLE(double,h,SPH_H,particle); \
 				GET_TUPLE(double,dddt,SPH_DDDT,particle); \
 				GET_TUPLE(double,pdr2,SPH_PDR2,particle); \
+				GET_TUPLE(Vect3d,f0,SPH_FORCE0,particle); \
 				GET_TUPLE(double,omega,SPH_OMEGA,particle)
 
 #define REGISTER_NEIGHBOUR_SPH_PARTICLE(tuple) \
@@ -82,16 +87,17 @@ typedef Particles<SphTuple> SphType;
 				const GET_TUPLE(double,hj,SPH_H,j); \
 				const GET_TUPLE(double,dddtj,SPH_DDDT,j); \
 				const GET_TUPLE(double,pdr2j,SPH_PDR2,j); \
+				const GET_TUPLE(Vect3d,f0j,SPH_FORCE0,j); \
 				const GET_TUPLE(double,omegaj,SPH_OMEGA,j)
 
 struct Params {
-	double sph_dt,sph_mass,sph_hfac,sph_visc,sph_refd,sph_gamma,sph_spsound,sph_prb;
+	double sph_dt,sph_mass,sph_hfac,sph_visc,sph_refd,sph_gamma,sph_spsound,sph_prb,sph_dens;
 	double dem_dt,dem_mass,dem_diameter,dem_k,dem_gamma, dem_vol;
 };
 
 
 template<typename GeometryType>
-void dem_start(ptr<DemType> dem,
+void dem_timestep(ptr<DemType> dem,
 		ptr<Params> params,
 		GeometryType geometry) {
 
@@ -105,7 +111,7 @@ void dem_start(ptr<DemType> dem,
 	dem->update_positions(dem->begin(),dem->end(),[dt](DemType::Value& i) {
 		REGISTER_DEM_PARTICLE(i);
 
-		v0 = v + dt/2*f;
+		v0 = v + dt/2*(f+f0);
 		v += dt * f;
 		return r + dt * v0;
 	});
@@ -133,26 +139,14 @@ void dem_start(ptr<DemType> dem,
 
 	});
 
-}
-
-template<typename GeometryType>
-void dem_end(ptr<DemType> dem,
-		ptr<Params> params,
-		GeometryType geometry) {
-
-	const double dt = params->dem_dt;
-	const double dem_diameter = params->dem_diameter;
-	const double dem_k = params->dem_k;
-	const double dem_gamma = params->dem_gamma;
-	const double dem_mass = params->dem_mass;
-	const double dem_vol = params->dem_vol;
-
 	std::for_each(dem->begin(),dem->end(),[dt](DemType::Value& i) {
 		REGISTER_DEM_PARTICLE(i);
 
-		v = v0 + dt/2 * f;
+		v = v0 + dt/2 * (f+f0);
 	});
+
 }
+
 
 template<typename GeometryType>
 void integrate_dem(const double dt,ptr<DemType> dem,
@@ -160,14 +154,12 @@ void integrate_dem(const double dt,ptr<DemType> dem,
 		GeometryType geometry) {
 	const int num_it = floor(dt/params->dem_dt);
 	for (int i = 0; i < num_it; ++i) {
-		dem_start(dem,params,geometry);
-		dem_end(dem,params,geometry);
+		dem_timestep(dem,params,geometry);
 	}
 	const double save_dem_dt = params->dem_dt;
 	params->dem_dt = dt - num_it*params->dem_dt;
 	if (params->dem_dt>0) {
-		dem_start(dem,params,geometry);
-		dem_end(dem,params,geometry);
+		dem_timestep(dem,params,geometry);
 	}
 	params->dem_dt = save_dem_dt;
 }
@@ -181,79 +173,26 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	const double sph_mass = params->sph_mass;
 	const double sph_prb = params->sph_prb;
 	const double sph_refd = params->sph_refd;
+	const double sph_dens = params->sph_dens;
 	const double sph_gamma = params->sph_gamma;
 	const double sph_visc = params->sph_visc;
+
+	const double dem_vol = params->dem_vol;
+	const double dem_diameter = params->dem_diameter;
+	const double dem_mass = params->dem_mass;
 
 	/*
 	 * 0 -> 1/2 step
 	 */
 
-	integrate_dem(dt,dem,params,geometry); //update dem positions
+	integrate_dem(dt/2,dem,params,dem_geometry); //update dem positions
 
-
-	 
 	sph->update_positions(sph->begin(),sph->end(),[dt,sph_mass](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
-
-		if (!fixed) v += dt/2 * f;
-		h = pow(sph_mass/rho,1.0/NDIM);
+		if (!fixed) v += dt/2 * (f+f0);
 		return r + dt/2 * v;
 	});
 
-//	std::for_each(sph->begin(),sph->end(),[dem](SphType::Value& i) {
-//		REGISTER_SPH_PARTICLE(i);
-//
-//		e = 0;
-//		for (auto tpl: i.get_neighbours(dem)) {
-//			REGISTER_NEIGHBOUR_DEM_PARTICLE(tpl);
-//			const double r = dx.norm();
-//
-//			e += (dem_vol)*W(r/h,h);
-//		}
-//	});
-//
-//	std::for_each(dem->begin(),dem->end(),[sph](DemType::Value& i) {
-//		REGISTER_SPH_PARTICLE(i);
-//
-//		for (auto tpl: i.get_neighbours(sph)) {
-//			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
-//			const double r = dx.norm();
-//
-//			//interpolate needed sph values here
-//		}
-//	});
-//
-//
-//	integrate_dem(dt,dem,params,dem_geometry);
-//
-//
-//	std::for_each(sph->begin(),sph->end(),[dem](SphType::Value& i) {
-//		REGISTER_SPH_PARTICLE(i);
-//
-//		e = 0;
-//
-//		for (auto tpl: i.get_neighbours(dem)) {
-//			REGISTER_NEIGHBOUR_DEM_PARTICLE(tpl);
-//
-//			const double r = dx.norm();
-//			e += dem_vol*W(r/h,h);
-//		}
-//	});
-//
-
-	/*
-	 * Calculate eps_a -------------- Giuseppe
-	*/
-	std::for_each(sph->begin(),sph->end(),[dem](SphType::Value& i) {
-		REGISTER_SPH_PARTICLE(i);
-		e=1;
-		for (auto tpl: i.get_neighbours(dem)) {
-			REGISTER_NEIGHBOUR_DEM_PARTICLE(tpl);
-			const double r = dx.norm();
-			e -= dem_vol*W(r/h,h);
-		}
-
-	});
 
 	/*
 	 * Calculate omega
@@ -263,8 +202,10 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 
 		for (auto tpl: i.get_neighbours(sph)) {
 			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
-
-			const double r = dx.norm();
+			const double r2 = dx.squaredNorm();
+			if (r2 > 4.0*hj*hj) continue;
+			if (r2 == 0) continue;
+			const double r = sqrt(r2);
 			omega -= sph_mass*pow(r,2)*F(r/h,h);
 		}
 		omega *= 1.0/(rho*NDIM);
@@ -279,7 +220,6 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		dddt = 0;
 		for (auto tpl: i.get_neighbours(sph)) {
 			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
-
 			const double r2 = dx.squaredNorm();
 			if (r2 > 4.0*h*h) continue;
 			if (r2 == 0) continue;
@@ -290,113 +230,113 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		dddt *= 1.0/omega;
 
 	});
-/*
- *  Calculate force on DEM  --- Giuseppe
- */
-		//drag force - do we add fd in DemType?
-	std::for_each(dem->begin(),dem->end(),[dem,dem_geometry,sph,&sph_geometry,sph_mass,sph_visc](DemType::Value& i) {
-		
-		
-		//here we must evaluate "us" (see eq 28) but "eps", "uf" and "ui" should be averaged using the kernel function
-		
-		fd=
-	});
-		
- 
- 	std::for_each(dem->begin(),dem->end(),[dem,dem_geometry,sph,&sph_geometry,sph_mass,sph_visc](DemType::Value& i) {
-		REGISTER_SPH_PARTICLE(i);
 
-		f << 0,0,0;
-		f = f + dem_geometry(i);
+	/*
+	 *  Calculate coupling force on DEM
+	 */
+	std::for_each(dem->begin(),dem->end(),[sph,dem_vol,sph_mass,sph_visc,dem_diameter,sph_dens,dem_mass](DemType::Value& i) {
+		REGISTER_DEM_PARTICLE(i);
 
+		f0 << 0,0,0;
+		s = 0;
+		Vect3d vf(0,0,0);
+		double ef = 0;
 		for (auto tpl: i.get_neighbours(sph)) {
 			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
-					const double r2 = dx.squaredNorm();
-					if (r2 > 4.0*h*h) continue;
-					if (r2 == 0) continue;
-					const double r = sqrt(r2);
-					const double fdash = F(r/h,h);
-					const double fdashj = F(r/hj,hj);
+			const double r2 = dx.squaredNorm();
+			if (r2 > 4.0*hj*hj) continue;
+			const double r = sqrt(r2);
+			const double Wab = W(r/hj,hj);
+			f0 += sph_mass*fj*Wab;
+			vf += sph_mass*vj*Wab;
+			ef += sph_mass*ej*Wab;
+			s += sph_mass*Wab/rhoj;
+		}
+		f0 /= s;
+		vf /= s;
+		ef /= s;
 
-					for (auto tpl: i.get_neighbours(sph)) { //calculate theta a
-						REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
-						const double r21 = dx.squaredNorm();
-						if (r21 > 4.0*h*h) continue;
-						if (r21 == 0) continue;
-						const double r1 = sqrt(r21);
-						const double fdash = F(r1/h,h);
-						const double fdashj = F(r1/hj,hj);
-
-						/*
-						 * pressure gradient
-						 */
-						theta += -dem_vol*((1.0/omega)*pdr2*fdash + (1.0/omegaj)*pdr2j*fdashj)*dx;
-
-						const Vect3d dv = v-vj;
-						const double visc = sph_visc*(rho+rhoj)/(rho*rhoj);
-
-						/*
-						 * viscosity (morris)
-						 */
-						theta += dv*sph_mass*visc*fdash 
-					}
-			/*
-			 * pression grad + shear stress 
-			 */
-			 part1+=1/(sph_mass/sph_rho*W(r/h,r)); //referring to eq 24 in paper Martin 2014 - not sure about r and h - subscript i indicate dem particle... probably we need two different r vector
-			 part2+=sph_mass*theta*W(r/h,r);
-		 }
-		 f=part1*part2;
-		 
-			/*
-			 * adding drag force 
-			 */
-		 
-		 f+=fd;
-		 
+		if (s > 0.5) {
+			const Vect3d fdrag = 3.0*PI*sph_visc*sph_dens*dem_diameter*ef*(vf-v);
+			f0 = (dem_vol*f0 + fdrag)/dem_mass;
+		} else {
+			f0 << 0,0,0;
+		}
 	});
-  
-
 
 	/*
 	 * 1/2 -> 1 step
 	 */
-	
-	integrate_dem(dt,dem,params,geometry); //update dem positions
-
-	
-	sph->update_positions(sph->begin(),sph->end(),[dt,sph_mass,sph_prb,sph_refd,sph_gamma](SphType::Value& i) {
+	integrate_dem(dt/2,dem,params,dem_geometry); //update dem positions
+	std::for_each(sph->begin(),sph->end(),[dt,sph_mass](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
-
 		rho += dt * dddt;
 		h = pow(sph_mass/rho,1.0/NDIM);
+	});
+	auto iterator_to_maxh =
+	    std::max_element(sph->begin(),sph->end(),[](SphType::Value& i, SphType::Value& j){
+		GET_TUPLE(double,hi,SPH_H,i);
+		GET_TUPLE(double,hj,SPH_H,j);
+		return hi<hj;
+	});
+	const double maxh = std::get<SPH_H>(iterator_to_maxh->get_data());
+	sph->reset_neighbour_search(2.0*maxh,[dt,sph_mass,sph_prb,sph_refd,sph_gamma](SphType::Value& i) {
+		REGISTER_SPH_PARTICLE(i);
 		v0 = v;
-		if (!fixed) v += dt/2 * f;
-		const double press = sph_prb*(pow(rho/sph_refd,sph_gamma) - 1.0);
+		if (!fixed) v += dt/2 * (f+f0);
+		const double press = sph_prb*(pow(rho/(e*sph_refd),sph_gamma) - 1.0);
 		pdr2 = press/pow(rho,2);
 		return r + dt/2 * v0;
 	});
 
 
 	/*
-	 * Calculate fa ------------Giuseppe
+	 * Calculate porosity on SPH
 	 */
-	std::for_each(sph->begin(),sph->end(),[&sph_geometry,sph,&dem_geometry](SphType::Value& i) {
+	std::for_each(sph->begin(),sph->end(),[dem,dem_vol](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
+		e=1;
+		for (auto tpl: i.get_neighbours(dem)) {
+			REGISTER_NEIGHBOUR_DEM_PARTICLE(tpl);
+			const double r2 = dx.squaredNorm();
+			if (r2 > 4.0*h*h) continue;
+			const double r = sqrt(r2);
+			e -= dem_vol*W(r/h,h);
+		}
+	});
 
-		Vect3d fa(0,0,0);
+	/*
+	 *  Calculate shep sum on DEM
+	 */
+	std::for_each(dem->begin(),dem->end(),[sph,dem_vol,sph_mass](DemType::Value& i) {
+		REGISTER_DEM_PARTICLE(i);
+		s = 0;
+
 		for (auto tpl: i.get_neighbours(sph)) {
 			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
-			Sj=0,0,0;
-			const double r = dx.norm();
-			for (auto tpl: i.get_neighbours(sph)) {
-				REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
-					const double r2 = dx.norm();
-					Sj += sph_mass/rho*W(r2/h,h);
-			}
-			fa += 1/Sj*dem_geometry->f*W(r/h,h);
+			const double r2 = dx.squaredNorm();
+			if (r2 > 4.0*hj*hj) continue;
+			const double r = sqrt(r2);
+			const double Wab = W(r/hj,hj);
+			s += sph_mass*Wab/rhoj;
 		}
-		fa *= -sph_mass/rho;
+	});
+	
+	/*
+	 * Calculate coupling force on SPH
+	 */
+	std::for_each(sph->begin(),sph->end(),[dem,dem_mass](SphType::Value& i) {
+		REGISTER_SPH_PARTICLE(i);
+
+		f0 << 0,0,0;
+		for (auto tpl: i.get_neighbours(dem)) {
+			REGISTER_NEIGHBOUR_DEM_PARTICLE(tpl);
+			const double r2 = dx.squaredNorm();
+			if (r2 > 4.0*h*h) continue;
+			const double r = sqrt(r2);
+			f0 -= dem_mass*f0j*W(r/h,h)/sj;
+		}
+		f0 /= rho;
 	});
 
 	/*
@@ -428,12 +368,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 			/*
 			 * viscosity (morris)
 			 */
-			f += dv*sph_mass*visc*fdash 
-			
-			/*
-			 * coupling force
-			 */
-			f += fa/sph_mass; // do we need to add "fa" in SphType?
+			f += dv*sph_mass*visc*fdash;
 		}
 
 	});
@@ -445,11 +380,8 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	std::for_each(sph->begin(),sph->end(),[dt](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
-		if (!fixed) v = v0 + dt/2 * f;
+		if (!fixed) v = v0 + dt/2 * (f+f0);
 	});
-
-
- // here is needed to calculate acceleratuin on DEM particles ?
 
 }
 
