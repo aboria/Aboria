@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	auto sph = SphType::New();
 	auto params = ptr<Params>(new Params());
 
-	const int timesteps = 100;
+	const int timesteps = 1000;
 	const int nout = 100;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
@@ -74,6 +74,9 @@ int main(int argc, char **argv) {
 	params->sph_mass = params->sph_dens*pow(psep,NDIM);
 
 	std::cout << "h = "<<params->sph_hfac*psep<<" vmax = "<<VMAX<<std::endl;
+
+	params->dem_time_drop = params->sph_dt*100;
+	params->time = 0;
 
 
 	/*
@@ -122,6 +125,7 @@ int main(int argc, char **argv) {
 		e = 1;
 		rho = params->sph_dens;
 		f << 0,0,0;
+		f0 << 0,0,0;
 		if ((r[1]<2) || (r[1]>nx-2)){
 			fixed = true;
 		} else {
@@ -139,6 +143,7 @@ int main(int argc, char **argv) {
 		v << 0,0,0;
 		v0 << 0,0,0;
 		f << 0,0,0;
+		f0 << 0,0,0;
 		return Vect3d(L/2,L/2,0.75*L);
 	});
 

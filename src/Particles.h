@@ -41,7 +41,9 @@
 #include <vtkSmartPointer.h>
 #include <vtkIntArray.h>
 #include <vtkFloatArray.h>
-#include "vtkPointData.h"
+#include <vtkPointData.h>
+#include <vtkCellArray.h>
+#include <vtkUnsignedCharArray.h>
 #endif
 
 namespace Aboria {
@@ -313,10 +315,15 @@ public:
 	void  copy_to_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
 		vtkSmartPointer<vtkPoints> points = grid->GetPoints();
 		if (!points) {
-			std::cout <<"creating new points"<<std::endl;
 			points = vtkSmartPointer<vtkPoints>::New();
 			grid->SetPoints(points);
 		}
+		vtkSmartPointer<vtkCellArray> cells = grid->GetCells();
+		if (!cells) {
+			cells = vtkSmartPointer<vtkCellArray>::New();
+			grid->SetCells(1,cells);
+		}
+		vtkSmartPointer<vtkUnsignedCharArray> cell_types = grid->GetCellTypesArray();
 		vtkSmartPointer<vtkIntArray> ids = vtkIntArray::SafeDownCast(grid->GetPointData()->GetArray("id"));
 		if (!ids) {
 			ids = vtkSmartPointer<vtkIntArray>::New();
@@ -342,15 +349,21 @@ public:
 		}
 		const vtkIdType n = size();
 		points->SetNumberOfPoints(n);
+		cells->Reset();
+		cell_types->Reset();
 		ids->SetNumberOfTuples(n);
 		for (int i = 0; i < dn; ++i) {
 			datas[i]->SetNumberOfTuples(n);
 		}
 		int j = 0;
+
 		for(auto& i: *this) {
 			const int index = j++;
 			//std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
 			points->SetPoint(index,i.get_position()[0],i.get_position()[1],i.get_position()[2]);
+			cells->InsertNextCell(1);
+			cells->InsertCellPoint(index);
+			cell_types->InsertNextTuple1(1);
 			ids->SetValue(index,i.get_id());
 			auto v = std::get<0>(i.get_data());datas[0]->SetTuple3(index,v[0],v[1],v[2]);
 			v = std::get<1>(i.get_data());datas[1]->SetTuple3(index,v[0],v[1],v[2]);
