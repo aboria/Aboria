@@ -37,7 +37,7 @@ int main(int argc, char **argv) {
 	auto sph = SphType::New();
 	auto params = ptr<Params>(new Params());
 
-	const int timesteps = 1000;
+	const int timesteps = 5000;
 	const int nout = 100;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;

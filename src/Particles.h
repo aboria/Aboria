@@ -220,7 +220,7 @@ public:
 	void create_particles(const int n, F f) {
 		data.resize(data.size()+n);
 		std::for_each(end()-n,end(),[this,&f](Value& i) {
-			i.id = next_id++;
+			i.id = this->next_id++;
 			i.alive = true;
 			i.r = f(i);
 			i.r0 = i.r;
@@ -375,7 +375,6 @@ public:
 		//points->ComputeBounds();
 	}
 #endif
-	NeighbourSearch_type neighbour_search;
 
 private:
 	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic) {
@@ -407,6 +406,7 @@ private:
 	data_type data;
 	bool searchable;
 	int next_id;
+	NeighbourSearch_type neighbour_search;
 
 };
 
