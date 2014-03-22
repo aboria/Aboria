@@ -32,6 +32,8 @@
 //#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
+#include <boost/fusion/algorithm.hpp>
+#include <boost/fusion/adapted/std_tuple.hpp>
 #include "Zip.h"
 #include "Vector.h"
 //#include "MyRandom.h"
@@ -312,6 +314,50 @@ public:
 	}
 
 #ifndef HAVE_VTK
+	struct save_elem {
+		typedef int result_type;
+		save_elem(int index, vtkSmartPointer<vtkFloatArray>* datas):
+			index(index),datas(datas){}
+		template<typename T>
+		result_type operator()(result_type state, T& t) const {
+			datas[state]->SetValue(index,t);
+			return state + 1;
+		}
+		//template<>
+		result_type operator()(result_type state, Vect3d& t) const {
+			datas[state]->SetTuple3(index,t[0],t[1],t[2]);
+			return state + 1;
+		}
+		result_type operator()(result_type state, const Vect3d& t) const {
+			datas[state]->SetTuple3(index,t[0],t[1],t[2]);
+			return state + 1;
+		}
+		int index;
+		vtkSmartPointer<vtkFloatArray>* datas;
+	};
+	struct setup_data {
+		typedef int result_type;
+		setup_data(vtkSmartPointer<vtkFloatArray>* datas):
+			datas(datas){}
+
+		template<typename T>
+		result_type operator()(result_type state, T& t) const {
+			datas[state]->SetNumberOfComponents(1);
+			return state + 1;
+		}
+		result_type operator()(result_type state, const Vect3d& t) const {
+			datas[state]->SetNumberOfComponents(3);
+			return state + 1;
+		}
+		result_type operator()(result_type state, Vect3d& t) const {
+			datas[state]->SetNumberOfComponents(3);
+			return state + 1;
+		}
+		//template<>
+
+		vtkSmartPointer<vtkFloatArray>* datas;
+	};
+
 	void  copy_to_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
 		vtkSmartPointer<vtkPoints> points = grid->GetPoints();
 		if (!points) {
@@ -340,13 +386,10 @@ public:
 				datas[i] = vtkSmartPointer<vtkFloatArray>::New();
 				datas[i]->SetName(buffer);
 				grid->GetPointData()->AddArray(datas[i]);
-				if (i<4) {
-					datas[i]->SetNumberOfComponents(3);
-				} else {
-					datas[i]->SetNumberOfComponents(1);
-				}
 			}
 		}
+		boost::fusion::fold(DataType(),0,setup_data(datas));
+
 		const vtkIdType n = size();
 		points->SetNumberOfPoints(n);
 		cells->Reset();
@@ -365,11 +408,15 @@ public:
 			cells->InsertCellPoint(index);
 			cell_types->InsertNextTuple1(1);
 			ids->SetValue(index,i.get_id());
-			auto v = std::get<0>(i.get_data());datas[0]->SetTuple3(index,v[0],v[1],v[2]);
-			v = std::get<1>(i.get_data());datas[1]->SetTuple3(index,v[0],v[1],v[2]);
-			v = std::get<2>(i.get_data());datas[2]->SetTuple3(index,v[0],v[1],v[2]);
-			v = std::get<3>(i.get_data());datas[3]->SetTuple3(index,v[0],v[1],v[2]);
-			double f = std::get<4>(i.get_data());datas[4]->SetValue(index,f);
+
+
+			boost::fusion::fold(i.get_data(),0,save_elem(index,datas));
+
+//			auto v = std::get<0>(i.get_data());datas[0]->SetTuple3(index,v[0],v[1],v[2]);
+//			v = std::get<1>(i.get_data());datas[1]->SetTuple3(index,v[0],v[1],v[2]);
+//			v = std::get<2>(i.get_data());datas[2]->SetTuple3(index,v[0],v[1],v[2]);
+//			v = std::get<3>(i.get_data());datas[3]->SetTuple3(index,v[0],v[1],v[2]);
+//			double f = std::get<4>(i.get_data());datas[4]->SetValue(index,f);
 		}
 
 		//points->ComputeBounds();
@@ -377,6 +424,7 @@ public:
 #endif
 
 private:
+
 	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic) {
 		std::for_each(begin(),end(),[low,high,periodic](Value& i) {
 			for (int d = 0; d < 3; ++d) {
