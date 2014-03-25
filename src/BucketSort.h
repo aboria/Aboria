@@ -92,11 +92,15 @@ public:
 	    		const Vect3d centre,
 	    		const int my_index = -1, const bool self = false)
 	    : bucket_sort(bucket_sort),
-	      cell_i(bucket_sort->cells.begin() + bucket_sort->find_cell_index(centre)),
 	      my_index(my_index),self(self),
 	      centre(centre) {
 	    	cell_empty.push_back(CELL_EMPTY);
 	    	m_node = cell_empty.begin();
+//	    	if (((centre.array() < bucket_sort->low.array()).any()) ||
+//	    			((centre.array() >= bucket_sort->high.array()).any())) {
+//	    		return;
+//	    	}
+	    	cell_i = bucket_sort->cells.begin() + bucket_sort->find_cell_index(centre);
 	    	surrounding_cell_offset_i = bucket_sort->surrounding_cell_offsets.begin();
 	    	if (self) {
 	    		surrounding_cell_offset_end = surrounding_cell_offset_i
@@ -207,9 +211,9 @@ private:
 	}
 	inline int find_cell_index(const Vect3d &r) const {
 		const Vect3i celli = ((r-low).cwiseProduct(inv_cell_size) + Vect3d(1.0,1.0,1.0)).cast<int>();
-		ASSERT((celli[0] >= 0) && (celli[0] < num_cells_along_axes[0]), "position is outside of x-range "<<r);
-		ASSERT((celli[1] >= 0) && (celli[1] < num_cells_along_axes[1]), "position is outside of y-range "<<r);
-		ASSERT((celli[2] >= 0) && (celli[2] < num_cells_along_axes[2]), "position is outside of z-range "<<r);
+		ASSERT((celli[0] > 0) && (celli[0] < num_cells_along_axes[0]-1), "position is outside of x-range "<<r);
+		ASSERT((celli[1] > 0) && (celli[1] < num_cells_along_axes[1]-1), "position is outside of y-range "<<r);
+		ASSERT((celli[2] > 0) && (celli[2] < num_cells_along_axes[2]-1), "position is outside of z-range "<<r);
 		//std::cout << " looking in cell " << celli <<" out of total cells " << num_cells_along_axes << " at position " << r<< std::endl;
 		return vect_to_index(celli);
 	}
