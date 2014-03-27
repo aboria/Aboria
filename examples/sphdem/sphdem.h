@@ -93,7 +93,7 @@ typedef Particles<SphTuple> SphType;
 				const GET_TUPLE(double,omegaj,SPH_OMEGA,j)
 
 struct Params {
-	double sph_dt,sph_mass,sph_hfac,sph_visc,sph_refd,sph_gamma,sph_spsound,sph_prb,sph_dens;
+	double sph_dt,sph_mass,sph_hfac,sph_visc,sph_refd,sph_gamma,sph_spsound,sph_prb,sph_dens,sph_time_damping;
 	double dem_dt,dem_mass,dem_diameter,dem_k,dem_gamma, dem_vol, dem_time_drop;
 	double time;
 };
@@ -193,9 +193,10 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	//std::cout << "0 -> 1/2 step"<<std::endl;
 	integrate_dem(dt/2,dem,params,dem_geometry); //update dem positions
 
-	sph->update_positions(sph->begin(),sph->end(),[dt,sph_mass](SphType::Value& i) {
+	sph->update_positions(sph->begin(),sph->end(),[params,dt,sph_mass](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 		if (!fixed) v += dt/2 * (f+f0+fext);
+		if (params->time < params->sph_time_damping) v *= 0.98;
 		return r + dt/2 * v;
 	});
 
@@ -271,10 +272,10 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 		ef /= s;
 
 		if (s > 0.5) {
-			const Vect3d fdrag = 3.0*PI*sph_visc*sph_dens*dem_diameter*ef*(vf-v);
-			//std::cout <<"v = "<<v<<" vf = "<<vf<<" f0 = "<<f0<<" fdrag = "<<fdrag<<std::endl;
+			const Vect3d fdrag = 3.0*PI*sph_visc*dem_diameter*ef*(vf-v);
+			f0 = sph_dens*(dem_vol*f0 + fdrag)/dem_mass;
+			//std::cout <<"v = "<<v<<" vf = "<<vf<<" f0 = "<<f0<<" fdrag = "<<fdrag<<"v / m = "<<dem_vol/dem_mass<<std::endl;
 
-			f0 = (dem_vol*f0 + fdrag)/dem_mass;
 		} else {
 			f0 << 0,0,0;
 		}
