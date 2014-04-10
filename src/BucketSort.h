@@ -199,7 +199,10 @@ public:
 	inline const Vect3d& get_high() {return high;}
 	inline const Vect3b& get_periodic() {return periodic;}
 
-	void embed_points(const T begin_iterator, const T end_iterator);
+	void clear();
+	void add_points(const T begin_iterator, const T end_iterator);
+	void remove_points(const T begin_iterator, const T end_iterator);
+
 	const_iterator find_broadphase_neighbours(const Vect3d& r, const int my_index, const bool self) const;
 	const_iterator end() const;
 	Vect3d correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const;
@@ -237,13 +240,7 @@ private:
 };
 
 template<typename T, typename F>
-void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
-
-	begin_iterator = _begin_iterator;
-	end_iterator = _end_iterator;
-	const unsigned int n = std::distance(begin_iterator,end_iterator);
-	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
-	linked_list.assign(n, CELL_EMPTY);
+void BucketSort<T,F>::clear() {
 	if (dirty_cells.size()>0) {
 		for (int i: dirty_cells) {
 			cells[i] = CELL_EMPTY;
@@ -252,6 +249,17 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	} else {
 		cells.assign(cells.size(), CELL_EMPTY);
 	}
+}
+
+template<typename T, typename F>
+void BucketSort<T,F>::add_points(const T _begin_iterator, const T _end_iterator) {
+
+	begin_iterator = _begin_iterator;
+	end_iterator = _end_iterator;
+	const unsigned int n = std::distance(begin_iterator,end_iterator);
+	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
+	//linked_list.assign(n, CELL_EMPTY);
+	linked_list.push_back();
 	//const bool particle_based = dirty_cells.size() < cells.size();
 	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
 	const bool use_dirty = n < cells.size();
