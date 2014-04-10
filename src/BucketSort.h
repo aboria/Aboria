@@ -244,14 +244,18 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
 	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
 	linked_list.assign(n, CELL_EMPTY);
-	//const bool particle_based = dirty_cells.size() < cells.size();
-	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
-	const bool use_dirty = n < cells.size();
-	if (use_dirty) {
+	if (dirty_cells.size()>0) {
 		for (int i: dirty_cells) {
 			cells[i] = CELL_EMPTY;
 		}
 		dirty_cells.clear();
+	} else {
+		cells.assign(cells.size(), CELL_EMPTY);
+	}
+	//const bool particle_based = dirty_cells.size() < cells.size();
+	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
+	const bool use_dirty = n < cells.size();
+	if (use_dirty) {
 		int i = 0;
 		for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
 			const int celli = find_cell_index(return_vect3d(*it));
@@ -272,7 +276,6 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 			}
 		}
 	} else {
-		cells.assign(cells.size(), CELL_EMPTY);
 		int i = 0;
 		for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
 			const int celli = find_cell_index(return_vect3d(*it));
@@ -281,12 +284,10 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 			// Insert into own cell
 			cells[celli] = i;
 			linked_list[i] = cell_entry;
-			//std::cout << "putting "<<cell_entry<<" into linked list at pos "<<i<<std::endl;
-			//std::cout <<"particle in cell "<<celli<<std::endl;
+
 			// Insert into ghosted cells
 			if (particle_based) {
 				for (int j: ghosting_indices_pb[celli]) {
-					//std::cout <<"particle in cell "<<celli<<" inserting into ghost cell "<<j<<" diff = "<<celli-j<<std::endl;
 					const int cell_entry = cells[j];
 					cells[j] = i;
 				}
@@ -330,6 +331,7 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	num_cells_along_yz = num_cells_along_axes[2]*num_cells_along_axes[1];
 	const unsigned int num_cells = num_cells_along_axes.prod();
 	cells.assign(num_cells, CELL_EMPTY);
+	dirty_cells.clear();
 	//TODO: assumed 3d
 	surrounding_cell_offsets.clear();
 	for (int i = -1; i < 2; ++i) {
