@@ -40,7 +40,7 @@ void dem_start(ptr<DemType> dem,
 
 		v0 = v + dt/2*f;
 		v += dt * f;
-		return r + dt * v;
+		return r + dt * v0;
 	});
 
 	std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,dem_diameter](DemType::Value& i) {
