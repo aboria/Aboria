@@ -28,6 +28,7 @@
 #include "BucketSort.h"
 
 #include <vector>
+#include <random>
 //#include <boost/array.hpp>
 //#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/counting_iterator.hpp>
@@ -63,7 +64,8 @@ public:
 	class Value {
 		friend class Particles;
 	public:
-		Value(){}
+		typedef std::mt19937 generator_type;
+		Value():uni(0,1),normal(0,1){}
 		Value(const Value& rhs) {
 			r = rhs.r;
 			r0 = rhs.r0;
@@ -71,8 +73,12 @@ public:
 			id = rhs.id;
 			saved_index = rhs.saved_index;
 			data = rhs.data;
-
+			generator = rhs.generator;
+			//neighbour_search.copy_points(std::vector<Value>::iterator(this),std::vector<Value>::iterator(&rhs));
 			std::cout <<"copy constructor!!"<<std::endl;
+		}
+		~Value() {
+			//neighbour_search.delete_point(std::vector<Value>::iterator(this));
 		}
 		Value& operator=(const Value &rhs) {
 			if (this != &rhs) {
@@ -82,6 +88,8 @@ public:
 				id = rhs.id;
 				saved_index = rhs.saved_index;
 				data = rhs.data;
+				generator = rhs.generator;
+				//neighbour_search.copy_points(std::vector<Value>::iterator(this),std::vector<Value>::iterator(&rhs));
 			}
 			std::cout <<"copying!!"<<std::endl;
 			return *this;
@@ -101,6 +109,15 @@ public:
 		bool is_alive() const {
 			return alive;
 		}
+		generator_type get_generator() {
+			return generator;
+		}
+		double rand_uniform() {
+			return uni(generator);
+		}
+		double rand_normal() {
+			return normal(generator);
+		}
 		const std::size_t& get_id() const {
 			return id;
 		}
@@ -109,7 +126,9 @@ public:
 		}
 		void mark_for_deletion() {
 			alive = false;
+			//neighbour_search.untrack_point(std::vector<Value>::iterator(this));
 		}
+
 		template<typename T>
 		boost::iterator_range<typename T::element_type::NeighbourSearch_type::const_iterator> get_neighbours(const T particles) {
 			return boost::make_iterator_range(
@@ -127,6 +146,10 @@ public:
 		std::size_t index,saved_index;
 		std::vector<size_t> neighbour_indicies;
 		DataType data;
+		generator_type generator;
+		std::uniform_real_distribution<double> uni;
+		std::normal_distribution<double> normal;
+
 	};
 
 	typedef typename std::vector<Value> data_type;
@@ -143,7 +166,8 @@ public:
 	Particles():
 		next_id(0),
 		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
-		searchable(false)
+		searchable(false),
+		seed(time(NULL))
 	{}
 
 	static ptr<Particles<DataType> > New() {
@@ -220,15 +244,16 @@ public:
 
 	template<typename F>
 	void create_particles(const int n, F f) {
-		data.resize(data.size()+n);
-		std::for_each(end()-n,end(),[this,&f](Value& i) {
-			i.id = this->next_id++;
-			i.alive = true;
-			i.r = f(i);
-			i.r0 = i.r;
-		});
-		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
-
+		const int old_size = data.size();
+		data.resize(old_size+n);
+		for (auto i=data.begin()+old_size; i!=data.end();i++) {
+			i->id = this->next_id++;
+			i->generator.seed(i->id*seed);
+			i->alive = true;
+			i->r = f(i);
+			i->r0 = i->r;
+			if (searchable) neighbour_search.add_point(i);
+		}
 	}
 
 	template<typename F>
@@ -243,11 +268,11 @@ public:
 			for (int j = 0; j < jmax; ++j) { //radius index
 				radius=radius-dem_diameter;
 				int kmax= radius*2*PI/dem_diameter; //number of particles on circumference
-				
+
 				double angle=shift*30+180*shiftz; // shift and shiftz avoid that vacuum is concentrated in certain point
 
-						int index = data.size();
-						data.resize(data.size()+kmax);
+				int index = data.size();
+				data.resize(data.size()+kmax);
 				for (int k = 0; k < kmax; ++k) {
 					double d_angle=dem_diameter/radius;
 					angle=angle+d_angle;
@@ -256,6 +281,8 @@ public:
 					data[index].r[2] = origin[2] + dem_diameter*i;
 					data[index].r0 = data[index].r;
 					data[index].id = next_id++;
+					data[index].generator.seed(data[index].id*seed);
+
 					data[index].alive = true;
 					f(data[index]);
 					index++;
@@ -280,6 +307,7 @@ public:
 					data[index].r = min + Vect3d(i+0.5,j+0.5,k+0.5).cwiseProduct(dx);
 					data[index].r0 = data[index].r;
 					data[index].id = next_id++;
+					data[index].generator.seed(data[index].id*seed);
 					data[index].alive = true;
 					f(data[index]);
 					index++;
@@ -454,6 +482,7 @@ private:
 	data_type data;
 	bool searchable;
 	int next_id;
+	const double seed;
 	NeighbourSearch_type neighbour_search;
 
 };

@@ -199,9 +199,13 @@ public:
 	inline const Vect3d& get_high() {return high;}
 	inline const Vect3b& get_periodic() {return periodic;}
 
-	void clear();
-	void add_points(const T begin_iterator, const T end_iterator);
-	void remove_points(const T begin_iterator, const T end_iterator);
+	void embed_points(const T begin_iterator, const T end_iterator);
+	void add_point(const T point_to_add_iterator);
+	void untrack_point(const T untrack_iterator);
+	void delete_point(const T untrack_iterator);
+
+	void copy_points(const T copy_to_iterator, const T copy_from_iterator);
+
 
 	const_iterator find_broadphase_neighbours(const Vect3d& r, const int my_index, const bool self) const;
 	const_iterator end() const;
@@ -209,6 +213,7 @@ public:
 	Vect3d correct_position_for_periodicity(const Vect3d& to_correct_r) const;
 
 private:
+
 	inline int vect_to_index(const Vect3i& vect) const {
 		return vect[0] * num_cells_along_yz + vect[1] * num_cells_along_axes[1] + vect[2];
 	}
@@ -227,7 +232,7 @@ private:
     std::vector<std::vector<int> > ghosting_indices_pb;
     std::vector<std::pair<int,int> > ghosting_indices_cb;
     std::vector<int> dirty_cells;
-	std::vector<int> linked_list;
+	std::vector<int> linked_list,linked_list_reverse;
 	std::vector<int> neighbr_list;
 	Vect3d low,high,domain_size;
 	Vect3b periodic;
@@ -239,8 +244,17 @@ private:
 	const int empty_cell;
 };
 
+
 template<typename T, typename F>
-void BucketSort<T,F>::clear() {
+void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
+
+	begin_iterator = _begin_iterator;
+	end_iterator = _end_iterator;
+	const unsigned int n = std::distance(begin_iterator,end_iterator);
+	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
+	linked_list.assign(n, CELL_EMPTY);
+	linked_list_reverse.assign(n, CELL_EMPTY);
+
 	if (dirty_cells.size()>0) {
 		for (int i: dirty_cells) {
 			cells[i] = CELL_EMPTY;
@@ -249,56 +263,27 @@ void BucketSort<T,F>::clear() {
 	} else {
 		cells.assign(cells.size(), CELL_EMPTY);
 	}
-}
-
-template<typename T, typename F>
-void BucketSort<T,F>::add_points(const T _begin_iterator, const T _end_iterator) {
-
-	begin_iterator = _begin_iterator;
-	end_iterator = _end_iterator;
-	const unsigned int n = std::distance(begin_iterator,end_iterator);
-	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
-	//linked_list.assign(n, CELL_EMPTY);
-	linked_list.push_back();
 	//const bool particle_based = dirty_cells.size() < cells.size();
 	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
 	const bool use_dirty = n < cells.size();
-	if (use_dirty) {
-		int i = 0;
-		for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
-			const int celli = find_cell_index(return_vect3d(*it));
-			const int cell_entry = cells[celli];
+	int i = 0;
+	for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
+		const int celli = find_cell_index(return_vect3d(*it));
+		const int cell_entry = cells[celli];
 
-			// Insert into own cell
-			cells[celli] = i;
-			dirty_cells.push_back(celli);
-			linked_list[i] = cell_entry;
+		// Insert into own cell
+		cells[celli] = i;
+		if (use_dirty) dirty_cells.push_back(celli);
+		linked_list[i] = cell_entry;
+		linked_list_reverse[i] = CELL_EMPTY;
+		if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
 
-			// Insert into ghosted cells
-			if (particle_based) {
-				for (int j: ghosting_indices_pb[celli]) {
-					const int cell_entry = cells[j];
-					cells[j] = i;
-					dirty_cells.push_back(j);
-				}
-			}
-		}
-	} else {
-		int i = 0;
-		for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
-			const int celli = find_cell_index(return_vect3d(*it));
-			const int cell_entry = cells[celli];
-
-			// Insert into own cell
-			cells[celli] = i;
-			linked_list[i] = cell_entry;
-
-			// Insert into ghosted cells
-			if (particle_based) {
-				for (int j: ghosting_indices_pb[celli]) {
-					const int cell_entry = cells[j];
-					cells[j] = i;
-				}
+		// Insert into ghosted cells
+		if (particle_based) {
+			for (int j: ghosting_indices_pb[celli]) {
+				const int cell_entry = cells[j];
+				cells[j] = i;
+				if (use_dirty) dirty_cells.push_back(j);
 			}
 		}
 	}
@@ -311,6 +296,92 @@ void BucketSort<T,F>::add_points(const T _begin_iterator, const T _end_iterator)
 		}
 	}
 }
+
+template<typename T, typename F>
+void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
+	linked_list.push_back(CELL_EMPTY);
+	int i = linked_list.size()-1;
+	const bool use_dirty = i < cells.size();
+	if (!use_dirty) dirty_cells.clear();
+	const bool particle_based = true;
+
+	const int celli = find_cell_index(return_vect3d(*point_to_add_iterator));
+	const int cell_entry = cells[celli];
+
+	// Insert into own cell
+	cells[celli] = i;
+	if (use_dirty) dirty_cells.push_back(celli);
+	linked_list[i] = cell_entry;
+	linked_list_reverse[i] = CELL_EMPTY;
+	if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
+
+	// Insert into ghosted cells
+	if (particle_based) {
+		for (int j: ghosting_indices_pb[celli]) {
+			const int cell_entry = cells[j];
+			cells[j] = i;
+			if (use_dirty) dirty_cells.push_back(j);
+		}
+	}
+}
+template<typename T, typename F>
+void BucketSort<T,F>::delete_point(const T untrack_iterator) {
+	const unsigned int i = std::distance(begin_iterator,untrack_iterator);
+	CHECK(i==linked_list.size()-1,"point to delete not at end of sequence");
+
+	const int forwardi = linked_list[i];
+	const int backwardsi = linked_list_reverse[i];
+
+	if (forwardi != CELL_EMPTY) linked_list_reverse[forwardi] = backwardsi;
+	if (backwardsi != CELL_EMPTY) {
+		linked_list[backwardsi] = forwardi;
+	} else {
+		const int celli = find_cell_index(return_vect3d(*untrack_iterator));
+		ASSERT(cells[celli]==i,"inconsistant cells data structures!");
+		cells[celli] = forwardi;
+	}
+
+	linked_list.pop_back();
+	linked_list_reverse.pop_back();
+}
+
+template<typename T, typename F>
+void BucketSort<T,F>::untrack_point(const T untrack_iterator) {
+	const unsigned int i = std::distance(begin_iterator,untrack_iterator);
+	ASSERT((i>=0) && (i<linked_list.size()),"invalid untrack index");
+
+	const int forwardi = linked_list[i];
+	const int backwardsi = linked_list_reverse[i];
+
+	if (forwardi != CELL_EMPTY) linked_list_reverse[forwardi] = backwardsi;
+	if (backwardsi != CELL_EMPTY) {
+		linked_list[backwardsi] = forwardi;
+	} else {
+		const int celli = find_cell_index(return_vect3d(*untrack_iterator));
+		ASSERT(cells[celli]==i,"inconsistant cells data structures!");
+		cells[celli] = forwardi;
+	}
+}
+
+
+
+template<typename T, typename F>
+void BucketSort<T,F>::copy_points(const T copy_to_iterator, const T copy_from_iterator) {
+	const unsigned int toi = std::distance(begin_iterator,copy_to_iterator);
+	const unsigned int fromi = std::distance(begin_iterator,copy_from_iterator);
+	ASSERT((toi>=0) && (toi<linked_list.size()),"invalid copy iterator");
+	ASSERT((fromi>=0) && (fromi<linked_list.size()),"invalid copy iterator");
+	if (toi==fromi) return;
+
+
+	const int forwardi = linked_list[fromi];
+
+	linked_list[toi] = forwardi;
+	linked_list_reverse[toi] = fromi;
+	linked_list[fromi] = toi;
+	linked_list_reverse[forwardi] = toi;
+}
+
 template<typename T, typename F>
 void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius, const Vect3b& _periodic) {
 	LOG(2,"Resetting bucketsort data structure:");
