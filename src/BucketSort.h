@@ -261,28 +261,30 @@ void BucketSort<T,F>::embed_points_incremental(const T _begin_iterator, const T 
 	int i = 0;
 	for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
 		const int celli = find_cell_index(return_vect3d(*it));
-		if (celli == dirty_cells[i]) continue;
-		const int cell_entry = cells[celli];
+		if (i < old_size) {
+			if (celli == dirty_cells[i]) continue;
 
-		// Remove from old cell
-		const int forwardi = linked_list[i];
-		const int backwardsi = linked_list_reverse[i];
+			// Remove from old cell
+			const int forwardi = linked_list[i];
+			const int backwardsi = linked_list_reverse[i];
 
-		if (forwardi != CELL_EMPTY) linked_list_reverse[forwardi] = backwardsi;
-		if (backwardsi != CELL_EMPTY) {
-			linked_list[backwardsi] = forwardi;
-		} else {
-			const int old_celli = dirty_cells[i];
-			ASSERT(cells[old_celli]==i,"inconsistant cells data structures!");
-			cells[old_celli] = forwardi;
-			for (int j: ghosting_indices_pb[old_celli]) {
-				cells[j] = forwardi;
+			if (forwardi != CELL_EMPTY) linked_list_reverse[forwardi] = backwardsi;
+			if (backwardsi != CELL_EMPTY) {
+				linked_list[backwardsi] = forwardi;
+			} else {
+				const int old_celli = dirty_cells[i];
+				ASSERT(cells[old_celli]==i,"inconsistant cells data structures!");
+				cells[old_celli] = forwardi;
+				for (int j: ghosting_indices_pb[old_celli]) {
+					cells[j] = forwardi;
+				}
 			}
 		}
 
 		// Insert into new cell
 		cells[celli] = i;
 		dirty_cells[i] = celli;
+		const int cell_entry = cells[celli];
 		linked_list[i] = cell_entry;
 		linked_list_reverse[i] = CELL_EMPTY;
 		if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
@@ -375,7 +377,6 @@ void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
 	// Insert into ghosted cells
 	if (particle_based) {
 		for (int j: ghosting_indices_pb[celli]) {
-			const int cell_entry = cells[j];
 			cells[j] = i;
 		}
 	}
