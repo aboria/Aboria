@@ -258,40 +258,38 @@ void BucketSort<T,F>::embed_points_incremental(const T _begin_iterator, const T 
 	linked_list_reverse.assign(n, CELL_EMPTY);
 	dirty_cells.assign(n,CELL_EMPTY);
 
-	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
-
 	int i = 0;
 	for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
 		const int celli = find_cell_index(return_vect3d(*it));
 		if (celli == dirty_cells[i]) continue;
 		const int cell_entry = cells[celli];
 
-		// Insert into own cell
+		// Remove from old cell
+		const int forwardi = linked_list[i];
+		const int backwardsi = linked_list_reverse[i];
+
+		if (forwardi != CELL_EMPTY) linked_list_reverse[forwardi] = backwardsi;
+		if (backwardsi != CELL_EMPTY) {
+			linked_list[backwardsi] = forwardi;
+		} else {
+			const int old_celli = dirty_cells[i];
+			ASSERT(cells[old_celli]==i,"inconsistant cells data structures!");
+			cells[old_celli] = forwardi;
+			for (int j: ghosting_indices_pb[old_celli]) {
+				cells[j] = forwardi;
+			}
+		}
+
+		// Insert into new cell
 		cells[celli] = i;
+		dirty_cells[i] = celli;
 		linked_list[i] = cell_entry;
 		linked_list_reverse[i] = CELL_EMPTY;
 		if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
 
 		// Insert into ghosted cells
-		if (particle_based) {
-			for (int j: ghosting_indices_pb[celli]) {
-				const int cell_entry = cells[j];
-				cells[j] = i;
-			}
-		}
-
-		// Remove from old cell
-		//TODO
-
-		// Save new celli
-		dirty_cells[i] = celli;
-	}
-
-
-	if (!particle_based) {
-		for (std::vector<std::pair<int,int> >::iterator index_pair = ghosting_indices_cb.begin(); index_pair != ghosting_indices_cb.end(); ++index_pair) {
-			//BOOST_FOREACH(std::pair<int,int> index_pair, ghosting_indices) {
-			cells[index_pair->first] = cells[index_pair->second];
+		for (int j: ghosting_indices_pb[celli]) {
+			cells[j] = i;
 		}
 	}
 }
@@ -341,7 +339,6 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 		// Insert into ghosted cells
 		if (particle_based) {
 			for (int j: ghosting_indices_pb[celli]) {
-				const int cell_entry = cells[j];
 				cells[j] = i;
 			}
 		}
