@@ -200,6 +200,8 @@ public:
 	inline const Vect3b& get_periodic() {return periodic;}
 
 	void embed_points(const T begin_iterator, const T end_iterator);
+	void embed_points_incremental(const T begin_iterator, const T end_iterator);
+
 	void add_point(const T point_to_add_iterator);
 	void untrack_point(const T untrack_iterator);
 	void delete_point(const T untrack_iterator);
@@ -244,6 +246,56 @@ private:
 	const int empty_cell;
 };
 
+template<typename T, typename F>
+void BucketSort<T,F>::embed_points_incremental(const T _begin_iterator, const T _end_iterator) {
+
+	begin_iterator = _begin_iterator;
+	end_iterator = _end_iterator;
+	const unsigned int n = std::distance(begin_iterator,end_iterator);
+	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
+	const int old_size = linked_list.size();
+	linked_list.assign(n, CELL_EMPTY);
+	linked_list_reverse.assign(n, CELL_EMPTY);
+	dirty_cells.assign(n,CELL_EMPTY);
+
+	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
+
+	int i = 0;
+	for (auto it = begin_iterator; it != end_iterator; ++it, ++i) {
+		const int celli = find_cell_index(return_vect3d(*it));
+		if (celli == dirty_cells[i]) continue;
+		const int cell_entry = cells[celli];
+
+		// Insert into own cell
+		cells[celli] = i;
+		linked_list[i] = cell_entry;
+		linked_list_reverse[i] = CELL_EMPTY;
+		if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
+
+		// Insert into ghosted cells
+		if (particle_based) {
+			for (int j: ghosting_indices_pb[celli]) {
+				const int cell_entry = cells[j];
+				cells[j] = i;
+			}
+		}
+
+		// Remove from old cell
+		//TODO
+
+		// Save new celli
+		dirty_cells[i] = celli;
+	}
+
+
+	if (!particle_based) {
+		for (std::vector<std::pair<int,int> >::iterator index_pair = ghosting_indices_cb.begin(); index_pair != ghosting_indices_cb.end(); ++index_pair) {
+			//BOOST_FOREACH(std::pair<int,int> index_pair, ghosting_indices) {
+			cells[index_pair->first] = cells[index_pair->second];
+		}
+	}
+}
+
 
 template<typename T, typename F>
 void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
@@ -252,17 +304,25 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	end_iterator = _end_iterator;
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
 	//std::cout <<"embedding "<<n<<" particles"<<std::endl;
-	linked_list.assign(n, CELL_EMPTY);
-	linked_list_reverse.assign(n, CELL_EMPTY);
 
-	if (dirty_cells.size()>0) {
+
+	/*
+	 * clear head of linked lists (cells)
+	 */
+	if (dirty_cells.size()<cells.size()) {
 		for (int i: dirty_cells) {
 			cells[i] = CELL_EMPTY;
+			for (int j: ghosting_indices_pb[i]) {
+				cells[j] = CELL_EMPTY;
+			}
 		}
-		dirty_cells.clear();
 	} else {
 		cells.assign(cells.size(), CELL_EMPTY);
 	}
+
+	linked_list.assign(n, CELL_EMPTY);
+	linked_list_reverse.assign(n, CELL_EMPTY);
+	dirty_cells.assign(n,CELL_EMPTY);
 	//const bool particle_based = dirty_cells.size() < cells.size();
 	const bool particle_based = true; //TODO: fix cell_based neighbour ghosting list
 	const bool use_dirty = n < cells.size();
@@ -273,7 +333,7 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 
 		// Insert into own cell
 		cells[celli] = i;
-		if (use_dirty) dirty_cells.push_back(celli);
+		dirty_cells[i] = celli;
 		linked_list[i] = cell_entry;
 		linked_list_reverse[i] = CELL_EMPTY;
 		if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
@@ -283,7 +343,6 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 			for (int j: ghosting_indices_pb[celli]) {
 				const int cell_entry = cells[j];
 				cells[j] = i;
-				if (use_dirty) dirty_cells.push_back(j);
 			}
 		}
 	}
@@ -300,9 +359,10 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 template<typename T, typename F>
 void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
 	linked_list.push_back(CELL_EMPTY);
+	linked_list_reverse.push_back(CELL_EMPTY);
+	dirty_cells.push_back(CELL_EMPTY);
+
 	int i = linked_list.size()-1;
-	const bool use_dirty = i < cells.size();
-	if (!use_dirty) dirty_cells.clear();
 	const bool particle_based = true;
 
 	const int celli = find_cell_index(return_vect3d(*point_to_add_iterator));
@@ -310,7 +370,7 @@ void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
 
 	// Insert into own cell
 	cells[celli] = i;
-	if (use_dirty) dirty_cells.push_back(celli);
+	dirty_cells[i] = celli;
 	linked_list[i] = cell_entry;
 	linked_list_reverse[i] = CELL_EMPTY;
 	if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
@@ -320,7 +380,6 @@ void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
 		for (int j: ghosting_indices_pb[celli]) {
 			const int cell_entry = cells[j];
 			cells[j] = i;
-			if (use_dirty) dirty_cells.push_back(j);
 		}
 	}
 }
@@ -343,6 +402,7 @@ void BucketSort<T,F>::delete_point(const T untrack_iterator) {
 
 	linked_list.pop_back();
 	linked_list_reverse.pop_back();
+	dirty_cells.pop_back();
 }
 
 template<typename T, typename F>
@@ -380,6 +440,7 @@ void BucketSort<T,F>::copy_points(const T copy_to_iterator, const T copy_from_it
 	linked_list_reverse[toi] = fromi;
 	linked_list[fromi] = toi;
 	linked_list_reverse[forwardi] = toi;
+	dirty_cells[toi] = dirty_cells[fromi];
 }
 
 template<typename T, typename F>
@@ -410,7 +471,6 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	num_cells_along_yz = num_cells_along_axes[2]*num_cells_along_axes[1];
 	const unsigned int num_cells = num_cells_along_axes.prod();
 	cells.assign(num_cells, CELL_EMPTY);
-	dirty_cells.clear();
 	//TODO: assumed 3d
 	surrounding_cell_offsets.clear();
 	for (int i = -1; i < 2; ++i) {
