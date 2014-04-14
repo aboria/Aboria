@@ -248,7 +248,7 @@ private:
 
 template<typename T, typename F>
 void BucketSort<T,F>::embed_points_incremental(const T _begin_iterator, const T _end_iterator) {
-
+	//TODO: embed_points_incremental doesn't work. And what if particles are deleted since last update?
 	begin_iterator = _begin_iterator;
 	end_iterator = _end_iterator;
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
