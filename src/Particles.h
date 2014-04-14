@@ -250,10 +250,16 @@ public:
 			i->id = this->next_id++;
 			i->generator.seed(i->id*seed);
 			i->alive = true;
-			i->r = f(i);
+			i->r = f(*i);
 			i->r0 = i->r;
 			if (searchable) neighbour_search.add_point(i);
 		}
+	}
+
+	boost::iterator_range<typename NeighbourSearch_type::const_iterator> get_neighbours(const Vect3d position) {
+		return boost::make_iterator_range(
+				neighbour_search.find_broadphase_neighbours(position, -1,false),
+				neighbour_search.end());
 	}
 
 	template<typename F>
