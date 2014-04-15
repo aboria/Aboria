@@ -67,44 +67,38 @@ public:
 		typedef std::mt19937 generator_type;
 		Value():uni(0,1),normal(0,1){}
 		Value(const Value& rhs) {
-			r = rhs.r;
-			r0 = rhs.r0;
-			alive = rhs.alive;
-			id = rhs.id;
-			saved_index = rhs.saved_index;
 			data = rhs.data;
-			generator = rhs.generator;
-			//neighbour_search.copy_points(std::vector<Value>::iterator(this),std::vector<Value>::iterator(&rhs));
-			std::cout <<"copy constructor!!"<<std::endl;
 		}
 		~Value() {
-			//neighbour_search.delete_point(std::vector<Value>::iterator(this));
 		}
 		Value& operator=(const Value &rhs) {
 			if (this != &rhs) {
-				r = rhs.r;
-				r0 = rhs.r0;
-				alive = rhs.alive;
-				id = rhs.id;
-				saved_index = rhs.saved_index;
 				data = rhs.data;
-				generator = rhs.generator;
-				//neighbour_search.copy_points(std::vector<Value>::iterator(this),std::vector<Value>::iterator(&rhs));
 			}
-			std::cout <<"copying!!"<<std::endl;
 			return *this;
 		}
+
+		void deep_copy(const Value &rhs) {
+			if (this != &rhs) {
+				r = rhs.r;
+				data = rhs.data;
+				alive = rhs.alive;
+				id = rhs.id;
+				generator = rhs.generator;
+			}
+		}
+
 		const Vect3d& get_position() const {
 			return r;
-		}
-		const Vect3d& get_old_position() const {
-			return r0;
 		}
 		const DataType& get_data() const {
 			return data;
 		}
 		DataType& get_data() {
 			return data;
+		}
+		const size_t get_index() {
+			return index;
 		}
 		bool is_alive() const {
 			return alive;
@@ -121,30 +115,27 @@ public:
 		const std::size_t& get_id() const {
 			return id;
 		}
-		const std::size_t& get_saved_index() const {
-			return saved_index;
-		}
 		void mark_for_deletion() {
 			alive = false;
-			//neighbour_search.untrack_point(std::vector<Value>::iterator(this));
 		}
 
 		template<typename T>
 		boost::iterator_range<typename T::element_type::NeighbourSearch_type::const_iterator> get_neighbours(const T particles) {
+			ASSERT(particles->searchable==true,"particles is not searchable");
 			return boost::make_iterator_range(
 			 particles->neighbour_search.find_broadphase_neighbours(get_position(), index,false),
 			 particles->neighbour_search.end());
 		}
+
 		template<typename T>
 		Vect3d correct_position_for_periodicity(const T particles, const Vect3d& position) {
 			return particles->neighbour_search.correct_position_for_periodicity(r, position);
 		}
 	private:
-		Vect3d r,r0;
+
+		Vect3d r;
 		bool alive;
-		std::size_t id;
-		std::size_t index,saved_index;
-		std::vector<size_t> neighbour_indicies;
+		std::size_t id,index;
 		DataType data;
 		generator_type generator;
 		std::uniform_real_distribution<double> uni;
@@ -166,7 +157,7 @@ public:
 	Particles():
 		next_id(0),
 		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
-		searchable(false),
+		searchable(false),track_ids(false),
 		seed(time(NULL))
 	{}
 
@@ -187,20 +178,16 @@ public:
 		return data.end();
 	}
 
-//	void fill_uniform(const Vect3d low, const Vect3d high, const unsigned int N) {
-//		//TODO: assumes a 3d rectangular region
-//		boost::variate_generator<base_generator_type&, boost::uniform_real<> > uni(generator, boost::uniform_real<>(0,1));
-//		const Vect3d dist = high-low;
-//		for(int i=0;i<N;i++) {
-//			add_particle(Vect3d(uni()*dist[0],uni()*dist[1],uni()*dist[2])+low);
-//		}
-//	}
-
 	void delete_particles() {
-		data.erase (std::remove_if( std::begin(data), std::end(data),
-				[](Value& p) { return !p.is_alive(); }),
-				std::end(data)
-		);
+		const int n = data.size();
+		for (int index = 0; index < n; ++index) {
+			Value& i = data[index];
+			if (i.alive==false) {
+				i.deep_copy(*(data.cend()-1));
+				if (track_ids) id_to_index[i.id] = index;
+				data.pop_back();
+			}
+		}
 		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
 	void clear() {
@@ -223,11 +210,29 @@ public:
 		searchable = true;
 	}
 	
+	void set_track_ids(bool set) {
+		if (!track_ids && set) {
+			const int n = data.size();
+			for (int i = 0; i < n; ++i) {
+				id_to_index[data[i].id] = i;
+			}
+		} else if (!set) {
+			id_to_index.clear();
+		}
+	}
+
+	Value* find_id(const int id) {
+		std::map<size_t,size_t>::iterator it = id_to_index.find(id);
+		if (it==id_to_index.end()) {
+			return NULL;
+		} else {
+			return &(data[*it]);
+		}
+	}
 
 	template<typename F>
 	void reset_neighbour_search(const double length_scale, F f) {
 		std::for_each(begin(),end(),[&f](Value& i) {
-			i.r0 = i.r;
 			i.r = f(i);
 		});
 		neighbour_search.reset(neighbour_search.get_low(),neighbour_search.get_high(),length_scale,neighbour_search.get_periodic());
@@ -243,15 +248,33 @@ public:
 
 
 	template<typename F>
-	void create_particles(const int n, F f) {
+	void create_particles_sequential(const int n, F f) {
 		const int old_size = data.size();
 		data.resize(old_size+n);
-		for (auto i=data.begin()+old_size; i!=data.end();i++) {
+		int index = old_size;
+		for (auto i=data.begin()+old_size; i!=data.end();i++,index++) {
 			i->id = this->next_id++;
 			i->generator.seed(i->id*seed);
 			i->alive = true;
+			i->index = index;
 			i->r = f(*i);
-			i->r0 = i->r;
+			if (track_ids) id_to_index[i->id] = index;
+			if (searchable) neighbour_search.add_point(i);
+		}
+	}
+
+	template<typename F>
+	void create_particles(const int n, F f) {
+		const int old_size = data.size();
+		data.resize(old_size+n);
+		int index = old_size;
+		for (auto i=data.begin()+old_size; i!=data.end();i++,index++) {
+			i->id = this->next_id++;
+			i->generator.seed(i->id*seed);
+			i->alive = true;
+			i->index = index;
+			i->r = f(*i);
+			if (track_ids) id_to_index[i->id] = index;
 			if (searchable) neighbour_search.add_point(i);
 		}
 	}
@@ -285,9 +308,11 @@ public:
 					data[index].r[0] = origin[0] + radius*cos(angle);
 					data[index].r[1] = origin[1] + radius*sin(angle);
 					data[index].r[2] = origin[2] + dem_diameter*i;
-					data[index].r0 = data[index].r;
 					data[index].id = next_id++;
+					data[index].index = index;
+
 					data[index].generator.seed(data[index].id*seed);
+					if (track_ids) id_to_index[data[index].id] = index;
 
 					data[index].alive = true;
 					f(data[index]);
@@ -311,11 +336,14 @@ public:
 			for (int j = 0; j < n[1]; ++j) {
 				for (int k = 0; k < n[2]; ++k) {
 					data[index].r = min + Vect3d(i+0.5,j+0.5,k+0.5).cwiseProduct(dx);
-					data[index].r0 = data[index].r;
 					data[index].id = next_id++;
 					data[index].generator.seed(data[index].id*seed);
 					data[index].alive = true;
+					data[index].index = index;
+
+					if (track_ids) id_to_index[data[index].id] = index;
 					f(data[index]);
+
 					index++;
 				}
 			}
@@ -327,7 +355,6 @@ public:
 	template<typename F>
 	void update_positions(iterator b, iterator e, F f) {
 		std::for_each(b,e,[&f](Value& i) {
-			i.r0 = i.r;
 			i.r = f(i);
 		});
 		if (searchable) {
@@ -338,7 +365,6 @@ public:
 	template<typename F>
 	void update_positions(F f) {
 		std::for_each(begin(),end(),[&f](Value& i) {
-			i.r0 = i.r;
 			i.r = f(i);
 		});
 		if (searchable) {
@@ -445,15 +471,7 @@ public:
 
 
 			boost::fusion::fold(i.get_data(),0,save_elem(index,datas));
-
-//			auto v = std::get<0>(i.get_data());datas[0]->SetTuple3(index,v[0],v[1],v[2]);
-//			v = std::get<1>(i.get_data());datas[1]->SetTuple3(index,v[0],v[1],v[2]);
-//			v = std::get<2>(i.get_data());datas[2]->SetTuple3(index,v[0],v[1],v[2]);
-//			v = std::get<3>(i.get_data());datas[3]->SetTuple3(index,v[0],v[1],v[2]);
-//			double f = std::get<4>(i.get_data());datas[4]->SetValue(index,f);
 		}
-
-		//points->ComputeBounds();
 	}
 #endif
 
@@ -477,20 +495,25 @@ private:
 			}
 		});
 		if ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false)) {
-			data.erase (std::remove_if( std::begin(data), std::end(data),
-					[](Value& p) { return !p.is_alive(); }),
-					std::end(data)
-			);
+			const int n = data.size();
+			for (int index = 0; index < n; ++index) {
+				Value& i = data[index];
+				if (i.alive==false) {
+					i.deep_copy(*(data.cend()-1));
+					if (track_ids) id_to_index[i.id] = index;
+					data.pop_back();
+				}
+			}
 		}
 	}
 
 
 	data_type data;
-	bool searchable;
+	bool searchable,track_ids;
 	int next_id;
 	const double seed;
 	NeighbourSearch_type neighbour_search;
-
+	std::map<size_t,size_t> id_to_index;
 };
 
 
