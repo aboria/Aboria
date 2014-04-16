@@ -51,11 +51,6 @@
 
 namespace Aboria {
 
-//#define DATA_typename ParticleInfo
-//#define DATA_names   (r)(r0)(alive)(id)(saved_index)
-//#define DATA_types   (Vect3d)(Vect3d)(bool)(int)(int)
-//#include "Data.h"
-
 template<typename DataType>
 class Particles {
 	template<typename T>
@@ -246,6 +241,16 @@ public:
 		searchable = true;
 	}
 
+	const double get_lengthscale() const {
+		return neighbour_search.get_lengthscale();
+	}
+	const Vect3d& get_low() const {
+		return neighbour_search.get_low();
+	}
+	const Vect3d& get_high() const {
+		return neighbour_search.get_high();
+	}
+
 
 	template<typename F>
 	void create_particles_sequential(const int n, F f) {
@@ -372,6 +377,7 @@ public:
 			neighbour_search.embed_points(data.cbegin(),data.cend());
 		}
 	}
+
 
 #ifndef HAVE_VTK
 	struct save_elem {

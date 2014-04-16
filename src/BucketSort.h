@@ -195,9 +195,11 @@ public:
 
 	void reset(const Vect3d& low, const Vect3d& high, double _max_interaction_radius, const Vect3b& periodic);
 
-	inline const Vect3d& get_low() {return low;}
-	inline const Vect3d& get_high() {return high;}
-	inline const Vect3b& get_periodic() {return periodic;}
+	inline const Vect3d& get_low() const {return low;}
+	inline const Vect3d& get_high() const {return high;}
+	inline const Vect3b& get_periodic() const {return periodic;}
+	inline const double get_lengthscale() const {return max_interaction_radius;}
+
 
 	void embed_points(const T begin_iterator, const T end_iterator);
 	void embed_points_incremental(const T begin_iterator, const T end_iterator);
