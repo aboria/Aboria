@@ -236,6 +236,7 @@ private:
     std::vector<std::vector<int> > ghosting_indices_pb;
     std::vector<std::pair<int,int> > ghosting_indices_cb;
     std::vector<int> dirty_cells;
+    bool use_dirty_cells;
 	std::vector<int> linked_list,linked_list_reverse;
 	std::vector<int> neighbr_list;
 	Vect3d low,high,domain_size;
@@ -311,16 +312,19 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 	/*
 	 * clear head of linked lists (cells)
 	 */
-	if (dirty_cells.size()<cells.size()) {
-		for (int i: dirty_cells) {
-			cells[i] = CELL_EMPTY;
-			for (int j: ghosting_indices_pb[i]) {
-				cells[j] = CELL_EMPTY;
+	if (use_dirty_cells) {
+		if (dirty_cells.size()<cells.size()) {
+			for (int i: dirty_cells) {
+				cells[i] = CELL_EMPTY;
+				for (int j: ghosting_indices_pb[i]) {
+					cells[j] = CELL_EMPTY;
+				}
 			}
+		} else {
+			cells.assign(cells.size(), CELL_EMPTY);
 		}
-	} else {
-		cells.assign(cells.size(), CELL_EMPTY);
 	}
+	use_dirty_cells = true;
 
 	linked_list.assign(n, CELL_EMPTY);
 	linked_list_reverse.assign(n, CELL_EMPTY);
@@ -471,6 +475,7 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	num_cells_along_yz = num_cells_along_axes[2]*num_cells_along_axes[1];
 	const unsigned int num_cells = num_cells_along_axes.prod();
 	cells.assign(num_cells, CELL_EMPTY);
+	use_dirty_cells = false;
 	//TODO: assumed 3d
 	surrounding_cell_offsets.clear();
 	for (int i = -1; i < 2; ++i) {
