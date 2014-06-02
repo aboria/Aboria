@@ -378,6 +378,31 @@ public:
 		}
 	}
 
+	template<typename F>
+	void update_positions_sequential(iterator b, iterator e, F f) {
+		const Vect3d low = neighbour_search.get_low();
+		const Vect3d high = neighbour_search.get_high();
+		const Vect3b periodic = neighbour_search.get_periodic();
+		for(iterator i = begin(); i != end(); i++) {
+			i->r = f(*i);
+			for (int d = 0; d < 3; ++d) {
+				if (periodic[d]) {
+					while (i->r[d]<low[d]) {
+						i->r[d] += (high[d]-low[d]);
+					}
+					while (i->r[d]>=high[d]) {
+						i->r[d] -= (high[d]-low[d]);
+					}
+				} else {
+					if ((i->r[d]<low[d]) || (i->r[d]>=high[d])) {
+						i->mark_for_deletion();
+					}
+				}
+			}
+			neighbour_search.update_point(i);
+		}
+	}
+
 
 #ifndef HAVE_VTK
 	struct save_elem {
@@ -483,7 +508,7 @@ public:
 
 private:
 
-	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic) {
+	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic, const bool remove_deleted_particles = false) {
 		std::for_each(begin(),end(),[low,high,periodic](Value& i) {
 			for (int d = 0; d < 3; ++d) {
 				if (periodic[d]) {
@@ -500,7 +525,7 @@ private:
 				}
 			}
 		});
-		if ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false)) {
+		if (remove_deleted_particles && ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))) {
 			const int n = data.size();
 			for (int index = 0; index < n; ++index) {
 				Value& i = data[index];

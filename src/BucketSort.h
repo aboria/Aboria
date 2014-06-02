@@ -207,6 +207,8 @@ public:
 	void add_point(const T point_to_add_iterator);
 	void untrack_point(const T untrack_iterator);
 	void delete_point(const T untrack_iterator);
+	void update_point(const T untrack_iterator);
+
 
 	void copy_points(const T copy_to_iterator, const T copy_from_iterator);
 
@@ -399,7 +401,8 @@ void BucketSort<T,F>::delete_point(const T untrack_iterator) {
 	if (backwardsi != CELL_EMPTY) {
 		linked_list[backwardsi] = forwardi;
 	} else {
-		const int celli = find_cell_index(return_vect3d(*untrack_iterator));
+		//const int celli = find_cell_index(return_vect3d(*untrack_iterator));
+		const int celli = dirty_cells[i];
 		ASSERT(cells[celli]==i,"inconsistant cells data structures!");
 		cells[celli] = forwardi;
 	}
@@ -407,6 +410,43 @@ void BucketSort<T,F>::delete_point(const T untrack_iterator) {
 	linked_list.pop_back();
 	linked_list_reverse.pop_back();
 	dirty_cells.pop_back();
+}
+
+template<typename T, typename F>
+void BucketSort<T,F>::update_point(const T update_iterator) {
+	const unsigned int i = std::distance(begin_iterator,update_iterator);
+	const bool particle_based = true;
+
+	const int forwardi = linked_list[i];
+	const int backwardsi = linked_list_reverse[i];
+
+	if (forwardi != CELL_EMPTY) linked_list_reverse[forwardi] = backwardsi;
+	if (backwardsi != CELL_EMPTY) {
+		linked_list[backwardsi] = forwardi;
+	} else {
+		//const int celli = find_cell_index(return_vect3d(*update_iterator));
+		const int celli = dirty_cells[i];
+		ASSERT(cells[celli]==i,"inconsistant cells data structures!");
+		cells[celli] = forwardi;
+	}
+
+	const int celli = find_cell_index(return_vect3d(*update_iterator));
+	const int cell_entry = cells[celli];
+
+	// Insert into own cell
+	cells[celli] = i;
+	dirty_cells[i] = celli;
+	linked_list[i] = cell_entry;
+	linked_list_reverse[i] = CELL_EMPTY;
+	if (cell_entry != CELL_EMPTY) linked_list_reverse[cell_entry] = i;
+
+	// Insert into ghosted cells
+	if (particle_based) {
+		for (int j: ghosting_indices_pb[celli]) {
+			cells[j] = i;
+		}
+	}
+
 }
 
 template<typename T, typename F>
@@ -421,7 +461,8 @@ void BucketSort<T,F>::untrack_point(const T untrack_iterator) {
 	if (backwardsi != CELL_EMPTY) {
 		linked_list[backwardsi] = forwardi;
 	} else {
-		const int celli = find_cell_index(return_vect3d(*untrack_iterator));
+		const int celli = dirty_cells[i];
+		//const int celli = find_cell_index(return_vect3d(*untrack_iterator));
 		ASSERT(cells[celli]==i,"inconsistant cells data structures!");
 		cells[celli] = forwardi;
 	}
