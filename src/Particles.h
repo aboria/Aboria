@@ -72,7 +72,7 @@ public:
 			saved_index = rhs.saved_index;
 			data = rhs.data;
 
-			std::cout <<"copy constructor!!"<<std::endl;
+			//std::cout <<"copy constructor!!"<<std::endl;
 		}
 		Value& operator=(const Value &rhs) {
 			if (this != &rhs) {
@@ -83,7 +83,7 @@ public:
 				saved_index = rhs.saved_index;
 				data = rhs.data;
 			}
-			std::cout <<"copying!!"<<std::endl;
+			//std::cout <<"copying!!"<<std::endl;
 			return *this;
 		}
 		const Vect3d& get_position() const {
