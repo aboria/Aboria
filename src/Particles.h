@@ -141,6 +141,9 @@ public:
 	};
 
 	typedef typename std::vector<Value> data_type;
+	typedef Value value_type;
+	typedef size_t size_type;
+	typedef size_t difference_type;
 	typedef typename data_type::iterator iterator;
 	typedef typename data_type::const_iterator const_iterator;
 	struct get_pos {
