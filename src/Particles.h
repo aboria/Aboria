@@ -29,6 +29,7 @@
 
 #include <vector>
 #include <random>
+#include <string>
 //#include <boost/array.hpp>
 //#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/counting_iterator.hpp>
@@ -50,6 +51,14 @@
 #endif
 
 namespace Aboria {
+
+template<typename DataType>
+class DataNames {
+public:
+	std::string static get(unsigned int n) {
+		return "data_" + std::to_string(n);
+	}
+};
 
 template<typename DataType>
 class Particles {
@@ -75,6 +84,10 @@ public:
 			return *this;
 		}
 
+		bool operator==(const Value &rhs) const {
+			return id == rhs.id;
+		}
+
 		void deep_copy(const Value &rhs) {
 			if (this != &rhs) {
 				r = rhs.r;
@@ -88,7 +101,7 @@ public:
 		const Vect3d& get_position() const {
 			return r;
 		}
-		const DataType& get_data() const {
+		const DataType& get_data_const() const {
 			return data;
 		}
 		DataType& get_data() {
@@ -109,7 +122,7 @@ public:
 		double rand_normal() {
 			return normal(generator);
 		}
-		const std::size_t& get_id() const {
+		const std::size_t get_id() const {
 			return id;
 		}
 		void mark_for_deletion() {
@@ -141,9 +154,9 @@ public:
 	};
 
 	typedef typename std::vector<Value> data_type;
-	typedef Value value_type;
-	typedef size_t size_type;
-	typedef size_t difference_type;
+	typedef typename data_type::value_type value_type;
+	typedef typename data_type::size_type size_type;
+	typedef typename data_type::size_type difference_type;
 	typedef typename data_type::iterator iterator;
 	typedef typename data_type::const_iterator const_iterator;
 	struct get_pos {
@@ -159,6 +172,23 @@ public:
 		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
 		searchable(false),track_ids(false),
 		seed(time(NULL))
+	{}
+
+	Particles(const Particles<DataType> &other):
+			data(other.data),
+			neighbour_search(other.neighbour_search),
+			next_id(other.next_id),
+			searchable(other.searchable),
+			track_ids(other.track_ids),
+			seed(other.seed),
+			id_to_index(id_to_index)
+	{}
+	Particles(iterator first, iterator last):
+		data(first,last),
+		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
+		searchable(false),
+		track_ids(false),
+		seed(0)
 	{}
 
 	static ptr<Particles<DataType> > New() {
@@ -193,6 +223,37 @@ public:
 	void clear() {
 		data.clear();
 	}
+
+	iterator erase (iterator i) {
+		i->deep_copy(*(data.cend()-1));
+		if (track_ids) id_to_index[i->id] = i-begin();
+		if (searchable) {
+			neighbour_search.copy_points(i,end());
+			neighbour_search.delete_point(end());
+		}
+		data.pop_back();
+	}
+
+	iterator erase (iterator first, iterator last) {
+		for(iterator i=first;i!=last;i++) {
+			erase(i);
+		}
+	}
+
+	iterator insert (iterator position, const value_type& val) {
+		data.insert(position,val);
+	}
+
+	void insert (iterator position, size_type n, const value_type& val) {
+		data.insert(position,n,val);
+	}
+
+	template <class InputIterator>
+	void insert (iterator position, InputIterator first, InputIterator last) {
+		data.insert(position,first,last);
+	}
+
+
 	size_t size() const {
 		return data.size();
 	}
@@ -271,6 +332,18 @@ public:
 			if (track_ids) id_to_index[i->id] = index;
 			if (searchable) neighbour_search.add_point(i);
 		}
+	}
+
+	void push_back (const value_type& val) {
+		data.push_back(val);
+		const int index = data.size();
+		iterator i = end()-1;
+		i->id = this->next_id++;
+		i->generator.seed(i->id*seed);
+		i->alive = true;
+		i->index = index;
+		if (track_ids) id_to_index[i->id] = index;
+		if (searchable) neighbour_search.add_point(i);
 	}
 
 	template<typename F>
@@ -454,6 +527,12 @@ public:
 		vtkSmartPointer<vtkFloatArray>* datas;
 	};
 
+	vtkSmartPointer<vtkUnstructuredGrid> get_grid() {
+		if (!cache_grid) cache_grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
+		copy_to_vtk_grid(cache_grid);
+		return cache_grid;
+	}
+
 	void  copy_to_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
 		vtkSmartPointer<vtkPoints> points = grid->GetPoints();
 		if (!points) {
@@ -475,12 +554,11 @@ public:
 		constexpr size_t dn = std::tuple_size<DataType>::value;
 		vtkSmartPointer<vtkFloatArray> datas[dn];
 		for (int i = 0; i < dn; ++i) {
-			char buffer[10];
-			sprintf(buffer,"data%3d",i);
-			datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(buffer));
+			std::string name = DataNames<DataType>::get(i);
+			datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
 			if (!datas[i]) {
 				datas[i] = vtkSmartPointer<vtkFloatArray>::New();
-				datas[i]->SetName(buffer);
+				datas[i]->SetName(name.c_str());
 				grid->GetPointData()->AddArray(datas[i]);
 			}
 		}
@@ -550,6 +628,9 @@ private:
 	const double seed;
 	NeighbourSearch_type neighbour_search;
 	std::map<size_t,size_t> id_to_index;
+#ifndef HAVE_VTK
+	vtkSmartPointer<vtkUnstructuredGrid> cache_grid;
+#endif
 };
 
 
