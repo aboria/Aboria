@@ -71,9 +71,14 @@ public:
 		typedef std::mt19937 generator_type;
 		Value():uni(0,1),normal(0,1){}
 		Value(const Value& rhs) {
+			r = rhs.r;
 			data = rhs.data;
-
+			alive = rhs.alive;
+			id = rhs.id;
+			generator = rhs.generator;
 		}
+		Value(const Vect3d &position):
+			r(position),uni(0,1),normal(0,1) {}
 		~Value() {
 
 		}
@@ -98,14 +103,32 @@ public:
 			}
 		}
 
+//		Vect3d& get_position() {
+//			return r;
+//		}
 		const Vect3d& get_position() const {
 			return r;
+		}
+		void set_position(Vect3d& arg) {
+			r = arg;
 		}
 		const DataType& get_data_const() const {
 			return data;
 		}
 		DataType& get_data() {
 			return data;
+		}
+//		template<int N>
+//		std::tuple_element<N,DataType>::type& get_data_elem() {
+//			return std::get<N>(data);
+//		}
+		template<int N>
+		typename std::tuple_element<N,DataType>::type& get_data_elem() {
+			return std::get<N>(data);
+		}
+		template<int N>
+		void set_data_elem(const typename std::tuple_element<N,DataType>::type& arg) {
+			std::get<N>(data) = arg;
 		}
 		const size_t get_index() {
 			return index;
@@ -338,6 +361,8 @@ public:
 		data.push_back(val);
 		const int index = data.size();
 		iterator i = end()-1;
+		i->r = val.r;
+		//if (std::get<1>(i->data).norm()>1) std::cout <<"adding bad orientation"<<std::endl;
 		i->id = this->next_id++;
 		i->generator.seed(i->id*seed);
 		i->alive = true;
@@ -461,7 +486,7 @@ public:
 		const Vect3d low = neighbour_search.get_low();
 		const Vect3d high = neighbour_search.get_high();
 		const Vect3b periodic = neighbour_search.get_periodic();
-		for(iterator i = begin(); i != end(); i++) {
+		for(iterator i = b; i != e; i++) {
 			i->r = f(*i);
 			for (int d = 0; d < 3; ++d) {
 				if (periodic[d]) {
