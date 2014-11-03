@@ -529,6 +529,26 @@ public:
 		int index;
 		vtkSmartPointer<vtkFloatArray>* datas;
 	};
+	struct read_elem {
+			typedef int result_type;
+			read_elem(int index, vtkSmartPointer<vtkFloatArray>* datas):
+				index(index),datas(datas){}
+			template<typename T>
+			result_type operator()(result_type state, T& t) const {
+				t = datas[state]->GetValue(index);
+				return state + 1;
+			}
+			//template<>
+			result_type operator()(result_type state, Vect3d& t) const {
+				double *data = datas[state]->GetTuple3(index);
+				t[0] = data[0];
+				t[1] = data[1];
+				t[2] = data[2];
+				return state + 1;
+			}
+			int index;
+			vtkSmartPointer<vtkFloatArray>* datas;
+	};
 	struct setup_data {
 		typedef int result_type;
 		setup_data(vtkSmartPointer<vtkFloatArray>* datas):
@@ -612,6 +632,40 @@ public:
 			boost::fusion::fold(i.get_data(),0,save_elem(index,datas));
 		}
 	}
+
+
+	void  copy_from_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
+			vtkSmartPointer<vtkPoints> points = grid->GetPoints();
+			CHECK(points,"No points in vtkUnstructuredGrid");
+			vtkSmartPointer<vtkCellArray> cells = grid->GetCells();
+			CHECK(points,"No cells in vtkUnstructuredGrid");
+			vtkSmartPointer<vtkUnsignedCharArray> cell_types = grid->GetCellTypesArray();
+			vtkSmartPointer<vtkIntArray> ids = vtkIntArray::SafeDownCast(grid->GetPointData()->GetArray("id"));
+			CHECK(ids,"No id array in vtkUnstructuredGrid");
+			constexpr size_t dn = std::tuple_size<DataType>::value;
+
+			vtkSmartPointer<vtkFloatArray> datas[dn];
+
+			const vtkIdType n = ids->GetSize();
+
+			for (int i = 0; i < dn; ++i) {
+				std::string name = DataNames<DataType>::get(i);
+				datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
+				CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
+				CHECK(datas[i]->GetSize()==n,"Data array "<<name<<" has size != id array");
+			}
+
+			this->clear();
+
+			for (int j = 0; j < n; ++j) {
+				value_type particle;
+				double *data = points->GetPoint(j);
+				particle.r << data[0],data[1],data[2];
+				particle.id = ids->GetValue(j);
+				boost::fusion::fold(particle.get_data(),0,read_elem(j,datas));
+				this->push_back(particle);
+			}
+		}
 #endif
 
 private:
