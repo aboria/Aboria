@@ -439,11 +439,11 @@ public:
 		const int nparticles = n.prod();
 		int index = data.size();
 		data.resize(data.size()+nparticles);
-		const Vect3d dx = (max-min).cwiseQuotient(n.cast<double>());
+		const Vect3d dx = (max-min)/n;
 		for (int i = 0; i < n[0]; ++i) {
 			for (int j = 0; j < n[1]; ++j) {
 				for (int k = 0; k < n[2]; ++k) {
-					data[index].r = min + Vect3d(i+0.5,j+0.5,k+0.5).cwiseProduct(dx);
+					data[index].r = min + Vect3d(i+0.5,j+0.5,k+0.5)*dx;
 					data[index].id = next_id++;
 					data[index].generator.seed(data[index].id*seed);
 					data[index].alive = true;
@@ -578,7 +578,7 @@ public:
 		return cache_grid;
 	}
 
-	void  copy_to_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
+	void  copy_to_vtk_grid(vtkUnstructuredGrid *grid) {
 		vtkSmartPointer<vtkPoints> points = grid->GetPoints();
 		if (!points) {
 			points = vtkSmartPointer<vtkPoints>::New();
@@ -634,7 +634,7 @@ public:
 	}
 
 
-	void  copy_from_vtk_grid(vtkSmartPointer<vtkUnstructuredGrid> grid) {
+	void  copy_from_vtk_grid(vtkUnstructuredGrid *grid) {
 			vtkSmartPointer<vtkPoints> points = grid->GetPoints();
 			CHECK(points,"No points in vtkUnstructuredGrid");
 			vtkSmartPointer<vtkCellArray> cells = grid->GetCells();
@@ -652,15 +652,14 @@ public:
 				std::string name = DataNames<DataType>::get(i);
 				datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
 				CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
-				CHECK(datas[i]->GetSize()==n,"Data array "<<name<<" has size != id array");
+				CHECK(datas[i]->GetNumberOfTuples()==n,"Data array "<<name<<" has size != id array. data size = "<<datas[i]->GetNumberOfTuples()<<". id size = "<<n);
 			}
 
 			this->clear();
 
 			for (int j = 0; j < n; ++j) {
 				value_type particle;
-				double *data = points->GetPoint(j);
-				particle.r << data[0],data[1],data[2];
+				particle.r  = points->GetPoint(j);
 				particle.id = ids->GetValue(j);
 				boost::fusion::fold(particle.get_data(),0,read_elem(j,datas));
 				this->push_back(particle);

@@ -224,7 +224,7 @@ private:
 		return vect[0] * num_cells_along_yz + vect[1] * num_cells_along_axes[1] + vect[2];
 	}
 	inline int find_cell_index(const Vect3d &r) const {
-		const Vect3i celli = ((r-low).cwiseProduct(inv_cell_size) + Vect3d(1.0,1.0,1.0)).cast<int>();
+		const Vect3i celli = ((r-low)*inv_cell_size) + Vect3d(1.0,1.0,1.0);
 		ASSERT((celli[0] > 0) && (celli[0] < num_cells_along_axes[0]-1), "position is outside of x-range "<<r);
 		ASSERT((celli[1] > 0) && (celli[1] < num_cells_along_axes[1]-1), "position is outside of y-range "<<r);
 		ASSERT((celli[2] > 0) && (celli[2] < num_cells_along_axes[2]-1), "position is outside of z-range "<<r);
@@ -499,7 +499,7 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	LOG(2,"\tPeriodic = "<<periodic);
 
 	max_interaction_radius = _max_interaction_radius;
-	Vect3i num_cells_without_ghost = ((high-low)/max_interaction_radius).cast<int>();
+	Vect3i num_cells_without_ghost = (high-low)/max_interaction_radius;
 	Vect3d new_high = high;
 	for (int i = 0; i < 3; ++i) {
 		if (num_cells_without_ghost[i]==0) {
@@ -510,9 +510,9 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	}
 	num_cells_along_axes = num_cells_without_ghost + Vect3i(3,3,3);
 	LOG(2,"\tNumber of cells along each axis = "<<num_cells_along_axes);
-	cell_size = (new_high-low).cwiseQuotient(num_cells_without_ghost.cast<double>());
+	cell_size = (new_high-low)/(num_cells_without_ghost);
 	LOG(2,"\tCell sizes along each axis = "<<cell_size);
-	inv_cell_size = Vect3d(1,1,1).cwiseQuotient(cell_size);
+	inv_cell_size = Vect3d(1,1,1)/cell_size;
 	num_cells_along_yz = num_cells_along_axes[2]*num_cells_along_axes[1];
 	const unsigned int num_cells = num_cells_along_axes.prod();
 	cells.assign(num_cells, CELL_EMPTY);
