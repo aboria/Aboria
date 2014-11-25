@@ -204,7 +204,7 @@ public:
 	void embed_points(const T begin_iterator, const T end_iterator);
 	void embed_points_incremental(const T begin_iterator, const T end_iterator);
 
-	void add_point(const T point_to_add_iterator);
+	void add_end_point(const T begin_iterator, const T end_iterator);
 	void untrack_point(const T untrack_iterator);
 	void delete_point(const T untrack_iterator);
 	void update_point(const T untrack_iterator);
@@ -364,10 +364,13 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 }
 
 template<typename T, typename F>
-void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
+void BucketSort<T,F>::add_end_point(const T _begin_iterator, const T _end_iterator) {
 	linked_list.push_back(CELL_EMPTY);
 	linked_list_reverse.push_back(CELL_EMPTY);
 	dirty_cells.push_back(CELL_EMPTY);
+	end_iterator = _end_iterator;
+	begin_iterator = _begin_iterator;
+	const T point_to_add_iterator = _end_iterator-1;
 
 	int i = linked_list.size()-1;
 	const bool particle_based = true;

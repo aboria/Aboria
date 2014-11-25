@@ -340,23 +340,6 @@ public:
 		return neighbour_search.get_high();
 	}
 
-
-	template<typename F>
-	void create_particles_sequential(const int n, F f) {
-		const int old_size = data.size();
-		data.resize(old_size+n);
-		int index = old_size;
-		for (auto i=data.begin()+old_size; i!=data.end();i++,index++) {
-			i->id = this->next_id++;
-			i->generator.seed(i->id*seed);
-			i->alive = true;
-			i->index = index;
-			i->r = f(*i);
-			if (track_ids) id_to_index[i->id] = index;
-			if (searchable) neighbour_search.add_point(i);
-		}
-	}
-
 	void push_back (const value_type& val) {
 		data.push_back(val);
 		const int index = data.size();
@@ -368,7 +351,7 @@ public:
 		i->alive = true;
 		i->index = index;
 		if (track_ids) id_to_index[i->id] = index;
-		if (searchable) neighbour_search.add_point(i);
+		if (searchable) neighbour_search.add_end_point(data.cbegin(),data.cend());
 	}
 
 	template<typename F>
@@ -383,7 +366,7 @@ public:
 			i->index = index;
 			i->r = f(*i);
 			if (track_ids) id_to_index[i->id] = index;
-			if (searchable) neighbour_search.add_point(i);
+			if (searchable) neighbour_search.add_end_point(data.cbegin(),data.cend());
 		}
 	}
 
