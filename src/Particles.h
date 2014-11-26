@@ -342,6 +342,7 @@ public:
 
 	void push_back (const value_type& val) {
 		data.push_back(val);
+		neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
 		const int index = data.size();
 		iterator i = end()-1;
 		i->r = val.r;
@@ -351,13 +352,14 @@ public:
 		i->alive = true;
 		i->index = index;
 		if (track_ids) id_to_index[i->id] = index;
-		if (searchable) neighbour_search.add_end_point(data.cbegin(),data.cend());
+		if (searchable) neighbour_search.add_point(i);
 	}
 
 	template<typename F>
 	void create_particles(const int n, F f) {
 		const int old_size = data.size();
 		data.resize(old_size+n);
+		neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
 		int index = old_size;
 		for (auto i=data.begin()+old_size; i!=data.end();i++,index++) {
 			i->id = this->next_id++;
@@ -366,7 +368,7 @@ public:
 			i->index = index;
 			i->r = f(*i);
 			if (track_ids) id_to_index[i->id] = index;
-			if (searchable) neighbour_search.add_end_point(data.cbegin(),data.cend());
+			if (searchable) neighbour_search.add_point(i);
 		}
 	}
 
@@ -393,6 +395,7 @@ public:
 
 				int index = data.size();
 				data.resize(data.size()+kmax);
+				neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
 				for (int k = 0; k < kmax; ++k) {
 					double d_angle=dem_diameter/radius;
 					angle=angle+d_angle;
@@ -422,6 +425,7 @@ public:
 		const int nparticles = n.prod();
 		int index = data.size();
 		data.resize(data.size()+nparticles);
+		neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
 		const Vect3d dx = (max-min)/n;
 		for (int i = 0; i < n[0]; ++i) {
 			for (int j = 0; j < n[1]; ++j) {
