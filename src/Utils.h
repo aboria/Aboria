@@ -29,7 +29,7 @@ ptr<std::vector<double> > radial_distribution_function(ptr<Particles<T> > partic
 			const typename Particles<T>::Value& j = std::get<0>(tpl);
 			if (i.get_id()==j.get_id()) continue;
 			const double r = dx.norm();
-			const int index = floor((r-min)/bsep);
+			const int index = std::floor((r-min)/bsep);
 			if ((index>=0)&&(index<n)) (*out)[index] += 1.0;
 		}
 	}

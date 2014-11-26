@@ -272,6 +272,20 @@ COMPOUND_ASSIGN(-=)
 COMPOUND_ASSIGN(*=)
 COMPOUND_ASSIGN(/=)
 
+#define UFUNC(the_op) \
+	template<typename T> \
+	Vector<T,3> the_op(const Vector<T,3> &arg1) { \
+		Vector<T,3> ret; \
+		ret[0] = std::the_op(arg1[0]); \
+		ret[1] = std::the_op(arg1[1]); \
+		ret[2] = std::the_op(arg1[2]); \
+		return ret; \
+	} \
+
+UFUNC(floor)
+UFUNC(ceil)
+UFUNC(round)
+
 template<typename T>
 Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
 	Vector<T,3> ret;

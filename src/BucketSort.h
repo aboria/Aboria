@@ -222,10 +222,10 @@ public:
 private:
 
 	inline int vect_to_index(const Vect3i& vect) const {
-		return vect[0] * num_cells_along_yz + vect[1] * num_cells_along_axes[1] + vect[2];
+		return vect[0] * num_cells_along_yz + vect[1] * num_cells_along_axes[2] + vect[2];
 	}
 	inline int find_cell_index(const Vect3d &r) const {
-		const Vect3i celli = ((r-low)*inv_cell_size) + Vect3d(1.0,1.0,1.0);
+		const Vect3i celli = floor(((r-low)*inv_cell_size)) + Vect3i(1,1,1);
 		ASSERT((celli[0] > 0) && (celli[0] < num_cells_along_axes[0]-1), "position is outside of x-range "<<r);
 		ASSERT((celli[1] > 0) && (celli[1] < num_cells_along_axes[1]-1), "position is outside of y-range "<<r);
 		ASSERT((celli[2] > 0) && (celli[2] < num_cells_along_axes[2]-1), "position is outside of z-range "<<r);
@@ -507,9 +507,12 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	max_interaction_radius = _max_interaction_radius;
 	Vect3i num_cells_without_ghost = (high-low)/max_interaction_radius;
 	Vect3d new_high = high;
+	Vect3b search(true,true,true);
 	for (int i = 0; i < 3; ++i) {
 		if (num_cells_without_ghost[i]==0) {
 			LOG(2,"\tNote: Dimension "<<i<<" has no length, setting cell side equal to interaction radius.");
+			LOG(1,"\tNote: Dimension "<<i<<" has no length, turning off neighbour search in this dimension.");
+			search[i] = false;
 			new_high[i] = low[i] + max_interaction_radius;
 			num_cells_without_ghost[i] = 1;
 		}
@@ -525,9 +528,13 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	use_dirty_cells = false;
 	//TODO: assumed 3d
 	surrounding_cell_offsets.clear();
+
 	for (int i = -1; i < 2; ++i) {
+		if ((i != 0) && !search[0]) continue;
 		for (int j = -1; j < 2; ++j) {
+			if ((j != 0) && !search[1]) continue;
 			for (int k = -1; k < 2; ++k) {
+				if ((k != 0) && !search[2]) continue;
 				surrounding_cell_offsets.push_back(vect_to_index(Vect3i(i,j,k)));
 			}
 		}
@@ -537,7 +544,7 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	ghosting_indices_pb.assign(num_cells, std::vector<int>());
 	ghosting_indices_cb.clear();
 	for (int i = 0; i < NDIM; ++i) {
-		if (!periodic[i]) continue;
+		if (!periodic[i] || !search[i]) continue;
 		int j,k;
 		switch (i) {
 			case 0:
@@ -564,15 +571,20 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 				tmp[k] = kk;
 				tmp[i] = n-3;
 				const int index_from1 = vect_to_index(tmp);
+				ASSERT(index_from1 < num_cells,"from index 1 ("<<index_from1<<") is greater than total number of cells ("<<num_cells<<"). tmp = "<<tmp);
 				tmp[i] = 0;
 				const int index_to1 = vect_to_index(tmp);
+				ASSERT(index_to1 < num_cells,"to index 1 ("<<index_to1<<") is greater than total number of cells ("<<num_cells<<"). tmp = "<<tmp);
 				ghosting_indices_pb[index_from1].push_back(index_to1);
 				//ghosting_indices_cb.push_back(std::pair<int,int>(index_to1,index_from1));
 				tmp[i] = 1;
 				const int index_from2 = vect_to_index(tmp);
+				ASSERT(index_from2 < num_cells,"from index 2 ("<<index_from2<<") is greater than total number of cells ("<<num_cells<<"). tmp = "<<tmp);
+
 				tmp[i] = n-2;
 				const int index_to2 = vect_to_index(tmp);
 				ghosting_indices_pb[index_from2].push_back(index_to2);
+				ASSERT(index_to2 < num_cells,"to index 2 ("<<index_to2<<") is greater than total number of cells ("<<num_cells<<"). tmp = "<<tmp);
 				//ghosting_indices_cb.push_back(std::pair<int,int>(index_to2,index_from2));
 			}
 		}
