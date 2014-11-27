@@ -33,7 +33,7 @@
 using namespace Aboria;
 
 
-class ConstructorsTest : public CxxTest::TestSuite {
+class ParticleContainerTest : public CxxTest::TestSuite {
 public:
     void test_add_particle1(void) {
     	typedef Particles<> Test_type;
