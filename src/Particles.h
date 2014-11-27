@@ -60,7 +60,7 @@ public:
 	}
 };
 
-template<typename DataType>
+template<typename DataType=std::tuple<double> >
 class Particles {
 	template<typename T>
 	friend class Particles;
@@ -248,12 +248,13 @@ public:
 	}
 
 	iterator erase (iterator i) {
-		i->deep_copy(*(data.cend()-1));
-		if (track_ids) id_to_index[i->id] = i-begin();
-		if (searchable) {
-			neighbour_search.copy_points(i,end());
-			neighbour_search.delete_point(end());
+		if (i != end()-1) {
+			i->deep_copy(*(data.cend()-1));
+			if (track_ids) id_to_index[i->id] = i-begin();
+			if (searchable) neighbour_search.copy_points(i,end());
+
 		}
+		if (searchable) neighbour_search.delete_point(end());
 		data.pop_back();
 	}
 
@@ -353,6 +354,10 @@ public:
 		i->index = index;
 		if (track_ids) id_to_index[i->id] = index;
 		if (searchable) neighbour_search.add_point(i);
+	}
+
+	void pop_back() {
+		erase(end()-1);
 	}
 
 	template<typename F>
