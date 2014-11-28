@@ -64,7 +64,7 @@ public:
     	TS_ASSERT_EQUALS(test.size(),3);
     	test.erase(test.begin());
     	TS_ASSERT_EQUALS(test.size(),2);
-    	test.erase(test.begin(),test.end()-1);
+    	test.erase(test.begin(),test.end());
     	TS_ASSERT_EQUALS(test.size(),0);
     }
 
