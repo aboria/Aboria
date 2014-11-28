@@ -51,47 +51,23 @@ public:
     	TS_ASSERT_EQUALS(test.size(),1);
     }
 
-    void test_add_delete_particle1(void) {
-    	typedef Particles<std::tuple<double> > Test_type;
-    	Test_type test;
-    	Test_type::value_type p;
-    	test.push_back(p);
-    	test.pop_back();
-    }
-
-    void test_delete_particle1(void) {
+    void test_add_delete_particle(void) {
     	typedef Particles<std::tuple<double> > Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);
     	test.pop_back();
     	TS_ASSERT_EQUALS(test.size(),0);
-    }
-
-    void test_delete_particle2(void) {
-    	typedef Particles<std::tuple<double> > Test_type;
-    	Test_type test;
-    	Test_type::value_type p;
     	test.push_back(p);
     	test.push_back(p);
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),3);
     	test.erase(test.begin());
     	TS_ASSERT_EQUALS(test.size(),2);
-    }
-
-    void test_delete_particle3(void) {
-    	typedef Particles<std::tuple<double> > Test_type;
-    	Test_type test;
-    	Test_type::value_type p;
-    	test.push_back(p);
-    	test.push_back(p);
-    	test.push_back(p);
-    	test.erase(test.begin(),test.end()-2);
-    	TS_ASSERT_EQUALS(test.size(),1);
     	test.erase(test.begin(),test.end()-1);
     	TS_ASSERT_EQUALS(test.size(),0);
     }
+
 };
 
 
