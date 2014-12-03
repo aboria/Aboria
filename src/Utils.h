@@ -38,7 +38,7 @@ ptr<std::vector<double> > radial_distribution_function(ptr<Particles<T> > partic
 	const double rho = particles->size()/volume;
 
 	for (int i = 0; i < n; ++i) {
-		(*out)[i] /= particles->size()*(4.0/3.0)*PI*(pow((i+1)*bsep+min,3)-pow(i*bsep+min,3))*rho;
+		(*out)[i] /= particles->size()*(4.0/3.0)*PI*(std::pow((i+1)*bsep+min,3)-std::pow(i*bsep+min,3))*rho;
 	}
 
 	particles->reset_neighbour_search(old_size);

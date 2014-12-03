@@ -85,13 +85,23 @@ public:
 	double squaredNorm() const {
 		double ret = 0;
 		for (int i = 0; i < N; ++i) {
-			ret += pow(mem[i],2);
+			ret += std::pow(mem[i],2);
 		}
 		return ret;
 	}
+
 		
 	double norm() const {
 		return sqrt(squaredNorm());
+	}
+
+	template<typename EXP_T>
+	Vector<T,N> pow(const EXP_T exponent) {
+		Vector<T,N> n = *this;
+		for (int i = 0; i < N; ++i) {
+			n[i] = std::pow(n[i],exponent);
+		}
+		return n;
 	}
 
 	void normalize() {
@@ -146,6 +156,11 @@ public:
 private:
 	T mem[N];
 };
+
+template<typename T, int N, typename EXP_T>
+Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
+	return arg.pow(exponent);
+}
 
 #define OPERATOR(the_op) \
 		template<typename T1,typename T2,int N> \
