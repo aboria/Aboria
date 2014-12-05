@@ -197,6 +197,13 @@ public:
 		seed(time(NULL))
 	{}
 
+	Particles(const double seed):
+		next_id(0),
+		neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
+		searchable(false),track_ids(false),
+		seed(seed)
+	{}
+
 	Particles(const Particles<DataType> &other):
 			data(other.data),
 			neighbour_search(other.neighbour_search),
