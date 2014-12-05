@@ -109,7 +109,7 @@ public:
 		const Vect3d& get_position() const {
 			return r;
 		}
-		void set_position(Vect3d& arg) {
+		void set_position(const Vect3d& arg) {
 			r = arg;
 		}
 		const DataType& get_data_const() const {
