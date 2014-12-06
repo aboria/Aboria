@@ -63,6 +63,18 @@ public:
 			  m_node = cell_empty.begin();
 		  }
 
+//		  const_iterator(const const_iterator& arg):
+//			  bucket_sort(arg.bucket_sort),
+//			  m_node(arg.m_node),
+//			  cell_i(arg.cell_i),
+//			  my_index(arg.my_index),
+//			  self(arg.self),
+//			  centre(arg.centre),
+//			  dx(arg.dx),
+//			  cell_empty(arg.cell_empty),
+//			  surrounding_cell_offset_end(arg.surrounding_cell_offset_end),
+//			  surrounding_cell_offset_i(arg.surrounding_cell_offset_i) {}
+
 	    void go_to_next_candidate() {
 	    	if (*m_node != CELL_EMPTY) {
 	    		m_node = bucket_sort->linked_list.begin() + *m_node;
@@ -129,6 +141,14 @@ public:
 	    	operator++();
 	    	return tmp;
 	    }
+	    size_t operator-(const_iterator start) const {
+	    	size_t count = 0;
+	    	while (start != *this) {
+	    		start++;
+	    		count++;
+	    	}
+	    	return count;
+	    }
 	    inline bool operator==(const const_iterator& rhs) {
 	    	return equal(rhs);
 	    }
@@ -153,11 +173,12 @@ public:
 	    		dx = centre-bucket_sort->correct_position_for_periodicity(centre, p);
 	    		//std::cout << "testing candidate with position "<<p<<" and dx = "<<dx<<std::endl;
 	    		//if (dx.squaredNorm() <= radius2) {
-	    		if ((abs(dx[0]) < bucket_sort->max_interaction_radius) &&
-	    				(abs(dx[1]) < bucket_sort->max_interaction_radius) &&
-	    				(abs(dx[2]) < bucket_sort->max_interaction_radius)) {
+	    		if ((std::abs(dx[0]) < bucket_sort->max_interaction_radius) &&
+	    				(std::abs(dx[1]) < bucket_sort->max_interaction_radius) &&
+	    				(std::abs(dx[2]) < bucket_sort->max_interaction_radius)) {
 
 	    	    	//std::cout << "found candidate with position"<<p<<std::endl;
+	    	    	//std::cout << "max interact rad = "<<bucket_sort->max_interaction_radius<<std::endl;
 	    	    	break;
 	    		} else {
 	    			go_to_next_candidate();
@@ -170,13 +191,15 @@ public:
 	    reference dereference() const
 	    { return std::tie(bucket_sort->begin_iterator[*m_node],dx); }
 
+
+
 	    const BucketSort* bucket_sort;
 	    std::vector<int>::const_iterator m_node;
 	    std::vector<int>::const_iterator cell_i;
 	    //Value* const linked_list;
-	    const int my_index;
-	    const bool self;
-	    const Vect3d centre;
+	    int my_index;
+	    bool self;
+	    Vect3d centre;
 	    Vect3d dx;
 	    std::vector<int> cell_empty;
 	//    std::vector<Vect3d>::const_iterator positions;
