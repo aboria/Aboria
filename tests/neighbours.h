@@ -77,16 +77,50 @@ public:
     	p.set_position(Vect3d(diameter/2,0,0));
     	test.push_back(p);
 
+    	auto tpl = test.get_neighbours(Vect3d(1.1*diameter,0,0));
+    	TS_ASSERT_EQUALS(tpl.size(),1);
+    	const Test_type::value_type &pfound = std::get<0>(*tpl.begin());
+    	TS_ASSERT_EQUALS(pfound.get_id(),test[1].get_id());
+
+    	tpl = test.get_neighbours(Vect3d(0.9*diameter,0,0));
+    	TS_ASSERT_EQUALS(tpl.size(),2);
+
+    	tpl = test.get_neighbours(Vect3d(1.6*diameter,0,0));
+    	TS_ASSERT_EQUALS(tpl.size(),0);
+    }
+
+    void test_create_particles(void) {
+    	typedef Particles<std::tuple<double> > Test_type;
+    	Test_type test;
+    	Vect3d min(-1,-1,-1);
+    	Vect3d max(1,1,1);
+    	Vect3d periodic(true,true,true);
+    	double diameter = 0.1;
+    	test.init_neighbour_search(min,max,diameter,periodic);
     	int count = 0;
-    	for (auto tpl: test.get_neighbours(Vect3d(1.1*diameter,0,0))) {
+    	test.create_particles(2,[&count,&test,&diameter](Test_type::value_type& i) {
+    		auto tpl = test.get_neighbours(Vect3d(diameter/2,0,0));
     		count++;
-    	}
-    	TS_ASSERT_EQUALS(count,1);
+    		if (count == 1) {
+    			TS_ASSERT_EQUALS(tpl.size(),0);
+    			return Vect3d(0,0,0);
+    		} else {
+    			TS_ASSERT_EQUALS(tpl.size(),1);
+    			return Vect3d(diameter/2,0,0);
+    		}
+
+    	});
 
     	auto tpl = test.get_neighbours(Vect3d(1.1*diameter,0,0));
     	TS_ASSERT_EQUALS(tpl.size(),1);
     	const Test_type::value_type &pfound = std::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(pfound.get_id(),test[1].get_id());
+
+    	tpl = test.get_neighbours(Vect3d(0.9*diameter,0,0));
+    	TS_ASSERT_EQUALS(tpl.size(),2);
+
+    	tpl = test.get_neighbours(Vect3d(1.6*diameter,0,0));
+    	TS_ASSERT_EQUALS(tpl.size(),0);
     }
 };
 
