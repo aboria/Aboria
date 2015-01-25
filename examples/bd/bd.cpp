@@ -24,11 +24,6 @@ int main(int argc, char **argv) {
 	params->D = 1.0;
 	params->dt = 0.0001;
 
-	const double buffer = 0.1;
-	const Vect3d min(-radius-buffer,-radius-buffer,-radius-buffer);
-	const Vect3d max(radius+buffer,radius+buffer,radius+buffer);
-	const Vect3b periodic(false,false,false);
-
 	SpeciesType::value_type p;
 	const int N = 100;
 	for (int i = 0; i < N; ++i) {
