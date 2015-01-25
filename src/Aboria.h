@@ -25,12 +25,14 @@
 #ifndef ABORIA_H_
 #define ABORIA_H_
 
+#include "Geometry.h"
 #include "Ptr.h"
 //#include "Operator.h"
 //#include "MyRandom.h"
 #include "Particles.h"
 #include "PrintTuple.h"
 #include "Utils.h"
+
 //#include "ParticleOperators.h"
 
 

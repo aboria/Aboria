@@ -25,7 +25,9 @@
 #ifndef VECTOR_H_
 #define VECTOR_H_
 
-#include <math.h>
+//#include <math.h>
+#include <cmath>
+
 #include <iostream>
 
 

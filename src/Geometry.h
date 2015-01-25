@@ -27,6 +27,7 @@
 
 #include "Vector.h"
 #include "Log.h"
+#include "Ptr.h"
 
 
 namespace Aboria {
@@ -45,6 +46,31 @@ public:
 	virtual void print(std::ostream& out) const = 0;
 };
 
+template<typename T>
+bool reflect_once(const Vect3d p1, Vect3d &p2, const T geometry) {
+	std::pair<double,Vect3d> res = geometry->lineXsurface(p1,p2);
+	if (res.first >= 0) {
+		/*
+		 * if line going through surface with normal then don't reflect
+		 */
+		const Vect3d dx = p2 - p1;
+		const double dxCosTheta = res.second.dot(dx);
+		if (dxCosTheta > 0) {
+			return false;
+		}
+
+		/*
+		 * calculate new position after reflection
+		 */
+		const double ratio = res.first/dx.norm();
+		const Vect3d v_reflect = dx - 2*dxCosTheta*res.second;
+		p2 = p1 + (dx-v_reflect)*ratio + v_reflect;
+		return true;
+	} else {
+		return false;
+	}
+}
+
 
 class Sphere : public Geometry {
 public:
@@ -53,51 +79,61 @@ public:
 			const bool in) :
 				position(position),radius(radius),radius_sq(radius*radius),in(in) {
 	}
-	static std::auto_ptr<Sphere> New(const Vect3d& position,
+	static ptr<Sphere> New(const Vect3d& position,
 			const double radius,
 			const bool in) {
-		return std::auto_ptr<Sphere>(new Sphere(position,radius,in));
+		return ptr<Sphere>(new Sphere(position,radius,in));
 	}
 
 	bool is_in(const Vect3d& point) const {
 		bool inside;
 		const double radial_dist_sq = radial_distance_to_boundary_sq(point);
 		if (in) {
-			inside = (radial_dist_sq < pow(radius-GEOMETRY_TOLERANCE,2));
+			inside = (radial_dist_sq < std::pow(radius-GEOMETRY_TOLERANCE,2));
 		} else {
-			inside = (radial_dist_sq < pow(radius+GEOMETRY_TOLERANCE,2));
+			inside = (radial_dist_sq < std::pow(radius+GEOMETRY_TOLERANCE,2));
 		}
 		return inside == in;
 	}
 
-	std::pair<double,Vect3d> lineXsurface(const Vect3d &p1, const Vect3d &p2) {
+	std::pair<double,Vect3d> lineXsurface(const Vect3d &p1, const Vect3d &p2) const {
 		std::pair<double,Vect3d> ret;
 		Vect3d dx = (p2-p1);
-		dx.normalize();
+		const double maxd = dx.norm();
+		dx /= maxd;
 		const Vect3d dr = p1-position;
 		const double dr_norm2 = dr.squaredNorm();
 		const double dx_dot_dr = dx.dot(dr);
-
-		const double in_sqrt = pow(dx_dot_dr,2) - dr_norm2 + radius_sq;
+		const double in_sqrt = std::pow(dx_dot_dr,2) - dr_norm2 + radius_sq;
 		if (in_sqrt < 0) {
 			//no intersect
 			ret.first = -1;
 		} else if (in_sqrt == 0) {
 			//one intersect
 			ret.first = -dx_dot_dr;
-			ret.second =  p1 + ret.first*dx - position;
-			ret.second.normalize();
 		} else {
-			//two intersect, take the first one
-			ret.first = -dx_dot_dr - sqrt(in_sqrt);
+			//two intersect
+			ret.first = -dx_dot_dr - std::sqrt(in_sqrt);
+			if (ret.first < 0) {
+				ret.first = -dx_dot_dr + std::sqrt(in_sqrt);
+
+			}
+		}
+		if ((ret.first > 0) && (ret.first <= maxd)) {
 			ret.second =  p1 + ret.first*dx - position;
-			ret.second.normalize();
+			if (in) {
+				ret.second /= ret.second.norm();
+			} else {
+				ret.second /= -ret.second.norm();
+			}
+		} else {
+			ret.first = -1;
 		}
 		return ret;
 	}
 
 	const Vect3d shortest_vector_to_boundary(const Vect3d& point) const {
-		const double radial_dist = sqrt(radial_distance_to_boundary_sq(point));
+		const double radial_dist = std::sqrt(radial_distance_to_boundary_sq(point));
 		return (radius/radial_dist-1.)*point;
 	}
 
