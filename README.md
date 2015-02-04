@@ -7,6 +7,11 @@ Neighbourhood searches are possible, using a bucket search method (uniform bucke
 
 The motivation behind Aboria is to provide a useful library for implementing particle-based numerical algorithms, for example Smoothed Particle Hydrodynamics or Molecular Dynamics. Each particle has a 3D position and user-defined data-package (for other variables such as velocity, density etc) and is optionally embedded within a cuboidal spatial domain (for neighbourhood searches) that can be periodic or not. Each particle also has its own random number generator that is seeded via its own unique id.
 
+- [Creating Particles](#create)
+- [Particle Objects](#particle)
+- [Looping through a container](#looping)
+- [Neighbourhood Searching](#neighbour)
+
 Examples
 --------
 
@@ -50,8 +55,8 @@ std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,de
 ```
 
 
-Creating New Particles
-----------------------
+<a name="create">Creating New Particles</a>
+-------------------------------------------
 
 The main particles data-structure, or container, is called `Particles`. It takes one template arguement, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one one `double` variable.
 
@@ -76,8 +81,8 @@ particles.push_back(MyParticle(Vect3d(0,0,0)));
 particles.push_back(MyParticle(Vect3d(1,0,0)));
 ```
 
-Particle Objects
-----------------
+<a name="particle">Particle Objects</a>
+---------------------------------------
 
 The `value_type` of the `Particles` container is a data-structure representing each particle. By default each particle has a position, a unique id and a boolean flag indicating if this particle is active or not. Use `get_position()` to access the position, `get_id()` for the id and `get_alive()` for the alive flag.
 
@@ -98,8 +103,8 @@ You can access the data package by using the `get_data_elem` function, which is 
 std::cout << "The first data element is " << particle.get_data_elem<0>() << "\n";
 ```
 
-Looping through container 
--------------------------
+<a name="looping">Looping through the container</a>
+---------------------------------------------------
 
 You can use the indexing operator `Operator[]` to simply loop through the container
 
@@ -133,8 +138,8 @@ std::for_each(particles.begin(), particles.end(), [](MyParticle& i) {
 });
 ```
 
-Neighbourhood Searching
------------------------
+<a name="neighbour">Neighbourhood Searching</a>
+-----------------------------------------------
 
 The `Particles` container gives you neighbourhood searching functionality, using a simple Cell List or Linked-List approach. The domain is divided into a regular grid of cubes with side length equal to a constant lengthscale that is supplied by the user. Each particle in the continer is assigned to the cell that contains its position. Neighbourhood search queries at a given point return all the particles within the cell that contains this point and the immediate cell neighbours.
 
