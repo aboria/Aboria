@@ -12,13 +12,13 @@ Examples
 
 The *examples/* subdirectory contains a collection of examples for using Aboria. Currently these are:
 
-- *examples/sph* - An Smoothed Particle Hydrodynamics example, simulating a 3D water column over a no-slip boundary. The *x* and *y* directions are periodic.
+- *examples/sph* - An Smoothed Particle Hydrodynamics example, simulating a 2D water column over a no-slip boundary. The *x* and *y* directions are periodic.
 - *examples/dem* - An Discrete Element Model example, simulating 2 spherical particles falling onto an surface.
 - *exampes/sphdem* - A coupled SPH and DEM example, simulating a single DEM particle falling down a water column
-- *examples/bd* - Brownian dynamics of N particles within a refelcting sphere
+- *examples/bd* - Brownian dynamics of N particles within a reflecting sphere
 
 
-A short sample from the DEM example, which shows what is possible with the library. This shows a for_each 
+A short sample from the DEM example, which shows what is possible with the library. This shows a `for_each`
 loop over the DEM particles, calculating the contact forces between pairs of particles
 
 ```
@@ -47,4 +47,31 @@ std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,de
 		}
 
 	});
+```
+
+
+Creating New Particles
+----------------------
+
+The main particles data-structure is called `Particles`. It takes one template arguement, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one one `double` variable.
+
+```
+using namespace Aboria;
+
+typedef Particles<std::tuple<double> > MyParticles;
+MyParticles particles1();
+```
+
+You can also give the `MyParticles` constructor a single `unsigned int` arguement to set the random seed for the container:
+
+```
+MyParticles particles2(0);
+```
+
+To create new particles simply use the `value_type` of the container type. Each particle constructor takes a single `Vect3d` type for the particle position.
+
+```
+typedef MyParticles::value_type MyParticle;
+particles.push_back(MyParticle(Vect3d(0,0,0)));
+particles.push_back(MyParticle(Vect3d(1,0,0)));
 ```
