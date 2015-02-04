@@ -115,6 +115,7 @@ Or you can use the normal STL `begin()` and `end()` functions that return random
 for (auto i = particles.begin(); i != particles.end(); i++) {
    std::cout << "Accessing particle with id = " << i->get_id() << "\n";
 }
+```
 
 Or
 
