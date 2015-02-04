@@ -133,7 +133,7 @@ public:
 		const size_t get_index() {
 			return index;
 		}
-		bool is_alive() const {
+		bool get_alive() const {
 			return alive;
 		}
 		generator_type get_generator() {

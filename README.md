@@ -21,7 +21,7 @@ The *examples/* subdirectory contains a collection of examples for using Aboria.
 A short sample from the DEM example, which shows what is possible with the library. This shows a `for_each`
 loop over the DEM particles, calculating the contact forces between pairs of particles
 
-```
+```Cpp
 std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,dem_diameter](DemType::Value& i) {
 		const Vect3d& r = i.get_position();
 		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
@@ -53,25 +53,125 @@ std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,de
 Creating New Particles
 ----------------------
 
-The main particles data-structure is called `Particles`. It takes one template arguement, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one one `double` variable.
+The main particles data-structure, or container, is called `Particles`. It takes one template arguement, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one one `double` variable.
 
-```
+```Cpp
 using namespace Aboria;
 
 typedef Particles<std::tuple<double> > MyParticles;
-MyParticles particles1();
+MyParticles particles();
 ```
 
 You can also give the `MyParticles` constructor a single `unsigned int` arguement to set the random seed for the container:
 
-```
-MyParticles particles2(0);
+```Cpp
+MyParticles particles_with_seed(0);
 ```
 
 To create new particles simply use the `value_type` of the container type. Each particle constructor takes a single `Vect3d` type for the particle position.
 
-```
+```Cpp
 typedef MyParticles::value_type MyParticle;
 particles.push_back(MyParticle(Vect3d(0,0,0)));
 particles.push_back(MyParticle(Vect3d(1,0,0)));
+```
+
+Particle Objects
+----------------
+
+The `value_type` of the `Particles` container is a data-structure representing each particle. By default each particle has a position, a unique id and a boolean flag indicating if this particle is active or not. Use `get_position()` to access the position, `get_id()` for the id and `get_alive()` for the alive flag.
+
+```Cpp
+MyParticle& particle = particles[0];
+std::cout <<"Position = "<<particle.get_position() << 
+   ". Id = "<<particle.get_id()<< ". Particle is ";
+if (particle.get_alive()) {
+   std::cout << "alive. " << "\n";
+} else {
+   std::cout << "dead. " << "\n";
+}
+```
+
+You can access the data package by using the `get_data_elem` function, which is templated by the index of the data element you wish to access.
+
+```Cpp
+std::cout << "The first data element is " << particle.get_data_elem<0>() << "\n";
+```
+
+Looping through container 
+-------------------------
+
+You can use the indexing operator `Operator[]` to simply loop through the container
+
+```Cpp
+for (int i=0; i < particles.size(); i++) {
+   std::cout << "Accessing particle with id = " << particles[i].get_id() << "\n";
+}
+```
+
+Or you can use the normal STL `begin()` and `end()` functions that return random access iterators to the beginning and end of the container.
+
+```Cpp
+for (auto i = particles.begin(); i != particles.end(); i++) {
+   std::cout << "Accessing particle with id = " << i->get_id() << "\n";
+}
+
+Or
+
+```Cpp
+for (auto i: particles) {
+   std::cout << "Accessing particle with id = " << i.get_id() << "\n";
+}
+```
+
+Or you can use the STL algorithm `for_each`. If you are using a GCC compiler, you can turn on the parallel mode to enable this loop to be run in parallel
+
+```Cpp
+std::for_each(particles.begin(), particles.end(), [](MyParticle& i) {
+   std::cout << "Accessing particle with id = " << i.get_id() << "\n";
+});
+```
+
+Neighbourhood Searching
+-----------------------
+
+The `Particles` container gives you neighbourhood searching functionality, using a simple Cell List or Linked-List approach. The domain is divided into a regular grid of cubes with side length equal to a constant lengthscale that is supplied by the user. Each particle in the continer is assigned to the cell that contains its position. Neighbourhood search queries at a given point return all the particles within the cell that contains this point and the immediate cell neighbours.
+
+Before you can use the neighbourhood searching, you need to initialise the domain using the `init_neighbour_search` function
+
+```Cpp
+Vect3d min(-1,-1,-1);
+Vect3d max(1,1,1);
+Vect3d periodic(true,true,true);
+double diameter = 0.1;
+particles.init_neighbour_search(min,max,diameter,periodic);
+```
+
+Here `diameter` is the lengthscale of the neighbourhood search. That is, any particles that are separated by more than `diameter` might not be classified as neighbours.
+
+Once this is done you can begin using the neighbourhood search queries using the `get_neighbours` function. This returns a lightweight container with `begin()` and `end()` functions that return `const` forward only iterators to the particles that satisfy the neighbour search. For example, the following counts all the particles within a square domain of side length `diameter` of the point (0,0,0)
+
+```Cpp
+int count = 0;
+for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
+   count++;
+}
+std::cout << "There are "<< count << " particles.\n";
+```
+
+When dereferenced, the neighbourhood iterator returns a tuple of size 2 containing 
+
+1. The found particle object
+2. $dx$, a vector pointing to the found point from the query point. I.e. if $x_a$ is the query point and $x_b$ is the found point, then $dx = x_a - x_b$.
+
+The latter is useful for periodic domains, the returned vector $dx$ takes periodic domains into account and returns the $dx$ with the smallest length. 
+
+For example, 
+
+```Cpp
+for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
+   const MyParticle& b = std::get<0>(tpl);
+   const Vect3d& dx = std::get<1>(tpl);
+   std::cout << "Found a particle with dx = " << dx << " and id = " << b.get_id() << "\n";
+}
 ```
