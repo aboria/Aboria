@@ -148,7 +148,7 @@ Before you can use the neighbourhood searching, you need to initialise the domai
 ```Cpp
 Vect3d min(-1,-1,-1);
 Vect3d max(1,1,1);
-Vect3d periodic(true,true,true);
+Vect3b periodic(true,true,true);
 double diameter = 0.1;
 particles.init_neighbour_search(min,max,diameter,periodic);
 ```
