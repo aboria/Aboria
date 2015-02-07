@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-find_package(Boost 1.50.0 COMPONENTS filesystem system date_time python REQUIRED)
+find_package(Boost 1.50.0 COMPONENTS filesystem system date_time REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_package(VTK REQUIRED)
 
@@ -23,3 +23,5 @@ cxx_test(neighbours ${TESTING_DIR}/neighbours.h)
 target_link_libraries(neighbours ${VTK_LIBRARIES} ${Boost_LIBRARIES}) 
 cxx_test(geometry ${TESTING_DIR}/geometry.h)
 target_link_libraries(geometry ${VTK_LIBRARIES} ${Boost_LIBRARIES})
+cxx_test(symbolic ${TESTING_DIR}/symbolic.h)
+target_link_libraries(symbolic ${VTK_LIBRARIES} ${Boost_LIBRARIES})

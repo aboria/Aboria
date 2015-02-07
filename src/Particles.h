@@ -26,7 +26,6 @@
 #define PARTICLES_H_
 
 #include "BucketSort.h"
-
 #include <vector>
 #include <random>
 #include <string>
@@ -52,6 +51,7 @@
 
 namespace Aboria {
 
+
 template<typename DataType>
 class DataNames {
 public:
@@ -60,41 +60,65 @@ public:
 	}
 };
 
+template<int I,typename ParticlesType>
+struct Elem {
+	typedef typename std::tuple_element<I,typename ParticlesType::data_type>::type type;
+};
+
+template<typename ParticlesType>
+struct Elem<POSITION, ParticlesType> {
+	typedef Vect3d type;
+};
+
+template<typename ParticlesType>
+struct Elem<ID, ParticlesType> {
+	typedef std::size_t type;
+};
+
+template<typename ParticlesType>
+struct Elem<ALIVE, ParticlesType> {
+	typedef std::size_t type;
+};
+
+
+
+
+
 template<typename DataType=std::tuple<double> >
 class Particles {
 	template<typename T>
 	friend class Particles;
 public:
-	class Value {
+
+	class value_type {
 		friend class Particles;
 	public:
 		typedef std::mt19937 generator_type;
-		Value():uni(0,1),normal(0,1){}
-		Value(const Value& rhs) {
+		value_type():uni(0,1),normal(0,1){}
+		value_type(const value_type& rhs) {
 			r = rhs.r;
 			data = rhs.data;
 			alive = rhs.alive;
 			id = rhs.id;
 			generator = rhs.generator;
 		}
-		Value(const Vect3d &position):
-			r(position),uni(0,1),normal(0,1) {
-		}
-		~Value() {
+		value_type(const Vect3d &position):
+			r(position),uni(0,1),normal(0,1) {}
+		~value_type() {
 
 		}
-		Value& operator=(const Value &rhs) {
+		value_type& operator=(const value_type &rhs) {
 			if (this != &rhs) {
-				data = rhs.data;
+				data = rhs.dattypea;
 			}
 			return *this;
 		}
 
-		bool operator==(const Value &rhs) const {
+		bool operator==(const value_type &rhs) const {
 			return id == rhs.id;
 		}
 
-		void deep_copy(const Value &rhs) {
+		void deep_copy(const value_type &rhs) {
 			if (this != &rhs) {
 				r = rhs.r;
 				data = rhs.data;
@@ -123,23 +147,27 @@ public:
 //		std::tuple_element<N,DataType>::type& get_data_elem() {
 //			return std::get<N>(data);
 //		}
-		template<int N>
-		typename std::tuple_element<N,DataType>::type& get_data_elem() {
-			return std::get<N>(data);
+		template<int I>
+		const typename Elem<I, Particles<DataType> >::type& get_elem() const {
+			return std::get<I>(data);
 		}
-		template<int N>
-		const typename std::tuple_element<N,DataType>::type& get_data_elem() const {
-			return std::get<N>(data);
+		template<int I>
+		typename Elem<I, Particles<DataType> >::type& get_elem() {
+			return std::get<I>(data);
 		}
-		template<int N>
-		void set_data_elem(const typename std::tuple_element<N,DataType>::type& arg) {
-			std::get<N>(data) = arg;
+		template<int I>
+		void set_elem(const typename Elem<I, Particles<DataType> >::type& arg) {
+			std::get<I>(data) = arg;
 		}
-		const size_t get_index() {
+
+		size_t get_index() {
 			return index;
 		}
 		bool get_alive() const {
 			return alive;
+		}
+		void set_alive(bool aliveIn) const {
+			alive = aliveIn;
 		}
 		generator_type get_generator() {
 			return generator;
@@ -147,6 +175,7 @@ public:
 		double rand_uniform() {
 			return uni(generator);
 		}
+
 		double rand_normal() {
 			return normal(generator);
 		}
@@ -180,15 +209,14 @@ public:
 		std::normal_distribution<double> normal;
 
 	};
-
-	typedef typename std::vector<Value> data_type;
-	typedef typename data_type::value_type value_type;
-	typedef typename data_type::size_type size_type;
-	typedef typename data_type::size_type difference_type;
-	typedef typename data_type::iterator iterator;
-	typedef typename data_type::const_iterator const_iterator;
+	typedef DataType data_type;
+	typedef typename std::vector<value_type> vector_type;
+	typedef typename vector_type::size_type size_type;
+	typedef typename vector_type::size_type difference_type;
+	typedef typename vector_type::iterator iterator;
+	typedef typename vector_type::const_iterator const_iterator;
 	struct get_pos {
-		const Vect3d& operator()(const Value& i) const {
+		const Vect3d& operator()(const value_type& i) const {
 			return i.get_position();
 		}
 	};
@@ -230,11 +258,11 @@ public:
 		return ptr<Particles<DataType> >(new Particles<DataType> ());
 	}
 
-	Value& operator[](std::size_t idx) {
+	value_type& operator[](std::size_t idx) {
 		return data[idx];
 	}
-	const Value& operator[](std::size_t idx) const {
-		return const_cast<Value>(*this)[idx];
+	const value_type& operator[](std::size_t idx) const {
+		return const_cast<value_type>(*this)[idx];
 	}
 	iterator begin() {
 		return data.begin();
@@ -243,10 +271,11 @@ public:
 		return data.end();
 	}
 
+
 	void delete_particles() {
 		const int n = data.size();
 		for (int index = 0; index < n; ++index) {
-			Value& i = data[index];
+			value_type& i = data[index];
 			if (i.alive==false) {
 				i.deep_copy(*(data.cend()-1));
 				if (track_ids) id_to_index[i.id] = index;
@@ -318,7 +347,7 @@ public:
 		}
 	}
 
-	Value* find_id(const int id) {
+	value_type* find_id(const int id) {
 		std::map<size_t,size_t>::iterator it = id_to_index.find(id);
 		if (it==id_to_index.end()) {
 			return NULL;
@@ -329,7 +358,7 @@ public:
 
 	template<typename F>
 	void reset_neighbour_search(const double length_scale, F f) {
-		std::for_each(begin(),end(),[&f](Value& i) {
+		std::for_each(begin(),end(),[&f](value_type& i) {
 			i.r = f(i);
 		});
 		neighbour_search.reset(neighbour_search.get_low(),neighbour_search.get_high(),length_scale,neighbour_search.get_periodic());
@@ -353,6 +382,8 @@ public:
 		return neighbour_search.get_high();
 	}
 
+
+
 	void push_back (const value_type& val) {
 		data.push_back(val);
 		if (searchable) neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
@@ -366,6 +397,10 @@ public:
 		i->index = index;
 		if (track_ids) id_to_index[i->id] = index;
 		if (searchable) neighbour_search.add_point(i);
+	}
+
+	void push_back(const Vect3d& position) {
+		this->push_back(value_type(position));
 	}
 
 	void pop_back() {
@@ -466,7 +501,7 @@ public:
 
 	template<typename F>
 	void update_positions(iterator b, iterator e, F f) {
-		std::for_each(b,e,[&f](Value& i) {
+		std::for_each(b,e,[&f](value_type& i) {
 			i.r = f(i);
 		});
 		if (searchable) {
@@ -476,9 +511,16 @@ public:
 	}
 	template<typename F>
 	void update_positions(F f) {
-		std::for_each(begin(),end(),[&f](Value& i) {
+		std::for_each(begin(),end(),[&f](value_type& i) {
 			i.r = f(i);
 		});
+		if (searchable) {
+			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
+			neighbour_search.embed_points(data.cbegin(),data.cend());
+		}
+	}
+
+	void update_positions() {
 		if (searchable) {
 			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
 			neighbour_search.embed_points(data.cbegin(),data.cend());
@@ -674,7 +716,7 @@ public:
 private:
 
 	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic, const bool remove_deleted_particles = false) {
-		std::for_each(begin(),end(),[low,high,periodic](Value& i) {
+		std::for_each(begin(),end(),[low,high,periodic](value_type& i) {
 			for (int d = 0; d < 3; ++d) {
 				if (periodic[d]) {
 					while (i.r[d]<low[d]) {
@@ -693,7 +735,7 @@ private:
 		if (remove_deleted_particles && ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))) {
 			const int n = data.size();
 			for (int index = 0; index < n; ++index) {
-				Value& i = data[index];
+				value_type& i = data[index];
 				if (i.alive==false) {
 					i.deep_copy(*(data.cend()-1));
 					if (track_ids) id_to_index[i.id] = index;
@@ -704,7 +746,7 @@ private:
 	}
 
 
-	data_type data;
+	vector_type data;
 	bool searchable,track_ids;
 	int next_id;
 	const double seed;
@@ -714,6 +756,7 @@ private:
 	vtkSmartPointer<vtkUnstructuredGrid> cache_grid;
 #endif
 };
+
 
 
 }

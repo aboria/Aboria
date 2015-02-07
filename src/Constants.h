@@ -26,7 +26,12 @@
 #define CONSTANTS_H_
 
 namespace Aboria {
+
 const double PI = 3.14159265359;
 const int NDIM = 3;
+const int POSITION = -1;
+const int ID = -2;
+const int ALIVE = -3;
+
 }
 #endif /* CONSTANTS_H_ */
