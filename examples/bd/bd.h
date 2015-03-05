@@ -21,13 +21,13 @@ typedef Particles<SpeciesTuple> SpeciesType;
 #define GET_TUPLE(type,name,position,particle) type& name = std::get<position>(particle.get_data())
 #define REGISTER_SPECIES_PARTICLE(particle) \
 				const Vect3d& r = particle.get_position(); \
-				const bool alive = particle.is_alive(); \
+				const bool alive = particle.get_alive(); \
 				GET_TUPLE(Vect3d,v,SPECIES_VELOCITY,particle);
 #define REGISTER_NEIGHBOUR_SPECIES_PARTICLE(tuple) \
 				const Vect3d& dx = std::get<1>(tuple); \
 				const SpeciesType::Value& j = std::get<0>(tuple); \
 				const Vect3d& rj = j.get_position(); \
-				const bool alivej = j.is_alive(); \
+				const bool alivej = j.get_alive(); \
 				const GET_TUPLE(Vect3d,vj,SPECIES_VELOCITY,j);
 
 struct Params {
