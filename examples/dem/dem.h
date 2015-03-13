@@ -31,30 +31,30 @@ void dem_start(ptr<DemType> dem,
 	const double dem_gamma = params->dem_gamma;
 	const double dem_mass = params->dem_mass;
 
-	dem->update_positions(dem->begin(),dem->end(),[dt](DemType::Value& i) {
+	dem->update_positions(dem->begin(),dem->end(),[dt](DemType::value_type& i) {
 		const Vect3d& r = i.get_position();
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
-		Vect3d& v0 = std::get<DEM_VELOCITY0>(i.get_data());
-
+		Vect3d& f = i.get_data_elem<DEM_FORCE>();
+		Vect3d& v = i.get_data_elem<DEM_VELOCITY>();
+		Vect3d& v0 = i.get_data_elem<DEM_VELOCITY0>();
 
 		v0 = v + dt/2*f;
 		v += dt * f;
+
 		return r + dt * v0;
 	});
-
 	std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,dem_diameter](DemType::Value& i) {
 		const Vect3d& r = i.get_position();
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
+		Vect3d& f = i.get_data_elem<DEM_FORCE>();
+		Vect3d& v = i.get_data_elem<DEM_VELOCITY>();
 
-		f << 0,0,0;
+		f = 0;
 		f = f + geometry(i);
 
 		for (auto tpl: i.get_neighbours(dem)) {
 			const Vect3d& dx = std::get<1>(tpl);
-			const DemType::Value& j = std::get<0>(tpl);
-			const Vect3d& vj = std::get<DEM_VELOCITY>(j.get_data());
+			const DemType::value_type& j = std::get<0>(tpl);
+			const Vect3d& vj = j.get_data_elem<DEM_VELOCITY>();
+
 			if (i.get_id()==j.get_id()) continue;
 
 			const double r = dx.norm();
@@ -82,10 +82,10 @@ void dem_end(ptr<DemType> dem,
 	const double dem_gamma = params->dem_gamma;
 	const double dem_mass = params->dem_mass;
 
-	std::for_each(dem->begin(),dem->end(),[dt](DemType::Value& i) {
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
-		Vect3d& v0 = std::get<DEM_VELOCITY0>(i.get_data());
+	std::for_each(dem->begin(),dem->end(),[dt](DemType::value_type& i) {
+		Vect3d& f = i.get_data_elem<DEM_FORCE>();
+		Vect3d& v = i.get_data_elem<DEM_VELOCITY>();
+		Vect3d& v0 = i.get_data_elem<DEM_VELOCITY0>();
 
 		v = v0 + dt/2 * f;
 	});

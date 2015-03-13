@@ -20,21 +20,14 @@ int main(int argc, char **argv) {
 	auto dem = DemType::New();
 	auto params = ptr<Params>(new Params());
 
-	int timesteps;
-	cin>> timesteps;
+	const int timesteps = 10000;
+	const int ndem = 100;
 	const int nout = 100;
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
-	const double Lx=L;
-	const double Ly=0.0024;
-	const double Lz=0.0012;
-//	const int ndem = 1;
-/*	const int ndemx = 7;
-	const int ndemy = 7;
-	const int ndemz = 7;
-	const int ndem=ndemx*ndemy*ndemz;
-*/
-
+	const Vect3d min(-L/4,-L/4,0);
+	const Vect3d max(L/4,L/4,L);
+	const Vect3b periodic(true,true,false);
 
 
 	params->dem_diameter = 0.0011;
@@ -47,18 +40,11 @@ int main(int argc, char **argv) {
 	params->dem_dt = (1.0/50.0)*PI/sqrt(params->dem_k/dem_min_reduced_mass-pow(0.5*params->dem_gamma/dem_min_reduced_mass,2));
 
 
-	const int ndemx = calc_part_num(params->dem_diameter,Lx);
-	const int ndemy = calc_part_num(params->dem_diameter,Ly);
-	const int ndemz = calc_part_num(params->dem_diameter,Lz);
-	const int ndem=ndemx*ndemy*ndemz;
-
-
-
 	auto geometry = [params](DemType::Value& i) {
-		Vect3d acceleration;
-		acceleration << 0,0,-9.8;
+		Vect3d acceleration(0,0,-9.8);
 		const Vect3d& r = i.get_position();
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
+		Vect3d& v = i.get_data_elem<DEM_VELOCITY>();
+
 		const double dem_diameter = params->dem_diameter;
 		const double dem_k = params->dem_k;
 		const double dem_gamma = params->dem_gamma;
@@ -68,78 +54,47 @@ int main(int argc, char **argv) {
 		if (overlap>0) {
 			const double overlap_dot = -v[2];
 			const Vect3d normal(0,0,1);
-			const Vect3d gravity(0,0,-9.8);
 			acceleration += (dem_k*overlap + dem_gamma*overlap_dot)*normal/dem_mass;
 		}
 		return acceleration;
 	};
-/*
-//	std::default_random_engine generator;
-//	std::uniform_real_distribution<double> distribution(0.0,1.0);
 
-	std::uniform_real_distribution<double> distribution(0.0, 1.0);
-	std::random_device rd;
-	std::default_random_engine generator( rd() );
+	std::default_random_engine generator;
+	std::uniform_real_distribution<double> distribution(-L/4,L/4);
 
 	auto dice = std::bind ( distribution, generator );
 
-	
-
-	dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
-
-		v << 0,2,1;
-		f << 0,0,0;
-		
-		Vect3d position(dice()*L-params->dem_diameter/3,dice()*L-params->dem_diameter/3,L/2);
-		return position;
-	});
-
-		dem->create_particles(ndem,[params,ndem,L,&dice](DemType::Value& i) {
-		Vect3d& v = std::get<DEM_VELOCITY>(dem->i.get_data());
-		Vect3d& f = std::get<DEM_FORCE>(dem->i.get_data());
-
-		v << 0,0,0;
-		f << 0,0,0;
-		Vect3d position(L/2-params->dem_diameter/3,L/2-params->dem_diameter/3,L/2);
-		return position;
-	});
-*/
-
-	const Vect3d min(0,0,0);
-	const Vect3d max(L,L,L);
-	const Vect3b periodic(true,true,false);
-
-	dem->create_particles_cylinder(min, max, 2,params->dem_diameter,[](DemType::Value& i) {
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
-
-		v << 0,0,0;
-		f << 0,0,0;
-	});
+	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
+	int i = 0;
+	while (i < ndem) {
+		const Vect3d position(dice(),dice(),2*dice()+L/2+params->dem_diameter/2);
+		auto neigh = dem->get_neighbours(position);
+		if (neigh.begin() == neigh.end()) {
+			DemType::value_type particle(position);
+			particle.get_data_elem<DEM_FORCE>() = Vect3d(0,0,0);
+			particle.get_data_elem<DEM_VELOCITY>() = Vect3d(0,0,0);
+			particle.get_data_elem<DEM_VELOCITY0>() = Vect3d(0,0,0);
+			dem->push_back(particle);
+			i++;
+		}
+	}
 	
 
 	auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	dem->copy_to_vtk_grid(grid);
-	dem->init_neighbour_search(min,max,params->dem_diameter,periodic);
 
-//	Visualisation vis(min,max);
-//	vis.glyph_points(grid);
-//	vis.start_render_loop();
+	std::cout <<"starting.... "<<std::endl;
 
 	for (int i = 0; i < nout; ++i) {
 		for (int k = 0; k < timesteps_per_out; ++k) {
-			//std::this_thread::sleep_for(std::chrono::seconds(1));
+
 			dem_start(dem,params,geometry);
 			dem_end(dem,params,geometry);
 		}
-		//std::cout <<"iteration "<<i<<std::endl;
+		std::cout <<"iteration "<<i<<std::endl;
 
-		//vis.stop_render_loop();
 		dem->copy_to_vtk_grid(grid);
-		Visualisation::vtkWriteGrid("vis/dem",i,grid);
-		//vis.restart_render_loop();
+		Visualisation::vtkWriteGrid("dem",i,grid);
 	}
 
 

@@ -78,7 +78,8 @@ public:
 			generator = rhs.generator;
 		}
 		Value(const Vect3d &position):
-			r(position),uni(0,1),normal(0,1) {}
+			r(position),uni(0,1),normal(0,1) {
+		}
 		~Value() {
 
 		}
@@ -124,6 +125,10 @@ public:
 //		}
 		template<int N>
 		typename std::tuple_element<N,DataType>::type& get_data_elem() {
+			return std::get<N>(data);
+		}
+		template<int N>
+		const typename std::tuple_element<N,DataType>::type& get_data_elem() const {
 			return std::get<N>(data);
 		}
 		template<int N>
