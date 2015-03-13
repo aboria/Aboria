@@ -26,7 +26,7 @@ int main(int argc, char **argv) {
 	const int timesteps_per_out = timesteps/nout;
 	const double L = 31.0/1000.0;
 	const Vect3d min(-L/4,-L/4,0);
-	const Vect3d max(L/4,L/4,L);
+	const Vect3d max(L/4,L/4,L*2);
 	const Vect3b periodic(true,true,false);
 
 

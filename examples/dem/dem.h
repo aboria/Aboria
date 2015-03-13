@@ -47,7 +47,7 @@ void dem_start(ptr<DemType> dem,
 		Vect3d& f = i.get_data_elem<DEM_FORCE>();
 		Vect3d& v = i.get_data_elem<DEM_VELOCITY>();
 
-		f = 0;
+		f = Vect3d(0,0,0);
 		f = f + geometry(i);
 
 		for (auto tpl: i.get_neighbours(dem)) {

@@ -38,9 +38,6 @@ template<typename T,int N>
 class Vector {
 public:
 	Vector() {}
-	Vector(T arg1) {
-		mem[0] = arg1;
-	}
 	Vector(T arg1,T arg2) {
 		mem[0] = arg1;
 		mem[1] = arg2;
