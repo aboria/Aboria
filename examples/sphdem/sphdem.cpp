@@ -27,10 +27,6 @@
 
 #include <vtkFloatArray.h>
 
-int calc_part_num(double diam, double L){
-	int num = int(L/diam);
-	return num;
-}
 
 int main(int argc, char **argv) {
 	auto dem = DemType::New();
@@ -84,8 +80,7 @@ int main(int argc, char **argv) {
 	 * define domain / geometry
 	 */
 	auto dem_geometry = [params](DemType::Value& i) {
-		Vect3d acceleration;
-		acceleration << 0,0,-9.8;
+		Vect3d acceleration(0,0,-9.8);
 		REGISTER_DEM_PARTICLE(i);
 		const double dem_diameter = params->dem_diameter;
 		const double dem_k = params->dem_k;
@@ -104,8 +99,7 @@ int main(int argc, char **argv) {
 	};
 
 	auto sph_geometry = [](SphType::Value& i) {
-		Vect3d acceleration;
-		acceleration << 0,0,-9.8;
+		Vect3d acceleration(0,0,-9.8);
 		return acceleration;
 	};
 
@@ -120,13 +114,13 @@ int main(int argc, char **argv) {
 		REGISTER_SPH_PARTICLE(i);
 		h = params->sph_hfac*psep;
 		omega = 1.0;
-		v << 0,0,0;
-		v0 << 0,0,0;
+		v = Vect3d(0,0,0);
+		v0 = Vect3d(0,0,0);
 		dddt = 0;
 		e = 1;
 		rho = params->sph_dens;
-		f << 0,0,0;
-		f0 << 0,0,0;
+		f = Vect3d(0,0,0);
+		f0 = Vect3d(0,0,0);
 		if (r[2]<0) {
 			fixed = true;
 		} else {
@@ -136,10 +130,10 @@ int main(int argc, char **argv) {
 
 	dem->create_particles(1,[L](DemType::Value& i) {
 		REGISTER_DEM_PARTICLE(i);
-		v << 0,0,0;
-		v0 << 0,0,0;
-		f << 0,0,0;
-		f0 << 0,0,0;
+		v = Vect3d(0,0,0);
+		v0 = Vect3d(0,0,0);;
+		f = Vect3d(0,0,0);
+		f0 = Vect3d(0,0,0);
 		return Vect3d(L/2,L/2,0.75*L);
 	});
 
@@ -151,8 +145,8 @@ int main(int argc, char **argv) {
 	auto dem_grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	sph->copy_to_vtk_grid(sph_grid);
 	dem->copy_to_vtk_grid(dem_grid);
-	Visualisation::vtkWriteGrid("vis/at_start_sph",0,sph_grid);
-	Visualisation::vtkWriteGrid("vis/at_start_dem",0,dem_grid);
+	Visualisation::vtkWriteGrid("at_start_sph",0,sph_grid);
+	Visualisation::vtkWriteGrid("at_start_dem",0,dem_grid);
 
 
 	std::cout << "starting...."<<std::endl;
@@ -168,8 +162,8 @@ int main(int argc, char **argv) {
 		
 		sph->copy_to_vtk_grid(sph_grid);
 		dem->copy_to_vtk_grid(dem_grid);
-		Visualisation::vtkWriteGrid("vis/sph",i,sph_grid);
-		Visualisation::vtkWriteGrid("vis/dem",i,dem_grid);
+		Visualisation::vtkWriteGrid("sph",i,sph_grid);
+		Visualisation::vtkWriteGrid("dem",i,dem_grid);
 	}
 	
 	

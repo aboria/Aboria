@@ -122,7 +122,7 @@ void dem_timestep(ptr<DemType> dem,
 	std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,dem_diameter](DemType::Value& i) {
 		REGISTER_DEM_PARTICLE(i);
 
-		f << 0,0,0;
+		f = Vect3d(0,0,0);
 		f = f + geometry(i);
 
 		for (auto tpl: i.get_neighbours(dem)) {
@@ -252,7 +252,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	std::for_each(dem->begin(),dem->end(),[sph,dem_vol,sph_mass,sph_visc,dem_diameter,sph_dens,dem_mass](DemType::Value& i) {
 		REGISTER_DEM_PARTICLE(i);
 
-		f0 << 0,0,0;
+		f0 = Vect3d(0,0,0);
 		s = 0;
 		Vect3d vf(0,0,0);
 		double ef = 0;
@@ -277,7 +277,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 			//std::cout <<"v = "<<v<<" vf = "<<vf<<" f0 = "<<f0<<" fdrag = "<<fdrag<<"v / m = "<<dem_vol/dem_mass<<std::endl;
 
 		} else {
-			f0 << 0,0,0;
+			f0 = Vect3d(0,0,0);
 		}
 	});
 
@@ -361,7 +361,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	std::for_each(sph->begin(),sph->end(),[dem,dem_mass](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
-		f0 << 0,0,0;
+		f0 = Vect3d(0,0,0);
 		for (auto tpl: i.get_neighbours(dem)) {
 			REGISTER_NEIGHBOUR_DEM_PARTICLE(tpl);
 			const double r2 = dx.squaredNorm();
@@ -382,7 +382,7 @@ void sphdem(ptr<SphType> sph,ptr<DemType> dem,
 	std::for_each(sph->begin(),sph->end(),[sph,&sph_geometry,sph_mass,sph_visc](SphType::Value& i) {
 		REGISTER_SPH_PARTICLE(i);
 
-		f << 0,0,0;
+		f = Vect3d(0,0,0);
 		fext = sph_geometry(i);
 		for (auto tpl: i.get_neighbours(sph)) {
 			REGISTER_NEIGHBOUR_SPH_PARTICLE(tpl);
