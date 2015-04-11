@@ -1,0 +1,15 @@
+*.vtu
+*.cproject
+*.project
+CMakeCache.txt
+CTestTestfile.cmake
+CMakeFiles/
+Makefile
+cmake_install.cmake
+tests/
+!tests/*.h
+examples/bd/bd
+examples/dem/dem
+examples/sph/out
+examples/sph/sph
+examples/sphdem/sphdem

@@ -63,21 +63,50 @@ public:
 template<int I,typename ParticlesType>
 struct Elem {
 	typedef typename std::tuple_element<I,typename ParticlesType::data_type>::type type;
+
+	static const type& get (typename ParticlesType::value_type const &arg) {
+		return arg.template get_elem<I>();
+	}
+
+	static void set (typename ParticlesType::value_type &arg, const type& data) {
+		return arg.template set_elem<I>(data);
+	}
 };
 
 template<typename ParticlesType>
 struct Elem<POSITION, ParticlesType> {
 	typedef Vect3d type;
+
+	static const type& get (typename ParticlesType::value_type const &arg) {
+		return arg.get_position();
+	}
+
+	static void set (typename ParticlesType::value_type &arg, const type& data) {
+		return arg.set_position(data);
+	}
 };
 
 template<typename ParticlesType>
 struct Elem<ID, ParticlesType> {
 	typedef std::size_t type;
+
+	static const type get (typename ParticlesType::value_type const &arg) {
+		return arg.get_id();
+	}
+
 };
 
 template<typename ParticlesType>
 struct Elem<ALIVE, ParticlesType> {
-	typedef std::size_t type;
+	typedef bool type;
+
+	static const type get (typename ParticlesType::value_type const &arg) {
+		return arg.get_alive();
+	}
+
+	static void set (typename ParticlesType::value_type &arg, const type& data) {
+		return arg.set_alive(data);
+	}
 };
 
 
@@ -756,6 +785,7 @@ private:
 	vtkSmartPointer<vtkUnstructuredGrid> cache_grid;
 #endif
 };
+
 
 
 

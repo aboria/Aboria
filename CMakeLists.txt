@@ -13,15 +13,7 @@ set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
 include_directories(${CXXTEST_INCLUDES} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} src)
 
-set(TESTING_DIR tests)
 enable_testing()
-cxx_test(constructors ${TESTING_DIR}/constructors.h)
-target_link_libraries(constructors ${VTK_LIBRARIES} ${Boost_LIBRARIES}) 
-cxx_test(particle_container ${TESTING_DIR}/particle_container.h)
-target_link_libraries(particle_container ${VTK_LIBRARIES} ${Boost_LIBRARIES}) 
-cxx_test(neighbours ${TESTING_DIR}/neighbours.h)
-target_link_libraries(neighbours ${VTK_LIBRARIES} ${Boost_LIBRARIES}) 
-cxx_test(geometry ${TESTING_DIR}/geometry.h)
-target_link_libraries(geometry ${VTK_LIBRARIES} ${Boost_LIBRARIES})
-cxx_test(symbolic ${TESTING_DIR}/symbolic.h)
-target_link_libraries(symbolic ${VTK_LIBRARIES} ${Boost_LIBRARIES})
+add_subdirectory(tests)
+
+

@@ -108,11 +108,11 @@ public:
        	typedef Particles<std::tuple<double> > ParticlesType;
        	ParticlesType particles;
 
-//       	Vect3d min(-1,-1,-1);
-//       	Vect3d max(1,1,1);
-//       	Vect3d periodic(true,true,true);
+        Vect3d min(-1,-1,-1);
+        Vect3d max(1,1,1);
+        Vect3d periodic(true,true,true);
        	double diameter = 0.1;
-//       	particles.init_neighbour_search(min,max,diameter,periodic);
+        particles.init_neighbour_search(min,max,diameter,periodic);
 
        	auto theDouble = get_vector<0>(particles);
        	auto position = get_vector<POSITION>(particles);
@@ -122,14 +122,38 @@ public:
        	particles.push_back(Vect3d(0,0,0));
        	particles.push_back(Vect3d(diameter*2,0,0));
 
-       	theDouble = sum(particles, radius < diameter, 1);
+       	Label<0> a;
+       	Label<1> b;
+        Dx dx;
+
+       	theDouble = sum_(b=particles, norm_(dx) < diameter, 1);
 
        	TS_ASSERT_EQUALS(particles[0].get_elem<0>(),1);
        	TS_ASSERT_EQUALS(particles[1].get_elem<0>(),1);
 
        	position = if_else(id == 0, Vect3d(0,0,0), Vect3d(diameter/2.0,0,0));
 
-       	theDouble = sum(particles, radius < diameter, 1);
+        TS_ASSERT_EQUALS(particles[0].get_position()[0],0);
+       	TS_ASSERT_EQUALS(particles[0].get_position()[1],0);
+       	TS_ASSERT_EQUALS(particles[0].get_position()[2],0);
+
+       	TS_ASSERT_EQUALS(particles[1].get_position()[0],diameter/2.0);
+       	TS_ASSERT_EQUALS(particles[1].get_position()[1],0);
+       	TS_ASSERT_EQUALS(particles[1].get_position()[2],0);
+
+
+//       	old_posiiton   = position;
+//       	for() {
+//
+//       	position = position  + sqrt(2*D*dt)*normal() + dt*interpolate(position, drift);
+//       	position = any(particles, norm_(dx()) < diameter, reflect(ellipsoid(positionb)))
+//       	}
+//       	dx =position-old_position;
+//       	msd = dot(dx,dx);
+//       	mean = mean(dx);
+//       	var = var(dx);
+
+       	theDouble = sum_(b=particles, norm_(dx) < diameter, 1);
 
        	TS_ASSERT_EQUALS(particles[0].get_elem<0>(),2);
        	TS_ASSERT_EQUALS(particles[1].get_elem<0>(),2);
