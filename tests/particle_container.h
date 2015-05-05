@@ -44,7 +44,8 @@ public:
     }
 
     void test_add_particle2(void) {
-    	typedef Particles<std::tuple<double> > Test_type;
+        ABORIA_VARIABLE(scalar,double,"scalar")
+    	typedef Particles<scalar> Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);
@@ -52,7 +53,8 @@ public:
     }
 
     void test_add_delete_particle(void) {
-    	typedef Particles<std::tuple<double> > Test_type;
+        ABORIA_VARIABLE(scalar,double,"scalar")
+    	typedef Particles<scalar> Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);

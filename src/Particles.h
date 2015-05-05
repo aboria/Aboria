@@ -33,10 +33,16 @@
 //#include <boost/iterator/iterator_facade.hpp>
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
-#include <boost/fusion/algorithm.hpp>
-#include <boost/fusion/adapted/std_tuple.hpp>
+
+#include <boost/mpl/vector.hpp>
+#include <boost/mpl/find.hpp>
+#include <boost/mpl/for_each.hpp>
+#include <boost/mpl/range_c.hpp>
+namespace mpl = boost::mpl;
+
 #include "Zip.h"
 #include "Vector.h"
+#include "Variable.h"
 //#include "MyRandom.h"
 
 #ifndef HAVE_VTK
@@ -52,193 +58,103 @@
 namespace Aboria {
 
 
-template<typename DataType>
-class DataNames {
-public:
-	std::string static get(unsigned int n) {
-		return "data_" + std::to_string(n);
-	}
-};
-
-template<int I,typename ParticlesType>
-struct Elem {
-	typedef typename std::tuple_element<I,typename ParticlesType::data_type>::type type;
-
-	static const type& get (typename ParticlesType::value_type const &arg) {
-		return arg.template get_elem<I>();
-	}
-
-	static void set (typename ParticlesType::value_type &arg, const type& data) {
-		return arg.template set_elem<I>(data);
-	}
-};
-
-template<typename ParticlesType>
-struct Elem<POSITION, ParticlesType> {
-	typedef Vect3d type;
-
-	static const type& get (typename ParticlesType::value_type const &arg) {
-		return arg.get_position();
-	}
-
-	static void set (typename ParticlesType::value_type &arg, const type& data) {
-		return arg.set_position(data);
-	}
-};
-
-template<typename ParticlesType>
-struct Elem<ID, ParticlesType> {
-	typedef std::size_t type;
-
-	static const type get (typename ParticlesType::value_type const &arg) {
-		return arg.get_id();
-	}
-
-};
-
-template<typename ParticlesType>
-struct Elem<ALIVE, ParticlesType> {
-	typedef bool type;
-
-	static const type get (typename ParticlesType::value_type const &arg) {
-		return arg.get_alive();
-	}
-
-	static void set (typename ParticlesType::value_type &arg, const type& data) {
-		return arg.set_alive(data);
-	}
-};
 
 
 
-
-
-template<typename DataType=std::tuple<double> >
+template<typename ... TYPES> 
 class Particles {
-	template<typename T>
-	friend class Particles;
+//	template<typename T>
+//	friend class Particles;
 public:
 
-	class value_type {
+    typedef typename std::tuple<position::value_type,id::value_type,alive::value_type,typename TYPES::value_type...> tuple_type;
+	typedef typename mpl::vector<position,id,alive,TYPES...> type_vector;
+
+    template<typename T>
+    struct elem_by_type {
+        typedef T type;
+        typedef typename T::value_type value_type;
+        typedef typename mpl::find<type_vector,T>::type iter;
+        BOOST_MPL_ASSERT_NOT(( boost::is_same< typename mpl::end<type_vector>::type, typename iter::type > ));
+        static const size_t index = iter::pos::value;
+    };
+    template<unsigned int I>
+    struct elem_by_index {
+        BOOST_MPL_ASSERT_RELATION( (mpl::size<type_vector>::type::value), >, I );
+        typedef typename mpl::at<type_vector,mpl::int_<I> > type;
+        typedef typename type::value_type value_type;
+        static const size_t index = I;
+    };
+
+   	class value_type {
 		friend class Particles;
 	public:
 		typedef std::mt19937 generator_type;
-		value_type():uni(0,1),normal(0,1){}
+		value_type():m_uni(0,1),m_normal(0,1){}
 		value_type(const value_type& rhs) {
-			r = rhs.r;
-			data = rhs.data;
-			alive = rhs.alive;
-			id = rhs.id;
-			generator = rhs.generator;
+			m_data = rhs.m_data;
+			m_generator = rhs.m_generator;
 		}
-		value_type(const Vect3d &position):
-			r(position),uni(0,1),normal(0,1) {}
+		value_type(const Vect3d &r):
+			m_uni(0,1),m_normal(0,1) {
+            this->set<position>(r);
+        }
 		~value_type() {
 
 		}
 		value_type& operator=(const value_type &rhs) {
 			if (this != &rhs) {
-				data = rhs.dattypea;
+				m_data = rhs.m_data;
 			}
 			return *this;
 		}
 
 		bool operator==(const value_type &rhs) const {
-			return id == rhs.id;
+			return get<id>(*this) == get<id>(rhs);
 		}
 
 		void deep_copy(const value_type &rhs) {
 			if (this != &rhs) {
-				r = rhs.r;
-				data = rhs.data;
-				alive = rhs.alive;
-				id = rhs.id;
-				generator = rhs.generator;
+				m_data = rhs.m_data;
+				m_generator = rhs.m_generator;
 			}
 		}
 
-//		Vect3d& get_position() {
-//			return r;
-//		}
-		const Vect3d& get_position() const {
-			return r;
-		}
-		void set_position(const Vect3d& arg) {
-			r = arg;
-		}
-		const DataType& get_data() const {
-			return data;
-		}
-		DataType& get_data() {
-			return data;
-		}
-//		template<int N>
-//		std::tuple_element<N,DataType>::type& get_data_elem() {
-//			return std::get<N>(data);
-//		}
-		template<int I>
-		const typename Elem<I, Particles<DataType> >::type& get_elem() const {
-			return std::get<I>(data);
-		}
-		template<int I>
-		typename Elem<I, Particles<DataType> >::type& get_elem() {
-			return std::get<I>(data);
-		}
-		template<int I>
-		void set_elem(const typename Elem<I, Particles<DataType> >::type& arg) {
-			std::get<I>(data) = arg;
+		template<typename T>
+		const typename elem_by_type<T>::value_type & get() const {
+			return std::get<elem_by_type<T>::index>(m_data);
 		}
 
-		size_t get_index() {
-			return index;
+		template<typename T>
+		typename elem_by_type<T>::value_type & get() {
+			return std::get<elem_by_type<T>::index>(m_data);
 		}
-		bool get_alive() const {
-			return alive;
+
+		template<typename T>
+		void set(const typename elem_by_type<T>::value_type & arg) {
+			std::get<elem_by_type<T>::index>(m_data) = arg;
 		}
-		void set_alive(bool aliveIn) const {
-			alive = aliveIn;
-		}
+
 		generator_type get_generator() {
-			return generator;
+			return m_generator;
 		}
 		double rand_uniform() {
-			return uni(generator);
+			return m_uni(m_generator);
 		}
 
 		double rand_normal() {
-			return normal(generator);
-		}
-		const std::size_t get_id() const {
-			return id;
-		}
-		void mark_for_deletion() {
-			alive = false;
+			return m_normal(m_generator);
 		}
 
-		template<typename T>
-		boost::iterator_range<typename T::element_type::NeighbourSearch_type::const_iterator> get_neighbours(const T particles) {
-			ASSERT(particles->searchable==true,"particles is not searchable");
-			return boost::make_iterator_range(
-			 particles->neighbour_search.find_broadphase_neighbours(get_position(), index,false),
-			 particles->neighbour_search.end());
-		}
-
-		template<typename T>
-		Vect3d correct_position_for_periodicity(const T particles, const Vect3d& position) {
-			return particles->neighbour_search.correct_position_for_periodicity(r, position);
-		}
 	private:
 
-		Vect3d r;
-		bool alive;
-		std::size_t id,index;
-		DataType data;
-		generator_type generator;
-		std::uniform_real_distribution<double> uni;
-		std::normal_distribution<double> normal;
+        tuple_type m_data;
+		generator_type m_generator;
+		std::uniform_real_distribution<double> m_uni;
+		std::normal_distribution<double> m_normal;
 
 	};
-	typedef DataType data_type;
+
 	typedef typename std::vector<value_type> vector_type;
 	typedef typename vector_type::size_type size_type;
 	typedef typename vector_type::size_type difference_type;
@@ -246,7 +162,7 @@ public:
 	typedef typename vector_type::const_iterator const_iterator;
 	struct get_pos {
 		const Vect3d& operator()(const value_type& i) const {
-			return i.get_position();
+			return i.template get<position>();
 		}
 	};
 	typedef BucketSort<const_iterator,get_pos> NeighbourSearch_type;
@@ -266,7 +182,7 @@ public:
 		seed(seed)
 	{}
 
-	Particles(const Particles<DataType> &other):
+	Particles(const Particles<TYPES...> &other):
 			data(other.data),
 			neighbour_search(other.neighbour_search),
 			next_id(other.next_id),
@@ -283,8 +199,8 @@ public:
 		seed(0)
 	{}
 
-	static ptr<Particles<DataType> > New() {
-		return ptr<Particles<DataType> >(new Particles<DataType> ());
+	static ptr<Particles<TYPES...> > New() {
+		return ptr<Particles<TYPES...> >(new Particles<TYPES...> ());
 	}
 
 	value_type& operator[](std::size_t idx) {
@@ -300,14 +216,13 @@ public:
 		return data.end();
 	}
 
-
 	void delete_particles() {
 		const int n = data.size();
 		for (int index = 0; index < n; ++index) {
 			value_type& i = data[index];
-			if (i.alive==false) {
+			if (i.template get<alive>() == false) {
 				i.deep_copy(*(data.cend()-1));
-				if (track_ids) id_to_index[i.id] = index;
+				if (track_ids) id_to_index[i.template get<id>()] = index;
 				data.pop_back();
 			}
 		}
@@ -320,7 +235,7 @@ public:
 	iterator erase (iterator i) {
 		if (i != end()-1) {
 			i->deep_copy(*(data.cend()-1));
-			if (track_ids) id_to_index[i->id] = i-begin();
+			if (track_ids) id_to_index[i->template get<id>()] = i-begin();
 			if (searchable) neighbour_search.copy_points(i,end());
 
 		}
@@ -388,7 +303,7 @@ public:
 	template<typename F>
 	void reset_neighbour_search(const double length_scale, F f) {
 		std::for_each(begin(),end(),[&f](value_type& i) {
-			i.r = f(i);
+			i.template set<position>(f(i));
 		});
 		neighbour_search.reset(neighbour_search.get_low(),neighbour_search.get_high(),length_scale,neighbour_search.get_periodic());
 		neighbour_search.embed_points(data.cbegin(),data.cend());
@@ -411,20 +326,16 @@ public:
 		return neighbour_search.get_high();
 	}
 
-
-
 	void push_back (const value_type& val) {
 		data.push_back(val);
 		if (searchable) neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
 		const int index = data.size();
 		iterator i = end()-1;
-		i->r = val.r;
-		//if (std::get<1>(i->data).norm()>1) std::cout <<"adding bad orientation"<<std::endl;
-		i->id = this->next_id++;
-		i->generator.seed(i->id*seed);
-		i->alive = true;
-		i->index = index;
-		if (track_ids) id_to_index[i->id] = index;
+		i->template set<position>(val.template get<position>());
+		i->template set<id>(this->next_id++);
+		i->m_generator.seed(i->template get<id>()*seed);
+		i->template set<alive>(true);
+		if (track_ids) id_to_index[i->template get<id>()] = index;
 		if (searchable) neighbour_search.add_point(i);
 	}
 
@@ -443,12 +354,11 @@ public:
 		if (searchable) neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
 		int index = old_size;
 		for (auto i=data.begin()+old_size; i!=data.end();i++,index++) {
-			i->id = this->next_id++;
-			i->generator.seed(i->id*seed);
-			i->alive = true;
-			i->index = index;
-			i->r = f(*i);
-			if (track_ids) id_to_index[i->id] = index;
+			i->template set<id>(this->next_id++);
+			i->m_generator.seed(i->template get<id>()*seed);
+			i->template set<alive>(true);
+			i->template set<position>(f(*i));
+			if (track_ids) id_to_index[i->template get<id>()] = index;
 			if (searchable) neighbour_search.add_point(i);
 		}
 	}
@@ -531,7 +441,7 @@ public:
 	template<typename F>
 	void update_positions(iterator b, iterator e, F f) {
 		std::for_each(b,e,[&f](value_type& i) {
-			i.r = f(i);
+			i.template set<position>(f(i));
 		});
 		if (searchable) {
 			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
@@ -541,7 +451,7 @@ public:
 	template<typename F>
 	void update_positions(F f) {
 		std::for_each(begin(),end(),[&f](value_type& i) {
-			i.r = f(i);
+			i.template set<position>(f(i));
 		});
 		if (searchable) {
 			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
@@ -583,69 +493,90 @@ public:
 
 
 #ifndef HAVE_VTK
-	struct save_elem {
-		typedef int result_type;
-		save_elem(int index, vtkSmartPointer<vtkFloatArray>* datas):
-			index(index),datas(datas){}
-		template<typename T>
-		result_type operator()(result_type state, T& t) const {
-			datas[state]->SetValue(index,t);
-			return state + 1;
-		}
-		//template<>
-		result_type operator()(result_type state, Vect3d& t) const {
-			datas[state]->SetTuple3(index,t[0],t[1],t[2]);
-			return state + 1;
-		}
-		result_type operator()(result_type state, const Vect3d& t) const {
-			datas[state]->SetTuple3(index,t[0],t[1],t[2]);
-			return state + 1;
-		}
+	struct write_from_tuple {
+		write_from_tuple(tuple_type &write_from, int index, vtkSmartPointer<vtkFloatArray>* datas):
+			write_from(write_from),index(index),datas(datas){}
+
+        template< typename U > void operator()(U i) {
+            typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
+            data_type &write_from_elem = std::get<U::value>(write_from);
+            if (boost::is_same<data_type,Vect3d>::value) {
+                datas[i]->SetTuple3(index,write_from_elem[0],
+                                              write_from_elem[1],
+                                              write_from_elem[2]);
+            } else {
+			    datas[i]->SetValue(index,write_from_elem);
+            }
+        }
+
+        tuple_type &write_from;
 		int index;
 		vtkSmartPointer<vtkFloatArray>* datas;
 	};
-	struct read_elem {
-			typedef int result_type;
-			read_elem(int index, vtkSmartPointer<vtkFloatArray>* datas):
-				index(index),datas(datas){}
-			template<typename T>
-			result_type operator()(result_type state, T& t) const {
-				t = datas[state]->GetValue(index);
-				return state + 1;
-			}
-			//template<>
-			result_type operator()(result_type state, Vect3d& t) const {
-				double *data = datas[state]->GetTuple3(index);
-				t[0] = data[0];
-				t[1] = data[1];
-				t[2] = data[2];
-				return state + 1;
-			}
-			int index;
-			vtkSmartPointer<vtkFloatArray>* datas;
-	};
-	struct setup_data {
-		typedef int result_type;
-		setup_data(vtkSmartPointer<vtkFloatArray>* datas):
-			datas(datas){}
 
-		template<typename T>
-		result_type operator()(result_type state, T& t) const {
-			datas[state]->SetNumberOfComponents(1);
-			return state + 1;
-		}
-		result_type operator()(result_type state, const Vect3d& t) const {
-			datas[state]->SetNumberOfComponents(3);
-			return state + 1;
-		}
-		result_type operator()(result_type state, Vect3d& t) const {
-			datas[state]->SetNumberOfComponents(3);
-			return state + 1;
-		}
-		//template<>
+	struct read_into_tuple {
+	    read_into_tuple(tuple_type &read_into, int index, vtkSmartPointer<vtkFloatArray>* datas):
+		    read_into(read_into),index(index),datas(datas){}
 
+        template< typename U > void operator()(U i) {
+            typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
+            data_type &read_into_elem = std::get<U::value>(read_into);
+            if (boost::is_same<data_type,Vect3d>::value) {
+				double *data = datas[i]->GetTuple3(index);
+                read_into_elem[0] = data[0];
+                read_into_elem[1] = data[1];
+                read_into_elem[2] = data[2];
+            } else {
+                read_into_elem = datas[i]->GetValue(index);
+            }
+        }
+
+        tuple_type &read_into;
+		int index;
 		vtkSmartPointer<vtkFloatArray>* datas;
 	};
+	
+    struct setup_datas_for_writing {
+		setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
+			n(n),datas(datas),grid(grid){}
+        template< typename U > void operator()(U i) {
+            std::string name = mpl::at<type_vector,typename U::value>::type::name;
+            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
+			if (!datas[i]) {
+				datas[i] = vtkSmartPointer<vtkFloatArray>::New();
+				datas[i]->SetName(name.c_str());
+				grid->GetPointData()->AddArray(datas[i]);
+			}
+			typedef typename mpl::at<type_vector,typename U::value>::type::value_type data_type;
+            if (boost::is_same<data_type, Vect3d>::value) {
+                datas[i]->SetNumberOfComponents(3);
+            } else {
+                datas[i]->SetNumberOfComponents(1);
+            }
+			datas[i]->SetNumberOfTuples(n);
+        }
+
+        size_t n;
+		vtkSmartPointer<vtkFloatArray>* datas;
+		vtkUnstructuredGrid *grid;
+    };
+
+    struct setup_datas_for_reading {
+		setup_datas_for_reading(size_t n,vtkSmartPointer<vtkFloatArray>* datas,vtkUnstructuredGrid *grid):
+			n(n),datas(datas),grid(grid){}
+        template< typename U > void operator()(U i) {
+            std::string name = mpl::at<type_vector,typename U::value>::type::name;
+			datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
+			CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
+			CHECK(datas[i]->GetNumberOfTuples()==n,"Data array "<<name<<" has size != id array. data size = "<<datas[i]->GetNumberOfTuples()<<". id size = "<<n);
+        }
+
+        size_t n;
+		vtkSmartPointer<vtkFloatArray>* datas;
+		vtkUnstructuredGrid *grid;
+    };
+
+
 
 	vtkSmartPointer<vtkUnstructuredGrid> get_grid() {
 		if (!cache_grid) cache_grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
@@ -665,46 +596,28 @@ public:
 			grid->SetCells(1,cells);
 		}
 		vtkSmartPointer<vtkUnsignedCharArray> cell_types = grid->GetCellTypesArray();
-		vtkSmartPointer<vtkIntArray> ids = vtkIntArray::SafeDownCast(grid->GetPointData()->GetArray("id"));
-		if (!ids) {
-			ids = vtkSmartPointer<vtkIntArray>::New();
-			ids->SetName("id");
-			grid->GetPointData()->AddArray(ids);
-		}
-		constexpr size_t dn = std::tuple_size<DataType>::value;
-		vtkSmartPointer<vtkFloatArray> datas[dn];
-		for (int i = 0; i < dn; ++i) {
-			std::string name = DataNames<DataType>::get(i);
-			datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
-			if (!datas[i]) {
-				datas[i] = vtkSmartPointer<vtkFloatArray>::New();
-				datas[i]->SetName(name.c_str());
-				grid->GetPointData()->AddArray(datas[i]);
-			}
-		}
-		boost::fusion::fold(DataType(),0,setup_data(datas));
+		
 
 		const vtkIdType n = size();
+
+		constexpr size_t dn = std::tuple_size<tuple_type>::value;
+		vtkSmartPointer<vtkFloatArray> datas[dn];
+        mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (setup_datas_for_writing(n,datas,grid));
 		points->SetNumberOfPoints(n);
 		cells->Reset();
 		cell_types->Reset();
-		ids->SetNumberOfTuples(n);
-		for (int i = 0; i < dn; ++i) {
-			datas[i]->SetNumberOfTuples(n);
-		}
 		int j = 0;
 
 		for(auto& i: *this) {
 			const int index = j++;
 			//std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
-			points->SetPoint(index,i.get_position()[0],i.get_position()[1],i.get_position()[2]);
+            const Vect3d &r = i.template get<position>();
+			points->SetPoint(index,r[0],r[1],r[2]);
 			cells->InsertNextCell(1);
 			cells->InsertCellPoint(index);
 			cell_types->InsertNextTuple1(1);
-			ids->SetValue(index,i.get_id());
 
-
-			boost::fusion::fold(i.get_data(),0,save_elem(index,datas));
+            mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (write_from_tuple(i.m_data,index,datas));
 		}
 	}
 
@@ -717,26 +630,20 @@ public:
 			vtkSmartPointer<vtkUnsignedCharArray> cell_types = grid->GetCellTypesArray();
 			vtkSmartPointer<vtkIntArray> ids = vtkIntArray::SafeDownCast(grid->GetPointData()->GetArray("id"));
 			CHECK(ids,"No id array in vtkUnstructuredGrid");
-			constexpr size_t dn = std::tuple_size<DataType>::value;
+			constexpr size_t dn = std::tuple_size<tuple_type>::value;
 
 			vtkSmartPointer<vtkFloatArray> datas[dn];
 
 			const vtkIdType n = ids->GetSize();
 
-			for (int i = 0; i < dn; ++i) {
-				std::string name = DataNames<DataType>::get(i);
-				datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
-				CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
-				CHECK(datas[i]->GetNumberOfTuples()==n,"Data array "<<name<<" has size != id array. data size = "<<datas[i]->GetNumberOfTuples()<<". id size = "<<n);
-			}
+            mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (setup_datas_for_reading(n,datas,grid));
 
 			this->clear();
 
 			for (int j = 0; j < n; ++j) {
 				value_type particle;
 				particle.r  = points->GetPoint(j);
-				particle.id = ids->GetValue(j);
-				boost::fusion::fold(particle.get_data(),0,read_elem(j,datas));
+                mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (read_into_tuple(particle.m_data,index,datas));
 				this->push_back(particle);
 			}
 		}
@@ -744,20 +651,22 @@ public:
 
 private:
 
+
 	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic, const bool remove_deleted_particles = false) {
 		std::for_each(begin(),end(),[low,high,periodic](value_type& i) {
+            Vect3d &r = i.template get<position>();
 			for (int d = 0; d < 3; ++d) {
 				if (periodic[d]) {
-					while (i.r[d]<low[d]) {
-						i.r[d] += (high[d]-low[d]);
+					while (r[d]<low[d]) {
+						r[d] += (high[d]-low[d]);
 					}
-					while (i.r[d]>=high[d]) {
-						i.r[d] -= (high[d]-low[d]);
+					while (r[d]>=high[d]) {
+						r[d] -= (high[d]-low[d]);
 					}
 				} else {
-					if ((i.r[d]<low[d]) || (i.r[d]>=high[d])) {
-						i.mark_for_deletion();
-					}
+					if ((r[d]<low[d]) || (r[d]>=high[d])) {
+						i.template set<alive>(false);
+                    }
 				}
 			}
 		});
@@ -765,9 +674,9 @@ private:
 			const int n = data.size();
 			for (int index = 0; index < n; ++index) {
 				value_type& i = data[index];
-				if (i.alive==false) {
+				if (i.template get<alive>()==false) {
 					i.deep_copy(*(data.cend()-1));
-					if (track_ids) id_to_index[i.id] = index;
+					if (track_ids) id_to_index[i.template get<id>()] = index;
 					data.pop_back();
 				}
 			}
@@ -787,6 +696,18 @@ private:
 };
 
 
+template<typename T, typename VT>
+const typename T::value_type & get(const VT & arg) {
+    return arg.template get<T>();
+}
+template<typename T, typename VT>
+typename T::value_type & get(VT & arg) {
+    return arg.template get<T>();
+}
+template<typename T, typename VT>
+void set(VT & arg, const typename T::value_type & data) {
+    arg.template set<T>(data);
+}
 
 
 }

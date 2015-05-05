@@ -6,7 +6,7 @@ CTestTestfile.cmake
 CMakeFiles/
 Makefile
 cmake_install.cmake
-tests/
+tests/*
 !tests/*.h
 examples/bd/bd
 examples/dem/dem

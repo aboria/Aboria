@@ -34,6 +34,7 @@
 #include "Utils.h"
 #include "DataVector.h"
 #include "Symbolic.h"
+#include "Variable.h"
 
 //#include "ParticleOperators.h"
 

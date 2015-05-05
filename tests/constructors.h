@@ -36,11 +36,13 @@ using namespace Aboria;
 class ConstructorsTest : public CxxTest::TestSuite {
 public:
     void testOneDouble(void) {
-    	Particles<std::tuple<double> > test;
+        ABORIA_VARIABLE(scalar,double,"scalar")
+    	Particles<scalar> test;
     }
 
     void testOneVect3d(void) {
-    	Particles<std::tuple<Vect3d> > test;
+        ABORIA_VARIABLE(vector,Vect3d,"vector")
+    	Particles<vector> test;
     }
 
     void testNoData(void) {
@@ -48,7 +50,12 @@ public:
     }
 
     void testMultiple(void) {
-    	Particles<std::tuple<Vect3d,double,int,unsigned int, bool> > test;
+        ABORIA_VARIABLE(vector,Vect3d,"vector")
+        ABORIA_VARIABLE(var1,double,"var1")
+        ABORIA_VARIABLE(var2,int,"var2")
+        ABORIA_VARIABLE(var3,unsigned int,"var3")
+        ABORIA_VARIABLE(var4,bool,"var4")
+    	Particles<vector,var1,var2,var3,var4> test;
     }
 
 };
