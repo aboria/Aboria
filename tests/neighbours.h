@@ -125,6 +125,7 @@ public:
     	tpl = test.get_neighbours(Vect3d(1.6*diameter,0,0));
     	TS_ASSERT_EQUALS(tpl.size(),0);
     }
+
 };
 
 

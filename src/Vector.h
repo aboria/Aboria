@@ -182,6 +182,19 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
     return ret; 
 } 
 
+
+#define UNARY_OPERATOR(the_op) \
+		template<typename T,int N> \
+				Vector<double,N> operator the_op(const Vector<T,N> &arg1) { \
+					Vector<double,N> ret; \
+					for (int i = 0; i < N; ++i) { \
+						ret[i] = the_op arg1[i]; \
+					} \
+					return ret; \
+				} \
+
+UNARY_OPERATOR(-)
+
 #define OPERATOR(the_op) \
 		template<typename T1,typename T2,int N> \
 				Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \

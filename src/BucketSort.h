@@ -171,7 +171,7 @@ public:
 	    		const Vect3d p = bucket_sort->return_vect3d(bucket_sort->begin_iterator[*m_node]);
 
 	    		dx = centre-bucket_sort->correct_position_for_periodicity(centre, p);
-	    		//std::cout << "testing candidate with position "<<p<<" and dx = "<<dx<<std::endl;
+	    		//std::cout << "testing candidate with position "<<p<<" and dx = "<<dx<<" relative to centre = "<<centre<<std::endl;
 	    		//if (dx.squaredNorm() <= radius2) {
 	    		if ((std::abs(dx[0]) < bucket_sort->max_interaction_radius) &&
 	    				(std::abs(dx[1]) < bucket_sort->max_interaction_radius) &&
@@ -632,7 +632,7 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 }
 template<typename T, typename F>
 typename BucketSort<T,F>::const_iterator BucketSort<T,F>::find_broadphase_neighbours(const Vect3d& r,const int my_index, const bool self) const {
-	return const_iterator(this,r,my_index,self);
+	return const_iterator(this,correct_position_for_periodicity(r),my_index,self);
 }
 template<typename T, typename F>
 typename BucketSort<T,F>::const_iterator BucketSort<T,F>::end() const {

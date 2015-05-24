@@ -364,6 +364,7 @@ public:
 	}
 
 	boost::iterator_range<typename NeighbourSearch_type::const_iterator> get_neighbours(const Vect3d position) {
+        ASSERT(searchable == true,"ERROR: using get_neighbours before initialising neighbour search. Please call the init_neighbour_search function before using get_neighbours");
 		return boost::make_iterator_range(
 				neighbour_search.find_broadphase_neighbours(position, -1,false),
 				neighbour_search.end());
