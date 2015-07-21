@@ -133,8 +133,9 @@ public:
        	Label<0> a;
        	Label<1> b;
         Dx dx;
+        Accumulate<std::plus<double> > sum;
 
-       	scalar_ = sum_(b=particles, norm_(dx) < diameter, 1,0);
+       	scalar_ = sum(b=particles, norm_(dx) < diameter, 1,0);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
@@ -171,7 +172,7 @@ public:
 //       	mean = mean(dx);
 //       	var = var(dx);
 
-       	scalar_ = sum_(b=particles, norm_(dx) < diameter, 1,0);
+       	scalar_ = sum(b=particles, norm_(dx) < diameter, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
@@ -190,7 +191,9 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[1],diameter/2.0);
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],diameter/2.0);
 
-    	position_ = sum_(b=particles, norm_(dx) < diameter, Vect3d(0,0,0) + 0.5*(scalar_[a]/2.0 + scalar_[b]/10.0),0);
+        Accumulate<std::plus<Vect3d> > sumVect;
+
+    	position_ = sumVect(b=particles, norm_(dx) < diameter, Vect3d(0,0,0) + 0.5*(scalar_[a]/2.0 + scalar_[b]/10.0),0);
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0.05);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0.05);

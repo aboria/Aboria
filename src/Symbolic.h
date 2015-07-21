@@ -62,11 +62,6 @@ struct label_ {
 };
 
 
-namespace tag {
-		struct sum_;
-		struct first_;
-	}
-
 template<typename Expr>
 struct DataVectorExpr;
 
@@ -169,12 +164,32 @@ struct DataVectorGrammar
 		}
 	};
 
+
+      template <typename T>
+      struct accumulate_ {
+          typedef T functor_type;
+          accumulate_() {};
+          accumulate_(const T& functor):functor(functor) {};
+          T functor;
+      };
+
     struct GeometryGrammar
     	: proto::function< proto::terminal< geometry_<_> >, DataVectorGrammar, DataVectorGrammar, DataVectorGrammar>
 		{}; 
 
 	struct GeometriesGrammar
     	: proto::function< proto::terminal< geometries_<_> >, LabelGrammar, DataVectorGrammar>
+		{}; 
+
+
+    //TODO: should make a "conditional" grammar to match 2nd arguement
+	struct AccumulateGrammar
+    	: proto::function< proto::terminal< accumulate_<_> >, LabelGrammar, DataVectorGrammar, DataVectorGrammar>
+		{}; 
+
+
+	struct AccumulateInitGrammar
+    	: proto::function< proto::terminal< accumulate_<_> >, LabelGrammar, DataVectorGrammar, DataVectorGrammar, DataVectorGrammar>
 		{}; 
 
 
@@ -191,16 +206,10 @@ struct DataVectorGrammar
   	    struct dx_ {};
   	  struct normal_ {};
 
-      template <typename T>
-      struct accumulate_ {
-      };
-
-	
-
   	  template<typename ParticlesType>
   	  struct ParticleCtx;
 
-		// Here is an evaluation context that indexes into a lazy vector
+	    // Here is an evaluation context that indexes into a lazy vector
 		// expression, and combines the result.
 		template<typename ParticlesType1, typename ParticlesType2>
 		struct TwoParticleCtx
@@ -327,228 +336,169 @@ struct ParticleCtx
 
 
 
-			// Handle unlabeled vector terminals here...
-			template<typename Expr>
-			struct eval<Expr, proto::tag::terminal, 
-                typename boost::enable_if<proto::matches<Expr, proto::terminal<DataVector<_,_> > > >::type 
-                //typename boost::enable_if<typename boost::is_same<typename Expr::proto_child0,DataVector<T,ParticlesType2> > > 
-				//boost::enable_if<mpl::true_ > 
-				>
-			{
-                typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-                typedef typename proto::result_of::value<Expr>::type::value_type result_type;
-
-                //BOOST_MPL_ASSERT(( boost::is_same< ParticlesType,ParticlesType2 > ));
-
-				result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-				{
-					return get<variable_type>(ctx.particle_);
-				}
-			};
-
-			// Handle normal terminals here...
-			template<typename Expr>
-			struct eval<Expr, proto::tag::terminal,
-                typename boost::enable_if<proto::matches<Expr, proto::terminal<normal_ > > >::type 
-				>
-			{
-				typedef double result_type;
-
-				result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-				{
-                    //TODO: get better (parallel) random number generator
-					return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
-				}
-			};
-
-			// Handle subscripts here...
-			template<typename Expr>
-			struct eval<Expr, proto::tag::subscript,
-				typename boost::enable_if<mpl::true_>::type 
-				>
-			{
-				typedef typename proto::result_of::child_c<Expr, 1>::type subscript_type;
-				BOOST_MPL_ASSERT(( proto::matches< subscript_type, SubscriptGrammar > ));
-
-				typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
-				typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
-
-				BOOST_MPL_ASSERT_RELATION( subscript_depth::value, == , 0 );
-
-				typedef typename proto::result_of::child_c<Expr, 0>::type ExprToSubscript;
-
-				typedef typename proto::result_of::eval<ExprToSubscript const, ParticleCtx<ParticlesType> const>::type result_type;
-
-				result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-				{
-					return proto::child_c<0>(expr).eval(ctx.particle_);
-				}
-			};
-
-			// Handle bitwise or (reflections) here
-            
-            /*
-            template<typename Expr>
-			struct eval<Expr, proto::tag::bitwise_or,
-				boost::enable_if<typename proto::matches<typename proto::result_of::child_c<Expr,1>,GeometriesGrammar>::type > 
-				>
-			{
-
-				typedef Vect3d result_type;
-
-				result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-				{
-					Vect3d vector = proto::eval(proto::child_c<0>(expr),ctx);
-                    reflect_once(Vect3d(0,0,0),vector,proto::eval(proto::child_c<1>(expr),ctx));
-                    return vector;
-                }
-            };
-            */
+	// Handle unlabeled vector terminals here...
+	template<typename Expr>
+	struct eval<Expr, proto::tag::terminal, 
+        typename boost::enable_if<proto::matches<Expr, proto::terminal<DataVector<_,_> > > >::type 
+	> 
+    {
+        typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
+        typedef typename proto::result_of::value<Expr>::type::value_type result_type;
 				
-				
-			template<typename Expr>
-			struct eval<Expr, proto::tag::bitwise_or,
-				typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,GeometriesGrammar> >::type 
-				>
-			{
+        result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
+	    {
+	        return get<variable_type>(ctx.particle_);
+	    }
+	};
 
-				typedef Vect3d result_type;
+	// Handle normal terminals here...
+	template<typename Expr>
+	struct eval<Expr, proto::tag::terminal,
+        typename boost::enable_if<proto::matches<Expr, proto::terminal<normal_ > > >::type 
+	    >
+	{
+	    typedef double result_type;
 
-				result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-				{
-					typedef typename proto::result_of::child_c<Expr,1>::type geometry_expr_type;
-					typedef typename proto::result_of::child_c<geometry_expr_type,0>::type geometry_functor_terminal_type;
-					typedef typename proto::result_of::value<geometry_functor_terminal_type>::type geometry_functor_type;
-					typedef typename geometry_functor_type::result_type geometry_type;
-					geometry_expr_type geometry_expr = proto::child_c<1>(expr);
-					Vect3d vector = proto::eval(proto::child_c<0>(expr),ctx);
-						typedef typename proto::result_of::child_c<geometry_expr_type,1>::type label_expr_type;
-						typedef typename proto::result_of::child_c<geometry_expr_type,2>::type arg1_expr_type;
-						typedef typename boost::result_of<LabelGrammar(label_expr_type)>::type particles_type_ref;
-						typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-						particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(geometry_expr));
-						arg1_expr_type arg1_expr = proto::child_c<2>(geometry_expr);
-                    	//std::cout << "doing reflect for particle "<<get<id>(ctx.particle_)<<std::endl;
-                        bool keep_going = true;
-						while (keep_going) {
-							keep_going = false;	
-                            //std::cout << "searching around position = "<<vector + get<position>(ctx.particle_)<<std::endl;
-							for (auto i: particlesb.get_neighbours(vector + get<position>(ctx.particle_))) {
-                       			//std::cout << "doing neighbour "<<get<id>(std::get<0>(i))<<std::endl;
-								TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
-                                //std::cout << "with dx = "<<ctx2.dx_<<" or "<<std::get<1>(i)<<" position1 = "<<get<position>(ctx2.particle1_)<<" position2 = "<<get<position>(ctx2.particle2_)<<std::endl;
-								geometry_type geometry(vector-ctx2.dx_,proto::eval(arg1_expr,ctx2),true);
-                       			//std::cout <<"result of evaluating geometry is "<<geometry<<std::endl;
-								if (reflect_once(Vect3d(0,0,0),vector,geometry))
-									keep_going = true;
-							}
-						}
-					return vector;
+	    result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
+	    {
+            //TODO: get better (parallel) random number generator
+	        return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
+	    }
+	};
+
+	// Handle subscripts here...
+	template<typename Expr>
+	struct eval<Expr, proto::tag::subscript,
+	    typename boost::enable_if<mpl::true_>::type 
+	    >
+	{
+        typedef typename proto::result_of::child_c<Expr, 1>::type subscript_type;
+	    BOOST_MPL_ASSERT(( proto::matches< subscript_type, SubscriptGrammar > ));
+	    typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
+	    typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
+
+	    BOOST_MPL_ASSERT_RELATION( subscript_depth::value, == , 0 );
+
+	    typedef typename proto::result_of::child_c<Expr, 0>::type ExprToSubscript;
+
+	    typedef typename proto::result_of::eval<ExprToSubscript const, ParticleCtx<ParticlesType> const>::type result_type;
+
+	    result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
+    	{
+            return proto::child_c<0>(expr).eval(ctx.particle_);
+		}
+	};
+
+    template<typename Expr>
+    struct eval<Expr, proto::tag::bitwise_or,
+        typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,GeometriesGrammar> >::type 
+    >
+    {
+
+        typedef Vect3d result_type;
+
+	    result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
+	    {
+	        typedef typename proto::result_of::child_c<Expr,1>::type geometry_expr_type;
+			typedef typename proto::result_of::child_c<geometry_expr_type,0>::type geometry_functor_terminal_type;
+			typedef typename proto::result_of::value<geometry_functor_terminal_type>::type geometry_functor_type;
+			typedef typename geometry_functor_type::result_type geometry_type;
+			geometry_expr_type geometry_expr = proto::child_c<1>(expr);
+			Vect3d vector = proto::eval(proto::child_c<0>(expr),ctx);
+			typedef typename proto::result_of::child_c<geometry_expr_type,1>::type label_expr_type;
+			typedef typename proto::result_of::child_c<geometry_expr_type,2>::type arg1_expr_type;
+			typedef typename boost::result_of<LabelGrammar(label_expr_type)>::type particles_type_ref;
+			typedef typename std::remove_reference<particles_type_ref>::type particles_type;
+			particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(geometry_expr));
+			arg1_expr_type arg1_expr = proto::child_c<2>(geometry_expr);
+            //std::cout << "doing reflect for particle "<<get<id>(ctx.particle_)<<std::endl;
+            bool keep_going = true;
+			while (keep_going) {
+			    keep_going = false;	
+                //std::cout << "searching around position = "<<vector + get<position>(ctx.particle_)<<std::endl;
+			    for (auto i: particlesb.get_neighbours(vector + get<position>(ctx.particle_))) {
+                    //std::cout << "doing neighbour "<<get<id>(std::get<0>(i))<<std::endl;
+				    TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
+				    geometry_type geometry(vector-ctx2.dx_,proto::eval(arg1_expr,ctx2),true);
+                    //std::cout <<"result of evaluating geometry is "<<geometry<<std::endl;
+					if (reflect_once(Vect3d(0,0,0),vector,geometry)) 
+                    {
+                        keep_going = true;
+                    }
+			    }
+		    }
+	        return vector;
+	    }
+	};
+
+
+    // Handle sums here...
+    template<typename Expr>
+	struct eval<Expr, proto::tag::function,
+		typename boost::enable_if<proto::matches<Expr,AccumulateInitGrammar> >::type 
+	>
+	{
+	    typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
+		typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
+		typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
+		typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
+		typedef typename proto::result_of::child_c<Expr,4>::type child4_type;
+
+		typedef typename boost::result_of<LabelGrammar(child1_type)>::type particles_type_ref;
+        typedef typename std::remove_reference<particles_type_ref>::type particles_type;
+		typedef typename proto::result_of::eval<child3_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type result_type_const_ref;
+		typedef typename std::remove_const<typename std::remove_reference<result_type_const_ref>::type>::type  result_type;
+        typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
+        typedef typename functor_terminal_type::functor_type functor_type;
+
+
+		result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
+		{
+			particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(expr));
+			result_type sum = proto::eval(proto::child_c<4>(expr),ctx);
+            functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
+			for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
+				TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
+				if (proto::eval(proto::child_c<2>(expr),ctx2)) {
+                    sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx2));
 				}
-			};
+            }
+		    return sum;
+	    }
+	};
+
+    template<typename Expr>
+	struct eval<Expr, proto::tag::function,
+	    typename boost::enable_if<proto::matches<Expr,AccumulateGrammar> >::type 
+	    >
+	{
+		typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
+		typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
+		typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
+		typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
+
+		typedef typename boost::result_of<LabelGrammar(child1_type)>::type particles_type_ref;
+        typedef typename std::remove_reference<particles_type_ref>::type particles_type;
+		typedef typename proto::result_of::eval<child3_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type result_type_const_ref;
+		typedef typename std::remove_const<typename std::remove_reference<result_type_const_ref>::type>::type  result_type;
+        typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
+        typedef typename functor_terminal_type::functor_type functor_type;
 
 
-			// Handle sums here...
-			template<typename Expr>
-			struct eval<Expr, tag::sum_,
-				typename boost::enable_if<mpl::true_>::type 
-				>
-			{
-				typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
-				typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
-				typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
-				typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
-
-
-				//BOOST_MPL_ASSERT(( proto::matches< child0_type, LabelGrammar<1> > ));
-
-				typedef typename boost::result_of<LabelGrammar(child0_type)>::type particles_type_ref;
-                typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-				//typedef typename Expr::proto_child0::proto_child1::proto_value particles_type;
-				typedef typename proto::result_of::eval<child1_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type conditional_type;
-
-				BOOST_MPL_ASSERT(( boost::is_same<conditional_type,bool > ));
-
-				typedef typename proto::result_of::eval<child2_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type result_type_const_ref;
-				typedef typename std::remove_const<typename std::remove_reference<result_type_const_ref>::type>::type  result_type;
-
-
-				result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-				{
-					particles_type_ref particlesb = LabelGrammar()(proto::child_c<0>(expr));
-					child1_type conditional = proto::child_c<1>(expr);
-					child2_type arg = proto::child_c<2>(expr);
-					child3_type init = proto::child_c<3>(expr);
-					result_type sum = proto::eval(init,ctx);
-                    //std::cout << "doing sum for particle "<<get<id>(ctx.particle_)<<std::endl;
-					for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
-                        //std::cout << "doing neighbour "<<get<id>(std::get<0>(i))<<std::endl;
-						TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
-						if (proto::eval(conditional,ctx2)) {
-                            //std::cout <<"conditional is true"<<std::endl;
-                            //std::cout <<"result of evaluating expression is "<<proto::eval(arg,ctx2)<<std::endl;
-							sum += proto::eval(arg,ctx2);
-						} else {
-                            //std::cout <<"conditional is true"<<std::endl;
-                        }
-					}
-                    //std::cout <<"sum is "<<sum<<std::endl;
-
-					return sum;
+		result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
+		{
+	        particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(expr));
+			result_type sum = 0;
+            functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
+			for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
+				TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
+				if (proto::eval(proto::child_c<2>(expr),ctx2)) {
+                    sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx2));
 				}
-				};
-
-            // Handle first_ here...
-			template<typename Expr>
-			struct eval<Expr, tag::first_,
-				typename boost::enable_if<mpl::true_>::type
-				>
-			{
-				typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
-				typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
-				typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
-				typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
-
-
-				//BOOST_MPL_ASSERT(( proto::matches< child0_type, LabelGrammar<1> > ));
-
-				typedef typename boost::result_of<LabelGrammar(child0_type)>::type particles_type_ref;
-				typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-				//typedef typename Expr::proto_child0::proto_child1::proto_value particles_type;
-				typedef typename proto::result_of::eval<child1_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type conditional_type;
-
-				BOOST_MPL_ASSERT(( boost::is_same<conditional_type,bool > ));
-
-				typedef typename proto::result_of::eval<child2_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type result_type_const_ref;
-				typedef typename std::remove_const<typename std::remove_reference<result_type_const_ref>::type>::type  result_type;
-
-
-				result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-				{
-					particles_type_ref particlesb = LabelGrammar()(proto::child_c<0>(expr));
-					child1_type conditional = proto::child_c<1>(expr);
-					child2_type arg = proto::child_c<2>(expr);
-					child3_type init = proto::child_c<3>(expr);
-
-					result_type sum = proto::eval(init,ctx);
-					//std::cout << "doing first for particle "<<get<id>(ctx.particle_)<<std::endl;
-					for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
-						//std::cout << "doing neighbour "<<get<id>(std::get<0>(i))<<std::endl;
-						TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
-						if (proto::eval(conditional,ctx2)) {
-							//std::cout <<"conditional is true"<<std::endl;
-							//std::cout <<"result of evaluating expression is "<<proto::eval(arg,ctx2)<<std::endl;
-							sum = proto::eval(arg,ctx2);
-							break;
-						}
-					}
-					//std::cout <<"result is "<<sum<<std::endl;
-
-					return sum;
-				}
-			};
-
-
+            }
+		    return sum;
+		}
+	};
 
 	const typename ParticlesType::value_type& particle_;
 };
@@ -684,8 +634,12 @@ struct Accumulate
 	typedef typename proto::terminal<accumulate_<T> >::type expr_type;
     typedef accumulate_<T> data_type;
 
-	explicit Accumulate()
+    explicit Accumulate()
 	: DataVectorExpr<expr_type>( expr_type::make(data_type()) )
+	  {}
+
+	explicit Accumulate(const T& arg)
+	: DataVectorExpr<expr_type>( expr_type::make(data_type(arg)) )
 	  {}
 };
 

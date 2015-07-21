@@ -140,9 +140,5 @@ namespace Aboria {
     ABORIA_TERNARY_FUNCTION(reflect_, reflect_fun<Expr3>, DataVectorDomain);
 
 
-
-    ABORIA_TAGGED_FUNCTION(sum_,tag::sum_);
-    ABORIA_TAGGED_FUNCTION(first_,tag::first_);
-
 }
 #endif /* FUNCTIONS_H_ */
