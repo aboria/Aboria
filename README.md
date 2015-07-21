@@ -27,19 +27,19 @@ A short sample from the DEM example, which shows what is possible with the libra
 loop over the DEM particles, calculating the contact forces between pairs of particles
 
 ```Cpp
-std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,dem_diameter](DemType::Value& i) {
-		const Vect3d& r = i.get_position();
-		Vect3d& f = std::get<DEM_FORCE>(i.get_data());
-		Vect3d& v = std::get<DEM_VELOCITY>(i.get_data());
+std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,dem_diameter](DemType::value_type& i) {
+		const Vect3d& r = get<position>(i);
+		Vect3d& f = get<force>(i);
+		Vect3d& v = get<velocity>(i);
 
 		f << 0,0,0;
 		f = f + geometry(i);
 
 		for (auto tpl: i.get_neighbours(dem)) {
 			const Vect3d& dx = std::get<1>(tpl);
-			const DemType::Value& j = std::get<0>(tpl);
-			const Vect3d& vj = std::get<DEM_VELOCITY>(j.get_data());
-			if (i.get_id()==j.get_id()) continue;
+			const DemType::value_type& j = std::get<0>(tpl);
+			const Vect3d& vj = get<velocity>(j);
+			if (get<id>(i)==get<id>(j)) continue;
 
 			const double r = dx.norm();
 			const double overlap = dem_diameter-r;
@@ -58,12 +58,13 @@ std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,de
 <a name="create">Creating New Particles</a>
 -------------------------------------------
 
-The main particles data-structure, or container, is called `Particles`. It takes one template arguement, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one one `double` variable.
+The main particles data-structure, or container, is called `Particles`. It takes one template arguement, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one `double` variable.
 
 ```Cpp
 using namespace Aboria;
 
-typedef Particles<std::tuple<double> > MyParticles;
+ABORIA_VARIABLE(scalar,double,"my scalar")
+typedef Particles<scalar> MyParticles;
 MyParticles particles();
 ```
 
@@ -84,23 +85,23 @@ particles.push_back(MyParticle(Vect3d(1,0,0)));
 <a name="particle">Particle Objects</a>
 ---------------------------------------
 
-The `value_type` of the `Particles` container is a data-structure representing each particle. By default each particle has a position, a unique id and a boolean flag indicating if this particle is active or not. Use `get_position()` to access the position, `get_id()` for the id and `get_alive()` for the alive flag.
+The `value_type` of the `Particles` container is a data-structure representing each particle. By default each particle has a position, a unique id and a boolean flag indicating if this particle is active or not. Use `get<position>()` to access the position, `get<id>()` for the id and `get<alive>()` for the alive flag.
 
 ```Cpp
 MyParticle& particle = particles[0];
-std::cout <<"Position = "<<particle.get_position() << 
-   ". Id = "<<particle.get_id()<< ". Particle is ";
-if (particle.get_alive()) {
+std::cout <<"Position = "<<get<position>(particle) << 
+   ". Id = "<<get<id>(particle)<< ". Particle is ";
+if (get<alive>(particle)) {
    std::cout << "alive. " << "\n";
 } else {
    std::cout << "dead. " << "\n";
 }
 ```
 
-You can access the data package by using the `get_data_elem` function, which is templated by the index of the data element you wish to access.
+You can access the data by templating the `get` function with the variable type, for example
 
 ```Cpp
-std::cout << "The first data element is " << particle.get_data_elem<0>() << "\n";
+std::cout << "The scalar data is " << get<scalar>(particle) << "\n";
 ```
 
 <a name="looping">Looping through the container</a>
@@ -110,7 +111,7 @@ You can use the indexing operator `Operator[]` to simply loop through the contai
 
 ```Cpp
 for (int i=0; i < particles.size(); i++) {
-   std::cout << "Accessing particle with id = " << particles[i].get_id() << "\n";
+   std::cout << "Accessing particle with id = " << get<id>(particles[i]) << "\n";
 }
 ```
 
@@ -118,7 +119,7 @@ Or you can use the normal STL `begin()` and `end()` functions that return random
 
 ```Cpp
 for (auto i = particles.begin(); i != particles.end(); i++) {
-   std::cout << "Accessing particle with id = " << i->get_id() << "\n";
+   std::cout << "Accessing particle with id = " << get<id>(*i) << "\n";
 }
 ```
 
@@ -126,7 +127,7 @@ Or
 
 ```Cpp
 for (auto i: particles) {
-   std::cout << "Accessing particle with id = " << i.get_id() << "\n";
+   std::cout << "Accessing particle with id = " << get<id>(i) << "\n";
 }
 ```
 
@@ -134,7 +135,7 @@ Or you can use the STL algorithm `for_each`. If you are using a GCC compiler, yo
 
 ```Cpp
 std::for_each(particles.begin(), particles.end(), [](MyParticle& i) {
-   std::cout << "Accessing particle with id = " << i.get_id() << "\n";
+   std::cout << "Accessing particle with id = " << get<id>(i) << "\n";
 });
 ```
 
@@ -178,6 +179,6 @@ For example,
 for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
    const MyParticle& b = std::get<0>(tpl);
    const Vect3d& dx = std::get<1>(tpl);
-   std::cout << "Found a particle with dx = " << dx << " and id = " << b.get_id() << "\n";
+   std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
 }
 ```
