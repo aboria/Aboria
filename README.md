@@ -74,7 +74,7 @@ dvdt = (// spring force between dem particles
 <a name="create">Creating New Particles</a>
 -------------------------------------------
 
-The main particles data-structure, or container, is called `Particles`. It takes one template arguement, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one `double` variable.
+The main particles data-structure, or container, is called `Particles`. It takes one template argument, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one `double` variable.
 
 ```Cpp
 using namespace Aboria;
@@ -84,7 +84,7 @@ typedef Particles<scalar> MyParticles;
 MyParticles particles();
 ```
 
-You can also give the `MyParticles` constructor a single `unsigned int` arguement to set the random seed for the container:
+You can also give the `MyParticles` constructor a single `unsigned int` argument to set the random seed for the container:
 
 ```Cpp
 MyParticles particles_with_seed(0);
@@ -158,7 +158,7 @@ std::for_each(particles.begin(), particles.end(), [](MyParticle& i) {
 <a name="neighbour">Neighbourhood Searching</a>
 -----------------------------------------------
 
-The `Particles` container gives you neighbourhood searching functionality, using a simple Cell List or Linked-List approach. The domain is divided into a regular grid of cubes with side length equal to a constant lengthscale that is supplied by the user. Each particle in the continer is assigned to the cell that contains its position. Neighbourhood search queries at a given point return all the particles within the cell that contains this point and the immediate cell neighbours.
+The `Particles` container gives you neighbourhood searching functionality, using a simple Cell List or Linked-List approach. The domain is divided into a regular grid of cubes with side length equal to a constant lengthscale that is supplied by the user. Each particle in the container is assigned to the cell that contains its position. Neighbourhood search queries at a given point return all the particles within the cell that contains this point and the immediate cell neighbours.
 
 Before you can use the neighbourhood searching, you need to initialise the domain using the `init_neighbour_search` function
 
