@@ -19,8 +19,10 @@ The *examples/* subdirectory contains a collection of examples for using Aboria.
 
 - *examples/sph* - An Smoothed Particle Hydrodynamics example, simulating a 2D water column over a no-slip boundary. The *x* and *y* directions are periodic.
 - *examples/dem* - An Discrete Element Model example, simulating 2 spherical particles falling onto an surface.
+- *examples/dem_symbolic* - An Discrete Element Model example using the symbolic interface, simulating a polydisperse set of spherical particles falling onto an surface.
 - *exampes/sphdem* - A coupled SPH and DEM example, simulating a single DEM particle falling down a water column
 - *examples/bd* - Brownian dynamics of N particles within a reflecting sphere
+- *examples/bd_symbolic* - Brownian dynamics of N point particles around a set of spheres, using the symbolic interface. The point particles reflect off the spheres as they diffuse.
 
 
 A short sample from the DEM example, which shows what is possible with the library. This shows a `for_each`
@@ -74,13 +76,22 @@ dvdt = (// spring force between dem particles
 <a name="create">Creating New Particles</a>
 -------------------------------------------
 
-The main particles data-structure, or container, is called `Particles`. It takes one template argument, which is the type of the data package given to each particle. This type is restricted to being a tuple. So, for example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting one `double` variable.
+The main particles data-structure, or container, is called `Particles`. It is templated on zero or more variable types. For example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting of one `double` variable type named `scalar`.
 
 ```Cpp
 using namespace Aboria;
 
 ABORIA_VARIABLE(scalar,double,"my scalar")
 typedef Particles<scalar> MyParticles;
+MyParticles particles();
+```
+
+If you wanted each particle to have a `potential` variable held as a `double`, as well as a `velocity` variable held as a `Vect3d` vector class, then you would write the following
+
+```Cpp
+ABORIA_VARIABLE(potential,double,"potential energy")
+ABORIA_VARIABLE(velocity,Vect3d,"velocity")
+typedef Particles<potential,velocity> MyParticles;
 MyParticles particles();
 ```
 
