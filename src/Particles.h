@@ -216,7 +216,7 @@ public:
 		return data.end();
 	}
 
-	void delete_particles() {
+	void delete_particles(const bool update_neighbour_search = true) {
 		const int n = data.size();
 		for (int index = 0; index < n; ++index) {
 			value_type& i = data[index];
@@ -226,7 +226,7 @@ public:
 				data.pop_back();
 			}
 		}
-		if (searchable) neighbour_search.embed_points(data.cbegin(),data.cend());
+		if (searchable && update_neighbour_search) neighbour_search.embed_points(data.cbegin(),data.cend());
 	}
 	void clear() {
 		data.clear();
@@ -446,7 +446,6 @@ public:
 		});
 		if (searchable) {
 			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
-			neighbour_search.embed_points(data.cbegin(),data.cend());
 		}
 	}
 	template<typename F>
@@ -456,14 +455,12 @@ public:
 		});
 		if (searchable) {
 			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
-			neighbour_search.embed_points(data.cbegin(),data.cend());
 		}
 	}
 
 	void update_positions() {
 		if (searchable) {
 			enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
-			neighbour_search.embed_points(data.cbegin(),data.cend());
 		}
 	}
 
@@ -667,7 +664,7 @@ public:
 private:
 
 
-	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic, const bool remove_deleted_particles = false) {
+	void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic, const bool remove_deleted_particles = true) {
 		std::for_each(begin(),end(),[low,high,periodic](value_type& i) {
             Vect3d &r = i.template get<position>();
 			for (int d = 0; d < 3; ++d) {
@@ -686,15 +683,9 @@ private:
 			}
 		});
 		if (remove_deleted_particles && ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))) {
-			const int n = data.size();
-			for (int index = 0; index < n; ++index) {
-				value_type& i = data[index];
-				if (i.template get<alive>()==false) {
-					i.deep_copy(*(data.cend()-1));
-					if (track_ids) id_to_index[i.template get<id>()] = index;
-					data.pop_back();
-				}
-			}
+	        delete_particles();
+        } else {
+			neighbour_search.embed_points(data.cbegin(),data.cend());
 		}
 	}
 

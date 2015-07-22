@@ -237,7 +237,7 @@ struct DataVectorGrammar
 			{
 
                 typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-                typedef typename proto::result_of::value<Expr>::type::value_type result_type;
+                typedef const typename proto::result_of::value<Expr>::type::value_type& result_type;
 
 				result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const
 				{
@@ -343,7 +343,7 @@ struct ParticleCtx
 	> 
     {
         typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-        typedef typename proto::result_of::value<Expr>::type::value_type result_type;
+        typedef const typename proto::result_of::value<Expr>::type::value_type& result_type;
 				
         result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
 	    {
@@ -369,11 +369,10 @@ struct ParticleCtx
 	// Handle subscripts here...
 	template<typename Expr>
 	struct eval<Expr, proto::tag::subscript,
-	    typename boost::enable_if<mpl::true_>::type 
+        typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,SubscriptGrammar> >::type 
 	    >
 	{
         typedef typename proto::result_of::child_c<Expr, 1>::type subscript_type;
-	    BOOST_MPL_ASSERT(( proto::matches< subscript_type, SubscriptGrammar > ));
 	    typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
 	    typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
 

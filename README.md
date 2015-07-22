@@ -54,6 +54,22 @@ std::for_each(dem->begin(),dem->end(),[&geometry,dem,dem_k,dem_gamma,dem_mass,de
 	});
 ```
 
+This can be further simplified to one line of code by using the symbolic interface, which provides a succinct way to specify accumulation loops over neighbours and expressions using particle variables.
+
+```Cpp
+dvdt = (// spring force between dem particles
+        sum(b=dem, id_[a]!=id_[b] && norm_(dx)<r[a]+r[b], 
+                   dem_k*((r[a]+r[b])/norm_(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
+                
+        // spring force between particles and bottom wall
+        + if_else(r-p[2] > 0, dem_k*(r-p[2]), 0.0)*Vect3d(0,0,1) 
+
+        // gravity force
+        + Vect3d(0,0,-9.81)*m
+
+       )/m;
+```
+
 
 <a name="create">Creating New Particles</a>
 -------------------------------------------
