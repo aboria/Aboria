@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
-find_package(Boost 1.50.0 COMPONENTS filesystem system date_time REQUIRED)
+find_package(Boost 1.50.0 REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_package(VTK REQUIRED)
 
