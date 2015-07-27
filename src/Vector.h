@@ -37,7 +37,15 @@ namespace Aboria {
 template<typename T,int N>
 class Vector {
 public:
+	typedef T value_type;
+	const static int size = N;
+
 	Vector() {}
+	Vector(T arg1) {
+		mem[0] = arg1;
+		mem[1] = arg1;
+		mem[2] = arg1;
+	}
 	Vector(T arg1,T arg2) {
 		mem[0] = arg1;
 		mem[1] = arg2;
@@ -74,12 +82,16 @@ public:
 		return mem[n];
 	}
 	template<typename T2>
-	double dot(const Vector<T2,N> &arg) const {
+	double inner_product(const Vector<T2,N> &arg) const {
 		double ret = 0;
 		for (int i = 0; i < N; ++i) {
 			ret += arg[i]*mem[i];
 		}
 		return ret;
+	}
+	template<typename T2>
+	double dot(const Vector<T2,N> &arg) const {
+		return inner_product(arg);
 	}
 	double squaredNorm() const {
 		double ret = 0;
@@ -160,6 +172,28 @@ template<typename T, int N, typename EXP_T>
 Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
 	return arg.pow(exponent);
 }
+
+template<typename T1,typename T2,int N> 
+bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { 
+    bool ret = true; 
+    for (int i = 0; i < N; ++i) { 
+        ret &= arg1[i] == arg2[i]; 
+    } 
+    return ret; 
+} 
+
+
+#define UNARY_OPERATOR(the_op) \
+		template<typename T,int N> \
+				Vector<double,N> operator the_op(const Vector<T,N> &arg1) { \
+					Vector<double,N> ret; \
+					for (int i = 0; i < N; ++i) { \
+						ret[i] = the_op arg1[i]; \
+					} \
+					return ret; \
+				} \
+
+UNARY_OPERATOR(-)
 
 #define OPERATOR(the_op) \
 		template<typename T1,typename T2,int N> \
@@ -300,6 +334,24 @@ UFUNC(floor)
 UFUNC(ceil)
 UFUNC(round)
 
+template<typename T, int I>
+double norm(const Vector<T,I> &arg1) {
+	return arg1.norm();
+}
+
+
+template<typename T, int I>
+double squaredNorm(const Vector<T,I> &arg1) {
+	return arg1.squaredNorm();
+}
+
+
+
+template<typename T1, typename T2, int I>
+double dot(const Vector<T1,I> &arg1, const Vector<T2,I> &arg2) {
+	return arg1.inner_product(arg2);
+}
+
 template<typename T>
 Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
 	Vector<T,3> ret;
@@ -308,6 +360,8 @@ Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
 	ret[2] = arg1[0]*arg2[1] - arg1[1]*arg2[0];
 	return ret;
 }
+
+
 
 template<typename T,int N>
 std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {

@@ -34,12 +34,12 @@ namespace Aboria {
 
 const double GEOMETRY_TOLERANCE = 1.0/100000.0;
 
-class Geometry {
+class GeometryBase {
 public:
 	virtual bool is_in(const Vect3d &point) const = 0;
 	virtual std::pair<double,Vect3d> lineXsurface(const Vect3d &p1, const Vect3d &p2) const = 0;
 	virtual const Vect3d shortest_vector_to_boundary(const Vect3d &point) const = 0;
-	friend std::ostream& operator<<( std::ostream& out, const Geometry& b ) {
+	friend std::ostream& operator<<( std::ostream& out, const GeometryBase& b ) {
 		b.print(out);
 		return out;
 	}
@@ -47,8 +47,8 @@ public:
 };
 
 template<typename T>
-bool reflect_once(const Vect3d p1, Vect3d &p2, const T geometry) {
-	std::pair<double,Vect3d> res = geometry->lineXsurface(p1,p2);
+bool reflect_once(const Vect3d& p1, Vect3d &p2, const T& geometry) {
+	std::pair<double,Vect3d> res = geometry.lineXsurface(p1,p2);
 	if (res.first >= 0) {
 		/*
 		 * if line going through surface with normal then don't reflect
@@ -71,8 +71,21 @@ bool reflect_once(const Vect3d p1, Vect3d &p2, const T geometry) {
 	}
 }
 
+template <typename T>
+Vect3d operator| (const Vect3d& vector, const T& geometry) {
+    Vect3d result = vector;
+    reflect_once(Vect3d(0,0,0),result,geometry);
+    return result;
+}
 
-class Sphere : public Geometry {
+template <typename T>
+Vect3d operator| (const T& geometry, const Vect3d& vector) {
+    Vect3d result = vector;
+    reflect_once(Vect3d(0,0,0),result,geometry);
+    return result;
+}
+
+class Sphere : public GeometryBase {
 public:
 	Sphere(const Vect3d& position,
 			const double radius,
@@ -152,7 +165,7 @@ public:
 		out << "Sphere with radius " << radius << " at position " << position;
 	}
 private:
-	friend std::ostream& operator<< (std::ostream& out, const Sphere& p);
+	//friend std::ostream& operator<< (std::ostream& out, const Sphere& p);
 	Vect3d position;
 	double radius,radius_sq;
 	bool in;
@@ -161,6 +174,8 @@ private:
 		return (position-point).squaredNorm();
 	}
 };
+
+
 
 
 }
