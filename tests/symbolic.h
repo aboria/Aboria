@@ -135,7 +135,7 @@ public:
         Dx dx;
         Accumulate<std::plus<double> > sum;
 
-       	scalar_ = sum(b=particles, norm_(dx) < diameter, 1,0);
+       	scalar_ = sum(b=particles, norm(dx) < diameter, 1,0);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
@@ -165,14 +165,14 @@ public:
 //          ellipsoids = ellipsoid(position)
 //          new_position = constrain(position + 
 //       	position = position + sqrt(2*D*dt)*normal() + dt*interpolate(position, drift);
-//       	position = any(particles, norm_(dx()) < diameter, reflect(position,new_position,ellipsoids))
+//       	position = any(particles, norm(dx()) < diameter, reflect(position,new_position,ellipsoids))
 //       	}
 //       	dx =position-old_position;
 //       	msd = dot(dx,dx);
 //       	mean = mean(dx);
 //       	var = var(dx);
 
-       	scalar_ = sum(b=particles, norm_(dx) < diameter, 1);
+       	scalar_ = sum(b=particles, norm(dx) < diameter, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
@@ -193,7 +193,7 @@ public:
 
         Accumulate<std::plus<Vect3d> > sumVect;
 
-    	position_ = sumVect(b=particles, norm_(dx) < diameter, Vect3d(0,0,0) + 0.5*(scalar_[a]/2.0 + scalar_[b]/10.0),0);
+    	position_ = sumVect(b=particles, norm(dx) < diameter, Vect3d(0,0,0) + 0.5*(scalar_[a]/2.0 + scalar_[b]/10.0),0);
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0.05);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0.05);

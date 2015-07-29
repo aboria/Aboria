@@ -70,7 +70,7 @@ public:
 		/*
 		 * Kill any points within spheres
 		 */
-		points_alive = !any(b=spheres, norm_(dx) < spheres_radius[b],true);
+		points_alive = !any(b=spheres, norm(dx) < spheres_radius[b],true);
 
 		/*
 		 * Check no points within spheres

@@ -121,7 +121,21 @@ namespace Aboria {
 		}
 	};
 
-    ABORIA_UNARY_FUNCTION(norm_, norm_fun, DataVectorDomain);
+    ABORIA_UNARY_FUNCTION(norm, norm_fun, DataVectorDomain);
+
+    struct exp_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const double& arg) const
+		{
+			return std::exp(arg);
+		}
+	};
+
+    ABORIA_UNARY_FUNCTION(exp, exp_fun, DataVectorDomain);
+
+
 
 
     template< typename T >
