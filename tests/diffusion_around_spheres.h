@@ -33,7 +33,7 @@ public:
 		const double L = 10.0;
 		const double D = 1.0;
 		const double dt = 0.1;
-		const double timesteps = 1000;
+		const double timesteps = 100;
 
 		spheres.push_back(Vect3d(0,0,0));
 		spheres[0].set<radius>(1.0);

@@ -236,17 +236,22 @@ public:
 		if (i != end()-1) {
 			i->deep_copy(*(data.cend()-1));
 			if (track_ids) id_to_index[i->template get<id>()] = i-begin();
-			if (searchable) neighbour_search.copy_points(i,end());
-
-		}
-		if (searchable) neighbour_search.delete_point(end());
-		data.pop_back();
+			if (searchable) neighbour_search.copy_points(i,end()-1);
+		    if (searchable) neighbour_search.delete_point(end()-1);
+		    data.pop_back();
+            return i;
+		} else {
+		    if (searchable) neighbour_search.delete_point(end()-1);
+		    data.pop_back();
+            return end();
+        }
 	}
 
 	iterator erase (iterator first, iterator last) {
-		for(iterator i=first;i!=last;i++) {
+		for(iterator i=first;i!=last-1;i++) {
 			erase(i);
 		}
+        return erase(last-1);
 	}
 
 	iterator insert (iterator position, const value_type& val) {
