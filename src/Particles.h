@@ -45,7 +45,7 @@ namespace mpl = boost::mpl;
 #include "Variable.h"
 //#include "MyRandom.h"
 
-#ifndef HAVE_VTK
+#ifdef HAVE_VTK
 #include <vtkUnstructuredGrid.h>
 #include <vtkSmartPointer.h>
 #include <vtkIntArray.h>
