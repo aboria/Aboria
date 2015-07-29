@@ -495,7 +495,7 @@ public:
 	}
 
 
-#ifndef HAVE_VTK
+#ifdef HAVE_VTK
 	struct write_from_tuple {
 		write_from_tuple(tuple_type &write_from, int index, vtkSmartPointer<vtkFloatArray>* datas):
 			write_from(write_from),index(index),datas(datas){}
@@ -701,7 +701,7 @@ private:
 	const double seed;
 	NeighbourSearch_type neighbour_search;
 	std::map<size_t,size_t> id_to_index;
-#ifndef HAVE_VTK
+#ifdef HAVE_VTK
 	vtkSmartPointer<vtkUnstructuredGrid> cache_grid;
 #endif
 };

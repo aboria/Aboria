@@ -1,8 +1,10 @@
 cmake_minimum_required(VERSION 2.8)
 project(Aboria)
 find_package(Boost 1.50.0 REQUIRED)
-find_package(PythonLibs REQUIRED)
-find_package(VTK REQUIRED)
+find_package(VTK)
+if (VTK_FOUND)
+    add_definitions(-DHAVE_VTK)
+endif(VTK_FOUND)
 
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/" ${CMAKE_MODULE_PATH})
 find_package(CxxTest)
