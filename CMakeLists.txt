@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 2.8)
+project(Aboria)
 find_package(Boost 1.50.0 REQUIRED)
 find_package(PythonLibs REQUIRED)
 find_package(VTK REQUIRED)

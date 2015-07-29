@@ -1,15 +1,14 @@
 
-cxx_test(symbolic symbolic.h)
-target_link_libraries(symbolic ${VTK_LIBRARIES} ${Boost_LIBRARIES})
-cxx_test(constructors constructors.h)
-target_link_libraries(constructors ${VTK_LIBRARIES} ${Boost_LIBRARIES}) 
-cxx_test(particle_container particle_container.h)
-target_link_libraries(particle_container ${VTK_LIBRARIES} ${Boost_LIBRARIES}) 
-cxx_test(neighbours neighbours.h)
-target_link_libraries(neighbours ${VTK_LIBRARIES} ${Boost_LIBRARIES}) 
-cxx_test(geometry geometry.h)
-target_link_libraries(geometry ${VTK_LIBRARIES} ${Boost_LIBRARIES})
-cxx_test(variables variables.h)
-target_link_libraries(variables ${VTK_LIBRARIES} ${Boost_LIBRARIES})
-cxx_test(diffusion_around_spheres diffusion_around_spheres.h)
-target_link_libraries(diffusion_around_spheres ${VTK_LIBRARIES} ${Boost_LIBRARIES})
+set(test_package 
+    constructors 
+    particle_container
+    neighbours
+    geometry
+    variables
+    diffusion_around_spheres
+    )
+
+foreach(test ${test_package})
+    cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)
+    target_link_libraries(${test} ${VTK_LIBRARIES} ${Boost_LIBRARIES})
+endforeach(test)
