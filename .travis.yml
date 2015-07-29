@@ -1,7 +1,7 @@
 sudo: false
 language: cpp
-compiler:
-    - gcc
+env:
+    - CXX="g++-4.8"
 addons:
     apt:
         sources:
@@ -10,13 +10,10 @@ addons:
         packages:
             - libboost1.55-dev
             - g++-4.8
-before_install:
-    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 before_script:
     - mkdir build
     - cd build
     - cmake ..
 script: 
     - make
-after_script:
     - ctest --output-on-failure 
