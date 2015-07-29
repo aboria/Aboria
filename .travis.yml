@@ -1,6 +1,6 @@
 language: cpp
 compiler:
-    - clang
+#    - clang
     - gcc
 before_install:
     - sudo add-apt-repository -y ppa:boost-latest/ppa
@@ -17,4 +17,4 @@ before_script:
 script: 
     - make
 after_script:
-    - ctest
+    - ctest --output-on-failure 
