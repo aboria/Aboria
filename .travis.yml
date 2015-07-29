@@ -10,6 +10,8 @@ before_script:
     - mkdir build
     - cd build
     - cmake ..
-script: make
+script: 
+    - make VERBOSE=1
+    - which cxxtestgen
 after_script:
     - ctest
