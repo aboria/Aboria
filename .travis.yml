@@ -9,10 +9,9 @@ addons:
             - ubuntu-toolchain-r-test
         packages:
             - libboost1.55-dev
-              #- libvtk5-dev
             - g++-4.8
 before_install:
-     - gcc --version
+    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 before_script:
     - mkdir build
     - cd build
