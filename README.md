@@ -1,12 +1,9 @@
 Aboria
 =====
 
-[![Build Status](https://travis-ci.org/martinjrobins/Aboria.svg?branch=master)](https://travis-ci.org/martinjrobins/Aboria)
-
-[![AppVeyor](https://ci.appveyor.com/api/projects/status/github/Aboria)](https://ci.appveyor.com/project/martinjrobins/aboria)
-
+[![TravisCI](https://travis-ci.org/martinjrobins/Aboria.svg?branch=master)](https://travis-ci.org/martinjrobins/Aboria)
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/6aimud6e8tvxfwgm?svg=true)](https://ci.appveyor.com/project/martinjrobins/aboria)
 [![Coverity](https://scan.coverity.com/projects/5951/badge.svg)](https://scan.coverity.com/projects/5951)
-
 [![Coverage](https://coveralls.io/repos/martinjrobins/Aboria/badge.svg?branch=master&service=github)](https://coveralls.io/github/martinjrobins/Aboria?branch=master)
 
 
