@@ -3,6 +3,13 @@ Aboria
 
 [![Build Status](https://travis-ci.org/martinjrobins/Aboria.svg?branch=master)](https://travis-ci.org/martinjrobins/Aboria)
 
+[![AppVeyor](https://ci.appveyor.com/api/projects/status/github/Aboria)](https://ci.appveyor.com/project/martinjrobins/aboria)
+
+[![Coverity](https://scan.coverity.com/projects/5951/badge.svg)](https://scan.coverity.com/projects/5951)
+
+[![Coverage](https://coveralls.io/repos/martinjrobins/Aboria/badge.svg?branch=master&service=github)](https://coveralls.io/github/martinjrobins/Aboria?branch=master)
+
+
 Aboria implements a STL container of particles in 3D space. The library is header-only.
 The container supports random access of particles, as well as the normal STL algorithms.
 Neighbourhood searches are possible, using a bucket search method (uniform bucket spacing).
