@@ -529,20 +529,20 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 
 	max_interaction_radius = _max_interaction_radius;
 	Vect3i num_cells_without_ghost = (high-low)/max_interaction_radius;
-	Vect3d new_high = high;
 	Vect3b search(true,true,true);
 	for (int i = 0; i < 3; ++i) {
 		if (num_cells_without_ghost[i]==0) {
 			LOG(2,"\tNote: Dimension "<<i<<" has no length, setting cell side equal to interaction radius.");
 			LOG(1,"\tNote: Dimension "<<i<<" has no length, turning off neighbour search in this dimension.");
 			search[i] = false;
-			new_high[i] = low[i] + max_interaction_radius;
+            const Vect3d middle_of_range = 0.5*(high[i]-low[i]);
+			high[i] = low[i] + max_interaction_radius;
 			num_cells_without_ghost[i] = 1;
 		}
 	}
 	num_cells_along_axes = num_cells_without_ghost + Vect3i(3,3,3);
 	LOG(2,"\tNumber of cells along each axis = "<<num_cells_along_axes);
-	cell_size = (new_high-low)/(num_cells_without_ghost);
+	cell_size = (high-low)/(num_cells_without_ghost);
 	LOG(2,"\tCell sizes along each axis = "<<cell_size);
 	inv_cell_size = Vect3d(1,1,1)/cell_size;
 	num_cells_along_yz = num_cells_along_axes[2]*num_cells_along_axes[1];
