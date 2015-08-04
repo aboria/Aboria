@@ -67,11 +67,7 @@ test_script:
     - cmd: ctest -C Debug -VV
 
 notifications:
-
-    # Email
     - provider: Email
-        to:
-            - martinjrobins@gmail.com
-        subject: 'Build {{status}}'                  # optional
-        message: "{{message}}, {{commitId}}, ..."    # optional
-        on_build_status_changed: true
+      to:
+        - martinjrobins@gmail.com
+      on_build_status_changed: true
