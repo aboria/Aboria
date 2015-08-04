@@ -20,7 +20,7 @@ before_script:
     - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
     - mkdir build
     - cd build
-    - cmake -DAboria_COVERAGE=$Aboria_COVERAGE ..
+    - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE ..
 script: 
     - make
     - ctest --output-on-failure 
