@@ -2,6 +2,10 @@ sudo: false
 language: cpp
 compiler:
         - gcc
+env:
+    -Aboria_COVERAGE=off
+    -Aboria_COVERAGE=on
+
 addons:
     apt:
         sources:
@@ -10,14 +14,18 @@ addons:
         packages:
             - libboost1.55-dev
             - g++-4.8
+before_install:
+    - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
 before_script:
     - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
     - mkdir build
     - cd build
-    - cmake ..
+    - cmake -DAboria_COVERAGE=$Aboria_COVERAGE ..
 script: 
     - make
     - ctest --output-on-failure 
+after_success:
+    - coveralls --exclude lib --exclude tests --gcov-options '\-lp'
 notifications:
     email:
         recipients:
