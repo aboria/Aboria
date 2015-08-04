@@ -1,8 +1,9 @@
 # version format
-version: {build}
+version: "{build}"
 
-#os: unstable
+os: unstable
 #os: Windows Server 2012 R2
+#
 
 # build platform, i.e. Win32 (instead of x86), x64, Any CPU. This setting is optional.
 platform: 
@@ -70,7 +71,7 @@ notifications:
     # Email
     - provider: Email
         to:
-            - user1@email.com
+            - martinjrobins@gmail.com
         subject: 'Build {{status}}'                  # optional
         message: "{{message}}, {{commitId}}, ..."    # optional
         on_build_status_changed: true
