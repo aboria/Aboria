@@ -25,6 +25,7 @@ script:
     - make
     - ctest --output-on-failure 
 after_success:
+    - cd tests
     - coveralls --gcov-options '\-lp'
 notifications:
     email:
