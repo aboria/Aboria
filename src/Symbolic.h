@@ -123,6 +123,7 @@ struct DataVectorGrammar
 
 {};
 
+
   struct LabelGrammar
     : proto::or_<
         proto::when< proto::terminal<_>
@@ -164,13 +165,34 @@ struct DataVectorGrammar
 		}
 	};
 
+    template <typename T>
+    struct min {
+        typedef T result_type;
+        T operator()(const T arg1, const T arg2) const {
+            return std::min(arg1,arg2);
+        }
+    };
+
+    template <typename T>
+    struct max {
+        typedef T result_type;
+        T operator()(const T arg1, const T arg2) const {
+            return std::max(arg1,arg2);
+        }
+    };
+
 
       template <typename T>
       struct accumulate_ {
           typedef T functor_type;
+          typedef typename T::result_type init_type;
           accumulate_() {};
           accumulate_(const T& functor):functor(functor) {};
+          void set_init(const init_type& arg) {
+              init = arg;
+          }
           T functor;
+          init_type init;
       };
 
     struct GeometryGrammar
@@ -203,8 +225,18 @@ struct DataVectorGrammar
 		}
 	};
 
-  	    struct dx_ {};
-  	  struct normal_ {};
+  	  struct dx_ {};
+
+  	  struct normal_ {
+        typedef std::mt19937 generator_type;
+        double operator()() {
+            return normal(generator);
+        }
+        generator_type generator;
+        std::normal_distribution<double> normal;
+        
+      
+      };
 
   	  template<typename ParticlesType>
   	  struct ParticleCtx;
@@ -313,6 +345,127 @@ struct DataVectorGrammar
 			const Vect3d& dx_;
 
 		};
+
+struct ConstantCtx
+{
+
+	ConstantCtx() {}
+
+	template<
+	        typename Expr
+	      , typename Tag = typename proto::tag_of<Expr>::type
+	      , typename Enable = void
+	    >
+	struct eval: proto::default_eval<Expr, ConstantCtx const>
+						{};
+
+
+    /*
+	// Handle unlabeled vector terminals here...
+	template<typename Expr>
+	struct eval<Expr, proto::tag::terminal, 
+        typename boost::enable_if<proto::matches<Expr, proto::terminal<DataVector<_,_> > > >::type 
+	> 
+    {
+        typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
+        typedef const typename proto::result_of::value<Expr>::type::value_type result_type;
+				
+        result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
+	    {
+	        return result_type();
+	    }
+	};
+    */
+
+	// Handle normal terminals here...
+	template<typename Expr>
+	struct eval<Expr, proto::tag::terminal,
+        typename boost::enable_if<proto::matches<Expr, proto::terminal<normal_ > > >::type 
+	    >
+	{
+	    typedef double result_type;
+
+	    result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
+	    {
+            return proto::value(expr)();
+	    }
+	};
+
+    /*
+	// Handle subscripts here...
+	template<typename Expr>
+	struct eval<Expr, proto::tag::subscript,
+        typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,SubscriptGrammar> >::type 
+	    >
+	{
+        typedef typename proto::result_of::child_c<Expr, 1>::type subscript_type;
+	    typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
+	    typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
+
+	    BOOST_MPL_ASSERT_RELATION( subscript_depth::value, == , 0 );
+
+	    typedef typename proto::result_of::child_c<Expr, 0>::type ExprToSubscript;
+
+	    typedef typename proto::result_of::eval<ExprToSubscript const, ConstantCtx const>::type result_type;
+
+	    result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
+    	{
+            return proto::child_c<0>(expr).eval();
+		}
+	};
+
+
+    template<typename Expr>
+    struct eval<Expr, proto::tag::bitwise_or,
+        typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,GeometriesGrammar> >::type 
+    >
+    {
+
+        typedef Vect3d result_type;
+
+	    result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
+	    {
+	        return result_type();
+	    }
+	};
+
+    */
+
+
+    // Handle sums here...
+    template<typename Expr>
+	struct eval<Expr, proto::tag::function,
+		typename boost::enable_if<proto::matches<Expr,AccumulateGrammar> >::type 
+	> {
+	    typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
+		typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
+		typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
+		typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
+
+		typedef typename boost::result_of<LabelGrammar(child1_type)>::type particles_type_ref;
+        typedef typename std::remove_reference<particles_type_ref>::type particles_type;
+        typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
+        typedef typename functor_terminal_type::functor_type functor_type;
+        typedef typename functor_type::result_type result_type;
+
+		result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
+		{
+			particles_type_ref particlesa = LabelGrammar()(proto::child_c<1>(expr));
+			result_type sum = proto::value(proto::child_c<0>(expr)).init;
+            functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
+            for (auto i: particlesa) {
+				ParticleCtx<particles_type> ctx(i);
+				if (proto::eval(proto::child_c<2>(expr),ctx)) {
+                    sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx));
+				}
+            }
+		    return sum;
+	    }
+	};
+
+};
+
+
 
 // Here is an evaluation context that indexes into a lazy vector
 // expression, and combines the result.
@@ -431,41 +584,6 @@ struct ParticleCtx
 	};
 
 
-    // Handle sums here...
-    template<typename Expr>
-	struct eval<Expr, proto::tag::function,
-		typename boost::enable_if<proto::matches<Expr,AccumulateInitGrammar> >::type 
-	>
-	{
-	    typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
-		typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
-		typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
-		typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
-		typedef typename proto::result_of::child_c<Expr,4>::type child4_type;
-
-		typedef typename boost::result_of<LabelGrammar(child1_type)>::type particles_type_ref;
-        typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-		typedef typename proto::result_of::eval<child3_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type result_type_const_ref;
-		typedef typename std::remove_const<typename std::remove_reference<result_type_const_ref>::type>::type  result_type;
-        typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
-        typedef typename functor_terminal_type::functor_type functor_type;
-
-
-		result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-		{
-			particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(expr));
-			result_type sum = proto::eval(proto::child_c<4>(expr),ctx);
-            functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
-			for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
-				TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
-				if (proto::eval(proto::child_c<2>(expr),ctx2)) {
-                    sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx2));
-				}
-            }
-		    return sum;
-	    }
-	};
-
     template<typename Expr>
 	struct eval<Expr, proto::tag::function,
 	    typename boost::enable_if<proto::matches<Expr,AccumulateGrammar> >::type 
@@ -478,16 +596,15 @@ struct ParticleCtx
 
 		typedef typename boost::result_of<LabelGrammar(child1_type)>::type particles_type_ref;
         typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-		typedef typename proto::result_of::eval<child3_type const, TwoParticleCtx<ParticlesType,particles_type> const>::type result_type_const_ref;
-		typedef typename std::remove_const<typename std::remove_reference<result_type_const_ref>::type>::type  result_type;
         typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
         typedef typename functor_terminal_type::functor_type functor_type;
+        typedef typename functor_type::result_type result_type;
 
 
 		result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
 		{
 	        particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(expr));
-			result_type sum = 0;
+			result_type sum = proto::value(proto::child_c<0>(expr)).init;
             functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
 			for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
 				TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
@@ -523,9 +640,6 @@ struct DataVectorDomain
 
 
 
-// Here is DataVectorExpr, which extends a proto expr type by
-// giving it an operator [] which uses the ParticleCtx
-// to evaluate an expression with a given index.
 template<typename Expr>
 struct DataVectorExpr
 		: proto::extends<Expr, DataVectorExpr<Expr>, DataVectorDomain>
@@ -533,7 +647,6 @@ struct DataVectorExpr
 			explicit DataVectorExpr(Expr const &expr)
 			: proto::extends<Expr, DataVectorExpr<Expr>, DataVectorDomain>(expr)
 			  {}
-
 
 			// Use the ParticleCtx to implement subscripting
 			// of a DataVector expression tree.
@@ -544,7 +657,6 @@ struct DataVectorExpr
 				ParticleCtx<ParticleType> const ctx(particle);
 				return proto::eval(*this, ctx);
 			}
-
 			template<typename ParticleType1, typename ParticleType2>
 			typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
 			eval( const Vect3d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const
@@ -552,7 +664,21 @@ struct DataVectorExpr
 				TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
 				return proto::eval(*this, ctx);
 			}
+
+            
 };
+
+
+//TODO: move univariate and bivariate down here to
+//TODO: check its a constant expression...
+template <class Expr>
+typename proto::result_of::eval<Expr const,  ConstantCtx const>::type
+eval(Expr const &expr) {
+    ConstantCtx const ctx;
+    return proto::eval(expr,ctx);
+}
+
+
 
 template<typename Expr>
 struct GeometryExpr: proto::extends<Expr, GeometryExpr<Expr>, GeometryDomain>
@@ -633,13 +759,20 @@ struct Accumulate
 	typedef typename proto::terminal<accumulate_<T> >::type expr_type;
     typedef accumulate_<T> data_type;
 
+
     explicit Accumulate()
 	: DataVectorExpr<expr_type>( expr_type::make(data_type()) )
 	  {}
 
-	explicit Accumulate(const T& arg)
+    template<typename T2>
+    explicit Accumulate(const T2& arg)
 	: DataVectorExpr<expr_type>( expr_type::make(data_type(arg)) )
 	  {}
+
+    void set_init(const typename data_type::init_type & arg) {
+        proto::value(*this).set_init(arg);
+    }
+
 };
 
 
@@ -676,11 +809,17 @@ struct DataVectorSymbolic
 		return this->assign(proto::as_expr<DataVectorDomain>(expr));
 	}
 
-	template< typename Expr >
-	DataVectorSymbolic &operator +=(Expr const & expr) {
-        BOOST_MPL_ASSERT_NOT(( boost::is_same<T,id > ));
-		return this->increment(proto::as_expr<DataVectorDomain>(expr));
-	}
+#define DEFINE_THE_OP(name,the_op) \
+	template< typename Expr > \
+	DataVectorSymbolic &operator the_op (Expr const & expr) { \
+        BOOST_MPL_ASSERT_NOT(( boost::is_same<T,id > )); \
+		return this->name(proto::as_expr<DataVectorDomain>(expr)); \
+	} \
+    
+    DEFINE_THE_OP(increment,+=)
+    DEFINE_THE_OP(decrement,-=)
+    DEFINE_THE_OP(divide,/=)
+    DEFINE_THE_OP(multiply,*=)
 
 
 private:
@@ -719,22 +858,25 @@ private:
         return *this;
 	}
 
-	template< typename Expr >
-	DataVectorSymbolic &increment(Expr const & expr)
-	{
-		ParticlesType &particles = proto::value(*this).get_particles();
+#define DO_THE_OP(name,the_op) \
+	template< typename Expr > \
+	DataVectorSymbolic & name (Expr const & expr) \
+	{                                                \
+		ParticlesType &particles = proto::value(*this).get_particles(); \
+                                                                        \
+		buffer.resize(particles.size()); \
+                                         \
+		for (int i=0; i<particles.size(); i++) { \
+			buffer[i] = get<T>(particles[i]) the_op expr.template eval<ParticlesType>(particles[i]);	\
+		} \
+        post(); \
+		return *this; \
+	} \
 
-		buffer.resize(particles.size());
-
-		//TODO: if vector to assign to does not exist in depth > 0, then don't need buffer
-		for (int i=0; i<particles.size(); i++) {
-			buffer[i] = get<T>(particles[i]) + expr.template eval<ParticlesType>(particles[i]);	
-		}
-
-        post();	
-
-		return *this;
-	}
+    DO_THE_OP(increment,+)
+    DO_THE_OP(multiply,*)
+    DO_THE_OP(divide,/)
+    DO_THE_OP(decrement,-)
 
 	std::vector<value_type> buffer;
 };

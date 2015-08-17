@@ -6,6 +6,7 @@ set(test_package
     geometry
     variables
     diffusion_around_spheres
+    symbolic
     )
 
 foreach(test ${test_package})

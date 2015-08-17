@@ -134,9 +134,18 @@ namespace Aboria {
 	};
 
     ABORIA_UNARY_FUNCTION(exp, exp_fun, DataVectorDomain);
+    
+    struct pow_fun
+    {
+        typedef double result_type;
+        
+        double operator()(const double d, const double exp) const
+        {
+            return std::pow(d, exp);
+        }
+    };
 
-
-
+    ABORIA_BINARY_FUNCTION(pow, pow_fun, DataVectorDomain);
 
     template< typename T >
 	struct reflect_fun

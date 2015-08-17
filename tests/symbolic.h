@@ -113,6 +113,7 @@ public:
 
     void test_neighbours(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
+
     	typedef Particles<scalar> ParticlesType;
        	ParticlesType particles;
 
@@ -135,7 +136,7 @@ public:
         Dx dx;
         Accumulate<std::plus<double> > sum;
 
-       	scalar_ = sum(b=particles, norm(dx) < diameter, 1,0);
+       	scalar_ = sum(b=particles, norm(dx) < diameter, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
@@ -193,7 +194,7 @@ public:
 
         Accumulate<std::plus<Vect3d> > sumVect;
 
-    	position_ = sumVect(b=particles, norm(dx) < diameter, Vect3d(0,0,0) + 0.5*(scalar_[a]/2.0 + scalar_[b]/10.0),0);
+    	position_ = sumVect(b=particles, norm(dx) < diameter, Vect3d(0,0,0) + 0.5*(scalar_[a]/2.0 + scalar_[b]/10.0));
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0.05);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0.05);
@@ -204,6 +205,45 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],0.55);
 
     }
+
+
+    void test_level0_expressions(void) {
+        ABORIA_VARIABLE(scalar,double,"scalar")
+
+    	typedef Particles<scalar> ParticlesType;
+       	ParticlesType particles;
+
+       	auto scalar_ = get_vector<scalar>(particles);
+       	auto position_ = get_vector<position>(particles);
+       	auto id_ = get_vector<id>(particles);
+       	auto alive_ = get_vector<alive>(particles);
+
+       	particles.push_back(Vect3d(0,0,0));
+       	particles.push_back(Vect3d(2,0,0));
+
+       	Label<0> a;
+        Dx dx;
+        Accumulate<std::plus<double> > sum;
+        Accumulate<Aboria::max<double> > max;
+        max.set_init(-1);
+        Accumulate<Aboria::min<double> > min;
+        min.set_init(1000);
+
+       	double result = eval(sum(a=particles, position_[0]<1, 1));
+    	TS_ASSERT_EQUALS(result,1);
+       	result = eval(sum(a=particles, true, 1));
+    	TS_ASSERT_EQUALS(result,2);
+       	result = eval(sum(a=particles, true, position_[0]));
+    	TS_ASSERT_EQUALS(result,2);
+        int result2 = eval(max(a=particles, true, id_));
+    	TS_ASSERT_EQUALS(result2,1);
+        result2 = eval(min(a=particles, true, id_));
+    	TS_ASSERT_EQUALS(result2,0);
+       	particles.push_back(Vect3d(0,0,0));
+        result2 = eval(max(a=particles, true, id_));
+    	TS_ASSERT_EQUALS(result2,2);
+    }
+
 
 };
 

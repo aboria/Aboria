@@ -30,6 +30,9 @@ public:
 	std::size_t size() const {
 		return particles.size();
 	}
+    value_type operator[](const unsigned int i) const {
+        return get<variable_type>(particles[i]);
+    }
 protected:
 	ParticlesType &particles;
 };
