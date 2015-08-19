@@ -29,10 +29,28 @@
 
 namespace Aboria {
 
+template<class C>
+    auto join(C&& c)
+    -> decltype(boost::make_iterator_range(std::begin(c),std::end(c))) {
+        return boost::make_iterator_range(std::begin(c),std::end(c));
+    }
+
+template<class C, class D, class... Args>
+    auto join(C&& c, D&& d, Args&&... args)
+    -> decltype(boost::join(boost::join(boost::make_iterator_range(std::begin(c),std::end(c)),
+                                                     boost::make_iterator_range(std::begin(d),std::end(d))),
+                                     join(std::forward<Args>(args)...))) {
+          return boost::join(boost::join(boost::make_iterator_range(std::begin(c),std::end(c)),
+                                                       boost::make_iterator_range(std::begin(d),std::end(d))),
+                                       join(std::forward<Args>(args)...));
+    }
+
 template <typename T>
 class ParticlesArray {
 public:
     typedef typename T::value_type value_type;
+    typedef typename T::iterator set_iterator;
+    typedef typename T::const_iterator const_set_iterator;
 
     ParticlesArray(std::initializer_list<T> sets): sets(sets) {}
 
@@ -47,7 +65,7 @@ public:
     {
     public:
         node_iter()
-            : m_node(0) {}
+            : m_node(0),set_index(0) {}
 
         explicit node_iter(Value* p)
             : m_node(p) {}
@@ -78,10 +96,11 @@ public:
         Value& dereference() const
         { return *m_node; }
 
-        Value* m_node;
+        Value m_set_iterator;
+        int set_index;
     };
-    typedef impl::node_iterator<value_type> iterator;
-    typedef impl::node_iterator<value_type const> const_iterator;
+    typedef impl::node_iterator<set_iterator> iterator;
+    typedef impl::node_iterator<const_set_iterator> const_iterator;
 
 
     boost::iterator_range<typename NeighbourSearch_type::const_iterator> get_neighbours(const Vect3d position) {
