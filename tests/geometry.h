@@ -69,63 +69,63 @@ public:
         ABORIA_VARIABLE(radius,double,"radius")
     	typedef Particles<radius> ParticlesType;
        	ParticlesType particles;
-       	auto position_ = get_vector<position>(particles);
-       	auto radius_ = get_vector<radius>(particles);
-       	particles.push_back(Vect3d(0,0,0));
+        Symbol<position> p;
+        Symbol<radius> r;
+        Label<0,ParticlesType> a(particles);
 
+       	particles.push_back(Vect3d(0,0,0));
 
 		Sphere sp_centre(Vect3d(0,0,0),0.5,false);
 		Vect3d p1(0.4,0,0);
 		Vect3d p2(0.6,0,0);
-        position_ =  reflect_(p1,p2,sp_centre);
+        p[a] =  reflect_(p1,p2,sp_centre);
 		TS_ASSERT_DELTA(get<position>(particles[0])[0],0.4,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[1],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[2],0,tol);
 
 		GeometrySymbolic<Sphere> sphere_;		
 
-        position_ = Vect3d(0,-0.4,0);
-        position_ = Vect3d(0,-0.3,0) | sphere_(position_,0.5,false);
+        p[a] = Vect3d(0,-0.4,0);
+        p[a] = Vect3d(0,-0.3,0) | sphere_(p,0.5,false);
 		TS_ASSERT_DELTA(get<position>(particles[0])[0],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[1],-0.3,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[2],0,tol);
 
-        position_ = Vect3d(0,-0.4,0);
-        position_ = Vect3d(0,-0.2,0) | sphere_(position_,0.3,true);
+        p[a] = Vect3d(0,-0.4,0);
+        p[a] = Vect3d(0,-0.2,0) | sphere_(p[a],0.3,true);
 		TS_ASSERT_DELTA(get<position>(particles[0])[0],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[1],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[2],0,tol);
 
-        position_ = Vect3d(0,-0.4,0);
-        radius_ = 0.5;
-        position_ = Vect3d(0,-0.3,0) | sphere_(position_,radius_,false);
+        p[a] = Vect3d(0,-0.4,0);
+        r[a] = 0.5;
+        p[a] = Vect3d(0,-0.3,0) | sphere_(p,r,false);
 		TS_ASSERT_DELTA(get<position>(particles[0])[0],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[1],-0.3,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[2],0,tol);
 
-        position_ = Vect3d(0,-0.4,0);
-        radius_ = 0.3;
-        position_ = Vect3d(0,-0.2,0) | sphere_(position_,radius_,true);
+        p[a] = Vect3d(0,-0.4,0);
+        r[a] = 0.3;
+        p[a] = Vect3d(0,-0.2,0) | sphere_(p[a],r[a],true);
 		TS_ASSERT_DELTA(get<position>(particles[0])[0],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[1],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[2],0,tol);
 
 
        	ParticlesType sphere_particles;
-       	auto sphere_position_ = get_vector<position>(sphere_particles);
-       	auto sphere_radius_ = get_vector<radius>(sphere_particles);
+        Label<0,ParticlesType> b(sphere_particles);
+        Label<1,ParticlesType> c(sphere_particles);
         
        	sphere_particles.push_back(Vect3d(0,0,0));
-        sphere_radius_ = 0.3;
+        r[b] = 0.3;
 
     	sphere_particles.init_neighbour_search(Vect3d(-4,-4,-4),Vect3d(4,4,4),0.3,Vect3b(false,false,false));
 
-        position_ = Vect3d(0,0.4,0);
+        p[a] = Vect3d(0,0.4,0);
 
 		GeometriesSymbolic<Sphere> spheres_;		
-       	Label<1> b;
 
-        position_ = Vect3d(0,-0.2,0) | spheres_(b=sphere_particles,sphere_radius_);
+        p[a] = Vect3d(0,-0.2,0) | spheres_(c,r[b]);
 		TS_ASSERT_DELTA(get<position>(particles[0])[0],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[1],0,tol);
 		TS_ASSERT_DELTA(get<position>(particles[0])[2],0,tol);

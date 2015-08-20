@@ -92,7 +92,7 @@ namespace Aboria {
     template<typename LABEL, typename CONDITIONAL, typename ARG, typename INIT> \
 	typename proto::result_of::make_expr< \
 	tag , \
-	DataVectorDomain, \
+	SymbolicDomain, \
 	LABEL const &, \
 	CONDITIONAL const &, \
 	ARG const &, \
@@ -100,7 +100,7 @@ namespace Aboria {
 	>::type const \
 	name(LABEL const & label,CONDITIONAL const & conditional, ARG const & arg, INIT const & init) \
 	{ \
-		return proto::make_expr< tag , DataVectorDomain>( \
+		return proto::make_expr< tag , SymbolicDomain>( \
 				boost::ref(label), \
 				boost::ref(conditional), \
 				boost::ref(arg), \
@@ -121,7 +121,7 @@ namespace Aboria {
 		}
 	};
 
-    ABORIA_UNARY_FUNCTION(norm, norm_fun, DataVectorDomain);
+    ABORIA_UNARY_FUNCTION(norm, norm_fun, SymbolicDomain);
 
     struct exp_fun
 	{
@@ -133,7 +133,7 @@ namespace Aboria {
 		}
 	};
 
-    ABORIA_UNARY_FUNCTION(exp, exp_fun, DataVectorDomain);
+    ABORIA_UNARY_FUNCTION(exp, exp_fun, SymbolicDomain);
     
     struct pow_fun
     {
@@ -145,7 +145,7 @@ namespace Aboria {
         }
     };
 
-    ABORIA_BINARY_FUNCTION(pow, pow_fun, DataVectorDomain);
+    ABORIA_BINARY_FUNCTION(pow, pow_fun, SymbolicDomain);
 
     template< typename T >
 	struct reflect_fun
@@ -160,7 +160,7 @@ namespace Aboria {
 		}
 	};
 
-    ABORIA_TERNARY_FUNCTION(reflect_, reflect_fun<Expr3>, DataVectorDomain);
+    ABORIA_TERNARY_FUNCTION(reflect_, reflect_fun<Expr3>, SymbolicDomain);
 
 
 }

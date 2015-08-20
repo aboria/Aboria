@@ -52,15 +52,15 @@ public:
 			points.push_back(Vect3d(uni(generator),uni(generator),uni(generator)));
 		}
 
-		auto spheres_position = get_vector<position>(spheres);
-		auto spheres_radius = get_vector<radius>(spheres);
+        Symbol<position> p;
+        Symbol<id> id_;
+        Symbol<alive> alive_;
+        Symbol<radius> r;
+        Label<0,Particles<radius> > a_s(spheres);
+        Label<1,Particles<radius> > b_s(spheres);
+        Label<0,Particles<> > a_p(points);
+        Label<1,Particles<> > b_p(points);
 
-		auto points_position = get_vector<position>(points);
-		auto points_alive = get_vector<alive>(points);
-
-
-		Label<0> a;
-		Label<1> b;
 		Dx dx;
 		Normal N;
 		GeometriesSymbolic<Sphere> spheres_;		
@@ -70,7 +70,7 @@ public:
 		/*
 		 * Kill any points within spheres
 		 */
-		points_alive = !any(b=spheres, norm(dx) < spheres_radius[b],true);
+		alive_[a_p] = !any(b_s, norm(dx) < r[b_s],true);
 
 		/*
 		 * Check no points within spheres
@@ -86,7 +86,7 @@ public:
 		 * Diffusion step for points and reflect off spheres
 		 */
 		for (int i = 0; i < timesteps; ++i) {
-			points_position += std::sqrt(2*D*dt)*vector(N,N,N) | spheres_(b=spheres,spheres_radius[b]);
+			p[a_p] += std::sqrt(2*D*dt)*vector(N,N,N) | spheres_(b_s,r[b_s]);
 		}
 
 		/*

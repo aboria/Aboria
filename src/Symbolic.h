@@ -25,7 +25,6 @@
 #ifndef SYMBOLIC_H_
 #define SYMBOLIC_H_
 
-#include "DataVector.h"
 #include "Vector.h"
 
 
@@ -56,14 +55,32 @@ using proto::N;
 
 namespace Aboria {
 
-template<typename I>
+template<typename I, typename P>
 struct label_ {
+    typedef P particles_type;
 	typedef I depth;
+
+    label_(P& p):p(p) {}
+    P& get_particles() const { return p; }
+
+    P& p;
 };
 
 
+template<typename T>
+struct symbolic_ {
+    typedef T variable_type;
+    typedef typename T::value_type value_type;
+
+    std::vector<value_type>& get_buffer(void *address) { return map[address]; }
+    
+    std::map<void *,std::vector<value_type> > map;
+};
+
+
+
 template<typename Expr>
-struct DataVectorExpr;
+struct SymbolicExpr;
 
 template<typename Expr>
 struct LabelExpr;
@@ -97,45 +114,56 @@ struct AssignOpsCases
 };
 
 
-// This grammar describes which DataVector expressions
+// This grammar describes which Symbolic expressions
 // are allowed;#include <tuple>
-//struct DataVectorGrammar
+//struct SymbolicGrammar
 //  : proto::or_<
 //  	  proto::when<proto::terminal, get_particles_ref<proto::_value>(proto::_value)>
-//  	  , proto::when<proto::sum_<DataVectorGrammar,DataVectorGrammar>, null()>
+//  	  , proto::when<proto::sum_<SymbolicGrammar,SymbolicGrammar>, null()>
 //  	  , proto::when<proto::and_<
-//              	  	  proto::nary_expr<_, proto::vararg<DataVectorGrammar> >
+//              	  	  proto::nary_expr<_, proto::vararg<SymbolicGrammar> >
 //            		, proto::not_<AssignOps> >
 //  	  	  	  	  	, proto::fold<_, void *(), particles_ref_accumulate<get_particles_ptrs,proto::_state>(get_particles_ptrs, proto::_state) > >
 //    >
 //{};
 
-// This grammar describes which DataVector expressions
+// This grammar describes which Symbolic expressions
 // are allowed;
-struct DataVectorGrammar
+struct SymbolicGrammar
   : proto::or_<
   	  proto::terminal<_>
   	  , proto::and_<
-              	  	  proto::nary_expr<_, proto::vararg<DataVectorGrammar> >
+              	  	  proto::nary_expr<_, proto::vararg<SymbolicGrammar> >
             		, proto::not_<AssignOps>
   	  	  	  	   >
   >
 
 {};
 
+struct get_particles: proto::callable {
+    template<typename Sig>
+    struct result;
+
+    template<typename This, typename LabelType>
+    struct result<This(const LabelType&)>
+        : boost::add_reference<typename LabelType::particles_type>
+    {};
+
+    template<typename LabelType>
+    typename LabelType::particles_type &operator()(const LabelType& label) {
+        return label.get_particles();
+    }
+};
+
+
 
   struct LabelGrammar
-    : proto::or_<
-        proto::when< proto::terminal<_>
-                    , proto::_value >
-        , proto::when< 
-                    _ 
-    				, LabelGrammar(proto::_right) >
-      >
+    : proto::when< proto::terminal<label_<_,_> >
+                       , get_particles(proto::_value) >
   {};
 
     struct SubscriptGrammar
-       : proto::when< proto::terminal<label_<_> >
+       : proto::when< proto::terminal<label_<_,_> >
                        , proto::_value >
      {};
 
@@ -196,22 +224,22 @@ struct DataVectorGrammar
       };
 
     struct GeometryGrammar
-    	: proto::function< proto::terminal< geometry_<_> >, DataVectorGrammar, DataVectorGrammar, DataVectorGrammar>
+    	: proto::function< proto::terminal< geometry_<_> >, SymbolicGrammar, SymbolicGrammar, SymbolicGrammar>
 		{}; 
 
 	struct GeometriesGrammar
-    	: proto::function< proto::terminal< geometries_<_> >, LabelGrammar, DataVectorGrammar>
+    	: proto::function< proto::terminal< geometries_<_> >, LabelGrammar, SymbolicGrammar>
 		{}; 
 
 
     //TODO: should make a "conditional" grammar to match 2nd arguement
 	struct AccumulateGrammar
-    	: proto::function< proto::terminal< accumulate_<_> >, LabelGrammar, DataVectorGrammar, DataVectorGrammar>
+    	: proto::function< proto::terminal< accumulate_<_> >, LabelGrammar, SymbolicGrammar, SymbolicGrammar>
 		{}; 
 
 
 	struct AccumulateInitGrammar
-    	: proto::function< proto::terminal< accumulate_<_> >, LabelGrammar, DataVectorGrammar, DataVectorGrammar, DataVectorGrammar>
+    	: proto::function< proto::terminal< accumulate_<_> >, LabelGrammar, SymbolicGrammar, SymbolicGrammar, SymbolicGrammar>
 		{}; 
 
 
@@ -264,12 +292,12 @@ struct DataVectorGrammar
 
 			template<typename Expr>
 			struct eval<Expr, proto::tag::terminal,
-                typename boost::enable_if<proto::matches<Expr, proto::terminal<DataVector<_,_> > > >::type 
+                typename boost::enable_if<proto::matches<Expr, proto::terminal<symbolic_<_> > > >::type 
                 >
 			{
 
                 typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-                typedef const typename proto::result_of::value<Expr>::type::value_type& result_type;
+                typedef const typename variable_type::value_type& result_type;
 
 				result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const
 				{
@@ -360,23 +388,6 @@ struct ConstantCtx
 						{};
 
 
-    /*
-	// Handle unlabeled vector terminals here...
-	template<typename Expr>
-	struct eval<Expr, proto::tag::terminal, 
-        typename boost::enable_if<proto::matches<Expr, proto::terminal<DataVector<_,_> > > >::type 
-	> 
-    {
-        typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-        typedef const typename proto::result_of::value<Expr>::type::value_type result_type;
-				
-        result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
-	    {
-	        return result_type();
-	    }
-	};
-    */
-
 	// Handle normal terminals here...
 	template<typename Expr>
 	struct eval<Expr, proto::tag::terminal,
@@ -391,47 +402,7 @@ struct ConstantCtx
 	    }
 	};
 
-    /*
-	// Handle subscripts here...
-	template<typename Expr>
-	struct eval<Expr, proto::tag::subscript,
-        typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,SubscriptGrammar> >::type 
-	    >
-	{
-        typedef typename proto::result_of::child_c<Expr, 1>::type subscript_type;
-	    typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
-	    typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
-
-	    BOOST_MPL_ASSERT_RELATION( subscript_depth::value, == , 0 );
-
-	    typedef typename proto::result_of::child_c<Expr, 0>::type ExprToSubscript;
-
-	    typedef typename proto::result_of::eval<ExprToSubscript const, ConstantCtx const>::type result_type;
-
-	    result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
-    	{
-            return proto::child_c<0>(expr).eval();
-		}
-	};
-
-
-    template<typename Expr>
-    struct eval<Expr, proto::tag::bitwise_or,
-        typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,GeometriesGrammar> >::type 
-    >
-    {
-
-        typedef Vect3d result_type;
-
-	    result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
-	    {
-	        return result_type();
-	    }
-	};
-
-    */
-
-
+    
     // Handle sums here...
     template<typename Expr>
 	struct eval<Expr, proto::tag::function,
@@ -492,11 +463,11 @@ struct ParticleCtx
 	// Handle unlabeled vector terminals here...
 	template<typename Expr>
 	struct eval<Expr, proto::tag::terminal, 
-        typename boost::enable_if<proto::matches<Expr, proto::terminal<DataVector<_,_> > > >::type 
+        typename boost::enable_if<proto::matches<Expr, proto::terminal<symbolic_<_> > > >::type 
 	> 
     {
         typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-        typedef const typename proto::result_of::value<Expr>::type::value_type& result_type;
+        typedef const typename variable_type::value_type& result_type;
 				
         result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
 	    {
@@ -537,7 +508,7 @@ struct ParticleCtx
 
 	    result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
     	{
-            return proto::child_c<0>(expr).eval(ctx.particle_);
+            return proto::eval(proto::child_c<0>(expr),ctx);
 		}
 	};
 
@@ -624,14 +595,14 @@ struct ParticleCtx
 
 
 
-// Tell proto how to generate expressions in the DataVectorDomain
-struct DataVectorDomain
-		: proto::domain<proto::generator<DataVectorExpr>, DataVectorGrammar >
+// Tell proto how to generate expressions in the SymbolicDomain
+struct SymbolicDomain
+		: proto::domain<proto::generator<SymbolicExpr>, SymbolicGrammar >
 		{};
 
 // Declare that phoenix_domain is a sub-domain of spirit_domain
  struct LabelDomain 
-        : proto::domain<proto::generator<LabelExpr>, LabelGrammar, DataVectorDomain>
+        : proto::domain<proto::generator<LabelExpr>, LabelGrammar, SymbolicDomain>
         {};
 
  struct GeometryDomain 
@@ -639,17 +610,16 @@ struct DataVectorDomain
         {};
 
 
-
 template<typename Expr>
-struct DataVectorExpr
-		: proto::extends<Expr, DataVectorExpr<Expr>, DataVectorDomain>
+struct SymbolicExpr
+		: proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>
 {
-			explicit DataVectorExpr(Expr const &expr)
-			: proto::extends<Expr, DataVectorExpr<Expr>, DataVectorDomain>(expr)
+			explicit SymbolicExpr(Expr const &expr)
+			: proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr)
 			  {}
 
 			// Use the ParticleCtx to implement subscripting
-			// of a DataVector expression tree.
+			// of a Symbolic expression tree.
 			template<typename ParticleType>
 			typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType> const>::type
 			eval( const typename ParticleType::value_type& particle) const
@@ -665,8 +635,13 @@ struct DataVectorExpr
 				return proto::eval(*this, ctx);
 			}
 
-            
 };
+
+//#define SUBSCRIPT_TYPE \
+//    typename proto::subscript< \
+//        typename proto::terminal< symbolic_<VariableType> >::type \
+//        ,typename proto::terminal< label_<mpl::int_<0>,ParticlesType > >::type \
+//        >::type \
 
 
 //TODO: move univariate and bivariate down here to
@@ -702,19 +677,19 @@ struct LabelExpr: proto::extends<Expr, LabelExpr<Expr>, LabelDomain>
 };
 
 
-template<unsigned int I>
+template<unsigned int I, typename P>
 struct Label 
-    : LabelExpr<typename proto::terminal<label_<mpl::int_<I> > >::type> {
+    : LabelExpr<typename proto::terminal<label_<mpl::int_<I>,P > >::type> {
 
-	typedef typename proto::terminal<label_<mpl::int_<I> > >::type expr_type;
-    typedef label_<mpl::int_<I> > data_type;
+	typedef typename proto::terminal<label_<mpl::int_<I>,P > >::type expr_type;
+    typedef label_<mpl::int_<I>,P > data_type;
 
-	explicit Label()
-		: LabelExpr<expr_type>( expr_type::make(data_type()))
+	explicit Label(P& p)
+		: LabelExpr<expr_type>( expr_type::make(data_type(p)))
 	  	{}
 
 
-    BOOST_PROTO_EXTENDS_USING_ASSIGN(Label)
+    //BOOST_PROTO_EXTENDS_USING_ASSIGN(Label)
 };
 
 
@@ -728,45 +703,45 @@ struct Normal
 
 template <typename T>
 struct GeometrySymbolic
-	: DataVectorExpr<typename proto::terminal<geometry_<T> >::type> {
+	: SymbolicExpr<typename proto::terminal<geometry_<T> >::type> {
 
 	typedef typename proto::terminal<geometry_<T> >::type expr_type;
     typedef geometry_<T> data_type;
 
 	explicit GeometrySymbolic()
-	: DataVectorExpr<expr_type>( expr_type::make(data_type()) )
+	: SymbolicExpr<expr_type>( expr_type::make(data_type()) )
 	  {}
 
 };
 
 template <typename T>
 struct VectorSymbolic
-	: DataVectorExpr<typename proto::terminal<vector_<T> >::type> {
+	: SymbolicExpr<typename proto::terminal<vector_<T> >::type> {
 
 	typedef typename proto::terminal<vector_<T> >::type expr_type;
     typedef vector_<T> data_type;
 
 	explicit VectorSymbolic()
-	: DataVectorExpr<expr_type>( expr_type::make(data_type()) )
+	: SymbolicExpr<expr_type>( expr_type::make(data_type()) )
 	  {}
 
 };
 
 template <typename T>
 struct Accumulate
-	: DataVectorExpr<typename proto::terminal<accumulate_<T> >::type> {
+	: SymbolicExpr<typename proto::terminal<accumulate_<T> >::type> {
 
 	typedef typename proto::terminal<accumulate_<T> >::type expr_type;
     typedef accumulate_<T> data_type;
 
 
     explicit Accumulate()
-	: DataVectorExpr<expr_type>( expr_type::make(data_type()) )
+	: SymbolicExpr<expr_type>( expr_type::make(data_type()) )
 	  {}
 
     template<typename T2>
     explicit Accumulate(const T2& arg)
-	: DataVectorExpr<expr_type>( expr_type::make(data_type(arg)) )
+	: SymbolicExpr<expr_type>( expr_type::make(data_type(arg)) )
 	  {}
 
     void set_init(const typename data_type::init_type & arg) {
@@ -778,44 +753,88 @@ struct Accumulate
 
 template <typename T>
 struct GeometriesSymbolic
-	: DataVectorExpr<typename proto::terminal<geometries_<T> >::type> {
+	: SymbolicExpr<typename proto::terminal<geometries_<T> >::type> {
 
 	typedef typename proto::terminal<geometries_<T> >::type expr_type;
     typedef geometries_<T> data_type;
 
 	explicit GeometriesSymbolic()
-	: DataVectorExpr<expr_type>( expr_type::make(data_type()) )
+	: SymbolicExpr<expr_type>( expr_type::make(data_type()) )
 	  {}
-
 };
 
 
-template<typename T, typename ParticlesType>
-struct DataVectorSymbolic
-	: DataVectorExpr<typename proto::terminal<DataVector<T,ParticlesType> >::type> {
 
-	typedef typename proto::terminal<DataVector<T,ParticlesType> >::type expr_type;
-	typedef typename ParticlesType::value_type particle_type;
+template<typename T>
+struct Symbol
+	: SymbolicExpr<typename proto::terminal<symbolic_<T> >::type> {
+
+	typedef typename proto::terminal<symbolic_<T> >::type expr_type;
 	typedef typename T::value_type value_type;
 
-	explicit DataVectorSymbolic(ParticlesType &p)
-	: DataVectorExpr<expr_type>( expr_type::make(DataVector<T,ParticlesType>(p)) )
+	explicit Symbol()
+	: SymbolicExpr<expr_type>( expr_type::make(symbolic_<T>()) )
 	  {}
+};
 
 
-	template< typename Expr >
-	DataVectorSymbolic &operator =(Expr const & expr) {
-        BOOST_MPL_ASSERT_NOT(( boost::is_same<T,id > ));
-		return this->assign(proto::as_expr<DataVectorDomain>(expr));
-	}
 
-#define DEFINE_THE_OP(name,the_op) \
-	template< typename Expr > \
-	DataVectorSymbolic &operator the_op (Expr const & expr) { \
-        BOOST_MPL_ASSERT_NOT(( boost::is_same<T,id > )); \
-		return this->name(proto::as_expr<DataVectorDomain>(expr)); \
+#define SUBSCRIPT_TYPE \
+    proto::exprns_::basic_expr< \
+        proto::tagns_::tag::subscript \
+        , proto::argsns_::list2< \
+            Aboria::SymbolicExpr<boost::proto::exprns_::expr< \
+                proto::tagns_::tag::terminal \
+                , proto::argsns_::term<symbolic_<VariableType> > \
+                , 0l> >& \
+            , Label<0u, ParticlesType >& \
+            > \
+        , 2l \
+    >
+
+
+template<typename VariableType, typename ParticlesType>
+struct SymbolicExpr<SUBSCRIPT_TYPE>
+		: proto::extends<SUBSCRIPT_TYPE, SymbolicExpr<SUBSCRIPT_TYPE>, SymbolicDomain>
+{
+    typedef SUBSCRIPT_TYPE Expr;
+
+#undef SUBSCRIPT_TYPE
+
+    explicit SymbolicExpr(Expr const &expr)
+    : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr),
+        symbol(proto::value(proto::child_c<0>(expr))),
+        label(proto::value(proto::child_c<1>(expr))) {}
+
+    // Use the ParticleCtx to implement subscripting
+    // of a Symbolic expression tree.
+    template<typename ParticleType>
+    typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType> const>::type
+    eval( const typename ParticleType::value_type& particle) const
+    {
+        ParticleCtx<ParticleType> const ctx(particle);
+        return proto::eval(*this, ctx);
+    }
+    template<typename ParticleType1, typename ParticleType2>
+    typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
+    eval( const Vect3d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const
+    {
+        TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
+        return proto::eval(*this, ctx);
+    }
+
+
+    //mpl::for_each<mpl::range_c<int,1,label_type::number_of_particle_sets::value> > (this->name(proto::as_expr<SymbolicDomain>(expr,label))); \
+    
+    #define DEFINE_THE_OP(name,the_op) \
+	template< typename ExprRight > \
+	const SymbolicExpr &operator the_op (ExprRight const & expr) const { \
+        BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
+        this->name(proto::as_expr<SymbolicDomain>(expr)); \
+        return *this; \
 	} \
     
+    DEFINE_THE_OP(assign,=)
     DEFINE_THE_OP(increment,+=)
     DEFINE_THE_OP(decrement,-=)
     DEFINE_THE_OP(divide,/=)
@@ -823,28 +842,35 @@ struct DataVectorSymbolic
 
 
 private:
+    label_<mpl::int_<0>,ParticlesType> &label;
+    symbolic_<VariableType> &symbol;
 
-    void post() {
-		ParticlesType &particles = proto::value(*this).get_particles();
+    void post() const {
+        typedef typename VariableType::value_type value_type;
+
+        ParticlesType& particles = label.get_particles();
+        std::vector<value_type>& buffer = symbol.get_buffer(&particles);
 
         for (int i=0; i<particles.size(); i++) {
-	        set<T>(particles[i],buffer[i]);	
+	        set<VariableType>(particles[i],buffer[i]);	
 	    }
 
-        if (boost::is_same<T,position>::value) {
+        if (boost::is_same<VariableType,position>::value) {
             particles.update_positions();
         }
 
-        if (boost::is_same<T,alive>::value) {
+        if (boost::is_same<VariableType,alive>::value) {
             particles.delete_particles();
         }
     }
 
-
-	template< typename Expr >
-	DataVectorSymbolic &assign(Expr const & expr)
+	template< typename Expr>
+	const SymbolicExpr &assign(Expr const & expr) const
 	{
-		ParticlesType &particles = proto::value(*this).get_particles();
+        typedef typename VariableType::value_type value_type;
+
+        ParticlesType& particles = label.get_particles();
+        std::vector<value_type>& buffer = symbol.get_buffer(&particles);
 
 		buffer.resize(particles.size());
 
@@ -858,16 +884,17 @@ private:
         return *this;
 	}
 
+   
 #define DO_THE_OP(name,the_op) \
 	template< typename Expr > \
-	DataVectorSymbolic & name (Expr const & expr) \
+	const SymbolicExpr & name (Expr const & expr) const \
 	{                                                \
-		ParticlesType &particles = proto::value(*this).get_particles(); \
-                                                                        \
+        typedef typename VariableType::value_type value_type; \
+        ParticlesType& particles = label.get_particles(); \
+        std::vector<value_type>& buffer = symbol.get_buffer(&particles); \
 		buffer.resize(particles.size()); \
-                                         \
 		for (int i=0; i<particles.size(); i++) { \
-			buffer[i] = get<T>(particles[i]) the_op expr.template eval<ParticlesType>(particles[i]);	\
+			buffer[i] = get<VariableType>(particles[i]) the_op expr.template eval<ParticlesType>(particles[i]);	\
 		} \
         post(); \
 		return *this; \
@@ -877,16 +904,14 @@ private:
     DO_THE_OP(multiply,*)
     DO_THE_OP(divide,/)
     DO_THE_OP(decrement,-)
-
-	std::vector<value_type> buffer;
+            
 };
 
 
 
-template<typename T, typename ParticlesType>
-DataVectorSymbolic<T,ParticlesType> get_vector(ParticlesType &p) {
-	return DataVectorSymbolic<T,ParticlesType>(p);
-}
+
+
+
 
 }
 

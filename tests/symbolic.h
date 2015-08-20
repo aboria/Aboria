@@ -40,67 +40,78 @@ public:
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<scalar> ParticlesType;
     	ParticlesType particles;
-    	auto scalar_ = get_vector<scalar>(particles);
+
+        Symbol<scalar> s;
+        Label<0,ParticlesType> a(particles);
     }
 
     void test_create_default_vectors(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<scalar> ParticlesType;
     	ParticlesType particles;
-    	auto position_ = get_vector<position>(particles);
-    	auto id_ = get_vector<id>(particles);
-    	auto alive_ = get_vector<alive>(particles);
+
+        Symbol<position> p;
+        Symbol<id> id_;
+        Symbol<alive> alive_;
+
     }
 
     void test_transform(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<scalar> ParticlesType;
     	ParticlesType particles;
-    	auto scalar_ = get_vector<scalar>(particles);
-    	auto position_ = get_vector<position>(particles);
-    	auto id_ = get_vector<id>(particles);
-    	auto alive_ = get_vector<alive>(particles);
 
-    	scalar_ = 0;
+        Symbol<position> p;
+        Symbol<id> id_;
+        Symbol<alive> alive_;
+        Symbol<scalar> s;
+        Label<0,ParticlesType> a(particles);
 
-    	ParticlesType::value_type p;
-    	particles.push_back(p);
-    	particles.push_back(p);
+    	s[a] = 0;
 
-    	scalar_ = 0;
+    	ParticlesType::value_type particle;
+    	particles.push_back(particle);
+    	particles.push_back(particle);
+
+    	s[a] = 0;
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),0);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),0);
 
-    	scalar_= 1;
+    	s[a] = 1;
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
 
-    	scalar_ = scalar_ + 1;
+    	s[a] = s + 1;
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
 
-    	position_ = Vect3d(1,2,3);
+        s[a] = s[a] + 1;
+
+    	TS_ASSERT_EQUALS(get<scalar>(particles[0]),3);
+    	TS_ASSERT_EQUALS(get<scalar>(particles[1]),3);
+
+    	p[a] = Vect3d(1,2,3);
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],1);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],2);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[2],3);
 
-        position_ += Vect3d(1,2,3);
+        p[a] += Vect3d(1,2,3);
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],2);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],4);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[2],6);
 
-    	position_ = position_ * scalar_;
+    	p[a] = p * s;
 
-    	TS_ASSERT_EQUALS(get<position>(particles[0])[0],4);
-    	TS_ASSERT_EQUALS(get<position>(particles[0])[1],8);
-    	TS_ASSERT_EQUALS(get<position>(particles[0])[2],12);
+    	TS_ASSERT_EQUALS(get<position>(particles[0])[0],6);
+    	TS_ASSERT_EQUALS(get<position>(particles[0])[1],12);
+    	TS_ASSERT_EQUALS(get<position>(particles[0])[2],18);
 
-       	position_ = if_else(id_ == 0, Vect3d(0,0,0), Vect3d(3,2,1));
+       	p[a] = if_else(id_ == 0, Vect3d(0,0,0), Vect3d(3,2,1));
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0);
@@ -123,25 +134,24 @@ public:
        	double diameter = 0.1;
         particles.init_neighbour_search(min,max,diameter,periodic);
 
-       	auto scalar_ = get_vector<scalar>(particles);
-       	auto position_ = get_vector<position>(particles);
-       	auto id_ = get_vector<id>(particles);
-       	auto alive_ = get_vector<alive>(particles);
+        Symbol<position> p;
+        Symbol<id> id_;
+        Symbol<alive> alive_;
+        Symbol<scalar> s;
+        Label<0,ParticlesType> a(particles);
+        Label<1,ParticlesType> b(particles);
+        Dx dx;
+        Accumulate<std::plus<double> > sum;
 
        	particles.push_back(Vect3d(0,0,0));
        	particles.push_back(Vect3d(diameter*2,0,0));
 
-       	Label<0> a;
-       	Label<1> b;
-        Dx dx;
-        Accumulate<std::plus<double> > sum;
-
-       	scalar_ = sum(b=particles, norm(dx) < diameter, 1);
+       	s[a] = sum(b, norm(dx) < diameter, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
 
-       	position_ = if_else(id_ == 0, Vect3d(diameter/2.0,0,0), Vect3d(0,0,0));
+       	p[a] = if_else(id_ == 0, Vect3d(diameter/2.0,0,0), Vect3d(0,0,0));
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],diameter/2.0);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0);
@@ -151,7 +161,7 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[1],0);
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],0);
 
-    	position_ = 0.5*(position_ + scalar_);
+    	p[a] = 0.5*(p + s);
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0.5*(diameter/2.0 + 1));
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0.5);
@@ -161,25 +171,13 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[1],0.5);
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],0.5);
 
-//       	old_posiiton   = position;
-//       	for() {
-//          ellipsoids = ellipsoid(position)
-//          new_position = constrain(position + 
-//       	position = position + sqrt(2*D*dt)*normal() + dt*interpolate(position, drift);
-//       	position = any(particles, norm(dx()) < diameter, reflect(position,new_position,ellipsoids))
-//       	}
-//       	dx =position-old_position;
-//       	msd = dot(dx,dx);
-//       	mean = mean(dx);
-//       	var = var(dx);
-
-       	scalar_ = sum(b=particles, norm(dx) < diameter, 1);
+       	s[a] = sum(b, norm(dx) < diameter, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
 
-       	position_ = if_else(id_ == 0, Vect3d(0,0,0), Vect3d(diameter/2.0,diameter/2.0,diameter/2.0));
-       	scalar_ = if_else(id_ == 0, 0, 1);
+       	p[a] = if_else(id_ == 0, Vect3d(0,0,0), Vect3d(diameter/2.0,diameter/2.0,diameter/2.0));
+       	s[a] = if_else(id_ == 0, 0, 1);
 
        	TS_ASSERT_EQUALS(get<scalar>(particles[0]),0);
        	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
@@ -194,7 +192,7 @@ public:
 
         Accumulate<std::plus<Vect3d> > sumVect;
 
-    	position_ = sumVect(b=particles, norm(dx) < diameter, Vect3d(0,0,0) + 0.5*(scalar_[a]/2.0 + scalar_[b]/10.0));
+    	p[a] = sumVect(b, norm(dx) < diameter, Vect3d(0,0,0) + 0.5*(s[a]/2.0 + s[b]/10.0));
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0.05);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0.05);
@@ -213,34 +211,35 @@ public:
     	typedef Particles<scalar> ParticlesType;
        	ParticlesType particles;
 
-       	auto scalar_ = get_vector<scalar>(particles);
-       	auto position_ = get_vector<position>(particles);
-       	auto id_ = get_vector<id>(particles);
-       	auto alive_ = get_vector<alive>(particles);
-
-       	particles.push_back(Vect3d(0,0,0));
-       	particles.push_back(Vect3d(2,0,0));
-
-       	Label<0> a;
+        Symbol<position> p;
+        Symbol<id> id_;
+        Symbol<alive> alive_;
+        Symbol<scalar> s;
+        Label<0,ParticlesType> a(particles);
+        Label<1,ParticlesType> b(particles);
         Dx dx;
+
         Accumulate<std::plus<double> > sum;
         Accumulate<Aboria::max<double> > max;
         max.set_init(-1);
         Accumulate<Aboria::min<double> > min;
         min.set_init(1000);
 
-       	double result = eval(sum(a=particles, position_[0]<1, 1));
+       	particles.push_back(Vect3d(0,0,0));
+       	particles.push_back(Vect3d(2,0,0));
+
+        double result = eval(sum(a, p[0]<1, 1));
     	TS_ASSERT_EQUALS(result,1);
-       	result = eval(sum(a=particles, true, 1));
+       	result = eval(sum(a, true, 1));
     	TS_ASSERT_EQUALS(result,2);
-       	result = eval(sum(a=particles, true, position_[0]));
+       	result = eval(sum(a, true, p[0]));
     	TS_ASSERT_EQUALS(result,2);
-        int result2 = eval(max(a=particles, true, id_));
+        int result2 = eval(max(a, true, id_));
     	TS_ASSERT_EQUALS(result2,1);
-        result2 = eval(min(a=particles, true, id_));
+        result2 = eval(min(a, true, id_));
     	TS_ASSERT_EQUALS(result2,0);
        	particles.push_back(Vect3d(0,0,0));
-        result2 = eval(max(a=particles, true, id_));
+        result2 = eval(max(a, true, id_));
     	TS_ASSERT_EQUALS(result2,2);
     }
 
