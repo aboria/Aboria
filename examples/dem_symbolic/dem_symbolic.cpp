@@ -19,7 +19,7 @@ int main(int argc, char **argv) {
     const double tol = GEOMETRY_TOLERANCE;
 
     ABORIA_VARIABLE(radius,double,"radius")
-    ABORIA_VARIABLE(mass,double,"mass")
+     ABORIA_VARIABLE(mass,double,"mass")
     ABORIA_VARIABLE(velocity,Vect3d,"velocity")
     ABORIA_VARIABLE(acceleration,Vect3d,"acceleration")
 
@@ -39,10 +39,10 @@ int main(int argc, char **argv) {
     const double dem_gamma = 0.0004;
     const double dem_k = 1.0e01;
     const double dem_dens = 1160.0;
-    const double dem_mass_min = (1.0/6.0)*PI*pow(0.5*dem_diameter,3)*dem_dens;
-    const double dem_mass_max = (1.0/6.0)*PI*pow(dem_diameter,3)*dem_dens;
+    const double dem_mass_min = (1.0/6.0)*PI*std::pow(0.5*dem_diameter,3)*dem_dens;
+    const double dem_mass_max = (1.0/6.0)*PI*std::pow(dem_diameter,3)*dem_dens;
     const double dem_min_reduced_mass = dem_mass_min*dem_mass_max/(dem_mass_min+dem_mass_max);
-    const double dt = (1.0/50.0)*PI/sqrt(dem_k/dem_min_reduced_mass-pow(0.5*dem_gamma/dem_min_reduced_mass,2));
+    const double dt = (1.0/50.0)*PI/sqrt(dem_k/dem_min_reduced_mass-std::pow(0.5*dem_gamma/dem_min_reduced_mass,2));
 
     dem.init_neighbour_search(Vect3d(0,0,-dem_diameter),Vect3d(L/3,L/3,L+dem_diameter),dem_diameter,Vect3b(true,true,false));
 
@@ -95,8 +95,8 @@ int main(int argc, char **argv) {
             p += v*dt;
 
             dvdt = (// spring force between dem particles
-                    sum(b=dem, id_[a]!=id_[b] && norm_(dx)<r[a]+r[b], 
-                          dem_k*((r[a]+r[b])/norm_(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
+                    sum(b=dem, id_[a]!=id_[b] && norm(dx)<r[a]+r[b], 
+                          dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
                 
                     // spring force between particles and bottom wall
                     + if_else(r-p[2] > 0, dem_k*(r-p[2]), 0.0)*Vect3d(0,0,1) 
