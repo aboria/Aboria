@@ -103,7 +103,7 @@ public:
 
 		
 	double norm() const {
-		return sqrt(squaredNorm());
+		return std::sqrt(squaredNorm());
 	}
 
 	template<typename EXP_T>
@@ -371,6 +371,16 @@ std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 		if (i != N-1) out << ",";
 	}
 	return out << ")";
+}
+
+template<typename T,int N>
+std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
+    out.get();
+	for (int i = 0; i < N; ++i) {
+		out >> v[i];
+		out.get();
+	}
+    return out;
 }
 
 typedef Vector<double,3> Vect3d;

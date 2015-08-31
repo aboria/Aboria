@@ -90,13 +90,17 @@ public:
         friend class Particles;
     public:
         typedef std::mt19937 generator_type;
-        value_type():m_uni(0,1),m_normal(0,1){}
-        value_type(const value_type& rhs) {
-            m_data = rhs.m_data;
-            m_generator = rhs.m_generator;
-        }
-        value_type(const Vect3d &r):
-            m_uni(0,1),m_normal(0,1) {
+        value_type():
+            m_uni(0,1),
+            m_normal(0,1) {}
+        value_type(const value_type& rhs): 
+            m_uni(rhs.m_uni),
+            m_normal(rhs.m_normal),
+            m_data(rhs.m_data),
+            m_generator(rhs.m_generator) {}
+        explicit value_type(const Vect3d &r):
+            m_uni(0,1),
+            m_normal(0,1) {
             this->set<position>(r);
         }
         ~value_type() {
@@ -139,11 +143,13 @@ public:
             return m_generator;
         }
         double rand_uniform() {
-            return m_uni(m_generator);
+            std::uniform_real_distribution<double> uni(0,1);
+            return uni(m_generator);
         }
 
         double rand_normal() {
-            return m_normal(m_generator);
+            std::normal_distribution<double> normal(0,1);
+            return normal(m_generator);
         }
 
     private:
@@ -343,7 +349,7 @@ public:
         iterator i = end()-1;
         i->template set<position>(val.template get<position>());
         i->template set<id>(this->next_id++);
-        i->m_generator.seed(i->template get<id>()*seed);
+        i->m_generator.seed(i->template get<id>()+seed);
         i->template set<alive>(true);
         if (track_ids) id_to_index[i->template get<id>()] = index;
         if (searchable) neighbour_search.add_point(i);
@@ -587,8 +593,9 @@ public:
         setup_datas_for_reading(size_t n,vtkSmartPointer<vtkFloatArray>* datas,vtkUnstructuredGrid *grid):
             n(n),datas(datas),grid(grid){}
         template< typename U > void operator()(U i) {
-            std::string name = mpl::at<type_vector,typename U::value>::type::name;
-            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name.c_str()));
+            typedef typename mpl::at<type_vector,U>::type variable_type;
+            const char *name = variable_type().name;
+            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
             CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
             CHECK(datas[i]->GetNumberOfTuples()==n,"Data array "<<name<<" has size != id array. data size = "<<datas[i]->GetNumberOfTuples()<<". id size = "<<n);
         }
@@ -650,13 +657,11 @@ public:
             vtkSmartPointer<vtkCellArray> cells = grid->GetCells();
             CHECK(points,"No cells in vtkUnstructuredGrid");
             vtkSmartPointer<vtkUnsignedCharArray> cell_types = grid->GetCellTypesArray();
-            vtkSmartPointer<vtkIntArray> ids = vtkIntArray::SafeDownCast(grid->GetPointData()->GetArray("id"));
-            CHECK(ids,"No id array in vtkUnstructuredGrid");
             constexpr size_t dn = std::tuple_size<tuple_type>::value;
 
             vtkSmartPointer<vtkFloatArray> datas[dn];
 
-            const vtkIdType n = ids->GetSize();
+            const vtkIdType n = points->GetNumberOfPoints();
 
             mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (setup_datas_for_reading(n,datas,grid));
 
@@ -664,8 +669,7 @@ public:
 
             for (int j = 0; j < n; ++j) {
                 value_type particle;
-                particle.r  = points->GetPoint(j);
-                mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (read_into_tuple(particle.m_data,index,datas));
+                mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (read_into_tuple(particle.m_data,j,datas));
                 this->push_back(particle);
             }
         }

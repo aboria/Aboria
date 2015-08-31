@@ -186,7 +186,7 @@ struct DataVectorGrammar
       struct accumulate_ {
           typedef T functor_type;
           typedef typename T::result_type init_type;
-          accumulate_() {};
+          accumulate_():init(0) {};
           accumulate_(const T& functor):functor(functor) {};
           void set_init(const init_type& arg) {
               init = arg;
