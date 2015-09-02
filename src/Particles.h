@@ -549,7 +549,7 @@ public:
         template< typename U >
         typename boost::enable_if<boost::is_same<typename std::tuple_element<U::value,tuple_type>::type,Vect3d> >::type
         operator()(U i) {
-             typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
+            typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
             data_type &read_into_elem = std::get<U::value>(read_into);
             double *data = datas[i]->GetTuple3(index);
             read_into_elem[0] = data[0];
@@ -669,6 +669,8 @@ public:
 
             for (int j = 0; j < n; ++j) {
                 value_type particle;
+                const double *r = points->GetPoint(j);
+                particle.template set<position>(Vect3d(r[0],r[1],r[2]));
                 mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (read_into_tuple(particle.m_data,j,datas));
                 this->push_back(particle);
             }
