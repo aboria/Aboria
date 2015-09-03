@@ -16,10 +16,10 @@ The motivation behind Aboria is to provide a useful library for implementing par
 
 - [Creating Particles](#create)
 - [Particle Objects](#particle)
-- [Variable Expressions](#expressions)
-- [Neighbourhood Accumulations](#accumulations)
 - [Looping through a container](#looping)
 - [Neighbourhood Searching](#neighbour)
+- [Variable Expressions](#expressions)
+- [Neighbourhood Accumulation Expressions](#accumulations)
 
 Examples
 --------
