@@ -16,6 +16,8 @@ The motivation behind Aboria is to provide a useful library for implementing par
 
 - [Creating Particles](#create)
 - [Particle Objects](#particle)
+- [Variable Expressions](#expressions)
+- [Neighbourhood Accumulations](#accumulations)
 - [Looping through a container](#looping)
 - [Neighbourhood Searching](#neighbour)
 
@@ -227,4 +229,94 @@ for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
    const Vect3d& dx = std::get<1>(tpl);
    std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
 }
+```
+
+<a name="expressions">Variable Expression</a>
+---------------------------------------------
+
+To start using variable expressions, you first need to define a set of symbols 
+to represent your variables, as well as labels to represent your particle 
+set(s).
+
+A symbol representing the variable `position` is defined as
+
+```Cpp
+Symbol<position> p;
+```
+
+A label representing the particle set `particles` with type `MyParticles` is 
+defined as
+
+```Cpp
+Label<0,MyParticles> a(particles);
+Label<1,MyParticles> b(particles);
+```
+The first template argument is the *depth* of the label, and the second is the 
+type of the particle set label refers to.
+
+Labels refer to a specific particle set at a given depth. For example, given a 
+neighbour expression involving two particles from `particles`, the label `a` 
+defined above would refer to the first particle, and `b` would refer to the 
+second.
+
+Now we have defined our labels and symbols, we can create a simple expression to 
+set the position of all particles to `Vect3d(0,0,1)`
+
+```Cpp
+p[a] = Vect3d(0,0,1);
+```
+
+Or we can add a constant value `1` to each particle position
+
+```Cpp
+p[a] = p[a] + 1;
+```
+
+For symbols on the right hand side of the expression, we can drop the label for 
+a more compact expression
+
+```Cpp
+p[a] = p + 1;
+```
+
+Or simply use an increment expression
+
+```Cpp
+p[a] += 1;
+```
+
+<a name="accumulations">Neighbourhood Accumulation Expressions</a>
+------------------------------------------------------------------
+
+To write expressions involving neighbouring particles, we can define an 
+accumulator, which takes a single template argument which is the function or 
+functor to accumulate with. For example, the following defines a summation 
+accumulator using `std::plus` 
+
+```Cpp
+Accumulate<std::plus<int> > sum;
+```
+
+We can use this to count the number of particles within a distance of `2` of 
+each individual particle, storing the result in a variable called `count`.
+
+```Cpp
+ABORIA_VARIABLE(count,int,"number of surrounding particles")
+typedef Particles<count> MyParticles;
+MyParticles particles();
+
+//add some particles
+...
+
+//initialise neighbour searching
+particles.init_neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),4,Vect3b(false,false,false));
+
+//define symbols and labels, and sum
+Symbol<count> c;
+Label<0,MyParticles> a(particles);
+Label<1,MyParticles> b(particles);
+Accumulate<std::plus<int> > sum;
+
+//count neighbouring particles within a distance of 2
+c[a] = sum(b,norm(dx)<2,1)
 ```
