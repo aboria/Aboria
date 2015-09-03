@@ -12,7 +12,9 @@ generator_type generator;
 #include "Aboria.h"
 using namespace Aboria;
 
+#ifdef HAVE_VTK
 #include "Visualisation.h"
+#endif
 
 
 int main(int argc, char **argv) {
@@ -64,10 +66,11 @@ int main(int argc, char **argv) {
         dem.push_back(p);
     }
 
-
+#ifdef HAVE_VTK
     auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
     dem.copy_to_vtk_grid(grid);
     Visualisation::vtkWriteGrid("vis/demInit",0,grid);
+#endif
 
     Symbol<position> p;
     Symbol<radius> r;
@@ -104,8 +107,10 @@ int main(int argc, char **argv) {
 
             v[a] += dvdt*dt;
         }
+#ifdef HAVE_VTK
         dem.copy_to_vtk_grid(grid);
         Visualisation::vtkWriteGrid("vis/dem",io,grid);
+#endif
     }
     std::cout << std::endl;
 }

@@ -8,7 +8,9 @@
 #include "Aboria.h"
 using namespace Aboria;
 
+#ifdef HAVE_VTK
 #include "Visualisation.h"
+#endif
 
 
 const double WCON_WENDLAND = 21.0/(256.0*PI);
@@ -115,9 +117,12 @@ int main(int argc, char **argv) {
 	/*
 	 * setup output stuff
 	 */
+
+#ifdef HAVE_VTK
 	auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 	sph.copy_to_vtk_grid(grid);
 	Visualisation::vtkWriteGrid("at_start_sph",0,grid);
+#endif
 
 	std::cout << "starting...."<<std::endl;
 	sph.init_neighbour_search(low,high,2*hfac*psep,periodic);
@@ -183,8 +188,10 @@ int main(int argc, char **argv) {
 		}
 		std::cout <<"iteration "<<i<<std::endl;
 
+#ifdef HAVE_VTK
 		sph.copy_to_vtk_grid(grid);
 		Visualisation::vtkWriteGrid("sph",i,grid);
+#endif
 	}
 
 

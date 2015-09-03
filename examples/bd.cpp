@@ -12,7 +12,9 @@ generator_type generator;
 #include "Aboria.h"
 using namespace Aboria;
 
+#ifdef HAVE_VTK
 #include "Visualisation.h"
+#endif
 
 
 int main(int argc, char **argv) {
@@ -57,8 +59,6 @@ int main(int argc, char **argv) {
     VectorSymbolic<double> vector;      
     Accumulate<std::bit_or<bool> > any;
 
-    auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
-
     int count_before=0;
     for(auto point: points) {
         if (norm(get<position>(point)-get<position>(spheres[0])) < get<radius>(spheres[0])) {
@@ -81,8 +81,11 @@ int main(int argc, char **argv) {
 
     std::cout <<" found "<<count_before<<" before and "<<count_after<<" after"<<std::endl;
 
+#ifdef HAVE_VTK
+    auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
     points.copy_to_vtk_grid(grid);
     Visualisation::vtkWriteGrid("vis/pointsInit",0,grid);
+#endif
 
     /*
      * Diffusion step for points and reflect off spheres
@@ -90,8 +93,10 @@ int main(int argc, char **argv) {
     for (int ts = 1; ts < timesteps; ++ts) {
         if (ts%10==0) {
             std::cout << "." << std::flush;
+#ifdef HAVE_VTK
             points.copy_to_vtk_grid(grid);
             Visualisation::vtkWriteGrid("vis/points",ts/10,grid);
+#endif
         }
         p[i] += std::sqrt(2*D*dt)*vector(N,N,N) | spheres_(b,r[b]);
     }
