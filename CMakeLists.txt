@@ -24,5 +24,6 @@ include_directories(${CXXTEST_INCLUDES} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}
 
 enable_testing()
 add_subdirectory(tests)
+add_subdirectory(examples)
 
 

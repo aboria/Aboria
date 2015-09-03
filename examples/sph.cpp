@@ -14,7 +14,8 @@ using namespace Aboria;
 const double WCON_WENDLAND = 21.0/(256.0*PI);
 
 struct F_fun {
-    double operator()(const double r,const double h) {
+    typedef double result_type;
+    double operator()(const double r,const double h) const {
         const double q = r/h;
         if (q<=2.0) {
             return (1/std::pow(h,NDIM+2))*WCON_WENDLAND*(-4*std::pow(2-q,3)*(1+2*q) + 2*std::pow(2-q,4))/q;
@@ -25,7 +26,8 @@ struct F_fun {
 };
 
 struct W_fun {
-    double operator()(const double r,const double h) {
+    typedef double result_type;
+    double operator()(const double r,const double h) const {
         const double q = r/h;
         if (q<=2.0) {
             return (1/std::pow(h,NDIM))*WCON_WENDLAND*std::pow(2.0-q,4)*(1.0+2.0*q);
@@ -35,8 +37,8 @@ struct W_fun {
     }
 };
 
-ABORIA_BINARY_FUNCTION(F, F_fun, DataVectorDomain);
-ABORIA_BINARY_FUNCTION(W, W_fun, DataVectorDomain);
+ABORIA_BINARY_FUNCTION(F, F_fun, SymbolicDomain);
+ABORIA_BINARY_FUNCTION(W, W_fun, SymbolicDomain);
 
 int main(int argc, char **argv) {
     ABORIA_VARIABLE(kernel_radius,double,"kernel radius");
@@ -51,16 +53,18 @@ int main(int argc, char **argv) {
     typedef Particles<kernel_radius,velocity,velocity_tmp,varh_omega,density,total_force,is_fixed,pressure_div_density2> sph_type;
     sph_type sph;
 
-    auto p = get_vector<position>(sph);
-    auto v = get_vector<velocity>(sph);
-    auto v0 = get_vector<velocity_tmp>(sph);
-    auto rho = get_vector<density>(sph);
-    auto dvdt = get_vector<total_force>(sph);
-    auto fixed = get_vector<is_fixed>(sph);
-    auto omega = get_vector<varh_omega>(sph);
-    auto h = get_vector<kernel_radius>(sph);
-    auto pdr2 = get_vector<pressure_div_density2>(sph);
-
+    Symbol<position> p;
+    Symbol<velocity> v;
+    Symbol<velocity_tmp> v0;
+    Symbol<density> rho;
+    Symbol<total_force> dvdt;
+    Symbol<is_fixed> fixed;
+    Symbol<varh_omega> omega;
+    Symbol<kernel_radius> h;
+    Symbol<pressure_div_density2> pdr2;
+    Label<0,sph_type> a(sph);
+    Label<1,sph_type> b(sph);
+ 
 	const int timesteps = 1000;
 	const int nout = 1000;
 	const int timesteps_per_out = timesteps/nout;
@@ -80,13 +84,13 @@ int main(int argc, char **argv) {
 	const double spsound = CSFAC*VMAX;
 	const double prb = std::pow(refd/dens,gamma-1.0)*std::pow(spsound,2)*refd/gamma;
 	const double psep = L/nx;
-	const double dt = std::min(0.25*hfac*psep/spsound,0.125*std::pow(hfac*psep,2)/visc);
+	double dt = std::min(0.25*hfac*psep/spsound,0.125*std::pow(hfac*psep,2)/visc);
 	const double mass = dens*std::pow(psep,NDIM);
 
 	std::cout << "h = "<<hfac*psep<<" vmax = "<<VMAX<<std::endl;
 
 	const double time_damping = dt*500;
-	const double t = 0;
+	double t = 0;
 
 	const Vect3d low(0,0,-3.0*psep);
 	const Vect3d high(L,L,L);
@@ -118,8 +122,6 @@ int main(int argc, char **argv) {
 	std::cout << "starting...."<<std::endl;
 	sph.init_neighbour_search(low,high,2*hfac*psep,periodic);
 
-    Label<0> a;
-    Label<1> b;
     Dx dx;
     Accumulate<std::plus<Vect3d> > sum_vect;
     Accumulate<std::plus<double> > sum;
@@ -134,33 +136,33 @@ int main(int argc, char **argv) {
 	        /*
 	         * 0 -> 1/2 step
 	         */
-            v += dt/2 + dvdt;
-            if (t < time_damping) v *= 0.98;
-            p += dt/2 + v;
+            v[a] += dt/2 + dvdt;
+            if (t < time_damping) v[a] *= 0.98;
+            p[a] += dt/2 + v;
 
 	        /*
 	         * Calculate omega
 	         */
-            omega = 1.0 - (mass/rho*NDIM)*sum(b=sph,pow(norm(dx),2)*F(norm(dx),h)+NDIM*W(norm(dx),h));
+            omega[a] = 1.0 - (mass/rho*NDIM)*sum(b,norm(dx)<2*h,pow(norm(dx),2)*F(norm(dx),h)+NDIM*W(norm(dx),h));
 
 	        /*
 	         * 1/2 -> 1 step
 	         */
-            rho += dt*(mass/omega) * sum(b=sph,dot(v[a]-v[b],dx*F(norm(dx),h)));
-            h = pow(mass/rho,1.0/NDIM);
+            rho[a] += dt*(mass/omega) * sum(b,norm(dx)<2*h,dot(v[a]-v[b],dx*F(norm(dx),h)));
+            h[a] = pow(mass/rho,1.0/NDIM);
             
-            const double maxh = eval(max(a=sph,true,h));
-            const double minh = eval(min(a=sph,true,h));
+            const double maxh = eval(max(a,true,h));
+            const double minh = eval(min(a,true,h));
 
-            v0 = v;
-            v += if_else(fixed==false,dt/2 * dvdt,0);
-            pdr2 = prb*(pow(rho/refd,gamma) - 1.0);
-            p += dt/2 * v0;
+            v0[a] = v;
+            v[a] += if_else(fixed==false,dt/2 * dvdt,0);
+            pdr2[a] = prb*(pow(rho/refd,gamma) - 1.0);
+            p[a] += dt/2 * v0;
 
 	        /*
 	         * acceleration on SPH calculation (pressure and viscosity force)
 	         */
-            dvdt += mass*sum_vect(b=sph,norm(dx)<2*h,
+            dvdt[a] += mass*sum_vect(b,norm(dx)<2*h,
                     
                     ((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
                     + (v[a]-v[b])*visc*(rho[a]+rho[b])/(rho[a]*rho[b])*F(norm(dx),h[a])
@@ -169,7 +171,7 @@ int main(int argc, char **argv) {
 	        /*
 	         * 1/2 -> 1 step for velocity
 	         */
-            v = if_else(fixed==false,v0 + dt/2 * dvdt,0);
+            v[a] = if_else(fixed==false,v0 + dt/2 * dvdt,0);
 
             t += dt;
                 

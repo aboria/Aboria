@@ -16,8 +16,6 @@ using namespace Aboria;
 
 
 int main(int argc, char **argv) {
-    const double tol = GEOMETRY_TOLERANCE;
-
     ABORIA_VARIABLE(radius,double,"radius")
 
     Particles<radius> spheres;
@@ -46,25 +44,24 @@ int main(int argc, char **argv) {
     points.init_neighbour_search(Vect3d(-L/5,-L/5,-L/5),Vect3d(L/5,L/5,L/5),4,Vect3b(true,true,true));
     spheres.init_neighbour_search(Vect3d(-L,-L,-L),Vect3d(L,L,L),4,Vect3b(false,false,false));
 
-    auto spheres_position = get_vector<position>(spheres);
-    auto spheres_radius = get_vector<radius>(spheres);
-
-    auto points_position = get_vector<position>(points);
-    auto points_alive = get_vector<alive>(points);
-
-
-    Label<0> a;
-    Label<1> b;
+    Symbol<position> p;
+    Symbol<radius> r;
+    Symbol<alive> alive_;
+    Label<0,Particles<radius> > a(spheres);
+    Label<1,Particles<radius> > b(spheres);
+    Label<0,Particles<> > i(points);
+    Label<1,Particles<> > j(points);
     Dx dx;
     Normal N;
     GeometriesSymbolic<Sphere> spheres_;        
     VectorSymbolic<double> vector;      
+    Accumulate<std::bit_or<bool> > any;
 
     auto grid = vtkSmartPointer<vtkUnstructuredGrid>::New();
 
     int count_before=0;
-    for(auto i: points) {
-        if (norm(get<position>(i)-get<position>(spheres[0])) < get<radius>(spheres[0])) {
+    for(auto point: points) {
+        if (norm(get<position>(point)-get<position>(spheres[0])) < get<radius>(spheres[0])) {
             count_before++;
         }
     }
@@ -72,12 +69,12 @@ int main(int argc, char **argv) {
     /*
      * Kill any points within spheres
      */
-    points_alive = !sum_(b=spheres, norm_(dx) < spheres_radius[b],true,false);
+    alive_[i] = !any(b, norm(dx) < r[b],true);
 
 
     int count_after=0;
-    for(auto i: points) {
-        if (norm(get<position>(i)-get<position>(spheres[0])) < get<radius>(spheres[0])) {
+    for(auto point: points) {
+        if (norm(get<position>(point)-get<position>(spheres[0])) < get<radius>(spheres[0])) {
             count_after++;
         } 
     }
@@ -90,13 +87,13 @@ int main(int argc, char **argv) {
     /*
      * Diffusion step for points and reflect off spheres
      */
-    for (int i = 1; i < timesteps; ++i) {
-        if (i%10==0) {
+    for (int ts = 1; ts < timesteps; ++ts) {
+        if (ts%10==0) {
             std::cout << "." << std::flush;
             points.copy_to_vtk_grid(grid);
-            Visualisation::vtkWriteGrid("vis/points",i/10,grid);
+            Visualisation::vtkWriteGrid("vis/points",ts/10,grid);
         }
-        points_position += std::sqrt(2*D*dt)*vector(N,N,N) | spheres_(b=spheres,spheres_radius[b]);
+        p[i] += std::sqrt(2*D*dt)*vector(N,N,N) | spheres_(b,r[b]);
     }
     std::cout << std::endl;
 }

@@ -16,10 +16,8 @@ using namespace Aboria;
 
 
 int main(int argc, char **argv) {
-    const double tol = GEOMETRY_TOLERANCE;
-
     ABORIA_VARIABLE(radius,double,"radius")
-     ABORIA_VARIABLE(mass,double,"mass")
+    ABORIA_VARIABLE(mass,double,"mass")
     ABORIA_VARIABLE(velocity,Vect3d,"velocity")
     ABORIA_VARIABLE(acceleration,Vect3d,"acceleration")
 
@@ -71,31 +69,29 @@ int main(int argc, char **argv) {
     dem.copy_to_vtk_grid(grid);
     Visualisation::vtkWriteGrid("vis/demInit",0,grid);
 
-    auto p = get_vector<position>(dem);
-    auto r = get_vector<radius>(dem);
-    auto m = get_vector<mass>(dem);
-    auto v = get_vector<velocity>(dem);
-    auto dvdt = get_vector<acceleration>(dem);
-    auto id_ = get_vector<id>(dem);
-
-
-    Label<0> a;
-    Label<1> b;
+    Symbol<position> p;
+    Symbol<radius> r;
+    Symbol<mass> m;
+    Symbol<velocity> v;
+    Symbol<acceleration> dvdt;
+    Symbol<id> id_;
+    Label<0,dem_type> a(dem);
+    Label<1,dem_type> b(dem);
     Dx dx;
     Accumulate<std::plus<Vect3d> > sum;
     
     /*
      * timestepping
      */
-    v = 0;
-    m = (1.0/6.0)*PI*8*r*r*r*dem_dens;
+    v[a] = 0;
+    m[a] = (1.0/6.0)*PI*8*r*r*r*dem_dens;
     for (int io = 0; io < nout; ++io) {
         std::cout << "." << std::flush;
         for (int i = 0; i < timesteps_per_out; i++) {
-            p += v*dt;
+            p[a] += v*dt;
 
-            dvdt = (// spring force between dem particles
-                    sum(b=dem, id_[a]!=id_[b] && norm(dx)<r[a]+r[b], 
+            dvdt[a] = (// spring force between dem particles
+                    sum(b, id_[a]!=id_[b] && norm(dx)<r[a]+r[b], 
                           dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
                 
                     // spring force between particles and bottom wall
@@ -106,7 +102,7 @@ int main(int argc, char **argv) {
 
                     )/m;
 
-            v += dvdt*dt;
+            v[a] += dvdt*dt;
         }
         dem.copy_to_vtk_grid(grid);
         Visualisation::vtkWriteGrid("vis/dem",io,grid);

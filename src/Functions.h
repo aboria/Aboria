@@ -123,6 +123,18 @@ namespace Aboria {
 
     ABORIA_UNARY_FUNCTION(norm, norm_fun, SymbolicDomain);
 
+    struct dot_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const Vect3d& vector1, const Vect3d& vector2) const
+		{
+			return vector1.dot(vector2);
+		}
+	};
+
+    ABORIA_BINARY_FUNCTION(dot, dot_fun, SymbolicDomain);
+
     struct exp_fun
 	{
 		typedef double result_type;

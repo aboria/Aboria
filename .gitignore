@@ -1,6 +1,7 @@
 *.vtu
 *.cproject
 *.project
+/*.cpp
 CMakeCache.txt
 CTestTestfile.cmake
 CMakeFiles/
@@ -8,8 +9,11 @@ Makefile
 cmake_install.cmake
 tests/*
 !tests/*.h
-examples/bd/bd
-examples/dem/dem
-examples/sph/out
-examples/sph/sph
-examples/sphdem/sphdem
+examples/bd
+examples/dem
+examples/sph
+constructors
+geometry
+neighbours
+particle_container
+symbolic
