@@ -538,7 +538,9 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
             const Vect3d middle_of_range = 0.5*(high[i]-low[i]);
 			high[i] = low[i] + max_interaction_radius;
 			num_cells_without_ghost[i] = 1;
-		}
+		} else if (periodic[i]) {
+            CHECK(num_cells_without_ghost[i]>2,"Number of cells in dimension "<<i<<" must be greater than 2. Set max_interaction_radius < "<<(high[i]-low[i])/3);
+        }
 	}
 	num_cells_along_axes = num_cells_without_ghost + Vect3i(3,3,3);
 	LOG(2,"\tNumber of cells along each axis = "<<num_cells_along_axes);
