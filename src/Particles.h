@@ -57,14 +57,30 @@ namespace mpl = boost::mpl;
 
 namespace Aboria {
 
-
-
-
-
+/// \brief A STL-compatable container of particles in 3D space
+///
+///  Each particle has a 3D position and user-defined data-package 
+///  (for other variables such as velocity, density etc) and is 
+///  optionally embedded within a cuboidal spatial domain (for neighbourhood searches) 
+///  that can be periodic or not. Each particle also has its own random number 
+///  generator that is seeded via its own unique id.
+///
+///  For example, the following creates a set of particles which each have 
+///  (along with the standard variables such as position, id etc) a 
+///  data package consisting of one double variable type named scalar.
+///
+///  \code 
+///     using namespace Aboria;
+///     ABORIA_VARIABLE(scalar,double,"my scalar")
+///     typedef Particles<scalar> MyParticles;
+///     MyParticles particles();
+///  \endcode
+///
+///  \param TYPES a list of one or more variable types
+///
+///  \see ABORIA_VARIABLE
 template<typename ... TYPES> 
 class Particles {
-//  template<typename T>
-//  friend class Particles;
 public:
 
     typedef typename std::tuple<position::value_type,id::value_type,alive::value_type,typename TYPES::value_type...> tuple_type;
