@@ -5,8 +5,15 @@ import modules ;
 
 doxygen autodoc
   :
+    ../src/Aboria.h
     ../src/Particles.h
     ../src/Variable.h
+    ../src/BucketSort.h
+    ../src/Functions.h
+    ../src/Geometry.h
+    ../src/Log.h
+    ../src/Symbolic.h
+    ../src/Vector.h
   :
     <doxygen:param>QUIET=YES
     <doxygen:param>WARNINGS=YES
@@ -15,8 +22,8 @@ doxygen autodoc
     <doxygen:param>EXTRACT_PRIVATE=NO
     <doxygen:param>HIDE_UNDOC_MEMBERS=YES
     <doxygen:param>HIDE_UNDOC_CLASSES=YES
-    <doxygen:param>EXPAND_ONLY_PREDEF=YES
     <doxygen:param>SORT_MEMBER_DOCS=NO
+    <doxygen:param>MACRO_EXPANSION=YES
     <doxygen:param>TAB_SIZE=4
     <doxygen:param>EXAMPLE_PATH=../
     <doxygen:param>PREDEFINED=BOOST_COMPUTE_DOXYGEN_INVOKED
@@ -29,4 +36,9 @@ boostbook standalone
       aboria
     :
       <dependency>autodoc
+      <xsl:param>boost.image.src=images/aboria2.jpg
+      <xsl:param>boost.image.alt="\"Aboria\""
+      <xsl:param>boost.image.w=200
+      <xsl:param>boost.image.h=62
+      <xsl:param>nav.layout=none
     ;

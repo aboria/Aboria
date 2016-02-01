@@ -1,15 +1,30 @@
 
 [section API Overview]
 
-[h3 Core Library]
+Header: `<Aboria.h>`
 
-Header: `<Particles.h>`
+[h3 Containers]
 
 * [classref Aboria::Particles Particles]
-
-Header: `<Variable.h>`
-
 * [classref Aboria::Variable Variable]
+* [macroref ABORIA_VARIABLE ABORIA_VARIABLE]
+
+[h3 Symbolic Core]
+
+* [classref Aboria::Symbol Symbol]
+* [classref Aboria::Label Label]
+* [classref Aboria::Accumulate Accumulate]
+
+[h3 Symbolic Functions]
+
+* [funcref Aboria::norm norm]
+* [funcref Aboria::dot dot]
+* [funcref Aboria::exp exp]
+* [funcref Aboria::pow pow]
+
+[h3 Utility]
+
+* [classref Aboria::Vect3d Vect3d]
 
 [endsect] [/ overview]
 
