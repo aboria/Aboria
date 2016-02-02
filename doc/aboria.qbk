@@ -8,5 +8,6 @@
 ]
 
 [include introduction.qbk]
-[include create.qbk]
+[include quick.qbk]
+[include examples.qbk]
 [include reference.qbk]

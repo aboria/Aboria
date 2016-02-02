@@ -1,0 +1,260 @@
+[section Quick Start]
+
+[section Creating new particles]
+
+The main particles data-structure, or container, is called [classref Aboria::Particles Particles]. It is templated on zero or more variable types. For example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting of one double variable type named scalar.
+
+``
+using namespace Aboria;
+
+ABORIA_VARIABLE(scalar,double,"my scalar")
+typedef Particles<scalar> MyParticles;
+MyParticles particles();
+``
+
+If you wanted each particle to have a potential variable held as a `double`, as well as a velocity variable held as a [classref Aboria::Vect3d Vect3d] vector class, then you would write the following
+
+``
+ABORIA_VARIABLE(potential,double,"potential energy")
+ABORIA_VARIABLE(velocity,Vect3d,"velocity")
+typedef Particles<potential,velocity> MyParticles;
+MyParticles particles();
+``
+
+You can also give the `MyParticles` constructor a single `unsigned int` argument to set the random seed for the container:
+
+``
+MyParticles particles_with_seed(0);
+``
+
+To create new particles simply use the `value_type` of the container type. Each particle constructor takes a single [classref Aboria::Vect3d Vect3d] type for the particle position.
+
+``
+typedef MyParticles::value_type MyParticle;
+particles.push_back(MyParticle(Vect3d(0,0,0)));
+particles.push_back(MyParticle(Vect3d(1,0,0)));
+``
+
+[endsect]
+
+
+[section Particle Objects]
+
+The `value_type` of the [classref Aboria::Particles Particles] container is a data-structure representing each particle. By default each particle has a position, a unique id and a 
+boolean flag indicating if this particle is active or not. Use `get<position>()` 
+to access the position, `get<id>()` for the id and `get<alive>()` for the alive 
+flag.
+
+``
+MyParticle& particle = particles[0];
+std::cout <<"Position = "<<get<position>(particle) << 
+   ". Id = "<<get<id>(particle)<< ". Particle is ";
+if (get<alive>(particle)) {
+   std::cout << "alive. " << "\n";
+} else {
+   std::cout << "dead. " << "\n";
+}
+``
+
+You can access the data by templating the `get` function with the variable type, 
+for example
+
+``
+std::cout << "The scalar data is " << get<scalar>(particle) << "\n";
+``
+
+[endsect]
+
+[section Looping through the container]
+
+You can use the indexing operator `Operator[]` to simply loop through the 
+container
+
+``
+for (int i=0; i < particles.size(); i++) {
+   std::cout << "Accessing particle with id = " << get<id>(particles[i]) << "\n";
+}
+``
+
+Or you can use the normal STL `begin()` and `end()` functions that return random 
+access iterators to the beginning and end of the container.
+
+``
+for (auto i = particles.begin(); i != particles.end(); i++) {
+   std::cout << "Accessing particle with id = " << get<id>(*i) << "\n";
+}
+``
+
+Or
+
+``
+for (auto i: particles) {
+   std::cout << "Accessing particle with id = " << get<id>(i) << "\n";
+}
+``
+
+Or you can use the STL algorithm `for_each`. If you are using a GCC compiler, 
+you can turn on the parallel mode to enable this loop to be run in parallel
+
+``
+std::for_each(particles.begin(), particles.end(), [](MyParticle& i) {
+   std::cout << "Accessing particle with id = " << get<id>(i) << "\n";
+});
+``
+
+[endsect]
+
+[section Neighbourhood Searching]
+
+The `Particles` container gives you neighbourhood searching functionality, using 
+a simple Cell List or Linked-List approach. The domain is divided into a regular 
+grid of cubes with side length equal to a constant lengthscale that is supplied 
+by the user. Each particle in the container is assigned to the cell that 
+contains its position. Neighbourhood search queries at a given point return all 
+the particles within the cell that contains this point and the immediate cell 
+neighbours.
+
+Before you can use the neighbourhood searching, you need to initialise the 
+domain using the `init_neighbour_search` function
+
+``
+Vect3d min(-1,-1,-1);
+Vect3d max(1,1,1);
+Vect3b periodic(true,true,true);
+double diameter = 0.1;
+particles.init_neighbour_search(min,max,diameter,periodic);
+``
+
+Here `diameter` is the lengthscale of the neighbourhood search. That is, any 
+particles that are separated by more than `diameter` might not be classified as 
+neighbours.
+
+Once this is done you can begin using the neighbourhood search queries using the 
+`get_neighbours` function. This returns a lightweight container with `begin()` 
+and `end()` functions that return `const` forward only iterators to the 
+particles that satisfy the neighbour search. For example, the following counts 
+all the particles within a square domain of side length `diameter` of the point 
+(0,0,0)
+
+``
+int count = 0;
+for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
+   count++;
+}
+std::cout << "There are "<< count << " particles.\n";
+``
+
+When dereferenced, the neighbourhood iterator returns a tuple of size 2 
+containing 
+
+1. The found particle object
+2. $dx$, a vector pointing to the found point from the query point. I.e. if 
+   $x_a$ is the query point and $x_b$ is the found point, then $dx = x_a - x_b$.
+
+The latter is useful for periodic domains, the returned vector $dx$ takes 
+periodic domains into account and returns the $dx$ with the smallest length. 
+
+For example, 
+
+``
+for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
+   const MyParticle& b = std::get<0>(tpl);
+   const Vect3d& dx = std::get<1>(tpl);
+   std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
+}
+``
+[endsect]
+
+[section Variable Expression]
+
+To start using variable expressions, you first need to define a set of symbols 
+to represent your variables, as well as labels to represent your particle 
+set(s).
+
+A symbol representing the variable `position` is defined as
+
+``
+Symbol<position> p;
+``
+
+A label representing the particle set `particles` with type `MyParticles` is 
+defined as
+
+``
+Label<0,MyParticles> a(particles);
+Label<1,MyParticles> b(particles);
+``
+
+The first template argument is the *depth* of the label, and the second is the 
+type of the particle set label refers to.
+
+Labels refer to a specific particle set at a given depth. For example, given a 
+neighbour expression involving two particles from `particles`, the label `a` 
+defined above would refer to the first particle, and `b` would refer to the 
+second.
+
+Now we have defined our labels and symbols, we can create a simple expression to 
+set the position of all particles to `Vect3d(0,0,1)`
+
+``
+p[a] = Vect3d(0,0,1);
+``
+
+Or we can add a constant value `1` to each particle position
+
+``
+p[a] = p[a] + 1;
+``
+
+For symbols on the right hand side of the expression, we can drop the label for 
+a more compact expression
+
+``
+p[a] = p + 1;
+``
+
+Or simply use an increment expression
+
+``
+p[a] += 1;
+``
+[endsect]
+
+[section Neighbourhood Accumulation Expressions]
+
+To write expressions involving neighbouring particles, we can define an 
+accumulator, which takes a single template argument which is the function or 
+functor to accumulate with. For example, the following defines a summation 
+accumulator using `std::plus` 
+
+``
+Accumulate<std::plus<int> > sum;
+``
+
+We can use this to count the number of particles within a distance of `2` of 
+each individual particle, storing the result in a variable called `count`.
+
+``
+ABORIA_VARIABLE(count,int,"number of surrounding particles")
+typedef Particles<count> MyParticles;
+MyParticles particles();
+
+//add some particles
+...
+
+//initialise neighbour searching
+particles.init_neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),4,Vect3b(false,false,false));
+
+//define symbols and labels, and sum
+Symbol<count> c;
+Label<0,MyParticles> a(particles);
+Label<1,MyParticles> b(particles);
+Accumulate<std::plus<int> > sum;
+
+//count neighbouring particles within a distance of 2
+c[a] = sum(b,norm(dx)<2,1)
+``
+
+[endsect]
+
+[endsect]

@@ -123,7 +123,7 @@ struct elem_by_index {
 ///
 ///  \param TYPES a list of one or more variable types
 ///
-///  \see ABORIA_VARIABLE
+///  \see #ABORIA_VARIABLE
 template<typename ... TYPES> 
 class Particles {
 public:

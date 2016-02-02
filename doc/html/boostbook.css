@@ -16,7 +16,9 @@ Body defaults
 
     body
     {
-        margin: 1em;
+        width: 800px;
+        /*margin: 1em;*/
+        margin: auto;
         font-family: sans-serif;
     }
 
