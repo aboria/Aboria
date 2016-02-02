@@ -22,3 +22,8 @@ doc/html/*
 !doc/html/images/*
 doc/autodoc.xml
 doc/bin
+*.bak
+.color_coded
+.ycm_extra_conf.*
+compile_commands.json
+

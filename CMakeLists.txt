@@ -6,6 +6,9 @@ if (VTK_FOUND)
     add_definitions(-DHAVE_VTK)
 endif(VTK_FOUND)
 
+#export compiler flags for code completion engines
+set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/" ${CMAKE_MODULE_PATH})
 find_package(CxxTest)
 

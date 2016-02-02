@@ -1,26 +1,38 @@
 /*
- * species.h
- *
- * Copyright 2012 Martin Robinson
- *
-  * This file is part of RD_3D.
- *
- * RD_3D is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
- *
- * RD_3D is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
- *
- * You should have received a copy of the GNU Lesser General Public License
- * along with RD_3D.  If not, see <http://www.gnu.org/licenses/>.
- *
- *  Created on: 11 Oct 2012
- *      Author: robinsonm
- */
+
+Copyright (c) 2005-2016, University of Oxford.
+All rights reserved.
+
+University of Oxford means the Chancellor, Masters and Scholars of the
+University of Oxford, having an administrative office at Wellington
+Square, Oxford OX1 2JD, UK.
+
+This file is part of Aboria.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+ * Redistributions of source code must retain the above copyright notice,
+   this list of conditions and the following disclaimer.
+ * Redistributions in binary form must reproduce the above copyright notice,
+   this list of conditions and the following disclaimer in the documentation
+   and/or other materials provided with the distribution.
+ * Neither the name of the University of Oxford nor the names of its
+   contributors may be used to endorse or promote products derived from this
+   software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+*/
+
 
 #ifndef PARTICLES_H_
 #define PARTICLES_H_
@@ -82,87 +94,138 @@ namespace Aboria {
 template<typename ... TYPES> 
 class Particles {
 public:
-
-    typedef typename std::tuple<position::value_type,id::value_type,alive::value_type,typename TYPES::value_type...> tuple_type;
+    /// a boost mpl vector type containing a vector of Variable 
+    /// attached to the particles (includes position, id and 
+    /// alive flag as well as all user-supplied variables)
     typedef typename mpl::vector<position,id,alive,TYPES...> type_vector;
 
+    /// 
+    /// a tuple type containing a list of value_types for each Variable
+    typedef typename std::tuple<position::value_type,id::value_type,alive::value_type,typename TYPES::value_type...> tuple_type;
+
+    /// 
+    /// helper class to find an element of type_vector from a Variable type T
     template<typename T>
     struct elem_by_type {
         typedef T type;
         typedef typename T::value_type value_type;
+
+        /// 
+        /// iter is a boost mpl iterator to the found element in Variable T
         typedef typename mpl::find<type_vector,T>::type iter;
         BOOST_MPL_ASSERT_NOT(( boost::is_same< typename mpl::end<type_vector>::type, typename iter::type > ));
+
+        /// 
+        /// index contains the index of the found element
         static const size_t index = iter::pos::value;
     };
+
+
+    /// helper class to find an element of type_vector from an
+    /// unsigned int index I
     template<unsigned int I>
     struct elem_by_index {
         BOOST_MPL_ASSERT_RELATION( (mpl::size<type_vector>::type::value), >, I );
         typedef typename mpl::at<type_vector,mpl::int_<I> > type;
+
+        /// 
+        /// value_type is the variable's value_type at index I 
         typedef typename type::value_type value_type;
         static const size_t index = I;
     };
 
-    class value_type {
-        friend class Particles;
-    public:
-        typedef std::mt19937 generator_type;
-        value_type():
-            m_uni(0,1),
-            m_normal(0,1) {}
-        value_type(const value_type& rhs): 
-            m_uni(rhs.m_uni),
-            m_normal(rhs.m_normal),
-            m_data(rhs.m_data),
-            m_generator(rhs.m_generator) {}
-        explicit value_type(const Vect3d &r):
-            m_uni(0,1),
-            m_normal(0,1) {
-            this->set<position>(r);
-        }
-        ~value_type() {
+    /// \brief class used to store information on each particle. 
+    ///
+    /// Each particle has a number of attached variables, 
+    /// including by default a position, id and alive flag. 
+    /// The data for each variable is contained in value_type::m_data with type
+    /// Particles::tuple_type
+    ///
+    /// Each particle also has a random number generator with a seed based on
+    /// its id. setting this seed is the responsibility of the container class
+    class Particle { 
+        friend class Particles; 
+    public: 
+        /// default random number generator
+        typedef std::mt19937 generator_type; 
 
-        }
-        value_type& operator=(const value_type &rhs) {
+        /// default constructor
+        Particle(): m_uni(0,1), m_normal(0,1) {} 
+
+        /// copy-contructor for particles
+        Particle(const Particle& rhs): 
+            m_uni(rhs.m_uni), 
+            m_normal(rhs.m_normal), 
+            m_data(rhs.m_data), 
+            m_generator(rhs.m_generator) {} 
+
+        /// create particle with a given position
+        explicit Particle(const Vect3d &r): 
+            m_uni(0,1), 
+            m_normal(0,1) { 
+                this->set<position>(r); 
+            } 
+
+        ~Particle() {}
+
+        /// assignment operator only copies all Variable data.
+        /// random number generator is not copied
+        Particle& operator=(const Particle &rhs) {
             if (this != &rhs) {
                 m_data = rhs.m_data;
             }
             return *this;
         }
 
-        bool operator==(const value_type &rhs) const {
+        /// particles are equal if they have the same id Variable
+        bool operator==(const Particle &rhs) const {
             return get<id>(*this) == get<id>(rhs);
         }
 
-        void deep_copy(const value_type &rhs) {
+        /// perform a deep particle copy, random number generator is 
+        /// also copied as well as Variable data
+        void deep_copy(const Particle &rhs) {
             if (this != &rhs) {
                 m_data = rhs.m_data;
                 m_generator = rhs.m_generator;
             }
         }
 
+        /// get the value_type of a stored Variable. get() is templated using 
+        /// the Variable type itself.
+        /// \return const reference to a T::value_type
         template<typename T>
-        const typename elem_by_type<T>::value_type & get() const {
+        const typename elem_by_type<T>::value_type& get() const {
             return std::get<elem_by_type<T>::index>(m_data);
         }
 
+        /// non-const version of get() const
+        /// \return reference to a T::value_type
         template<typename T>
-        typename elem_by_type<T>::value_type & get() {
+        typename elem_by_type<T>::value_type& get() {
             return std::get<elem_by_type<T>::index>(m_data);
         }
 
+        /// set the value_type of a stored Variable
+        /// \param T a Variable type
+        /// \param arg a type compatible with T::value_type
         template<typename T>
-        void set(const typename elem_by_type<T>::value_type & arg) {
+        void set(const typename elem_by_type<T>::value_type& arg) {
             std::get<elem_by_type<T>::index>(m_data) = arg;
         }
 
+        /// getter for internal random number generator
         generator_type get_generator() {
             return m_generator;
         }
+
+        /// generate a uniform random number between 0 and 1
         double rand_uniform() {
             std::uniform_real_distribution<double> uni(0,1);
             return uni(m_generator);
         }
 
+        /// generate a normally distributed random number
         double rand_normal() {
             std::normal_distribution<double> normal(0,1);
             return normal(m_generator);
@@ -177,16 +240,23 @@ public:
 
     };
 
+    /// typedef Particle to value_type
+    typedef Particle value_type;
+    /// vector type used to hold a collection of value_type
     typedef typename std::vector<value_type> vector_type;
+    /// type used to hold and return size information
     typedef typename vector_type::size_type size_type;
     typedef typename vector_type::size_type difference_type;
+    /// non-const iterator type
     typedef typename vector_type::iterator iterator;
+    /// const iterator type
     typedef typename vector_type::const_iterator const_iterator;
     struct get_pos {
         const Vect3d& operator()(const value_type& i) const {
             return i.template get<position>();
         }
     };
+    /// external type used to implement neighbourhood searching
     typedef BucketSort<const_iterator,get_pos> NeighbourSearch_type;
 
 
