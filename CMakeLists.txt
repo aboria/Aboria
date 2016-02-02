@@ -26,7 +26,9 @@ endif()
 include_directories(${CXXTEST_INCLUDES} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} src)
 
 enable_testing()
-add_subdirectory(tests)
+if (CXXTEST_FOUND)
+    add_subdirectory(tests)
+endif()
 add_subdirectory(examples)
 
 
