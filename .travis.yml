@@ -14,8 +14,8 @@ addons:
         packages:
             - libboost1.55-dev
             - g++-4.8
-            - libvtk5-dev
-            - cxxtest
+              #- libvtk5-dev
+              #- cxxtest
 before_install:
     - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
 before_script:

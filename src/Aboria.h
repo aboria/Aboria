@@ -39,8 +39,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "Geometry.h"
 #include "Ptr.h"
-//#include "Operator.h"
-//#include "MyRandom.h"
 #include "Particles.h"
 #include "PrintTuple.h"
 #include "Utils.h"
@@ -48,9 +46,5 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Symbolic.h"
 #include "Functions.h"
 #include "Variable.h"
-
-//#include "ParticleOperators.h"
-
-
 
 #endif /* ABORIA_H_ */
