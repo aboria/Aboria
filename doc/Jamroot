@@ -8,7 +8,8 @@ doxygen autodoc
     ../src/Aboria.h
     ../src/Particles.h
     ../src/Variable.h
-    ../src/BucketSort.h
+    ../src/DataVector.h
+    ../src/BucketSearch.h
     ../src/Functions.h
     ../src/Geometry.h
     ../src/Log.h

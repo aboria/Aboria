@@ -37,7 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef PARTICLES_H_
 #define PARTICLES_H_
 
-#include "BucketSort.h"
+#include "BucketSearch.h"
 #include <vector>
 #include <random>
 #include <string>
@@ -260,7 +260,7 @@ public:
         }
     };
     /// external type used to implement neighbourhood searching
-    typedef BucketSort<const_iterator,get_pos> NeighbourSearch_type;
+    typedef BucketSearch<const_iterator,get_pos> NeighbourSearch_type;
 
 
     /// Contructs an empty container with no searching or id tracking enabled

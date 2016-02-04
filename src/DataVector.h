@@ -41,24 +41,41 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+/// A thin wrapper class around Particles that acts like a vector
+/// to the variable given by \p T
+/// \param T the Variable type
+/// \param ParticlesType the type of the Particles container. Note that
+/// ParticlesType must have been templated on T
 template<typename T, typename ParticlesType>
 class DataVector {
 public:
+    /// A typedef of T, the Variable type
 	typedef T variable_type;
+    /// The value_type of the Variable
 	typedef typename T::value_type value_type;
 
+    /// pass in the particles continer for the data
 	DataVector(ParticlesType& particles):
 		particles(particles)
 	{};
+
+    /// \return a reference to the parent particles container
 	ParticlesType &get_particles() {
 		return particles;
 	}
+
+    /// \return a const reference to the parent particles container
 	const ParticlesType &get_particles() const {
 		return particles;
 	}
+
+    /// returns the size of the vector
 	std::size_t size() const {
 		return particles.size();
 	}
+
+    /// index the vector using index \p i. This returns
+    /// the same as get<T>(particles[i])
     value_type operator[](const unsigned int i) const {
         return get<variable_type>(particles[i]);
     }

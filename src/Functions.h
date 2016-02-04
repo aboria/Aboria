@@ -45,7 +45,13 @@ namespace proto = boost::proto;
 namespace Aboria {
 
 
-
+/// a macro to generate a symbolic function taking a single argument 
+/// using a given functor
+/// \param function_name the name of the symbolic function to generate
+/// \param function_to_wrap a functor that defines a typedef `result_type`
+/// with the returned type, and a operator() that takes a single argument
+/// and returns `result_type`
+/// \param domain the domain of the symbolic function (normally SymbolicDomain)
 #define ABORIA_UNARY_FUNCTION(function_name, function_to_wrap,  domain) \
     template<typename Expr> \
 	typename proto::result_of::make_expr<\
@@ -62,6 +68,13 @@ namespace Aboria {
 		);  \
 	}\
 
+/// a macro to generate a symbolic function taking two arguments
+/// using a given functor
+/// \param function_name the name of the symbolic function to generate
+/// \param function_to_wrap a functor that defines a typedef `result_type`
+/// with the returned type, and a operator() that takes two arguments
+/// and returns `result_type`
+/// \param domain the domain of the symbolic function (normally SymbolicDomain)
 #define ABORIA_BINARY_FUNCTION(function_name, function_to_wrap,  domain) \
     template<typename Expr1, typename Expr2> \
 	typename proto::result_of::make_expr<\
@@ -80,6 +93,13 @@ namespace Aboria {
 		);  \
 	}\
 
+/// a macro to generate a symbolic function taking three arguments
+/// using a given functor
+/// \param function_name the name of the symbolic function to generate
+/// \param function_to_wrap a functor that defines a typedef `result_type`
+/// with the returned type, and a operator() that takes three arguments
+/// and returns `result_type`
+/// \param domain the domain of the symbolic function (normally SymbolicDomain)
 #define ABORIA_TERNARY_FUNCTION(function_name, function_to_wrap,  domain) \
     template<typename Expr1, typename Expr2, typename Expr3> \
 	typename proto::result_of::make_expr<\
@@ -133,6 +153,8 @@ namespace Aboria {
 		}
 	};
 
+    /// a symbolic norm function for Vect3d
+    ///
     ABORIA_UNARY_FUNCTION(norm, norm_fun, SymbolicDomain);
 
     struct dot_fun
@@ -145,6 +167,8 @@ namespace Aboria {
 		}
 	};
 
+    /// a symbolic dot-product function for Vect3d
+    ///
     ABORIA_BINARY_FUNCTION(dot, dot_fun, SymbolicDomain);
 
     struct exp_fun
@@ -157,6 +181,8 @@ namespace Aboria {
 		}
 	};
 
+    /// a symbolic exponential function for scalars
+    ///
     ABORIA_UNARY_FUNCTION(exp, exp_fun, SymbolicDomain);
     
     struct pow_fun
@@ -169,6 +195,8 @@ namespace Aboria {
         }
     };
 
+    /// a symbolic power function for that takes two arguements arg1
+    /// and arg2 and returns arg1 to the power of arg2
     ABORIA_BINARY_FUNCTION(pow, pow_fun, SymbolicDomain);
 
     template< typename T >

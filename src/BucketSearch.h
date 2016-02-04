@@ -34,8 +34,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#ifndef BUCKETSORT_H_
-#define BUCKETSORT_H_
+#ifndef BUCKETSEARCH_H_
+#define BUCKETSEARCH_H_
 
 #include <boost/iterator/iterator_facade.hpp>
 #include "Vector.h"
@@ -48,17 +48,29 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+/// a constant indicating an empty cell
 const int CELL_EMPTY = -1;
 
+/// \brief Implements neighbourhood searching using a bucket search algorithm, dividing
+/// the domain into constant size "buckets".
+///
+/// This class implements neighbourhood searching using a bucket search algorithm. The 
+/// domain is first divided up into a regular grid of constant size "buckets", either by
+/// using the class constructor to initialise the domain extents, bucket size etc., or by 
+/// using the reset() member function to reset these parameters.
+///
+/// After the buckets are created, a set of 3D points can be assigned to their respective buckets
+/// using the embed_points() member function. After this, neighbourhood queries around
+/// a given point can be performed using find_broadphase_neighbours(), which returns a const 
+/// iterator to all the points in the same bucket or surrounding buckets of the given point.
+///
 template<typename T, typename F>
-class BucketSort {
+class BucketSearch {
 public:
+
+    /// A const iterator to a set of neighbouring points. This iterator implements
+    /// a STL forward iterator type
 	class const_iterator
-//	  : public boost::iterator_facade<
-//	        const_iterator
-//	      , const std::tuple<const typename T::value_type&,const Vect3d&>
-//	      , boost::forward_traversal_tag
-//	    >
 	{
 	 public:
 		  typedef const std::tuple<const typename T::value_type&,const Vect3d&>* pointer;
@@ -68,7 +80,7 @@ public:
 		  typedef std::ptrdiff_t difference_type;
 
 
-
+          /// This constructor is used to return an end iterator
 		  const_iterator()
 	      : m_node(),my_index(-1),self(false) {
 			  cell_empty.push_back(CELL_EMPTY);
@@ -112,7 +124,15 @@ public:
 
 	    }
 
-	    explicit const_iterator(const BucketSort* bucket_sort,
+        /// this constructor is used to start the iterator at the head of a bucket 
+        /// list
+        /// \param bucket_sort a pointer to the parent BucketSearch class
+        /// \param centre the neighbourhood query point
+        /// \param my_index (optional) the index of the query point
+        /// \param self (optional) if true then assume that the user is finding
+        /// all point pairs within a single container and so don't return
+        /// each point pair twice (i.e. only 1/2 the normal neighbour checking required)
+	    explicit const_iterator(const BucketSearch* bucket_sort,
 	    		const Vect3d centre,
 	    		const int my_index = -1, const bool self = false)
 	    : bucket_sort(bucket_sort),
@@ -205,7 +225,7 @@ public:
 
 
 
-	    const BucketSort* bucket_sort;
+	    const BucketSearch* bucket_sort;
 	    std::vector<int>::const_iterator m_node;
 	    std::vector<int>::const_iterator cell_i;
 	    //Value* const linked_list;
@@ -219,7 +239,14 @@ public:
 	    std::vector<int>::const_iterator surrounding_cell_offset_i,surrounding_cell_offset_end;
 	};
 
-	BucketSort(Vect3d low, Vect3d high, Vect3b periodic, F return_vect3d):
+    /// This constructor sets the domain extents and their periodicity 
+    /// \param low the lower extent of the search domain
+    /// \param high the upper extent of the search domain
+    /// \param periodic a boolean vector indicating wether each dimension
+    /// is periodic or not.
+    /// \param return_vect3d a function that takes a value_type representing
+    /// a particle in 3D space and returns its position
+	BucketSearch(Vect3d low, Vect3d high, Vect3b periodic, F return_vect3d):
 		return_vect3d(return_vect3d),
 		low(low),high(high),domain_size(high-low),periodic(periodic),
 		empty_cell(CELL_EMPTY) {
@@ -228,6 +255,11 @@ public:
 		reset(low, high, dx,periodic);
 	}
 
+    /// resets the domain extents, periodicity and bucket size
+    /// \param low the lower extent of the search domain
+    /// \param high the upper extent of the search domain
+    /// \param _max_interaction_radius the side length of each bucket
+    /// \param periodic a boolean vector indicating wether each dimension
 	void reset(const Vect3d& low, const Vect3d& high, double _max_interaction_radius, const Vect3b& periodic);
 
 	inline const Vect3d& get_low() const {return low;}
@@ -235,23 +267,79 @@ public:
 	inline const Vect3b& get_periodic() const {return periodic;}
 	inline const double get_lengthscale() const {return max_interaction_radius;}
 
-
+    /// embed a set of points into the buckets, assigning each 3D point into the bucket
+    /// that contains that point. Any points already assigned to the buckets are 
+    /// removed. 
+    /// \param begin_iterator an iterator to the beginning of the set of points
+    /// \param end_iterator an iterator to the end of the set of points
+    /// \see embed_points_incremental() 
 	void embed_points(const T begin_iterator, const T end_iterator);
+
+    /// embed a set of points into the buckets, assigning each 3D point into the bucket
+    /// that contains that point. The primary difference to embed_points() is that any
+    /// existing points are kept
+    /// \param begin_iterator an iterator to the beginning of the set of points
+    /// \param end_iterator an iterator to the end of the set of points
+    /// \see embed_points()
 	void embed_points_incremental(const T begin_iterator, const T end_iterator);
 
+    /// This class keeps track of the searchable particles through begin and end
+    /// iterators to a STL-compatible container. If these need to be updated
+    /// (for example if the memory allocation is changed) this function can be 
+    /// used to update them. Note that if the ordering of the particles changes
+    /// then the particles will need to be embedded again
 	void update_begin_and_end(const T begin_iterator, const T end_iterator);
+
+
+    /// add a singular point to the buckets. Note that it is assumed that this is 
+    /// also added to the end of the container holding the points
+    /// \param point_to_add an iterator pointing to the point to add
 	void add_point(const T point_to_add);
+
+    /// remove a point from the buckets, so it will not occur in neighbourhood
+    /// queries. If you wish to delete a point entirely (i.e. in the original
+    /// point container), you need to use delete_point()
+    /// \param untrack_iterator an iterator pointing to the point to remove. Note 
+    /// that this iterator should be between begin_iterator and end_iterator
 	void untrack_point(const T untrack_iterator);
+
+    /// delete a point from the buckets and pop it off the linked list, 
+    /// so it will not occur in neighbourhood queries. Note that this point must be
+    /// at (end_iterator-1),
+    /// \param untrack_iterator an iterator pointing to the point to delete. Note 
+    /// should be  == (end_iterator-1)
 	void delete_point(const T untrack_iterator);
+
+
+    /// update the bucket for a specified point (if it has changed position sufficiently)
+    /// \param untrack_iterator an iterator pointing to the point to remove. Note 
+    /// that this iterator should be between begin_iterator and end_iterator
 	void update_point(const T untrack_iterator);
 
 
+    /// If a point is copied from \p copy_from_iterator to \p copy_to_iterator in the 
+    /// point container, then this function can be used to still keep the bucketsearch
+    /// data structures correct
 	void copy_points(const T copy_to_iterator, const T copy_from_iterator);
 
 
-	const_iterator find_broadphase_neighbours(const Vect3d& r, const int my_index, const bool self) const;
+    /// return a const forward iterator to all the points in the neighbourhood of \p r. If 
+    /// this function is being used to find all the point pairs within the same point container, then
+    /// a naive looping through and using find_broadphase_neighbours() will find each pair twice. 
+    /// This can be avoided by setting self=true and supplying the index of each point with my_index
+    const_iterator find_broadphase_neighbours(const Vect3d& r, const int my_index, const bool self) const;
+
+    /// return an end() iterator to compare against the result of find_broadphase_neighbours in order
+    /// to determine the end of the neighbour list
 	const_iterator end() const;
+
+    /// in periodic domains a point pair can have multiple separations, but what is normally required for
+    /// neighbourhood searches is the minimum separation. This function corrects \p to_correct_r in relation
+    /// to \p source_r so that it is closest to \p source r
 	Vect3d correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const;
+
+    /// this function corrects the position of \p to_correct_r so that it is within the extents of a periodic
+    /// domain. If the domain is not periodic the Vect3d is unchanged
 	Vect3d correct_position_for_periodicity(const Vect3d& to_correct_r) const;
 
 private:
@@ -288,7 +376,7 @@ private:
 };
 
 template<typename T, typename F>
-void BucketSort<T,F>::embed_points_incremental(const T _begin_iterator, const T _end_iterator) {
+void BucketSearch<T,F>::embed_points_incremental(const T _begin_iterator, const T _end_iterator) {
 	//TODO: embed_points_incremental doesn't work. And what if particles are deleted since last update?
 	begin_iterator = _begin_iterator;
 	end_iterator = _end_iterator;
@@ -338,14 +426,14 @@ void BucketSort<T,F>::embed_points_incremental(const T _begin_iterator, const T 
 }
 
 template<typename T, typename F>
-void BucketSort<T,F>::update_begin_and_end(const T _begin_iterator, const T _end_iterator) {
+void BucketSearch<T,F>::update_begin_and_end(const T _begin_iterator, const T _end_iterator) {
 	begin_iterator = _begin_iterator;
 	end_iterator = _end_iterator;
 }
 
 
 template<typename T, typename F>
-void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
+void BucketSearch<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
 	begin_iterator = _begin_iterator;
 	end_iterator = _end_iterator;
 	const unsigned int n = std::distance(begin_iterator,end_iterator);
@@ -405,7 +493,7 @@ void BucketSort<T,F>::embed_points(const T _begin_iterator, const T _end_iterato
 }
 
 template<typename T, typename F>
-void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
+void BucketSearch<T,F>::add_point(const T point_to_add_iterator) {
 	linked_list.push_back(CELL_EMPTY);
 	linked_list_reverse.push_back(CELL_EMPTY);
 	dirty_cells.push_back(CELL_EMPTY);
@@ -431,7 +519,7 @@ void BucketSort<T,F>::add_point(const T point_to_add_iterator) {
 	}
 }
 template<typename T, typename F>
-void BucketSort<T,F>::delete_point(const T untrack_iterator) {
+void BucketSearch<T,F>::delete_point(const T untrack_iterator) {
 	const unsigned int i = std::distance(begin_iterator,untrack_iterator);
 	CHECK(i==linked_list.size()-1,"point to delete not at end of sequence");
 
@@ -454,7 +542,7 @@ void BucketSort<T,F>::delete_point(const T untrack_iterator) {
 }
 
 template<typename T, typename F>
-void BucketSort<T,F>::update_point(const T update_iterator) {
+void BucketSearch<T,F>::update_point(const T update_iterator) {
 	const unsigned int i = std::distance(begin_iterator,update_iterator);
 	const bool particle_based = true;
 
@@ -491,7 +579,7 @@ void BucketSort<T,F>::update_point(const T update_iterator) {
 }
 
 template<typename T, typename F>
-void BucketSort<T,F>::untrack_point(const T untrack_iterator) {
+void BucketSearch<T,F>::untrack_point(const T untrack_iterator) {
 	const unsigned int i = std::distance(begin_iterator,untrack_iterator);
 	ASSERT((i>=0) && (i<linked_list.size()),"invalid untrack index");
 
@@ -512,7 +600,7 @@ void BucketSort<T,F>::untrack_point(const T untrack_iterator) {
 
 
 template<typename T, typename F>
-void BucketSort<T,F>::copy_points(const T copy_to_iterator, const T copy_from_iterator) {
+void BucketSearch<T,F>::copy_points(const T copy_to_iterator, const T copy_from_iterator) {
 	const unsigned int toi = std::distance(begin_iterator,copy_to_iterator);
 	const unsigned int fromi = std::distance(begin_iterator,copy_from_iterator);
 	ASSERT((toi>=0) && (toi<linked_list.size()),"invalid copy iterator");
@@ -530,7 +618,7 @@ void BucketSort<T,F>::copy_points(const T copy_to_iterator, const T copy_from_it
 }
 
 template<typename T, typename F>
-void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius, const Vect3b& _periodic) {
+void BucketSearch<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius, const Vect3b& _periodic) {
 	LOG(2,"Resetting bucketsort data structure:");
 	LOG(2,"\tMax interaction radius = "<<_max_interaction_radius);
 	high = _high;
@@ -645,15 +733,15 @@ void BucketSort<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max
 	}
 }
 template<typename T, typename F>
-typename BucketSort<T,F>::const_iterator BucketSort<T,F>::find_broadphase_neighbours(const Vect3d& r,const int my_index, const bool self) const {
+typename BucketSearch<T,F>::const_iterator BucketSearch<T,F>::find_broadphase_neighbours(const Vect3d& r,const int my_index, const bool self) const {
 	return const_iterator(this,correct_position_for_periodicity(r),my_index,self);
 }
 template<typename T, typename F>
-typename BucketSort<T,F>::const_iterator BucketSort<T,F>::end() const {
+typename BucketSearch<T,F>::const_iterator BucketSearch<T,F>::end() const {
 	return const_iterator();
 }
 template<typename T, typename F>
-Vect3d BucketSort<T,F>::correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const {
+Vect3d BucketSearch<T,F>::correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const {
 	Vect3d corrected_r = to_correct_r - source_r;
 	for (int i = 0; i < NDIM; ++i) {
 		if (!periodic[i]) continue;
@@ -664,7 +752,7 @@ Vect3d BucketSort<T,F>::correct_position_for_periodicity(const Vect3d& source_r,
 }
 
 template<typename T, typename F>
-Vect3d BucketSort<T,F>::correct_position_for_periodicity(const Vect3d& to_correct_r) const {
+Vect3d BucketSearch<T,F>::correct_position_for_periodicity(const Vect3d& to_correct_r) const {
 	Vect3d corrected_r = to_correct_r;
 	for (int i = 0; i < NDIM; ++i) {
 		if (!periodic[i]) continue;
@@ -678,4 +766,4 @@ Vect3d BucketSort<T,F>::correct_position_for_periodicity(const Vect3d& to_correc
 
 }
 
-#endif /* BUCKETSORT_H_ */
+#endif /* BUCKETSEARCH_H_ */
