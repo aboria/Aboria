@@ -1,0 +1,97 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class value_type</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../../index.html" title="Aboria 0.1">
+<link rel="up" href="../Particles.html#idm45283486720400" title="Description">
+<link rel="prev" href="get_pos.html" title="Struct get_pos">
+<link rel="next" href="../Accumulate.html" title="Struct template Accumulate">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="get_pos.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45283486720400"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../Accumulate.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.Particles.value_type"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class value_type</span></h2>
+<p>Aboria::Particles::value_type</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s04.html#header..home.mrobins.git.Aboria.src.Particles_h" title="Header &lt;/home/mrobins/git/Aboria/src/Particles.h&gt;">/home/mrobins/git/Aboria/src/Particles.h</a>&gt;
+
+</span>
+
+<span class="keyword">class</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">mt19937</span> <a name="Aboria.Particles.value_type.generator_type"></a><span class="identifier">generator_type</span><span class="special">;</span>  <span class="comment">// default random number generator </span>
+
+  <span class="comment">// <a class="link" href="value_type.html#Aboria.Particles.value_typeconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="value_type.html#idm46024382162016-bb"><span class="identifier">value_type</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="value_type.html#idm46024382161760-bb"><span class="identifier">value_type</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="value_type.html#idm46024382160496-bb"><span class="identifier">value_type</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> <a class="link" href="value_type.html#idm46024382158864-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="value_type.html#idm46024382159120-bb"><span class="special">~</span><span class="identifier">value_type</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="value_type.html#idm46024382176208-bb">public member functions</a></span>
+  <span class="keyword">bool</span> <a class="link" href="value_type.html#idm46024382175712-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="value_type.html#idm46024382173712-bb"><span class="identifier">deep_copy</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> <span class="keyword">const</span> <a class="link" href="elem_by_type.html" title="Struct template elem_by_type">elem_by_type</a><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> <a class="link" href="value_type.html#idm46024382171952-bb"><span class="identifier">get</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> <a class="link" href="elem_by_type.html" title="Struct template elem_by_type">elem_by_type</a><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> <a class="link" href="value_type.html#idm46024382169440-bb"><span class="identifier">get</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> 
+    <span class="keyword">void</span> <a class="link" href="value_type.html#idm46024382167296-bb"><span class="identifier">set</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <a class="link" href="elem_by_type.html" title="Struct template elem_by_type">elem_by_type</a><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">generator_type</span> <a class="link" href="value_type.html#idm46024382164400-bb"><span class="identifier">get_generator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="value_type.html#idm46024382163648-bb"><span class="identifier">rand_uniform</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="value_type.html#idm46024382162896-bb"><span class="identifier">rand_normal</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm45283486094944"></a><h2>Description</h2>
+<p>class used to store information on each particle.</p>
+<p>Each particle has a number of attached variables, including by default a position, id and alive flag. The data for each variable is contained in value_type::m_data with type Particles::tuple_type</p>
+<p>Each particle also has a random number generator with a seed based on its id. setting this seed is the responsibility of the container class </p>
+<div class="refsect2">
+<a name="idm45283486093392"></a><h3>
+<a name="Aboria.Particles.value_typeconstruct-copy-destruct"></a><code class="computeroutput">value_type</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idm46024382162016-bb"></a><span class="identifier">value_type</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm46024382161760-bb"></a><span class="identifier">value_type</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">explicit</span> <a name="idm46024382160496-bb"></a><span class="identifier">value_type</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> r<span class="special">)</span><span class="special">;</span></pre>normally would create particle with a given position </li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> <a name="idm46024382158864-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm46024382159120-bb"></a><span class="special">~</span><span class="identifier">value_type</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm45283486063200"></a><h3>
+<a name="idm46024382176208-bb"></a><code class="computeroutput">value_type</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm46024382175712-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm46024382173712-bb"></a><span class="identifier">deep_copy</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> <span class="keyword">const</span> <a class="link" href="elem_by_type.html" title="Struct template elem_by_type">elem_by_type</a><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> <a name="idm46024382171952-bb"></a><span class="identifier">get</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> <a class="link" href="elem_by_type.html" title="Struct template elem_by_type">elem_by_type</a><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> <a name="idm46024382169440-bb"></a><span class="identifier">get</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> 
+  <span class="keyword">void</span> <a name="idm46024382167296-bb"></a><span class="identifier">set</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <a class="link" href="elem_by_type.html" title="Struct template elem_by_type">elem_by_type</a><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><a class="link" href="value_type.html" title="Class value_type">value_type</a> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">generator_type</span> <a name="idm46024382164400-bb"></a><span class="identifier">get_generator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idm46024382163648-bb"></a><span class="identifier">rand_uniform</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idm46024382162896-bb"></a><span class="identifier">rand_normal</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="get_pos.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45283486720400"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../Accumulate.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

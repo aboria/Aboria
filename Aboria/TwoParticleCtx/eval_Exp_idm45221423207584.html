@@ -1,0 +1,66 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template eval&lt;Expr, proto::tag::subscript, typename boost::enable_if&lt; proto::matches&lt; typename proto::result_of::child_c&lt; Expr, 1 &gt;::type, SubscriptGrammar &gt; &gt;::type&gt;</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../../index.html" title="Aboria 0.1">
+<link rel="up" href="../TwoParticleCtx.html#idm46819676606688" title="Description">
+<link rel="prev" href="eval.html" title="Struct template eval">
+<link rel="next" href="eval_Exp_idm45221423194064.html" title="Struct template eval&lt;Expr, proto::tag::terminal, typename boost::enable_if&lt; proto::matches&lt; Expr, proto::terminal&lt; dx_ &gt; &gt; &gt;::type&gt;">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="eval.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../TwoParticleCtx.html#idm46819676606688"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="eval_Exp_idm45221423194064.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template eval&lt;Expr, proto::tag::subscript, typename boost::enable_if&lt; proto::matches&lt; typename proto::result_of::child_c&lt; Expr, 1 &gt;::type, SubscriptGrammar &gt; &gt;::type&gt;</span></h2>
+<p>Aboria::TwoParticleCtx::eval&lt;Expr, proto::tag::subscript, typename boost::enable_if&lt; proto::matches&lt; typename proto::result_of::child_c&lt; Expr, 1 &gt;::type, SubscriptGrammar &gt; &gt;::type&gt;</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s04.html#header..home.mrobins.git.Aboria.src.Symbolic_h" title="Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;">/home/mrobins/git/Aboria/src/Symbolic.h</a>&gt;
+
+</span>
+<span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Expr<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="eval_Exp_idm45221423207584.html" title="Struct template eval&lt;Expr, proto::tag::subscript, typename boost::enable_if&lt; proto::matches&lt; typename proto::result_of::child_c&lt; Expr, 1 &gt;::type, SubscriptGrammar &gt; &gt;::type&gt;">eval</a><span class="special">&lt;</span><span class="identifier">Expr</span><span class="special">,</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">tag</span><span class="special">::</span><span class="identifier">subscript</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">matches</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">child_c</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="number">1</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">,</span> <span class="identifier">SubscriptGrammar</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">&gt;</span> <span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">child_c</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="number">1</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>                                                   <a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584.subscript_type"></a><span class="identifier">subscript_type</span><span class="special">;</span>             
+  <span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">SubscriptGrammar</span><span class="special">(</span><span class="identifier">subscript_type</span><span class="special">)</span><span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>                                    <a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584.result_o_idm45221423204208"></a><span class="identifier">result_of_subscript_grammar</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="identifier">result_of_subscript_grammar</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">::</span><span class="identifier">depth</span>                            <a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584.subscript_depth"></a><span class="identifier">subscript_depth</span><span class="special">;</span>            
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">child_c</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="number">0</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>                                                   <a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584.expr_to_subscript"></a><span class="identifier">expr_to_subscript</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">ParticlesType1</span><span class="special">,</span> <span class="identifier">ParticlesType2</span> <span class="special">&gt;</span>                                                <a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584.ParticlesTypes"></a><span class="identifier">ParticlesTypes</span><span class="special">;</span>             
+  <span class="keyword">typedef</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">at</span><span class="special">&lt;</span> <span class="identifier">ParticlesTypes</span><span class="special">,</span> <span class="identifier">subscript_depth</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>                                             <a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584.ParticlesType"></a><span class="identifier">ParticlesType</span><span class="special">;</span>              
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">eval</span><span class="special">&lt;</span> <span class="identifier">expr_to_subscript</span> <span class="keyword">const</span><span class="special">,</span> <span class="identifier">ParticleCtx</span><span class="special">&lt;</span> <span class="identifier">ParticlesType</span> <span class="special">&gt;</span> <span class="keyword">const</span>  <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a name="Aboria.TwoParticleCtx.eval_Exp_idm45221423207584.result_type"></a><span class="identifier">result_type</span><span class="special">;</span>                
+
+  <span class="comment">// <a class="link" href="eval_Exp_idm45221423207584.html#idm45221423199424-bb">public member functions</a></span>
+   <a class="link" href="eval_Exp_idm45221423207584.html#idm45221423198928-bb"><span class="identifier">BOOST_MPL_ASSERT</span></a><span class="special">(</span><span class="special">(</span><span class="identifier">proto</span><span class="special">::</span><span class="identifier">matches</span><span class="special">&lt;</span> <span class="identifier">subscript_type</span><span class="special">,</span> <span class="identifier">SubscriptGrammar</span> <span class="special">&gt;</span><span class="special">)</span><span class="special">)</span><span class="special">;</span>
+   <a class="link" href="eval_Exp_idm45221423207584.html#idm45221423197680-bb"><span class="identifier">BOOST_MPL_ASSERT_RELATION</span></a><span class="special">(</span><span class="identifier">subscript_depth</span><span class="special">::</span><span class="identifier">value</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">result_type</span> <a class="link" href="eval_Exp_idm45221423207584.html#idm45221423196432-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">Expr</span> <span class="special">&amp;</span><span class="special">,</span> <span class="identifier">TwoParticleCtx</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm46819676439760"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm46819676439344"></a><h3>
+<a name="idm45221423199424-bb"></a><code class="computeroutput">eval</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"> <a name="idm45221423198928-bb"></a><span class="identifier">BOOST_MPL_ASSERT</span><span class="special">(</span><span class="special">(</span><span class="identifier">proto</span><span class="special">::</span><span class="identifier">matches</span><span class="special">&lt;</span> <span class="identifier">subscript_type</span><span class="special">,</span> <span class="identifier">SubscriptGrammar</span> <span class="special">&gt;</span><span class="special">)</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"> <a name="idm45221423197680-bb"></a><span class="identifier">BOOST_MPL_ASSERT_RELATION</span><span class="special">(</span><span class="identifier">subscript_depth</span><span class="special">::</span><span class="identifier">value</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">result_type</span> <a name="idm45221423196432-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">Expr</span> <span class="special">&amp;</span> expr<span class="special">,</span> <span class="identifier">TwoParticleCtx</span> <span class="keyword">const</span> <span class="special">&amp;</span> ctx<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="eval.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../TwoParticleCtx.html#idm46819676606688"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="eval_Exp_idm45221423194064.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

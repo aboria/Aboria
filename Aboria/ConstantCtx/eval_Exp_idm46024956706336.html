@@ -1,0 +1,62 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template eval&lt;Expr, proto::tag::function, typename boost::enable_if&lt; proto::matches&lt; Expr, AccumulateGrammar &gt; &gt;::type&gt;</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../../index.html" title="Aboria 0.1">
+<link rel="up" href="../ConstantCtx.html#idm45720807522304" title="Description">
+<link rel="prev" href="eval.html" title="Struct template eval">
+<link rel="next" href="eval_Exp_idm46024956692656.html" title="Struct template eval&lt;Expr, proto::tag::terminal, typename boost::enable_if&lt; proto::matches&lt; Expr, proto::terminal&lt; normal_ &gt; &gt; &gt;::type&gt;">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="eval.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../ConstantCtx.html#idm45720807522304"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="eval_Exp_idm46024956692656.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template eval&lt;Expr, proto::tag::function, typename boost::enable_if&lt; proto::matches&lt; Expr, AccumulateGrammar &gt; &gt;::type&gt;</span></h2>
+<p>Aboria::ConstantCtx::eval&lt;Expr, proto::tag::function, typename boost::enable_if&lt; proto::matches&lt; Expr, AccumulateGrammar &gt; &gt;::type&gt;</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s05.html#header..home.mrobins.git.Aboria.src.Symbolic_h" title="Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;">/home/mrobins/git/Aboria/src/Symbolic.h</a>&gt;
+
+</span>
+<span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Expr<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="eval_Exp_idm46024956706336.html" title="Struct template eval&lt;Expr, proto::tag::function, typename boost::enable_if&lt; proto::matches&lt; Expr, AccumulateGrammar &gt; &gt;::type&gt;">eval</a><span class="special">&lt;</span><span class="identifier">Expr</span><span class="special">,</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">tag</span><span class="special">::</span><span class="identifier">function</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">matches</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="identifier">AccumulateGrammar</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">&gt;</span> <span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">child_c</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="number">0</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>         <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.child0_type"></a><span class="identifier">child0_type</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">child_c</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="number">1</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>         <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.child1_type"></a><span class="identifier">child1_type</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">child_c</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="number">2</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>         <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.child2_type"></a><span class="identifier">child2_type</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">child_c</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="number">3</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>         <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.child3_type"></a><span class="identifier">child3_type</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">&lt;</span> <span class="identifier">LabelGrammar</span><span class="special">(</span><span class="identifier">child1_type</span><span class="special">)</span><span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.particles_type_ref"></a><span class="identifier">particles_type_ref</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="identifier">particles_type_ref</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>  <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.particles_type"></a><span class="identifier">particles_type</span><span class="special">;</span>       
+  <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">value</span><span class="special">&lt;</span> <span class="identifier">child0_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span>       <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.functor_terminal_type"></a><span class="identifier">functor_terminal_type</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">functor_terminal_type</span><span class="special">::</span><span class="identifier">functor_type</span>                <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.functor_type"></a><span class="identifier">functor_type</span><span class="special">;</span>         
+  <span class="keyword">typedef</span> <span class="identifier">functor_type</span><span class="special">::</span><span class="identifier">result_type</span>                          <a name="Aboria.ConstantCtx.eval_Exp_idm46024956706336.result_type"></a><span class="identifier">result_type</span><span class="special">;</span>          
+
+  <span class="comment">// <a class="link" href="eval_Exp_idm46024956706336.html#idm46024956695872-bb">public member functions</a></span>
+  <span class="identifier">result_type</span> <a class="link" href="eval_Exp_idm46024956706336.html#idm46024956695312-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">Expr</span> <span class="special">&amp;</span><span class="special">,</span> <span class="identifier">ConstantCtx</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm45720807380208"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm45720807379792"></a><h3>
+<a name="idm46024956695872-bb"></a><code class="computeroutput">eval</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">result_type</span> <a name="idm46024956695312-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">Expr</span> <span class="special">&amp;</span> expr<span class="special">,</span> <span class="identifier">ConstantCtx</span> <span class="keyword">const</span> <span class="special">&amp;</span> ctx<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="eval.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../ConstantCtx.html#idm45720807522304"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="eval_Exp_idm46024956692656.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

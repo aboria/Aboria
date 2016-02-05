@@ -1,0 +1,87 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Aboria 0.1</title>
+<link rel="stylesheet" href="boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="index.html" title="Aboria 0.1">
+<link rel="next" href="aboria/quick_start.html" title="Quick Start">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav"><a accesskey="n" href="aboria/quick_start.html"><img src="images/next.png" alt="Next"></a></div>
+<div class="article">
+<div class="titlepage">
+<div>
+<div><h2 class="title">
+<a name="aboria"></a>Aboria 0.1</h2></div>
+<div><div class="authorgroup"><div class="author"><h3 class="author">
+<span class="firstname">Martin</span> <span class="surname">Robinson</span>
+</h3></div></div></div>
+<div><p class="copyright">Copyright &#169; 2015 Martin Robinson</p></div>
+</div>
+<hr>
+</div>
+<div class="toc">
+<p><b>Table of Contents</b></p>
+<dl class="toc">
+<dt><span class="section"><a href="index.html#aboria.introduction">Introduction</a></span></dt>
+<dt><span class="section"><a href="aboria/quick_start.html">Quick Start</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="aboria/quick_start.html#aboria.quick_start.creating_new_particles">Creating new
+      particles</a></span></dt>
+<dt><span class="section"><a href="aboria/quick_start.html#aboria.quick_start.particle_objects">Particle Objects</a></span></dt>
+<dt><span class="section"><a href="aboria/quick_start.html#aboria.quick_start.looping_through_the_container">Looping
+      through the container</a></span></dt>
+<dt><span class="section"><a href="aboria/quick_start.html#aboria.quick_start.neighbourhood_searching">Neighbourhood
+      Searching</a></span></dt>
+<dt><span class="section"><a href="aboria/quick_start.html#aboria.quick_start.variable_expression">Variable Expression</a></span></dt>
+<dt><span class="section"><a href="aboria/quick_start.html#aboria.quick_start.neighbourhood_accumulation_expre">Neighbourhood
+      Accumulation Expressions</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="aboria/examples.html">Examples</a></span></dt>
+<dt><span class="section"><a href="aboria/api_overview.html">API Overview</a></span></dt>
+<dt><span class="section"><a href="index/s05.html">Reference</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.BucketSearch_h">Header &lt;/home/mrobins/git/Aboria/src/BucketSearch.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.DataVector_h">Header &lt;/home/mrobins/git/Aboria/src/DataVector.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.Functions_h">Header &lt;/home/mrobins/git/Aboria/src/Functions.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.Geometry_h">Header &lt;/home/mrobins/git/Aboria/src/Geometry.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.Log_h">Header &lt;/home/mrobins/git/Aboria/src/Log.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.Particles_h">Header &lt;/home/mrobins/git/Aboria/src/Particles.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.Symbolic_h">Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.Variable_h">Header &lt;/home/mrobins/git/Aboria/src/Variable.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s05.html#header..home.mrobins.git.Aboria.src.Vector_h">Header &lt;/home/mrobins/git/Aboria/src/Vector.h&gt;</a></span></dt>
+</dl></dd>
+</dl>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.introduction"></a><a class="link" href="index.html#aboria.introduction" title="Introduction">Introduction</a>
+</h2></div></div></div>
+<p>
+      Aboria implements a STL container of particles in 3D space. The library is
+      header-only. The container supports random access of particles, as well as
+      the normal STL algorithms. Neighbourhood searches are possible, using a bucket
+      search method (uniform bucket spacing).
+    </p>
+<p>
+      The motivation behind Aboria is to provide a useful library for implementing
+      particle-based numerical algorithms, for example Smoothed Particle Hydrodynamics
+      or Molecular Dynamics. Each particle has a 3D position and user-defined data-package
+      (for other variables such as velocity, density etc) and is optionally embedded
+      within a cuboidal spatial domain (for neighbourhood searches) that can be periodic
+      or not. Each particle also has its own random number generator that is seeded
+      via its own unique id.
+    </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"><p><small>Last revised: February 04, 2016 at 15:26:53 GMT</small></p></td>
+<td align="right"><div class="copyright-footer"></div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav"><a accesskey="n" href="aboria/quick_start.html"><img src="images/next.png" alt="Next"></a></div>
+</body>
+</html>

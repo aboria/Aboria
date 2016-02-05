@@ -1,0 +1,35 @@
+sudo: false
+language: cpp
+compiler:
+        - gcc
+env:
+    - Aboria_COVERAGE=off CMAKE_BUILD_TYPE=Release
+    - Aboria_COVERAGE=on CMAKE_BUILD_TYPE=Debug
+
+addons:
+    apt:
+        sources:
+            - boost-latest
+            - ubuntu-toolchain-r-test
+        packages:
+            - libboost1.55-dev
+            - g++-4.8
+              #- libvtk5-dev
+              #- cxxtest
+before_install:
+    - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
+before_script:
+    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+    - mkdir build
+    - cd build
+    - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE ..
+script: 
+    - make
+    - ctest --output-on-failure 
+after_success:
+    - cd tests
+    - coveralls --gcov-options '\-lp'
+notifications:
+    email:
+        recipients:
+            - martinjrobins@gmail.com

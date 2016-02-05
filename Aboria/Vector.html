@@ -1,0 +1,109 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template Vector</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.1">
+<link rel="up" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Vector_h" title="Header &lt;/home/mrobins/git/Aboria/src/Vector.h&gt;">
+<link rel="prev" href="../ABORIA_VARIABLE.html" title="Macro ABORIA_VARIABLE">
+<link rel="next" href="../UNARY_OPERATOR.html" title="Macro UNARY_OPERATOR">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../ABORIA_VARIABLE.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Vector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="../UNARY_OPERATOR.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.Vector"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template Vector</span></h2>
+<p>Aboria::Vector</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Vector_h" title="Header &lt;/home/mrobins/git/Aboria/src/Vector.h&gt;">/home/mrobins/git/Aboria/src/Vector.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">int</span> N<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">T</span> <a name="Aboria.Vector.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="Vector.html#Aboria.Vectorconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="Vector.html#idm45998063012112-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idm45998063011824-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idm45998063010848-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idm45998063009184-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html#idm45998063006832-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idm45998063005008-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idm45998063002896-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="Vector.html#idm45998063033408-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idm45998063032848-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idm45998063031040-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idm45998063029504-bb"><span class="identifier">inner_product</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idm45998063026848-bb"><span class="identifier">dot</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idm45998063024192-bb"><span class="identifier">squaredNorm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idm45998063023072-bb"><span class="identifier">norm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a class="link" href="Vector.html#idm45998063021952-bb"><span class="identifier">pow</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Vector.html#idm45998063019568-bb"><span class="identifier">normalize</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="Vector.html#idm45998063018720-bb"><span class="identifier">all</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="Vector.html#idm45998063017600-bb"><span class="identifier">any</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idm45998063016480-bb"><span class="identifier">minCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idm45998063015360-bb"><span class="identifier">maxCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idm45998063014240-bb"><span class="identifier">prod</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="Vector.html#idm45998063013120-bb"><span class="identifier">data</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">size</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm46279963642160"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm46279963641744"></a><h3>
+<a name="Aboria.Vectorconstruct-copy-destruct"></a><code class="computeroutput">Vector</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idm45998063012112-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45998063011824-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45998063010848-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45998063009184-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">,</span> <span class="identifier">T</span> arg3<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idm45998063006832-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idm45998063005008-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idm45998063002896-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span> arg<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm46279963579472"></a><h3>
+<a name="idm45998063033408-bb"></a><code class="computeroutput">Vector</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a name="idm45998063032848-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <span class="special">&amp;</span> <a name="idm45998063031040-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idm45998063029504-bb"></a><span class="identifier">inner_product</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idm45998063026848-bb"></a><span class="identifier">dot</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idm45998063024192-bb"></a><span class="identifier">squaredNorm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idm45998063023072-bb"></a><span class="identifier">norm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="idm45998063021952-bb"></a><span class="identifier">pow</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span> exponent<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45998063019568-bb"></a><span class="identifier">normalize</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45998063018720-bb"></a><span class="identifier">all</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45998063017600-bb"></a><span class="identifier">any</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <a name="idm45998063016480-bb"></a><span class="identifier">minCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <a name="idm45998063015360-bb"></a><span class="identifier">maxCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <a name="idm45998063014240-bb"></a><span class="identifier">prod</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idm45998063013120-bb"></a><span class="identifier">data</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../ABORIA_VARIABLE.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Vector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="../UNARY_OPERATOR.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
