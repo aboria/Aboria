@@ -31,17 +31,17 @@
   <span class="keyword">typedef</span> <span class="identifier">T</span><span class="special">::</span><span class="identifier">value_type</span>                     <a name="Aboria.elem_by_type.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>
   <span class="keyword">typedef</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">find</span><span class="special">&lt;</span> <span class="identifier">type_vector</span><span class="special">,</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a class="link" href="elem_by_type.html#Aboria.elem_by_type.iter"><span class="identifier">iter</span></a><span class="special">;</span>      
 
-  <span class="comment">// <a class="link" href="elem_by_type.html#idm45998063553600-bb">public member functions</a></span>
-   <a class="link" href="elem_by_type.html#idm45998063553104-bb"><span class="identifier">BOOST_MPL_ASSERT_NOT</span></a><span class="special">(</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">end</span><span class="special">&lt;</span> <span class="identifier">type_vector</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">iter</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">)</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="elem_by_type.html#idm45521061916832-bb">public member functions</a></span>
+   <a class="link" href="elem_by_type.html#idm45521061916336-bb"><span class="identifier">BOOST_MPL_ASSERT_NOT</span></a><span class="special">(</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">end</span><span class="special">&lt;</span> <span class="identifier">type_vector</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">iter</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">)</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="elem_by_type.html#Aboria.elem_by_typepublic-data-members">public data members</a></span>
   <span class="keyword">static</span> <span class="keyword">const</span> <span class="identifier">size_t</span> <a class="link" href="elem_by_type.html#Aboria.elem_by_type.index"><span class="identifier">index</span></a><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm46279970439600"></a><h2>Description</h2>
+<a name="idm45141069763936"></a><h2>Description</h2>
 <p>helper class to find an element of type_vector from a <a class="link" href="Variable.html" title="Struct template Variable">Variable</a> type T </p>
 <div class="refsect2">
-<a name="idm46279970438096"></a><h3>
+<a name="idm45141069762416"></a><h3>
 <a name="Aboria.elem_by_typetypes"></a><code class="computeroutput">elem_by_type</code> 
         public
        types</h3>
@@ -52,12 +52,12 @@
 </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm46279970426080"></a><h3>
-<a name="idm45998063553600-bb"></a><code class="computeroutput">elem_by_type</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"> <a name="idm45998063553104-bb"></a><span class="identifier">BOOST_MPL_ASSERT_NOT</span><span class="special">(</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">end</span><span class="special">&lt;</span> <span class="identifier">type_vector</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">iter</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">)</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<a name="idm45141069750352"></a><h3>
+<a name="idm45521061916832-bb"></a><code class="computeroutput">elem_by_type</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"> <a name="idm45521061916336-bb"></a><span class="identifier">BOOST_MPL_ASSERT_NOT</span><span class="special">(</span><span class="special">(</span><span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">end</span><span class="special">&lt;</span> <span class="identifier">type_vector</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">,</span> <span class="keyword">typename</span> <span class="identifier">iter</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">)</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm46279970407856"></a><h3>
+<a name="idm45141069732000"></a><h3>
 <a name="Aboria.elem_by_typepublic-data-members"></a><code class="computeroutput">elem_by_type</code> 
         public
        public data members</h3>
