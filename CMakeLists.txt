@@ -32,3 +32,16 @@ endif()
 add_subdirectory(examples)
 
 
+add_custom_target(generate_doc 
+    bjam
+    WORKING_DIRECTORY doc
+    COMMENT Generating documentation...
+    VERBATIM)
+
+add_custom_target(install_doc 
+    git checkout gh-pages
+    COMMAND cp -R html/* ..
+    WORKING_DIRECTORY doc
+    DEPENDS generate_doc
+    COMMENT Installing documentation...
+    VERBATIM)
