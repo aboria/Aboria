@@ -68,10 +68,10 @@ public:
     	TS_ASSERT_EQUALS(count,1);
 
     	auto tpl = test.get_neighbours(Vect3d(diameter/2,diameter/2,0));
-    	TS_ASSERT_EQUALS(tpl.size(),1);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
 
     	tpl = test.get_neighbours(Vect3d(2*diameter,0,0));
-    	TS_ASSERT_EQUALS(tpl.size(),0);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
     void test_two_particles(void) {
@@ -92,15 +92,15 @@ public:
     	test.push_back(p);
 
     	auto tpl = test.get_neighbours(Vect3d(1.1*diameter,0,0));
-    	TS_ASSERT_EQUALS(tpl.size(),1);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     	const Test_type::value_type &pfound = std::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
     	tpl = test.get_neighbours(Vect3d(0.9*diameter,0,0));
-    	TS_ASSERT_EQUALS(tpl.size(),2);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
     	tpl = test.get_neighbours(Vect3d(1.6*diameter,0,0));
-    	TS_ASSERT_EQUALS(tpl.size(),0);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
     void test_create_particles(void) {
@@ -117,25 +117,25 @@ public:
     		auto tpl = test.get_neighbours(Vect3d(diameter/2,0,0));
     		count++;
     		if (count == 1) {
-    			TS_ASSERT_EQUALS(tpl.size(),0);
+    			TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     			return Vect3d(0,0,0);
     		} else {
-    			TS_ASSERT_EQUALS(tpl.size(),1);
+    			TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     			return Vect3d(diameter/2,0,0);
     		}
 
     	});
 
     	auto tpl = test.get_neighbours(Vect3d(1.1*diameter,0,0));
-    	TS_ASSERT_EQUALS(tpl.size(),1);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     	const Test_type::value_type &pfound = std::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
     	tpl = test.get_neighbours(Vect3d(0.9*diameter,0,0));
-    	TS_ASSERT_EQUALS(tpl.size(),2);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
     	tpl = test.get_neighbours(Vect3d(1.6*diameter,0,0));
-    	TS_ASSERT_EQUALS(tpl.size(),0);
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
 };
