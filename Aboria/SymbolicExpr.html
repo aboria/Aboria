@@ -7,13 +7,13 @@
 <link rel="home" href="../index.html" title="Aboria 0.1">
 <link rel="up" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Symbolic_h" title="Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;">
 <link rel="prev" href="SymbolicDomain.html" title="Struct SymbolicDomain">
-<link rel="next" href="Symbolic_idm45521061534688.html" title="Struct template SymbolicExpr&lt;proto::exprns_::basic_expr&lt; proto::tagns_::tag::subscript, proto::argsns_::list2&lt; Aboria::SymbolicExpr&lt; boost::proto::exprns_::expr&lt; proto::tagns_::tag::terminal, proto::argsns_::term&lt; symbolic_&lt; VariableType &gt; &gt;, 0l &gt; &gt; &amp;, Label&lt; 0u, ParticlesType &gt; &amp; &gt;, 2l &gt;&gt;">
+<link rel="next" href="Symbolic_idm45383672428704.html" title="Struct template SymbolicExpr&lt;proto::exprns_::basic_expr&lt; proto::tagns_::tag::subscript, proto::argsns_::list2&lt; Aboria::SymbolicExpr&lt; boost::proto::exprns_::expr&lt; proto::tagns_::tag::terminal, proto::argsns_::term&lt; symbolic_&lt; VariableType &gt; &gt;, 0l &gt; &gt; &amp;, Label&lt; 0u, ParticlesType &gt; &amp; &gt;, 2l &gt;&gt;">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="SymbolicDomain.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Symbolic_idm45521061534688.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="SymbolicDomain.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Symbolic_idm45383672428704.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.SymbolicExpr"></a><div class="titlepage"></div>
@@ -29,36 +29,36 @@
   <span class="keyword">public</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">proto</span><span class="special">::</span><span class="identifier">extends</span><span class="special">&lt;</span> <span class="identifier">Expr</span><span class="special">,</span> <span class="identifier">SymbolicExpr</span><span class="special">&lt;</span> <span class="identifier">Expr</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">SymbolicDomain</span> <span class="special">&gt;</span>
 <span class="special">{</span>
   <span class="comment">// <a class="link" href="SymbolicExpr.html#Aboria.SymbolicExprconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <span class="keyword">explicit</span> <a class="link" href="SymbolicExpr.html#idm45521061535936-bb"><span class="identifier">SymbolicExpr</span></a><span class="special">(</span><span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="SymbolicExpr.html#idm45383672429952-bb"><span class="identifier">SymbolicExpr</span></a><span class="special">(</span><span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="SymbolicExpr.html#idm45521061544144-bb">public member functions</a></span>
+  <span class="comment">// <a class="link" href="SymbolicExpr.html#idm45383672438160-bb">public member functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ParticleType<span class="special">&gt;</span> 
     <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">eval</span><span class="special">&lt;</span> <span class="identifier">Expr</span> <span class="keyword">const</span><span class="special">,</span> <span class="identifier">ParticleCtx</span><span class="special">&lt;</span> <span class="identifier">ParticleType</span> <span class="special">&gt;</span> <span class="keyword">const</span>  <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="SymbolicExpr.html#idm45521061543584-bb"><span class="identifier">eval</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <a class="link" href="SymbolicExpr.html#idm45383672437600-bb"><span class="identifier">eval</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ParticleType1<span class="special">,</span> <span class="keyword">typename</span> ParticleType2<span class="special">&gt;</span> 
     <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">eval</span><span class="special">&lt;</span> <span class="identifier">Expr</span> <span class="keyword">const</span><span class="special">,</span> <span class="identifier">TwoParticleCtx</span><span class="special">&lt;</span> <span class="identifier">ParticleType1</span><span class="special">,</span> <span class="identifier">ParticleType2</span> <span class="special">&gt;</span> <span class="keyword">const</span>  <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="SymbolicExpr.html#idm45521061540832-bb"><span class="identifier">eval</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType1</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> 
+    <a class="link" href="SymbolicExpr.html#idm45383672434848-bb"><span class="identifier">eval</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType1</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> 
          <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType2</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45141065890960"></a><h2>Description</h2>
+<a name="idm46362084454272"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45141065890544"></a><h3>
+<a name="idm46362084453856"></a><h3>
 <a name="Aboria.SymbolicExprconstruct-copy-destruct"></a><code class="computeroutput">SymbolicExpr</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idm45521061535936-bb"></a><span class="identifier">SymbolicExpr</span><span class="special">(</span><span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span> expr<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idm45383672429952-bb"></a><span class="identifier">SymbolicExpr</span><span class="special">(</span><span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span> expr<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45141065881824"></a><h3>
-<a name="idm45521061544144-bb"></a><code class="computeroutput">SymbolicExpr</code> public member functions</h3>
+<a name="idm46362084445200"></a><h3>
+<a name="idm45383672438160-bb"></a><code class="computeroutput">SymbolicExpr</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ParticleType<span class="special">&gt;</span> 
   <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">eval</span><span class="special">&lt;</span> <span class="identifier">Expr</span> <span class="keyword">const</span><span class="special">,</span> <span class="identifier">ParticleCtx</span><span class="special">&lt;</span> <span class="identifier">ParticleType</span> <span class="special">&gt;</span> <span class="keyword">const</span>  <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idm45521061543584-bb"></a><span class="identifier">eval</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span> particle<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+  <a name="idm45383672437600-bb"></a><span class="identifier">eval</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span> particle<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ParticleType1<span class="special">,</span> <span class="keyword">typename</span> ParticleType2<span class="special">&gt;</span> 
   <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">eval</span><span class="special">&lt;</span> <span class="identifier">Expr</span> <span class="keyword">const</span><span class="special">,</span> <span class="identifier">TwoParticleCtx</span><span class="special">&lt;</span> <span class="identifier">ParticleType1</span><span class="special">,</span> <span class="identifier">ParticleType2</span> <span class="special">&gt;</span> <span class="keyword">const</span>  <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idm45521061540832-bb"></a><span class="identifier">eval</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> dx<span class="special">,</span> 
+  <a name="idm45383672434848-bb"></a><span class="identifier">eval</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> dx<span class="special">,</span> 
        <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType1</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span> particle1<span class="special">,</span> 
        <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">ParticleType2</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span> particle2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
@@ -71,7 +71,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="SymbolicDomain.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Symbolic_idm45521061534688.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="SymbolicDomain.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Symbolic_idm45383672428704.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
