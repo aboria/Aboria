@@ -213,7 +213,7 @@ find_path(CXXTEST_INCLUDE_DIR cxxtest/TestSuite.h
          PATHS ${CXXTEST_ROOT})
 find_program(CXXTEST_PYTHON_TESTGEN_EXECUTABLE
          NAMES cxxtestgen cxxtestgen.py
-         PATHS ${CXXTEST_INCLUDE_DIR})
+         PATHS ${CXXTEST_INCLUDE_DIR} ${CXXTEST_INCLUDE_DIR}/cxxtest)
 find_program(CXXTEST_PERL_TESTGEN_EXECUTABLE cxxtestgen.pl
          PATHS ${CXXTEST_INCLUDE_DIR})
 
