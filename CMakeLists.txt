@@ -19,8 +19,10 @@ set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-Wno-deprecated -std=c++0x")
 set(CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
 if (Aboria_COVERAGE)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fprofile-arcs -ftest-coverage")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fprofile-arcs -ftest-coverage")
+    set(COVERAGE_FLAGS --coverage)
+    #set(COVERAGE_FLAGS -fprofile-arcs -ftest-coverage)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COVERAGE_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${COVERAGE_FLAGS}")
     message("-- Building with coverage reporting")
 endif()
 

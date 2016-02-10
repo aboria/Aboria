@@ -15,7 +15,6 @@ addons:
             - libboost1.55-dev
             - gcc-4.8
             - g++-4.8
-            - gcov-4.6
             - clang
             - doxygen
             - valgrind
@@ -23,6 +22,7 @@ addons:
               #- cxxtest
 before_install:
     - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
+
 before_script:
     - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
     - uname -a
@@ -41,7 +41,7 @@ script:
     - ctest --output-on-failure 
 after_success:
     - cd tests
-    - coveralls --gcov-options '\-lp'
+    - coveralls --exclude tests --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
 notifications:
     email:
         recipients:
