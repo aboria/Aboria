@@ -40,8 +40,7 @@ script:
     - make
     - ctest --output-on-failure 
 after_success:
-    - cd tests
-    - coveralls -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp' --verbose
+    - coveralls -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
 notifications:
     email:
         recipients:
