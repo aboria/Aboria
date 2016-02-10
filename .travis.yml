@@ -41,7 +41,7 @@ script:
     - ctest --output-on-failure 
 after_success:
     - cd tests
-    - coveralls --exclude tests --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
+    - coveralls -e tests -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
 notifications:
     email:
         recipients:
