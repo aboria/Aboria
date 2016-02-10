@@ -13,13 +13,26 @@ addons:
             - ubuntu-toolchain-r-test
         packages:
             - libboost1.55-dev
+            - gcc-4.8
             - g++-4.8
+            - gcov-4.6
+            - clang
+            - doxygen
+            - valgrind
               #- libvtk5-dev
               #- cxxtest
 before_install:
     - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
 before_script:
     - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+    - uname -a
+    - printenv
+    - clang++ --version 2>&1 | grep clang
+    - g++ --version 2>&1 | grep g++
+    - gcov --version | grep gcov
+    - valgrind --version
+    - grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
+    - doxygen --version
     - mkdir build
     - cd build
     - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE ..
