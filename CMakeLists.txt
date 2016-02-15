@@ -1,15 +1,22 @@
 cmake_minimum_required(VERSION 2.8)
 project(Aboria)
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
+                      "${CMAKE_SOURCE_DIR}/cmake"
+                        ${CMAKE_MODULE_PATH})
 find_package(Boost 1.50.0 REQUIRED)
 find_package(VTK)
 if (VTK_FOUND)
     add_definitions(-DHAVE_VTK)
 endif(VTK_FOUND)
+find_package(Thrust)
+if (Thrust_FOUND)
+    add_definitions(-DHAVE_THRUST)
+endif(Thrust_FOUND)
+
 
 #export compiler flags for code completion engines
 set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
 
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/" ${CMAKE_MODULE_PATH})
 set(CXXTEST_ROOT ${CMAKE_SOURCE_DIR})
 find_package(CxxTest)
 

@@ -67,20 +67,24 @@ namespace mpl = boost::mpl;
 #include <vtkUnsignedCharArray.h>
 #endif
 
+#ifdef HAVE_THRUST
+#include <thrust/device_vector.h>
+#endif
+
 
 namespace Aboria {
 
 /// 
-/// helper class to find an element of type_vector from a Variable type T
-template<typename T, typename type_vector>
+/// helper class to find an element of mpl_type_vector from a Variable type T
+template<typename T, typename mpl_type_vector>
 struct elem_by_type {
     typedef T type;
     typedef typename T::value_type value_type;
 
     /// 
     /// iter is a boost mpl iterator to the found element in Variable T
-    typedef typename mpl::find<type_vector,T>::type iter;
-    BOOST_MPL_ASSERT_NOT(( boost::is_same< typename mpl::end<type_vector>::type, typename iter::type > ));
+    typedef typename mpl::find<mpl_type_vector,T>::type iter;
+    BOOST_MPL_ASSERT_NOT(( boost::is_same< typename mpl::end<mpl_type_vector>::type, typename iter::type > ));
 
     /// 
     /// index contains the index of the found element
@@ -88,18 +92,71 @@ struct elem_by_type {
 };
 
 
-/// helper class to find an element of type_vector from an
+/// helper class to find an element of mpl_type_vector from an
 /// unsigned int index I
-template<unsigned int I, typename type_vector>
+template<unsigned int I, typename mpl_type_vector>
 struct elem_by_index {
-    BOOST_MPL_ASSERT_RELATION( (mpl::size<type_vector>::type::value), >, I );
-    typedef typename mpl::at<type_vector,mpl::int_<I> > type;
+    BOOST_MPL_ASSERT_RELATION( (mpl::size<mpl_type_vector>::type::value), >, I );
+    typedef typename mpl::at<mpl_type_vector,mpl::int_<I> > type;
 
     /// 
     /// value_type is the variable's value_type at index I 
     typedef typename type::value_type value_type;
     static const size_t index = I;
 };
+
+
+template<typename VECTOR, typename VARIABLES>
+struct Traits {};
+
+template <typename ... TYPES>
+struct Traits<std::vector<double>,typename std::tuple<TYPES...> > {
+    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
+    typedef boost::tuple<std::vector<position::value_type>::iterator,
+                         std::vector<id::value_type>::iterator,
+                         std::vector<alive::value_type>::iterator,
+                         typename std::vector<TYPES::value_type>::iterator...> tuple_of_iterators_type;
+typedef boost::tuple<std::vector<position::value_type>::const_iterator,
+                         std::vector<id::value_type>::const_iterator,
+                         std::vector<alive::value_type>::const_iterator,
+                         typename std::vector<TYPES::value_type>::const_iterator...> tuple_of_const_iterators_type;
+
+    typedef boost::zip_iterator<tuple_of_iterators_type> iterator;
+    typedef boost::zip_iterator<tuple_of_const_iterators_type> const_iterator;
+    typedef boost::tuple<position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...> value_type;
+
+    typedef boost::tuple<std::vector<position::value_type>,
+                         std::vector<id::value_type>,
+                         std::vector<alive::value_type>,
+                         typename std::vector<TYPES::value_type>...> data_type;
+ 
+};
+
+template <typename ... TYPES>
+struct Traits<thrust::device_vector<double>,typename std::vector<TYPES...> > {
+    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
+    typedef thrust::tuple<thrust::device_vector<position::value_type>::iterator,
+                         thust::device_vector<id::value_type>::iterator,
+                         thust::device_vector<alive::value_type>::iterator,
+                         typename thust::device_vector<TYPES::value_type>::iterator...> tuple_of_iterators_type;
+    typedef thrust::tuple<thrust::device_vector<position::value_type>::const_iterator,
+                         thust::device_vector<id::value_type>::const_iterator,
+                         thust::device_vector<alive::value_type>::const_iterator,
+                         typename thust::device_vector<TYPES::value_type>::const_iterator...> tuple_of_const_iterators_type;
+
+    typedef thrust::zip_iterator<tuple_of_iterators_type> iterator;
+    typedef thrust::zip_iterator<tuple_of_const_iterators_type> const_iterator;
+    typedef thrust::tuple<position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...> value_type;
+    
+    typedef thrust::tuple<thrust::device_vector<position::value_type>,
+                         thrust::device_vector<id::value_type>,
+                         thrust::device_vector<alive::value_type>,
+                         typename thrust::device_vector<TYPES::value_type>...> data_type;
+ 
+
+};
+
+
 
 
 /// \brief A STL-compatable container of particles in 3D space
@@ -124,143 +181,39 @@ struct elem_by_index {
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename ... TYPES> 
+template<typename VECTOR, typename VAR, typename traits=Traits<VECTOR,VAR> > 
 class Particles {
 public:
+
+    typedef traits traits_type;
+
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
     /// alive flag as well as all user-supplied variables)
-    typedef typename mpl::vector<position,id,alive,TYPES...> type_vector;
+    typedef typename traits_type::mpl_type_vector mpl_type_vector;
 
     /// 
-    /// a tuple type containing a list of value_types for each Variable
-    typedef typename std::tuple<position::value_type,id::value_type,alive::value_type,typename TYPES::value_type...> tuple_type;
+    /// a tuple type containing a list of references to value_types for each Variable
+    typedef typename traits_type::value_type value_type;
 
-    
-    /// \brief class used to store information on each particle. 
-    ///
-    /// Each particle has a number of attached variables, 
-    /// including by default a position, id and alive flag. 
-    /// The data for each variable is contained in value_type::m_data with type
-    /// Particles::tuple_type
-    ///
-    /// Each particle also has a random number generator with a seed based on
-    /// its id. setting this seed is the responsibility of the container class
-    class Particle { 
-        friend class Particles; 
-    public: 
-        /// default random number generator
-        typedef std::mt19937 generator_type; 
-
-        /// default constructor
-        Particle(): m_uni(0,1), m_normal(0,1) {} 
-
-        /// copy-contructor for particles
-        Particle(const Particle& rhs): 
-            m_uni(rhs.m_uni), 
-            m_normal(rhs.m_normal), 
-            m_data(rhs.m_data), 
-            m_generator(rhs.m_generator) {} 
-
-        /// create particle with a given position
-        explicit Particle(const Vect3d &r): 
-            m_uni(0,1), 
-            m_normal(0,1) { 
-                this->set<position>(r); 
-            } 
-
-        ~Particle() {}
-
-        /// assignment operator only copies all Variable data.
-        /// random number generator is not copied
-        Particle& operator=(const Particle &rhs) {
-            if (this != &rhs) {
-                m_data = rhs.m_data;
-            }
-            return *this;
-        }
-
-        /// particles are equal if they have the same id Variable
-        bool operator==(const Particle &rhs) const {
-            return get<id>(*this) == get<id>(rhs);
-        }
-
-        /// perform a deep particle copy, random number generator is 
-        /// also copied as well as Variable data
-        void deep_copy(const Particle &rhs) {
-            if (this != &rhs) {
-                m_data = rhs.m_data;
-                m_generator = rhs.m_generator;
-            }
-        }
-
-        /// get the value_type of a stored Variable. get() is templated using 
-        /// the Variable type itself.
-        /// \return const reference to a T::value_type
-        template<typename T>
-        const typename elem_by_type<T,type_vector>::value_type& get() const {
-            return std::get<elem_by_type<T,type_vector>::index>(m_data);
-        }
-
-        /// non-const version of get() const
-        /// \return reference to a T::value_type
-        template<typename T>
-        typename elem_by_type<T,type_vector>::value_type& get() {
-            return std::get<elem_by_type<T,type_vector>::index>(m_data);
-        }
-
-        /// set the value_type of a stored Variable
-        /// \param T a Variable type
-        /// \param arg a type compatible with T::value_type
-        template<typename T>
-        void set(const typename elem_by_type<T,type_vector>::value_type& arg) {
-            std::get<elem_by_type<T,type_vector>::index>(m_data) = arg;
-        }
-
-        /// getter for internal random number generator
-        generator_type get_generator() {
-            return m_generator;
-        }
-
-        /// generate a uniform random number between 0 and 1
-        double rand_uniform() {
-            std::uniform_real_distribution<double> uni(0,1);
-            return uni(m_generator);
-        }
-
-        /// generate a normally distributed random number
-        double rand_normal() {
-            std::normal_distribution<double> normal(0,1);
-            return normal(m_generator);
-        }
-
-    private:
-
-        tuple_type m_data;
-        generator_type m_generator;
-        std::uniform_real_distribution<double> m_uni;
-        std::normal_distribution<double> m_normal;
-
-    };
-
-    /// typedef Particle to value_type
-    typedef Particle value_type;
-    /// vector type used to hold a collection of value_type
-    typedef typename std::vector<value_type> vector_type;
+   
+    /// type used to hold data (tuple of vectors or similar)
+    typedef typename traits_type::data_type data_type;
     /// type used to hold and return size information
-    typedef typename vector_type::size_type size_type;
-    typedef typename vector_type::size_type difference_type;
+    typedef typename traits_type::size_type size_type;
+    typedef typename traits_type::size_type difference_type;
     /// non-const iterator type
-    typedef typename vector_type::iterator iterator;
+    typedef typename traits_type::iterator iterator;
     /// const iterator type
-    typedef typename vector_type::const_iterator const_iterator;
+    typedef typename traits_type::const_iterator const_iterator;
     struct get_pos {
         const Vect3d& operator()(const value_type& i) const {
             return i.template get<position>();
         }
     };
+
     /// external type used to implement neighbourhood searching
-    typedef BucketSearch<const_iterator,get_pos> NeighbourSearch_type;
+    typedef OctTree<traits_type> spatial_type;
 
 
     /// Contructs an empty container with no searching or id tracking enabled
@@ -590,6 +543,41 @@ public:
         }
     }
 
+
+    //
+    // Particle getters/setters
+    //
+
+    /// get a variable from a particle \p arg
+    /// \param T Variable type
+    /// \param arg the particle
+    /// \return a const reference to a T::value_type holding the variable data
+    template<typename T>
+    const typename T::value_type & get(const value_type& arg) {
+        return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
+    }
+
+    /// get a variable from a particle \p arg
+    /// \param T Variable type
+    /// \param arg the particle
+    /// \return a reference to a T::value_type holding the variable data
+    template<typename T>
+    typename T::value_type & get(value_type& arg) {
+        return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
+    }
+
+    /// set a variable attached to a particle \p arg
+    /// \param T Variable type
+    /// \param arg the particle
+    /// \param data a reference to a T::value_type. This will be copied to
+    /// the variable attached to particle \p arg
+    template<typename T>
+    void set(value_type& arg, const typename T::value_type & data) {
+        std::get<elem_by_type<T,mpl_type_vector>::index>(arg) = data;
+    }
+
+
+
   
 #ifdef HAVE_VTK
     
@@ -627,7 +615,7 @@ public:
 
         constexpr size_t dn = std::tuple_size<tuple_type>::value;
         vtkSmartPointer<vtkFloatArray> datas[dn];
-        mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (setup_datas_for_writing(n,datas,grid));
+        mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (setup_datas_for_writing(n,datas,grid));
         points->SetNumberOfPoints(n);
         cells->Reset();
         cell_types->Reset();
@@ -642,7 +630,7 @@ public:
             cells->InsertCellPoint(index);
             cell_types->InsertNextTuple1(1);
 
-            mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (write_from_tuple(i.m_data,index,datas));
+            mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (write_from_tuple(i.m_data,index,datas));
         }
     }
 
@@ -664,7 +652,7 @@ public:
 
             const vtkIdType n = points->GetNumberOfPoints();
 
-            mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (setup_datas_for_reading(n,datas,grid));
+            mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (setup_datas_for_reading(n,datas,grid));
 
             this->clear();
 
@@ -672,7 +660,7 @@ public:
                 value_type particle;
                 const double *r = points->GetPoint(j);
                 particle.template set<position>(Vect3d(r[0],r[1],r[2]));
-                mpl::for_each<mpl::range_c<int,1,mpl::size<type_vector>::type::value> > (read_into_tuple(particle.m_data,j,datas));
+                mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (read_into_tuple(particle.m_data,j,datas));
                 this->push_back(particle);
             }
         }
@@ -715,11 +703,11 @@ private:
     }
 
 
-    vector_type data;
+    data_type data;
     bool searchable,track_ids;
     int next_id;
     const double seed;
-    NeighbourSearch_type neighbour_search;
+    spatial_type spatial;
     std::map<size_t,size_t> id_to_index;
 
 #ifdef HAVE_VTK
@@ -783,7 +771,7 @@ private:
         setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
             n(n),datas(datas),grid(grid){}
         template< typename U > void operator()(U i) {
-            typedef typename mpl::at<type_vector,U>::type variable_type;
+            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
             const char *name = variable_type().name;
             datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
             if (!datas[i]) {
@@ -791,7 +779,7 @@ private:
                 datas[i]->SetName(name);
                 grid->GetPointData()->AddArray(datas[i]);
             }
-            typedef typename mpl::at<type_vector,U>::type::value_type data_type;
+            typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
             if (boost::is_same<data_type, Vect3d>::value) {
                 datas[i]->SetNumberOfComponents(3);
             } else {
@@ -809,7 +797,7 @@ private:
         setup_datas_for_reading(size_t n,vtkSmartPointer<vtkFloatArray>* datas,vtkUnstructuredGrid *grid):
             n(n),datas(datas),grid(grid){}
         template< typename U > void operator()(U i) {
-            typedef typename mpl::at<type_vector,U>::type variable_type;
+            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
             const char *name = variable_type().name;
             datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
             CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
@@ -825,37 +813,6 @@ private:
 #endif
 };
 
-
-/// get a variable from a particle \p arg
-/// \param T Variable type
-/// \param VT Particle type (optional)
-/// \param arg the particle
-/// \return a const reference to a T::value_type holding the variable data
-template<typename T, typename VT>
-const typename T::value_type & get(const VT & arg) {
-    return arg.template get<T>();
-}
-
-/// get a variable from a particle \p arg
-/// \param T Variable type
-/// \param VT Particle type (optional)
-/// \param arg the particle
-/// \return a reference to a T::value_type holding the variable data
-template<typename T, typename VT>
-typename T::value_type & get(VT & arg) {
-    return arg.template get<T>();
-}
-
-/// set a variable attached to a particle \p arg
-/// \param T Variable type
-/// \param VT Particle type (optional)
-/// \param arg the particle
-/// \param data a reference to a T::value_type. This will be copied to
-/// the variable attached to particle \p arg
-template<typename T, typename VT>
-void set(VT & arg, const typename T::value_type & data) {
-    arg.template set<T>(data);
-}
 
 
 }
