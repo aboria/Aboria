@@ -342,14 +342,52 @@ void activate_nodes_for_next_level(const thrust::device_vector<int> &children,
                   is_a<NODE>());
 }
 
+template <typename traits>
+class OctTree {
+    typedef traits::vector_Vect3d vector_Vect3d;
+    typedef traits::vector_int vector_int;
+    typedef traits::iterator iterator;
+    typedef traits::range range;
 
-void build_tree(const thrust::device_vector<int> &tags,
-                const bbox &bounds,
-                int max_level,
-                int threshold,
-                thrust::device_vector<int> &nodes,
-                thrust::device_vector<int2> &leaves)
-{
+public:
+    OctTree() {};
+
+    void embed_points(iterator begin, iterator end);
+
+    void get_neighbours(const Vect3d &centre_point, const double radius, std::vector<range> &neighbours);
+
+    template<typename targets_traits, typename F>
+    void evaluate_kernel_fmm(targets_traits::iterator targets_begin, targets_traits::iterator targets_end, F &functor);
+
+    void set_domain(Vect3d &min_in, Vect3d &max_in, Vect3b &periodic_in) {
+        min = min_in;
+        max = max_in;
+        periodic = periodic_in;
+    }
+    void get_domain(Vect3d &min_out, Vect3d &max_out, Vect3b &periodic_out) {
+        min_out = min;
+        max_out = max;
+        periodic_out = periodic;
+    }
+    void set_max_points(int arg) { max_points = arg; }
+    void get_max_points(int arg) { return max_points; }
+    void set_max_levels(int arg) { max_levels = arg; }
+    void get_max_levels(int arg) { return max_levels; }
+
+private:
+    void build_tree(const vector_int &tags, vector_int &nodes, vector_int2 &leaves);
+
+    iterator begin;
+    iterator end;
+    int max_points;
+    int max_levels;
+    Vect3d min,max;
+    Vect3b periodic;
+}
+
+
+
+void OctTree::build_tree(const vector_int &tags, vector_int &nodes, vector_int2 &leaves) {
   thrust::device_vector<int> active_nodes(1,0);
 
   // Build the tree one level at a time, starting at the root

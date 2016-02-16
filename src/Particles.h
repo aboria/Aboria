@@ -129,6 +129,9 @@ typedef boost::tuple<std::vector<position::value_type>::const_iterator,
                          std::vector<id::value_type>,
                          std::vector<alive::value_type>,
                          typename std::vector<TYPES::value_type>...> data_type;
+    
+    typedef std::vector<Vect3d> vector_Vect3d;
+    typedef std::vector<int> vector_int;
  
 };
 
@@ -154,6 +157,8 @@ struct Traits<thrust::device_vector<double>,typename std::vector<TYPES...> > {
                          typename thrust::device_vector<TYPES::value_type>...> data_type;
  
 
+    typedef boost::device_vector<Vect3d> vector_Vect3d;
+    typedef boost::device_vector<int> vector_int;
 };
 
 
