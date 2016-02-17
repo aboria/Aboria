@@ -9,6 +9,7 @@ Makefile
 cmake_install.cmake
 tests/*
 !tests/*.h
+!tests/*.py
 examples/bd
 examples/dem
 examples/sph
