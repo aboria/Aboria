@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PARTICLES_H_
 
 #include "BucketSearch.h"
+#include "OctTree.h"
 #include <vector>
 #include <random>
 #include <string>
@@ -115,11 +116,11 @@ struct Traits<std::vector<double>,typename std::tuple<TYPES...> > {
     typedef boost::tuple<std::vector<position::value_type>::iterator,
                          std::vector<id::value_type>::iterator,
                          std::vector<alive::value_type>::iterator,
-                         typename std::vector<TYPES::value_type>::iterator...> tuple_of_iterators_type;
+                         typename std::vector<typename TYPES::value_type>::iterator...> tuple_of_iterators_type;
 typedef boost::tuple<std::vector<position::value_type>::const_iterator,
                          std::vector<id::value_type>::const_iterator,
                          std::vector<alive::value_type>::const_iterator,
-                         typename std::vector<TYPES::value_type>::const_iterator...> tuple_of_const_iterators_type;
+                         typename std::vector<typename TYPES::value_type>::const_iterator...> tuple_of_const_iterators_type;
 
     typedef boost::zip_iterator<tuple_of_iterators_type> iterator;
     typedef boost::zip_iterator<tuple_of_const_iterators_type> const_iterator;
@@ -128,13 +129,14 @@ typedef boost::tuple<std::vector<position::value_type>::const_iterator,
     typedef boost::tuple<std::vector<position::value_type>,
                          std::vector<id::value_type>,
                          std::vector<alive::value_type>,
-                         typename std::vector<TYPES::value_type>...> data_type;
+                         typename std::vector<typename TYPES::value_type>...> data_type;
     
     typedef std::vector<Vect3d> vector_Vect3d;
     typedef std::vector<int> vector_int;
  
 };
 
+#ifdef HAVE_THRUST
 template <typename ... TYPES>
 struct Traits<thrust::device_vector<double>,typename std::vector<TYPES...> > {
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
@@ -160,6 +162,7 @@ struct Traits<thrust::device_vector<double>,typename std::vector<TYPES...> > {
     typedef boost::device_vector<Vect3d> vector_Vect3d;
     typedef boost::device_vector<int> vector_int;
 };
+#endif
 
 
 
@@ -186,7 +189,7 @@ struct Traits<thrust::device_vector<double>,typename std::vector<TYPES...> > {
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VECTOR, typename VAR, typename traits=Traits<VECTOR,VAR> > 
+template<typename VAR, typename VECTOR=std::vector<double>, typename traits=Traits<VECTOR,VAR> > 
 class Particles {
 public:
 

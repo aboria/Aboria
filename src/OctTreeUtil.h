@@ -1,25 +1,28 @@
+#include "CudaInclude.h"
+
+
 namespace Aboria {
 
 // Utility functions to encode leaves and children in single int
-inline __device__ __host__
+inline CUDA_HOST_DEVICE
 bool is_empty(int id) { return id == 0xffffffff; }
 
-inline __device__ __host__
+inline CUDA_HOST_DEVICE
 bool is_node(int id) { return id > 0; }
 
-inline __device__ __host__
+inline CUDA_HOST_DEVICE
 bool is_leaf(int id) { return id < 0; }
 
-inline __device__ __host__
+inline CUDA_HOST_DEVICE
 int get_empty_id() { return 0xffffffff; }
 
-inline __device__ __host__
+inline CUDA_HOST_DEVICE
 int get_leaf_id(int offset) { return 0x80000000 | offset; }
 
-inline __device__ __host__
+inline CUDA_HOST_DEVICE
 int get_leaf_offset(int id) { return 0x80000000 ^ id; }
 
-inline __device__ __host__
+inline CUDA_HOST_DEVICE
 int child_tag_mask(int tag, int which_child, int level, int max_level)
 {
   int shift = (max_level - level) * 2;
@@ -30,7 +33,7 @@ template <int CODE>
 struct is_a
 {
   typedef int result_type;
-  inline __device__ __host__
+  inline CUDA_HOST_DEVICE
   int operator()(int code) { return code == CODE ? 1 : 0; }
 };
 
@@ -38,7 +41,7 @@ struct is_a
 // Given an integer, output a pseudorandom 2D point
 struct random_point
 {
-  __host__ __device__ unsigned int hash(unsigned int x)
+  CUDA_HOST_DEVICE unsigned int hash(unsigned int x)
   {
     x = (x+0x7ed55d16) + (x<<12);
     x = (x^0xc761c23c) ^ (x>>19);
@@ -49,7 +52,7 @@ struct random_point
     return x;
   }
 
-  __host__ __device__ float2 operator()(unsigned int i)
+  CUDA_HOST_DEVICE float2 operator()(unsigned int i)
   {
     thrust::default_random_engine rng(hash(i));
     thrust::random::uniform_real_distribution<float> dist;
@@ -70,16 +73,16 @@ struct bbox
   float xmin, xmax;
   float ymin, ymax;
 
-  inline __host__ __device__
+  inline CUDA_HOST_DEVICE
   bbox() : xmin(FLT_MAX), xmax(-FLT_MAX), ymin(FLT_MAX), ymax(-FLT_MAX)
   {}
   
-  inline __host__ __device__
+  inline CUDA_HOST_DEVICE
   bbox(const float2 &p) : xmin(p.x), xmax(p.x), ymin(p.y), ymax(p.y)
   {}
 };
 
-__host__ __device__
+CUDA_HOST_DEVICE
 int point_to_tag(const float2 &p, bbox box, int max_level)
 {
   int result = 0;
