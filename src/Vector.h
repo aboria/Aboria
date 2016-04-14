@@ -397,6 +397,7 @@ std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
 
 typedef Vector<double,3> Vect3d;
 typedef Vector<int,3> Vect3i;
+typedef Vector<int,2> Vect2i;
 typedef Vector<int,6> Vect6i;
 typedef Vector<bool,3> Vect3b;
 typedef Vector<double,2> Vect2d;

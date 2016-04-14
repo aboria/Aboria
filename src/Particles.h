@@ -107,64 +107,124 @@ struct elem_by_index {
 };
 
 
-template<typename VECTOR, typename VARIABLES>
+
+
+template<template<typename> class VECTOR, typename VARIABLES, 
+    template<typename tuple, typename zip_iterator>
+struct TraitsCommon {
+    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
+    template <typename T>
+    struct vector_type {
+        typedef VECTOR<T> type;
+    };
+    typedef tuple<
+                vector_type<position::value_type>::type::iterator,
+                vector_type<id::value_type>::type::iterator,
+                vector_type<alive::value_type>::type::iterator,
+                typename vector_type<typename TYPES::value_type>::type::iterator...
+                 > tuple_of_iterators_type;
+    typedef tuple<
+                vector_type<position::value_type>::type::const_iterator,
+                vector_type<id::value_type>::type::const_iterator,
+                vector_type<alive::value_type>::type::const_iterator,
+                typename vector_type<typename TYPES::value_type>::type::const_iterator...
+                 > tuple_of_const_iterators_type;
+
+    typedef zip_iterator<tuple_of_iterators_type> iterator;
+    typedef zip_iterator<tuple_of_const_iterators_type> const_iterator;
+    typedef tuple<
+        position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...
+                > value_type;
+
+    typedef tuple<
+                vector_type<position::value_type>::type::iterator,
+                vector_type<id::value_type>::type::iterator,
+                vector_type<alive::value_type>::type::iterator,
+                typename vector_type<typename TYPES::value_type>::type...
+                    > data_type;
+};
+
+
+template<template<typename> class VECTOR, typename VARIABLES>
 struct Traits {};
 
 template <typename ... TYPES>
-struct Traits<std::vector<double>,typename std::tuple<TYPES...> > {
+struct Traits<std::vector,typename std::tuple<TYPES...> > {
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
-    typedef boost::tuple<std::vector<position::value_type>::iterator,
-                         std::vector<id::value_type>::iterator,
-                         std::vector<alive::value_type>::iterator,
-                         typename std::vector<typename TYPES::value_type>::iterator...> tuple_of_iterators_type;
-typedef boost::tuple<std::vector<position::value_type>::const_iterator,
-                         std::vector<id::value_type>::const_iterator,
-                         std::vector<alive::value_type>::const_iterator,
-                         typename std::vector<typename TYPES::value_type>::const_iterator...> tuple_of_const_iterators_type;
-
-    typedef boost::zip_iterator<tuple_of_iterators_type> iterator;
-    typedef boost::zip_iterator<tuple_of_const_iterators_type> const_iterator;
-    typedef boost::tuple<position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...> value_type;
-
-    typedef boost::tuple<std::vector<position::value_type>,
-                         std::vector<id::value_type>,
-                         std::vector<alive::value_type>,
-                         typename std::vector<typename TYPES::value_type>...> data_type;
-    
-    typedef std::vector<Vect3d> vector_Vect3d;
-    typedef std::vector<int> vector_int;
- 
+    template <typename T>
+    struct vector_type {
+        typedef std::device_vector<T> type;
+    };
+    template <typename ... TupleTypes >
+    struct tuple_type {
+        typedef std::tuple<TupleTypes...> type;
+    };
+    template <typename T>
+    struct zip_type {
+        typedef boost::zip_iterator<T> type;
+    };
+    template <unsigned int N>
+    struct placeholder_type {
+        typedef boost::arg<N> type;
+    };
 };
 
 #ifdef HAVE_THRUST
 template <typename ... TYPES>
-struct Traits<thrust::device_vector<double>,typename std::vector<TYPES...> > {
+struct Traits<thrust::device_vector,typename std::vector<TYPES...> > {
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
-    typedef thrust::tuple<thrust::device_vector<position::value_type>::iterator,
-                         thust::device_vector<id::value_type>::iterator,
-                         thust::device_vector<alive::value_type>::iterator,
-                         typename thust::device_vector<TYPES::value_type>::iterator...> tuple_of_iterators_type;
-    typedef thrust::tuple<thrust::device_vector<position::value_type>::const_iterator,
-                         thust::device_vector<id::value_type>::const_iterator,
-                         thust::device_vector<alive::value_type>::const_iterator,
-                         typename thust::device_vector<TYPES::value_type>::const_iterator...> tuple_of_const_iterators_type;
+    template <typename T>
+    struct vector_type {
+        typedef thrust::device_vector<T> type;
+    };
+    template <typename ... TupleTypes >
+    struct tuple_type {
+        typedef trust::tuple<TupleTypes...> type;
+    };
+    template <typename T>
+    struct zip_type {
+        typedef thrust::zip_iterator<T> type;
+    };
+    template <unsigned int N>
+    struct placeholder_type {
+        typedef thrust:detail::functional::placeholder<N> type;
+    };
 
-    typedef thrust::zip_iterator<tuple_of_iterators_type> iterator;
-    typedef thrust::zip_iterator<tuple_of_const_iterators_type> const_iterator;
-    typedef thrust::tuple<position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...> value_type;
-    
-    typedef thrust::tuple<thrust::device_vector<position::value_type>,
-                         thrust::device_vector<id::value_type>,
-                         thrust::device_vector<alive::value_type>,
-                         typename thrust::device_vector<TYPES::value_type>...> data_type;
- 
-
-    typedef boost::device_vector<Vect3d> vector_Vect3d;
-    typedef boost::device_vector<int> vector_int;
-};
+    };
 #endif
 
+template<typename ARG,typename TRAITS>
+struct TraitsCommon {};
 
+template <typename traits, typename ... TYPES>
+struct TraitsCommon<std::tuple<TYPES...>,traits> {
+    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
+    typedef traits::tuple_type<
+                traits::vector_type<position::value_type>::type::iterator,
+                traits::vector_type<id::value_type>::type::iterator,
+                traits::vector_type<alive::value_type>::type::iterator,
+                typename traits::vector_type<typename TYPES::value_type>::type::iterator...
+                 >::type tuple_of_iterators_type;
+    typedef traits::tuple_type<
+                traits::vector_type<position::value_type>::type::const_iterator,
+                traits::vector_type<id::value_type>::type::const_iterator,
+                traits::vector_type<alive::value_type>::type::const_iterator,
+                typename traits::vector_type<typename TYPES::value_type>::type::const_iterator...
+                 >::type tuple_of_const_iterators_type;
+
+    typedef traits::zip_type<tuple_of_iterators_type>::type iterator;
+    typedef traits::zip_type<tuple_of_const_iterators_type>::type const_iterator;
+    typedef traits::tuple_type< 
+        position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...
+                >::type value_type;
+
+    typedef traits::tuple_type<
+                traits::vector_type<position::value_type>::type::iterator,
+                traits::vector_type<id::value_type>::type::iterator,
+                traits::vector_type<alive::value_type>::type::iterator,
+                typename vector_type<typename TYPES::value_type>::type...
+                    >::type data_type;
+}
 
 
 /// \brief A STL-compatable container of particles in 3D space
@@ -189,31 +249,34 @@ struct Traits<thrust::device_vector<double>,typename std::vector<TYPES...> > {
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VAR, typename VECTOR=std::vector<double>, typename traits=Traits<VECTOR,VAR> > 
+template<typename VAR, template <typename> class VECTOR=std::vector, typename traits=Traits<VECTOR,VAR> > 
 class Particles {
 public:
 
     typedef traits traits_type;
 
+    typedef TraitsCommon<VAR,traits> traits_common_type;
+
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
     /// alive flag as well as all user-supplied variables)
-    typedef typename traits_type::mpl_type_vector mpl_type_vector;
+    typedef typename traits_common_type::mpl_type_vector mpl_type_vector;
 
     /// 
     /// a tuple type containing a list of references to value_types for each Variable
-    typedef typename traits_type::value_type value_type;
+    typedef typename traits_common_type::value_type value_type;
 
    
     /// type used to hold data (tuple of vectors or similar)
-    typedef typename traits_type::data_type data_type;
+    typedef typename traits_common_type::data_type data_type;
     /// type used to hold and return size information
-    typedef typename traits_type::size_type size_type;
-    typedef typename traits_type::size_type difference_type;
+    typedef typename traits_common_type::size_type size_type;
+    typedef typename traits_common_type::size_type difference_type;
     /// non-const iterator type
-    typedef typename traits_type::iterator iterator;
+    typedef typename traits_common_type::iterator iterator;
     /// const iterator type
-    typedef typename traits_type::const_iterator const_iterator;
+    typedef typename traits_common_type::const_iterator const_iterator;
+
     struct get_pos {
         const Vect3d& operator()(const value_type& i) const {
             return i.template get<position>();

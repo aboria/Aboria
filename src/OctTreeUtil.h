@@ -1,5 +1,7 @@
 #include "CudaInclude.h"
 
+#include <bitset>         // std::bitset
+#include <iomanip>      // std::setw
 
 namespace Aboria {
 
@@ -38,90 +40,61 @@ struct is_a
 };
 
 
-// Given an integer, output a pseudorandom 2D point
-struct random_point
-{
-  CUDA_HOST_DEVICE unsigned int hash(unsigned int x)
-  {
-    x = (x+0x7ed55d16) + (x<<12);
-    x = (x^0xc761c23c) ^ (x>>19);
-    x = (x+0x165667b1) + (x<<5);
-    x = (x+0xd3a2646c) ^ (x<<9);
-    x = (x+0xfd7046c5) + (x<<3);
-    x = (x^0xb55a4f09) ^ (x>>16);
-    return x;
-  }
 
-  CUDA_HOST_DEVICE float2 operator()(unsigned int i)
-  {
-    thrust::default_random_engine rng(hash(i));
-    thrust::random::uniform_real_distribution<float> dist;
-    float x = dist(rng);
-    float y = dist(rng);
-    return make_float2(x, y);
-  }
-};
+#define FLT_MAX 1.0
+struct bbox {
+    Vect3d bmin;
+    Vect3d bmax;
 
-template<typename Vector>
-void generate_random_points(Vector &points)
-{
-  thrust::tabulate(points.begin(), points.end(), random_point());
-}
+    inline CUDA_HOST_DEVICE
+    bbox() : bmin(Vect3d(FLT_MAX,FLT_MAX,FLT_MAX)), bmax(Vect3d(-FLT_MAX,-FLT_MAX,-FLT_MAX))
+    {}
+      
+    inline CUDA_HOST_DEVICE
+    bbox(const Vect3d &p) : bmin(p),bmax(p)
+    {}
 
-struct bbox
-{
-  float xmin, xmax;
-  float ymin, ymax;
-
-  inline CUDA_HOST_DEVICE
-  bbox() : xmin(FLT_MAX), xmax(-FLT_MAX), ymin(FLT_MAX), ymax(-FLT_MAX)
-  {}
-  
-  inline CUDA_HOST_DEVICE
-  bbox(const float2 &p) : xmin(p.x), xmax(p.x), ymin(p.y), ymax(p.y)
-  {}
+    inline CUDA_HOST_DEVICE
+    bbox operator+(const bbox &arg) {
+        bbox bounds;
+        for (int i=0; i<3; i++) {
+            bounds.bmin[i] = std::min(bmin[i], arg.bmin[i]);
+            bounds.bmax[i] = std::max(bmax[i], arg.bmax[i]);
+        }
+    return bounds;
+    }
+ 
 };
 
 CUDA_HOST_DEVICE
-int point_to_tag(const float2 &p, bbox box, int max_level)
-{
-  int result = 0;
+int point_to_tag(const Vect3d &p, bbox box, int max_level) {
+    int result = 0;
   
-  for (int level = 1 ; level <= max_level ; ++level)
-  {
-    // Classify in x-direction
-    float xmid = 0.5f * (box.xmin + box.xmax);
-    int x_hi_half = (p.x < xmid) ? 0 : 1;
+    for (int level = 1 ; level <= max_level ; ++level) {
+        Vect3d mid;
+        Vect3i hi_half;
+    
+        for (int i=0; i<3; i++) {
+            // Classify in i-direction
+            mid[i] = 0.5f * (box.bmin[i] + box.bmax[i]);
+            hi_half[i] = (p[i] < mid[i]) ? 0 : 1;
   
-    // Push the bit into the result as we build it
-    result |= x_hi_half;
-    result <<= 1;
+            // Push the bit into the result as we build it
+            result |= hi_half[i];
+            result <<= 1;
+        }
   
-    // Classify in y-direction
-    float ymid = 0.5f * (box.ymin + box.ymax);
-    int y_hi_half = (p.y < ymid) ? 0 : 1;
-  
-    // Push the bit into the result as we build it
-    result |= y_hi_half;
-    result <<= 1;
-  
-    // Shrink the bounding box, still encapsulating the point
-    box.xmin = (x_hi_half) ? xmid : box.xmin;
-    box.xmax = (x_hi_half) ? box.xmax : xmid;
-    box.ymin = (y_hi_half) ? ymid : box.ymin;
-    box.ymax = (y_hi_half) ? box.ymax : ymid;
+        // Shrink the bounding box, still encapsulating the point
+        for (int i=0; i<3; i++) {
+            box.bmin[i] = (hi_half[i]) ? mid[i] : box.bmin[i];
+            box.bmax[i] = (hi_half[i]) ? box.bmax[i] : mid[i];
+        }
+
   }
   // Unshift the last
   result >>= 1;
 
   return result;
-}
-
-std::ostream &operator<<(std::ostream &os, float2 p)
-{
-  return os << std::fixed << "(" <<
-      std::setw(8) << std::setprecision(6) << p.x << ", " <<
-      std::setw(8) << std::setprecision(6) << p.y << ")";
 }
 
 void print_tag(int tag, int max_level)
@@ -133,7 +106,8 @@ void print_tag(int tag, int max_level)
   }
 }
 
-void print_active_nodes(const thrust::host_vector<int> &active_nodes, int max_level)
+template<typename Vector>
+void print_active_nodes(const Vector &active_nodes, int max_level)
 {
   std::cout << "Active nodes:\n      ";
   for (int i = 1 ; i <= max_level ; ++i)
@@ -150,7 +124,8 @@ void print_active_nodes(const thrust::host_vector<int> &active_nodes, int max_le
   std::cout << std::endl;
 }
 
-void print_children(const thrust::host_vector<int> &children, int max_level)
+template<typename Vector>
+void print_children(const Vector &children, int max_level)
 {
   std::cout << "Children:\n      ";
   for (int i = 1 ; i <= max_level ; ++i)
@@ -167,8 +142,9 @@ void print_children(const thrust::host_vector<int> &children, int max_level)
   std::cout << std::endl;
 }
 
-void print_child_bounds(const thrust::host_vector<int> &lower_bounds,
-                        const thrust::host_vector<int> &upper_bounds)
+template<typename Vector>
+void print_child_bounds(const Vector &lower_bounds,
+                        const Vector &upper_bounds)
 {
   std::cout << "Child bounds:\n      [ lower upper count ]\n";
   for (int i = 0 ; i < lower_bounds.size() ; ++i)
@@ -185,7 +161,8 @@ void print_child_bounds(const thrust::host_vector<int> &lower_bounds,
 // Markers
 enum { NODE = 1, LEAF = 2, EMPTY = 4 };
 
-void print_child_node_kind(const thrust::host_vector<int> &child_node_kind)
+template<typename Vector>
+void print_child_node_kind(const Vector &child_node_kind)
 {
   std::cout << "child_node_kind:\n";
   for (int i = 0 ; i < child_node_kind.size() ; ++i)
@@ -211,9 +188,10 @@ void print_child_node_kind(const thrust::host_vector<int> &child_node_kind)
   std::cout << std::endl;
 }
 
-void print_child_enumeration(const thrust::host_vector<int> &child_node_kind,
-                             const thrust::host_vector<int> &nodes_on_this_level,
-                             const thrust::host_vector<int> &leaves_on_this_level)
+template<typename Vector>
+void print_child_enumeration(const Vector &child_node_kind,
+                             const Vector &nodes_on_this_level,
+                             const Vector &leaves_on_this_level)
 {
   std::cout << "Node/leaf enumeration:\n      [ nodeid leafid ]\n";
   for (int i = 0 ; i < child_node_kind.size() ; ++i)
@@ -236,7 +214,8 @@ void print_child_enumeration(const thrust::host_vector<int> &child_node_kind,
   std::cout << std::endl;
 }
 
-void print_nodes(const thrust::host_vector<int> &nodes)
+template<typename Vector>
+void print_nodes(const Vector &nodes)
 {
   std::cout << "Quadtree nodes:\n";
   std::cout << "          [ nodeid  leafid ]\n";
@@ -279,7 +258,8 @@ void print_nodes(const thrust::host_vector<int> &nodes)
   std::cout << "          [================]\n";
 }
 
-void print_leaves(const thrust::host_vector<int2> &leaves)
+template<typename Vector>
+void print_leaves(const Vector &leaves)
 {
   std::cout << "Quadtree leaves:\n";
   std::cout << "          [ lower    upper ]\n";
