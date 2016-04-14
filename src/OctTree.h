@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "CudaInclude.h"
 #include "OctTreeUtil.h"
+#include "Particles.h"
 
 namespace Aboria {
 
@@ -58,21 +59,18 @@ namespace Aboria {
 //   int child_tag_mask(int tag, int which_child, int level, int max_level);
 
 
-
 template <typename traits>
 class OctTree {
     typedef typename traits::template vector_type<Vect3d>::type vector_Vect3d;
     typedef typename traits::template vector_type<int>::type vector_int;
     typedef typename traits::template vector_type<Vect2i>::type vector_int2;
-    typedef typename traits::iterator iterator;
-    typedef typename traits::range range;
 
 public:
     OctTree() {};
 
-    void embed_points(iterator begin, iterator end);
+    void embed_points(vector_Vect3d& points);
 
-    void get_neighbours(const Vect3d &centre_point, const double radius, std::vector<range> &neighbours);
+    //void get_neighbours(const Vect3d &centre_point, const double radius, std::vector<range> &neighbours);
 
     //template<typename targets_traits, typename F>
     //void evaluate_kernel_fmm(targets_traits::iterator targets_begin, targets_traits::iterator targets_end, F &functor);
@@ -95,7 +93,7 @@ public:
     void get_threshold(int arg) { return threshold; }
 
 private:
-    void build_tree(const vector_int &tags, vector_int &nodes, vector_int2 &leaves);
+    void build_tree();
 
     struct classify_point;
     struct child_index_to_tag_mask;
@@ -104,52 +102,60 @@ private:
     struct make_leaf;
 
 
-    iterator begin;
-    iterator end;
     int max_points;
     int max_level;
     int threshold;
     Vect3d min,max;
     Vect3b periodic;
+
+    vector_int tags;
+    vector_int nodes;
+    vector_int indices;
+    bbox bounds;
+    vector_int2 &leaves;
 };
 
 
 template <typename traits>
-void OctTree<traits::embed_points() {
+void OctTree<traits>::embed_points(vector_Vect3d& points) {
+
+    const int num_points = points.size();
+
+    nodes.clear();
+    leaves.clear();
+    tags.resize(num_points);
+    indices.resize(num_points);
+
     /******************************************
      * 2. Compute bounding box                *
      ******************************************/
 
-    bbox bounds = reduce(points.begin(), points.end(), bbox(), std::plus<bbox>());
+    bounds = reduce(points.begin(), points.end(), bbox(), plus<bbox>());
 
     /******************************************
      * 3. Classify points                     *
      ******************************************/
-
-    thrust::device_vector<int> tags(num_points);
 
     transform(points.begin(), 
             points.end(), 
             tags.begin(), 
             classify_point(bounds, max_level));
 
-
     /******************************************
      * 4. Sort according to classification    *
      ******************************************/
 
-    thrust::device_vector<int> indices(num_points);
 
     // Now that we have the geometric information, we can sort the
     // points accordingly.
-    thrust::sequence(indices.begin(), indices.end());
-    thrust::sort_by_key(tags.begin(), tags.end(), indices.begin());
+    sequence(indices.begin(), indices.end());
+    sort_by_key(tags.begin(), tags.end(), indices.begin());
 }
 
 
 
 template <typename traits>
-void OctTree<traits>::build_tree(const vector_int &tags, vector_int &nodes, vector_int2 &leaves) {
+void OctTree<traits>::build_tree() {
   vector_int active_nodes(1,0);
 
   // Build the tree one level at a time, starting at the root
@@ -226,10 +232,8 @@ void OctTree<traits>::build_tree(const vector_int &tags, vector_int &nodes, vect
                                    0, 
                                    plus<int>());
 
-    std::pair<int,int> num_nodes_and_leaves_on_this_level;
-
-    num_nodes_and_leaves_on_this_level.first = nodes_on_this_level.back() + (child_node_kind.back() == NODE ? 1 : 0);
-    num_nodes_and_leaves_on_this_level.second = leaves_on_this_level.back() + (child_node_kind.back() == LEAF ? 1 : 0);
+    int num_nodes_on_this_level = nodes_on_this_level.back() + (child_node_kind.back() == NODE ? 1 : 0);
+    int num_leaves_on_this_level = leaves_on_this_level.back() + (child_node_kind.back() == LEAF ? 1 : 0);
 
 
     /******************************************
@@ -243,18 +247,18 @@ void OctTree<traits>::build_tree(const vector_int &tags, vector_int &nodes, vect
       
     transform(
             make_zip_iterator(
-                thrust::make_tuple(child_node_kind.begin(), nodes_on_this_level.begin(), leaves_on_this_level.begin())),
+                make_tuple(child_node_kind.begin(), nodes_on_this_level.begin(), leaves_on_this_level.begin())),
              make_zip_iterator(
                 make_tuple(child_node_kind.end(), nodes_on_this_level.end(), leaves_on_this_level.end())),
                 nodes.begin() + children_begin,
-                write_nodes(nodes.size(), num_leaves));
+                write_nodes(nodes.size(), leaves.size()));
 
 
     /******************************************
      * 6. Add the leaves to the leaf list     *
      ******************************************/
 
-    int children_begin = leaves.size();
+    children_begin = leaves.size();
 
     leaves.resize(leaves.size() + num_leaves_on_this_level);
 
@@ -306,9 +310,10 @@ struct OctTree<traits>::classify_point {
 template <typename traits>
 struct OctTree<traits>::child_index_to_tag_mask {
     int level, max_level;
-    thrust::device_ptr<const int> nodes;
+    typedef typename vector_int::const_pointer ptr_type;
+    ptr_type nodes;
 
-    child_index_to_tag_mask(int lvl, int max_lvl, thrust::device_ptr<const int> nodes) : level(lvl), max_level(max_lvl), nodes(nodes) {}
+    child_index_to_tag_mask(int lvl, int max_lvl, ptr_type nodes) : level(lvl), max_level(max_lvl), nodes(nodes) {}
 
     inline CUDA_HOST_DEVICE
         int operator()(int idx) const
@@ -380,15 +385,15 @@ struct OctTree<traits>::write_nodes {
 
 template <typename traits>
 struct OctTree<traits>::make_leaf {
-    typedef int2 result_type;
+    typedef Vect2i result_type;
     template <typename tuple_type>
         inline CUDA_HOST_DEVICE
-        int2 operator()(const tuple_type &t) const
+        result_type operator()(const tuple_type &t) const
         {
             int x = get<0>(t);
             int y = get<1>(t);
 
-            return make_int2(x, y);
+            return result_type(x, y);
         }
 };
 

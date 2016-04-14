@@ -107,53 +107,14 @@ struct elem_by_index {
 };
 
 
-
-
-template<template<typename> class VECTOR, typename VARIABLES, 
-    template<typename tuple, typename zip_iterator>
-struct TraitsCommon {
-    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
-    template <typename T>
-    struct vector_type {
-        typedef VECTOR<T> type;
-    };
-    typedef tuple<
-                vector_type<position::value_type>::type::iterator,
-                vector_type<id::value_type>::type::iterator,
-                vector_type<alive::value_type>::type::iterator,
-                typename vector_type<typename TYPES::value_type>::type::iterator...
-                 > tuple_of_iterators_type;
-    typedef tuple<
-                vector_type<position::value_type>::type::const_iterator,
-                vector_type<id::value_type>::type::const_iterator,
-                vector_type<alive::value_type>::type::const_iterator,
-                typename vector_type<typename TYPES::value_type>::type::const_iterator...
-                 > tuple_of_const_iterators_type;
-
-    typedef zip_iterator<tuple_of_iterators_type> iterator;
-    typedef zip_iterator<tuple_of_const_iterators_type> const_iterator;
-    typedef tuple<
-        position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...
-                > value_type;
-
-    typedef tuple<
-                vector_type<position::value_type>::type::iterator,
-                vector_type<id::value_type>::type::iterator,
-                vector_type<alive::value_type>::type::iterator,
-                typename vector_type<typename TYPES::value_type>::type...
-                    > data_type;
-};
-
-
-template<template<typename> class VECTOR, typename VARIABLES>
+template<template<typename,typename> class VECTOR>
 struct Traits {};
 
-template <typename ... TYPES>
-struct Traits<std::vector,typename std::tuple<TYPES...> > {
-    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
+template <>
+struct Traits<std::vector> {
     template <typename T>
     struct vector_type {
-        typedef std::device_vector<T> type;
+        typedef std::vector<T> type;
     };
     template <typename ... TupleTypes >
     struct tuple_type {
@@ -163,16 +124,11 @@ struct Traits<std::vector,typename std::tuple<TYPES...> > {
     struct zip_type {
         typedef boost::zip_iterator<T> type;
     };
-    template <unsigned int N>
-    struct placeholder_type {
-        typedef boost::arg<N> type;
-    };
 };
 
 #ifdef HAVE_THRUST
-template <typename ... TYPES>
-struct Traits<thrust::device_vector,typename std::vector<TYPES...> > {
-    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
+template <>
+struct Traits<thrust::device_vector> {
     template <typename T>
     struct vector_type {
         typedef thrust::device_vector<T> type;
@@ -185,10 +141,6 @@ struct Traits<thrust::device_vector,typename std::vector<TYPES...> > {
     struct zip_type {
         typedef thrust::zip_iterator<T> type;
     };
-    template <unsigned int N>
-    struct placeholder_type {
-        typedef thrust:detail::functional::placeholder<N> type;
-    };
 
     };
 #endif
@@ -198,33 +150,36 @@ struct TraitsCommon {};
 
 template <typename traits, typename ... TYPES>
 struct TraitsCommon<std::tuple<TYPES...>,traits> {
+    typedef std::tuple<TYPES...> variable_type;
+    typedef traits traits_type;
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
-    typedef traits::tuple_type<
-                traits::vector_type<position::value_type>::type::iterator,
-                traits::vector_type<id::value_type>::type::iterator,
-                traits::vector_type<alive::value_type>::type::iterator,
-                typename traits::vector_type<typename TYPES::value_type>::type::iterator...
+    typedef typename traits::template tuple_type<
+                traits::template vector_type<position::value_type>::type::iterator,
+                traits::template vector_type<id::value_type>::type::iterator,
+                traits::template vector_type<alive::value_type>::type::iterator,
+                typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
                  >::type tuple_of_iterators_type;
-    typedef traits::tuple_type<
-                traits::vector_type<position::value_type>::type::const_iterator,
-                traits::vector_type<id::value_type>::type::const_iterator,
-                traits::vector_type<alive::value_type>::type::const_iterator,
-                typename traits::vector_type<typename TYPES::value_type>::type::const_iterator...
+    typedef typename traits::template tuple_type<
+                traits::template vector_type<position::value_type>::type::const_iterator,
+                traits::template vector_type<id::value_type>::type::const_iterator,
+                traits::template vector_type<alive::value_type>::type::const_iterator,
+                typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
                  >::type tuple_of_const_iterators_type;
 
-    typedef traits::zip_type<tuple_of_iterators_type>::type iterator;
-    typedef traits::zip_type<tuple_of_const_iterators_type>::type const_iterator;
-    typedef traits::tuple_type< 
+    typedef typename traits::template zip_type<tuple_of_iterators_type>::type iterator;
+    typedef typename traits::template zip_type<tuple_of_const_iterators_type>::type const_iterator;
+
+    typedef typename traits::template tuple_type< 
         position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...
                 >::type value_type;
 
-    typedef traits::tuple_type<
-                traits::vector_type<position::value_type>::type::iterator,
-                traits::vector_type<id::value_type>::type::iterator,
-                traits::vector_type<alive::value_type>::type::iterator,
-                typename vector_type<typename TYPES::value_type>::type...
+    typedef typename traits::template tuple_type<
+                traits::template vector_type<position::value_type>::type::iterator,
+                traits::template vector_type<id::value_type>::type::iterator,
+                traits::template vector_type<alive::value_type>::type::iterator,
+                typename traits::template vector_type<typename TYPES::value_type>::type...
                     >::type data_type;
-}
+};
 
 
 /// \brief A STL-compatable container of particles in 3D space
@@ -249,10 +204,11 @@ struct TraitsCommon<std::tuple<TYPES...>,traits> {
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VAR, template <typename> class VECTOR=std::vector, typename traits=Traits<VECTOR,VAR> > 
+template<typename VAR, template <typename,typename> class VECTOR=std::vector, typename traits=Traits<VECTOR> > 
 class Particles {
 public:
 
+    typedef Particles<VAR,VECTOR,traits> particles_type;
     typedef traits traits_type;
 
     typedef TraitsCommon<VAR,traits> traits_common_type;
@@ -284,7 +240,7 @@ public:
     };
 
     /// external type used to implement neighbourhood searching
-    typedef OctTree<traits_type> spatial_type;
+    typedef OctTree<traits> spatial_type;
 
 
     /// Contructs an empty container with no searching or id tracking enabled
@@ -305,7 +261,7 @@ public:
     {}
 
     /// copy-constructor. performs deep copying of all particles
-    Particles(const Particles<TYPES...> &other):
+    Particles(const particles_type &other):
             data(other.data),
             neighbour_search(other.neighbour_search),
             next_id(other.next_id),
@@ -325,9 +281,6 @@ public:
         seed(0)
     {}
 
-    static ptr<Particles<TYPES...> > New() {
-        return ptr<Particles<TYPES...> >(new Particles<TYPES...> ());
-    }
 
     
     //
@@ -453,7 +406,7 @@ public:
     /// is periodic (true) or not (false)
     void init_neighbour_search(const Vect3d& low, const Vect3d& high, const double length_scale, const Vect3b& periodic) {
         neighbour_search.reset(low,high,length_scale,periodic);
-        neighbour_search.embed_points(data.cbegin(),data.cend());
+        neighbour_search.embed_points(get<position>());
         searchable = true;
     }
 
@@ -612,6 +565,14 @@ public:
             if (track_ids) id_to_index[i->template get<id>()] = index;
             if (searchable) neighbour_search.add_point(i);
         }
+    }
+
+    //
+    // Vector getters/setters
+    //
+    template<typename T>
+    const typename traits::vector_type<T::value_type> & get() {
+        return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
     }
 
 
