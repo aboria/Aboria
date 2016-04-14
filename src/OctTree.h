@@ -76,13 +76,13 @@ public:
     //void evaluate_kernel_fmm(targets_traits::iterator targets_begin, targets_traits::iterator targets_end, F &functor);
 
     void set_domain(Vect3d &min_in, Vect3d &max_in, Vect3b &periodic_in) {
-        min = min_in;
-        max = max_in;
+        bounds.bmin = min_in;
+        bounds.bmax = max_in;
         periodic = periodic_in;
     }
     void get_domain(Vect3d &min_out, Vect3d &max_out, Vect3b &periodic_out) {
-        min_out = min;
-        max_out = max;
+        min_out = bounds.bmin;
+        max_out = bounds.bmax;
         periodic_out = periodic;
     }
     void set_max_points(int arg) { max_points = arg; }
@@ -105,7 +105,6 @@ private:
     int max_points;
     int max_level;
     int threshold;
-    Vect3d min,max;
     Vect3b periodic;
 
     vector_int tags;
@@ -130,7 +129,8 @@ void OctTree<traits>::embed_points(vector_Vect3d& points) {
      * 2. Compute bounding box                *
      ******************************************/
 
-    bounds = reduce(points.begin(), points.end(), bbox(), plus<bbox>());
+    bbox points_bounds = reduce(points.begin(), points.end(), bbox(), plus<bbox>());
+    assert(points_bounds < bounds);
 
     /******************************************
      * 3. Classify points                     *

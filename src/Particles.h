@@ -145,6 +145,52 @@ struct Traits<thrust::device_vector> {
     };
 #endif
 
+template<typename ARG>
+struct unpack_tuple_types {};
+
+template <typename ... TYPES>
+struct unpack_tuple_types< std::tuple<TYPES...> > {
+    typedef mpl::vector<typename std::remove_reference<TYPES>::type...> mpl_type_vector;
+};
+
+
+//
+// Particle getters/setters
+//
+
+/// get a variable from a particle \p arg
+/// \param T Variable type
+/// \param arg the particle
+/// \return a const reference to a T::value_type holding the variable data
+template<typename T, typename value_type>
+const typename T::value_type & get(const value_type& arg) {
+    typedef typename unpack_tuple_types<value_type>::mpl_type_vector mpl_type_vector;
+    return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
+}
+
+/// get a variable from a particle \p arg
+/// \param T Variable type
+/// \param arg the particle
+/// \return a reference to a T::value_type holding the variable data
+template<typename T, typename value_type>
+typename T::value_type & get(value_type& arg) {
+    typedef typename unpack_tuple_types<value_type>::mpl_type_vector mpl_type_vector;
+    return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
+}
+
+/// set a variable attached to a particle \p arg
+/// \param T Variable type
+/// \param arg the particle
+/// \param data a reference to a T::value_type. This will be copied to
+/// the variable attached to particle \p arg
+template<typename T, typename value_type>
+void set(value_type& arg, const typename T::value_type & data) {
+    typedef typename unpack_tuple_types<value_type>::mpl_type_vector mpl_type_vector;
+    std::get<elem_by_type<T,mpl_type_vector>::index>(arg) = data;
+}
+
+
+ 
 template<typename ARG,typename TRAITS>
 struct TraitsCommon {};
 
@@ -232,12 +278,6 @@ public:
     typedef typename traits_common_type::iterator iterator;
     /// const iterator type
     typedef typename traits_common_type::const_iterator const_iterator;
-
-    struct get_pos {
-        const Vect3d& operator()(const value_type& i) const {
-            return i.template get<position>();
-        }
-    };
 
     /// external type used to implement neighbourhood searching
     typedef OctTree<traits> spatial_type;
@@ -571,7 +611,7 @@ public:
     // Vector getters/setters
     //
     template<typename T>
-    const typename traits::vector_type<T::value_type> & get() {
+    const typename traits::template vector_type<T::value_type> & get() {
         return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
     }
 
