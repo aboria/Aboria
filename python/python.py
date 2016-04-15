@@ -1,5 +1,6 @@
 from jinja2 import Environment, FileSystemLoader
 import os
+import importlib
 
 # Capture our current directory
 THIS_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -24,7 +25,7 @@ class Particles:
                         block_end_string='%}*/',
                         variable_start_string='/*{{',
                         variable_end_string='}}*/',
-                        trim_blocks=True
+#                        trim_blocks=True
                         )
         output_from_parsed_template = j2_env.get_template('python_template.cpp').render(
             variable_type_string = 'std::tuple<' + ', '.join(list_of_names) + '>',
@@ -33,8 +34,11 @@ class Particles:
             variables = list_of_variables
         )
 
-        with open('%s.cpp'%self.name, "wb") as f:
+        with open('%s_generated.cpp'%self.name, "wb") as f:
             f.write(output_from_parsed_template)
+
+        #compile then
+        return importlib.import_module(self.name)
 
 
 v = Variable('velocity','Vect3d','this is the velocity')
