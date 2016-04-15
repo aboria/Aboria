@@ -61,7 +61,29 @@ struct bbox {
             bounds.bmin[i] = std::min(bmin[i], arg.bmin[i]);
             bounds.bmax[i] = std::max(bmax[i], arg.bmax[i]);
         }
-    return bounds;
+        return bounds;
+    }
+
+    inline CUDA_HOST_DEVICE
+    bool operator<(const bbox &arg) {
+        bbox bounds;
+        bool within = true;
+        for (int i=0; i<3; i++) {
+            within |= bmin[i] >= arg.bmin[i];
+            within |= bmax[i] < arg.bmax[i];
+        }
+        return within;
+    }
+
+    inline CUDA_HOST_DEVICE
+    bool operator<=(const bbox &arg) {
+        bbox bounds;
+        bool within = true;
+        for (int i=0; i<3; i++) {
+            within |= bmin[i] >= arg.bmin[i];
+            within |= bmax[i] <= arg.bmax[i];
+        }
+        return within;
     }
  
 };

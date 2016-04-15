@@ -614,43 +614,33 @@ public:
     const typename traits::template vector_type<T::value_type> & get() {
         return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
     }
-
-
-    //
-    // Particle getters/setters
-    //
-
-    /// get a variable from a particle \p arg
-    /// \param T Variable type
-    /// \param arg the particle
-    /// \return a const reference to a T::value_type holding the variable data
     template<typename T>
-    const typename T::value_type & get(const value_type& arg) {
-        return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
+    typename traits::template vector_type<T::value_type> & get() {
+        return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
     }
 
-    /// get a variable from a particle \p arg
-    /// \param T Variable type
-    /// \param arg the particle
-    /// \return a reference to a T::value_type holding the variable data
-    template<typename T>
-    typename T::value_type & get(value_type& arg) {
-        return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
-    }
+private:
+    struct set_variable {
+        set_variable(data_type &data_to_set, data_type &internal_data, int n):
+            data_to_set(data_to_set),internal_data(internal_data),n(n) {}
+        template< typename U > void operator()(U i) {
+            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
+            const char *name = variable_type().name;
+            CHECK(n == data_to_set.get<U::value>().size(), "error, data vectors not the same size")
+            internal_data.set<U::value>(data_to_set.get<U::value>());
+        }
 
-    /// set a variable attached to a particle \p arg
-    /// \param T Variable type
-    /// \param arg the particle
-    /// \param data a reference to a T::value_type. This will be copied to
-    /// the variable attached to particle \p arg
-    template<typename T>
-    void set(value_type& arg, const typename T::value_type & data) {
-        std::get<elem_by_type<T,mpl_type_vector>::index>(arg) = data;
+        data_type &data_to_set;
+        data_type &internal_data;
+        int n;
+    };
+public:
+
+    void set(data_type &data_to_set) {
+        mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (set_variable(data_to_set,data,data_to_set.get<0>().size()));
     }
 
 
-
-  
 #ifdef HAVE_VTK
     
     /// get a vtk unstructured grid version of the particle container

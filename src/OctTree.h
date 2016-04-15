@@ -150,6 +150,8 @@ void OctTree<traits>::embed_points(vector_Vect3d& points) {
     // points accordingly.
     sequence(indices.begin(), indices.end());
     sort_by_key(tags.begin(), tags.end(), indices.begin());
+
+    build_tree();
 }
 
 
