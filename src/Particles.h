@@ -182,7 +182,7 @@ public:
 
         /// particles are equal if they have the same id Variable
         bool operator==(const Particle &rhs) const {
-            return get<id>(*this) == get<id>(rhs);
+            return this->get<id>() == rhs.get<id>();
         }
 
         /// perform a deep particle copy, random number generator is 
