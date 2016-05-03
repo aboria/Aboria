@@ -42,21 +42,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OCTTREE_H_
 
 #include "CudaInclude.h"
-#include "OctTreeUtil.h"
+#include "SpatialUtil.h"
 #include "Particles.h"
 
 namespace Aboria {
-
-
-// Utility functions to encode leaves and children in single int
-// are defined in util.h:
-//   bool is_empty(int id);
-//   bool is_node(int id);
-//   bool is_leaf(int id);
-//   int get_empty_id();
-//   int get_leaf_id(int offset);
-//   int get_leaf_offset(int id);
-//   int child_tag_mask(int tag, int which_child, int level, int max_level);
 
 
 template <typename traits>

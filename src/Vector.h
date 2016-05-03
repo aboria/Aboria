@@ -101,6 +101,17 @@ public:
 		}
 		return ret;
 	}
+
+    template <typename T2>
+    Vector<T2,N> cast() {
+        Vector<T2,N> ret;
+        for (int i = 0; i < N; ++i) {
+            ret[i] = static_cast<T2>(mem[i]);
+		}
+		return ret;
+	}
+
+
 	template<typename T2>
 	double dot(const Vector<T2,N> &arg) const {
 		return inner_product(arg);

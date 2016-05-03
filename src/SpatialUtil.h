@@ -1,9 +1,68 @@
 #include "CudaInclude.h"
+#include "Vector.h"
 
 #include <bitset>         // std::bitset
 #include <iomanip>      // std::setw
 
 namespace Aboria {
+
+#define FLT_MAX 1.0
+template<unsigned int D>
+struct bbox {
+    typedef typename Vector<double,m_dimension> double_d;
+    double_d bmax;
+    double_d bmin;
+
+    inline CUDA_HOST_DEVICE
+    bbox() : bmin(Vect3d(FLT_MAX)), bmax(Vect3d(-FLT_MAX))
+    {}
+
+    inline CUDA_HOST_DEVICE
+    bbox(const double_d &p) : bmin(p),bmax(p)
+    {}
+
+    inline CUDA_HOST_DEVICE
+    bbox operator+(const bbox &arg) {
+        bbox bounds;
+        for (int i=0; i<D; i++) {
+            bounds.bmin[i] = std::min(bmin[i], arg.bmin[i]);
+            bounds.bmax[i] = std::max(bmax[i], arg.bmax[i]);
+        }
+        return bounds;
+    }
+
+    inline CUDA_HOST_DEVICE
+    bool operator<(const bbox &arg) {
+        bbox bounds;
+        bool within = true;
+        for (int i=0; i<D; i++) {
+            within |= bmin[i] >= arg.bmin[i];
+            within |= bmax[i] < arg.bmax[i];
+        }
+        return within;
+    }
+
+    inline CUDA_HOST_DEVICE
+    bool operator<=(const bbox &arg) {
+        bbox bounds;
+        bool within = true;
+        for (int i=0; i<D; i++) {
+            within |= bmin[i] >= arg.bmin[i];
+            within |= bmax[i] <= arg.bmax[i];
+        }
+        return within;
+    }
+
+    inline CUDA_HOST_DEVICE
+    bool is_empty() {
+        for (int i=0; i<D; i++) {
+            if (bmax[i] < bmin[i]) return true;
+        }
+        return false;
+    }
+ 
+};
+
 
 // Utility functions to encode leaves and children in single int
 inline CUDA_HOST_DEVICE
@@ -41,52 +100,7 @@ struct is_a
 
 
 
-#define FLT_MAX 1.0
-struct bbox {
-    Vect3d bmin;
-    Vect3d bmax;
 
-    inline CUDA_HOST_DEVICE
-    bbox() : bmin(Vect3d(FLT_MAX,FLT_MAX,FLT_MAX)), bmax(Vect3d(-FLT_MAX,-FLT_MAX,-FLT_MAX))
-    {}
-      
-    inline CUDA_HOST_DEVICE
-    bbox(const Vect3d &p) : bmin(p),bmax(p)
-    {}
-
-    inline CUDA_HOST_DEVICE
-    bbox operator+(const bbox &arg) {
-        bbox bounds;
-        for (int i=0; i<3; i++) {
-            bounds.bmin[i] = std::min(bmin[i], arg.bmin[i]);
-            bounds.bmax[i] = std::max(bmax[i], arg.bmax[i]);
-        }
-        return bounds;
-    }
-
-    inline CUDA_HOST_DEVICE
-    bool operator<(const bbox &arg) {
-        bbox bounds;
-        bool within = true;
-        for (int i=0; i<3; i++) {
-            within |= bmin[i] >= arg.bmin[i];
-            within |= bmax[i] < arg.bmax[i];
-        }
-        return within;
-    }
-
-    inline CUDA_HOST_DEVICE
-    bool operator<=(const bbox &arg) {
-        bbox bounds;
-        bool within = true;
-        for (int i=0; i<3; i++) {
-            within |= bmin[i] >= arg.bmin[i];
-            within |= bmax[i] <= arg.bmax[i];
-        }
-        return within;
-    }
- 
-};
 
 CUDA_HOST_DEVICE
 int point_to_tag(const Vect3d &p, bbox box, int max_level) {

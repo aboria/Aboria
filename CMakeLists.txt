@@ -4,14 +4,18 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
                       "${CMAKE_SOURCE_DIR}/cmake"
                         ${CMAKE_MODULE_PATH})
 find_package(Boost 1.50.0 REQUIRED)
-find_package(VTK)
-if (VTK_FOUND)
+
+option(Aboria_USE_VTK "Use VTK library" OFF)
+if (Aboria_USE_VTK)
+    find_package(VTK COMPULSARY)
     add_definitions(-DHAVE_VTK)
-endif(VTK_FOUND)
-find_package(Thrust)
-if (Thrust_FOUND)
+endif()
+
+option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
+if (Aboria_USE_THRUST)
+    find_package(Thrust)
     add_definitions(-DHAVE_THRUST)
-endif(Thrust_FOUND)
+endif()
 
 
 #export compiler flags for code completion engines

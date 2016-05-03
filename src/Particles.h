@@ -191,11 +191,21 @@ void set(value_type& arg, const typename T::value_type & data) {
 
 
  
-template<typename ARG,typename TRAITS>
+template<typename ARG,unsigned int D, typename TRAITS>
 struct TraitsCommon {};
 
-template <typename traits, typename ... TYPES>
-struct TraitsCommon<std::tuple<TYPES...>,traits> {
+template <typename traits, unsigned int D, typename ... TYPES>
+struct TraitsCommon<std::tuple<TYPES...>,D,traits> {
+
+    const static unsigned int dimension = D;
+    typedef typename traits::template vector_type<Vector<double,D> >::type vector_double_d;
+    typedef typename traits::template vector_type<Vector<int,D> >::type vector_int_d;
+    typedef typename traits::template vector_type<Vector<bool,D> >::type vector_bool_d;
+    typedef typename traits::template vector_type<int>::type vector_int;
+    typedef typename traits::template vector_type<int>::type vector_unsigned_int;
+    typedef typename traits::template vector_type<Vect2i>::type vector_int2;
+
+
     typedef std::tuple<TYPES...> variable_type;
     typedef traits traits_type;
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
@@ -250,14 +260,14 @@ struct TraitsCommon<std::tuple<TYPES...>,traits> {
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VAR, template <typename,typename> class VECTOR=std::vector, typename traits=Traits<VECTOR> > 
+template<typename VAR, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, typename traits=Traits<VECTOR> > 
 class Particles {
 public:
 
     typedef Particles<VAR,VECTOR,traits> particles_type;
     typedef traits traits_type;
 
-    typedef TraitsCommon<VAR,traits> traits_common_type;
+    typedef TraitsCommon<VAR,D,traits> traits_common_type;
 
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
@@ -280,7 +290,7 @@ public:
     typedef typename traits_common_type::const_iterator const_iterator;
 
     /// external type used to implement neighbourhood searching
-    typedef OctTree<traits> spatial_type;
+    typedef OctTree<traits_common_type> spatial_type;
 
 
     /// Contructs an empty container with no searching or id tracking enabled
