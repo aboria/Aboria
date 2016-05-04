@@ -9,12 +9,12 @@ namespace Aboria {
 #define FLT_MAX 1.0
 template<unsigned int D>
 struct bbox {
-    typedef typename Vector<double,m_dimension> double_d;
+    typedef Vector<double,D> double_d;
     double_d bmax;
     double_d bmin;
 
     inline CUDA_HOST_DEVICE
-    bbox() : bmin(Vect3d(FLT_MAX)), bmax(Vect3d(-FLT_MAX))
+    bbox() : bmin(double_d(FLT_MAX)), bmax(double_d(-FLT_MAX))
     {}
 
     inline CUDA_HOST_DEVICE
@@ -103,14 +103,17 @@ struct is_a
 
 
 CUDA_HOST_DEVICE
-int point_to_tag(const Vect3d &p, bbox box, int max_level) {
+template<unsigned int D>
+int point_to_tag(const Vector<double,D> &p, bbox<D> box, int max_level) {
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
     int result = 0;
   
     for (int level = 1 ; level <= max_level ; ++level) {
-        Vect3d mid;
-        Vect3i hi_half;
+        double_d mid;
+        int_d hi_half;
     
-        for (int i=0; i<3; i++) {
+        for (int i=0; i<D; i++) {
             // Classify in i-direction
             mid[i] = 0.5f * (box.bmin[i] + box.bmax[i]);
             hi_half[i] = (p[i] < mid[i]) ? 0 : 1;
@@ -121,7 +124,7 @@ int point_to_tag(const Vect3d &p, bbox box, int max_level) {
         }
   
         // Shrink the bounding box, still encapsulating the point
-        for (int i=0; i<3; i++) {
+        for (int i=0; i<D; i++) {
             box.bmin[i] = (hi_half[i]) ? mid[i] : box.bmin[i];
             box.bmax[i] = (hi_half[i]) ? box.bmax[i] : mid[i];
         }

@@ -61,9 +61,6 @@ struct Variable {
     };                                                   \
     typedef Variable<DATA_TYPE,BOOST_PP_CAT(NAME,_description)> NAME;   \
 
-ABORIA_VARIABLE(position,Vect3d,"position")
-ABORIA_VARIABLE(alive,bool,"is alive")
-ABORIA_VARIABLE(id,size_t,"id")
 
 }
 #endif /* VARIABLE_H_ */

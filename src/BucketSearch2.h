@@ -42,24 +42,27 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define BUCKETSEARCH_H_
 
 #include "CudaInclude.h"
+#include "Vector.h"
 #include "SpatialUtil.h"
 #include "Particles.h"
 
-
+namespace Aboria {
 
 template <typename traits>
 class BucketSearch {
     const static unsigned int m_dimension = traits::dimension;
     typedef typename traits::vector_double_d vector_double_d;
+    typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;
     typedef typename traits::vector_int_d vector_int_d;
     typedef typename traits::vector_unsigned_int_d vector_unsigned_int_d;
     typedef typename traits::vector_bool_d vector_bool_d;
-    typedef typename Vector<double,m_dimension> double_d;
-    typedef typename Vector<int,m_dimension> int_d;
-    typedef typename Vector<unsigned int,m_dimension> unsigned_int_d;
-    typedef typename Vector<bool,m_dimension> bool_d;
+    typedef Vector<double,m_dimension> double_d;
+    typedef Vector<int,m_dimension> int_d;
+    typedef Vector<unsigned int,m_dimension> unsigned_int_d;
+    typedef Vector<bool,m_dimension> bool_d;
     typedef typename traits::vector_int vector_int;
     typedef typename traits::vector_unsigned_int vector_unsigned_int;
+    typedef typename vector_unsigned_int::iterator vector_unsigned_int_iterator;
     typedef typename traits::iterator particles_iterator;
     typedef typename traits::const_iterator const_particles_iterator;
     typedef typename traits::value_type particles_value_type;
@@ -78,12 +81,12 @@ public:
         m_positions_begin = get<0>(m_particles_begin);
         m_positions_end = get<0>(m_particles_end);
 
-        CHECK(!bbox.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
+        CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-        m_bucket_begin.resize(m_size.prod());
-        m_bucket_end.resize(m_size.prod());
         m_bucket_indices.resize(distance(m_particles_begin,m_particles_end));
 
+        build_bucket_indices(m_positions_begin,m_positions_end,m_bucket_indices.begin());
+        sort_by_bucket_index();
         build_buckets();
     }
 
@@ -91,13 +94,9 @@ public:
     /// this function is being used to find all the point pairs within the same point container, then
     /// a naive looping through and using find_broadphase_neighbours() will find each pair twice. 
     /// This can be avoided by setting self=true and supplying the index of each point with my_index
-    const_iterator find_broadphase_neighbours(const Vect3d& r, 
+    const_iterator find_broadphase_neighbours(const double_d& r, 
                                               const int my_index, 
                                               const bool self) const;
-
-    /// return an end() iterator to compare against the result of find_broadphase_neighbours in order
-    /// to determine the end of the neighbour list
-	const_iterator end() const;
 
     void set_domain(double_d &min_in, double_d &max_in, bool_d&periodic_in, double_d& side_length) {
         LOG(2,"BucketSearch: set_domain:");
@@ -105,24 +104,38 @@ public:
         m_bounds.bmax = max_in;
         m_periodic = periodic_in;
         m_bucket_side_length = side_length;
-        m_size =  ((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).cast<int>();
+        m_size = ((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
         m_bucket_side_length = (m_bounds.bmax-m_bounds.bmin)/m_size;
 	    LOG(2,"\tbounds = "<<m_bounds);
 	    LOG(2,"\tperiodic = "<<m_periodic);
 	    LOG(2,"\tbucket_side_length = "<<m_bucket_side_length);
 
-        embed_points(m_particles_begin,m_particles_end);
+        // setup bucket data structures
+        m_bucket_begin.resize(m_size.prod());
+        m_bucket_end.resize(m_size.prod());
     }
 
-    void get_domain(double_d &min_out, double_d &max_out, bool_d&periodic_out, double_d& side_length_out) {
-        min_out = m_bounds.bmin;
-        max_out = m_bounds.bmax;
-        periodic_out = m_periodic;
-        side_length_out = m_bucket_side_length;
-    }
+
+    const double_d& get_min() const { return m_bounds.min; }
+    const double_d& get_max() const { return m_bounds.max; }
+    const double_d& get_side_length() const { return m_bucket_side_length; }
+    const double_d& get_periodic() const { return m_periodic; }
+
+    /// add a singular point to the buckets. Note that it is assumed that this is 
+    /// also added to the end of the container holding the points
+    /// \param point_to_add an iterator pointing to the point to add
+	void add_point_at_end(particles_iterator &begin, particles_iterator &end);
+
+
 
 private:
     void build_buckets();
+    void build_bucket_indices(
+        vector_double_d_const_iterator positions_begin,
+        vector_double_d_const_iterator positions_end,
+        vector_unsigned_int_iterator bucket_indices_begin);
+    void sort_by_bucket_index();
+ 
 
 	inline unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
         unsigned int index = vindex[0];
@@ -135,35 +148,22 @@ private:
         return index;
     }
 
-        // find the raster indices of p's bucket
-        unsigned int index = (v[0]-box.min[0])/length[0];
-        unsigned int multiplier = 1.0;
-        for (int i=1; i<m_dimension; i++) {
-            multiplier *= m_size[i];
-            const unsigned_int raster_d = (v[i]-box.min[i])/m_bucket_side_length[i];
-		    ASSERT((raster_d > 0) && (raster_d < m_size[i]), "position is outside of dimension "<<i<<": "<<r);
-            index += multiplier*raster_d;
-        }
-        return index;
-    }
- 
 
     // hash a point in the unit square to the index of
     // the grid bucket that contains it
-	inline unsigned int find_bucket_index(const Vect3d &r) const {
+	inline unsigned int find_bucket_index(const double_d &r) const {
         // find the raster indices of p's bucket
-        unsigned int index = (v[0]-box.min[0])/length[0];
+        unsigned int index = (r[0]-m_bounds.min[0])/m_bucket_side_length[0];
         unsigned int multiplier = 1.0;
         for (int i=1; i<m_dimension; i++) {
-            multiplier *= size[i];
-            const unsigned_int raster_d = (v[i]-box.min[i])/length[i];
+            multiplier *= m_size[i];
+            const unsigned int raster_d = (r[i]-m_bounds.min[i])/m_bucket_side_length[i];
 		    ASSERT((raster_d > 0) && (raster_d < m_size[i]), "position is outside of dimension "<<i<<": "<<r);
             index += multiplier*raster_d;
         }
         return index;
     }
      
-    template<unsigned int D>
     struct point_to_bucket_index {
         CUDA_HOST_DEVICE
         point_to_bucket_index() {}
@@ -174,14 +174,14 @@ private:
         }
     };
 
-    iterator& m_particles_begin;
-    iterator& m_particles_end;
-    vector_double_d::iterator& m_positions_begin;
-    vector_double_d::iterator& m_positions_end;
+    particles_iterator& m_particles_begin;
+    particles_iterator& m_particles_end;
+    vector_double_d_const_iterator& m_positions_begin;
+    vector_double_d_const_iterator& m_positions_end;
     bool_d m_periodic;
     double_d m_bucket_side_length; 
     unsigned_int_d m_size;
-    bbox m_bounds;
+    bbox<m_dimension> m_bounds;
 
     // the grid data structure keeps a range per grid bucket:
     // each bucket_begin[i] indexes the first element of bucket i's list of points
@@ -195,41 +195,69 @@ private:
 
 
 template <typename traits>
-BucketSearch<traits>::build_buckets() {
-
+void BucketSearch<traits>::build_bucket_indices(
+        vector_double_d_const_iterator positions_begin,
+        vector_double_d_const_iterator positions_end,
+        vector_unsigned_int_iterator bucket_indices_begin
+        ) {
     // transform the points to their bucket indices
-    transform(m_positions_begin,
-            m_positions_end,
-            m_bucket_indices.begin(),
+    transform(positions_begin,
+            positions_end,
+            bucket_indices_begin,
             point_to_bucket_index());
+}
 
+template <typename traits>
+void BucketSearch<traits>::sort_by_bucket_index() {
     // sort the points by their bucket index
     sort_by_key(m_bucket_indices.begin(),
             m_bucket_indices.end(),
-            m_positions_begin);
+            m_particles_begin);
+}
+
+
+template <typename traits>
+void BucketSearch<traits>::build_buckets() {
 
     // find the beginning of each bucket's list of points
     counting_iterator<unsigned int> search_begin(0);
     lower_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
-            search_begin + w*h,
+            search_begin + m_size.prod(),
             m_bucket_begin.begin());
 
     // find the end of each bucket's list of points
     upper_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
-            search_begin + w*h,
+            search_begin + m_size.prod(),
             m_bucket_end.begin());
 }
 
 
 template <typename traits>
-std::pair<BucketSearch<traits>::const_particles_iterator,
-          BucketSearch<traits>::const_particles_iterator> 
+void BucketSearch<traits>add_points_at_end(particles_iterator &begin, particles_iterator &start_adding, particles_iterator &end) {
+    m_particles_begin = begin;
+    m_particles_end = end;
+    m_positions_begin = get<0>(m_particles_begin);
+    m_positions_end = get<0>(m_particles_end);
+
+    CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
+
+    const unsigned int dist = distance(start_adding,end);
+    vector_double_d::iterator positions_start_adding = m_positions_end - dist;
+    vector_unsigned_int::iterator bucket_indices_start_adding = m_bucket_indices.end() - dist;
+    build_bucket_indices(positions_start_adding,m_positions_end,bucket_indices_start_adding);
+    sort_by_bucket_index();
+    build_buckets();
+}
+
+
+template <typename traits>
+BucketSearch<traits>::const_particles_iterator
 BucketSearch<traits>::find_broadphase_neighbours(
-        const Vect3d& r, 
+        const double_d& r, 
         const int my_index, 
         const bool self) const {
     
@@ -242,10 +270,12 @@ BucketSearch<traits>::find_broadphase_neighbours(
         unsigned_int_d other_bucket = my_bucket + bucket_offset; 
 
         // handle end cases
+        double_d transpose(0);
         for (int i=0; i<m_dimension; i++) {
             if (other_bucket[i] == std::numeric_limits<unsigned int>::max()) {
                 if (m_periodic[i]) {
                     other_bucket[i] = m_size[i]-1;
+                    transpose[i] = -m_size[i];
                 } else {
                     break;
                 }
@@ -253,6 +283,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
             if (other_bucket[i] == m_size[i]) {
                 if (m_periodic[i]) {
                     other_bucket[i] = 0;
+                    transpose[i] = m_size[i];
                 } else {
                     break;
                 }
@@ -260,7 +291,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
         }
 
         const unsigned_int other_bucket_index = collapse_index_vector(other_bucket);
-        search_iterator.add_range(m_bucket_begin[other_bucket_index],m_bucket_end[other_bucket_index]);
+        search_iterator.add_range(m_bucket_begin[other_bucket_index],m_bucket_end[other_bucket_index],transpose);
 
         // go to next candidate bucket
         for (int i=0; i<m_dimension; i++) {
@@ -289,9 +320,10 @@ public:
         m_bucket_sort(bucket_sort),
         m_r(r) {}
 
-    void add_range(particles_iterator &begin, particles_iterator &end) {
+    void add_range(particles_iterator &begin, particles_iterator &end, double_d &transpose) {
         m_begins.push_back(begin);
         m_ends.push_back(end);
+        m_transpose.push_back(transpose);
         if (m_begins.size() == 1) {
             m_current_index = 0;
             m_node = m_begins[m_current_index];
@@ -306,7 +338,7 @@ public:
         return std::tie(bucket_sort->begin_iterator[*m_node],dx); 
     }
 
-    void go_to_next_candidate() {
+    bool go_to_next_candidate() {
         m_node++;
         if (m_node == m_ends[m_current_index]) {
             m_current_index++;
@@ -314,17 +346,18 @@ public:
                 m_node == m_begins[m_current_index];
             } else {
                 m_node = m_bucket_sort->m_particles_end;
+                return false;
             }
         }
+        return true;
     }
 
     void increment() {
         bool found_good_candidate = false;
-        while (!(found_good_candidate || (m_node == m_bucket_sort->m_particles_end))) {
-            go_to_next_candidate();
+        while (!found_good_candidate && go_to_next_candidate()) {
 
-            const double_d p = get<position>(m_node);
-            m_dx = centre-bucket_sort->correct_position_for_periodicity(r, p);
+            const double_d p = get<position>(m_node) + m_transpose[m_current_index];
+            dx = p - m_r;
 
             bool outside = false;
             for (int i=0; i < m_dimension; i++) {
@@ -333,6 +366,7 @@ public:
                     break;
                 } 
             }
+
             found_good_candidate = !outside;
         }
     }
@@ -380,8 +414,11 @@ private:
     particles_iterator m_node;
     std::vector<particles_iterator> m_begins;
     std::vector<particles_iterator> m_ends;
+    std::vector<double_d> m_transpose;
     unsigned int m_current_index = -1;
 };
+
+}
 
 
 #endif /* BUCKETSEARCH_H_ */

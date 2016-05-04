@@ -37,8 +37,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef PARTICLES_H_
 #define PARTICLES_H_
 
-#include "BucketSearch.h"
+#include "BucketSearch2.h"
 #include "OctTree.h"
+#include "Vector.h"
 #include <vector>
 #include <random>
 #include <string>
@@ -189,7 +190,6 @@ void set(value_type& arg, const typename T::value_type & data) {
     std::get<elem_by_type<T,mpl_type_vector>::index>(arg) = data;
 }
 
-
  
 template<typename ARG,unsigned int D, typename TRAITS>
 struct TraitsCommon {};
@@ -260,44 +260,57 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits> {
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VAR, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, typename traits=Traits<VECTOR> > 
+template<typename VAR, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, typename TRAITS_USER=Traits<VECTOR> > 
 class Particles {
 public:
 
     typedef Particles<VAR,VECTOR,traits> particles_type;
-    typedef traits traits_type;
 
-    typedef TraitsCommon<VAR,D,traits> traits_common_type;
+    typedef TraitsCommon<VAR,D,TRAITS_USER> traits_type;
 
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
     /// alive flag as well as all user-supplied variables)
-    typedef typename traits_common_type::mpl_type_vector mpl_type_vector;
+    typedef typename traits_type::mpl_type_vector mpl_type_vector;
 
     /// 
     /// a tuple type containing a list of references to value_types for each Variable
-    typedef typename traits_common_type::value_type value_type;
+    typedef typename traits_type::value_type value_type;
 
    
     /// type used to hold data (tuple of vectors or similar)
-    typedef typename traits_common_type::data_type data_type;
+    typedef typename traits_type::data_type data_type;
     /// type used to hold and return size information
-    typedef typename traits_common_type::size_type size_type;
-    typedef typename traits_common_type::size_type difference_type;
+    typedef typename traits_type::size_type size_type;
+    typedef typename traits_type::size_type difference_type;
     /// non-const iterator type
-    typedef typename traits_common_type::iterator iterator;
+    typedef typename traits_type::iterator iterator;
     /// const iterator type
-    typedef typename traits_common_type::const_iterator const_iterator;
+    typedef typename traits_type::const_iterator const_iterator;
 
-    /// external type used to implement neighbourhood searching
-    typedef OctTree<traits_common_type> spatial_type;
+    const static unsigned int dimension = traits::dimension;
+    typedef typename traits_type::vector_double_d vector_double_d;
+    typedef typename traits_type::vector_int_d vector_int_d;
+    typedef typename traits_type::vector_unsigned_int_d vector_unsigned_int_d;
+    typedef typename traits_type::vector_bool_d vector_bool_d;
+    typedef typename Vector<double,dimension> double_d;
+    typedef typename Vector<int,dimension> int_d;
+    typedef typename Vector<unsigned int,dimension> unsigned_int_d;
+    typedef typename Vector<bool,dimension> bool_d;
+    typedef typename traits_type::vector_int vector_int;
+    typedef typename traits_type::vector_unsigned_int vector_unsigned_int;
+    typedef typename traits_type::iterator particles_iterator;
+    typedef typename traits_type::const_iterator const_particles_iterator;
+    typedef typename traits_type::value_type particles_value_type;
 
+    ABORIA_VARIABLE(position,double_d,"position")
+    ABORIA_VARIABLE(alive,bool,"is alive")
+    ABORIA_VARIABLE(id,size_t,"id")
 
     /// Contructs an empty container with no searching or id tracking enabled
     Particles():
         next_id(0),
-        neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
-        searchable(false),track_ids(false),
+        searchable(false),
         seed(time(NULL))
     {}
 
@@ -305,8 +318,7 @@ public:
     /// \param seed initialises the base random seed for the container
     Particles(const double seed):
         next_id(0),
-        neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
-        searchable(false),track_ids(false),
+        searchable(false),
         seed(seed)
     {}
 
@@ -316,7 +328,6 @@ public:
             neighbour_search(other.neighbour_search),
             next_id(other.next_id),
             searchable(other.searchable),
-            track_ids(other.track_ids),
             seed(other.seed),
             id_to_index(id_to_index)
     {}
@@ -325,11 +336,11 @@ public:
     /// particles from \p first to \p last
     Particles(iterator first, iterator last):
         data(first,last),
-        neighbour_search(Vect3d(0,0,0),Vect3d(1,1,1),Vect3b(false,false,false),get_pos()),
         searchable(false),
-        track_ids(false),
         seed(0)
-    {}
+    {
+        if (searchable) embed_points(data.begin(),data.end());
+    }
 
 
     
@@ -338,23 +349,28 @@ public:
     //
     
     /// push the particle \p val to the back of the container
-    void push_back (const value_type& val) {
+    void push_back (const value_type& val, bool update_neighbour_search=true) {
         data.push_back(val);
-        if (searchable) neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
         const int index = data.size();
         iterator i = end()-1;
-        i->template set<position>(val.template get<position>());
-        i->template set<id>(this->next_id++);
-        i->m_generator.seed(i->template get<id>()+seed);
-        i->template set<alive>(true);
-        if (track_ids) id_to_index[i->template get<id>()] = index;
-        if (searchable) neighbour_search.add_point(i);
+        set<position>(i,get<position>(val));
+        set<id>(i,this->next_id++);
+        set<alive>(i,true);
+        if (searchable && update_neighbour_search) neighbour_search.add_points_at_end(data.begin(),data.end()-1,data.end());
     }
 
     /// push a new particle with position \p position
     /// to the back of the container
-    void push_back(const Vect3d& position) {
+    void push_back(const double_d& position) {
         this->push_back(value_type(position));
+    }
+
+    /// push the particles in \p particles to the back of the container
+    void push_back (const particles_type& particles) {
+        for (const value_type& i: particles) {
+            this->push_back(i,false);
+        }
+        if (searchable) neighbour_search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end());
     }
 
     /// pop (delete) the particle at the end of the container 
@@ -392,19 +408,17 @@ public:
     /// erase the particle pointed to by the iterator \p i.
     /// NOTE: This will potentially reorder the particles
     /// if neighbourhood searching is on, then this is updated
-    iterator erase (iterator i) {
+    iterator erase (iterator i, bool update_neighbour_search = true) {
         if (i != end()-1) {
             i->deep_copy(*(data.cend()-1));
-            if (track_ids) id_to_index[i->template get<id>()] = i-begin();
-            if (searchable) neighbour_search.copy_points(i,end()-1);
-            if (searchable) neighbour_search.delete_point(end()-1);
             data.pop_back();
             return i;
         } else {
-            if (searchable) neighbour_search.delete_point(end()-1);
             data.pop_back();
             return end();
         }
+
+        if (searchable && update_neighbour_search) neighbour_search.embed_points(get<position>().begin(),get<position>().end());
     }
 
 
@@ -413,8 +427,10 @@ public:
     /// \see erase(iterator)
     iterator erase (iterator first, iterator last) {
         for(iterator i=first;i!=last-1;i++) {
-            erase(i);
+            erase(i,false);
         }
+        iterator return_iterator = erase(last-1,false);
+        if (searchable) neighbour_search.embed_points(get<position>().begin(),get<position>().end());
         return erase(last-1);
     }
 
@@ -454,9 +470,9 @@ public:
     /// to each other than this length are considered neighbours
     /// \param periodic a boolean 3d vector indicating whether each dimension 
     /// is periodic (true) or not (false)
-    void init_neighbour_search(const Vect3d& low, const Vect3d& high, const double length_scale, const Vect3b& periodic) {
-        neighbour_search.reset(low,high,length_scale,periodic);
-        neighbour_search.embed_points(get<position>());
+    void init_neighbour_search(const double_d& low, const double_d& high, const double length_scale, const Vect3b& periodic) {
+        neighbour_search.set_domain(low,high,periodic,double_d(length_scale),periodic);
+        enforce_domain(neighbour_search.get_min(),neighbour_search.get_max(),neighbour_search.get_periodic());
         searchable = true;
     }
 
@@ -464,37 +480,40 @@ public:
     /// NOTE: you must call init_neighbour_search() before using this function
     /// \param position the centre of the search region
     /// \see init_neighbour_search
-    boost::iterator_range<typename NeighbourSearch_type::const_iterator> get_neighbours(const Vect3d position) {
+    boost::iterator_range<typename NeighbourSearch_type::const_iterator> get_neighbours(const double_d position) {
         ASSERT(searchable == true,"ERROR: using get_neighbours before initialising neighbour search. Please call the init_neighbour_search function before using get_neighbours");
         return boost::make_iterator_range(
                 neighbour_search.find_broadphase_neighbours(position, -1,false),
-                neighbour_search.end());
+                data.end());
     }
 
     /// set the length scale of the neighbourhood search to be equal to \p length_scale
     /// \see init_neighbour_search()
     void reset_neighbour_search(const double length_scale) {
-        neighbour_search.reset(neighbour_search.get_low(),neighbour_search.get_high(),length_scale,neighbour_search.get_periodic());
-        neighbour_search.embed_points(data.cbegin(),data.cend());
+        neighbour_search.set_domain(neighbour_search.get_min(),
+                                    neighbour_search.get_max(),
+                                    neighbour_search.get_periodic(),
+                                    double_d(length_scale));
+        neighbour_search.embed_points(get<position>().begin(),get<position>().end());
         searchable = true;
     }
 
     /// return the length scale of the neighbourhood search
     /// \see init_neighbour_search()
     const double get_lengthscale() const {
-        return neighbour_search.get_lengthscale();
+        return neighbour_search.get_bucket_side_length();
     }
 
     /// return the lower extent of the neighbourhood search
     /// \see init_neighbour_search()
-    const Vect3d& get_low() const {
-        return neighbour_search.get_low();
+    const double_d& get_min() const {
+        return neighbour_search.get_min();
     }
 
     /// return the upper extent of the neighbourhood search
     /// \see init_neighbour_search()
-    const Vect3d& get_high() const {
-        return neighbour_search.get_high();
+    const double_d& get_max() const {
+        return neighbour_search.get_max();
     }
 
     /// Update the neighbourhood search data. This function must be
@@ -504,71 +523,10 @@ public:
     /// \see get_neighbours()
     void update_positions() {
         if (searchable) {
-            enforce_domain(neighbour_search.get_low(),neighbour_search.get_high(),neighbour_search.get_periodic());
+            enforce_domain(neighbour_search.get_min(),neighbour_search.get_max(),neighbour_search.get_periodic());
         }
     }
 
-    /// Update the neighbourhood search data continuously while altering the particle
-    /// positions from \p b to \p e. This function iterates through the container from 
-    /// \p b to \p e and updates the position of each particle using \p f(). It then
-    /// refeshes the neighbourhood searching before moving onto the next particle.
-    /// \param f a functor that takes a reference to a particle value_type and returns
-    /// a new position for that particle
-    /// \see get_neighbours()
-    template<typename F>
-    void update_positions_sequential(iterator b, iterator e, F f) {
-        const Vect3d low = neighbour_search.get_low();
-        const Vect3d high = neighbour_search.get_high();
-        const Vect3b periodic = neighbour_search.get_periodic();
-        for(iterator i = b; i != e; i++) {
-            Vect3d& r = i->template get<position>();
-            r = f(*i);
-            for (int d = 0; d < 3; ++d) {
-                if (periodic[d]) {
-                    while (r[d]<low[d]) {
-                        r[d] += (high[d]-low[d]);
-                    }
-                    while (r[d]>=high[d]) {
-                        r[d] -= (high[d]-low[d]);
-                    }
-                } else {
-                    if ((r[d]<low[d]) || (r[d]>=high[d])) {
-                        i->template set<alive>(false);
-                    }
-                }
-            }
-            neighbour_search.update_point(i);
-        }
-    }
-
-    //
-    // ID Tracking
-    //
-
-    /// turn on or off id tracking
-    /// \see find_id(const int)
-    void set_track_ids(bool set) {
-        if (!track_ids && set) {
-            const int n = data.size();
-            for (int i = 0; i < n; ++i) {
-                id_to_index[data[i].id] = i;
-            }
-        } else if (!set) {
-            id_to_index.clear();
-        }
-    }
-
-    /// return a pointer to the particle with id==\p id
-    /// \return if the particle with id==\p id is within the container 
-    /// it returns a pointer to it, otherwise NULL
-    value_type* find_id(const int id) {
-        std::map<size_t,size_t>::iterator it = id_to_index.find(id);
-        if (it==id_to_index.end()) {
-            return NULL;
-        } else {
-            return &(data[*it]);
-        }
-    }
 
     //
     // Particle Creation/Deletion
@@ -582,10 +540,9 @@ public:
     void delete_particles(const bool update_neighbour_search = true) {
         for (int index = 0; index < data.size(); ++index) {
             typename vector_type::iterator i = data.begin() + index;
-            while (i->template get<alive>() == false) {
+            while (get<alive>(i) == false) {
                 if ((index < data.size()-1) && (data.size() > 1)) {
                     i->deep_copy(*(data.cend()-1));
-                    if (track_ids) id_to_index[i->template get<id>()] = index;
                     data.pop_back();
                     i = data.begin() + index;
                 } else {
@@ -597,25 +554,6 @@ public:
         if (searchable && update_neighbour_search) neighbour_search.embed_points(data.cbegin(),data.cend());
     }
 
-    /// Create \p n particles with a user-defined function that sets each 
-    /// particles position
-    /// \param n number of particles to create
-    /// \param f a functor that returns a Vect3d position
-    template<typename F>
-    void create_particles(const int n, F f) {
-        const int old_size = data.size();
-        data.resize(old_size+n);
-        if (searchable) neighbour_search.update_begin_and_end(data.cbegin(),data.cend());
-        int index = old_size;
-        for (auto i=data.begin()+old_size; i!=data.end();i++,index++) {
-            i->template set<id>(this->next_id++);
-            i->m_generator.seed(i->template get<id>()*seed);
-            i->template set<alive>(true);
-            i->template set<position>(f(*i));
-            if (track_ids) id_to_index[i->template get<id>()] = index;
-            if (searchable) neighbour_search.add_point(i);
-        }
-    }
 
     //
     // Vector getters/setters
@@ -696,7 +634,7 @@ public:
         for(auto& i: *this) {
             const int index = j++;
             //std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
-            const Vect3d &r = i.template get<position>();
+            const double_d &r = get<position>(i);
             points->SetPoint(index,r[0],r[1],r[2]);
             cells->InsertNextCell(1);
             cells->InsertCellPoint(index);
@@ -731,7 +669,7 @@ public:
             for (int j = 0; j < n; ++j) {
                 value_type particle;
                 const double *r = points->GetPoint(j);
-                particle.template set<position>(Vect3d(r[0],r[1],r[2]));
+                set<position>(particle,double_d(r[0],r[1],r[2]));
                 mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (read_into_tuple(particle.m_data,j,datas));
                 this->push_back(particle);
             }
@@ -749,10 +687,10 @@ private:
     /// or non-periodic (false)
     /// \param remove_deleted_particles if true, removes particles with alive==false from 
     /// the container (default = true)
-    void enforce_domain(const Vect3d& low, const Vect3d& high, const Vect3b& periodic, const bool remove_deleted_particles = true) {
+    void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
         std::for_each(begin(),end(),[low,high,periodic](value_type& i) {
-            Vect3d &r = i.template get<position>();
-            for (int d = 0; d < 3; ++d) {
+            double_d &r = get<position>(i);
+            for (unsigned int d = 0; d < dimension; ++d) {
                 if (periodic[d]) {
                     while (r[d]<low[d]) {
                         r[d] += (high[d]-low[d]);
@@ -762,7 +700,7 @@ private:
                     }
                 } else {
                     if ((r[d]<low[d]) || (r[d]>=high[d])) {
-                        i.template set<alive>(false);
+                        set<alive>(i,false);
                     }
                 }
             }
@@ -776,11 +714,12 @@ private:
 
 
     data_type data;
-    bool searchable,track_ids;
+    bool searchable;
     int next_id;
     const double seed;
-    spatial_type spatial;
     std::map<size_t,size_t> id_to_index;
+    BucketSearch<traits_type> bucket_search;
+
 
 #ifdef HAVE_VTK
     struct write_from_tuple {
@@ -796,7 +735,7 @@ private:
         }
 
         template< typename U >
-        typename boost::enable_if<boost::is_same<typename std::tuple_element<U::value,tuple_type>::type,Vect3d> >::type
+        typename boost::enable_if<boost::is_same<typename std::tuple_element<U::value,tuple_type>::type,double_d> >::type
         operator()(U i) {
             typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
             data_type &write_from_elem = std::get<U::value>(write_from);
@@ -823,7 +762,7 @@ private:
         }
 
         template< typename U >
-        typename boost::enable_if<boost::is_same<typename std::tuple_element<U::value,tuple_type>::type,Vect3d> >::type
+        typename boost::enable_if<boost::is_same<typename std::tuple_element<U::value,tuple_type>::type,double_d> >::type
         operator()(U i) {
             typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
             data_type &read_into_elem = std::get<U::value>(read_into);
@@ -852,7 +791,7 @@ private:
                 grid->GetPointData()->AddArray(datas[i]);
             }
             typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
-            if (boost::is_same<data_type, Vect3d>::value) {
+            if (boost::is_same<data_type, double_d>::value) {
                 datas[i]->SetNumberOfComponents(3);
             } else {
                 datas[i]->SetNumberOfComponents(1);
