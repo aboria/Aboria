@@ -42,7 +42,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 template<typename PTYPE, typename GTYPE, typename RNDGTYPE>
-void create_n_particles_with_rejection_sampling(const unsigned int n, PTYPE &particles, const GTYPE &generator_fun, const Vect3d &low, const Vect3d &high, RNDGTYPE &generator) {
+void create_n_particles_with_rejection_sampling(const unsigned int n, PTYPE &particles, const GTYPE &generator_fun, const Vector<double,3> &low, const Vector<double,3> &high, RNDGTYPE &generator) {
+
+    // assume 3d for now...
+    typedef Vector<double,3> Vect3d;
 
     std::uniform_real_distribution<double> uni(0,1);
     const Vect3d h = (high-low)/1000;
@@ -74,6 +77,10 @@ template<typename T>
 ptr<std::vector<double> > radial_distribution_function(ptr<Particles<T> > particles,
 							const double min, const double max,
 							const int n) {
+
+    // assume 3d for now...
+    typedef Vector<double,3> Vect3d;
+    
 	auto out = ptr<std::vector<double> >(new std::vector<double>());
 
 	out->resize(n,0);

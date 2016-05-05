@@ -40,12 +40,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Vector.h"
 #include "Geometry.h"
 #include "Ptr.h"
+#include "Variable.h"
 #include "Particles.h"
 #include "PrintTuple.h"
-#include "Utils.h"
 #include "DataVector.h"
 #include "Symbolic.h"
 #include "Functions.h"
-#include "Variable.h"
 
 #endif /* ABORIA_H_ */

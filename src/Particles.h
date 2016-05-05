@@ -37,9 +37,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef PARTICLES_H_
 #define PARTICLES_H_
 
-#include "BucketSearch2.h"
-#include "OctTree.h"
-#include "Vector.h"
 #include <vector>
 #include <random>
 #include <string>
@@ -48,16 +45,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 
-#include <boost/mpl/vector.hpp>
-#include <boost/mpl/find.hpp>
-#include <boost/mpl/for_each.hpp>
-#include <boost/mpl/range_c.hpp>
-namespace mpl = boost::mpl;
-
 #include "Zip.h"
+#include "Get.h"
 #include "Vector.h"
 #include "Variable.h"
-//#include "MyRandom.h"
+#include "Traits.h"
+#include "BucketSearch2.h"
+#include "OctTree.h"
 
 #ifdef HAVE_VTK
 #include <vtkUnstructuredGrid.h>
@@ -75,168 +69,6 @@ namespace mpl = boost::mpl;
 
 
 namespace Aboria {
-
-/// 
-/// helper class to find an element of mpl_type_vector from a Variable type T
-template<typename T, typename mpl_type_vector>
-struct elem_by_type {
-    typedef T type;
-    typedef typename T::value_type value_type;
-
-    /// 
-    /// iter is a boost mpl iterator to the found element in Variable T
-    typedef typename mpl::find<mpl_type_vector,T>::type iter;
-    BOOST_MPL_ASSERT_NOT(( boost::is_same< typename mpl::end<mpl_type_vector>::type, typename iter::type > ));
-
-    /// 
-    /// index contains the index of the found element
-    static const size_t index = iter::pos::value;
-};
-
-
-/// helper class to find an element of mpl_type_vector from an
-/// unsigned int index I
-template<unsigned int I, typename mpl_type_vector>
-struct elem_by_index {
-    BOOST_MPL_ASSERT_RELATION( (mpl::size<mpl_type_vector>::type::value), >, I );
-    typedef typename mpl::at<mpl_type_vector,mpl::int_<I> > type;
-
-    /// 
-    /// value_type is the variable's value_type at index I 
-    typedef typename type::value_type value_type;
-    static const size_t index = I;
-};
-
-
-template<template<typename,typename> class VECTOR>
-struct Traits {};
-
-template <>
-struct Traits<std::vector> {
-    template <typename T>
-    struct vector_type {
-        typedef std::vector<T> type;
-    };
-    template <typename ... TupleTypes >
-    struct tuple_type {
-        typedef std::tuple<TupleTypes...> type;
-    };
-    template <typename T>
-    struct zip_type {
-        typedef boost::zip_iterator<T> type;
-    };
-};
-
-#ifdef HAVE_THRUST
-template <>
-struct Traits<thrust::device_vector> {
-    template <typename T>
-    struct vector_type {
-        typedef thrust::device_vector<T> type;
-    };
-    template <typename ... TupleTypes >
-    struct tuple_type {
-        typedef trust::tuple<TupleTypes...> type;
-    };
-    template <typename T>
-    struct zip_type {
-        typedef thrust::zip_iterator<T> type;
-    };
-
-    };
-#endif
-
-template<typename ARG>
-struct unpack_tuple_types {};
-
-template <typename ... TYPES>
-struct unpack_tuple_types< std::tuple<TYPES...> > {
-    typedef mpl::vector<typename std::remove_reference<TYPES>::type...> mpl_type_vector;
-};
-
-
-//
-// Particle getters/setters
-//
-
-/// get a variable from a particle \p arg
-/// \param T Variable type
-/// \param arg the particle
-/// \return a const reference to a T::value_type holding the variable data
-template<typename T, typename value_type>
-const typename T::value_type & get(const value_type& arg) {
-    typedef typename unpack_tuple_types<value_type>::mpl_type_vector mpl_type_vector;
-    return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
-}
-
-/// get a variable from a particle \p arg
-/// \param T Variable type
-/// \param arg the particle
-/// \return a reference to a T::value_type holding the variable data
-template<typename T, typename value_type>
-typename T::value_type & get(value_type& arg) {
-    typedef typename unpack_tuple_types<value_type>::mpl_type_vector mpl_type_vector;
-    return std::get<elem_by_type<T,mpl_type_vector>::index>(arg);
-}
-
-/// set a variable attached to a particle \p arg
-/// \param T Variable type
-/// \param arg the particle
-/// \param data a reference to a T::value_type. This will be copied to
-/// the variable attached to particle \p arg
-template<typename T, typename value_type>
-void set(value_type& arg, const typename T::value_type & data) {
-    typedef typename unpack_tuple_types<value_type>::mpl_type_vector mpl_type_vector;
-    std::get<elem_by_type<T,mpl_type_vector>::index>(arg) = data;
-}
-
- 
-template<typename ARG,unsigned int D, typename TRAITS>
-struct TraitsCommon {};
-
-template <typename traits, unsigned int D, typename ... TYPES>
-struct TraitsCommon<std::tuple<TYPES...>,D,traits> {
-
-    const static unsigned int dimension = D;
-    typedef typename traits::template vector_type<Vector<double,D> >::type vector_double_d;
-    typedef typename traits::template vector_type<Vector<int,D> >::type vector_int_d;
-    typedef typename traits::template vector_type<Vector<bool,D> >::type vector_bool_d;
-    typedef typename traits::template vector_type<int>::type vector_int;
-    typedef typename traits::template vector_type<int>::type vector_unsigned_int;
-    typedef typename traits::template vector_type<Vect2i>::type vector_int2;
-
-
-    typedef std::tuple<TYPES...> variable_type;
-    typedef traits traits_type;
-    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
-    typedef typename traits::template tuple_type<
-                traits::template vector_type<position::value_type>::type::iterator,
-                traits::template vector_type<id::value_type>::type::iterator,
-                traits::template vector_type<alive::value_type>::type::iterator,
-                typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
-                 >::type tuple_of_iterators_type;
-    typedef typename traits::template tuple_type<
-                traits::template vector_type<position::value_type>::type::const_iterator,
-                traits::template vector_type<id::value_type>::type::const_iterator,
-                traits::template vector_type<alive::value_type>::type::const_iterator,
-                typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
-                 >::type tuple_of_const_iterators_type;
-
-    typedef typename traits::template zip_type<tuple_of_iterators_type>::type iterator;
-    typedef typename traits::template zip_type<tuple_of_const_iterators_type>::type const_iterator;
-
-    typedef typename traits::template tuple_type< 
-        position::value_type&,id::value_type&,alive::value_type&,typename TYPES::value_type&...
-                >::type value_type;
-
-    typedef typename traits::template tuple_type<
-                traits::template vector_type<position::value_type>::type::iterator,
-                traits::template vector_type<id::value_type>::type::iterator,
-                traits::template vector_type<alive::value_type>::type::iterator,
-                typename traits::template vector_type<typename TYPES::value_type>::type...
-                    >::type data_type;
-};
-
 
 /// \brief A STL-compatable container of particles in 3D space
 ///
@@ -264,7 +96,7 @@ template<typename VAR, unsigned int D=3, template <typename,typename> class VECT
 class Particles {
 public:
 
-    typedef Particles<VAR,VECTOR,traits> particles_type;
+    typedef Particles<VAR,D,VECTOR,TRAITS_USER> particles_type;
 
     typedef TraitsCommon<VAR,D,TRAITS_USER> traits_type;
 
@@ -288,24 +120,7 @@ public:
     /// const iterator type
     typedef typename traits_type::const_iterator const_iterator;
 
-    const static unsigned int dimension = traits::dimension;
-    typedef typename traits_type::vector_double_d vector_double_d;
-    typedef typename traits_type::vector_int_d vector_int_d;
-    typedef typename traits_type::vector_unsigned_int_d vector_unsigned_int_d;
-    typedef typename traits_type::vector_bool_d vector_bool_d;
-    typedef typename Vector<double,dimension> double_d;
-    typedef typename Vector<int,dimension> int_d;
-    typedef typename Vector<unsigned int,dimension> unsigned_int_d;
-    typedef typename Vector<bool,dimension> bool_d;
-    typedef typename traits_type::vector_int vector_int;
-    typedef typename traits_type::vector_unsigned_int vector_unsigned_int;
-    typedef typename traits_type::iterator particles_iterator;
-    typedef typename traits_type::const_iterator const_particles_iterator;
-    typedef typename traits_type::value_type particles_value_type;
-
-    ABORIA_VARIABLE(position,double_d,"position")
-    ABORIA_VARIABLE(alive,bool,"is alive")
-    ABORIA_VARIABLE(id,size_t,"id")
+    UNPACK_TRAITS(traits_type)
 
     /// Contructs an empty container with no searching or id tracking enabled
     Particles():
@@ -325,7 +140,7 @@ public:
     /// copy-constructor. performs deep copying of all particles
     Particles(const particles_type &other):
             data(other.data),
-            neighbour_search(other.neighbour_search),
+            bucket_search(other.bucket_search),
             next_id(other.next_id),
             searchable(other.searchable),
             seed(other.seed),
@@ -353,10 +168,10 @@ public:
         data.push_back(val);
         const int index = data.size();
         iterator i = end()-1;
-        set<position>(i,get<position>(val));
-        set<id>(i,this->next_id++);
-        set<alive>(i,true);
-        if (searchable && update_neighbour_search) neighbour_search.add_points_at_end(data.begin(),data.end()-1,data.end());
+        Aboria::set<position>(*i,get<position>(val));
+        Aboria::set<id>(*i,this->next_id++);
+        Aboria::set<alive>(*i,true);
+        if (searchable && update_neighbour_search) bucket_search.add_points_at_end(data.begin(),data.end()-1,data.end());
     }
 
     /// push a new particle with position \p position
@@ -370,7 +185,7 @@ public:
         for (const value_type& i: particles) {
             this->push_back(i,false);
         }
-        if (searchable) neighbour_search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end());
+        if (searchable) bucket_search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end());
     }
 
     /// pop (delete) the particle at the end of the container 
@@ -418,7 +233,7 @@ public:
             return end();
         }
 
-        if (searchable && update_neighbour_search) neighbour_search.embed_points(get<position>().begin(),get<position>().end());
+        if (searchable && update_neighbour_search) bucket_search.embed_points(get<position>().begin(),get<position>().end());
     }
 
 
@@ -430,7 +245,7 @@ public:
             erase(i,false);
         }
         iterator return_iterator = erase(last-1,false);
-        if (searchable) neighbour_search.embed_points(get<position>().begin(),get<position>().end());
+        if (searchable) bucket_search.embed_points(get<position>().begin(),get<position>().end());
         return erase(last-1);
     }
 
@@ -470,9 +285,9 @@ public:
     /// to each other than this length are considered neighbours
     /// \param periodic a boolean 3d vector indicating whether each dimension 
     /// is periodic (true) or not (false)
-    void init_neighbour_search(const double_d& low, const double_d& high, const double length_scale, const Vect3b& periodic) {
-        neighbour_search.set_domain(low,high,periodic,double_d(length_scale),periodic);
-        enforce_domain(neighbour_search.get_min(),neighbour_search.get_max(),neighbour_search.get_periodic());
+    void init_neighbour_search(const double_d& low, const double_d& high, const double length_scale, const bool_d& periodic) {
+        bucket_search.set_domain(low,high,periodic,double_d(length_scale),periodic);
+        enforce_domain(bucket_search.get_min(),bucket_search.get_max(),bucket_search.get_periodic());
         searchable = true;
     }
 
@@ -480,40 +295,40 @@ public:
     /// NOTE: you must call init_neighbour_search() before using this function
     /// \param position the centre of the search region
     /// \see init_neighbour_search
-    boost::iterator_range<typename NeighbourSearch_type::const_iterator> get_neighbours(const double_d position) {
+    boost::iterator_range<typename BucketSearch<traits_type>::const_iterator> get_neighbours(const double_d position) {
         ASSERT(searchable == true,"ERROR: using get_neighbours before initialising neighbour search. Please call the init_neighbour_search function before using get_neighbours");
         return boost::make_iterator_range(
-                neighbour_search.find_broadphase_neighbours(position, -1,false),
+                bucket_search.find_broadphase_neighbours(position, -1,false),
                 data.end());
     }
 
     /// set the length scale of the neighbourhood search to be equal to \p length_scale
     /// \see init_neighbour_search()
     void reset_neighbour_search(const double length_scale) {
-        neighbour_search.set_domain(neighbour_search.get_min(),
-                                    neighbour_search.get_max(),
-                                    neighbour_search.get_periodic(),
+        bucket_search.set_domain(bucket_search.get_min(),
+                                    bucket_search.get_max(),
+                                    bucket_search.get_periodic(),
                                     double_d(length_scale));
-        neighbour_search.embed_points(get<position>().begin(),get<position>().end());
+        bucket_search.embed_points(get<position>().begin(),get<position>().end());
         searchable = true;
     }
 
     /// return the length scale of the neighbourhood search
     /// \see init_neighbour_search()
     const double get_lengthscale() const {
-        return neighbour_search.get_bucket_side_length();
+        return bucket_search.get_bucket_side_length();
     }
 
     /// return the lower extent of the neighbourhood search
     /// \see init_neighbour_search()
     const double_d& get_min() const {
-        return neighbour_search.get_min();
+        return bucket_search.get_min();
     }
 
     /// return the upper extent of the neighbourhood search
     /// \see init_neighbour_search()
     const double_d& get_max() const {
-        return neighbour_search.get_max();
+        return bucket_search.get_max();
     }
 
     /// Update the neighbourhood search data. This function must be
@@ -523,7 +338,7 @@ public:
     /// \see get_neighbours()
     void update_positions() {
         if (searchable) {
-            enforce_domain(neighbour_search.get_min(),neighbour_search.get_max(),neighbour_search.get_periodic());
+            enforce_domain(bucket_search.get_min(),bucket_search.get_max(),bucket_search.get_periodic());
         }
     }
 
@@ -539,7 +354,7 @@ public:
     /// information if true (default=true)
     void delete_particles(const bool update_neighbour_search = true) {
         for (int index = 0; index < data.size(); ++index) {
-            typename vector_type::iterator i = data.begin() + index;
+            iterator i = data.begin() + index;
             while (get<alive>(i) == false) {
                 if ((index < data.size()-1) && (data.size() > 1)) {
                     i->deep_copy(*(data.cend()-1));
@@ -551,7 +366,7 @@ public:
                 }
             }
         }
-        if (searchable && update_neighbour_search) neighbour_search.embed_points(data.cbegin(),data.cend());
+        if (searchable && update_neighbour_search) bucket_search.embed_points(data.cbegin(),data.cend());
     }
 
 
@@ -559,11 +374,11 @@ public:
     // Vector getters/setters
     //
     template<typename T>
-    const typename traits::template vector_type<T::value_type> & get() {
+    const typename traits_type::template vector_type<T::value_type> & get() {
         return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
     }
     template<typename T>
-    typename traits::template vector_type<T::value_type> & get() {
+    typename traits_type::template vector_type<T::value_type> & get() {
         return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
     }
 
@@ -700,7 +515,7 @@ private:
                     }
                 } else {
                     if ((r[d]<low[d]) || (r[d]>=high[d])) {
-                        set<alive>(i,false);
+                    Aboria::set<alive>(i,false);
                     }
                 }
             }
@@ -708,7 +523,7 @@ private:
         if (remove_deleted_particles && ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))) {
             delete_particles();
         } else {
-            neighbour_search.embed_points(data.cbegin(),data.cend());
+            bucket_search.embed_points(data.cbegin(),data.cend());
         }
     }
 

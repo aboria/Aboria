@@ -44,28 +44,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CudaInclude.h"
 #include "Vector.h"
 #include "SpatialUtil.h"
-#include "Particles.h"
+#include "Get.h"
 
 namespace Aboria {
 
 template <typename traits>
 class BucketSearch {
-    const static unsigned int m_dimension = traits::dimension;
-    typedef typename traits::vector_double_d vector_double_d;
-    typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;
-    typedef typename traits::vector_int_d vector_int_d;
-    typedef typename traits::vector_unsigned_int_d vector_unsigned_int_d;
-    typedef typename traits::vector_bool_d vector_bool_d;
-    typedef Vector<double,m_dimension> double_d;
-    typedef Vector<int,m_dimension> int_d;
-    typedef Vector<unsigned int,m_dimension> unsigned_int_d;
-    typedef Vector<bool,m_dimension> bool_d;
-    typedef typename traits::vector_int vector_int;
-    typedef typename traits::vector_unsigned_int vector_unsigned_int;
-    typedef typename vector_unsigned_int::iterator vector_unsigned_int_iterator;
-    typedef typename traits::iterator particles_iterator;
-    typedef typename traits::const_iterator const_particles_iterator;
-    typedef typename traits::value_type particles_value_type;
+    UNPACK_TRAITS(traits)
 
 public:
 
@@ -78,8 +63,8 @@ public:
     void embed_points(particles_iterator &begin, particles_iterator& end) {
         m_particles_begin = begin;
         m_particles_end = end;
-        m_positions_begin = get<0>(m_particles_begin);
-        m_positions_end = get<0>(m_particles_end);
+        m_positions_begin = std::get<0>(m_particles_begin);
+        m_positions_end = std::get<0>(m_particles_end);
 
         CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
@@ -90,6 +75,9 @@ public:
         build_buckets();
     }
 
+
+    void add_points_at_end(particles_iterator &begin, particles_iterator &start_adding, particles_iterator &end);
+
     /// return a const forward iterator to all the points in the neighbourhood of \p r. If 
     /// this function is being used to find all the point pairs within the same point container, then
     /// a naive looping through and using find_broadphase_neighbours() will find each pair twice. 
@@ -97,6 +85,7 @@ public:
     const_iterator find_broadphase_neighbours(const double_d& r, 
                                               const int my_index, 
                                               const bool self) const;
+
 
     void set_domain(double_d &min_in, double_d &max_in, bool_d&periodic_in, double_d& side_length) {
         LOG(2,"BucketSearch: set_domain:");
@@ -121,12 +110,6 @@ public:
     const double_d& get_side_length() const { return m_bucket_side_length; }
     const double_d& get_periodic() const { return m_periodic; }
 
-    /// add a singular point to the buckets. Note that it is assumed that this is 
-    /// also added to the end of the container holding the points
-    /// \param point_to_add an iterator pointing to the point to add
-	void add_point_at_end(particles_iterator &begin, particles_iterator &end);
-
-
 
 private:
     void build_buckets();
@@ -140,7 +123,7 @@ private:
 	inline unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
         unsigned int index = vindex[0];
         unsigned int multiplier = 1.0;
-        for (int i=1; i<m_dimension; i++) {
+        for (int i=1; i<dimension; i++) {
             multiplier *= m_size[i];
 		    ASSERT((vindex[i] > 0) && (vindex[i] < m_size[i]), "index is outside of dimension "<<i<<": "<<vindex);
             index += multiplier*vindex[i];
@@ -155,7 +138,7 @@ private:
         // find the raster indices of p's bucket
         unsigned int index = (r[0]-m_bounds.min[0])/m_bucket_side_length[0];
         unsigned int multiplier = 1.0;
-        for (int i=1; i<m_dimension; i++) {
+        for (int i=1; i<dimension; i++) {
             multiplier *= m_size[i];
             const unsigned int raster_d = (r[i]-m_bounds.min[i])/m_bucket_side_length[i];
 		    ASSERT((raster_d > 0) && (raster_d < m_size[i]), "position is outside of dimension "<<i<<": "<<r);
@@ -181,7 +164,7 @@ private:
     bool_d m_periodic;
     double_d m_bucket_side_length; 
     unsigned_int_d m_size;
-    bbox<m_dimension> m_bounds;
+    bbox<dimension> m_bounds;
 
     // the grid data structure keeps a range per grid bucket:
     // each bucket_begin[i] indexes the first element of bucket i's list of points
@@ -220,15 +203,15 @@ template <typename traits>
 void BucketSearch<traits>::build_buckets() {
 
     // find the beginning of each bucket's list of points
-    counting_iterator<unsigned int> search_begin(0);
-    lower_bound(m_bucket_indices.begin(),
+    extra_iterators::counting_iterator<unsigned int> search_begin(0);
+    astd::lower_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
             search_begin + m_size.prod(),
             m_bucket_begin.begin());
 
     // find the end of each bucket's list of points
-    upper_bound(m_bucket_indices.begin(),
+    astd::upper_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
             search_begin + m_size.prod(),
@@ -237,17 +220,17 @@ void BucketSearch<traits>::build_buckets() {
 
 
 template <typename traits>
-void BucketSearch<traits>add_points_at_end(particles_iterator &begin, particles_iterator &start_adding, particles_iterator &end) {
+void BucketSearch<traits>::add_points_at_end(particles_iterator &begin, particles_iterator &start_adding, particles_iterator &end) {
     m_particles_begin = begin;
     m_particles_end = end;
-    m_positions_begin = get<0>(m_particles_begin);
-    m_positions_end = get<0>(m_particles_end);
+    m_positions_begin = std::get<0>(m_particles_begin);
+    m_positions_end = std::get<0>(m_particles_end);
 
     CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
     const unsigned int dist = distance(start_adding,end);
-    vector_double_d::iterator positions_start_adding = m_positions_end - dist;
-    vector_unsigned_int::iterator bucket_indices_start_adding = m_bucket_indices.end() - dist;
+    vector_double_d_const_iterator positions_start_adding = m_positions_end - dist;
+    vector_unsigned_int_iterator bucket_indices_start_adding = m_bucket_indices.end() - dist;
     build_bucket_indices(positions_start_adding,m_positions_end,bucket_indices_start_adding);
     sort_by_bucket_index();
     build_buckets();
@@ -255,7 +238,7 @@ void BucketSearch<traits>add_points_at_end(particles_iterator &begin, particles_
 
 
 template <typename traits>
-BucketSearch<traits>::const_particles_iterator
+typename BucketSearch<traits>::const_iterator
 BucketSearch<traits>::find_broadphase_neighbours(
         const double_d& r, 
         const int my_index, 
@@ -264,14 +247,14 @@ BucketSearch<traits>::find_broadphase_neighbours(
     const unsigned int my_bucket = point_to_bucket_index(r);
     const_particles_iterator search_iterator(this,r);
     int_d bucket_offset(-1);
-    constexpr unsigned int last_d = m_dimension-1;
+    constexpr unsigned int last_d = dimension-1;
     bool still_going = true;
     while (still_going) {
         unsigned_int_d other_bucket = my_bucket + bucket_offset; 
 
         // handle end cases
         double_d transpose(0);
-        for (int i=0; i<m_dimension; i++) {
+        for (int i=0; i<dimension; i++) {
             if (other_bucket[i] == std::numeric_limits<unsigned int>::max()) {
                 if (m_periodic[i]) {
                     other_bucket[i] = m_size[i]-1;
@@ -290,11 +273,11 @@ BucketSearch<traits>::find_broadphase_neighbours(
             }
         }
 
-        const unsigned_int other_bucket_index = collapse_index_vector(other_bucket);
+        const unsigned int other_bucket_index = collapse_index_vector(other_bucket);
         search_iterator.add_range(m_bucket_begin[other_bucket_index],m_bucket_end[other_bucket_index],transpose);
 
         // go to next candidate bucket
-        for (int i=0; i<m_dimension; i++) {
+        for (int i=0; i<dimension; i++) {
             bucket_offset[i]++;
             if (bucket_offset[i] <= 1) break;
             if (i == last_d) still_going = false;
@@ -335,7 +318,7 @@ public:
     }
 
     reference dereference() const { 
-        return std::tie(bucket_sort->begin_iterator[*m_node],dx); 
+        return std::tie(*m_node,m_dx); 
     }
 
     bool go_to_next_candidate() {
@@ -357,11 +340,11 @@ public:
         while (!found_good_candidate && go_to_next_candidate()) {
 
             const double_d p = get<position>(m_node) + m_transpose[m_current_index];
-            dx = p - m_r;
+            m_dx = p - m_r;
 
             bool outside = false;
-            for (int i=0; i < m_dimension; i++) {
-                if (std::abs(dx[i]) < bucket_sort->m_bucket_side_length[i]) {
+            for (int i=0; i < dimension; i++) {
+                if (std::abs(m_dx[i]) < m_bucket_sort->m_bucket_side_length[i]) {
                     outside = true;
                     break;
                 } 

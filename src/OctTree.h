@@ -50,26 +50,24 @@ namespace Aboria {
 
 template <typename traits>
 class OctTree {
-    typedef typename traits::template vector_type<Vect3d>::type vector_Vect3d;
-    typedef typename traits::template vector_type<int>::type vector_int;
-    typedef typename traits::template vector_type<Vect2i>::type vector_int2;
+    UNPACK_TRAITS(traits)
 
 public:
     OctTree() {};
 
-    void embed_points(vector_Vect3d& points);
+    void embed_points(vector_double_d& points);
 
-    //void get_neighbours(const Vect3d &centre_point, const double radius, std::vector<range> &neighbours);
+    //void get_neighbours(const double_d &centre_point, const double radius, std::vector<range> &neighbours);
 
     //template<typename targets_traits, typename F>
     //void evaluate_kernel_fmm(targets_traits::iterator targets_begin, targets_traits::iterator targets_end, F &functor);
 
-    void set_domain(Vect3d &min_in, Vect3d &max_in, Vect3b &periodic_in) {
+    void set_domain(double_d &min_in, double_d &max_in, bool_d &periodic_in) {
         bounds.bmin = min_in;
         bounds.bmax = max_in;
         periodic = periodic_in;
     }
-    void get_domain(Vect3d &min_out, Vect3d &max_out, Vect3b &periodic_out) {
+    void get_domain(double_d &min_out, double_d &max_out, bool_d &periodic_out) {
         min_out = bounds.bmin;
         max_out = bounds.bmax;
         periodic_out = periodic;
@@ -94,18 +92,18 @@ private:
     int max_points;
     int max_level;
     int threshold;
-    Vect3b periodic;
+    bool_d periodic;
 
     vector_int tags;
     vector_int nodes;
     vector_int indices;
-    bbox bounds;
+    bbox<dimension> bounds;
     vector_int2 &leaves;
 };
 
 
 template <typename traits>
-void OctTree<traits>::embed_points(vector_Vect3d& points) {
+void OctTree<traits>::embed_points(vector_double_d& points) {
 
     const int num_points = points.size();
 
@@ -118,7 +116,7 @@ void OctTree<traits>::embed_points(vector_Vect3d& points) {
      * 2. Compute bounding box                *
      ******************************************/
 
-    bbox points_bounds = reduce(points.begin(), points.end(), bbox(), plus<bbox>());
+    bbox<dimension> points_bounds = reduce(points.begin(), points.end(), bbox<dimension>(), astd::plus<bbox<dimension> >());
     assert(points_bounds < bounds);
 
     /******************************************
@@ -182,8 +180,8 @@ void OctTree<traits>::build_tree() {
 
     upper_bound(tags.begin(),
                       tags.end(),
-                      make_transform_iterator(children.begin(), _1 + length),
-                      make_transform_iterator(children.end(), _1 + length),
+                      make_transform_iterator(children.begin(), lambda::_1 + length),
+                      make_transform_iterator(children.end(), lambda::_1 + length),
                       upper_bounds.begin());
 
 
@@ -213,7 +211,7 @@ void OctTree<traits>::build_tree() {
                                    nodes_on_this_level.begin(), 
                                    is_a<NODE>(), 
                                    0, 
-                                   plus<int>());
+                                   astd::plus<int>());
   
     // Enumerate leaves at this level
     transform_exclusive_scan(child_node_kind.begin(), 
@@ -221,7 +219,7 @@ void OctTree<traits>::build_tree() {
                                    leaves_on_this_level.begin(), 
                                    is_a<LEAF>(), 
                                    0, 
-                                   plus<int>());
+                                   astd::plus<int>());
 
     int num_nodes_on_this_level = nodes_on_this_level.back() + (child_node_kind.back() == NODE ? 1 : 0);
     int num_leaves_on_this_level = leaves_on_this_level.back() + (child_node_kind.back() == LEAF ? 1 : 0);
@@ -286,15 +284,15 @@ void OctTree<traits>::build_tree() {
 // Classify a point with respect to the bounding box.
 template <typename traits>
 struct OctTree<traits>::classify_point {
-    bbox box;
+    bbox<dimension> box;
     int max_level;
 
     // Create the classifier
-    classify_point(const bbox &b, int lvl) : box(b), max_level(lvl) {}
+    classify_point(const bbox<dimension> &b, int lvl) : box(b), max_level(lvl) {}
 
     // Classify a point
     inline CUDA_HOST_DEVICE
-        int operator()(const Vect3d &p) { return point_to_tag(p, box, max_level); }
+        int operator()(const double_d &p) { return point_to_tag(p, box, max_level); }
 };
 
 
@@ -376,7 +374,7 @@ struct OctTree<traits>::write_nodes {
 
 template <typename traits>
 struct OctTree<traits>::make_leaf {
-    typedef Vect2i result_type;
+    typedef int2 result_type;
     template <typename tuple_type>
         inline CUDA_HOST_DEVICE
         result_type operator()(const tuple_type &t) const

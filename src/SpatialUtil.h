@@ -1,3 +1,7 @@
+
+#ifndef SPATIAL_UTIL_H_ 
+#define SPATIAL_UTIL_H_ 
+
 #include "CudaInclude.h"
 #include "Vector.h"
 
@@ -312,3 +316,4 @@ void print_leaves(const Vector &leaves)
 }
 
 }
+#endif //SPATIAL_UTIL_H_ 

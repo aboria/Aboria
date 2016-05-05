@@ -262,7 +262,11 @@ namespace Aboria {
         // expression, and combines the result.
         template<typename ParticlesType1, typename ParticlesType2>
         struct TwoParticleCtx {
-            TwoParticleCtx(const Vect3d& dx, const typename ParticlesType1::value_type& particle1, const typename ParticlesType2::value_type& particle2)
+
+            typedef typename ParticlesType1::position position;
+            typedef typename position::value_type position_value_type;
+
+            TwoParticleCtx(const position_value_type& dx, const typename ParticlesType1::value_type& particle1, const typename ParticlesType2::value_type& particle2)
                     : dx_(dx),particle1_(particle1),particle2_(particle2)
             {}
 
@@ -324,7 +328,7 @@ namespace Aboria {
             struct eval<Expr, proto::tag::terminal, 
                 typename boost::enable_if<proto::matches<Expr, proto::terminal<dx> > >::type 
             > {
-                typedef const Vect3d& result_type;
+                typedef const position_value_type& result_type;
 
                 result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const {
                     return ctx.dx_;
@@ -347,7 +351,7 @@ namespace Aboria {
 
             const typename ParticlesType1::value_type& particle1_;
             const typename ParticlesType2::value_type& particle2_;
-            const Vect3d& dx_;
+            const position_value_type& dx_;
 
         };
 
@@ -418,6 +422,9 @@ namespace Aboria {
         // expression, and combines the result.
         template<typename ParticlesType>
         struct ParticleCtx {
+                typedef typename ParticlesType::position position;
+                typedef typename position::value_type position_value_type;
+
                 ParticleCtx(const typename ParticlesType::value_type& particle)
                     : particle_(particle)
                 {}
@@ -493,7 +500,7 @@ namespace Aboria {
                         >
                         {
 
-                            typedef Vect3d result_type;
+                            typedef position_value_type result_type;
 
                             result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
                             {
@@ -502,7 +509,7 @@ namespace Aboria {
                                 typedef typename proto::result_of::value<geometry_functor_terminal_type>::type geometry_functor_type;
                                 typedef typename geometry_functor_type::result_type geometry_type;
                                 geometry_expr_type geometry_expr = proto::child_c<1>(expr);
-                                Vect3d vector = proto::eval(proto::child_c<0>(expr),ctx);
+                                position_value_type vector = proto::eval(proto::child_c<0>(expr),ctx);
                                 typedef typename proto::result_of::child_c<geometry_expr_type,1>::type label_expr_type;
                                 typedef typename proto::result_of::child_c<geometry_expr_type,2>::type arg1_expr_type;
                                 typedef typename boost::result_of<LabelGrammar(label_expr_type)>::type particles_type_ref;
@@ -519,7 +526,7 @@ namespace Aboria {
                                         TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
                                         geometry_type geometry(vector-ctx2.dx_,proto::eval(arg1_expr,ctx2),true);
                                         //std::cout <<"result of evaluating geometry is "<<geometry<<std::endl;
-                                        if (reflect_once(Vect3d(0,0,0),vector,geometry)) 
+                                        if (reflect_once(position_value_type(0),vector,geometry)) 
                                         {
                                             keep_going = true;
                                         }
@@ -592,6 +599,7 @@ namespace Aboria {
         template<typename Expr>
         struct SymbolicExpr
             : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain> {
+
                 explicit SymbolicExpr(Expr const &expr)
                     : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr)
                 {}
@@ -607,7 +615,7 @@ namespace Aboria {
                     }
                 template<typename ParticleType1, typename ParticleType2>
                     typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
-                    eval( const Vect3d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const
+                    eval( const typename ParticleType1::double_d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const
                     {
                         TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
                         return proto::eval(*this, ctx);
@@ -694,7 +702,7 @@ namespace Aboria {
                 }
                 template<typename ParticleType1, typename ParticleType2>
                 typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
-                eval( const Vect3d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const {
+                eval( const typename ParticleType1::double_d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const {
                     TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
                     return proto::eval(*this, ctx);
                 }
