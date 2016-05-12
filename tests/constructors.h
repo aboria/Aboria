@@ -49,25 +49,42 @@ class ConstructorsTest : public CxxTest::TestSuite {
 public:
     void testOneDouble(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	Particles<scalar> test;
+        typedef std::tuple<scalar> variables_type;
+    	Particles<variables_type> test;
     }
 
     void testOneVect3d(void) {
-        ABORIA_VARIABLE(vector,Vect3d,"vector")
-    	Particles<vector> test;
+        ABORIA_VARIABLE(vector,double3,"vector")
+        typedef std::tuple<vector> variables_type;
+    	Particles<variables_type> test;
     }
 
     void testNoData(void) {
     	Particles<> test;
     }
 
+    void testDimension(void) {
+        ABORIA_VARIABLE(scalar,double,"scalar")
+        typedef std::tuple<scalar> variable_type;
+    	Particles<variable_type,8> test8d;
+    	Particles<variable_type,7> test7d;
+    	Particles<variable_type,6> test6d;
+    	Particles<variable_type,5> test5d;
+    	Particles<variable_type,4> test4d;
+    	Particles<variable_type,3> test3d;
+    	Particles<variable_type,2> test2d;
+    	Particles<variable_type,1> test1d;
+    }
+
+
     void testMultiple(void) {
-        ABORIA_VARIABLE(vector,Vect3d,"vector")
+        ABORIA_VARIABLE(vector,double3,"vector")
         ABORIA_VARIABLE(var1,double,"var1")
         ABORIA_VARIABLE(var2,int,"var2")
         ABORIA_VARIABLE(var3,unsigned int,"var3")
         ABORIA_VARIABLE(var4,bool,"var4")
-    	Particles<vector,var1,var2,var3,var4> test;
+        typedef std::tuple<vector,var1,var2,var3,var4> variables_type;
+    	Particles<variables_type> test;
     }
 
 };

@@ -92,7 +92,7 @@ namespace Aboria {
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VAR, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, typename TRAITS_USER=Traits<VECTOR> > 
+template<typename VAR=std::tuple<>, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, typename TRAITS_USER=Traits<VECTOR> > 
 class Particles {
 public:
 
@@ -108,6 +108,8 @@ public:
     /// 
     /// a tuple type containing a list of references to value_types for each Variable
     typedef typename traits_type::value_type value_type;
+
+    typedef typename traits_type::reference reference;
 
    
     /// type used to hold data (tuple of vectors or similar)
@@ -154,7 +156,7 @@ public:
         searchable(false),
         seed(0)
     {
-        if (searchable) embed_points(data.begin(),data.end());
+        if (searchable) embed_points(begin(),end());
     }
 
 
@@ -165,13 +167,13 @@ public:
     
     /// push the particle \p val to the back of the container
     void push_back (const value_type& val, bool update_neighbour_search=true) {
-        data.push_back(val);
-        const int index = data.size();
+        traits_type::push_back(data,val);
+        const int index = size();
         iterator i = end()-1;
-        Aboria::set<position>(*i,get<position>(val));
+        Aboria::set<position>(*i,Aboria::get<position>(val));
         Aboria::set<id>(*i,this->next_id++);
         Aboria::set<alive>(*i,true);
-        if (searchable && update_neighbour_search) bucket_search.add_points_at_end(data.begin(),data.end()-1,data.end());
+        if (searchable && update_neighbour_search) bucket_search.add_points_at_end(begin(),end()-1,end());
     }
 
     /// push a new particle with position \p position
@@ -194,30 +196,31 @@ public:
     }
 
     /// returns a reference to the particle at position \p idx
-    value_type& operator[](std::size_t idx) {
-        return data[idx];
+    value_type operator[](std::size_t idx) {
+        return traits_type::index(data, idx);
     }
 
+    /*
     /// returns a const reference to the particle at position \p idx
-    const value_type& operator[](std::size_t idx) const {
-        return const_cast<value_type>(*this)[idx];
+    const_value_type operator[](std::size_t idx) const {
+        return traits_type::index_const(data, idx);
     }
+    */
 
     /// returns an iterator to the beginning of the container
     iterator begin() {
-        return data.begin();
+        return traits_type::begin(data);
     }
 
     /// returns an iterator to the end of the container
     iterator end() {
-        return data.end();
+        return traits_type::end(data);
     }
 
-    
 
     /// sets container to empty and deletes all particles
     void clear() {
-        data.clear();
+        return traits_type::clear(data);
     }
 
     /// erase the particle pointed to by the iterator \p i.
@@ -225,15 +228,15 @@ public:
     /// if neighbourhood searching is on, then this is updated
     iterator erase (iterator i, bool update_neighbour_search = true) {
         if (i != end()-1) {
-            i->deep_copy(*(data.cend()-1));
-            data.pop_back();
+            *i = *(end()-1);
+            traits_type::pop_back(data);
             return i;
         } else {
-            data.pop_back();
+            traits_type::pop_back(data);
             return end();
         }
 
-        if (searchable && update_neighbour_search) bucket_search.embed_points(get<position>().begin(),get<position>().end());
+        if (searchable && update_neighbour_search) bucket_search.embed_points(begin(),end());
     }
 
 
@@ -245,29 +248,30 @@ public:
             erase(i,false);
         }
         iterator return_iterator = erase(last-1,false);
-        if (searchable) bucket_search.embed_points(get<position>().begin(),get<position>().end());
+        if (searchable) bucket_search.embed_points(begin(),end());
         return erase(last-1);
     }
 
     /// insert a particle \p val into the container at \p position
     iterator insert (iterator position, const value_type& val) {
-        data.insert(position,val);
+        traits_type::insert(data,position,val);
     }
 
     /// insert a \p n copies of the particle \p val into the container at \p position
     void insert (iterator position, size_type n, const value_type& val) {
-        data.insert(position,n,val);
+        traits_type::insert(data,position,n,val);
     }
 
     /// insert a range of particles pointed to by \p first and \p last at \p position 
     template <class InputIterator>
     void insert (iterator position, InputIterator first, InputIterator last) {
+        traits_type::insert(data,position,first,last);
         data.insert(position,first,last);
     }
 
     /// return the total number of particles in the container
     size_t size() const {
-        return data.size();
+        return this->get<position>().size();
     }
 
 
@@ -309,7 +313,7 @@ public:
                                     bucket_search.get_max(),
                                     bucket_search.get_periodic(),
                                     double_d(length_scale));
-        bucket_search.embed_points(get<position>().begin(),get<position>().end());
+        bucket_search.embed_points(begin(),end());
         searchable = true;
     }
 
@@ -366,7 +370,7 @@ public:
                 }
             }
         }
-        if (searchable && update_neighbour_search) bucket_search.embed_points(data.cbegin(),data.cend());
+        if (searchable && update_neighbour_search) bucket_search.embed_points(begin(),end());
     }
 
 
@@ -374,12 +378,8 @@ public:
     // Vector getters/setters
     //
     template<typename T>
-    const typename traits_type::template vector_type<T::value_type> & get() {
-        return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
-    }
-    template<typename T>
-    typename traits_type::template vector_type<T::value_type> & get() {
-        return std::get<elem_by_type<T,mpl_type_vector>::index>(data);
+    const typename TRAITS_USER::template vector_type<typename T::value_type>::type & get() const {
+        return data.get<T>();
     }
 
 private:
@@ -523,7 +523,7 @@ private:
         if (remove_deleted_particles && ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))) {
             delete_particles();
         } else {
-            bucket_search.embed_points(data.cbegin(),data.cend());
+            bucket_search.embed_points(begin(),end());
         }
     }
 

@@ -685,6 +685,11 @@ namespace Aboria {
             : proto::extends<SUBSCRIPT_TYPE, SymbolicExpr<SUBSCRIPT_TYPE>, SymbolicDomain> {
                 typedef SUBSCRIPT_TYPE Expr;
 
+                typedef typename ParticlesType::position position;
+                typedef typename ParticlesType::id id;
+                typedef typename ParticlesType::alive alive;
+
+
         #undef SUBSCRIPT_TYPE
 
                 explicit SymbolicExpr(Expr const &expr)

@@ -147,7 +147,8 @@ namespace Aboria {
 	{
 		typedef double result_type;
 
-		result_type operator()(const Vect3d& vector) const
+        template<typename T,unsigned int N>
+		result_type operator()(const Vector<T,N>& vector) const
 		{
 			return vector.norm();
 		}
@@ -161,7 +162,8 @@ namespace Aboria {
 	{
 		typedef double result_type;
 
-		result_type operator()(const Vect3d& vector1, const Vect3d& vector2) const
+        template<typename T,unsigned int N>
+		result_type operator()(const Vector<T,N>& vector1, const Vector<T,N>& vector2) const
 		{
 			return vector1.dot(vector2);
 		}
@@ -202,6 +204,7 @@ namespace Aboria {
     template< typename T >
 	struct reflect_fun
 	{
+        typedef Vector<double,3> Vect3d;
 		typedef Vect3d result_type;
 
 		result_type operator()(const Vect3d& from, const Vect3d& to, const T geometry) const

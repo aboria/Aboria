@@ -60,15 +60,15 @@ public:
 
     BucketSearch() {};
 
-    void embed_points(particles_iterator &begin, particles_iterator& end) {
+    void embed_points(particles_iterator begin, particles_iterator end) {
         m_particles_begin = begin;
         m_particles_end = end;
-        m_positions_begin = std::get<0>(m_particles_begin);
-        m_positions_end = std::get<0>(m_particles_end);
+        m_positions_begin = get<position>(m_particles_begin);
+        m_positions_end = get<position>(m_particles_end);
 
         CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-        m_bucket_indices.resize(distance(m_particles_begin,m_particles_end));
+        m_bucket_indices.resize(m_particles_begin-m_particles_end);
 
         build_bucket_indices(m_positions_begin,m_positions_end,m_bucket_indices.begin());
         sort_by_bucket_index();
@@ -76,7 +76,7 @@ public:
     }
 
 
-    void add_points_at_end(particles_iterator &begin, particles_iterator &start_adding, particles_iterator &end);
+    void add_points_at_end(const particles_iterator &begin, const particles_iterator &start_adding, const particles_iterator &end);
 
     /// return a const forward iterator to all the points in the neighbourhood of \p r. If 
     /// this function is being used to find all the point pairs within the same point container, then
@@ -157,10 +157,10 @@ private:
         }
     };
 
-    particles_iterator& m_particles_begin;
-    particles_iterator& m_particles_end;
-    vector_double_d_const_iterator& m_positions_begin;
-    vector_double_d_const_iterator& m_positions_end;
+    particles_iterator m_particles_begin;
+    particles_iterator m_particles_end;
+    vector_double_d_const_iterator m_positions_begin;
+    vector_double_d_const_iterator m_positions_end;
     bool_d m_periodic;
     double_d m_bucket_side_length; 
     unsigned_int_d m_size;
@@ -220,15 +220,15 @@ void BucketSearch<traits>::build_buckets() {
 
 
 template <typename traits>
-void BucketSearch<traits>::add_points_at_end(particles_iterator &begin, particles_iterator &start_adding, particles_iterator &end) {
+void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, const particles_iterator &start_adding, const particles_iterator &end) {
     m_particles_begin = begin;
     m_particles_end = end;
-    m_positions_begin = std::get<0>(m_particles_begin);
-    m_positions_end = std::get<0>(m_particles_end);
+    m_positions_begin = get<position>(m_particles_begin);
+    m_positions_end = get<position>(m_particles_end);
 
     CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-    const unsigned int dist = distance(start_adding,end);
+    const size_t dist = start_adding-end;
     vector_double_d_const_iterator positions_start_adding = m_positions_end - dist;
     vector_unsigned_int_iterator bucket_indices_start_adding = m_bucket_indices.end() - dist;
     build_bucket_indices(positions_start_adding,m_positions_end,bucket_indices_start_adding);
