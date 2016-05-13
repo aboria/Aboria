@@ -6,7 +6,9 @@
 #include <boost/mpl/find.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/range_c.hpp>
-#include "boost/tuple/tuple.hpp"
+#include <boost/iterator/iterator_facade.hpp>
+#include <tuple>
+
 
 namespace Aboria {
 
@@ -81,127 +83,109 @@ struct unpack_tuple_types< boost::tuple<TYPES...> > {
 */
 
 template <typename tuple_type, typename mpl_vector_type> 
-struct value_type {
-        typedef mpl_vector_type mpl_type_vector;
-        template <typename T>
-        using elem_by_type = elem_by_type<T,mpl_type_vector>;
-        template <typename T>
-        using return_type = element<elem_by_type<T>::index,tuple_type>;
+struct getter_type {
+    typedef mpl_vector_type mpl_type_vector;
+    template <typename T>
+    using elem_by_type = elem_by_type<T,mpl_type_vector>;
+    template <typename T>
+    using return_type = element<elem_by_type<T>::index,tuple_type>;
 
-        value_type() {}
-        value_type(const tuple_type& data):data(data) {}
+    getter_type() {}
+    getter_type(const tuple_type& data):data(data) {}
 
-        template<typename T>
-        typename return_type<T>::type get() const {
-            return data.template get<elem_by_type<T>::index>();
-        }
+    template<typename T>
+    typename return_type<T>::type get() const {
+        return std::get<elem_by_type<T>::index>(data);        
+    }
 
-        const tuple_type & get_tuple() const { return data; }
-        tuple_type & get_tuple() { return data; }
-                
-        tuple_type data;
+    const tuple_type & get_tuple() const { return data; }
+    tuple_type & get_tuple() { return data; }
+            
+    tuple_type data;
 };
 
-template <typename tuple_type, typename mpl_vector_type> 
-struct reference_type {
-        typedef mpl_vector_type mpl_type_vector;
-        template <typename T>
-        using elem_by_type = elem_by_type<T,mpl_type_vector>;
-        template <typename T>
-        using return_type = element<elem_by_type<T>::index,tuple_type>;
 
-        reference_type() {}
-        reference_type(tuple_type data):data(data) {}
+template <typename iterator_tuple_type, typename value_type, typename reference_type, typename mpl_vector_type>
+class zip_iterator: public boost::iterator_facade<zip_iterator<iterator_tuple_type,value_type,reference_type,mpl_vector_type>,
+    value_type,
+    boost::random_access_traversal_tag,
+    reference_type> {
 
-        template<typename T>
-        typename return_type<T>::type get() const {
-            return data.template get<elem_by_type<T>::index>();
-        }
-
-        const tuple_type & get_tuple() const { return data; }
-        tuple_type & get_tuple() { return data; }
-                
-        tuple_type data;
-};
-
-template <typename zip_type, typename iterator_tuple_type, typename reference_type, typename mpl_vector_type>
-struct zip_iterator {
-    typedef zip_iterator<zip_type,iterator_tuple_type,reference_type,mpl_vector_type> my_type;
     typedef mpl_vector_type mpl_type_vector;
     template <typename T>
     using elem_by_type = elem_by_type<T,mpl_type_vector>;
     template <typename T>
     using return_type = element<elem_by_type<T>::index,iterator_tuple_type>;
 
+    typedef typename element<0,iterator_tuple_type>::type first_type;
+public:
+    explicit zip_iterator(iterator_tuple_type iter) : iter(iter) {}
+    typedef typename std::iterator_traits<first_type>::difference_type difference_type;
+private:
+    typedef make_index_sequence<std::tuple_size<iterator_tuple_type>::value> index_type;
 
-    typedef reference_type reference;
-    zip_iterator() {}
-    zip_iterator(iterator_tuple_type iterators): zip(iterators) {}
-    zip_iterator(const zip_type& other): zip(other) {}
+    template<std::size_t... I>
+    static reference_type make_reference(iterator_tuple_type& tuple, index_sequence<I...>) {
+        return reference_type(std::get<I>(tuple)...);
+    }
 
-    reference operator*() const {
-        return reference(*zip);
+    template<std::size_t... I>
+    static void increament_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
+        using expander = int[];
+        (void)expander { 0, (++std::get<I>(tuple))...};
     }
-    zip_iterator& operator++() {
-        ++zip;
-        return *this;
+
+    template<std::size_t... I>
+    static void decrement_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
+        using expander = int[];
+        (void)expander { 0, (--std::get<I>(tuple))...};
     }
-    zip_iterator operator++(int) {
-        return my_type(zip++);
+
+    template<std::size_t... I>
+    static void advance_impl(iterator_tuple_type& tuple, const difference_type n,  index_sequence<I...>) {
+        using expander = int[];
+        (void)expander { 0, (std::get<I>(tuple) += n)...};
     }
-    zip_iterator& operator--() {
-        zip--;
-        return *this;
-    }
-    zip_iterator operator-(size_t n) {
-        return my_type(zip-n);
-    }
-    size_t operator-(const my_type& other) const {
-        return zip-other.zip;
-    }
-    zip_iterator operator+(size_t n) {
-        return my_type(zip+n);
-    }
-    bool operator!=(const my_type& rhs) { 
-        return (zip != rhs.zip); 
-    }
-    bool operator==(const my_type& rhs) { 
-        return (zip == rhs.zip); 
-    }
+
+    void increment() { increament_impl(iter,index_type()); }
+    void decrement() { decrement_impl(iter,index_type()); }
+
+    bool equal(zip_iterator const& other) const { return std::get<0>(iter) == std::get<0>(other.iter); }
+    reference_type dereference() const { return make_reference(iter,index_type()); }
+    difference_type distance_to(zip_iterator const& other) const { return std::get<0>(other.iter) - std::get<0>(iter); }
+    void advance(difference_type n) { advance_impl(iter,index_type()); }
 
     template<typename T>
-    typename return_type<T>::type get() const {
-        return zip.get_iterator_tuple().template get<elem_by_type<T>::index>();
+    typename return_type<T>::type & get() const {
+        return std::get<elem_by_type<T>::index>(iter);        
     }
 
-    zip_type zip;
+    iterator_tuple_type iter;
+    friend class boost::iterator_core_access;
 };
 
+template<typename T>
+struct zip_helper {};
 
-template <typename tuple_type, typename mpl_vector_type> 
-struct tuple_of_vectors_type {
-        typedef mpl_vector_type mpl_type_vector;
-        template <typename T>
-        using elem_by_type = elem_by_type<T,mpl_type_vector>;
-        template <typename T>
-        using return_type = element<elem_by_type<T>::index,tuple_type>;
-
-        tuple_of_vectors_type() {}
-        tuple_of_vectors_type(const tuple_type& data):data(data) {}
-
-        template<typename T>
-        typename return_type<T>::type & get() const {
-            return std::get<elem_by_type<T>::index>(data);        
-        }
-
-        const tuple_type & get_tuple() const { return data; }
-        tuple_type & get_tuple() { return data; }
-
-                
-        tuple_type data;
+template <typename ... T>
+struct zip_helper<std::tuple<T ...>> {
+    typedef std::tuple<T...> tuple_iterator_type; 
+    typedef std::tuple<typename T::value_type ...> tuple_value_type; 
+    typedef std::tuple<typename T::reference ...> tuple_reference; 
+    typedef std::tuple<typename T::const_reference ...> tuple_const_reference; 
 };
 
-
+template <typename tuple_type, typename mpl_vector_type>
+zip_iterator<typename zip_helper<tuple_type>::tuple_iterator_type, 
+             typename zip_helper<tuple_type>::tuple_value_type, 
+             typename zip_helper<tuple_type>::tuple_reference,
+             mpl_vector_type> 
+make_zip_iterator(tuple_type arg) {
+    return zip_iterator<typename zip_helper<tuple_type>::tuple_iterator_type, 
+             typename zip_helper<tuple_type>::tuple_value_type, 
+             typename zip_helper<tuple_type>::tuple_reference, 
+             mpl_vector_type>(arg);
+}
 
 //
 // Particle getters/setters

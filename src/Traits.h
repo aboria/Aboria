@@ -17,7 +17,41 @@ struct Traits<std::vector> {
     struct vector_type {
         typedef std::vector<T> type;
     };
+
+    template <typename T1, class T2> 
+    struct iter_comp {
+        typedef typename helper_type<T1, T2>::value_type T;
+        bool operator()(const T& t1, const T& t2) { return get<0>(t1) < get<0>(t2); }
+    };
+
+    template <class T1, class T2> iter_comp<T1, T2> make_comp(T1 t1, T2 t2) { return iter_comp<T1, T2>(); }
+
+    template<typename iterator_type1, typename iterator_type2>
+    void sort_by_key(iterator_type1 start_keys,
+            iterator_type1 end_keys,
+            iterator_type2 start start_data) {
+
+        std::sort(
+                zip_iterator(std::make_tuple(start_keys,start_data)),
+                zip_iterator(std::make_tuple(end_keys,end_data)),
+                [](
+        
     
+ extra_iterators::counting_iterator<unsigned int> search_begin(0);
+    astd::lower_bound(m_bucket_indices.begin(),
+            m_bucket_indices.end(),
+            search_begin,
+            search_begin + m_size.prod(),
+            m_bucket_begin.begin());
+
+    // find the end of each bucket's list of points
+    astd::upper_bound(m_bucket_indices.begin(),
+            m_bucket_indices.end(),
+            search_begin,
+            search_begin + m_size.prod(),
+            m_bucket_end.begin());
+}
+
 };
 
 #ifdef HAVE_THRUST
@@ -49,11 +83,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits> {
 
     template <typename ... TupleTypes >
     struct tuple_type {
-        typedef boost::tuple<TupleTypes...> type;
-    };
-    template <typename T>
-    struct zip_type {
-        typedef boost::zip_iterator<T> type;
+        typedef std::tuple<TupleTypes...> type;
     };
 
     const static unsigned int dimension = D;
@@ -80,43 +110,16 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits> {
     typedef typename traits::template vector_type<alive_value_type>::type alive_vector_type;
     typedef typename traits::template vector_type<id_value_type>::type id_vector_type;
 
-    typedef std::tuple<TYPES...> variable_type;
     typedef traits traits_type;
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
-    typedef typename tuple_type<
-        typename position_vector_type::iterator,
-        typename id_vector_type::iterator,
-        typename alive_vector_type::iterator,
-        typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
-            >::type tuple_of_iterators_type;
 
-    typedef typename tuple_type<
-        typename position_vector_type::const_iterator,
-        typename id_vector_type::const_iterator,
-        typename alive_vector_type::const_iterator,
-        typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
-            >::type tuple_of_const_iterators_type;
-
-    typedef typename tuple_type< 
-        const typename position::value_type&,
-        const typename id::value_type&,
-        const typename alive::value_type&,
-        const typename TYPES::value_type&...
-            >::type const_reference_data_type;
-
-    typedef typename tuple_type< 
-        typename position::value_type&,
-        typename id::value_type&,
-        typename alive::value_type&,
-        typename TYPES::value_type&...
-            >::type reference_data_type;
-
-    typedef typename tuple_type< 
-        typename position::value_type,
-        typename id::value_type,
-        typename alive::value_type,
-        typename TYPES::value_type...
-            >::type value_data_type;
+    typedef zip_helper<
+        std::tuple <
+            typename position_vector_type::iterator,
+            typename id_vector_type::iterator,
+            typename alive_vector_type::iterator,
+            typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
+            >> zip_helper;
 
     typedef std::tuple<
         position_vector_type,
@@ -125,36 +128,22 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits> {
         typename traits::template vector_type<typename TYPES::value_type>::type...
             > vectors_data_type;
 
-
-
-    typedef Aboria::value_type<value_data_type, mpl_type_vector> value_type;
-    typedef Aboria::tuple_of_vectors_type<vectors_data_type, mpl_type_vector> data_type;
-    typedef Aboria::reference_type<reference_data_type, mpl_type_vector> reference;
-    typedef Aboria::reference_type<const_reference_data_type, mpl_type_vector> const_reference;
+    typedef Aboria::getter_type<zip_helper::value_type, mpl_type_vector> value_type;
+    typedef Aboria::getter_type<zip_helper::reference, mpl_type_vector> reference;
+    typedef Aboria::getter_type<zip_helper::const_reference, mpl_type_vector> const_reference;
+    typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
     typedef typename Aboria::zip_iterator<
-        typename zip_type<tuple_of_iterators_type>::type, 
-        tuple_of_iterators_type,reference,mpl_type_vector> iterator;
+        tuple_of_iterators_type,value_type,reference,mpl_type_vector> iterator;
     typedef typename Aboria::zip_iterator<
-        typename zip_type<tuple_of_const_iterators_type>::type, 
-        tuple_of_iterators_type,const_reference,mpl_type_vector> const_iterator;
+        tuple_of_const_iterators_type,const value_type,const_reference,mpl_type_vector> const_iterator;
 
-    /*
-    typedef typename tuple_type<
-        position_vector_type,
-        id_vector_type,
-        alive_vector_type,
-        typename traits::template vector_type<typename TYPES::value_type>::type...
-            >::type data_type;
-            */
-
-    
 
     const static size_t N = std::tuple_size<vectors_data_type>::value;
 
     template<std::size_t... I>
     static iterator begin_impl(data_type& data, index_sequence<I...>) {
-        return boost::make_zip_iterator(boost::make_tuple(data.get<I>.begin()...));
+        return make_zip_iterator(std::make_tuple(data.get<I>.begin()...));
     }
 
     template<std::size_t... I>
