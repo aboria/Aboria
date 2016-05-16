@@ -2,8 +2,8 @@
 #ifndef SPATIAL_UTIL_H_ 
 #define SPATIAL_UTIL_H_ 
 
-#include "CudaInclude.h"
 #include "Vector.h"
+#include "CudaInclude.h"
 
 #include <bitset>         // std::bitset
 #include <iomanip>      // std::setw
@@ -11,6 +11,13 @@
 namespace Aboria {
 
 #define FLT_MAX 1.0
+
+
+template <typename T>
+struct plus {
+    T operator()(const T& t1, const T& t2) { return t1+t2; }
+}
+
 template<unsigned int D>
 struct bbox {
     typedef Vector<double,D> double_d;

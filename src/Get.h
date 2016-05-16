@@ -164,26 +164,25 @@ private:
     friend class boost::iterator_core_access;
 };
 
-template<typename T>
+template<template<typename> class iterator_traits,typename tuple_of_iterators>
 struct zip_helper {};
 
-template <typename ... T>
-struct zip_helper<std::tuple<T ...>> {
+template <template<typename> class iterator_traits, typename ... T>
+struct zip_helper<iterator_traits, std::tuple<T ...>> {
     typedef std::tuple<T...> tuple_iterator_type; 
-    typedef std::tuple<typename T::value_type ...> tuple_value_type; 
-    typedef std::tuple<typename T::reference ...> tuple_reference; 
-    typedef std::tuple<typename T::const_reference ...> tuple_const_reference; 
+    typedef std::tuple<typename iterator_traits<T>::value_type ...> value_type; 
+    typedef std::tuple<typename iterator_traits<T>::reference ...> reference; 
 };
 
-template <typename tuple_type, typename mpl_vector_type>
-zip_iterator<typename zip_helper<tuple_type>::tuple_iterator_type, 
-             typename zip_helper<tuple_type>::tuple_value_type, 
-             typename zip_helper<tuple_type>::tuple_reference,
+template <template<typename> class iterator_traits, typename tuple_type, typename mpl_vector_type>
+zip_iterator<typename zip_helper<iterator_traits,tuple_type>::tuple_iterator_type, 
+             typename zip_helper<iterator_traits,tuple_type>::value_type, 
+             typename zip_helper<iterator_traits,tuple_type>::reference,
              mpl_vector_type> 
 make_zip_iterator(tuple_type arg) {
-    return zip_iterator<typename zip_helper<tuple_type>::tuple_iterator_type, 
-             typename zip_helper<tuple_type>::tuple_value_type, 
-             typename zip_helper<tuple_type>::tuple_reference, 
+    return zip_iterator<typename zip_helper<iterator_traits,tuple_type>::tuple_iterator_type, 
+             typename zip_helper<iterator_traits,tuple_type>::value_type, 
+             typename zip_helper<iterator_traits,tuple_type>::reference, 
              mpl_vector_type>(arg);
 }
 

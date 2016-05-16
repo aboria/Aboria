@@ -41,6 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BUCKETSEARCH_H_
 #define BUCKETSEARCH_H_
 
+#include "Traits.h"
 #include "CudaInclude.h"
 #include "Vector.h"
 #include "SpatialUtil.h"
@@ -193,7 +194,7 @@ void BucketSearch<traits>::build_bucket_indices(
 template <typename traits>
 void BucketSearch<traits>::sort_by_bucket_index() {
     // sort the points by their bucket index
-    sort_by_key(m_bucket_indices.begin(),
+    traits::sort_by_key(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             m_particles_begin);
 }
@@ -203,15 +204,15 @@ template <typename traits>
 void BucketSearch<traits>::build_buckets() {
 
     // find the beginning of each bucket's list of points
-    extra_iterators::counting_iterator<unsigned int> search_begin(0);
-    astd::lower_bound(m_bucket_indices.begin(),
+    typename traits::template counting_iterator<unsigned int> search_begin(0);
+    traits::lower_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
             search_begin + m_size.prod(),
             m_bucket_begin.begin());
 
     // find the end of each bucket's list of points
-    astd::upper_bound(m_bucket_indices.begin(),
+    traits::upper_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
             search_begin + m_size.prod(),

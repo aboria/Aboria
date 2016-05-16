@@ -116,14 +116,14 @@ void OctTree<traits>::embed_points(vector_double_d& points) {
      * 2. Compute bounding box                *
      ******************************************/
 
-    bbox<dimension> points_bounds = reduce(points.begin(), points.end(), bbox<dimension>(), astd::plus<bbox<dimension> >());
+    bbox<dimension> points_bounds = traits::reduce(points.begin(), points.end(), bbox<dimension>(), plus<bbox<dimension> >());
     assert(points_bounds < bounds);
 
     /******************************************
      * 3. Classify points                     *
      ******************************************/
 
-    transform(points.begin(), 
+    traits::transform(points.begin(), 
             points.end(), 
             tags.begin(), 
             classify_point(bounds, max_level));
@@ -135,7 +135,7 @@ void OctTree<traits>::embed_points(vector_double_d& points) {
 
     // Now that we have the geometric information, we can sort the
     // points accordingly.
-    sequence(indices.begin(), indices.end());
+    traits::sequence(indices.begin(), indices.end());
     sort_by_key(tags.begin(), tags.end(), indices.begin());
 
     build_tree();
@@ -206,7 +206,7 @@ void OctTree<traits>::build_tree() {
     vector_int nodes_on_this_level(child_node_kind.size());
 
     // Enumerate nodes at this level
-    transform_exclusive_scan(child_node_kind.begin(), 
+    traits::transform_exclusive_scan(child_node_kind.begin(), 
                                    child_node_kind.end(), 
                                    nodes_on_this_level.begin(), 
                                    is_a<NODE>(), 
@@ -214,7 +214,7 @@ void OctTree<traits>::build_tree() {
                                    astd::plus<int>());
   
     // Enumerate leaves at this level
-    transform_exclusive_scan(child_node_kind.begin(), 
+    traits::transform_exclusive_scan(child_node_kind.begin(), 
                                    child_node_kind.end(), 
                                    leaves_on_this_level.begin(), 
                                    is_a<LEAF>(), 
@@ -234,7 +234,7 @@ void OctTree<traits>::build_tree() {
     int children_begin = nodes.size();
     nodes.resize(nodes.size() + num_children);
       
-    transform(
+    traits::transform(
             make_zip_iterator(
                 make_tuple(child_node_kind.begin(), nodes_on_this_level.begin(), leaves_on_this_level.begin())),
              make_zip_iterator(
