@@ -137,11 +137,11 @@ private:
     // the grid bucket that contains it
 	inline unsigned int find_bucket_index(const double_d &r) const {
         // find the raster indices of p's bucket
-        unsigned int index = (r[0]-m_bounds.min[0])/m_bucket_side_length[0];
+        unsigned int index = (r[0]-m_bounds.bmin[0])/m_bucket_side_length[0];
         unsigned int multiplier = 1.0;
         for (int i=1; i<dimension; i++) {
             multiplier *= m_size[i];
-            const unsigned int raster_d = (r[i]-m_bounds.min[i])/m_bucket_side_length[i];
+            const unsigned int raster_d = (r[i]-m_bounds.bmin[i])/m_bucket_side_length[i];
 		    ASSERT((raster_d > 0) && (raster_d < m_size[i]), "position is outside of dimension "<<i<<": "<<r);
             index += multiplier*raster_d;
         }
@@ -149,12 +149,13 @@ private:
     }
      
     struct point_to_bucket_index {
+        const BucketSearch& bs; 
         CUDA_HOST_DEVICE
-        point_to_bucket_index() {}
+        point_to_bucket_index(const BucketSearch& bs):bs(bs) {}
 
         CUDA_HOST_DEVICE
         unsigned int operator()(const double_d& v) const {
-            return find_bucket_index(v);
+            return bs.find_bucket_index(v);
         }
     };
 
@@ -188,7 +189,7 @@ void BucketSearch<traits>::build_bucket_indices(
     transform(positions_begin,
             positions_end,
             bucket_indices_begin,
-            point_to_bucket_index());
+            point_to_bucket_index(*this));
 }
 
 template <typename traits>

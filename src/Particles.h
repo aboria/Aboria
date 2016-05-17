@@ -196,7 +196,7 @@ public:
     }
 
     /// returns a reference to the particle at position \p idx
-    value_type operator[](std::size_t idx) {
+    reference operator[](std::size_t idx) {
         return traits_type::index(data, idx);
     }
 

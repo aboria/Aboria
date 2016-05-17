@@ -180,8 +180,8 @@ void OctTree<traits>::build_tree() {
 
     upper_bound(tags.begin(),
                       tags.end(),
-                      make_transform_iterator(children.begin(), lambda::_1 + length),
-                      make_transform_iterator(children.end(), lambda::_1 + length),
+                      make_transform_iterator(children.begin(), traits::_1 + length),
+                      make_transform_iterator(children.end(), traits::_1 + length),
                       upper_bounds.begin());
 
 
@@ -211,7 +211,7 @@ void OctTree<traits>::build_tree() {
                                    nodes_on_this_level.begin(), 
                                    is_a<NODE>(), 
                                    0, 
-                                   astd::plus<int>());
+                                   plus<int>());
   
     // Enumerate leaves at this level
     traits::transform_exclusive_scan(child_node_kind.begin(), 
@@ -219,7 +219,7 @@ void OctTree<traits>::build_tree() {
                                    leaves_on_this_level.begin(), 
                                    is_a<LEAF>(), 
                                    0, 
-                                   astd::plus<int>());
+                                   plus<int>());
 
     int num_nodes_on_this_level = nodes_on_this_level.back() + (child_node_kind.back() == NODE ? 1 : 0);
     int num_leaves_on_this_level = leaves_on_this_level.back() + (child_node_kind.back() == LEAF ? 1 : 0);

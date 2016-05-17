@@ -7,7 +7,8 @@
 #include <tuple>
 #include <vector>
 #include <boost/iterator/counting_iterator.hpp>
-#include <algorithms>
+#include <boost/lambda/lambda.hpp>
+#include <algorithm>
 
 
 
@@ -29,19 +30,22 @@ struct Traits<std::vector> {
 
     template <typename T1, class T2> 
     struct iter_comp {
-        typedef typename zip_helper<iterator_traits,std::tuple<T1,T2>>::reference_type reference;
+        typedef zip_iterator<iterator_traits,std::tuple<T1,T2>> pair_zip_type;
+        typedef typename pair_zip_type::reference reference;
         bool operator()(const reference& t1, const reference& t2) { return get<0>(t1) < get<0>(t2); }
     };
 
 
     template<typename T1, typename T2>
-    void sort_by_key(T1 start_keys,
+    static void sort_by_key(T1 start_keys,
             T1 end_keys,
             T2 start_data) {
 
+        typedef zip_iterator<iterator_traits,std::tuple<T1,T2>> pair_zip_type;
+
         std::sort(
-                make_zip_iterator(std::make_tuple(start_keys,start_data)),
-                make_zip_iterator(std::make_tuple(end_keys,start_data+std::distance(start_keys,end_keys))),
+                pair_zip_type(std::make_tuple(start_keys,start_data)),
+                pair_zip_type(std::make_tuple(end_keys,start_data+std::distance(start_keys,end_keys))),
                 iter_comp<T1,T2>());
     }
 
@@ -70,7 +74,7 @@ struct Traits<std::vector> {
     };
 
     template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
-    void lower_bound(
+    static void lower_bound(
             ForwardIterator first,
             ForwardIterator last,
             InputIterator values_first,
@@ -81,7 +85,7 @@ struct Traits<std::vector> {
     }
 
     template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
-    void upper_bound(
+    static void upper_bound(
             ForwardIterator first,
             ForwardIterator last,
             InputIterator values_first,
@@ -92,59 +96,56 @@ struct Traits<std::vector> {
     }
 
     template< class InputIt, class T, class BinaryOperation >
-    T reduce( 
+    static T reduce( 
         InputIt first, 
         InputIt last, T init,
         BinaryOperation op ) {
 
-        return std::reduce(first,last,init,op);
+        return std::accumulate(first,last,init,op);
     }
 
     template <class InputIterator, class OutputIterator, class UnaryOperation>
-    OutputIterator transform (
-            InputIterator first1, InputIterator last1,
+    static OutputIterator transform (
+            InputIterator first, InputIterator last,
             OutputIterator result, UnaryOperation op) {
         
-        return std::transform(first1,last2,result,op);
+        return std::transform(first,last,result,op);
     }
 
 
     template <typename T>
     using counting_iterator = boost::counting_iterator<T>;
 
+    static const boost::lambda::placeholder1_type _1;
+    static const boost::lambda::placeholder2_type _2;
+    static const boost::lambda::placeholder3_type _3;
+
     template <class ForwardIterator>
-    void sequence (ForwardIterator first, ForwardIterator last) {
+    static void sequence (ForwardIterator first, ForwardIterator last) {
         counting_iterator<unsigned int> count(0);
         std::transform(first,last,count,first,
-            [unary_op&](const iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
+            [](const typename iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
                 return i;
             });
     }
 
     template<typename ForwardIterator , typename UnaryOperation >
-    void tabulate (
+    static void tabulate (
             ForwardIterator first,
             ForwardIterator last,
             UnaryOperation  unary_op) {	
 
         counting_iterator<unsigned int> count(0);
         std::transform(first,last,count,first,
-            [unary_op&](const iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
+            [&unary_op](const typename iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
                 return unary_op(i);
             });
 
     }
 
-    transform_exclusive_scan(child_node_kind.begin(), 
-                                   child_node_kind.end(), 
-                                   nodes_on_this_level.begin(), 
-                                   is_a<NODE>(), 
-                                   0, 
-                                   astd::plus<int>());
- 
     template<typename InputIterator, typename OutputIterator, typename UnaryFunction, 
         typename T, typename AssociativeOperator>
-    OutputIterator thrust::transform_exclusive_scan(
+    static OutputIterator transform_exclusive_scan(
         InputIterator first, InputIterator last,
         OutputIterator result,
         UnaryFunction unary_op, T init, AssociativeOperator binary_op) {
@@ -156,27 +157,37 @@ struct Traits<std::vector> {
         }
     }
 
-    scatter_if(make_transform_iterator(
-                         make_zip_iterator(
-                             make_tuple(lower_bounds.begin(), upper_bounds.begin())),
-                         make_leaf()),
-                     make_transform_iterator(
-                         make_zip_iterator(
-                             make_tuple(lower_bounds.end(), upper_bounds.end())),
-                         make_leaf()),
-                     leaves_on_this_level.begin(),
-                     child_node_kind.begin(),
-                     leaves.begin() + children_begin,
-                     is_a<LEAF>());
 
+    template<typename InputIterator1, typename InputIterator2, 
+        typename InputIterator3, typename RandomAccessIterator , typename Predicate >
+    static void scatter_if(
+            InputIterator1 first, InputIterator1 last,
+            InputIterator2 map, InputIterator3 stencil,
+            RandomAccessIterator output, Predicate pred) {
 
-    copy_if(children.begin(),
-                  children.end(),
-                  child_node_kind.begin(),
-                  active_nodes.begin(),
-                  is_a<NODE>());
+        const size_t n = last-first;
+        for (int i=0; i<n; i++) {
+            if (pred(stencil[i])) {
+                output[map[i]] = first[i];
+            }
+        }
+    }
 
+    template<typename InputIterator1, typename InputIterator2, 
+        typename OutputIterator, typename Predicate>
+    static OutputIterator copy_if(
+            InputIterator1 first, InputIterator1 last, 
+            InputIterator2 stencil, OutputIterator result, Predicate pred) {
 
+        const size_t n = last-first;
+        for (int i=0; i<n; i++) {
+            if (pred(stencil[i])) {
+                *result = first[i];
+                ++result;
+            }
+        }
+        return result;
+    }
 };
 
 #ifdef HAVE_THRUST
@@ -226,7 +237,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef Vector<bool,dimension> bool_d;
 
     ABORIA_VARIABLE(position,double_d,"position")
-    ABORIA_VARIABLE(alive,bool,"is alive")
+    ABORIA_VARIABLE(alive,uint8_t,"is alive")
     ABORIA_VARIABLE(id,size_t,"id")
     typedef typename position::value_type position_value_type;
     typedef typename alive::value_type alive_value_type;
@@ -263,32 +274,32 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
         typename traits::template vector_type<typename TYPES::value_type>::type...
             > vectors_data_type;
 
-    typedef Aboria::getter_type<typename my_zip_helper::value_type, mpl_type_vector> value_type;
-    typedef Aboria::getter_type<typename my_zip_helper::reference, mpl_type_vector> reference;
-    typedef Aboria::getter_type<typename my_zip_helper::const_reference, mpl_type_vector> const_reference;
+    typedef typename Aboria::zip_iterator<
+        traits::template iterator_traits,tuple_of_iterators_type,mpl_type_vector> iterator;
+    typedef typename Aboria::zip_iterator<
+        traits::template iterator_traits,tuple_of_const_iterators_type,mpl_type_vector> const_iterator;
+
+    typedef typename iterator::reference reference;
+    typedef typename iterator::value_type value_type;
+    typedef typename const_iterator::reference const_reference;
     typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
-    typedef typename Aboria::zip_iterator<
-        tuple_of_iterators_type,value_type,reference,mpl_type_vector> iterator;
-    typedef typename Aboria::zip_iterator<
-        tuple_of_const_iterators_type,const value_type,const_reference,mpl_type_vector> const_iterator;
-
-
+    
     const static size_t N = std::tuple_size<vectors_data_type>::value;
 
     template<std::size_t... I>
     static iterator begin_impl(data_type& data, index_sequence<I...>) {
-        return make_zip_iterator(std::make_tuple(data.get<I>.begin()...));
+        return iterator(std::make_tuple(std::get<I>(data.get_tuple()).begin()...));
     }
 
     template<std::size_t... I>
     static iterator end_impl(data_type& data, index_sequence<I...>) {
-        return boost::make_zip_iterator(boost::make_tuple(data.get<I>.end()...));
+        return iterator(std::make_tuple(std::get<I>(data.get_tuple()).end()...));
     }
 
     template<std::size_t... I>
-    static value_type index_impl(data_type& data, const size_t i, index_sequence<I...>) {
-        return value_type(std::get<I>(data.get_tuple())[i]...);
+    static reference index_impl(data_type& data, const size_t i, index_sequence<I...>) {
+        return reference(std::tie(std::get<I>(data.get_tuple())[i]...));
     }
 
     template<std::size_t... I>
@@ -299,26 +310,26 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static void push_back_impl(data_type& data, const value_type& val, index_sequence<I...>) {
-        int dummy[] = { 0, (std::get<I>(data.get_tuple()).push_back(val.get_tuple().get<I>()),void(),0)... };
+        int dummy[] = { 0, (std::get<I>(data.get_tuple()).push_back(std::get<I>(val.get_tuple())),void(),0)... };
         static_cast<void>(dummy); // Avoid warning for unused variable.
     }
 
     template<std::size_t... I>
     static void pop_back_impl(data_type& data, index_sequence<I...>) {
-        int dummy[] = { 0, (std::get<I>(data.get_tuple()).pop_back())... };
+        int dummy[] = { 0, (std::get<I>(data.get_tuple()).pop_back(),void(),0)... };
         static_cast<void>(dummy); // Avoid warning for unused variable.
     }
 
     template<std::size_t... I>
     static void insert_impl(data_type& data, iterator position, const value_type& val, index_sequence<I...>) {
         using expander = int[];
-        (void)expander { 0, (std::get<I>(data.get_tuple()).insert(position,val.get_tuple().get<I>()))... };
+        (void)expander { 0, (std::get<I>(data.get_tuple()).insert(position,std::get<I>(val.get_tuple())))... };
     }
 
     template<std::size_t... I>
     static void insert_impl(data_type& data, iterator position, size_t n, const value_type& val, index_sequence<I...>) {
         using expander = int[];
-        (void)expander { 0, (std::get<I>(data.get_tuple()).insert(position,n,val.get_tuple().get<I>()))... };
+        (void)expander { 0, (std::get<I>(data.get_tuple()).insert(position,n,std::get<I>(val.get_tuple())))... };
     }
 
     template<class InputIterator, std::size_t... I>
@@ -338,7 +349,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<typename Indices = make_index_sequence<N>>
-    static value_type index(data_type& data, const size_t i) {
+    static reference index(data_type& data, const size_t i) {
         return index_impl(data, i, Indices());
     }
 
