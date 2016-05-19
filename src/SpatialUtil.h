@@ -74,6 +74,11 @@ struct bbox {
  
 };
 
+template<unsigned int D>
+std::ostream& operator<< (std::ostream& out, const bbox<D>& b) {
+	return out << "bbox(" << b.bmin << "<->" << b.bmax << ")";
+}
+
 
 // Utility functions to encode leaves and children in single int
 inline CUDA_HOST_DEVICE

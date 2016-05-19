@@ -178,8 +178,10 @@ public:
 
     /// push a new particle with position \p position
     /// to the back of the container
-    void push_back(const double_d& position) {
-        this->push_back(value_type(position));
+    void push_back(const double_d& pos) {
+        value_type i;
+        Aboria::set<position>(i,pos);
+        this->push_back(i);
     }
 
     /// push the particles in \p particles to the back of the container
@@ -290,7 +292,7 @@ public:
     /// \param periodic a boolean 3d vector indicating whether each dimension 
     /// is periodic (true) or not (false)
     void init_neighbour_search(const double_d& low, const double_d& high, const double length_scale, const bool_d& periodic) {
-        bucket_search.set_domain(low,high,periodic,double_d(length_scale),periodic);
+        bucket_search.set_domain(low,high,periodic,double_d(length_scale));
         enforce_domain(bucket_search.get_min(),bucket_search.get_max(),bucket_search.get_periodic());
         searchable = true;
     }
@@ -303,7 +305,7 @@ public:
         ASSERT(searchable == true,"ERROR: using get_neighbours before initialising neighbour search. Please call the init_neighbour_search function before using get_neighbours");
         return boost::make_iterator_range(
                 bucket_search.find_broadphase_neighbours(position, -1,false),
-                data.end());
+                bucket_search.end());
     }
 
     /// set the length scale of the neighbourhood search to be equal to \p length_scale
@@ -504,7 +506,7 @@ private:
     /// the container (default = true)
     void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
         std::for_each(begin(),end(),[low,high,periodic](value_type& i) {
-            double_d &r = get<position>(i);
+            double_d &r = Aboria::get<position>(i);
             for (unsigned int d = 0; d < dimension; ++d) {
                 if (periodic[d]) {
                     while (r[d]<low[d]) {

@@ -87,8 +87,10 @@ public:
                                               const int my_index, 
                                               const bool self) const;
 
+    const_iterator end() { return const_iterator(this); }
 
-    void set_domain(double_d &min_in, double_d &max_in, bool_d&periodic_in, double_d& side_length) {
+
+    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const double_d& side_length) {
         LOG(2,"BucketSearch: set_domain:");
         m_bounds.bmin = min_in;
         m_bounds.bmax = max_in;
@@ -106,10 +108,10 @@ public:
     }
 
 
-    const double_d& get_min() const { return m_bounds.min; }
-    const double_d& get_max() const { return m_bounds.max; }
+    const double_d& get_min() const { return m_bounds.bmin; }
+    const double_d& get_max() const { return m_bounds.bmax; }
     const double_d& get_side_length() const { return m_bucket_side_length; }
-    const double_d& get_periodic() const { return m_periodic; }
+    const bool_d& get_periodic() const { return m_periodic; }
 
 
 private:
@@ -300,6 +302,10 @@ public:
     typedef const std::tuple<const particles_value_type&,const double_d&> value_type;
     typedef const std::tuple<const particles_value_type&,const double_d&> reference;
 	typedef std::ptrdiff_t difference_type;
+
+    const_iterator(const BucketSearch<traits>* bucket_sort):
+        m_bucket_sort(bucket_sort),
+        m_node(bucket_sort->m_particles_end) {}
 
     const_iterator(const BucketSearch<traits>* bucket_sort, double_d &r):
         m_bucket_sort(bucket_sort),

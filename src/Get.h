@@ -7,6 +7,7 @@
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/range_c.hpp>
 #include <boost/iterator/iterator_facade.hpp>
+#include <algorithm>
 #include <tuple>
 #include <type_traits>
 
@@ -88,9 +89,8 @@ struct unpack_tuple_types< boost::tuple<TYPES...> > {
 };
 */
 
-template <typename tuple_type, typename mpl_vector_type> 
-struct getter_type;
 
+/*
 template<typename T>
 struct getter_reference {
     typedef T& type;
@@ -109,33 +109,61 @@ struct tuple_helper<std::tuple<T ...>> {
     typedef std::tuple<T...> value_type; 
     typedef std::tuple<typename getter_reference<T>::type...> reference; 
 };
+*/
 
 
 template <typename tuple_type, typename mpl_vector_type> 
-struct getter_type {
+struct getter_type{};
+
+template <typename mpl_vector_type, typename ... tuple_elements> 
+struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
+    typedef std::tuple<tuple_elements...> tuple_type;
+
     typedef mpl_vector_type mpl_type_vector;
     template <typename T>
     using elem_by_type = elem_by_type<T,mpl_type_vector>;
     template <typename T>
     using return_type = element<elem_by_type<T>::index,tuple_type>;
 
-    typedef getter_type<typename tuple_helper<tuple_type>::reference,mpl_type_vector> reference;
+    //typedef getter_type<typename tuple_helper<tuple_type>::reference,mpl_type_vector> reference;
 
     getter_type() {}
     explicit getter_type(const tuple_type& data):data(data) {}
     getter_type(const getter_type& other):data(other.data) {}
     getter_type(getter_type&& other):data(std::move(other.data)) {}
-    template <typename T1, typename T2>
-    getter_type(const getter_type<T1,T2>& other):data(other.data) {}
-    template <typename T1, typename T2>
-    getter_type(const getter_type<T1,T2>&& other):data(std::move(other.data)) {}
+    //getter_type(const reference& other):data(other.data) {}
+
+    /*
+    template<typename... _UElements, typename = typename
+        enable_if<__and_<is_convertible<const _UElements&,
+					_Elements>...>::value>::type>
+        constexpr tuple(const tuple<_UElements...>& __in)
+        : _Inherited(static_cast<const _Tuple_impl<0, _UElements...>&>(__in))
+        { }
+
+      template<typename... _UElements, typename = typename
+        enable_if<__and_<is_convertible<_UElements,
+					_Elements>...>::value>::type>
+        constexpr tuple(tuple<_UElements...>&& __in)
+        : _Inherited(static_cast<_Tuple_impl<0, _UElements...>&&>(__in)) { }
+        */
+
+
+
+    template <typename T1, typename... T2,typename = typename
+	std::enable_if<std::__and_<std::is_convertible<const T2&, tuple_elements>...>::value>::type>
+    getter_type(const getter_type<std::tuple<T2...>,T1>& other):data(other.data) {}
+
+    template <typename T1, typename... T2,typename = typename
+	std::enable_if<std::__and_<std::is_convertible<T2, tuple_elements>...>::value>::type>
+    getter_type(const getter_type<std::tuple<T2...>,T1>&& other):data(std::move(other.data)) {}
 
     
     getter_type& operator=( const getter_type& other ) {
         data = other.data;
         return *this;
     }
-    getter_type& operator=( const getter_type&& other ) {
+    getter_type& operator=( getter_type&& other ) {
         data = std::move(other.data);
         return *this;
     }
@@ -145,7 +173,7 @@ struct getter_type {
         return *this;
     }
     template <typename T1, typename T2> 
-    getter_type& operator=( const getter_type<T1,T2>&& other) {
+    getter_type& operator=( getter_type<T1,T2>&& other) {
         data = std::move(other.data);
         return *this;
     }
@@ -171,24 +199,31 @@ struct getter_type {
 };
 
 
+template <typename tuple_type, typename mpl_vector_type> 
+void swap(getter_type<tuple_type,mpl_vector_type> x,
+          getter_type<tuple_type,mpl_vector_type> y) {
+    x.swap(y);
+}
 
 
-template<template<typename> class iterator_traits, typename tuple_of_iterators>
+
+
+template<typename tuple_of_iterators>
 struct zip_helper {};
 
-template <template<typename> class iterator_traits, typename ... T>
-struct zip_helper<iterator_traits, std::tuple<T ...>> {
+template <typename ... T>
+struct zip_helper<std::tuple<T ...>> {
     typedef std::tuple<T...> tuple_iterator_type; 
-    typedef std::tuple<typename iterator_traits<T>::value_type ...> tuple_value_type; 
-    typedef std::tuple<typename iterator_traits<T>::reference ...> tuple_reference; 
+    typedef std::tuple<typename std::iterator_traits<T>::value_type ...> tuple_value_type; 
+    typedef std::tuple<typename std::iterator_traits<T>::reference ...> tuple_reference; 
 };
 
 
-template <template<typename> class iterator_traits, typename iterator_tuple_type, typename mpl_vector_type=mpl::vector<int>>
-class zip_iterator: public boost::iterator_facade<zip_iterator<iterator_traits,iterator_tuple_type,mpl_vector_type>,
-    getter_type<typename zip_helper<iterator_traits,iterator_tuple_type>::tuple_value_type,mpl_vector_type>,
+template <typename iterator_tuple_type, typename mpl_vector_type=mpl::vector<int>>
+class zip_iterator: public boost::iterator_facade<zip_iterator<iterator_tuple_type,mpl_vector_type>,
+    getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type>,
     boost::random_access_traversal_tag,
-    getter_type<typename zip_helper<iterator_traits,iterator_tuple_type>::tuple_reference,mpl_vector_type>
+    getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type>
         > {
 
     typedef mpl_vector_type mpl_type_vector;
@@ -196,8 +231,8 @@ class zip_iterator: public boost::iterator_facade<zip_iterator<iterator_traits,i
     using elem_by_type = elem_by_type<T,mpl_type_vector>;
 
 public:
-    typedef getter_type<typename zip_helper<iterator_traits,iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
-    typedef getter_type<typename zip_helper<iterator_traits,iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
         
     template<typename T>
     struct return_type {
@@ -223,7 +258,8 @@ private:
 
     template<std::size_t... I>
     static reference make_reference(const iterator_tuple_type& tuple, index_sequence<I...>) {
-        return reference(std::tie(*(std::get<I>(tuple))...));
+        typedef typename zip_helper<iterator_tuple_type>::tuple_reference tuple_reference;
+        return reference(tuple_reference(*(std::get<I>(tuple))...));
     }
     template<std::size_t... I>
     static void increment_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
@@ -290,10 +326,6 @@ void set(value_type arg, const typename T::value_type & data) {
 }
 
 
-template <template<typename> class iterator_traits, typename iterator_tuple_type, typename mpl_vector_type>
-void swap(typename Aboria::zip_iterator<iterator_traits,iterator_tuple_type,mpl_vector_type>::reference x,
-          typename Aboria::zip_iterator<iterator_traits,iterator_tuple_type,mpl_vector_type>::reference y) {
-    x.swap(y);
-}
+
 
 #endif //GET_H_

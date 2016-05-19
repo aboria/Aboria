@@ -24,15 +24,11 @@ struct Traits<std::vector> {
         typedef std::vector<T> type;
     };
 
-    template <typename T>
-    using iterator_traits = std::iterator_traits<T>;
 
 
-    template <typename T1, class T2> 
+    template <typename value_type> 
     struct iter_comp {
-        typedef zip_iterator<iterator_traits,std::tuple<T1,T2>> pair_zip_type;
-        typedef typename pair_zip_type::reference reference;
-        bool operator()(const reference& t1, const reference& t2) { return get<0>(t1) < get<0>(t2); }
+        bool operator()(const value_type& t1, const value_type& t2) { return get<0>(t1.get_tuple()) < get<0>(t2.get_tuple()); }
     };
 
 
@@ -41,12 +37,14 @@ struct Traits<std::vector> {
             T1 end_keys,
             T2 start_data) {
 
-        typedef zip_iterator<iterator_traits,std::tuple<T1,T2>> pair_zip_type;
+        typedef zip_iterator<std::tuple<T1,T2>> pair_zip_type;
+        typedef typename pair_zip_type::reference reference;
+        typedef typename pair_zip_type::value_type value_type;
 
         std::sort(
                 pair_zip_type(std::make_tuple(start_keys,start_data)),
                 pair_zip_type(std::make_tuple(end_keys,start_data+std::distance(start_keys,end_keys))),
-                iter_comp<T1,T2>());
+                iter_comp<value_type>());
     }
 
     template <typename T> 
@@ -124,7 +122,7 @@ struct Traits<std::vector> {
     static void sequence (ForwardIterator first, ForwardIterator last) {
         counting_iterator<unsigned int> count(0);
         std::transform(first,last,count,first,
-            [](const typename iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
+            [](const typename std::iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
                 return i;
             });
     }
@@ -137,7 +135,7 @@ struct Traits<std::vector> {
 
         counting_iterator<unsigned int> count(0);
         std::transform(first,last,count,first,
-            [&unary_op](const typename iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
+            [&unary_op](const typename std::iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
                 return unary_op(i);
             });
 
@@ -264,8 +262,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             > tuple_of_const_iterators_type;
 
 
-    typedef zip_helper<traits::template iterator_traits,tuple_of_iterators_type> my_zip_helper;
-    typedef zip_helper<traits::template iterator_traits,tuple_of_const_iterators_type> my_zip_helper_const;
+    typedef zip_helper<tuple_of_iterators_type> my_zip_helper;
+    typedef zip_helper<tuple_of_const_iterators_type> my_zip_helper_const;
 
     typedef std::tuple<
         position_vector_type,
@@ -274,10 +272,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
         typename traits::template vector_type<typename TYPES::value_type>::type...
             > vectors_data_type;
 
-    typedef typename Aboria::zip_iterator<
-        traits::template iterator_traits,tuple_of_iterators_type,mpl_type_vector> iterator;
-    typedef typename Aboria::zip_iterator<
-        traits::template iterator_traits,tuple_of_const_iterators_type,mpl_type_vector> const_iterator;
+    typedef typename Aboria::zip_iterator<tuple_of_iterators_type,mpl_type_vector> iterator;
+    typedef typename Aboria::zip_iterator<tuple_of_const_iterators_type,mpl_type_vector> const_iterator;
 
     typedef typename iterator::reference reference;
     typedef typename iterator::value_type value_type;
