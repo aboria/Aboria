@@ -129,10 +129,10 @@ private:
 	inline unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
         unsigned int index = vindex[0];
         unsigned int multiplier = 1.0;
-		ASSERT((vindex[0] > 0) && (vindex[0] < m_size[0]), "index "<<vindex<<" is outside of dimension "<<0<<": "<<m_size);
+		ASSERT((vindex[0] >= 0) && (vindex[0] < m_size[0]), "index "<<vindex<<" is outside of dimension "<<0<<": "<<m_size);
         for (int i=1; i<dimension; i++) {
             multiplier *= m_size[i];
-		    ASSERT((vindex[i] > 0) && (vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
+		    ASSERT((vindex[i] >= 0) && (vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
             index += multiplier*vindex[i];
         }
         return index;
@@ -265,12 +265,14 @@ BucketSearch<traits>::find_broadphase_neighbours(
 
         // handle end cases
         double_d transpose(0);
+        bool outside = false;
         for (int i=0; i<dimension; i++) {
             if (other_bucket[i] == std::numeric_limits<unsigned int>::max()) {
                 if (m_periodic[i]) {
                     other_bucket[i] = m_size[i]-1;
                     transpose[i] = -m_size[i];
                 } else {
+                    outside = true;
                     break;
                 }
             }
@@ -279,20 +281,24 @@ BucketSearch<traits>::find_broadphase_neighbours(
                     other_bucket[i] = 0;
                     transpose[i] = m_size[i];
                 } else {
+                    outside = true;
                     break;
                 }
             }
         }
 
-        const unsigned int other_bucket_index = collapse_index_vector(other_bucket);
-        
-        const unsigned int range_start_index = m_bucket_begin[other_bucket_index]; 
-        const unsigned int range_end_index = m_bucket_end[other_bucket_index]; 
-        if (range_end_index-range_start_index > 0) {
-            search_iterator.add_range(
-                    m_particles_begin + range_start_index,
-                    m_particles_begin + range_end_index,
-                    transpose);
+        if (!outside) {
+            const unsigned int other_bucket_index = collapse_index_vector(other_bucket);
+            const unsigned int range_start_index = m_bucket_begin[other_bucket_index]; 
+            const unsigned int range_end_index = m_bucket_end[other_bucket_index]; 
+
+            if (range_end_index-range_start_index > 0) {
+                search_iterator.add_range(
+                        m_particles_begin + range_start_index,
+                        m_particles_begin + range_end_index,
+                        transpose);
+            }
+
         }
 
         // go to next candidate bucket

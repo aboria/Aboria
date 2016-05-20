@@ -1,12 +1,12 @@
 
 set(test_package 
     constructors 
-    geometry
-    diffusion_around_spheres
     symbolic
     variables
     particle_container
     neighbours
+    geometry
+    diffusion_around_spheres
     )
 
 foreach(test ${test_package})

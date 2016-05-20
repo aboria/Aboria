@@ -104,10 +104,10 @@ public:
     	tpl = test.get_neighbours(double3(1.6*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
 
-    	tpl = test.get_neighbours(double3(0.25*diameter,0.96*diameter,0));
+    	tpl = test.get_neighbours(double3(0.25*diameter,0.99*diameter,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = test.get_neighbours(double3(0.25*diameter,0.97*diameter,0));
+    	tpl = test.get_neighbours(double3(0.25*diameter,1.01*diameter,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
