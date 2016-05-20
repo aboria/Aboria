@@ -68,13 +68,13 @@ public:
 		const double timesteps = 100;
 
 		spheres.push_back(double3(0,0,0));
-		set<radius>(spheres[0],1.0);
+		get<radius>(spheres[0]) = 1.0;
 		spheres.push_back(double3(5,0,0));
-		set<radius>(spheres[1],2.0);
+		get<radius>(spheres[1]) = 2.0;
 		spheres.push_back(double3(0,-5,0));
-		set<radius>(spheres[2],1.5);
+		get<radius>(spheres[2]) = 1.5;
 		spheres.push_back(double3(0,0,5));
-		set<radius>(spheres[3],1.0);
+		get<radius>(spheres[3]) = 1.0;
 
     	spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),4,bool3(true,true,true));
 

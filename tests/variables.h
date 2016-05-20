@@ -54,9 +54,9 @@ public:
         ABORIA_VARIABLE(c,int,"c")
 
         Particles<std::tuple<a,b,c>>::value_type p;
-        set<a>(p,1.2);
-        set<b>(p,1.3);
-        set<c>(p,1);
+        get<a>(p) = 1.2;
+        get<b>(p) = 1.3;
+        get<c>(p) = 1;
 
         TS_ASSERT_DELTA(get<a>(p),1.2,std::numeric_limits<double>::epsilon());
         TS_ASSERT_DELTA(get<b>(p),1.3,std::numeric_limits<float>::epsilon());
@@ -79,8 +79,8 @@ public:
 
         Particles<std::tuple<a,b>>::value_type p;
 
-        set<a>(p,double3(1.1,1.2,1.3));
-        set<b>(p,double3(1,2,3));
+        get<a>(p) = double3(1.1,1.2,1.3);
+        get<b>(p) = double3(1,2,3);
 
         std::cout << "get<a>(p) = " << get<a>(p) <<std::endl;
         TS_ASSERT_EQUALS(get<a>(p),double3(1.1,1.2,1.3));

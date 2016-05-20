@@ -170,10 +170,10 @@ public:
         traits_type::push_back(data,val);
         const int index = size();
         reference i = *(end()-1);
-        Aboria::set<position>(i,Aboria::get<position>(val));
-        Aboria::set<id>(i,this->next_id++);
+        Aboria::get<position>(i) = Aboria::get<position>(val);
+        Aboria::get<id>(i) = this->next_id++;
         Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
-        Aboria::set<alive>(i,true);
+        Aboria::get<alive>(i) = true;
         if (searchable && update_neighbour_search) bucket_search.add_points_at_end(begin(),end()-1,end());
     }
 
@@ -181,7 +181,7 @@ public:
     /// to the back of the container
     void push_back(const double_d& pos) {
         value_type i;
-        Aboria::set<position>(i,pos);
+        Aboria::get<position>(i) = pos;
         this->push_back(i);
     }
 
@@ -247,12 +247,15 @@ public:
     /// and \p last
     /// \see erase(iterator)
     iterator erase (iterator first, iterator last) {
-        for(iterator i=first;i!=last-1;i++) {
-            erase(i,false);
+        iterator return_iterator = last;
+        if (last != first) {
+            for(iterator i=first;i!=last-1;i++) {
+                erase(i,false);
+            }
+            return_iterator = erase(last-1,false);
+            if (searchable) bucket_search.embed_points(begin(),end());
         }
-        iterator return_iterator = erase(last-1,false);
-        if (searchable) bucket_search.embed_points(begin(),end());
-        return erase(last-1);
+        return return_iterator;
     }
 
     /// insert a particle \p val into the container at \p position
@@ -274,7 +277,7 @@ public:
 
     /// return the total number of particles in the container
     size_t size() const {
-        return this->get<position>().size();
+        return Aboria::get<position>(data).size();
     }
 
 
@@ -378,14 +381,7 @@ public:
     }
 
 
-    //
-    // Vector getters/setters
-    //
-    template<typename T>
-    const typename TRAITS_USER::template vector_type<typename T::value_type>::type & get() const {
-        return data.get<T>();
-    }
-
+    /*
 private:
     struct set_variable {
         set_variable(data_type &data_to_set, data_type &internal_data, int n):
@@ -406,6 +402,7 @@ public:
     void set(data_type &data_to_set) {
         mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (set_variable(data_to_set,data,data_to_set.get<0>().size()));
     }
+    */
 
 
 #ifdef HAVE_VTK
@@ -519,7 +516,7 @@ private:
                     }
                 } else {
                     if ((r[d]<low[d]) || (r[d]>=high[d])) {
-                    Aboria::set<alive>(i,false);
+                    Aboria::get<alive>(i) = false;
                     }
                 }
             }

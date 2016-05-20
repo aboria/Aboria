@@ -59,57 +59,6 @@ struct elem_by_index {
     static const size_t index = I;
 };
 
-template<size_t N, typename tuple_type>
-struct element {
-    typedef typename boost::tuples::element<N,tuple_type>::type raw_type;
-    typedef typename std::remove_reference<raw_type>::type type;
-    typedef const type const_type;
-};
-
-template<size_t N, typename... tuple_args>
-struct element<N,std::tuple<tuple_args...>> {
-    typedef typename std::tuple_element<N,std::tuple<tuple_args...>>::type raw_type;
-    typedef typename std::remove_reference<raw_type>::type type;
-    typedef const type const_type;
-};
-
-/*
-template<typename ARG>
-struct unpack_tuple_types {};
-
-template <typename ... TYPES>
-struct unpack_tuple_types< std::tuple<TYPES...> > {
-    typedef mpl::vector<typename std::remove_reference<TYPES>::type...> mpl_type_vector;
-};
-
-template <typename ... TYPES>
-struct unpack_tuple_types< boost::tuple<TYPES...> > {
-    typedef mpl::vector<typename std::remove_reference<TYPES>::type...> mpl_type_vector;
-};
-*/
-
-
-/*
-template<typename T>
-struct getter_reference {
-    typedef T& type;
-};
-
-template <typename tuple_type, typename mpl_vector_type> 
-struct getter_reference<getter_type<tuple_type,mpl_vector_type>> {
-    typedef typename getter_type<tuple_type,mpl_vector_type>::reference type;
-};
-
-template<typename tuple_type>
-struct tuple_helper {};
-
-template <typename ... T>
-struct tuple_helper<std::tuple<T ...>> {
-    typedef std::tuple<T...> value_type; 
-    typedef std::tuple<typename getter_reference<T>::type...> reference; 
-};
-*/
-
 
 template <typename tuple_type, typename mpl_vector_type> 
 struct getter_type{};
@@ -122,7 +71,7 @@ struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
     template <typename T>
     using elem_by_type = elem_by_type<T,mpl_type_vector>;
     template <typename T>
-    using return_type = element<elem_by_type<T>::index,tuple_type>;
+    using return_type = std::tuple_element<elem_by_type<T>::index,tuple_type>;
 
     //typedef getter_type<typename tuple_helper<tuple_type>::reference,mpl_type_vector> reference;
 
@@ -181,8 +130,9 @@ struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
         data.swap(other.data);
     }
 
+    /*
     template<typename T>
-    typename return_type<T>::const_type & get() const {
+    typename return_type<T>::type & get() const {
         return std::get<elem_by_type<T>::index>(data);        
     }
 
@@ -190,6 +140,8 @@ struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
     typename return_type<T>::type & get() {
         return std::get<elem_by_type<T>::index>(data);        
     }
+
+    */
 
     const tuple_type & get_tuple() const { return data; }
     tuple_type & get_tuple() { return data; }
@@ -226,22 +178,22 @@ class zip_iterator: public boost::iterator_facade<zip_iterator<iterator_tuple_ty
         > {
 
     typedef mpl_vector_type mpl_type_vector;
-    template <typename T>
-    using elem_by_type = elem_by_type<T,mpl_type_vector>;
 
 public:
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
-        
+
+    template <typename T>
+    using elem_by_type = elem_by_type<T,mpl_type_vector>;
+
     template<typename T>
     struct return_type {
         static const size_t N = elem_by_type<T>::index;
         typedef const typename std::tuple_element<N,iterator_tuple_type>::type type;
-        typedef type const_type;
     };
 
 
-    typedef typename element<0,iterator_tuple_type>::type first_type;
+    typedef typename std::tuple_element<0,iterator_tuple_type>::type first_type;
     zip_iterator() {}
     explicit zip_iterator(iterator_tuple_type iter) : iter(iter) {}
     typedef typename std::iterator_traits<first_type>::difference_type difference_type;
@@ -251,6 +203,10 @@ public:
     const typename return_type<T>::type & get() const {
         return std::get<elem_by_type<T>::index>(iter);        
     }
+
+
+    const iterator_tuple_type & get_tuple() const { return iter; }
+    iterator_tuple_type & get_tuple() { return iter; }
 
 private:
     typedef make_index_sequence<std::tuple_size<iterator_tuple_type>::value> index_type;
@@ -301,25 +257,25 @@ private:
 /// \return a const reference to a T::value_type holding the variable data
 ///
 template<typename T, typename value_type>
-typename value_type::template return_type<T>::const_type & get(const value_type& arg) {
-    return arg.template get<T>();
+typename value_type::template return_type<T>::type const& 
+get(const value_type& arg) {
+    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
+    //return arg.template get<T>();
 }
 
 template<typename T, typename value_type>
-typename value_type::template return_type<T>::type & get(value_type& arg) {
-    return arg.template get<T>();
+typename value_type::template return_type<T>::type & 
+get(value_type& arg) {
+    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
+    //return arg.template get<T>();
 }
 
-/// set a variable attached to a particle \p arg
-/// \param T Variable type
-/// \param arg the particle
-/// \param data a reference to a T::value_type. This will be copied to
-/// the variable attached to particle \p arg
 template<typename T, typename value_type>
-void set(value_type arg, const typename T::value_type & data) {
-    arg.template get<T>() = data;
+typename value_type::template return_type<T>::type && 
+get(value_type&& arg) {
+    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
+    //return arg.template get<T>();
 }
-
 
 
 }

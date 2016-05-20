@@ -69,10 +69,13 @@ public:
 
         CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-        m_bucket_indices.resize(m_particles_begin-m_particles_end);
+        const size_t n = m_particles_end - m_particles_begin;
+        m_bucket_indices.resize(n);
 
-        build_bucket_indices(m_positions_begin,m_positions_end,m_bucket_indices.begin());
-        sort_by_bucket_index();
+        if (n > 0) {
+            build_bucket_indices(m_positions_begin,m_positions_end,m_bucket_indices.begin());
+            sort_by_bucket_index();
+        }
         build_buckets();
     }
 
@@ -126,28 +129,25 @@ private:
 	inline unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
         unsigned int index = vindex[0];
         unsigned int multiplier = 1.0;
+		ASSERT((vindex[0] > 0) && (vindex[0] < m_size[0]), "index "<<vindex<<" is outside of dimension "<<0<<": "<<m_size);
         for (int i=1; i<dimension; i++) {
             multiplier *= m_size[i];
-		    ASSERT((vindex[i] > 0) && (vindex[i] < m_size[i]), "index is outside of dimension "<<i<<": "<<vindex);
+		    ASSERT((vindex[i] > 0) && (vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
             index += multiplier*vindex[i];
         }
         return index;
     }
 
 
+	inline unsigned_int_d find_bucket_index_vector(const double_d &r) const {
+        // find the raster indices of p's bucket
+        return (r-m_bounds.bmin)/m_bucket_side_length;
+    }
+
     // hash a point in the unit square to the index of
     // the grid bucket that contains it
 	inline unsigned int find_bucket_index(const double_d &r) const {
-        // find the raster indices of p's bucket
-        unsigned int index = (r[0]-m_bounds.bmin[0])/m_bucket_side_length[0];
-        unsigned int multiplier = 1.0;
-        for (int i=1; i<dimension; i++) {
-            multiplier *= m_size[i];
-            const unsigned int raster_d = (r[i]-m_bounds.bmin[i])/m_bucket_side_length[i];
-		    ASSERT((raster_d > 0) && (raster_d < m_size[i]), "position is outside of dimension "<<i<<": "<<r);
-            index += multiplier*raster_d;
-        }
-        return index;
+	   return collapse_index_vector(find_bucket_index_vector(r));
     }
      
     struct point_to_bucket_index {
@@ -230,14 +230,20 @@ void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, co
     m_positions_begin = get<position>(m_particles_begin);
     m_positions_end = get<position>(m_particles_end);
 
+    CHECK(start_adding-begin == m_bucket_indices.size(), "prior number of particles embedded into domain is not consistent with distance between begin and start_adding");
     CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-    const size_t dist = start_adding-end;
-    vector_double_d_const_iterator positions_start_adding = m_positions_end - dist;
-    vector_unsigned_int_iterator bucket_indices_start_adding = m_bucket_indices.end() - dist;
-    build_bucket_indices(positions_start_adding,m_positions_end,bucket_indices_start_adding);
-    sort_by_bucket_index();
-    build_buckets();
+    const size_t dist = end - start_adding;
+    if (dist > 0) {
+        vector_double_d_const_iterator positions_start_adding = m_positions_end - dist;
+
+        m_bucket_indices.resize(m_bucket_indices.size() + dist);
+        vector_unsigned_int_iterator bucket_indices_start_adding = m_bucket_indices.end() - dist;
+
+        build_bucket_indices(positions_start_adding,m_positions_end,bucket_indices_start_adding);
+        sort_by_bucket_index();
+        build_buckets();
+    }
 }
 
 
@@ -248,7 +254,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
         const int my_index, 
         const bool self) const {
     
-    const unsigned int my_bucket = find_bucket_index(r);
+    const unsigned_int_d my_bucket = find_bucket_index_vector(r);
 
     const_iterator search_iterator(this,r);
     int_d bucket_offset(-1);
@@ -279,17 +285,22 @@ BucketSearch<traits>::find_broadphase_neighbours(
         }
 
         const unsigned int other_bucket_index = collapse_index_vector(other_bucket);
-        search_iterator.add_range(
-                m_particles_begin + m_bucket_begin[other_bucket_index],
-                m_particles_begin + m_bucket_end[other_bucket_index],
-                transpose);
+        
+        const unsigned int range_start_index = m_bucket_begin[other_bucket_index]; 
+        const unsigned int range_end_index = m_bucket_end[other_bucket_index]; 
+        if (range_end_index-range_start_index > 0) {
+            search_iterator.add_range(
+                    m_particles_begin + range_start_index,
+                    m_particles_begin + range_end_index,
+                    transpose);
+        }
 
         // go to next candidate bucket
         for (int i=0; i<dimension; i++) {
             bucket_offset[i]++;
             if (bucket_offset[i] <= 1) break;
             if (i == last_d) still_going = false;
-            bucket_offset[i] = 0;
+            bucket_offset[i] = -1;
         }
     }
     
@@ -313,15 +324,19 @@ public:
 
     const_iterator(const BucketSearch<traits>* bucket_sort, const double_d &r):
         m_bucket_sort(bucket_sort),
-        m_r(r) {}
+        m_r(r),
+        m_node(bucket_sort->m_particles_end) {}
 
     void add_range(particles_iterator begin, particles_iterator end, const double_d &transpose) {
         m_begins.push_back(begin);
         m_ends.push_back(end);
         m_transpose.push_back(transpose);
-        if (m_begins.size() == 1) {
-            m_current_index = 0;
+        if (m_node == m_bucket_sort->m_particles_end) {
+            m_current_index = m_begins.size()-1;
             m_node = m_begins[m_current_index];
+            if (!check_candidate()) {
+                increment(); 
+            }
         }
     }
 
@@ -347,22 +362,25 @@ public:
         return true;
     }
 
+    bool check_candidate() {
+        const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
+        m_dx = p - m_r;
+
+        bool outside = false;
+        for (int i=0; i < dimension; i++) {
+            if (std::abs(m_dx[i]) > m_bucket_sort->m_bucket_side_length[i]/2) {
+                outside = true;
+                break;
+            } 
+        }
+
+        return !outside;
+    }
+
     void increment() {
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
-
-            const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
-            m_dx = p - m_r;
-
-            bool outside = false;
-            for (int i=0; i < dimension; i++) {
-                if (std::abs(m_dx[i]) < m_bucket_sort->m_bucket_side_length[i]) {
-                    outside = true;
-                    break;
-                } 
-            }
-
-            found_good_candidate = !outside;
+            found_good_candidate = check_candidate();
         }
     }
 

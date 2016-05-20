@@ -747,7 +747,7 @@ namespace Aboria {
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
 
                     for (int i=0; i<particles.size(); i++) {
-                        set<VariableType>(particles[i],buffer[i]);	
+                        get<VariableType>(particles[i]) = buffer[i];	
                     }
 
                     if (boost::is_same<VariableType,position>::value) {
