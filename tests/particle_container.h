@@ -72,7 +72,7 @@ public:
     	Test_type test;
     	Test_type::value_type p;
         typedef Vector<double,6> double6;
-        typedef Test_type::position position;
+        typedef position_d<6> position;
         get<position>(p) = double6(2.0);
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);

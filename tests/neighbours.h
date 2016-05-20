@@ -50,8 +50,7 @@ public:
     void test_single_particle(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> Test_type;
-        typedef Test_type::position position;
-        typedef Test_type::id id;
+        typedef position_d<3> position;
     	Test_type test;
     	double3 min(-1,-1,-1);
     	double3 max(1,1,1);
@@ -79,8 +78,7 @@ public:
     void test_two_particles(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> Test_type;
-        typedef Test_type::position position;
-        typedef Test_type::id id;
+        typedef position_d<3> position;
     	Test_type test;
     	double3 min(-1,-1,-1);
     	double3 max(1,1,1);
@@ -110,8 +108,7 @@ public:
     void test_create_particles(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> Test_type;
-        typedef Test_type::position position;
-        typedef Test_type::id id;
+        typedef position_d<3> position;
     	Test_type test;
     	double3 min(-1,-1,-1);
     	double3 max(1,1,1);

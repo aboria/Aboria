@@ -406,7 +406,14 @@ std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     return out;
 }
 
+typedef Vector<double,1> double1;
+typedef Vector<double,2> double2;
 typedef Vector<double,3> double3;
+typedef Vector<double,4> double4;
+typedef Vector<double,5> double5;
+typedef Vector<double,6> double6;
+typedef Vector<double,7> double7;
+
 typedef Vector<int,3> int3;
 typedef Vector<bool,3> bool3;
 

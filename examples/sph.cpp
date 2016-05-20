@@ -12,8 +12,11 @@ using namespace Aboria;
 #include "Visualisation.h"
 #endif
 
+#include <boost/math/constants/constants.hpp>
 
+const double PI = boost::math::constants::pi<double>();
 const double WCON_WENDLAND = 21.0/(256.0*PI);
+const unsigned int NDIM = 3;
 
 struct F_fun {
     typedef double result_type;
@@ -44,15 +47,16 @@ ABORIA_BINARY_FUNCTION(W, W_fun, SymbolicDomain);
 
 int main(int argc, char **argv) {
     ABORIA_VARIABLE(kernel_radius,double,"kernel radius");
-    ABORIA_VARIABLE(velocity,Vect3d,"velocity");
-    ABORIA_VARIABLE(velocity_tmp,Vect3d,"temp velocity");
+    ABORIA_VARIABLE(velocity,double3,"velocity");
+    ABORIA_VARIABLE(velocity_tmp,double3,"temp velocity");
     ABORIA_VARIABLE(varh_omega,double,"varh omega");
     ABORIA_VARIABLE(density,double,"density");
-    ABORIA_VARIABLE(total_force,Vect3d,"total force");
-    ABORIA_VARIABLE(is_fixed,bool,"fixed boundary");
+    ABORIA_VARIABLE(total_force,double3,"total force");
+    ABORIA_VARIABLE(is_fixed,uint8_t,"fixed boundary");
     ABORIA_VARIABLE(pressure_div_density2,double,"pressure div density2");
 
-    typedef Particles<kernel_radius,velocity,velocity_tmp,varh_omega,density,total_force,is_fixed,pressure_div_density2> sph_type;
+    typedef Particles<std::tuple<kernel_radius,velocity,velocity_tmp,varh_omega,density,total_force,is_fixed,pressure_div_density2>> sph_type;
+    typedef position_d<3> position;
     sph_type sph;
 
     Symbol<position> p;
@@ -94,20 +98,21 @@ int main(int argc, char **argv) {
 	const double time_damping = dt*500;
 	double t = 0;
 
-	const Vect3d low(0,0,-3.0*psep);
-	const Vect3d high(L,L,L);
-	const Vect3b periodic(true,true,false);
+	const double3 low(0,0,-3.0*psep);
+	const double3 high(L,L,L);
+	const bool3 periodic(true,true,false);
 
     for (int i = 0; i < nx; i++) {
         for (int j = 0; j < nx; j++) {
             for (int k = -3; k < nx; k++) {
-                sph_type::value_type p(low + Vect3d((i+0.5)*psep,(j+0.5)*psep,k*psep));
+                sph_type::value_type p;
+                set<position>(p,low + double3((i+0.5)*psep,(j+0.5)*psep,k*psep));
                 set<kernel_radius>(p,hfac*psep);
-                set<velocity>(p,Vect3d(0,0,0));
-                set<velocity_tmp>(p,Vect3d(0,0,0));
+                set<velocity>(p,double3(0,0,0));
+                set<velocity_tmp>(p,double3(0,0,0));
                 set<varh_omega>(p,1.0);
                 set<density>(p,dens);
-                set<total_force>(p,Vect3d(0,0,0));
+                set<total_force>(p,double3(0,0,0));
                 set<is_fixed>(p,k<0);
                 sph.push_back(p);
             }
@@ -128,7 +133,7 @@ int main(int argc, char **argv) {
 	sph.init_neighbour_search(low,high,2*hfac*psep,periodic);
 
     Dx dx;
-    Accumulate<std::plus<Vect3d> > sum_vect;
+    Accumulate<std::plus<double3> > sum_vect;
     Accumulate<std::plus<double> > sum;
     Accumulate<Aboria::max<double> > max;
     max.set_init(0);

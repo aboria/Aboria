@@ -12,7 +12,6 @@
 #include <type_traits>
 
 
-
 namespace Aboria {
 
 namespace mpl = boost::mpl;

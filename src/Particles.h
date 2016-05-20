@@ -133,7 +133,7 @@ public:
 
     /// Contructs an empty container with no searching or id tracking enabled
     /// \param seed initialises the base random seed for the container
-    Particles(const double seed):
+    Particles(const uint32_t seed):
         next_id(0),
         searchable(false),
         seed(seed)
@@ -169,10 +169,11 @@ public:
     void push_back (const value_type& val, bool update_neighbour_search=true) {
         traits_type::push_back(data,val);
         const int index = size();
-        iterator i = end()-1;
-        Aboria::set<position>(*i,Aboria::get<position>(val));
-        Aboria::set<id>(*i,this->next_id++);
-        Aboria::set<alive>(*i,true);
+        reference i = *(end()-1);
+        Aboria::set<position>(i,Aboria::get<position>(val));
+        Aboria::set<id>(i,this->next_id++);
+        Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
+        Aboria::set<alive>(i,true);
         if (searchable && update_neighbour_search) bucket_search.add_points_at_end(begin(),end()-1,end());
     }
 
@@ -359,15 +360,16 @@ public:
     /// \param update_neighbour_search updates neighbourhood search
     /// information if true (default=true)
     void delete_particles(const bool update_neighbour_search = true) {
-        for (int index = 0; index < data.size(); ++index) {
-            iterator i = data.begin() + index;
-            while (get<alive>(i) == false) {
-                if ((index < data.size()-1) && (data.size() > 1)) {
-                    i->deep_copy(*(data.cend()-1));
-                    data.pop_back();
-                    i = data.begin() + index;
+        for (int index = 0; index < size(); ++index) {
+            iterator i = begin() + index;
+            while (Aboria::get<alive>(*i) == false) {
+                if ((index < size()-1) && (size() > 1)) {
+                    //std::swap(*i,*(end()-1));
+                    *i = *(end()-1);
+                    pop_back();
+                    i = begin() + index;
                 } else {
-                    data.pop_back();
+                    pop_back();
                     break;
                 }
             }
@@ -505,7 +507,7 @@ private:
     /// \param remove_deleted_particles if true, removes particles with alive==false from 
     /// the container (default = true)
     void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
-        std::for_each(begin(),end(),[low,high,periodic](value_type& i) {
+        std::for_each(begin(),end(),[low,high,periodic](reference i) {
             double_d &r = Aboria::get<position>(i);
             for (unsigned int d = 0; d < dimension; ++d) {
                 if (periodic[d]) {
@@ -533,7 +535,7 @@ private:
     data_type data;
     bool searchable;
     int next_id;
-    const double seed;
+    const uint32_t seed;
     std::map<size_t,size_t> id_to_index;
     BucketSearch<traits_type> bucket_search;
 

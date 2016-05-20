@@ -57,38 +57,41 @@ public:
 
 		ABORIA_VARIABLE(radius,double,"radius")
 
-		Particles<radius> spheres;
+		typedef Particles<std::tuple<radius>> spheres_type;
+		typedef Particles<> points_type;
+        typedef position_d<3> position;
+		spheres_type spheres;
 
 		const double L = 10.0;
 		const double D = 1.0;
 		const double dt = 0.1;
 		const double timesteps = 100;
 
-		spheres.push_back(Vect3d(0,0,0));
-		spheres[0].set<radius>(1.0);
-		spheres.push_back(Vect3d(5,0,0));
-		spheres[1].set<radius>(2.0);
-		spheres.push_back(Vect3d(0,-5,0));
-		spheres[2].set<radius>(1.5);
-		spheres.push_back(Vect3d(0,0,5));
-		spheres[3].set<radius>(1.0);
+		spheres.push_back(double3(0,0,0));
+		set<radius>(spheres[0],1.0);
+		spheres.push_back(double3(5,0,0));
+		set<radius>(spheres[1],2.0);
+		spheres.push_back(double3(0,-5,0));
+		set<radius>(spheres[2],1.5);
+		spheres.push_back(double3(0,0,5));
+		set<radius>(spheres[3],1.0);
 
-    	spheres.init_neighbour_search(Vect3d(-L,-L,-L),Vect3d(L,L,L),4,Vect3b(true,true,true));
+    	spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),4,bool3(true,true,true));
 
-		Particles<> points;
+		points_type points;
 		std::uniform_real_distribution<double> uni(-L,L);
 		for (int i = 0; i < 1000; ++i) {
-			points.push_back(Vect3d(uni(generator),uni(generator),uni(generator)));
+			points.push_back(double3(uni(generator),uni(generator),uni(generator)));
 		}
 
         Symbol<position> p;
         Symbol<id> id_;
         Symbol<alive> alive_;
         Symbol<radius> r;
-        Label<0,Particles<radius> > a_s(spheres);
-        Label<1,Particles<radius> > b_s(spheres);
-        Label<0,Particles<> > a_p(points);
-        Label<1,Particles<> > b_p(points);
+        Label<0,spheres_type > a_s(spheres);
+        Label<1,spheres_type > b_s(spheres);
+        Label<0,points_type > a_p(points);
+        Label<1,points_type > b_p(points);
 
 		Dx dx;
 		Normal N;
@@ -105,10 +108,10 @@ public:
 		 * Check no points within spheres
 		 */
 		for(auto i: points) {
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(0,0,0)), 1.0);
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(5,0,0)), 2.0);
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(0,-5,0)), 1.5);
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(0,0,5)), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,0)).norm(), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(5,0,0)).norm(), 2.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,-5,0)).norm(), 1.5);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,5)).norm(), 1.0);
 		}
 
 		/*
@@ -122,10 +125,10 @@ public:
 		 * Check still no points within spheres
 		 */
 		for(auto i: points) {
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(0,0,0)), 1.0);
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(5,0,0)), 2.0);
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(0,-5,0)), 1.5);
-			TS_ASSERT_RELATION(std::greater<double>, norm(get<position>(i) - Vect3d(0,0,5)), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,0)).norm(), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(5,0,0)).norm(), 2.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,-5,0)).norm(), 1.5);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,5)).norm(), 1.0);
 		}
 	}
 };

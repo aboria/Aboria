@@ -16,14 +16,19 @@ using namespace Aboria;
 #include "Visualisation.h"
 #endif
 
+#include <boost/math/constants/constants.hpp>
+
+const double PI = boost::math::constants::pi<double>();
+
 
 int main(int argc, char **argv) {
     ABORIA_VARIABLE(radius,double,"radius")
     ABORIA_VARIABLE(mass,double,"mass")
-    ABORIA_VARIABLE(velocity,Vect3d,"velocity")
-    ABORIA_VARIABLE(acceleration,Vect3d,"acceleration")
+    ABORIA_VARIABLE(velocity,double3,"velocity")
+    ABORIA_VARIABLE(acceleration,double3,"acceleration")
 
-    typedef Particles<radius,velocity,acceleration,mass> dem_type;
+    typedef Particles<std::tuple<radius,velocity,acceleration,mass>> dem_type;
+    typedef position_d<3> position;
     dem_type dem;
 
     const int timesteps = 30000;
@@ -44,20 +49,21 @@ int main(int argc, char **argv) {
     const double dem_min_reduced_mass = dem_mass_min*dem_mass_max/(dem_mass_min+dem_mass_max);
     const double dt = (1.0/50.0)*PI/sqrt(dem_k/dem_min_reduced_mass-std::pow(0.5*dem_gamma/dem_min_reduced_mass,2));
 
-    dem.init_neighbour_search(Vect3d(0,0,-dem_diameter),Vect3d(L/3,L/3,L+dem_diameter),dem_diameter,Vect3b(true,true,false));
+    dem.init_neighbour_search(double3(0,0,-dem_diameter),double3(L/3,L/3,L+dem_diameter),dem_diameter,bool3(true,true,false));
 
     std::uniform_real_distribution<double> uni(0,1);
     for (int i = 0; i < N; ++i) {
         bool free_position = false;
-        dem_type::value_type p(Vect3d(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2));
+        dem_type::value_type p;
+        set<position>(p,double3(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2));
         set<radius>(p,(uni(generator)+1)*dem_diameter/4);
         while (free_position == false) {
-            set<position>(p,Vect3d(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2));
+            set<position>(p,double3(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2));
             free_position = true;
             for (auto tpl: dem.get_neighbours(get<position>(p))) {
-                const Vect3d& dx = std::get<1>(tpl);
+                const double3& dx = std::get<1>(tpl);
                 const dem_type::value_type& j = std::get<0>(tpl);
-                if (norm(dx) < get<radius>(j) + get<radius>(p)) {
+                if (dx.norm() < get<radius>(j) + get<radius>(p)) {
                     free_position = false;
                     break;
                 }
@@ -81,7 +87,7 @@ int main(int argc, char **argv) {
     Label<0,dem_type> a(dem);
     Label<1,dem_type> b(dem);
     Dx dx;
-    Accumulate<std::plus<Vect3d> > sum;
+    Accumulate<std::plus<double3> > sum;
     
     /*
      * timestepping
@@ -98,10 +104,10 @@ int main(int argc, char **argv) {
                           dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
                 
                     // spring force between particles and bottom wall
-                    + if_else(r-p[2] > 0, dem_k*(r-p[2]), 0.0)*Vect3d(0,0,1) 
+                    + if_else(r-p[2] > 0, dem_k*(r-p[2]), 0.0)*double3(0,0,1) 
 
                     // gravity force
-                    + Vect3d(0,0,-9.81)*m
+                    + double3(0,0,-9.81)*m
 
                     )/m;
 

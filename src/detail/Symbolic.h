@@ -39,6 +39,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SYMBOLIC_DETAIL_H_
 
 #include "Vector.h"
+#include "Get.h"
+#include "Random.h"
 
 
 #include <boost/mpl/bool.hpp>
@@ -127,13 +129,18 @@ namespace Aboria {
         struct dx {};
 
         struct normal {
-            typedef std::mt19937 generator_type;
+            //typedef std::mt19937 generator_type;
+            normal() {};
+            normal(uint32_t seed): generator(seed) {};
             double operator()() {
-                return normal(generator);
+                std::normal_distribution<double> normal_distribution;
+                return normal_distribution(generator);
+            }
+            double operator()(generator_type& gen) const {
+                std::normal_distribution<double> normal_distribution;
+                return normal_distribution(gen);
             }
             generator_type generator;
-            std::normal_distribution<double> normal;
-
 
         };
 
@@ -345,7 +352,8 @@ namespace Aboria {
 
                         result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const
                         {
-                            return const_cast<typename ParticlesType1::value_type&>(ctx.particle1_).rand_normal();
+                            //return const_cast<typename ParticlesType1::value_type&>(ctx.particle1_).rand_normal();
+                            return proto::value(expr)(get<random>(const_cast<typename ParticlesType1::value_type&>(ctx.particle1_)));
                         }
                     };
 
@@ -468,7 +476,8 @@ namespace Aboria {
                             result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
                             {
                                 //TODO: get better (parallel) random number generator
-                                return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
+                                //return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
+                                return proto::value(expr)(get<random>(const_cast<typename ParticlesType::value_type&>(ctx.particle_)));
                             }
                         };
 
@@ -686,9 +695,6 @@ namespace Aboria {
                 typedef SUBSCRIPT_TYPE Expr;
 
                 typedef typename ParticlesType::position position;
-                typedef typename ParticlesType::id id;
-                typedef typename ParticlesType::alive alive;
-
 
         #undef SUBSCRIPT_TYPE
 

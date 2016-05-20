@@ -248,8 +248,9 @@ BucketSearch<traits>::find_broadphase_neighbours(
         const int my_index, 
         const bool self) const {
     
-    const unsigned int my_bucket = point_to_bucket_index(r);
-    const_particles_iterator search_iterator(this,r);
+    const unsigned int my_bucket = find_bucket_index(r);
+
+    const_iterator search_iterator(this,r);
     int_d bucket_offset(-1);
     constexpr unsigned int last_d = dimension-1;
     bool still_going = true;
@@ -278,7 +279,10 @@ BucketSearch<traits>::find_broadphase_neighbours(
         }
 
         const unsigned int other_bucket_index = collapse_index_vector(other_bucket);
-        search_iterator.add_range(m_bucket_begin[other_bucket_index],m_bucket_end[other_bucket_index],transpose);
+        search_iterator.add_range(
+                m_particles_begin + m_bucket_begin[other_bucket_index],
+                m_particles_begin + m_bucket_end[other_bucket_index],
+                transpose);
 
         // go to next candidate bucket
         for (int i=0; i<dimension; i++) {
@@ -299,19 +303,19 @@ class BucketSearch<traits>::const_iterator {
 public:
     typedef const std::tuple<const particles_value_type&,const double_d&>* pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const std::tuple<const particles_value_type&,const double_d&> value_type;
-    typedef const std::tuple<const particles_value_type&,const double_d&> reference;
+    typedef const std::tuple<particles_reference_type,const double_d&> reference;
+    typedef const std::tuple<particles_reference_type,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
 
     const_iterator(const BucketSearch<traits>* bucket_sort):
         m_bucket_sort(bucket_sort),
         m_node(bucket_sort->m_particles_end) {}
 
-    const_iterator(const BucketSearch<traits>* bucket_sort, double_d &r):
+    const_iterator(const BucketSearch<traits>* bucket_sort, const double_d &r):
         m_bucket_sort(bucket_sort),
         m_r(r) {}
 
-    void add_range(particles_iterator &begin, particles_iterator &end, double_d &transpose) {
+    void add_range(particles_iterator begin, particles_iterator end, const double_d &transpose) {
         m_begins.push_back(begin);
         m_ends.push_back(end);
         m_transpose.push_back(transpose);
@@ -326,7 +330,7 @@ public:
     }
 
     reference dereference() const { 
-        return std::tie(*m_node,m_dx); 
+        return reference(*m_node,m_dx); 
     }
 
     bool go_to_next_candidate() {
@@ -347,7 +351,7 @@ public:
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
 
-            const double_d p = get<position>(m_node) + m_transpose[m_current_index];
+            const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
             m_dx = p - m_r;
 
             bool outside = false;

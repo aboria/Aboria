@@ -20,39 +20,42 @@ using namespace Aboria;
 int main(int argc, char **argv) {
     ABORIA_VARIABLE(radius,double,"radius")
 
-    Particles<radius> spheres;
+    typedef Particles<std::tuple<radius>> spheres_type;
+    typedef Particles<> points_type;
+    typedef position_d<3> position;
+    spheres_type spheres;
 
     const double L = 10.0;
     const double D = 1.0;
     const double dt = 0.1;
     const double timesteps = 1000;
 
-    spheres.push_back(Vect3d(0,0,0));
-    spheres[0].set<radius>(1.0);
-    spheres.push_back(Vect3d(5,0,0));
-    spheres[1].set<radius>(2.0);
-    spheres.push_back(Vect3d(0,-5,0));
-    spheres[2].set<radius>(1.5);
-    spheres.push_back(Vect3d(0,0,5));
-    spheres[3].set<radius>(1.0);
+    spheres.push_back(double3(0,0,0));
+    set<radius>(spheres[0],1.0);
+    spheres.push_back(double3(5,0,0));
+    set<radius>(spheres[1],2.0);
+    spheres.push_back(double3(0,-5,0));
+    set<radius>(spheres[2],1.5);
+    spheres.push_back(double3(0,0,5));
+    set<radius>(spheres[3],1.0);
 
-    Particles<> points;
+    points_type points;
     std::uniform_real_distribution<double> uni(-L/5,L/5);
     for (int i = 0; i < 10000; ++i) {
-        points.push_back(Vect3d(uni(generator),uni(generator),uni(generator)));
+        points.push_back(double3(uni(generator),uni(generator),uni(generator)));
     }
 
 
-    points.init_neighbour_search(Vect3d(-L/5,-L/5,-L/5),Vect3d(L/5,L/5,L/5),4,Vect3b(true,true,true));
-    spheres.init_neighbour_search(Vect3d(-L,-L,-L),Vect3d(L,L,L),4,Vect3b(false,false,false));
+    points.init_neighbour_search(double3(-L/5,-L/5,-L/5),double3(L/5,L/5,L/5),4,bool3(true,true,true));
+    spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),4,bool3(false,false,false));
 
     Symbol<position> p;
     Symbol<radius> r;
     Symbol<alive> alive_;
-    Label<0,Particles<radius> > a(spheres);
-    Label<1,Particles<radius> > b(spheres);
-    Label<0,Particles<> > i(points);
-    Label<1,Particles<> > j(points);
+    Label<0,spheres_type > a(spheres);
+    Label<1,spheres_type > b(spheres);
+    Label<0,points_type > i(points);
+    Label<1,points_type > j(points);
     Dx dx;
     Normal N;
     GeometriesSymbolic<Sphere> spheres_;        
@@ -61,7 +64,7 @@ int main(int argc, char **argv) {
 
     int count_before=0;
     for(auto point: points) {
-        if (norm(get<position>(point)-get<position>(spheres[0])) < get<radius>(spheres[0])) {
+        if ((get<position>(point)-get<position>(spheres[0])).norm() < get<radius>(spheres[0])) {
             count_before++;
         }
     }
@@ -74,7 +77,7 @@ int main(int argc, char **argv) {
 
     int count_after=0;
     for(auto point: points) {
-        if (norm(get<position>(point)-get<position>(spheres[0])) < get<radius>(spheres[0])) {
+        if ((get<position>(point)-get<position>(spheres[0])).norm() < get<radius>(spheres[0])) {
             count_after++;
         } 
     }
