@@ -5,7 +5,7 @@ set(test_package
     variables
     particle_container
     neighbours
-    geometry
+    #geometry
     diffusion_around_spheres
     )
 

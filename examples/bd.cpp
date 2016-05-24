@@ -31,13 +31,13 @@ int main(int argc, char **argv) {
     const double timesteps = 1000;
 
     spheres.push_back(double3(0,0,0));
-    set<radius>(spheres[0],1.0);
+    get<radius>(spheres[0]) = 1.0;
     spheres.push_back(double3(5,0,0));
-    set<radius>(spheres[1],2.0);
+    get<radius>(spheres[1]) = 2.0;
     spheres.push_back(double3(0,-5,0));
-    set<radius>(spheres[2],1.5);
+    get<radius>(spheres[2]) = 1.5;
     spheres.push_back(double3(0,0,5));
-    set<radius>(spheres[3],1.0);
+    get<radius>(spheres[3]) = 1.0;
 
     points_type points;
     std::uniform_real_distribution<double> uni(-L/5,L/5);

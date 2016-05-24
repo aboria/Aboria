@@ -84,6 +84,8 @@ public:
 			points.push_back(double3(uni(generator),uni(generator),uni(generator)));
 		}
 
+    	points.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),4,bool3(true,true,true));
+
         Symbol<position> p;
         Symbol<id> id_;
         Symbol<alive> alive_;
@@ -98,6 +100,7 @@ public:
 		GeometriesSymbolic<Sphere> spheres_;		
 		VectorSymbolic<double> vector;		
         Accumulate<std::bit_or<bool> > any;
+        Accumulate<std::plus<double3> > sum;
 
 		/*
 		 * Kill any points within spheres
@@ -115,10 +118,66 @@ public:
 		}
 
 		/*
-		 * Diffusion step for points and reflect off spheres
+		 * Diffusion step for points and "reflect" off spheres
 		 */
 		for (int i = 0; i < timesteps; ++i) {
-			p[a_p] += std::sqrt(2*D*dt)*vector(N,N,N) | spheres_(b_s,r[b_s]);
+			p[a_p] += std::sqrt(2*D*dt)*vector(N,N,N);
+            p[a_p] += sum(b_s, norm(dx) < r[b_s],
+                    -2*(r[b_s]/norm(dx)-1)*dx );
+            /*
+            const double3 pos = get<position>(points[0]);
+            if (((pos - double3(0,0,0)).norm() < 1.0) || 
+                ((pos - double3(5,0,0)).norm() < 2.0) ||
+                ((pos - double3(0,-5,0)).norm() < 1.5)||
+                ((pos - double3(0,0,5)).norm() < 1.0)) {
+                std::cout << "BOUNCE" << std::endl;
+                std::cout << "after step "<<get<position>(points[0])<<std::endl;
+                if ((pos - double3(0,0,0)).norm() < 1.0) {
+                    std::cout << "dx "<<pos-double3(0,0,0)<<std::endl;
+                    std::cout << "|dx| "<<(pos-double3(0,0,0)).norm()<<std::endl;
+                }
+                if ((pos - double3(5,0,0)).norm() < 2.0) {
+                    std::cout << "dx "<<pos-double3(5,0,0)<<std::endl;
+                    std::cout << "|dx| "<<(pos-double3(5,0,0)).norm()<<std::endl;
+                }
+                if ((pos - double3(0,-5,0)).norm() < 1.5) {
+                    std::cout << "dx "<<pos-double3(0,-5,0)<<std::endl;
+                    std::cout << "|dx| "<<(pos-double3(0,-5,0)).norm()<<std::endl;
+                }
+                if ((pos - double3(0,0,5)).norm() < 1.0) {
+                    std::cout << "dx "<<pos-double3(0,0,5)<<std::endl;
+                    std::cout << "|dx| "<<(pos-double3(0,0,5)).norm()<<std::endl;
+                }
+                p[a_p] += sum(b_s, norm(dx) < r[b_s],
+                    -2*(r[b_s]/norm(dx)-1)*dx );
+                std::cout << "after bounce "<<get<position>(points[0])<<std::endl;
+                const double3 pos2 = get<position>(points[0]);
+                if (((pos2 - double3(0,0,0)).norm() < 1.0) || 
+                ((pos2 - double3(5,0,0)).norm() < 2.0) ||
+                ((pos2 - double3(0,-5,0)).norm() < 1.5)||
+                ((pos2 - double3(0,0,5)).norm() < 1.0)) {
+                    std::cout << "STILL IN" << std::endl;
+                    if ((pos2 - double3(0,0,0)).norm() < 1.0) {
+                        std::cout << "dx "<<pos2-double3(0,0,0)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-double3(0,0,0)).norm()<<std::endl;
+                    }
+                    if ((pos2 - double3(5,0,0)).norm() < 2.0) {
+                        std::cout << "dx "<<pos2-double3(5,0,0)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-double3(5,0,0)).norm()<<std::endl;
+                    }
+                    if ((pos2 - double3(0,-5,0)).norm() < 1.5) {
+                        std::cout << "dx "<<pos2-double3(0,-5,0)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-double3(0,-5,0)).norm()<<std::endl;
+                    }
+                    if ((pos2 - double3(0,0,5)).norm() < 1.0) {
+                        std::cout << "dx "<<pos2-double3(0,0,5)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-double3(0,0,5)).norm()<<std::endl;
+                    }
+                }
+
+            }
+            */
+
 		}
 
 		/*

@@ -76,7 +76,7 @@ public:
         get<position>(p) = double6(2.0);
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
-        TS_ASSERT_EQUALS(get<position>(test[0]),double6(2.0));
+        TS_ASSERT((get<position>(test[0])==double6(2.0)).all());
     }
 
     void test_add_delete_particle(void) {

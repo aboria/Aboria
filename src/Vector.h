@@ -54,9 +54,9 @@ public:
 
 	Vector() {}
 	Vector(T arg1) {
-		mem[0] = arg1;
-		mem[1] = arg1;
-		mem[2] = arg1;
+        for (unsigned int i=0; i<N; i++) {
+		    mem[i] = arg1;
+        }
 	}
 	Vector(T arg1,T arg2) {
 		mem[0] = arg1;
@@ -196,6 +196,7 @@ Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
 	return arg.pow(exponent);
 }
 
+/*
 template<typename T1,typename T2,unsigned int N> 
 bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { 
     bool ret = true; 
@@ -204,6 +205,7 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
     } 
     return ret; 
 } 
+*/
 
 
 #define UNARY_OPERATOR(the_op) \
@@ -305,6 +307,7 @@ COMPARISON(>)
 COMPARISON(<)
 COMPARISON(<=)
 COMPARISON(>=)
+COMPARISON(==)
 
 #define COMPOUND_ASSIGN(the_op) \
 		template<typename T1,typename T2,unsigned int N> \

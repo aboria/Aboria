@@ -106,14 +106,14 @@ int main(int argc, char **argv) {
         for (int j = 0; j < nx; j++) {
             for (int k = -3; k < nx; k++) {
                 sph_type::value_type p;
-                set<position>(p,low + double3((i+0.5)*psep,(j+0.5)*psep,k*psep));
-                set<kernel_radius>(p,hfac*psep);
-                set<velocity>(p,double3(0,0,0));
-                set<velocity_tmp>(p,double3(0,0,0));
-                set<varh_omega>(p,1.0);
-                set<density>(p,dens);
-                set<total_force>(p,double3(0,0,0));
-                set<is_fixed>(p,k<0);
+                get<position>(p) = low + double3((i+0.5)*psep,(j+0.5)*psep,k*psep);
+                get<kernel_radius>(p) = hfac*psep;
+                get<velocity>(p) = double3(0,0,0);
+                get<velocity_tmp>(p) = double3(0,0,0);
+                get<varh_omega>(p) = 1.0;
+                get<density>(p) = dens;
+                get<total_force>(p) = double3(0,0,0);
+                get<is_fixed>(p) = k<0;
                 sph.push_back(p);
             }
         }

@@ -521,7 +521,7 @@ private:
                 }
             }
         });
-        if (remove_deleted_particles && ((periodic[0]==false)||(periodic[1]==false)||(periodic[2]==false))) {
+        if (remove_deleted_particles && (periodic==false).any()) {
             delete_particles();
         } else {
             bucket_search.embed_points(begin(),end());

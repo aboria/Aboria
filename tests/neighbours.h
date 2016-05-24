@@ -56,7 +56,7 @@ public:
     	double3 max(1,1,1);
     	double3 periodic(true,true,true);
     	double diameter = 0.1;
-    	test.init_neighbour_search(min,max,2*diameter,periodic);
+    	test.init_neighbour_search(min,max,diameter,periodic);
     	Test_type::value_type p;
 
         get<position>(p) = double3(0,0,0);
@@ -84,7 +84,7 @@ public:
     	double3 max(1,1,1);
     	double3 periodic(true,true,true);
     	double diameter = 0.1;
-    	test.init_neighbour_search(min,max,2*diameter,periodic);
+    	test.init_neighbour_search(min,max,diameter,periodic);
     	Test_type::value_type p;
 
         get<position>(p) = double3(0,0,0);
@@ -109,6 +109,67 @@ public:
 
     	tpl = test.get_neighbours(double3(0.25*diameter,1.01*diameter,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
+    }
+
+    template<unsigned int D>
+    void helper_d(void) {
+        ABORIA_VARIABLE(scalar,double,"scalar")
+    	typedef Particles<std::tuple<scalar>,D> Test_type;
+        typedef position_d<D> position;
+        typedef Vector<double,D> double_d;
+        typedef Vector<bool,D> bool_d;
+        typedef Vector<unsigned int,D> uint_d;
+    	Test_type test;
+    	double_d min(-1);
+    	double_d max(1);
+    	bool_d periodic(true);
+    	typename Test_type::value_type p;
+        uint_d index(0);
+        unsigned int n = 10;
+        double dx = 2.0/n;
+
+    	double diameter = dx*1.00001;
+        unsigned int expect_n = std::pow(3,D);
+
+        bool finished = false;
+        while (finished != true) {
+            double_d pos = index*dx+min+dx/2;
+            get<position>(p) = pos;
+            test.push_back(p);
+            index[0]++;
+            for (int i=0; i<D; i++) {
+                if (index[i] >= n) {
+                    if (i==D-1) {
+                        finished = true;
+                    } else {
+                        index[i+1]++;
+                        index[i] = 0;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
+    	test.init_neighbour_search(min,max,diameter,periodic);
+
+        for (auto i: test) {
+            auto tpl = test.get_neighbours(get<position>(i));
+    	    TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),expect_n);
+        }
+    }
+
+    void test_dim1(void) {
+        helper_d<1>();
+    }
+    void test_dim2(void) {
+        helper_d<2>();
+    }
+    void test_dim3(void) {
+        helper_d<3>();
+    }
+    void test_dim4(void) {
+        helper_d<4>();
     }
 
 };

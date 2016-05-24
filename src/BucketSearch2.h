@@ -254,6 +254,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
         const int my_index, 
         const bool self) const {
     
+    ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);
     const unsigned_int_d my_bucket = find_bucket_index_vector(r);
 
     const_iterator search_iterator(this,r);
@@ -270,7 +271,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
             if (other_bucket[i] == std::numeric_limits<unsigned int>::max()) {
                 if (m_periodic[i]) {
                     other_bucket[i] = m_size[i]-1;
-                    transpose[i] = -m_size[i];
+                    transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
                 } else {
                     outside = true;
                     break;
@@ -279,7 +280,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
             if (other_bucket[i] == m_size[i]) {
                 if (m_periodic[i]) {
                     other_bucket[i] = 0;
-                    transpose[i] = m_size[i];
+                    transpose[i] = (m_bounds.bmax-m_bounds.bmin)[i];
                 } else {
                     outside = true;
                     break;
@@ -293,6 +294,8 @@ BucketSearch<traits>::find_broadphase_neighbours(
             const unsigned int range_end_index = m_bucket_end[other_bucket_index]; 
 
             if (range_end_index-range_start_index > 0) {
+
+                //std::cout << "adding range for my_bucket = "<<my_bucket<<" other_bucket = "<<other_bucket<<" range_start_index = "<<range_start_index<<" range_end_index = "<<range_end_index<< " transpose = "<<transpose<<std::endl;
                 search_iterator.add_range(
                         m_particles_begin + range_start_index,
                         m_particles_begin + range_end_index,
@@ -358,8 +361,10 @@ public:
         m_node++;
         if (m_node == m_ends[m_current_index]) {
             m_current_index++;
+            //std::cout << "moving on to next index i = "<<m_current_index<<" with range "<<m_begins[m_current_index]-m_bucket_sort->m_particles_begin<<" to "<<m_ends[m_current_index]-m_bucket_sort->m_particles_begin<<std::endl;
             if (m_current_index < m_begins.size()) {
-                m_node == m_begins[m_current_index];
+                m_node = m_begins[m_current_index];
+                //std::cout << "particle index = "<<m_node-m_bucket_sort->m_particles_begin<<std::endl;
             } else {
                 m_node = m_bucket_sort->m_particles_end;
                 return false;
@@ -369,12 +374,13 @@ public:
     }
 
     bool check_candidate() {
+        //std::cout << "check my_r = "<<m_r<<" r = "<<get<position>(*m_node)<<" trans = "<<m_transpose[m_current_index]<<" index = "<<m_current_index<<std::endl;
         const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
         m_dx = p - m_r;
 
         bool outside = false;
         for (int i=0; i < dimension; i++) {
-            if (std::abs(m_dx[i]) > m_bucket_sort->m_bucket_side_length[i]/2) {
+            if (std::abs(m_dx[i]) > m_bucket_sort->m_bucket_side_length[i]) {
                 outside = true;
                 break;
             } 

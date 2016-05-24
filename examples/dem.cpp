@@ -55,10 +55,10 @@ int main(int argc, char **argv) {
     for (int i = 0; i < N; ++i) {
         bool free_position = false;
         dem_type::value_type p;
-        set<position>(p,double3(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2));
-        set<radius>(p,(uni(generator)+1)*dem_diameter/4);
+        get<position>(p) = double3(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2);
+        get<radius>(p) = (uni(generator)+1)*dem_diameter/4;
         while (free_position == false) {
-            set<position>(p,double3(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2));
+            get<position>(p) = double3(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2);
             free_position = true;
             for (auto tpl: dem.get_neighbours(get<position>(p))) {
                 const double3& dx = std::get<1>(tpl);

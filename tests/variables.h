@@ -83,14 +83,14 @@ public:
         get<b>(p) = double3(1,2,3);
 
         std::cout << "get<a>(p) = " << get<a>(p) <<std::endl;
-        TS_ASSERT_EQUALS(get<a>(p),double3(1.1,1.2,1.3));
-        TS_ASSERT_EQUALS(get<b>(p),int3(1,2,3));
+        TS_ASSERT((get<a>(p)==double3(1.1,1.2,1.3)).all());
+        TS_ASSERT((get<b>(p)==int3(1,2,3)).all());
 
         get<a>(p) = double3(2.1,2.2,2.3);
         get<b>(p) = int3(2,3,4);
 
-        TS_ASSERT_EQUALS(get<a>(p),double3(2.1,2.2,2.3));
-        TS_ASSERT_EQUALS(get<b>(p),int3(2,3,4));
+        TS_ASSERT((get<a>(p)==double3(2.1,2.2,2.3)).all());
+        TS_ASSERT((get<b>(p)==int3(2,3,4)).all());
     }
 
 };
