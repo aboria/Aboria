@@ -7,16 +7,21 @@ find_package(Boost 1.50.0 REQUIRED)
 
 option(Aboria_USE_VTK "Use VTK library" OFF)
 if (Aboria_USE_VTK)
-    find_package(VTK COMPULSARY)
+    find_package(VTK REQUIRED)
     add_definitions(-DHAVE_VTK)
 endif()
 
 option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
 if (Aboria_USE_THRUST)
-    find_package(Thrust)
+    find_package(Thrust REQUIRED)
     add_definitions(-DHAVE_THRUST)
 endif()
 
+option(Aboria_USE_EIGEN "Use Eigen Linear Algebra library" OFF)
+if (Aboria_USE_EIGEN)
+    find_package(Eigen REQUIRED)
+    add_definitions(-DHAVE_EIGEN)
+endif()
 
 #export compiler flags for code completion engines
 set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )

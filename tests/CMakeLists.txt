@@ -7,6 +7,7 @@ set(test_package
     neighbours
     #geometry
     diffusion_around_spheres
+    assemble
     )
 
 foreach(test ${test_package})

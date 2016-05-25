@@ -256,6 +256,65 @@ namespace Aboria {
             : proto::function< proto::terminal< accumulate<_> >, LabelGrammar, SymbolicGrammar, SymbolicGrammar, SymbolicGrammar>
         {}; 
 
+        struct const_expr:
+            proto::or_<
+                proto::and_<
+                    proto::terminal<_>
+                    , proto::not_<proto::terminal< label<_,_> > >
+                >
+                , proto::nary_expr<_, proto::vararg<const_expr> >
+            > {};
+
+        struct univariate_expr:
+            proto::or_<
+                proto::when< 
+                    proto::terminal< label<_,_> >
+                    , get_particles(proto::_value)
+                >
+                , proto::when< 
+                    proto::unary_expr<_, univariate_expr>
+                    , univariate_expr(proto::_left)
+                >
+                , proto::when< 
+                    proto::binary_expr<_, const_expr, univariate_expr>
+                    , univariate_expr(proto::_right)
+                >
+                , proto::when< 
+                    proto::binary_expr<_, univariate_expr, const_expr>
+                    , univariate_expr(proto::_left)
+                >
+                , proto::when< 
+                    proto::and_<
+                        proto::binary_expr<_, univariate_expr, univariate_expr>
+                        , proto::if_<boost::is_same<univariate_expr(proto::_left),univariate_expr(proto::_right)>() >
+                    >
+                    , univariate_expr(proto::_left)
+                >
+            > {};
+
+        struct bivariate_expr:
+            proto::or_<
+                proto::when< 
+                    proto::unary_expr<_, bivariate_expr>
+                    , bivariate_expr(proto::_left)
+                >
+                , proto::when< 
+                    proto::binary_expr<_, const_expr, bivariate_expr>
+                    , bivariate_expr(proto::_right)
+                >
+                , proto::when< 
+                    proto::binary_expr<_, bivariate_expr, const_expr>
+                    , bivariate_expr(proto::_left)
+                >
+                , proto::when< 
+                    proto::and_<
+                        proto::binary_expr<_, univariate_expr, univariate_expr>
+                        , proto::not_<boost::is_same<univariate_expr(proto::_left),univariate_expr(proto::_right)> >
+                    >
+                    , std::pair<boost::result_of<univariate_expr(proto::_left)>,boost::result_of<univariate_expr(proto::_right)> >(univariate_expr(proto::_left),univariate_expr(proto::_right))
+                >
+            > {};
+
 
         ////////////////
         /// Contexts ///
