@@ -34,7 +34,7 @@ before_script:
     - valgrind --version
     - grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
     - doxygen --version
-    - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
+    - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DAboria_USE_EIGEN=ON .
 script: 
     - make
     - ctest --output-on-failure 

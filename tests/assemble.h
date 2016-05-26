@@ -48,6 +48,8 @@ using namespace Aboria;
 
 class AssembleTest : public CxxTest::TestSuite {
 public:
+
+#ifdef HAVE_EIGEN
     void test_Eigen(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
 
@@ -160,6 +162,7 @@ public:
         }
 
     }
+#endif // HAVE_EIGEN
 
 
 
