@@ -19,7 +19,7 @@ endif()
 
 option(Aboria_USE_EIGEN "Use Eigen Linear Algebra library" OFF)
 if (Aboria_USE_EIGEN)
-    find_package(Eigen REQUIRED)
+    find_package(Eigen3 REQUIRED)
     add_definitions(-DHAVE_EIGEN)
 endif()
 
@@ -42,7 +42,8 @@ if (Aboria_COVERAGE)
     message("-- Building with coverage reporting")
 endif()
 
-include_directories(${CXXTEST_INCLUDES} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} src)
+include_directories(src)
+include_directories(SYSTEM ${CXXTEST_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS})
 
 enable_testing()
 if (CXXTEST_FOUND)

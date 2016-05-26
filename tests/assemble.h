@@ -83,24 +83,24 @@ public:
         assemble(A, s[a] + s[b]);
         s_vect = A*s_vect;
         for (int i; i<3; i++) {
-            TS_ASSERT_EQUAL(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
+            TS_ASSERT_EQUALS(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
             for (int j; j<3; j++) {
-                TS_ASSERT_EQUAL(A(i,j),(2*s_init)); 
+                TS_ASSERT_EQUALS(A(i,j),(2*s_init)); 
             }
         }
 
         s_vect.setOnes();
         for (int i; i<3; i++) {
-            TS_ASSERT_EQUAL(get<scalar>(particles[i]),1.0); 
+            TS_ASSERT_EQUALS(get<scalar>(particles[i]),1.0); 
         }
 
-        Eigen::Matrix<double,dynamic,dynamic> B;
+        Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> B;
         assemble(B, s[a] + s[b]);
         s_vect = B*s_vect;
         for (int i; i<3; i++) {
-            TS_ASSERT_EQUAL(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
+            TS_ASSERT_EQUALS(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
             for (int j; j<3; j++) {
-                TS_ASSERT_EQUAL(A(i,j),(2*s_init)); 
+                TS_ASSERT_EQUALS(B(i,j),(2*s_init)); 
             }
         }
 
@@ -108,17 +108,17 @@ public:
         assemble(C, s[a] + s[b], norm(dx) < diameter);
         s_vect = C*s_vect;
         for (int i; i<3; i++) {
-            if (get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2) {
-                TS_ASSERT_EQUAL(get<scalar>(particles[i]),2*2*(2*s_init)*particles.size()); 
+            if ((get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2)) {
+                TS_ASSERT_EQUALS(get<scalar>(particles[i]),2*2*(2*s_init)*particles.size()); 
             }
             if (get<id>(particles[i]) == 1) {
-                TS_ASSERT_EQUAL(get<scalar>(particles[i]),3*2*(2*s_init)*particles.size()); 
+                TS_ASSERT_EQUALS(get<scalar>(particles[i]),3*2*(2*s_init)*particles.size()); 
             }
         }
 
         s_vect.setOnes();
         for (int i; i<3; i++) {
-            TS_ASSERT_EQUAL(get<scalar>(particles[i]),1.0); 
+            TS_ASSERT_EQUALS(get<scalar>(particles[i]),1.0); 
         }
 
         Eigen::SparseMatrix<double> D(2,2); 
@@ -126,11 +126,11 @@ public:
         s_vect = D*s_vect;
 
         for (int i; i<3; i++) {
-            if (get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2) {
-                TS_ASSERT_EQUAL(get<scalar>(particles[i]),2*2); 
+            if ((get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2)) {
+                TS_ASSERT_EQUALS(get<scalar>(particles[i]),2*2); 
             }
             if (get<id>(particles[i]) == 1) {
-                TS_ASSERT_EQUAL(get<scalar>(particles[i]),3*2); 
+                TS_ASSERT_EQUALS(get<scalar>(particles[i]),3*2); 
             }
         }
 

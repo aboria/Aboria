@@ -52,7 +52,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/proto/transform.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/ice.hpp>
-#include <type_traits>
+#include <boost/type_traits/is_same.hpp>
+#include <boost/utility/result_of.hpp>
+//#include <type_traits>
 #include <tuple>
 #include <map>
 
@@ -218,6 +220,13 @@ namespace Aboria {
                 : boost::add_reference<typename LabelType::particles_type>
                 {};
 
+            template<typename This, typename LabelType>
+                struct result<This(LabelType)>
+                : boost::add_reference<typename LabelType::particles_type>
+                {};
+
+
+
             template<typename LabelType>
                 typename LabelType::particles_type &operator()(const LabelType& label) {
                     return label.get_particles();
@@ -269,7 +278,7 @@ namespace Aboria {
             proto::or_<
                 proto::when< 
                     proto::terminal< label<_,_> >
-                    , get_particles(proto::_value)
+                    , proto::_value
                 >
                 , proto::when< 
                     proto::unary_expr<_, univariate_expr>
@@ -286,11 +295,38 @@ namespace Aboria {
                 , proto::when< 
                     proto::and_<
                         proto::binary_expr<_, univariate_expr, univariate_expr>
-                        , proto::if_<boost::is_same<univariate_expr(proto::_left),univariate_expr(proto::_right)>() >
+                        , proto::if_<boost::is_same<
+                            boost::result_of<univariate_expr(proto::_left)>
+                            , boost::result_of<univariate_expr(proto::_right)> >() >
                     >
                     , univariate_expr(proto::_left)
                 >
             > {};
+
+        struct make_pair: proto::callable {
+            template<typename Sig>
+                struct result;
+
+            template<typename This, typename LabelType1, typename LabelType2>
+                struct result<This(const LabelType1&, const LabelType2&)> {
+                    typedef typename std::pair<const LabelType1&,const LabelType2&> type;
+                };
+
+
+            template<typename This, typename LabelType1, typename LabelType2>
+                struct result<This(LabelType1, LabelType2)> {
+                    typedef typename std::pair<LabelType1,LabelType2> type;
+                };
+
+
+            template<typename LabelType1, typename LabelType2>
+                typename std::pair<const LabelType1&,const LabelType2&> operator()(const LabelType1& label1, const LabelType2& label2) {
+                    return std::pair<const LabelType1&,const LabelType2&>(label1,label2);
+                }
+        };
+
+
+
 
         struct bivariate_expr:
             proto::or_<
@@ -309,9 +345,11 @@ namespace Aboria {
                 , proto::when< 
                     proto::and_<
                         proto::binary_expr<_, univariate_expr, univariate_expr>
-                        , proto::not_<boost::is_same<univariate_expr(proto::_left),univariate_expr(proto::_right)> >
+                        , proto::not_<proto::if_<boost::is_same<
+                            boost::result_of<univariate_expr(proto::_left)>
+                            , boost::result_of<univariate_expr(proto::_right)> >() > >
                     >
-                    , std::pair<boost::result_of<univariate_expr(proto::_left)>,boost::result_of<univariate_expr(proto::_right)> >(univariate_expr(proto::_left),univariate_expr(proto::_right))
+                    , make_pair(univariate_expr(proto::_left),univariate_expr(proto::_right))
                 >
             > {};
 

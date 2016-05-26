@@ -52,16 +52,17 @@ namespace Aboria {
 #ifdef HAVE_EIGEN
 
 template <typename Scalar, int Rows, int Cols, typename Expr, 
-         typename = typename std::enable_if<proto::matches<R, bivariate_expr> >::type>
+         typename = typename std::enable_if<proto::matches<Expr, detail::bivariate_expr>::value >::type>
 void assemble(Eigen::Matrix<Scalar, Rows, Cols>& matrix, const Expr& expr) {
-    const R &reactants = proto::value(*this).second;
-    P products = proto::value(*this).first;
-        
-    typedef typename std::result_of<bivariate_expr(R)>::type::first_type particles_a_type;
-    typedef typename std::result_of<bivariate_expr(R)>::type::second_type particles_b_type;
+    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first_type label_a_type_ref;
+    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second_type label_b_type_ref;
+    typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
+    typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
+    typedef typename label_a_type::particles_type particles_a_type;
+    typedef typename label_b_type::particles_type particles_b_type;
 
-    const particles_a_type& a = bivariate_expr()(expr).first;
-    const particles_b_type& b = bivariate_expr()(expr).second;
+    const particles_a_type& a = detail::bivariate_expr()(expr).first.get_particles();
+    const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -78,16 +79,17 @@ void assemble(Eigen::Matrix<Scalar, Rows, Cols>& matrix, const Expr& expr) {
 }
 
 template <typename Scalar, typename Expr, typename ifExpr,
-         typename = typename std::enable_if<proto::matches<R, bivariate_expr> >::type>
+         typename = typename std::enable_if<proto::matches<Expr, detail::bivariate_expr>::value >::type>
 void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExpr& if_expr) {
-    const R &reactants = proto::value(*this).second;
-    P products = proto::value(*this).first;
-        
-    typedef typename std::result_of<bivariate_expr(R)>::type::first_type particles_a_type;
-    typedef typename std::result_of<bivariate_expr(R)>::type::second_type particles_b_type;
+    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first_type label_a_type_ref;
+    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second_type label_b_type_ref;
+    typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
+    typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
+    typedef typename label_a_type::particles_type particles_a_type;
+    typedef typename label_b_type::particles_type particles_b_type;
 
-    const particles_a_type& a = bivariate_expr()(expr).first;
-    const particles_b_type& b = bivariate_expr()(expr).second;
+    const particles_a_type& a = detail::bivariate_expr()(expr).first.get_particles();
+    const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -108,11 +110,11 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
 
     for (size_t i=0; i<na; ++i) {
         //cols_sizes[i] = 0;
-        const particles_a_type::value_type& ai = a[i];
-        for (auto bj: b.get_neighbours(get<position>(ai))) {
-            if (if_expr.eval(ai,bi)) {
+        const typename particles_a_type::value_type& ai = a[i];
+        for (auto bj: b.get_neighbours(get<particles_a_type::position>(ai))) {
+            if (if_expr.eval(ai,bj)) {
                 const size_t j = map_id_to_index[get<id>(bj)];
-                tripletList.push_back(triplet_type(i,j,expr.eval(ai,bi)));
+                tripletList.push_back(triplet_type(i,j,expr.eval(ai,bj)));
                 //++cols_sizes[i];
             }
         }

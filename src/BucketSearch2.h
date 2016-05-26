@@ -46,6 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Vector.h"
 #include "SpatialUtil.h"
 #include "Get.h"
+#include "Log.h"
 
 namespace Aboria {
 

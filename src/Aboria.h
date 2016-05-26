@@ -38,7 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define ABORIA_H_
 
 #include "Vector.h"
-#include "Geometry.h"
+//#include "Geometry.h"
 #include "Ptr.h"
 #include "Variable.h"
 #include "Particles.h"
