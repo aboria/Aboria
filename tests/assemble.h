@@ -49,8 +49,8 @@ using namespace Aboria;
 class AssembleTest : public CxxTest::TestSuite {
 public:
 
-#ifdef HAVE_EIGEN
     void test_Eigen(void) {
+#ifdef HAVE_EIGEN
         ABORIA_VARIABLE(scalar,double,"scalar")
 
     	typedef Particles<std::tuple<scalar>> ParticlesType;
@@ -160,9 +160,8 @@ public:
                 TS_ASSERT_EQUALS(get<scalar>(particles[i]),3*2); 
             }
         }
-
-    }
 #endif // HAVE_EIGEN
+    }
 
 
 
