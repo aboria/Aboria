@@ -13,6 +13,7 @@ addons:
             - ubuntu-toolchain-r-test
         packages:
             - libboost1.55-dev
+            - libeigen3-dev
             - gcc-4.8
             - g++-4.8
             - clang
