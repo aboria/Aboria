@@ -104,6 +104,7 @@ public:
     typedef typename traits_type::value_type value_type;
 
     typedef typename traits_type::reference reference;
+    typedef typename traits_type::const_reference const_reference;
 
    
     /// type used to hold data (tuple of vectors or similar)
@@ -204,6 +205,11 @@ public:
 
     /// returns a reference to the particle at position \p idx
     reference operator[](std::size_t idx) {
+        return traits_type::index(data, idx);
+    }
+
+    /// returns a const_reference to the particle at position \p idx
+    const_reference operator[](std::size_t idx) const {
         return traits_type::index(data, idx);
     }
 
@@ -309,7 +315,7 @@ public:
     /// NOTE: you must call init_neighbour_search() before using this function
     /// \param position the centre of the search region
     /// \see init_neighbour_search
-    boost::iterator_range<typename BucketSearch<traits_type>::const_iterator> get_neighbours(const double_d position) {
+    boost::iterator_range<typename BucketSearch<traits_type>::const_iterator> get_neighbours(const double_d position) const {
         ASSERT(searchable == true,"ERROR: using get_neighbours before initialising neighbour search. Please call the init_neighbour_search function before using get_neighbours");
         return boost::make_iterator_range(
                 bucket_search.find_broadphase_neighbours(position, -1,false),

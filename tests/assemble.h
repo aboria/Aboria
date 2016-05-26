@@ -70,6 +70,8 @@ public:
         get<position>(p) = double3(diameter*1.8,0,0);
        	particles.push_back(p);
 
+        const size_t n = 3;
+
         particles.init_neighbour_search(min,max,diameter,periodic);
 
         Symbol<scalar> s;
@@ -77,55 +79,78 @@ public:
         Label<1,ParticlesType> b(particles);
         Dx dx;
 
-        Eigen::Matrix<double,2,1> s_vect(get<scalar>(particles).data());
+        Eigen::Map<Eigen::Matrix<double,n,1> > s_vect(get<scalar>(particles).data());
 
-        Eigen::Matrix<double,2,2> A;
+        Eigen::Matrix<double,n,n> A;
         assemble(A, s[a] + s[b]);
         s_vect = A*s_vect;
-        for (int i; i<3; i++) {
+        for (int i; i<n; i++) {
+            TS_ASSERT_EQUALS(s_vect[i],(2*s_init)*particles.size()); 
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
-            for (int j; j<3; j++) {
+            for (int j; j<n; j++) {
                 TS_ASSERT_EQUALS(A(i,j),(2*s_init)); 
             }
         }
 
         s_vect.setOnes();
-        for (int i; i<3; i++) {
+        for (int i; i<n; i++) {
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),1.0); 
         }
 
         Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> B;
         assemble(B, s[a] + s[b]);
         s_vect = B*s_vect;
-        for (int i; i<3; i++) {
+        for (int i; i<n; i++) {
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
-            for (int j; j<3; j++) {
+            for (int j; j<n; j++) {
                 TS_ASSERT_EQUALS(B(i,j),(2*s_init)); 
             }
         }
 
-        Eigen::SparseMatrix<double> C(2,2); 
+        Eigen::SparseMatrix<double> C(n,n); 
         assemble(C, s[a] + s[b], norm(dx) < diameter);
         s_vect = C*s_vect;
-        for (int i; i<3; i++) {
+        const double exp = (2*s_init)*particles.size();
+
+        for (int i; i<n; i++) {
             if ((get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2)) {
-                TS_ASSERT_EQUALS(get<scalar>(particles[i]),2*2*(2*s_init)*particles.size()); 
+                TS_ASSERT_EQUALS(get<scalar>(particles[i]),2*2*exp*exp); 
             }
             if (get<id>(particles[i]) == 1) {
-                TS_ASSERT_EQUALS(get<scalar>(particles[i]),3*2*(2*s_init)*particles.size()); 
+                TS_ASSERT_EQUALS(get<scalar>(particles[i]),3*2*exp*exp); 
+            }
+            for (int j; j<n; j++) {
+                if ((get<id>(particles[i]) == 1) || (get<id>(particles[j]) == 1)) {
+                    TS_ASSERT_EQUALS(C.coeff(i,j),2*exp); 
+                }
+                else if (get<id>(particles[i]) == 0) {
+                    if ((get<id>(particles[j]) == 0) || (get<id>(particles[j]) == 1)) {
+                        TS_ASSERT_EQUALS(C.coeff(i,j),2*exp); 
+                    } else {
+                        TS_ASSERT_EQUALS(C.coeff(i,j),0); 
+                    }
+                }
+                else if (get<id>(particles[i]) == 2) {
+                    if ((get<id>(particles[j]) == 2) || (get<id>(particles[j]) == 1)) {
+                        TS_ASSERT_EQUALS(C.coeff(i,j),2*exp); 
+                    } else {
+                        TS_ASSERT_EQUALS(C.coeff(i,j),0); 
+                    }
+                }
             }
         }
 
         s_vect.setOnes();
-        for (int i; i<3; i++) {
+        for (int i; i<n; i++) {
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),1.0); 
         }
 
-        Eigen::SparseMatrix<double> D(2,2); 
-        assemble(C, s[a] + s[b], norm(dx) < diameter);
+        Eigen::SparseMatrix<double> D(n,n); 
+        assemble(D, s[a] + s[b], norm(dx) < diameter);
+
         s_vect = D*s_vect;
 
-        for (int i; i<3; i++) {
+        for (int i; i<n; i++) {
             if ((get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2)) {
                 TS_ASSERT_EQUALS(get<scalar>(particles[i]),2*2); 
             }

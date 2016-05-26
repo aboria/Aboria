@@ -53,7 +53,7 @@ using namespace Aboria;
 class DiffusionAroundSpheres : public CxxTest::TestSuite {
 public:
 	void test_diffusion_around_spheres(void) {
-		const double tol = GEOMETRY_TOLERANCE;
+		//const double tol = GEOMETRY_TOLERANCE;
 
 		ABORIA_VARIABLE(radius,double,"radius")
 
@@ -97,7 +97,6 @@ public:
 
 		Dx dx;
 		Normal N;
-		GeometriesSymbolic<Sphere> spheres_;		
 		VectorSymbolic<double> vector;		
         Accumulate<std::bit_or<bool> > any;
         Accumulate<std::plus<double3> > sum;

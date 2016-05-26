@@ -60,6 +60,9 @@ void assemble(Eigen::Matrix<Scalar, Rows, Cols>& matrix, const Expr& expr) {
     typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
     typedef typename label_a_type::particles_type particles_a_type;
     typedef typename label_b_type::particles_type particles_b_type;
+    typedef typename particles_b_type::double_d double_d;
+    typedef typename particles_b_type::position position;
+    const static unsigned int dimension = particles_b_type::dimension;                          \
 
     const particles_a_type& a = detail::bivariate_expr()(expr).first.get_particles();
     const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
@@ -67,13 +70,19 @@ void assemble(Eigen::Matrix<Scalar, Rows, Cols>& matrix, const Expr& expr) {
     const size_t na = a.size();
     const size_t nb = b.size();
 
-    matrix.resize(a,b);
+    matrix.resize(na,nb);
 
     CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression. expr = ("<<na<<","<<nb<<") and matrix = ("<<matrix.rows()<<","<<matrix.cols()<<").")
 
     for (size_t i=0; i<na; ++i) {
         for (size_t j=0; j<na; ++j) {
-            matrix(i,j) = expr.eval(a[i],b[i]);
+            double_d dx = get<position>(b[i])-get<position>(a[i]);
+            double_d domain_width = a.get_max()-a.get_min();
+            for (size_t d; d<dimension; ++d) {
+                while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
+                while (dx[d] <= domain_width[d]/2) dx[d] += domain_width[d];
+            }
+            matrix(i,j) = expr.eval<particles_a_type,particles_b_type>(dx,a[i],b[i]);
         }
     }
 }
@@ -87,6 +96,11 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
     typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
     typedef typename label_a_type::particles_type particles_a_type;
     typedef typename label_b_type::particles_type particles_b_type;
+    typedef typename particles_b_type::double_d double_d;
+    typedef typename particles_b_type::position position;
+    const static unsigned int dimension = particles_b_type::dimension;                          \
+
+
 
     const particles_a_type& a = detail::bivariate_expr()(expr).first.get_particles();
     const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
@@ -110,11 +124,13 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
 
     for (size_t i=0; i<na; ++i) {
         //cols_sizes[i] = 0;
-        const typename particles_a_type::value_type& ai = a[i];
-        for (auto bj: b.get_neighbours(get<particles_a_type::position>(ai))) {
-            if (if_expr.eval(ai,bj)) {
+        typename particles_a_type::const_reference ai = a[i];
+        for (auto pairj: b.get_neighbours(get<position>(ai))) {
+            const double_d & dx = std::get<1>(pairj);
+            typename particles_b_type::const_reference bj = std::get<0>(pairj);
+            if (if_expr.eval<particles_a_type,particles_b_type>(dx,ai,bj)) {
                 const size_t j = map_id_to_index[get<id>(bj)];
-                tripletList.push_back(triplet_type(i,j,expr.eval(ai,bj)));
+                tripletList.push_back(triplet_type(i,j,expr.eval<particles_a_type,particles_b_type>(dx,ai,bj)));
                 //++cols_sizes[i];
             }
         }

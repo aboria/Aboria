@@ -308,6 +308,11 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<std::size_t... I>
+    static const_reference index_const_impl(const data_type& data, const size_t i, index_sequence<I...>) {
+        return const_reference(std::tie(std::get<I>(data.get_tuple())[i]...));
+    }
+
+    template<std::size_t... I>
     static void clear_impl(data_type& data, index_sequence<I...>) {
         using expander = int[];
         (void)expander { 0, (std::get<I>(data.get_tuple()).clear())... };
@@ -356,6 +361,11 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     template<typename Indices = make_index_sequence<N>>
     static reference index(data_type& data, const size_t i) {
         return index_impl(data, i, Indices());
+    }
+
+    template<typename Indices = make_index_sequence<N>>
+    static const_reference index(const data_type& data, const size_t i) {
+        return index_const_impl(data, i, Indices());
     }
 
     template<typename Indices = make_index_sequence<N>>

@@ -101,9 +101,9 @@ namespace Aboria {
             typedef T variable_type;
             typedef typename T::value_type value_type;
 
-            std::vector<value_type>& get_buffer(void *address) { return map[address]; }
+            std::vector<value_type>& get_buffer(const void *address) { return map[address]; }
 
-            std::map<void *,std::vector<value_type> > map;
+            std::map<const void *,std::vector<value_type> > map;
         };
 
         template <typename T>
@@ -220,12 +220,12 @@ namespace Aboria {
                 : boost::add_reference<typename LabelType::particles_type>
                 {};
 
+            /*
             template<typename This, typename LabelType>
                 struct result<This(LabelType)>
                 : boost::add_reference<typename LabelType::particles_type>
                 {};
-
-
+                */
 
             template<typename LabelType>
                 typename LabelType::particles_type &operator()(const LabelType& label) {
@@ -308,20 +308,22 @@ namespace Aboria {
                 struct result;
 
             template<typename This, typename LabelType1, typename LabelType2>
-                struct result<This(const LabelType1&, const LabelType2&)> {
-                    typedef typename std::pair<const LabelType1&,const LabelType2&> type;
+                struct result<This(LabelType1&, LabelType2&)> {
+                    typedef typename std::pair<LabelType1&,LabelType2&> type;
                 };
 
 
+            /*
             template<typename This, typename LabelType1, typename LabelType2>
                 struct result<This(LabelType1, LabelType2)> {
                     typedef typename std::pair<LabelType1,LabelType2> type;
                 };
+            */
 
 
             template<typename LabelType1, typename LabelType2>
-                typename std::pair<const LabelType1&,const LabelType2&> operator()(const LabelType1& label1, const LabelType2& label2) {
-                    return std::pair<const LabelType1&,const LabelType2&>(label1,label2);
+                typename std::pair<LabelType1&,LabelType2&> operator()(LabelType1& label1, LabelType2& label2) {
+                    return std::pair<LabelType1&,LabelType2&>(label1,label2);
                 }
         };
 
@@ -370,7 +372,7 @@ namespace Aboria {
             typedef typename ParticlesType1::position position;
             typedef typename position::value_type position_value_type;
 
-            TwoParticleCtx(const position_value_type& dx, const typename ParticlesType1::value_type& particle1, const typename ParticlesType2::value_type& particle2)
+            TwoParticleCtx(const position_value_type& dx, typename ParticlesType1::const_reference particle1, typename ParticlesType2::const_reference particle2)
                     : dx_(dx),particle1_(particle1),particle2_(particle2)
             {}
 
@@ -454,8 +456,8 @@ namespace Aboria {
                         }
                     };
 
-            const typename ParticlesType1::value_type& particle1_;
-            const typename ParticlesType2::value_type& particle2_;
+            typename ParticlesType1::const_reference particle1_;
+            typename ParticlesType2::const_reference particle2_;
             const position_value_type& dx_;
 
         };
@@ -530,7 +532,7 @@ namespace Aboria {
                 typedef typename ParticlesType::position position;
                 typedef typename position::value_type position_value_type;
 
-                ParticleCtx(const typename ParticlesType::value_type& particle)
+                ParticleCtx(typename ParticlesType::const_reference particle)
                     : particle_(particle)
                 {}
 
@@ -574,7 +576,7 @@ namespace Aboria {
                             {
                                 //TODO: get better (parallel) random number generator
                                 //return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
-                                return proto::value(expr)(get<random>(const_cast<typename ParticlesType::value_type&>(ctx.particle_)));
+                                return proto::value(expr)(const_cast<generator_type&>(get<random>(ctx.particle_)));
                             }
                         };
 
@@ -675,7 +677,7 @@ namespace Aboria {
                             }
                         };
 
-                const typename ParticlesType::value_type& particle_;
+                typename ParticlesType::const_reference particle_;
             };
 
 
@@ -714,14 +716,14 @@ namespace Aboria {
                 // of a Symbolic expression tree.
                 template<typename ParticleType>
                     typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType> const>::type
-                    eval( const typename ParticleType::value_type& particle) const
+                    eval( typename ParticleType::const_reference particle) const
                     {
                         ParticleCtx<ParticleType> const ctx(particle);
                         return proto::eval(*this, ctx);
                     }
                 template<typename ParticleType1, typename ParticleType2>
                     typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
-                    eval( const typename ParticleType1::double_d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const
+                    eval( const typename ParticleType1::double_d& dx, typename ParticleType1::const_reference particle1,  typename ParticleType2::const_reference particle2) const
                     {
                         TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
                         return proto::eval(*this, ctx);
@@ -804,13 +806,13 @@ namespace Aboria {
                 // of a Symbolic expression tree.
                 template<typename ParticleType>
                 typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType> const>::type
-                eval( const typename ParticleType::value_type& particle) const {
+                eval( typename ParticleType::const_reference particle) const {
                     ParticleCtx<ParticleType> const ctx(particle);
                     return proto::eval(*this, ctx);
                 }
                 template<typename ParticleType1, typename ParticleType2>
                 typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
-                eval( const typename ParticleType1::double_d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const {
+                eval( const typename ParticleType1::double_d& dx, typename ParticleType1::const_reference particle1,  typename ParticleType2::const_reference particle2) const {
                     TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
                     return proto::eval(*this, ctx);
                 }
@@ -860,7 +862,7 @@ namespace Aboria {
                 const SymbolicExpr &assign(Expr const & expr) const {
                     typedef typename VariableType::value_type value_type;
 
-                    ParticlesType& particles = mlabel.get_particles();
+                    const ParticlesType& particles = mlabel.get_particles();
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
 
                     buffer.resize(particles.size());
@@ -881,7 +883,7 @@ namespace Aboria {
                 const SymbolicExpr & name (Expr const & expr) const \
                 {                                                \
                     typedef typename VariableType::value_type value_type; \
-                    ParticlesType& particles = mlabel.get_particles(); \
+                    const ParticlesType& particles = mlabel.get_particles(); \
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles); \
                     buffer.resize(particles.size()); \
                     for (int i=0; i<particles.size(); i++) { \

@@ -91,7 +91,7 @@ public:
                                               const int my_index, 
                                               const bool self) const;
 
-    const_iterator end() { return const_iterator(this); }
+    const_iterator end() const { return const_iterator(this); }
 
 
     void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const double_d& side_length) {
