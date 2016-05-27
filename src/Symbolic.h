@@ -76,6 +76,21 @@ namespace Aboria {
             {}
     };
 
+    template<unsigned int I>
+    struct Unknown 
+        : detail::SymbolicExpr<typename proto::terminal<detail::unknown<mpl::int_<I> > >::type> {
+
+            typedef typename proto::terminal<detail::unknown<mpl::int_<I>> >::type expr_type;
+            typedef detail::unknown<mpl::int_<I>> data_type;
+
+            /// constructor
+            explicit Unknown()
+                : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
+            {}
+    };
+
+
+
 
     /// define a label with a given depth \p I that referres to a particle 
     /// container with type \p P

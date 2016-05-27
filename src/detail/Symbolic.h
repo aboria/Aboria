@@ -836,20 +836,22 @@ namespace Aboria {
                     msymbol(proto::value(proto::child_c<0>(expr))),
                     mlabel(proto::value(proto::child_c<1>(expr))) {}
 
+                /*
                 // Use the ParticleCtx to implement subscripting
                 // of a Symbolic expression tree.
-                template<typename ParticleType>
-                typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType> const>::type
-                eval( typename ParticleType::const_reference particle) const {
-                    ParticleCtx<ParticleType> const ctx(particle);
+                template<typename ParticleType, typename unknown_tuple_type>
+                typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType,unknown_tuple_type> const>::type
+                eval( typename ParticleType::const_reference particle, unknown_tuple_type unknown_tuple=unknown_tuple_type()) const {
+                    ParticleCtx<ParticleType,unknown_tuple_type> const ctx(particle,unknown_tuple);
                     return proto::eval(*this, ctx);
                 }
-                template<typename ParticleType1, typename ParticleType2>
-                typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
-                eval( const typename ParticleType1::double_d& dx, typename ParticleType1::const_reference particle1,  typename ParticleType2::const_reference particle2) const {
-                    TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
+                template<typename ParticleType1, typename ParticleType, typename unknown_tuple_type>
+                typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2,unknown_tuple_type> const>::type
+                eval( const typename ParticleType1::double_d& dx, typename ParticleType1::const_reference particle1,  typename ParticleType2::const_reference particle2, unknown_tuple_type unknown_tuple=unknown_tuple_type()) const {
+                    TwoParticleCtx<ParticleType1,ParticleType2,unknown_tuple_type> const ctx(dx, particle1, particle2, unknown_tuple);
                     return proto::eval(*this, ctx);
                 }
+                */
 
 
                 //mpl::for_each<mpl::range_c<int,1,label_type::number_of_particle_sets::value> > (this->name(proto::as_expr<SymbolicDomain>(expr,label))); \
