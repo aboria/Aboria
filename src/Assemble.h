@@ -52,9 +52,9 @@ namespace Aboria {
 
 #ifdef HAVE_EIGEN
 
-template <typename Scalar, int Rows, int Cols, typename Expr, 
+template <typename Derived, typename Expr, 
          typename = typename std::enable_if<proto::matches<Expr, detail::bivariate_expr>::value >::type>
-void assemble(Eigen::Matrix<Scalar, Rows, Cols>& matrix, const Expr& expr) {
+void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
     typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first_type label_a_type_ref;
     typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second_type label_b_type_ref;
     typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
@@ -71,7 +71,7 @@ void assemble(Eigen::Matrix<Scalar, Rows, Cols>& matrix, const Expr& expr) {
     const size_t na = a.size();
     const size_t nb = b.size();
 
-    matrix.resize(na,nb);
+    //matrix.resize(na,nb);
 
     CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression. expr = ("<<na<<","<<nb<<") and matrix = ("<<matrix.rows()<<","<<matrix.cols()<<").")
 

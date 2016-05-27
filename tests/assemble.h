@@ -99,7 +99,7 @@ public:
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),1.0); 
         }
 
-        Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> B;
+        Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> B(n,n);
         assemble(B, s[a] + s[b]);
         s_vect = B*s_vect;
         for (int i; i<n; i++) {
