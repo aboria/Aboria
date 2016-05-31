@@ -83,7 +83,7 @@ void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
                 while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
                 while (dx[d] <= domain_width[d]/2) dx[d] += domain_width[d];
             }
-            matrix(i,j) = expr.eval<particles_a_type,particles_b_type>(dx,a[i],b[i]);
+            matrix(i,j) = eval(expr,dx,a[i],b[i]);
         }
     }
 }
@@ -113,11 +113,6 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
 
     CHECK((matrix.cols() == na) && (matrix.rows() == nb), "matrix size is not compatible with expression. expr = ("<<na<<","<<nb<<") and matrix = ("<<matrix.cols()<<","<<matrix.rows()<<").")
 
-    std::map<size_t,size_t> map_id_to_index;
-    for (size_t j=0; j<nb; ++j) {
-        map_id_to_index[get<id>(b[j])] = j;
-    }
-
     //std::vector<size_t> cols_sizes(na);
     typedef Eigen::Triplet<Scalar> triplet_type;
     std::vector<triplet_type> tripletList;
@@ -129,9 +124,9 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
         for (auto pairj: b.get_neighbours(get<position>(ai))) {
             const double_d & dx = std::get<1>(pairj);
             typename particles_b_type::const_reference bj = std::get<0>(pairj);
-            if (if_expr.eval<particles_a_type,particles_b_type>(dx,ai,bj)) {
-                const size_t j = map_id_to_index[get<id>(bj)];
-                tripletList.push_back(triplet_type(i,j,expr.eval<particles_a_type,particles_b_type>(dx,ai,bj)));
+            if (eval(if_expr,dx,ai,bj)) {
+                const size_t j = &bj-a.begin();
+                tripletList.push_back(triplet_type(i,j,eval(expr,dx,ai,bj)));
                 //++cols_sizes[i];
             }
         }

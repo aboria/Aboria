@@ -79,7 +79,7 @@ public:
         Symbol<scalar> s;
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
-        Dx dx;
+        Dx<ParticlesType,ParticlesType> dx;
 
         Eigen::Map<Eigen::Matrix<double,n,1> > s_vect(get<scalar>(particles).data());
 

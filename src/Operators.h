@@ -50,6 +50,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace Aboria {
+    template<std::size_t... I>
+    static std::tuple<const double&...> make_unknown(const size_t i, const size_t nb, data_type& rhs, index_sequence<I...>) {
+        return std::make_tuple(std::get<I>(rhs[i+I*nb]...);
+    }
 
 #ifdef HAVE_EIGEN
     template <typename Expr, typename IfExpr> 
@@ -148,12 +152,13 @@ namespace Aboria {
                 const particles_b_type& b = detail::bivariate_expr()(m_matrix.m_expr).second.get_particles();
 
                 const Index nb = m_matrix.cols();
-                std::map<size_t,size_t> map_id_to_index;
-                for (size_t j=0; j<nb; ++j) {
-                    map_id_to_index[get<id>(b[j])] = j;
-                }
+                const Index nrhs = m_rhs.rows();
+
+                static int const num_unknowns = std::result_of<detail::num_unknowns(Expr)>::type::value;
+                ASSERT(nb*num_unknowns == nrhs);
 
                 const Index na = m_matrix.rows();
+                const n_unknowns = detail::num_unknowns<Expr>
                 y.setZero(na);
                 for (size_t i=0; i<na; ++i) {
                     //cols_sizes[i] = 0;
@@ -163,8 +168,11 @@ namespace Aboria {
                         typename particles_b_type::const_reference bj = std::get<0>(pairj);
                         double sum = 0;
                         if (m_matrix.m_if_expr.eval<particles_a_type,particles_b_type>(dx,ai,bj)) {
-                            const size_t j = map_id_to_index[get<id>(bj)];
-                            sum += m_matrix.expr.eval<particles_a_type,particles_b_type>(dx,ai,bj,m_rhs(j));
+                            const size_t j = (&bj-a.begin());
+                
+                            sum += eval(m_matrix.expr,dx,ai,bj,
+                                    make_unknown(i,nb,m_rhs,make_index_sequence<num_unknowns>),
+                                    make_unknown(j,nb,m_rhs,make_index_sequence<num_unknowns>));
                         }
                         y(i) = sum;
                     }
