@@ -81,39 +81,26 @@ public:
 
         Symbol<scalar1> s1;
         Symbol<scalar2> s2;
-        Unknown<0> x;
-        Unknown<1> y;
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
-        Dx dx;
+        auto dx = create_dx(a,b);
 
-        auto A = create_eigen_operator(s1[a] + x[b]);
+        auto A = create_eigen_operator(s1[a] + s2[b]);
         Eigen::VectorXd v(3);
         v << 1, 2, 3;
         Eigen::VectorXd ans(3);
         ans = A*v;
         for (int i; i<n; i++) {
-            TS_ASSERT_EQUALS(ans[i],s_init1*v.sum()); 
+            TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
         }
         v << 0, 2, 1;
         ans = A*v;
         for (int i; i<n; i++) {
-            TS_ASSERT_EQUALS(ans[i],s_init1*v.sum()); 
+            TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
         }
 
-        auto B = create_eigen_operator(x[a] + s1[b]);
-        v << 1, 2, 3;
-        ans = B*v;
-        for (int i; i<n; i++) {
-            TS_ASSERT_EQUALS(ans[i],n*v[i]*s_init1); 
-        }
-        v << 0, 2, 1;
-        ans = B*v;
-        for (int i; i<n; i++) {
-            TS_ASSERT_EQUALS(ans[i],n*v[i]*s_init1); 
-        }
 
-        auto C = create_eigen_operator(s1[a] + x[b], norm(dx) < diameter);
+        auto C = create_eigen_operator(s1[a] + s2[b], norm(dx) < diameter);
         v << 1, 2, 3;
         ans = C*v;
         
@@ -125,29 +112,12 @@ public:
                 } else if ((get<id>(particles[i]) == 2) || (get<id>(particles[j]) == 0)) {
                     sum += 0;
                 } else {
-                    sum += s_init1*v[j];
+                    sum += (s_init1+s_init2)*v[j];
                 }
             }
             TS_ASSERT_EQUALS(v[i],sum); 
         }
 
-        auto D = create_eigen_operator(s2[a] + x[b], norm(dx) < diameter);
-        v << 1, 2, 3;
-        ans = D*v;
-        
-        for (int i; i<n; i++) {
-            double sum = 0;
-            for (int j; j<n; j++) {
-                if ((get<id>(particles[i]) == 0) || (get<id>(particles[j]) == 2)) {
-                    sum += 0;
-                } else if ((get<id>(particles[i]) == 2) || (get<id>(particles[j]) == 0)) {
-                    sum += 0;
-                } else {
-                    sum += s_init2*v[j];
-                }
-            }
-            TS_ASSERT_EQUALS(v[i],sum); 
-        }
 
 #endif // HAVE_EIGEN
     }

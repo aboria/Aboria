@@ -155,7 +155,7 @@ public:
         Symbol<scalar> s;
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
-        Dx dx;
+        auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
 
        	particles.push_back(double3(0,0,0));
@@ -233,7 +233,7 @@ public:
         Symbol<scalar> s;
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
-        Dx dx;
+        auto dx = create_dx(a,b);
 
         Accumulate<std::plus<double> > sum;
         Accumulate<Aboria::max<double> > max;

@@ -34,8 +34,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#ifndef ASSEMBLE_H_
-#define ASSEMBLE_H_
+#ifndef OPERATORS_H_
+#define OPERATORS_H_
 
 #include <type_traits>
 #include "Symbolic.h"
@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_EIGEN
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
+#include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
@@ -50,10 +51,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace Aboria {
+    /*
     template<std::size_t... I>
-    static std::tuple<const double&...> make_unknown(const size_t i, const size_t nb, data_type& rhs, index_sequence<I...>) {
-        return std::make_tuple(std::get<I>(rhs[i+I*nb]...);
+    auto make_unknown(const size_t i, const size_t nb, data_type& rhs, index_sequence<I...>) 
+        -> decltype(std::make_tuple(std::get<I>(rhs[i+I*nb]...))) {
+        return std::make_tuple(std::get<I>(rhs[i+I*nb]...));
     }
+    */
 
 #ifdef HAVE_EIGEN
     template <typename Expr, typename IfExpr> 
@@ -62,21 +66,26 @@ namespace Aboria {
     template<typename Rhs, typename Expr, typename IfExpr> class 
     MatrixReplacement_ProductReturnType;
 
-    namespace Eigen {
-        namespace internal {
-            template<typename Expr, typename IfExpr>
-                struct traits<MatrixReplacement<Expr,IfExpr>> :  Eigen::internal::traits<Eigen::SparseMatrix<double> >
-                {};
-            template <typename Rhs, typename Expr, typename IfExpr>
-                struct traits<MatrixReplacement_ProductReturnType<Rhs,Expr,IfExpr> > {
-                    // The equivalent plain objet type of the product. This type is used if the product needs to be evaluated into a temporary.
-                    typedef Eigen::Matrix<typename Rhs::Scalar, Eigen::Dynamic, Rhs::ColsAtCompileTime> ReturnType;
-                };
-        }
+}
+
+namespace Eigen {
+    namespace internal {
+        template<typename Expr, typename IfExpr>
+        struct traits<Aboria::MatrixReplacement<Expr,IfExpr>> :  Eigen::internal::traits<Eigen::SparseMatrix<double> >
+        {};
+        template <typename Rhs, typename Expr, typename IfExpr>
+        struct traits<Aboria::MatrixReplacement_ProductReturnType<Rhs,Expr,IfExpr> > {
+            // The equivalent plain objet type of the product. This type is used if the product needs to be evaluated into a temporary.
+            typedef Eigen::Matrix<typename Rhs::Scalar, Eigen::Dynamic, Rhs::ColsAtCompileTime> ReturnType;
+        };
     }
+}
+
+namespace Aboria {
     // Inheriting EigenBase should not be needed in the future.
     template <typename Expr, typename IfExpr> 
-    class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement> {
+    class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<Expr,IfExpr>> {
+        public:
         typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first_type label_a_type_ref;
         typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second_type label_b_type_ref;
         typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
@@ -88,10 +97,10 @@ namespace Aboria {
         const static unsigned int dimension = particles_b_type::dimension;                          \
 
 
-        public:
             // Expose some compile-time information to Eigen:
             typedef double Scalar;
             typedef double RealScalar;
+            typedef size_t Index;
             enum {
                 ColsAtCompileTime = Eigen::Dynamic,
                 RowsAtCompileTime = Eigen::Dynamic,
@@ -99,21 +108,15 @@ namespace Aboria {
                 MaxRowsAtCompileTime = Eigen::Dynamic
             };
 
-            MatrixReplacement(const Expr& expr, const IfExpr& if_expr):m_expr(expr),m_if_expr(if_expr) {
-                const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
-
-                const size_t na = a.size();
-                const size_t nb = b.size();
-            };
-
+            MatrixReplacement(const Expr& expr, const IfExpr& if_expr):m_expr(expr),m_if_expr(if_expr) {};
 
             Index rows() const { 
-                const particles_a_type& a = detail::bivariate_expr()(expr).first.get_particles();
+                const particles_a_type& a = detail::bivariate_expr()(m_expr).first.get_particles();
                 return a.size(); 
             }
 
             Index cols() const { 
-                const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
+                const particles_b_type& b = detail::bivariate_expr()(m_expr).second.get_particles();
                 return b.size();
             }
             void resize(Index a_rows, Index a_cols) {
@@ -122,8 +125,8 @@ namespace Aboria {
             }
             // In the future, the return type should be Eigen::Product<MatrixReplacement,Rhs>
             template<typename Rhs>
-            MatrixReplacement_ProductReturnType<Rhs,Expr> operator*(const Eigen::MatrixBase<Rhs>& x) const {
-                return MatrixReplacement_ProductReturnType<Rhs,Expr>(*this, x.derived());
+            MatrixReplacement_ProductReturnType<Rhs,Expr,IfExpr> operator*(const Eigen::MatrixBase<Rhs>& x) const {
+                return MatrixReplacement_ProductReturnType<Rhs,Expr,IfExpr>(*this, x.derived());
             }
 
             const Expr& m_expr;
@@ -133,10 +136,10 @@ namespace Aboria {
     // The proxy class representing the product of a MatrixReplacement with a MatrixBase<>
     template<typename Rhs, typename Expr, typename IfExpr>
     class MatrixReplacement_ProductReturnType : public Eigen::ReturnByValue<MatrixReplacement_ProductReturnType<Rhs,Expr,IfExpr> > {
-        typedef typename MatrixReplacement<Expr>::particles_a_type particles_a_type;
-        typedef typename MatrixReplacement<Expr>::particles_b_type particles_b_type;
+        typedef typename MatrixReplacement<Expr,IfExpr>::particles_a_type particles_a_type;
+        typedef typename MatrixReplacement<Expr,IfExpr>::particles_b_type particles_b_type;
         public:
-            typedef MatrixReplacement<Expr>::Index Index;
+            typedef typename MatrixReplacement<Expr,IfExpr>::Index Index;
 
             // The ctor store references to the matrix and right-hand-side object (usually a vector).
             MatrixReplacement_ProductReturnType(const MatrixReplacement<Expr,IfExpr>& matrix, const Rhs& rhs)
@@ -151,28 +154,20 @@ namespace Aboria {
                 const particles_a_type& a = detail::bivariate_expr()(m_matrix.m_expr).first.get_particles();
                 const particles_b_type& b = detail::bivariate_expr()(m_matrix.m_expr).second.get_particles();
 
-                const Index nb = m_matrix.cols();
-                const Index nrhs = m_rhs.rows();
-
-                static int const num_unknowns = std::result_of<detail::num_unknowns(Expr)>::type::value;
-                ASSERT(nb*num_unknowns == nrhs);
-
                 const Index na = m_matrix.rows();
-                const n_unknowns = detail::num_unknowns<Expr>
+                const Index nb = m_matrix.cols();
+
+                ASSERT(nb == m_rhs.rows(),"In Eigen-Aboria Matrix-Vector product: The number of columns in the  Matrix replacement and the length of the rhs vector do not match");
+
                 y.setZero(na);
                 for (size_t i=0; i<na; ++i) {
-                    //cols_sizes[i] = 0;
                     typename particles_a_type::const_reference ai = a[i];
-                    for (auto pairj: b.get_neighbours(get<position>(ai))) {
-                        const double_d & dx = std::get<1>(pairj);
+                    for (auto pairj: b.get_neighbours(get<typename particles_a_type::position>(ai))) {
+                        const typename particles_a_type::double_d & dx = std::get<1>(pairj);
                         typename particles_b_type::const_reference bj = std::get<0>(pairj);
                         double sum = 0;
-                        if (m_matrix.m_if_expr.eval<particles_a_type,particles_b_type>(dx,ai,bj)) {
-                            const size_t j = (&bj-a.begin());
-                
-                            sum += eval(m_matrix.expr,dx,ai,bj,
-                                    make_unknown(i,nb,m_rhs,make_index_sequence<num_unknowns>),
-                                    make_unknown(j,nb,m_rhs,make_index_sequence<num_unknowns>));
+                        if (eval(m_matrix.m_if_expr,dx,ai,bj)) {
+                            sum += eval(m_matrix.expr,dx,ai,bj);
                         }
                         y(i) = sum;
                     }
@@ -190,14 +185,14 @@ namespace Aboria {
 
 
     
-    template <typename Expr, typename IfExpr,
+    template <typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>,
     typename = typename std::enable_if<proto::matches<Expr, detail::bivariate_expr>::value >::type>
-    void create_eigen_operator(const Expr& expr, const IfExpr& if_expr = SymbolicExpr(true)) {
-        return MatrixReplacement<Expr>(expr,if_expr);
+    MatrixReplacement<Expr,IfExpr> create_eigen_operator(const Expr& expr, const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) {
+        return MatrixReplacement<Expr,IfExpr>(expr,if_expr);
     }
 
 #endif
 
 }
 
-#endif //ASSEMBLE_H_
+#endif //OPERATORS_H_

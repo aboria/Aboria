@@ -47,5 +47,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Symbolic.h"
 #include "Assemble.h"
 #include "Functions.h"
+#include "Operators.h"
 
 #endif /* ABORIA_H_ */

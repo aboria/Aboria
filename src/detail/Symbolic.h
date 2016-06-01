@@ -106,10 +106,12 @@ namespace Aboria {
             std::map<const void *,std::vector<value_type> > map;
         };
 
+        /*
         template<typename I>
         struct unknown {
             typedef typename I::value value;
         };
+        */
 
         template <typename T>
         struct accumulate {
@@ -406,6 +408,7 @@ namespace Aboria {
             > {};
 
 
+        /*
         template<typename T>
         struct unknown_value {
             typedef typename T::value type;
@@ -427,6 +430,7 @@ namespace Aboria {
                 >
             >
         {};
+        */
 
 
 
@@ -435,19 +439,19 @@ namespace Aboria {
         ////////////////
 
 
-        template<typename const_reference, typename unknown_tuple_type>
+        template<typename const_reference>
         struct ParticleCtx;
 
         // Here is an evaluation context that indexes into a lazy vector
         // expression, and combines the result.
-        template<typename ParticlesType1, typename ParticlesType2, typename unknown_tuple_type>
+        template<typename ParticlesType1, typename ParticlesType2>
         struct TwoParticleCtx {
 
             typedef typename ParticlesType1::position position;
             typedef typename position::value_type position_value_type;
 
-            TwoParticleCtx(const position_value_type& dx, typename ParticlesType1::const_reference particle1, typename ParticlesType2::const_reference particle2, const unknown_tuple_type& unknown_tuple1, const unknown_tuple_type& unknown_tuple2)
-                    : dx_(dx),particle1_(particle1),particle2_(particle2),unknown_tuple1(unknown_tuple1),unknown_tuple2(unknown_tuple2)
+            TwoParticleCtx(const position_value_type& dx, typename ParticlesType1::const_reference particle1, typename ParticlesType2::const_reference particle2)
+                    : dx_(dx),particle1_(particle1),particle2_(particle2)
             {}
 
             template<
@@ -473,6 +477,7 @@ namespace Aboria {
                 }
             };
 
+            /*
             template<typename Expr>
             struct eval<Expr, proto::tag::terminal,
             typename boost::enable_if<proto::matches<Expr, proto::terminal<unknown<_> > > >::type> {
@@ -483,6 +488,7 @@ namespace Aboria {
                     return std::get<n::value>(ctx.unknown_tuple1);
                 }
             };
+            */
 
             // Handle subscripted expressions here...
             template<typename Expr>
@@ -503,12 +509,11 @@ namespace Aboria {
                 typedef typename mpl::vector<ParticlesType1,ParticlesType2> ParticlesTypes;
                 typedef typename mpl::at<ParticlesTypes,subscript_depth>::type ParticlesType;
 
-                typedef typename proto::result_of::eval<expr_to_subscript const, ParticleCtx<ParticlesType,unknown_tuple_type> const>::type result_type;
+                typedef typename proto::result_of::eval<expr_to_subscript const, ParticleCtx<ParticlesType> const>::type result_type;
 
                 result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const {
                     auto particles = std::tie(ctx.particle1_,ctx.particle2_);
-                    auto unknown_tuples = std::tie(ctx.unknown_tuple1,ctx.unknown_tuple2);
-                    ParticleCtx<ParticlesType,unknown_tuple_type> const single_ctx(std::get<subscript_depth::value>(particles),std::get<subscript_depth::value>(unknown_tuples));
+                    ParticleCtx<ParticlesType> const single_ctx(std::get<subscript_depth::value>(particles));
                     return proto::eval(proto::child_c<0>(expr), single_ctx);
                             //return proto::child_c<0>(expr).eval<ParticlesType1>(ctx.particle1_);
                 }
@@ -545,8 +550,6 @@ namespace Aboria {
             typename ParticlesType1::const_reference particle1_;
             typename ParticlesType2::const_reference particle2_;
             const position_value_type& dx_;
-            const unknown_tuple_type& unknown_tuple1;
-            const unknown_tuple_type& unknown_tuple2;
 
         };
 
@@ -600,7 +603,7 @@ namespace Aboria {
                             result_type sum = proto::value(proto::child_c<0>(expr)).init;
                             functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
                             for (auto i: particlesa) {
-                                ParticleCtx<particles_type,std::tuple<>> ctx(i,std::tuple<>());
+                                ParticleCtx<particles_type> ctx(i);
                                 if (proto::eval(proto::child_c<2>(expr),ctx)) {
                                     sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx));
                                 }
@@ -615,13 +618,13 @@ namespace Aboria {
 
         // Here is an evaluation context that indexes into a lazy vector
         // expression, and combines the result.
-        template<typename ParticlesType, typename unknown_tuple_type>
+        template<typename ParticlesType>
         struct ParticleCtx {
                 typedef typename ParticlesType::position position;
                 typedef typename position::value_type position_value_type;
 
-                ParticleCtx(typename ParticlesType::const_reference particle, const unknown_tuple_type& unknown_tuple)
-                    : particle_(particle),unknown_tuple(unknown_tuple)
+                ParticleCtx(typename ParticlesType::const_reference particle)
+                    : particle_(particle)
                 {}
 
                 template<
@@ -652,6 +655,7 @@ namespace Aboria {
                             }
                         };
 
+                /*
                 template<typename Expr>
                 struct eval<Expr, proto::tag::terminal,
                 typename boost::enable_if<proto::matches<Expr, proto::terminal<unknown<_> > > >::type> {
@@ -662,6 +666,7 @@ namespace Aboria {
                         return std::get<n::value>(ctx.unknown_tuple);
                     }
                 };
+                */
 
                 // Handle normal terminals here...
                 template<typename Expr>
@@ -693,7 +698,7 @@ namespace Aboria {
 
                             typedef typename proto::result_of::child_c<Expr, 0>::type ExprToSubscript;
 
-                            typedef typename proto::result_of::eval<ExprToSubscript const, ParticleCtx<ParticlesType,unknown_tuple_type> const>::type result_type;
+                            typedef typename proto::result_of::eval<ExprToSubscript const, ParticleCtx<ParticlesType> const>::type result_type;
 
                             result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
                             {
@@ -730,7 +735,7 @@ namespace Aboria {
                                     //std::cout << "searching around position = "<<vector + get<position>(ctx.particle_)<<std::endl;
                                     for (auto i: particlesb.get_neighbours(vector + get<position>(ctx.particle_))) {
                                         //std::cout << "doing neighbour "<<get<id>(std::get<0>(i))<<std::endl;
-                                        TwoParticleCtx<ParticlesType,particles_type,unknown_tuple_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i),ctx.unknown_tuple);
+                                        TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
                                         geometry_type geometry(vector-ctx2.dx_,proto::eval(arg1_expr,ctx2),true);
                                         //std::cout <<"result of evaluating geometry is "<<geometry<<std::endl;
                                         if (reflect_once(position_value_type(0),vector,geometry)) 
@@ -767,7 +772,7 @@ namespace Aboria {
                                 result_type sum = proto::value(proto::child_c<0>(expr)).init;
                                 functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
                                 for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
-                                    TwoParticleCtx<ParticlesType,particles_type,unknown_tuple_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i),ctx.unknown_tuple);
+                                    TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
                                     if (proto::eval(proto::child_c<2>(expr),ctx2)) {
                                         sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx2));
                                     }
@@ -777,7 +782,6 @@ namespace Aboria {
                         };
 
                 typename ParticlesType::const_reference particle_;
-                const unknown_tuple_type& unknown_tuple;
             };
 
 
@@ -823,12 +827,8 @@ namespace Aboria {
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::double_d double_d;
             typedef typename particles_a_type::const_reference particle_a_reference;
-
-            template<typename unknown_type>
-            using univariate_context_type = ParticleCtx<particles_a_type,unknown_type>;
-
-            template<typename unknown_type>
-            using result = typename proto::result_of::eval<Expr const, univariate_context_type<unknown_type> const>::type;
+            typedef ParticleCtx<particles_a_type> univariate_context_type;
+            typedef typename proto::result_of::eval<Expr const, univariate_context_type const>::type result;
         };
 
         template<typename Expr>
@@ -842,12 +842,8 @@ namespace Aboria {
             typedef typename particles_a_type::const_reference particle_a_reference;
             typedef typename particles_b_type::const_reference particle_b_reference;
             typedef typename particles_a_type::double_d double_d;
-            
-            template<typename unknown_type>
-            using bivariate_context_type = TwoParticleCtx<particles_a_type,particles_b_type,unknown_type>;
-
-            template<typename unknown_type>
-            using result = typename proto::result_of::eval<Expr const, bivariate_context_type<unknown_type> const>::type;
+            typedef TwoParticleCtx<particles_a_type,particles_b_type> bivariate_context_type ;
+            typedef typename proto::result_of::eval<Expr const, bivariate_context_type const>::type result;
 
 
         };
@@ -1043,7 +1039,7 @@ namespace Aboria {
 
                     //TODO: if vector to assign to does not exist in depth > 0, then don't need buffer
                     for (int i=0; i<particles.size(); i++) {
-                        ParticleCtx<ParticlesType,std::tuple<>> ctx(particles[i],std::tuple<>());
+                        ParticleCtx<ParticlesType> ctx(particles[i]);
                         buffer[i] = proto::eval(expr,ctx);
                     }
 
@@ -1062,7 +1058,7 @@ namespace Aboria {
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles); \
                     buffer.resize(particles.size()); \
                     for (int i=0; i<particles.size(); i++) { \
-                        ParticleCtx<ParticlesType,std::tuple<>> ctx(particles[i],std::tuple<>()); \
+                        ParticleCtx<ParticlesType> ctx(particles[i]); \
                         buffer[i] = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
                     } \
                     post(); \

@@ -56,57 +56,21 @@ namespace Aboria {
             return proto::eval(expr,ctx);
     }
 
-    template<typename Expr, typename Unknown=std::tuple<>>  
-    typename detail::symbolic_helper<Expr>::template result<Unknown> 
+    template<typename Expr>  
+    typename detail::symbolic_helper<Expr>::result
     eval(Expr const &expr, 
-            const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
-            const Unknown& unknown_a=std::tuple<>()) {
-        typename detail::symbolic_helper<Expr>::template univariate_context_type<Unknown> const ctx(particle_a,unknown_a);
+            const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a) {
+        typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(particle_a);
         return proto::eval(expr, ctx);
     }
 
-    template<typename Expr, typename Unknown=std::tuple<>>  
-    typename detail::symbolic_helper<Expr>::template result<Unknown> 
+    template<typename Expr>  
+    typename detail::symbolic_helper<Expr>::result 
     eval(Expr const &expr, 
             const typename detail::symbolic_helper<Expr>::double_d& dx,
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
-            const typename detail::symbolic_helper<Expr>::particle_b_reference& particle_b, 
-            const Unknown& unknown_a=std::tuple<>(), 
-            const Unknown& unknown_b=std::tuple<>()) {
-        typename detail::symbolic_helper<Expr>::template bivariate_context_type<Unknown> const ctx(dx,particle_a,particle_b,unknown_a,unknown_b);
-        return proto::eval(expr, ctx);
-    }
-
-    template<typename ParticleType, typename unknown_tuple_type, typename Expr,  
-        typename=typename boost::enable_if<proto::matches<Expr, detail::univariate_expr> >::type>
-    typename proto::result_of::eval<Expr const, detail::ParticleCtx<ParticleType,unknown_tuple_type> const>::type
-    eval_bivariate(Expr const &expr, 
-            typename ParticleType::const_reference particle, 
-            const unknown_tuple_type& unknown_tuple) {
-        detail::ParticleCtx<ParticleType,unknown_tuple_type> const ctx(particle,unknown_tuple);
-        return proto::eval(expr, ctx);
-    }
-
-    template<typename ParticleType1, typename ParticleType2, typename Expr,  
-        typename=typename boost::enable_if<proto::matches<Expr, detail::bivariate_expr>>::type>
-    typename proto::result_of::eval<Expr const, detail::TwoParticleCtx<ParticleType1,ParticleType2,std::tuple<>> const>::type
-    eval(Expr const &expr, const typename ParticleType1::double_d& dx, 
-            typename ParticleType1::const_reference particle1, 
-            typename ParticleType2::const_reference particle2) {
-        detail::TwoParticleCtx<ParticleType1,ParticleType2,std::tuple<>> const ctx(dx, particle1, particle2, std::tuple<>(), std::tuple<>());
-        return proto::eval(expr, ctx);
-    }
-
-
-    template<typename ParticleType1, typename ParticleType2, typename unknown_tuple_type, typename Expr,  
-        typename=typename boost::enable_if<proto::matches<Expr, detail::bivariate_expr>>::type>
-    typename proto::result_of::eval<Expr const, detail::TwoParticleCtx<ParticleType1,ParticleType2,unknown_tuple_type> const>::type
-    eval(Expr const &expr, const typename ParticleType1::double_d& dx, 
-            typename ParticleType1::const_reference particle1, 
-            typename ParticleType2::const_reference particle2, 
-            const unknown_tuple_type& unknown_tuple1,
-            const unknown_tuple_type& unknown_tuple2) {
-        detail::TwoParticleCtx<ParticleType1,ParticleType2,unknown_tuple_type> const ctx(dx, particle1, particle2, unknown_tuple1, unknown_tuple2);
+            const typename detail::symbolic_helper<Expr>::particle_b_reference& particle_b) { 
+        typename detail::symbolic_helper<Expr>::bivariate_context_type const ctx(dx,particle_a,particle_b);
         return proto::eval(expr, ctx);
     }
 
@@ -130,6 +94,7 @@ namespace Aboria {
             {}
     };
 
+    /*
     template<unsigned int I>
     struct Unknown 
         : detail::SymbolicExpr<typename proto::terminal<detail::unknown<mpl::int_<I> > >::type> {
@@ -142,6 +107,7 @@ namespace Aboria {
                 : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
             {}
     };
+    */
 
 
 
