@@ -125,7 +125,7 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
             const double_d & dx = std::get<1>(pairj);
             typename particles_b_type::const_reference bj = std::get<0>(pairj);
             if (eval(if_expr,dx,ai,bj)) {
-                const size_t j = &bj-a.begin();
+                const size_t j = &get<position>(bj)-get<position>(a).data();
                 tripletList.push_back(triplet_type(i,j,eval(expr,dx,ai,bj)));
                 //++cols_sizes[i];
             }

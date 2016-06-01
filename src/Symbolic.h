@@ -61,7 +61,7 @@ namespace Aboria {
     eval(Expr const &expr, 
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
             const Unknown& unknown_a=std::tuple<>()) {
-        typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(particle_a,unknown_a);
+        typename detail::symbolic_helper<Expr>::template univariate_context_type<Unknown> const ctx(particle_a,unknown_a);
         return proto::eval(expr, ctx);
     }
 
@@ -73,7 +73,7 @@ namespace Aboria {
             const typename detail::symbolic_helper<Expr>::particle_b_reference& particle_b, 
             const Unknown& unknown_a=std::tuple<>(), 
             const Unknown& unknown_b=std::tuple<>()) {
-        typename detail::symbolic_helper<Expr>::bivariate_context_type const ctx(particle_a,particle_b,unknown_a,unknown_b);
+        typename detail::symbolic_helper<Expr>::template bivariate_context_type<Unknown> const ctx(dx,particle_a,particle_b,unknown_a,unknown_b);
         return proto::eval(expr, ctx);
     }
 
@@ -171,22 +171,34 @@ namespace Aboria {
             //BOOST_PROTO_EXTENDS_USING_ASSIGN(Label)
     };
 
+
+    template<unsigned int I, typename P>
+    Label<I,P> create_label(P& p) {
+        return Label<I,P>(p);
+    }
+
     /// a symbolic class used to refer to the difference between neighbouring 
     /// particles position vectors. Note that for periodic domains this might 
     /// be different than `get<position)(a)-get<position>(b)`, and in this case 
     /// always gives the *shortest* position difference
-    template<typename P1, typename P2>
+    template<typename L1, typename L2>
     struct Dx 
-        : detail::SymbolicExpr<typename proto::terminal<detail::dx<P1,P2> >::type> {
+        : detail::SymbolicExpr<typename proto::terminal<detail::dx<typename L1::data_type,typename L2::data_type> >::type> {
 
-            typedef typename proto::terminal<detail::dx<P1,P2>>::type expr_type;
-            typedef typename detail::dx<P1,P2> data_type;
+            typedef typename detail::dx<typename L1::data_type,typename L2::data_type> data_type;
+            typedef typename proto::terminal<data_type>::type expr_type;
 
             /// constructor
-            explicit Dx()
-                : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
+            explicit Dx(L1& la, L2& lb)
+                : detail::SymbolicExpr<expr_type>( expr_type::make(data_type(proto::value(la),proto::value(lb))) )
             {}
     };
+
+    
+    template<typename L1, typename L2>
+    Dx<L1,L2> create_dx(L1& la, L2& lb) {
+        return Dx<L1,L2>(la,lb);
+    }
 
     /// a symbolic class used to return a normally distributed random variable. This uses
     /// the random number generator of the current particle to generate the random

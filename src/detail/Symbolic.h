@@ -133,10 +133,15 @@ namespace Aboria {
             }
         };
 
-        template <typename P1, typename P2>
+        template <typename L1, typename L2>
         struct dx {
-            typedef P1 particles_a_type;
-            typedef P2 particles_b_type;
+            typedef L1 label_a_type;
+            typedef L2 label_b_type;
+            label_a_type la;
+            label_b_type lb;
+            dx(label_a_type &la, label_b_type &lb):la(la),lb(lb) {};
+            const label_a_type & get_label_a() { return la; }
+            const label_b_type & get_label_b() { return lb; }
         };
 
         struct normal {
@@ -336,22 +341,46 @@ namespace Aboria {
                 }
         };
 
+        struct get_a_from_dx: proto::callable {
+            template<typename Sig>
+                struct result;
 
-        template<typename T>
-        struct dx_a_type{
-            typedef typename T::particles_a_type type;
+            template<typename This, typename DxType>
+            struct result<This(DxType&)> {
+                typedef typename DxType::label_a_type& type;
+            };
+
+            /*
+            template<typename DxType>
+            const typename DxType::label_a_type & operator()(const DxType& dx) {
+                return dx.get_label_a();
+            }
+            */
         };
 
-        template<typename T>
-        struct dx_b_type{
-            typedef typename T::particles_b_type type;
+        struct get_b_from_dx: proto::callable {
+            template<typename Sig>
+                struct result;
+
+            template<typename This, typename DxType>
+            struct result<This(DxType&)> {
+                typedef typename DxType::label_b_type& type;
+            };
+
+            /*
+            template<typename DxType>
+            const typename DxType::label_b_type & operator()(const DxType& dx) {
+                return dx.get_label_b();
+            }
+            */
         };
+
 
         struct bivariate_expr:
             proto::or_<
                 proto::when< 
                     proto::terminal< dx<_,_> >
-                    , make_pair(dx_a_type<proto::_value>,dx_b_type<proto::_value>)
+                    , make_pair(get_a_from_dx(proto::_value),get_b_from_dx(proto::_value))
                 >
                 , proto::when< 
                     proto::unary_expr<_, bivariate_expr>
@@ -738,7 +767,7 @@ namespace Aboria {
                                 result_type sum = proto::value(proto::child_c<0>(expr)).init;
                                 functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
                                 for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
-                                    TwoParticleCtx<ParticlesType,particles_type,unknown_tuple_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i),unknown_tuple);
+                                    TwoParticleCtx<ParticlesType,particles_type,unknown_tuple_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i),ctx.unknown_tuple);
                                     if (proto::eval(proto::child_c<2>(expr),ctx2)) {
                                         sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx2));
                                     }
@@ -796,7 +825,7 @@ namespace Aboria {
             typedef typename particles_a_type::const_reference particle_a_reference;
 
             template<typename unknown_type>
-            using univariate_context_type = typename detail::ParticleCtx<particles_a_type,unknown_type>;
+            using univariate_context_type = ParticleCtx<particles_a_type,unknown_type>;
 
             template<typename unknown_type>
             using result = typename proto::result_of::eval<Expr const, univariate_context_type<unknown_type> const>::type;
@@ -815,7 +844,7 @@ namespace Aboria {
             typedef typename particles_a_type::double_d double_d;
             
             template<typename unknown_type>
-            using bivariate_context_type = typename detail::TwoParticleCtx<particles_a_type,particles_b_type,unknown_type>;
+            using bivariate_context_type = TwoParticleCtx<particles_a_type,particles_b_type,unknown_type>;
 
             template<typename unknown_type>
             using result = typename proto::result_of::eval<Expr const, bivariate_context_type<unknown_type> const>::type;
@@ -1014,7 +1043,8 @@ namespace Aboria {
 
                     //TODO: if vector to assign to does not exist in depth > 0, then don't need buffer
                     for (int i=0; i<particles.size(); i++) {
-                        buffer[i] =  expr.template eval<ParticlesType>(particles[i]);	
+                        ParticleCtx<ParticlesType,std::tuple<>> ctx(particles[i],std::tuple<>());
+                        buffer[i] = proto::eval(expr,ctx);
                     }
 
                     post();
@@ -1032,7 +1062,8 @@ namespace Aboria {
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles); \
                     buffer.resize(particles.size()); \
                     for (int i=0; i<particles.size(); i++) { \
-                        buffer[i] = get<VariableType>(particles[i]) the_op expr.template eval<ParticlesType>(particles[i]);	\
+                        ParticleCtx<ParticlesType,std::tuple<>> ctx(particles[i],std::tuple<>()); \
+                        buffer[i] = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
                     } \
                     post(); \
                     return *this; \

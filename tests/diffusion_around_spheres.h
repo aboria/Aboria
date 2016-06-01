@@ -90,12 +90,12 @@ public:
         Symbol<id> id_;
         Symbol<alive> alive_;
         Symbol<radius> r;
-        Label<0,spheres_type > a_s(spheres);
-        Label<1,spheres_type > b_s(spheres);
-        Label<0,points_type > a_p(points);
-        Label<1,points_type > b_p(points);
+        auto a_s = create_label<0>(spheres);
+        auto b_s = create_label<1>(spheres);
+        auto a_p = create_label<0>(points);
+        auto b_p = create_label<1>(points);
+		auto dx = create_dx(a_s,b_p);
 
-		Dx dx;
 		Normal N;
 		VectorSymbolic<double> vector;		
         Accumulate<std::bit_or<bool> > any;

@@ -77,9 +77,9 @@ public:
         particles.init_neighbour_search(min,max,diameter,periodic);
 
         Symbol<scalar> s;
-        Label<0,ParticlesType> a(particles);
-        Label<1,ParticlesType> b(particles);
-        Dx<ParticlesType,ParticlesType> dx;
+        auto a = create_label<0>(particles);
+        auto b = create_label<1>(particles);
+        auto dx = create_dx(a,b);
 
         Eigen::Map<Eigen::Matrix<double,n,1> > s_vect(get<scalar>(particles).data());
 
