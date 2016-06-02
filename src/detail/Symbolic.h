@@ -281,14 +281,56 @@ namespace Aboria {
             : proto::function< proto::terminal< accumulate<_> >, LabelGrammar, SymbolicGrammar, SymbolicGrammar, SymbolicGrammar>
         {}; 
 
+
+        struct const_expr;
+        struct bivariate_expr;
+        struct univariate_expr;
+        struct not_bivariate_expr:
+            proto::or_<const_expr,univariate_expr>
+        {};
+        struct any_expr:
+            proto::or_<const_expr,univariate_expr,bivariate_expr>
+        {};
+                
+
         struct const_expr:
             proto::or_<
                 proto::and_<
                     proto::terminal<_>
                     , proto::not_<proto::terminal< label<_,_> > >
+                    , proto::not_<proto::terminal< dx<_,_> > >
                 >
+                , proto::function< proto::terminal< accumulate<_> >, LabelGrammar, not_bivariate_expr, not_bivariate_expr>
+                , proto::function< proto::terminal< accumulate<_> >, LabelGrammar, not_bivariate_expr, not_bivariate_expr, not_bivariate_expr>
                 , proto::nary_expr<_, proto::vararg<const_expr> >
             > {};
+
+        struct set_difference: proto::callable {
+            template<typename Sig>
+            struct result;
+
+            template<typename This, typename LabelType1, typename LabelType2>
+            struct result<This(std::pair<LabelType1&, LabelType2&>, LabelType1&)> {
+                typedef LabelType2& type;
+            };
+
+            template<typename This, typename LabelType1, typename LabelType2>
+            struct result<This(std::pair<LabelType1&, LabelType2&>, LabelType2&)> {
+                typedef LabelType1& type;
+            };
+
+            template<typename LabelType1, typename LabelType2>
+            LabelType2& operator()(std::pair<LabelType1&, LabelType2&> pair, LabelType1& label1) {
+                return pair.second; 
+            }
+
+            template<typename LabelType1, typename LabelType2>
+            LabelType1& operator()(std::pair<LabelType1&, LabelType2&> pair, LabelType2& label1) {
+                return pair.first; 
+            }
+        };
+
+
 
         struct univariate_expr:
             proto::or_<
@@ -296,6 +338,27 @@ namespace Aboria {
                     proto::terminal< label<_,_> >
                     , proto::_value
                 >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, bivariate_expr, any_expr>
+                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child2))
+                >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, any_expr, bivariate_expr>
+                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child3))
+                >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, bivariate_expr, any_expr, any_expr>
+                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child2))
+                >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, any_expr, bivariate_expr, any_expr>
+                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child3))
+                >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, any_expr, any_expr, bivariate_expr>
+                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child4))
+                >
+                    
                 , proto::when< 
                     proto::unary_expr<_, univariate_expr>
                     , univariate_expr(proto::_left)
@@ -819,6 +882,12 @@ namespace Aboria {
 
         template<typename Expr, typename Enable=void>
         struct symbolic_helper {};
+
+        template<typename Expr>
+        struct symbolic_helper<Expr, typename boost::enable_if<proto::matches<Expr, detail::const_expr> >::type> {
+            typedef ConstantCtx const_context_type;
+            typedef typename proto::result_of::eval<Expr const, const_context_type const>::type result;
+        };
 
         template<typename Expr>
         struct symbolic_helper<Expr, typename boost::enable_if<proto::matches<Expr, detail::univariate_expr> >::type> {

@@ -132,7 +132,7 @@ int main(int argc, char **argv) {
 	std::cout << "starting...."<<std::endl;
 	sph.init_neighbour_search(low,high,2*hfac*psep,periodic);
 
-    Dx dx;
+    auto dx = create_dx(a,b);
     Accumulate<std::plus<double3> > sum_vect;
     Accumulate<std::plus<double> > sum;
     Accumulate<Aboria::max<double> > max;

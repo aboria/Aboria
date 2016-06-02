@@ -86,7 +86,7 @@ int main(int argc, char **argv) {
     Symbol<id> id_;
     Label<0,dem_type> a(dem);
     Label<1,dem_type> b(dem);
-    Dx dx;
+    auto dx = create_dx(a,b);
     Accumulate<std::plus<double3> > sum;
     
     /*

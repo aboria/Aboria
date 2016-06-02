@@ -50,27 +50,61 @@ namespace Aboria {
     //TODO: move univariate and bivariate down here to
     //TODO: check its a constant expression...
     template <class Expr>
-    typename proto::result_of::eval<Expr const,  detail::ConstantCtx const>::type
+    typename boost::enable_if<proto::matches<Expr, detail::const_expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr) {
-            detail::ConstantCtx const ctx;
-            return proto::eval(expr,ctx);
+        typename detail::symbolic_helper<Expr>::const_context_type const ctx;
+        return proto::eval(expr,ctx);
     }
 
     template<typename Expr>  
-    typename detail::symbolic_helper<Expr>::result
+    typename boost::enable_if<proto::matches<Expr, detail::univariate_expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a) {
         typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(particle_a);
         return proto::eval(expr, ctx);
     }
 
+    template<typename Expr, typename AnyRef>  
+    typename boost::enable_if<proto::matches<Expr, detail::const_expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr const &expr, 
+            const AnyRef& particle_a) {
+        typename detail::symbolic_helper<Expr>::constant_context_type const ctx;
+        return proto::eval(expr, ctx);
+    }
+
     template<typename Expr>  
-    typename detail::symbolic_helper<Expr>::result 
+    typename boost::enable_if<proto::matches<Expr, detail::bivariate_expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const typename detail::symbolic_helper<Expr>::double_d& dx,
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
             const typename detail::symbolic_helper<Expr>::particle_b_reference& particle_b) { 
         typename detail::symbolic_helper<Expr>::bivariate_context_type const ctx(dx,particle_a,particle_b);
+        return proto::eval(expr, ctx);
+    }
+
+    template<typename Expr, typename AnyRef>  
+    typename boost::enable_if<proto::matches<Expr, detail::univariate_expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr const &expr, 
+            const typename detail::symbolic_helper<Expr>::double_d& dx,
+            const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
+            const AnyRef& particle_b) { 
+        typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(particle_a);
+        return proto::eval(expr, ctx);
+    }
+
+    template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
+    typename boost::enable_if<proto::matches<Expr, detail::const_expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr const &expr, 
+            const AnyDx& dx,
+            const AnyRef1& particle_a, 
+            const AnyRef2& particle_b) { 
+        typename detail::symbolic_helper<Expr>::const_context_type const ctx;
         return proto::eval(expr, ctx);
     }
 

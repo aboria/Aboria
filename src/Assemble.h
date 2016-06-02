@@ -77,13 +77,8 @@ void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
 
     for (size_t i=0; i<na; ++i) {
         for (size_t j=0; j<na; ++j) {
-            double_d dx = get<position>(b[i])-get<position>(a[i]);
-            double_d domain_width = a.get_max()-a.get_min();
-            for (size_t d; d<dimension; ++d) {
-                while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
-                while (dx[d] <= domain_width[d]/2) dx[d] += domain_width[d];
-            }
-            matrix(i,j) = eval(expr,dx,a[i],b[i]);
+            double_d dx = a.correct_dx_for_periodicity(get<position>(b[j])-get<position>(a[i]));
+            matrix(i,j) = eval(expr,dx,a[i],b[j]);
         }
     }
 }
@@ -125,7 +120,7 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
             const double_d & dx = std::get<1>(pairj);
             typename particles_b_type::const_reference bj = std::get<0>(pairj);
             if (eval(if_expr,dx,ai,bj)) {
-                const size_t j = &get<position>(bj)-get<position>(a).data();
+                const size_t j = &get<position>(bj)-get<position>(b).data();
                 tripletList.push_back(triplet_type(i,j,eval(expr,dx,ai,bj)));
                 //++cols_sizes[i];
             }

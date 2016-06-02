@@ -90,12 +90,12 @@ public:
         v << 1, 2, 3;
         Eigen::VectorXd ans(3);
         ans = A*v;
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
         }
         v << 0, 2, 1;
         ans = A*v;
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
         }
 
@@ -104,18 +104,18 @@ public:
         v << 1, 2, 3;
         ans = C*v;
         
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             double sum = 0;
-            for (int j; j<n; j++) {
-                if ((get<id>(particles[i]) == 0) || (get<id>(particles[j]) == 2)) {
+            for (int j=0; j<n; j++) {
+                if ((get<id>(particles[i]) == 0) && (get<id>(particles[j]) == 2)) {
                     sum += 0;
-                } else if ((get<id>(particles[i]) == 2) || (get<id>(particles[j]) == 0)) {
+                } else if ((get<id>(particles[i]) == 2) && (get<id>(particles[j]) == 0)) {
                     sum += 0;
                 } else {
                     sum += (s_init1+s_init2)*v[j];
                 }
             }
-            TS_ASSERT_EQUALS(v[i],sum); 
+            TS_ASSERT_EQUALS(ans[i],sum); 
         }
 
 

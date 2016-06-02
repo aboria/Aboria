@@ -86,7 +86,7 @@ public:
         Eigen::Matrix<double,n,n> A;
         assemble(A, s[a] + s[b]);
         s_vect = A*s_vect;
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(s_vect[i],(2*s_init)*particles.size()); 
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
             for (int j; j<n; j++) {
@@ -102,7 +102,7 @@ public:
         Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> B(n,n);
         assemble(B, s[a] + s[b]);
         s_vect = B*s_vect;
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),(2*s_init)*particles.size()); 
             for (int j; j<n; j++) {
                 TS_ASSERT_EQUALS(B(i,j),(2*s_init)); 
@@ -114,14 +114,14 @@ public:
         s_vect = C*s_vect;
         const double exp = (2*s_init)*particles.size();
 
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             if ((get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2)) {
                 TS_ASSERT_EQUALS(get<scalar>(particles[i]),2*2*exp*exp); 
             }
             if (get<id>(particles[i]) == 1) {
                 TS_ASSERT_EQUALS(get<scalar>(particles[i]),3*2*exp*exp); 
             }
-            for (int j; j<n; j++) {
+            for (int j=0; j<n; j++) {
                 if ((get<id>(particles[i]) == 1) || (get<id>(particles[j]) == 1)) {
                     TS_ASSERT_EQUALS(C.coeff(i,j),2*exp); 
                 }
@@ -143,7 +143,7 @@ public:
         }
 
         s_vect.setOnes();
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(get<scalar>(particles[i]),1.0); 
         }
 
@@ -152,7 +152,7 @@ public:
 
         s_vect = D*s_vect;
 
-        for (int i; i<n; i++) {
+        for (int i=0; i<n; i++) {
             if ((get<id>(particles[i]) == 0) || (get<id>(particles[i]) == 2)) {
                 TS_ASSERT_EQUALS(get<scalar>(particles[i]),2*2); 
             }

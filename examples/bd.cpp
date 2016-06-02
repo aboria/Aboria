@@ -56,11 +56,11 @@ int main(int argc, char **argv) {
     Label<1,spheres_type > b(spheres);
     Label<0,points_type > i(points);
     Label<1,points_type > j(points);
-    Dx dx;
+    auto dx = create_dx(i,b);
     Normal N;
-    GeometriesSymbolic<Sphere> spheres_;        
     VectorSymbolic<double> vector;      
     Accumulate<std::bit_or<bool> > any;
+    Accumulate<std::plus<double3> > sum;
 
     int count_before=0;
     for(auto point: points) {
@@ -101,7 +101,10 @@ int main(int argc, char **argv) {
             Visualisation::vtkWriteGrid("vis/points",ts/10,grid);
 #endif
         }
-        p[i] += std::sqrt(2*D*dt)*vector(N,N,N) | spheres_(b,r[b]);
+        p[i] += std::sqrt(2*D*dt)*vector(N,N,N);
+        p[i] += sum(b, norm(dx) < r[b],
+                    -2*(r[b]/norm(dx)-1)*dx );
+
     }
     std::cout << std::endl;
 }

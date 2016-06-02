@@ -333,6 +333,16 @@ public:
         searchable = true;
     }
 
+    double_d correct_dx_for_periodicity(const double_d& uncorrected_dx) const {
+        double_d dx = uncorrected_dx;
+        double_d domain_width = get_max()-get_min();
+        for (size_t d=0; d<dimension; ++d) {
+            while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
+            while (dx[d] <= domain_width[d]/2) dx[d] += domain_width[d];
+        }
+        return dx;
+    }
+
     /// return the length scale of the neighbourhood search
     /// \see init_neighbour_search()
     const double get_lengthscale() const {

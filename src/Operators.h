@@ -138,6 +138,9 @@ namespace Aboria {
     class MatrixReplacement_ProductReturnType : public Eigen::ReturnByValue<MatrixReplacement_ProductReturnType<Rhs,Expr,IfExpr> > {
         typedef typename MatrixReplacement<Expr,IfExpr>::particles_a_type particles_a_type;
         typedef typename MatrixReplacement<Expr,IfExpr>::particles_b_type particles_b_type;
+        typedef typename particles_a_type::position position;
+        typedef typename particles_a_type::double_d double_d;
+        const static unsigned int dimension = particles_a_type::dimension;                          \
         public:
             typedef typename MatrixReplacement<Expr,IfExpr>::Index Index;
 
@@ -162,15 +165,24 @@ namespace Aboria {
                 y.setZero(na);
                 for (size_t i=0; i<na; ++i) {
                     typename particles_a_type::const_reference ai = a[i];
-                    for (auto pairj: b.get_neighbours(get<typename particles_a_type::position>(ai))) {
-                        const typename particles_a_type::double_d & dx = std::get<1>(pairj);
-                        typename particles_b_type::const_reference bj = std::get<0>(pairj);
-                        double sum = 0;
-                        if (eval(m_matrix.m_if_expr,dx,ai,bj)) {
-                            sum += eval(m_matrix.expr,dx,ai,bj);
+                    double sum = 0;
+                    if (boost::is_same<IfExpr,detail::SymbolicExpr<typename proto::terminal<bool>::type>>::value) {
+                        for (size_t j=0; j<nb; ++j) {
+                            typename particles_b_type::const_reference bj = b[j];
+                            const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                            sum += eval(m_matrix.m_expr,dx,ai,bj)*m_rhs(j);
                         }
-                        y(i) = sum;
+                    } else {
+                        for (auto pairj: b.get_neighbours(get<position>(ai))) {
+                            const double_d & dx = std::get<1>(pairj);
+                            typename particles_b_type::const_reference bj = std::get<0>(pairj);
+                            const Index j = &get<position>(bj) - get<position>(b).data();
+                            if (eval(m_matrix.m_if_expr,dx,ai,bj)) {
+                                sum += eval(m_matrix.m_expr,dx,ai,bj)*m_rhs(j);
+                            }
+                        }
                     }
+                    y(i) = sum;
                 }
             }
 
