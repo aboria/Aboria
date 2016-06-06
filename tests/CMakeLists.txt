@@ -1,14 +1,14 @@
 
 set(test_package 
     operators
-    constructors 
-    variables
-    particle_container
-    neighbours
+    #constructors 
+    #variables
+    #particle_container
+    #neighbours
     #geometry
-    diffusion_around_spheres
-    assemble
-    symbolic
+    #diffusion_around_spheres
+    #assemble
+    #symbolic
     )
 
 foreach(test ${test_package})

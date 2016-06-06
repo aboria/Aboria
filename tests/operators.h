@@ -85,7 +85,7 @@ public:
         Label<1,ParticlesType> b(particles);
         auto dx = create_dx(a,b);
 
-        auto A = create_eigen_operator(s1[a] + s2[b]);
+        auto A = create_eigen_operator(a,b, s1[a] + s2[b]);
         Eigen::VectorXd v(3);
         v << 1, 2, 3;
         Eigen::VectorXd ans(3);
@@ -100,7 +100,7 @@ public:
         }
 
 
-        auto C = create_eigen_operator(s1[a] + s2[b], norm(dx) < diameter);
+        auto C = create_eigen_operator(a,b, s1[a] + s2[b], norm(dx) < diameter);
         v << 1, 2, 3;
         ans = C*v;
         
