@@ -40,7 +40,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <type_traits>
 #include "Symbolic.h"
 
-
 #ifdef HAVE_EIGEN
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 #include <Eigen/Core>
@@ -83,12 +82,22 @@ namespace Eigen {
 
 namespace Aboria {
 
-    struct one {
-        struct dummy {
+    struct OneDummy {
+        struct vector_tag {
             size_t size() { return 1; }
         };
-        const dummy& get_particles() { return d; }
-        dummy d;
+        vector_tag get_particles() { return d; }
+
+        vector_tag d;
+    };
+
+    struct SizeOne {
+        size_t size() const { return 1; }
+    };
+
+    struct One {
+        const SizeOne& get_size_one() const { return one; }
+        SizeOne one;
     };
 
     int sum() {
@@ -97,7 +106,6 @@ namespace Aboria {
 
     template<typename T1, typename... T>
     int sum(T1 s, T... ts) {
-        std::cout << "s = "<<s<<std::endl;
         return s + sum(ts...);
     }
 
@@ -133,12 +141,12 @@ namespace Aboria {
             }
 
             Index rows() const { 
-                std::cout << "rows = " << rows_impl(make_index_sequence<NI>()) << std::endl;
+                //std::cout << "rows = " << rows_impl(make_index_sequence<NI>()) << std::endl;
                 return rows_impl(make_index_sequence<NI>());
             }
 
             Index cols() const { 
-                std::cout << "cols = " << cols_impl(make_index_sequence<NJ>())<< std::endl;
+                //std::cout << "cols = " << cols_impl(make_index_sequence<NJ>())<< std::endl;
                 return cols_impl(make_index_sequence<NJ>());
             }
 
@@ -189,23 +197,13 @@ namespace Aboria {
             Index rows() const { return m_matrix.rows(); }
             Index cols() const { return m_rhs.cols(); }
 
+
             template <typename Dest, typename Source, typename particles_a_type, typename particles_b_type,
                                      typename expr_type, typename if_expr_type>
             void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) const {
                 typedef typename particles_b_type::double_d double_d;
                 typedef typename particles_b_type::position position;
                 const static unsigned int dimension = particles_b_type::dimension;
-
-                typedef typename std::result_of<detail::bivariate_expr(expr_type)>::type::first_type label_a_type_ref;
-                typedef typename std::result_of<detail::bivariate_expr(expr_type)>::type::second_type label_b_type_ref;
-                typedef typename std::remove_reference<label_a_type_ref>::type label_a_type_check;
-                typedef typename std::remove_reference<label_b_type_ref>::type label_b_type_check;
-                typedef typename label_a_type_check::particles_type particles_a_type_check;
-                typedef typename label_b_type_check::particles_type particles_b_type_check;
-
-                static_assert(std::is_same<particles_a_type_check,particles_a_type>::value, "particles type a in expression not the same as particles type given to block");
-                static_assert(std::is_same<particles_b_type_check,particles_b_type>::value, "particles type b in expression not the same as particles type given to block");
-
                 const particles_a_type& a = std::get<0>(block);
                 const particles_b_type& b = std::get<1>(block);
                 const expr_type expr = std::get<2>(block);
@@ -214,16 +212,31 @@ namespace Aboria {
                 const Index na = a.size();
                 const Index nb = b.size();
 
-                for (size_t i=0; i<na; ++i) {
-                    typename particles_a_type::const_reference ai = a[i];
-                    double sum = 0;
-                    if (boost::is_same<if_expr_type,detail::SymbolicExpr<typename proto::terminal<bool>::type>>::value) {
+                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon()))
+                    ||
+                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())))
+                    ) {
+                    //std::cout << "zero a x b block" <<std::endl;
+                    return;
+                }
+
+                if (proto::matches<if_expr_type,detail::const_expr>::value && eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())==true) {
+                    //std::cout << "dense a x b block" <<std::endl;
+                    for (size_t i=0; i<na; ++i) {
+                        typename particles_a_type::const_reference ai = a[i];
+                        double sum = 0;
                         for (size_t j=0; j<nb; ++j) {
                             typename particles_b_type::const_reference bj = b[j];
                             const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
                             sum += eval(expr,dx,ai,bj)*rhs(j);
                         }
-                    } else {
+                        y(i) += sum;
+                    }
+                } else {
+                    //std::cout << "sparse a x b block" <<std::endl;
+                    for (size_t i=0; i<na; ++i) {
+                        typename particles_a_type::const_reference ai = a[i];
+                        double sum = 0;
                         for (auto pairj: b.get_neighbours(get<position>(ai))) {
                             const double_d & dx = std::get<1>(pairj);
                             typename particles_b_type::const_reference bj = std::get<0>(pairj);
@@ -232,33 +245,34 @@ namespace Aboria {
                                 sum += eval(expr,dx,ai,bj)*rhs(j);
                             }
                         }
+                        y(i) += sum;
                     }
-                    y(i) += sum;
                 }
             }
 
 
             template <typename Dest, typename Source, typename particles_b_type,
                                      typename expr_type, typename if_expr_type>
-            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const one&,const particles_b_type&,expr_type,if_expr_type>& block) const {
+            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) const {
 
                 typedef typename particles_b_type::double_d double_d;
                 typedef typename particles_b_type::position position;
                 const static unsigned int dimension = particles_b_type::dimension;
 
-                typedef typename std::result_of<detail::univariate_expr(expr_type)>::type label_b_type_ref;
-                typedef typename std::remove_reference<label_b_type_ref>::type label_b_type_check;
-                typedef typename label_b_type_check::particles_type particles_b_type_check;
-
-                static_assert(std::is_same<particles_b_type_check,particles_b_type>::value, "particles type b in expression not the same as particles type given to block");
-
-                const particles_b_type& b = std::get<1>(block).get_particles();
+                const particles_b_type& b = std::get<1>(block);
                 const expr_type expr = std::get<2>(block);
                 const if_expr_type if_expr = std::get<3>(block);
 
                 const Index nb = b.size();
 
+                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr,typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
+                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr,typename particles_b_type::value_type())))) {
+                    //std::cout << "zero one x b block" <<std::endl;
+                    return;
+                }
+
                 double sum = 0;
+                //std::cout << "dens one x b block" <<std::endl;
                 for (size_t j=0; j<nb; ++j) {
                     typename particles_b_type::const_reference bj = b[j];
                     if (eval(if_expr,bj)) {
@@ -270,24 +284,25 @@ namespace Aboria {
 
             template <typename Dest, typename Source, typename particles_a_type,
                                      typename expr_type, typename if_expr_type>
-            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const one&,expr_type,if_expr_type>& block) const {
+            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) const {
 
                 typedef typename particles_a_type::double_d double_d;
                 typedef typename particles_a_type::position position;
                 const static unsigned int dimension = particles_a_type::dimension;
 
-                typedef typename std::result_of<detail::univariate_expr(expr_type)>::type label_a_type_ref;
-                typedef typename std::remove_reference<label_a_type_ref>::type label_a_type_check;
-                typedef typename label_a_type_check::particles_type particles_a_type_check;
-
-                static_assert(std::is_same<particles_a_type_check,particles_a_type>::value, "particles type a in expression not the same as particles type given to block");
-
-                const particles_a_type& a = std::get<0>(block).get_particles();
+                const particles_a_type& a = std::get<0>(block);
                 const expr_type expr = std::get<2>(block);
                 const if_expr_type if_expr = std::get<3>(block);
 
                 const Index na = a.size();
 
+                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr,typename particles_a_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
+                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr,typename particles_a_type::value_type())))) {
+                    //std::cout << "zero a x one block" <<std::endl;
+                    return;
+                }
+
+                //std::cout << "dens a x one block" <<std::endl;
                 for (size_t i=0; i<na; ++i) {
                     typename particles_a_type::const_reference ai = a[i];
                     if (eval(if_expr,ai)) {
@@ -296,14 +311,34 @@ namespace Aboria {
                 }
             }
 
+            template <typename Dest, typename Source,
+                                     typename expr_type, typename if_expr_type>
+            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) const {
+
+                const expr_type expr = std::get<2>(block);
+                const if_expr_type if_expr = std::get<3>(block);
+
+                //TODO: should use return type instead of double
+                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr))<=std::numeric_limits<double>::epsilon())) ||
+    
+                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr)))) {
+                    //std::cout << "zero one x one block" <<std::endl;
+                    return;
+                }
+
+                proto::display_expr(expr);
+                //std::cout << "dens one x one block" <<std::endl;
+                y(0) = eval(expr)*rhs(0);
+            }
+
 
             template<typename Dest>
             void evalTo_impl2(Dest& y) const {}
              
             template<typename Dest, typename I, typename J, typename T1, typename ... T>
             void evalTo_impl2(Dest& y, const std::tuple<I,J,T1>& block, const T&... other_blocks) const {
-                evalTo_block(y.segment(m_matrix.template start_col<J::value>(),m_matrix.template size_col<J::value>()),
-                        m_rhs.segment(m_matrix.template start_row<I::value>(),m_matrix.template size_row<I::value>()),
+                evalTo_block(y.segment(m_matrix.template start_row<I::value>(),m_matrix.template size_row<I::value>()),
+                        m_rhs.segment(m_matrix.template start_col<J::value>(),m_matrix.template size_col<J::value>()),
                         std::get<2>(block));
                 evalTo_impl2(y,other_blocks...);
             }
@@ -344,6 +379,50 @@ namespace Aboria {
         return MatrixReplacement<1,1,std::tuple<std::tuple<const A&, const B&, Expr,IfExpr>>>(
                 std::make_tuple(
                     std::tie(proto::value(a).get_particles(),proto::value(b).get_particles(),expr,if_expr)
+                ));
+    }
+
+    template <typename B, unsigned int B_depth, 
+              typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
+    MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&,const B&,Expr,IfExpr>>> 
+    create_eigen_operator(
+            const One& a, 
+            const Label<B_depth,B>& b, 
+            const Expr& expr, 
+            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
+    {
+        return MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&, const B&, Expr,IfExpr>>>(
+                std::make_tuple(
+                    std::tie(a.get_size_one(),proto::value(b).get_particles(),expr,if_expr)
+                ));
+    }
+
+    template <typename A, unsigned int A_depth, 
+              typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
+    MatrixReplacement<1,1,std::tuple<std::tuple<const A&,const SizeOne&,Expr,IfExpr>>> 
+    create_eigen_operator(
+            const Label<A_depth,A>& a, 
+            const One& b, 
+            const Expr& expr, 
+            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
+    {
+        return MatrixReplacement<1,1,std::tuple<std::tuple<const A&, const SizeOne&, Expr,IfExpr>>>(
+                std::make_tuple(
+                    std::tie(proto::value(a).get_particles(),b.get_size_one(),expr,if_expr)
+                ));
+    }
+
+    template <typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
+    MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&,const SizeOne&,Expr,IfExpr>>> 
+    create_eigen_operator(
+            const One& a, 
+            const One& b, 
+            const Expr& expr, 
+            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
+    {
+        return MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&, const SizeOne&, Expr,IfExpr>>>(
+                std::make_tuple(
+                    std::tie(a.get_size_one(),b.get_size_one(),expr,if_expr)
                 ));
     }
 

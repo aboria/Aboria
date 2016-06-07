@@ -50,6 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/proto/context.hpp>
 #include <boost/proto/traits.hpp>
 #include <boost/proto/transform.hpp>
+#include <boost/proto/debug.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/ice.hpp>
 #include <boost/type_traits/is_same.hpp>
@@ -757,7 +758,8 @@ namespace Aboria {
                             typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
                             typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
 
-                            BOOST_MPL_ASSERT_RELATION( subscript_depth::value, == , 0 );
+                            // don't need? could have var[b] = other_var[b], with b.depth>0. makes sense
+                            //BOOST_MPL_ASSERT_RELATION( subscript_depth::value, == , 0 );
 
                             typedef typename proto::result_of::child_c<Expr, 0>::type ExprToSubscript;
 

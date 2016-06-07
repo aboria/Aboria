@@ -122,7 +122,73 @@ public:
 #endif // HAVE_EIGEN
     }
 
+    void test_Eigen_block(void) {
+#ifdef HAVE_EIGEN
+        ABORIA_VARIABLE(scalar1,double,"scalar1")
+        ABORIA_VARIABLE(scalar2,double,"scalar2")
 
+    	typedef Particles<std::tuple<scalar1,scalar2>> ParticlesType;
+        typedef position_d<3> position;
+       	ParticlesType particles;
+
+       	double diameter = 0.1;
+        double3 min(-1);
+        double3 max(1);
+        double3 periodic(true);
+        
+        ParticlesType::value_type p;
+        get<position>(p) = double3(0,0,0);
+        get<scalar1>(p) = 1;
+        get<scalar2>(p) = 0.1;
+       	particles.push_back(p);
+        get<position>(p) = double3(diameter*0.9,0,0);
+        get<scalar1>(p) = 2;
+        get<scalar2>(p) = 0.2;
+       	particles.push_back(p);
+        get<position>(p) = double3(diameter*1.8,0,0);
+        get<scalar1>(p) = 3;
+        get<scalar2>(p) = 0.3;
+       	particles.push_back(p);
+
+
+        const size_t n = 3;
+
+        particles.init_neighbour_search(min,max,diameter,periodic);
+
+        Symbol<scalar1> s1;
+        Symbol<scalar2> s2;
+        Label<0,ParticlesType> a(particles);
+        Label<1,ParticlesType> b(particles);
+        auto dx = create_dx(a,b);
+        One one;
+
+        auto A = create_eigen_operator(a,b, s1[a]);
+        Eigen::VectorXd v(n);
+        v << 1, 1, 1;
+        Eigen::VectorXd ans(n);
+        ans = A*v;
+        TS_ASSERT_EQUALS(ans[0],3); 
+        TS_ASSERT_EQUALS(ans[1],6); 
+        TS_ASSERT_EQUALS(ans[2],9); 
+
+        auto B = create_eigen_operator(a,one, s2[a]);
+        auto C = create_eigen_operator(one,b, s2[b]);
+        auto Zero = create_eigen_operator(one,one, proto::lit(0.));
+
+        auto Full = create_block_eigen_operator<2,2>(A,B,
+                                                     C,Zero);
+
+        v.resize(n+1);
+        v << 1, 1, 1, 1;
+        ans.resize(n+1);
+        ans = Full*v;
+        TS_ASSERT_DELTA(ans[0],3.1,std::numeric_limits<double>::epsilon()); 
+        TS_ASSERT_DELTA(ans[1],6.2,std::numeric_limits<double>::epsilon()); 
+        TS_ASSERT_DELTA(ans[2],9.3,std::numeric_limits<double>::epsilon()); 
+        TS_ASSERT_DELTA(ans[3],0.6,std::numeric_limits<double>::epsilon()); 
+
+#endif // HAVE_EIGEN
+    }
 
 
 };

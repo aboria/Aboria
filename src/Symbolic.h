@@ -71,7 +71,7 @@ namespace Aboria {
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const AnyRef& particle_a) {
-        typename detail::symbolic_helper<Expr>::constant_context_type const ctx;
+        typename detail::symbolic_helper<Expr>::const_context_type const ctx;
         return proto::eval(expr, ctx);
     }
 
