@@ -46,6 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
+//#include <Eigen/ForwardDeclarations.h>
 #endif
 
 
@@ -120,6 +121,7 @@ namespace Aboria {
             typedef double Scalar;
             typedef double RealScalar;
             typedef size_t Index;
+            typedef size_t StorageIndex;
             enum {
                 ColsAtCompileTime = Eigen::Dynamic,
                 RowsAtCompileTime = Eigen::Dynamic,
@@ -148,6 +150,14 @@ namespace Aboria {
             Index cols() const { 
                 //std::cout << "cols = " << cols_impl(make_index_sequence<NJ>())<< std::endl;
                 return cols_impl(make_index_sequence<NJ>());
+            }
+
+            Index innerSize() const { 
+                return rows();
+            }
+
+            Index outerSize() const { 
+                return cols();
             }
 
             template <int I>
@@ -362,10 +372,71 @@ namespace Aboria {
 
 
 
+    /*****/
+    // This class simply warp a diagonal matrix as a Jacobi preconditioner.
+    // In the future such simple and generic wrapper should be shipped within Eigen itsel.
+    //
+    template <typename _Scalar>
+    class MyJacobiPreconditioner
+    {
+        typedef _Scalar Scalar;
+        typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> Vector;
+        typedef typename Vector::Index Index;
+        public:
+        // this typedef is only to export the scalar type and compile-time dimensions to solve_retval
+        typedef Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> MatrixType;
+        MyJacobiPreconditioner() : m_isInitialized(false) {}
+        void setInvDiag(const Eigen::VectorXd &invdiag) {
+            m_invdiag=invdiag;
+            m_isInitialized=true;
+        }
+        Index rows() const { return m_invdiag.size(); }
+        Index cols() const { return m_invdiag.size(); }
 
+        template<typename MatType>
+            MyJacobiPreconditioner& analyzePattern(const MatType& ) { return *this; }
 
+        template<typename MatType>
+            MyJacobiPreconditioner& factorize(const MatType& mat) { return *this; }
 
+        template<typename MatType>
+            MyJacobiPreconditioner& compute(const MatType& mat) { return *this; }
+        template<typename Rhs, typename Dest>
+            void _solve(const Rhs& b, Dest& x) const
+            {
+                x = m_invdiag.array() * b.array() ;
+            }
+        template<typename Rhs> inline const Eigen::internal::solve_retval<MyJacobiPreconditioner, Rhs>
+            solve(const Eigen::MatrixBase<Rhs>& b) const
+            {
+                eigen_assert(m_isInitialized && "MyJacobiPreconditioner is not initialized.");
+                eigen_assert(m_invdiag.size()==b.rows()
+                        && "MyJacobiPreconditioner::solve(): invalid number of rows of the right hand side matrix b");
+                return Eigen::internal::solve_retval<MyJacobiPreconditioner, Rhs>(*this, b.derived());
+            }
+        protected:
+        Vector m_invdiag;
+        bool m_isInitialized;
+    };
+}
+
+namespace Eigen {
+    namespace internal {
+    template<typename _MatrixType, typename Rhs>
+    struct solve_retval<MyJacobiPreconditioner<_MatrixType>, Rhs>
+    : solve_retval_base<MyJacobiPreconditioner<_MatrixType>, Rhs>
+    {
+        typedef MyJacobiPreconditioner<_MatrixType> Dec;
+        EIGEN_MAKE_SOLVE_HELPERS(Dec,Rhs)
+            template<typename Dest> void evalTo(Dest& dst) const
+            {
+                dec()._solve(rhs(),dst);
+            }
+    };
+    }
+}
     
+namespace Aboria {    
     template <typename A, unsigned int A_depth, 
               typename B, unsigned int B_depth, 
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>

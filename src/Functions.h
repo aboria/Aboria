@@ -186,6 +186,20 @@ namespace Aboria {
     /// a symbolic exponential function for scalars
     ///
     ABORIA_UNARY_FUNCTION(exp, exp_fun, SymbolicDomain);
+
+    struct sqrt_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const double& arg) const
+		{
+			return std::sqrt(arg);
+		}
+	};
+
+    /// a symbolic square root function for scalars
+    ///
+    ABORIA_UNARY_FUNCTION(sqrt, sqrt_fun, SymbolicDomain);
     
     struct pow_fun
     {
