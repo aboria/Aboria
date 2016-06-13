@@ -10,10 +10,12 @@ set(test_package
     assemble
     symbolic
     rbf_pde
+    metafunctions
     )
 
 set(test_package
-    symbolic)
+    metafunctions
+    )
 
 foreach(test ${test_package})
     cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)

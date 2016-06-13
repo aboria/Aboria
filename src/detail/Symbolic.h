@@ -377,9 +377,11 @@ namespace Aboria {
                                                                     proto::_child2,
                                                                     get_labels(proto::_child3)))
                 >
+                /*
                 , proto::otherwise< 
                     proto::fold<_, fusion::nil_(), get_labels> 
                 >
+                */
            >
         {};
 
@@ -388,7 +390,9 @@ namespace Aboria {
         struct is_const: 
             mpl::equal_to<
                 typename fusion::result_of::size<
-                    typename boost::result_of<get_labels(Expr)>::type
+                    typename std::remove_reference<
+                    typename boost::result_of<get_labels(Expr,fusion::nil_)>::type
+                    >::type
                 >::type
                 , mpl::int_<0>
             >
@@ -398,7 +402,9 @@ namespace Aboria {
         struct is_univariate: 
             mpl::equal_to<
                 typename fusion::result_of::size<
-                    typename boost::result_of<get_labels(Expr)>::type
+                    typename std::remove_reference<
+                    typename boost::result_of<get_labels(Expr,fusion::nil_)>::type
+                    >::type
                 >::type
                 , mpl::int_<1>
             >
@@ -408,7 +414,9 @@ namespace Aboria {
         struct is_bivariate: 
             mpl::equal_to<
                 typename fusion::result_of::size<
-                    typename boost::result_of<get_labels(Expr)>::type
+                    typename std::remove_reference<
+                    typename boost::result_of<get_labels(Expr,fusion::nil_)>::type
+                    >::type
                 >::type
                 , mpl::int_<2>
             >
