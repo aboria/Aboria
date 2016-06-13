@@ -53,20 +53,16 @@ namespace Aboria {
 #ifdef HAVE_EIGEN
 
 template <typename Derived, typename Expr, 
-         typename = typename std::enable_if<proto::matches<Expr, detail::bivariate_expr>::value >::type>
+         typename = typename std::enable_if<detail::is_bivariate<Expr>::value >::type>
 void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
-    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first_type label_a_type_ref;
-    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second_type label_b_type_ref;
-    typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
-    typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
-    typedef typename label_a_type::particles_type particles_a_type;
-    typedef typename label_b_type::particles_type particles_b_type;
+    typedef typename detail::symbolic_helper<Expr>::particles_a_type particles_a_type;
+    typedef typename detail::symbolic_helper<Expr>::particles_b_type particles_b_type;
     typedef typename particles_b_type::double_d double_d;
     typedef typename particles_b_type::position position;
     const static unsigned int dimension = particles_b_type::dimension;                          \
 
-    const particles_a_type& a = detail::bivariate_expr()(expr).first.get_particles();
-    const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
+    const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr)).get_particles();
+    const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr)).get_particles();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -84,22 +80,16 @@ void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
 }
 
 template <typename Scalar, typename Expr, typename ifExpr,
-         typename = typename std::enable_if<proto::matches<Expr, detail::bivariate_expr>::value >::type>
+         typename = typename std::enable_if<detail::is_bivariate<Expr>::value >::type>
 void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExpr& if_expr) {
-    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first_type label_a_type_ref;
-    typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second_type label_b_type_ref;
-    typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
-    typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
-    typedef typename label_a_type::particles_type particles_a_type;
-    typedef typename label_b_type::particles_type particles_b_type;
+    typedef typename detail::symbolic_helper<Expr>::particles_a_type particles_a_type;
+    typedef typename detail::symbolic_helper<Expr>::particles_b_type particles_b_type;
     typedef typename particles_b_type::double_d double_d;
     typedef typename particles_b_type::position position;
     const static unsigned int dimension = particles_b_type::dimension;                          \
 
-
-
-    const particles_a_type& a = detail::bivariate_expr()(expr).first.get_particles();
-    const particles_b_type& b = detail::bivariate_expr()(expr).second.get_particles();
+    const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr)).get_particles();
+    const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr)).get_particles();
 
     const size_t na = a.size();
     const size_t nb = b.size();

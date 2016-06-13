@@ -132,12 +132,11 @@ public:
         }
         phi[knots.size()] = 0;
 
-        // solve Ax = b using CG with matrix-free version:
-        Eigen::ConjugateGradient < decltype(W), Eigen::Lower|Eigen::Upper, MyJacobiPreconditioner<double>> cg;
+        Eigen::ConjugateGradient<decltype(W), 
+            Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
         cg.compute(W);
         gamma = cg.solve(phi);
-        std::cout << "#iterations: " << cg.iterations() << std::endl;
-        std::cout << "estimated error: " << cg.error() << std::endl;
+        std::cout << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
         
 #endif // HAVE_EIGEN
     }

@@ -50,7 +50,7 @@ namespace Aboria {
     //TODO: move univariate and bivariate down here to
     //TODO: check its a constant expression...
     template <class Expr>
-    typename boost::enable_if<proto::matches<Expr, detail::const_expr>,
+    typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr) {
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
@@ -58,7 +58,7 @@ namespace Aboria {
     }
 
     template<typename Expr>  
-    typename boost::enable_if<proto::matches<Expr, detail::univariate_expr>,
+    typename boost::enable_if<detail::is_univariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a) {
@@ -67,7 +67,7 @@ namespace Aboria {
     }
 
     template<typename Expr, typename AnyRef>  
-    typename boost::enable_if<proto::matches<Expr, detail::const_expr>,
+    typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const AnyRef& particle_a) {
@@ -76,7 +76,7 @@ namespace Aboria {
     }
 
     template<typename Expr>  
-    typename boost::enable_if<proto::matches<Expr, detail::bivariate_expr>,
+    typename boost::enable_if<detail::is_bivariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const typename detail::symbolic_helper<Expr>::double_d& dx,
@@ -87,7 +87,7 @@ namespace Aboria {
     }
 
     template<typename Expr, typename AnyRef>  
-    typename boost::enable_if<proto::matches<Expr, detail::univariate_expr>,
+    typename boost::enable_if<detail::is_univariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const typename detail::symbolic_helper<Expr>::double_d& dx,
@@ -98,7 +98,7 @@ namespace Aboria {
     }
 
     template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
-    typename boost::enable_if<proto::matches<Expr, detail::const_expr>,
+    typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr const &expr, 
             const AnyDx& dx,

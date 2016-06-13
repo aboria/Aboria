@@ -46,6 +46,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/equal.hpp>
+#include <boost/fusion/include/vector.hpp>
+#include <boost/fusion/include/remove_if.hpp>
 #include <boost/proto/core.hpp>
 #include <boost/proto/context.hpp>
 #include <boost/proto/traits.hpp>
@@ -60,6 +62,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <map>
 
 namespace mpl = boost::mpl;
+namespace fusion = boost::fusion;
 namespace proto = boost::proto;
 using proto::_;
 using proto::N;
@@ -282,130 +285,38 @@ namespace Aboria {
             : proto::function< proto::terminal< accumulate<_> >, LabelGrammar, SymbolicGrammar, SymbolicGrammar, SymbolicGrammar>
         {}; 
 
-
-        struct const_expr;
-        struct bivariate_expr;
-        struct univariate_expr;
-        struct not_bivariate_expr:
-            proto::or_<const_expr,univariate_expr>
-        {};
-        struct any_expr:
-            proto::or_<const_expr,univariate_expr,bivariate_expr>
-        {};
-                
-
-        struct const_expr:
-            proto::or_<
-                proto::and_<
-                    proto::terminal<_>
-                    , proto::not_<proto::terminal< label<_,_> > >
-                    , proto::not_<proto::terminal< dx<_,_> > >
-                >
-                , proto::function< proto::terminal< accumulate<_> >, LabelGrammar, not_bivariate_expr, not_bivariate_expr>
-                , proto::function< proto::terminal< accumulate<_> >, LabelGrammar, not_bivariate_expr, not_bivariate_expr, not_bivariate_expr>
-                , proto::nary_expr<_, proto::vararg<const_expr> >
-            > {};
-
-        struct set_difference: proto::callable {
+        struct remove_label: proto::callable {
             template<typename Sig>
             struct result;
 
-            template<typename This, typename LabelType1, typename LabelType2>
-            struct result<This(std::pair<LabelType1&, LabelType2&>, LabelType1&)> {
-                typedef LabelType2& type;
-            };
+            template<typename This, typename T1, typename T2>
+            struct result<This(const T1&, T2)>:
+                fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>> {};
 
-            template<typename This, typename LabelType1, typename LabelType2>
-            struct result<This(std::pair<LabelType1&, LabelType2&>, LabelType2&)> {
-                typedef LabelType1& type;
-            };
-
-            template<typename LabelType1, typename LabelType2>
-            LabelType2& operator()(std::pair<LabelType1&, LabelType2&> pair, LabelType1& label1) {
-                return pair.second; 
-            }
-
-            template<typename LabelType1, typename LabelType2>
-            LabelType1& operator()(std::pair<LabelType1&, LabelType2&> pair, LabelType2& label1) {
-                return pair.first; 
+            template<typename T1, typename T2>
+            typename fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>>::type
+            operator()(const T1& label, const T2& state) {
+                return fusion::remove_if<boost::is_same<T1,mpl::_>>(state);
             }
         };
 
-
-
-        struct univariate_expr:
-            proto::or_<
-                proto::when< 
-                    proto::terminal< label<_,_> >
-                    , proto::_value
-                >
-                , proto::when<
-                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, bivariate_expr, any_expr>
-                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child2))
-                >
-                , proto::when<
-                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, any_expr, bivariate_expr>
-                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child3))
-                >
-                , proto::when<
-                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, bivariate_expr, any_expr, any_expr>
-                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child2))
-                >
-                , proto::when<
-                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, any_expr, bivariate_expr, any_expr>
-                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child3))
-                >
-                , proto::when<
-                    proto::function< proto::terminal< accumulate<_> >, LabelGrammar, any_expr, any_expr, bivariate_expr>
-                    , set_difference(univariate_expr(proto::_child1),bivariate_expr(proto::_child4))
-                >
-                    
-                , proto::when< 
-                    proto::unary_expr<_, univariate_expr>
-                    , univariate_expr(proto::_left)
-                >
-                , proto::when< 
-                    proto::binary_expr<_, const_expr, univariate_expr>
-                    , univariate_expr(proto::_right)
-                >
-                , proto::when< 
-                    proto::binary_expr<_, univariate_expr, const_expr>
-                    , univariate_expr(proto::_left)
-                >
-                , proto::when< 
-                    proto::and_<
-                        proto::binary_expr<_, univariate_expr, univariate_expr>
-                        , proto::if_<boost::is_same<
-                            boost::result_of<univariate_expr(proto::_left)>
-                            , boost::result_of<univariate_expr(proto::_right)> >() >
-                    >
-                    , univariate_expr(proto::_left)
-                >
-            > {};
-
-        struct make_pair: proto::callable {
+        struct push_back_if_new: proto::callable {
             template<typename Sig>
-                struct result;
+            struct result;
 
-            template<typename This, typename LabelType1, typename LabelType2>
-                struct result<This(LabelType1&, LabelType2&)> {
-                    typedef typename std::pair<LabelType1&,LabelType2&> type;
-                };
+            template<typename This, typename T1, typename T2>
+            struct result<This(const T1&, const T2&)>:
+                fusion::result_of::push_back<
+                    typename boost::result_of<remove_label(T1,T2)>::type, T1> {};
 
-
-            /*
-            template<typename This, typename LabelType1, typename LabelType2>
-                struct result<This(LabelType1, LabelType2)> {
-                    typedef typename std::pair<LabelType1,LabelType2> type;
-                };
-            */
-
-
-            template<typename LabelType1, typename LabelType2>
-                typename std::pair<LabelType1&,LabelType2&> operator()(LabelType1& label1, LabelType2& label2) {
-                    return std::pair<LabelType1&,LabelType2&>(label1,label2);
-                }
+            template<typename T1, typename T2>
+            typename fusion::result_of::push_back<
+                    typename boost::result_of<remove_label(T1,T2)>::type, T1>
+            operator()(const T1& label, const T2& state) {
+                return fusion::push_back(remove_label()(label,state),label);
+            }
         };
+
 
         struct get_a_from_dx: proto::callable {
             template<typename Sig>
@@ -416,12 +327,10 @@ namespace Aboria {
                 typedef typename DxType::label_a_type& type;
             };
 
-            /*
             template<typename DxType>
             const typename DxType::label_a_type & operator()(const DxType& dx) {
                 return dx.get_label_a();
             }
-            */
         };
 
         struct get_b_from_dx: proto::callable {
@@ -433,69 +342,77 @@ namespace Aboria {
                 typedef typename DxType::label_b_type& type;
             };
 
-            /*
             template<typename DxType>
             const typename DxType::label_b_type & operator()(const DxType& dx) {
                 return dx.get_label_b();
             }
-            */
         };
 
-
-        struct bivariate_expr:
+        struct get_labels: 
             proto::or_<
-                proto::when< 
-                    proto::terminal< dx<_,_> >
-                    , make_pair(get_a_from_dx(proto::_value),get_b_from_dx(proto::_value))
-                >
-                , proto::when< 
-                    proto::unary_expr<_, bivariate_expr>
-                    , bivariate_expr(proto::_left)
-                >
-                , proto::when< 
-                    proto::binary_expr<_, const_expr, bivariate_expr>
-                    , bivariate_expr(proto::_right)
-                >
-                , proto::when< 
-                    proto::binary_expr<_, bivariate_expr, const_expr>
-                    , bivariate_expr(proto::_left)
-                >
-                , proto::when< 
-                    proto::and_<
-                        proto::binary_expr<_, univariate_expr, univariate_expr>
-                        , proto::not_<proto::if_<boost::is_same<
-                            boost::result_of<univariate_expr(proto::_left)>
-                            , boost::result_of<univariate_expr(proto::_right)> >() > >
-                    >
-                    , make_pair(univariate_expr(proto::_left),univariate_expr(proto::_right))
-                >
-            > {};
-
-
-        /*
-        template<typename T>
-        struct unknown_value {
-            typedef typename T::value type;
-        };
-
-        // The lambda grammar, with the transforms for calculating the max arity
-        struct num_unknowns
-          : proto::or_<
+                
+                // Put all label terminals at the head of the
+                // list that we're building in the "state" parameter
                 proto::when<
-                    proto::terminal< unknown<_> >
-                  , mpl::next<unknown_value<proto::_value> >()
+                    proto::terminal< label<_,_> >
+                  , push_back_if_new(proto::_value,proto::_state)
                 >
-              , proto::when< proto::terminal<_>
-                  , mpl::int_<0>()
+                , proto::when< 
+                    proto::terminal< dx<_,_> >
+                    , push_back_if_new(get_a_from_dx(proto::_value),
+                            push_back_if_new(get_b_from_dx(proto::_value)))
                 >
-              , proto::when<
-                    proto::nary_expr<_, proto::vararg<_> >
-                  , proto::fold<_, mpl::int_<0>(), mpl::max<num_unknowns, proto::_state>()>
+                //don't add other terminals
+                , proto::when<
+                    proto::terminal<_>
+                  , proto::_state
                 >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, _, _, _>
+                    , remove_label(proto::_value(proto::_child1), get_labels(proto::_child2))
+                >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, _, _, _, _>
+                    , remove_label(proto::_value(proto::_child1), get_labels(
+                                                                    proto::_child2,
+                                                                    get_labels(proto::_child3)))
+                >
+                , proto::otherwise< 
+                    proto::fold<_, fusion::nil_(), get_labels> 
+                >
+           >
+        {};
+
+
+        template<typename Expr>
+        struct is_const: 
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename boost::result_of<get_labels(Expr)>::type
+                >::type
+                , mpl::int_<0>
             >
         {};
-        */
 
+        template<typename Expr>
+        struct is_univariate: 
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename boost::result_of<get_labels(Expr)>::type
+                >::type
+                , mpl::int_<1>
+            >
+        {};
+
+        template<typename Expr>
+        struct is_bivariate: 
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename boost::result_of<get_labels(Expr)>::type
+                >::type
+                , mpl::int_<2>
+            >
+        {};
 
 
         ////////////////
@@ -886,14 +803,14 @@ namespace Aboria {
         struct symbolic_helper {};
 
         template<typename Expr>
-        struct symbolic_helper<Expr, typename boost::enable_if<proto::matches<Expr, detail::const_expr> >::type> {
+        struct symbolic_helper<Expr, typename boost::enable_if<is_const<Expr>>::type> {
             typedef ConstantCtx const_context_type;
             typedef typename proto::result_of::eval<Expr const, const_context_type const>::type result;
         };
 
         template<typename Expr>
-        struct symbolic_helper<Expr, typename boost::enable_if<proto::matches<Expr, detail::univariate_expr> >::type> {
-            typedef typename std::result_of<detail::univariate_expr(Expr)>::type label_a_type_ref;
+        struct symbolic_helper<Expr, typename boost::enable_if<is_univariate<Expr>>::type> {
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr)>::type,0>::type label_a_type_ref;
             typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::double_d double_d;
@@ -903,9 +820,9 @@ namespace Aboria {
         };
 
         template<typename Expr>
-        struct symbolic_helper<Expr, typename boost::enable_if<proto::matches<Expr, detail::bivariate_expr> >::type> {
-            typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first_type label_a_type_ref;
-            typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second_type label_b_type_ref;
+        struct symbolic_helper<Expr, typename boost::enable_if<is_bivariate<Expr>>::type> {
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr)>::type,0>::type label_a_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr)>::type,1>::type label_b_type_ref;
             typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
             typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
             typedef typename label_a_type::particles_type particles_a_type;
@@ -915,8 +832,6 @@ namespace Aboria {
             typedef typename particles_a_type::double_d double_d;
             typedef TwoParticleCtx<particles_a_type,particles_b_type> bivariate_context_type ;
             typedef typename proto::result_of::eval<Expr const, bivariate_context_type const>::type result;
-
-
         };
 
 

@@ -46,38 +46,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
-//#include <Eigen/ForwardDeclarations.h>
+#include <unsupported/Eigen/IterativeSolvers>
 #endif
 
 
 namespace Aboria {
-    /*
-    template<std::size_t... I>
-    auto make_unknown(const size_t i, const size_t nb, data_type& rhs, index_sequence<I...>) 
-        -> decltype(std::make_tuple(std::get<I>(rhs[i+I*nb]...))) {
-        return std::make_tuple(std::get<I>(rhs[i+I*nb]...));
-    }
-    */
-
 #ifdef HAVE_EIGEN
     template <unsigned int NI, unsigned int NJ, typename Blocks> 
     class MatrixReplacement;
-
-    template<typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks> class 
-    MatrixReplacement_ProductReturnType;
-
 }
 
 namespace Eigen {
     namespace internal {
+        // MatrixReplacement looks-like a SparseMatrix, so let's inherits its traits:
         template<unsigned int NI, unsigned int NJ, typename Blocks>
-        struct traits<Aboria::MatrixReplacement<NI, NJ, Blocks>> :  Eigen::internal::traits<Eigen::SparseMatrix<double> >
-        {};
-        template <typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks>
-        struct traits<Aboria::MatrixReplacement_ProductReturnType<Rhs,NI,NJ,Blocks> > {
-            // The equivalent plain objet type of the product. This type is used if the product needs to be evaluated into a temporary.
-            typedef Eigen::Matrix<typename Rhs::Scalar, Eigen::Dynamic, Rhs::ColsAtCompileTime> ReturnType;
-        };
+        struct traits<Aboria::MatrixReplacement<NI, NJ, Blocks>> :  public Eigen::internal::traits<Eigen::SparseMatrix<double> > {};
     }
 }
 
@@ -121,12 +104,13 @@ namespace Aboria {
             typedef double Scalar;
             typedef double RealScalar;
             typedef size_t Index;
-            typedef size_t StorageIndex;
+            typedef int StorageIndex;
             enum {
                 ColsAtCompileTime = Eigen::Dynamic,
                 RowsAtCompileTime = Eigen::Dynamic,
                 MaxColsAtCompileTime = Eigen::Dynamic,
-                MaxRowsAtCompileTime = Eigen::Dynamic
+                MaxRowsAtCompileTime = Eigen::Dynamic,
+                IsRowMajor = false
             };
 
             MatrixReplacement(const Blocks& blocks):m_blocks(blocks) {};
@@ -184,258 +168,188 @@ namespace Aboria {
                 // This method should not be needed in the future.
                 assert(a_rows==0 && a_cols==0 || a_rows==rows() && a_cols==cols());
             }
-            // In the future, the return type should be Eigen::Product<MatrixReplacement,Rhs>
+
             template<typename Rhs>
-            MatrixReplacement_ProductReturnType<Rhs,NI,NJ,Blocks> operator*(const Eigen::MatrixBase<Rhs>& x) const {
-                return MatrixReplacement_ProductReturnType<Rhs,NI,NJ,Blocks>(*this, x.derived());
+            Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
+                return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
             }
 
             const Blocks m_blocks;
 
     };
-    // The proxy class representing the product of a MatrixReplacement with a MatrixBase<>
-    template<typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks>
-    class MatrixReplacement_ProductReturnType : public Eigen::ReturnByValue<MatrixReplacement_ProductReturnType<Rhs,NI,NJ,Blocks> > {
-        public:
-            typedef typename MatrixReplacement<NI,NJ,Blocks>::Index Index;
 
-            // The ctor store references to the matrix and right-hand-side object (usually a vector).
-            MatrixReplacement_ProductReturnType(const MatrixReplacement<NI,NJ,Blocks>& matrix, const Rhs& rhs)
-                : m_matrix(matrix), m_rhs(rhs)
-            {}
+    template <typename Dest, typename Source, 
+              typename particles_a_type, typename particles_b_type,
+              typename expr_type, typename if_expr_type>
+    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) {
+        typedef typename particles_b_type::double_d double_d;
+        typedef typename particles_b_type::position position;
+        const static unsigned int dimension = particles_b_type::dimension;
+        const particles_a_type& a = std::get<0>(block);
+        const particles_b_type& b = std::get<1>(block);
+        const expr_type expr = std::get<2>(block);
+        const if_expr_type if_expr = std::get<3>(block);
 
-            Index rows() const { return m_matrix.rows(); }
-            Index cols() const { return m_rhs.cols(); }
+        const size_t na = a.size();
+        const size_t nb = b.size();
 
+        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon()))
+                ||
+                (detail::is_const<if_expr_type>::value && (!eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())))
+           ) {
+            //std::cout << "zero a x b block" <<std::endl;
+            return;
+        }
 
-            template <typename Dest, typename Source, typename particles_a_type, typename particles_b_type,
-                                     typename expr_type, typename if_expr_type>
-            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) const {
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-                const static unsigned int dimension = particles_b_type::dimension;
-                const particles_a_type& a = std::get<0>(block);
-                const particles_b_type& b = std::get<1>(block);
-                const expr_type expr = std::get<2>(block);
-                const if_expr_type if_expr = std::get<3>(block);
-
-                const Index na = a.size();
-                const Index nb = b.size();
-
-                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon()))
-                    ||
-                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())))
-                    ) {
-                    //std::cout << "zero a x b block" <<std::endl;
-                    return;
-                }
-
-                if (proto::matches<if_expr_type,detail::const_expr>::value && eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())==true) {
-                    //std::cout << "dense a x b block" <<std::endl;
-                    for (size_t i=0; i<na; ++i) {
-                        typename particles_a_type::const_reference ai = a[i];
-                        double sum = 0;
-                        for (size_t j=0; j<nb; ++j) {
-                            typename particles_b_type::const_reference bj = b[j];
-                            const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                            sum += eval(expr,dx,ai,bj)*rhs(j);
-                        }
-                        y(i) += sum;
-                    }
-                } else {
-                    //std::cout << "sparse a x b block" <<std::endl;
-                    for (size_t i=0; i<na; ++i) {
-                        typename particles_a_type::const_reference ai = a[i];
-                        double sum = 0;
-                        for (auto pairj: b.get_neighbours(get<position>(ai))) {
-                            const double_d & dx = std::get<1>(pairj);
-                            typename particles_b_type::const_reference bj = std::get<0>(pairj);
-                            const Index j = &get<position>(bj) - get<position>(b).data();
-                            if (eval(if_expr,dx,ai,bj)) {
-                                sum += eval(expr,dx,ai,bj)*rhs(j);
-                            }
-                        }
-                        y(i) += sum;
-                    }
-                }
-            }
-
-
-            template <typename Dest, typename Source, typename particles_b_type,
-                                     typename expr_type, typename if_expr_type>
-            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) const {
-
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-                const static unsigned int dimension = particles_b_type::dimension;
-
-                const particles_b_type& b = std::get<1>(block);
-                const expr_type expr = std::get<2>(block);
-                const if_expr_type if_expr = std::get<3>(block);
-
-                const Index nb = b.size();
-
-                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr,typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
-                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr,typename particles_b_type::value_type())))) {
-                    //std::cout << "zero one x b block" <<std::endl;
-                    return;
-                }
-
+        if (detail::is_const<if_expr_type>::value && eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())==true) {
+            //std::cout << "dense a x b block" <<std::endl;
+            for (size_t i=0; i<na; ++i) {
+                typename particles_a_type::const_reference ai = a[i];
                 double sum = 0;
-                //std::cout << "dens one x b block" <<std::endl;
                 for (size_t j=0; j<nb; ++j) {
                     typename particles_b_type::const_reference bj = b[j];
-                    if (eval(if_expr,bj)) {
-                        sum += eval(expr,bj)*rhs(j);
+                    const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                    sum += eval(expr,dx,ai,bj)*rhs(j);
+                }
+                y(i) += sum;
+            }
+        } else {
+            //std::cout << "sparse a x b block" <<std::endl;
+            for (size_t i=0; i<na; ++i) {
+                typename particles_a_type::const_reference ai = a[i];
+                double sum = 0;
+                for (auto pairj: b.get_neighbours(get<position>(ai))) {
+                    const double_d & dx = std::get<1>(pairj);
+                    typename particles_b_type::const_reference bj = std::get<0>(pairj);
+                    const size_t j = &get<position>(bj) - get<position>(b).data();
+                    if (eval(if_expr,dx,ai,bj)) {
+                        sum += eval(expr,dx,ai,bj)*rhs(j);
                     }
                 }
-                y(0) += sum;
+                y(i) += sum;
             }
-
-            template <typename Dest, typename Source, typename particles_a_type,
-                                     typename expr_type, typename if_expr_type>
-            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) const {
-
-                typedef typename particles_a_type::double_d double_d;
-                typedef typename particles_a_type::position position;
-                const static unsigned int dimension = particles_a_type::dimension;
-
-                const particles_a_type& a = std::get<0>(block);
-                const expr_type expr = std::get<2>(block);
-                const if_expr_type if_expr = std::get<3>(block);
-
-                const Index na = a.size();
-
-                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr,typename particles_a_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
-                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr,typename particles_a_type::value_type())))) {
-                    //std::cout << "zero a x one block" <<std::endl;
-                    return;
-                }
-
-                //std::cout << "dens a x one block" <<std::endl;
-                for (size_t i=0; i<na; ++i) {
-                    typename particles_a_type::const_reference ai = a[i];
-                    if (eval(if_expr,ai)) {
-                        y(i) += eval(expr,ai)*rhs(0);
-                    }
-                }
-            }
-
-            template <typename Dest, typename Source,
-                                     typename expr_type, typename if_expr_type>
-            void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) const {
-
-                const expr_type expr = std::get<2>(block);
-                const if_expr_type if_expr = std::get<3>(block);
-
-                //TODO: should use return type instead of double
-                if ((proto::matches<expr_type,detail::const_expr>::value && (std::abs(eval(expr))<=std::numeric_limits<double>::epsilon())) ||
-    
-                    (proto::matches<if_expr_type,detail::const_expr>::value && (!eval(if_expr)))) {
-                    //std::cout << "zero one x one block" <<std::endl;
-                    return;
-                }
-
-                proto::display_expr(expr);
-                //std::cout << "dens one x one block" <<std::endl;
-                y(0) = eval(expr)*rhs(0);
-            }
-
-
-            template<typename Dest>
-            void evalTo_impl2(Dest& y) const {}
-             
-            template<typename Dest, typename I, typename J, typename T1, typename ... T>
-            void evalTo_impl2(Dest& y, const std::tuple<I,J,T1>& block, const T&... other_blocks) const {
-                evalTo_block(y.segment(m_matrix.template start_row<I::value>(),m_matrix.template size_row<I::value>()),
-                        m_rhs.segment(m_matrix.template start_col<J::value>(),m_matrix.template size_col<J::value>()),
-                        std::get<2>(block));
-                evalTo_impl2(y,other_blocks...);
-            }
-
-            template<typename Dest, std::size_t... I>
-            void evalTo_impl1(Dest& y, index_sequence<I...>) const {
-                evalTo_impl2(y, std::make_tuple(mpl::int_<I/NJ>(), mpl::int_<I%NJ>(), std::get<I>(m_matrix.m_blocks))...);
-            }
-
-            // This function is automatically called by Eigen. It must evaluate the product of matrix * rhs into y.
-            template<typename Dest>
-            void evalTo(Dest& y) const {
-                y.setZero();
-                evalTo_impl1(y, make_index_sequence<NI*NJ>());
-            }
-            
-        protected:
-            const MatrixReplacement<NI,NJ,Blocks>& m_matrix;
-            typename Rhs::Nested m_rhs;
-    };
-
-
-
-    /*****/
-    // This class simply warp a diagonal matrix as a Jacobi preconditioner.
-    // In the future such simple and generic wrapper should be shipped within Eigen itsel.
-    //
-    template <typename _Scalar>
-    class MyJacobiPreconditioner
-    {
-        typedef _Scalar Scalar;
-        typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> Vector;
-        typedef typename Vector::Index Index;
-        public:
-        // this typedef is only to export the scalar type and compile-time dimensions to solve_retval
-        typedef Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> MatrixType;
-        MyJacobiPreconditioner() : m_isInitialized(false) {}
-        void setInvDiag(const Eigen::VectorXd &invdiag) {
-            m_invdiag=invdiag;
-            m_isInitialized=true;
         }
-        Index rows() const { return m_invdiag.size(); }
-        Index cols() const { return m_invdiag.size(); }
+    }
 
-        template<typename MatType>
-            MyJacobiPreconditioner& analyzePattern(const MatType& ) { return *this; }
 
-        template<typename MatType>
-            MyJacobiPreconditioner& factorize(const MatType& mat) { return *this; }
+    template <typename Dest, typename Source, typename particles_b_type,
+              typename expr_type, typename if_expr_type>
+    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) {
 
-        template<typename MatType>
-            MyJacobiPreconditioner& compute(const MatType& mat) { return *this; }
-        template<typename Rhs, typename Dest>
-            void _solve(const Rhs& b, Dest& x) const
-            {
-                x = m_invdiag.array() * b.array() ;
+        typedef typename particles_b_type::double_d double_d;
+        typedef typename particles_b_type::position position;
+        const static unsigned int dimension = particles_b_type::dimension;
+
+        const particles_b_type& b = std::get<1>(block);
+        const expr_type expr = std::get<2>(block);
+        const if_expr_type if_expr = std::get<3>(block);
+
+        const size_t nb = b.size();
+
+        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr,typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
+                (detail::is_const<if_expr_type>::value && (!eval(if_expr,typename particles_b_type::value_type())))) {
+            //std::cout << "zero one x b block" <<std::endl;
+            return;
+        }
+
+        double sum = 0;
+        //std::cout << "dens one x b block" <<std::endl;
+        for (size_t j=0; j<nb; ++j) {
+            typename particles_b_type::const_reference bj = b[j];
+            if (eval(if_expr,bj)) {
+                sum += eval(expr,bj)*rhs(j);
             }
-        template<typename Rhs> inline const Eigen::internal::solve_retval<MyJacobiPreconditioner, Rhs>
-            solve(const Eigen::MatrixBase<Rhs>& b) const
-            {
-                eigen_assert(m_isInitialized && "MyJacobiPreconditioner is not initialized.");
-                eigen_assert(m_invdiag.size()==b.rows()
-                        && "MyJacobiPreconditioner::solve(): invalid number of rows of the right hand side matrix b");
-                return Eigen::internal::solve_retval<MyJacobiPreconditioner, Rhs>(*this, b.derived());
-            }
-        protected:
-        Vector m_invdiag;
-        bool m_isInitialized;
-    };
-}
+        }
+        y(0) += sum;
+    }
 
-namespace Eigen {
-    namespace internal {
-    template<typename _MatrixType, typename Rhs>
-    struct solve_retval<MyJacobiPreconditioner<_MatrixType>, Rhs>
-    : solve_retval_base<MyJacobiPreconditioner<_MatrixType>, Rhs>
-    {
-        typedef MyJacobiPreconditioner<_MatrixType> Dec;
-        EIGEN_MAKE_SOLVE_HELPERS(Dec,Rhs)
-            template<typename Dest> void evalTo(Dest& dst) const
-            {
-                dec()._solve(rhs(),dst);
+    template <typename Dest, typename Source, typename particles_a_type,
+                             typename expr_type, typename if_expr_type>
+    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) {
+
+        typedef typename particles_a_type::double_d double_d;
+        typedef typename particles_a_type::position position;
+        const static unsigned int dimension = particles_a_type::dimension;
+
+        const particles_a_type& a = std::get<0>(block);
+        const expr_type expr = std::get<2>(block);
+        const if_expr_type if_expr = std::get<3>(block);
+
+        const size_t na = a.size();
+
+        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr,typename particles_a_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
+            (detail::is_const<if_expr_type>::value && (!eval(if_expr,typename particles_a_type::value_type())))) {
+            //std::cout << "zero a x one block" <<std::endl;
+            return;
+        }
+
+        //std::cout << "dens a x one block" <<std::endl;
+        for (size_t i=0; i<na; ++i) {
+            typename particles_a_type::const_reference ai = a[i];
+            if (eval(if_expr,ai)) {
+                y(i) += eval(expr,ai)*rhs(0);
             }
-    };
+        }
+    }
+
+    template <typename Dest, typename Source,
+                             typename expr_type, typename if_expr_type>
+    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) {
+
+        const expr_type expr = std::get<2>(block);
+        const if_expr_type if_expr = std::get<3>(block);
+
+        //TODO: should use return type instead of double
+        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr))<=std::numeric_limits<double>::epsilon())) ||
+
+            (detail::is_const<if_expr_type>::value && (!eval(if_expr)))) {
+            //std::cout << "zero one x one block" <<std::endl;
+            return;
+        }
+
+        proto::display_expr(expr);
+        //std::cout << "dens one x one block" <<std::endl;
+        y(0) = eval(expr)*rhs(0);
+    }
+
+
+    template<typename Dest>
+    void evalTo_unpack_blocks(Dest& y) {}
+     
+    template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs, typename I, typename J, typename T1, typename ... T>
+    void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const std::tuple<I,J,T1>& block, const T&... other_blocks) {
+        evalTo_block(y.segment(lhs.template start_row<I::value>(),lhs.template size_row<I::value>()),
+                rhs.segment(lhs.template start_col<J::value>(),lhs.template size_col<J::value>()),
+                std::get<2>(block));
+        evalTo_unpack_blocks(y,lhs,rhs,other_blocks...);
+    }
+
+    template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs, std::size_t... I>
+    void evalTo_impl(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, index_sequence<I...>) {
+        evalTo_unpack_blocks(y,lhs,rhs,std::make_tuple(mpl::int_<I/NJ>(), mpl::int_<I%NJ>(), std::get<I>(lhs.m_blocks))...);
     }
 }
-    
+
+
+// Implementation of MatrixReplacement * Eigen::DenseVector though a specialization of internal::generic_product_impl:
+namespace Eigen {
+namespace internal {
+template<typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks>
+struct generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>, Rhs, SparseShape, DenseShape, GemvProduct> // GEMV stands for matrix-vector
+    : generic_product_impl_base<Aboria::MatrixReplacement<NI,NJ,Blocks>,Rhs,generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>,Rhs> > {
+
+    typedef typename Product<Aboria::MatrixReplacement<NI,NJ,Blocks>,Rhs>::Scalar Scalar;
+    template<typename Dest>
+    static void scaleAndAddTo(Dest& y, const Aboria::MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const Scalar& alpha) {
+        // This method should implement "y += alpha * lhs * rhs" inplace,
+        // however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
+        assert(alpha==Scalar(1) && "scaling is not implemented");
+        evalTo_impl(y, lhs, rhs, Aboria::make_index_sequence<NI*NJ>());
+    }
+};
+}
+}
+
 namespace Aboria {    
     template <typename A, unsigned int A_depth, 
               typename B, unsigned int B_depth, 
