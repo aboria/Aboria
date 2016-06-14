@@ -46,7 +46,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/assert.hpp>
 #include <boost/mpl/equal.hpp>
-#include <boost/fusion/include/vector.hpp>
+#include <boost/fusion/include/cons.hpp>
+//#include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/include/remove_if.hpp>
 #include <boost/proto/core.hpp>
 #include <boost/proto/context.hpp>
@@ -290,13 +291,23 @@ namespace Aboria {
             struct result;
 
             template<typename This, typename T1, typename T2>
-            struct result<This(const T1&, T2)>:
-                fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>> {};
+            struct result<This(T1, T2)>:
+                fusion::result_of::as_list<
+                    typename fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>>::type
+                > 
+            {};
+
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1, const T2&)>:
+                fusion::result_of::as_list<
+                    typename fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>>::type
+                > 
+            {};
 
             template<typename T1, typename T2>
-            typename fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>>::type
-            operator()(const T1& label, const T2& state) {
-                return fusion::remove_if<boost::is_same<T1,mpl::_>>(state);
+            typename result<remove_label(T1&, const T2&)>::type
+            operator()(T1& label, const T2& state) {
+                return fusion::as_list(fusion::remove_if<boost::is_same<T1,mpl::_>>(state));
             }
         };
 
@@ -305,14 +316,26 @@ namespace Aboria {
             struct result;
 
             template<typename This, typename T1, typename T2>
-            struct result<This(const T1&, const T2&)>:
-                fusion::result_of::push_back<
-                    typename boost::result_of<remove_label(T1,T2)>::type, T1> {};
+            struct result<This(T1, T2)>:
+                fusion::result_of::as_list<
+                    typename fusion::result_of::push_back<
+                        typename boost::result_of<remove_label(T1,T2)>::type, T1>::type 
+                > 
+            {};
+
+            /*
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1&, const T2&)>:
+                fusion::result_of::as_list<
+                    typename fusion::result_of::push_back<
+                        typename boost::result_of<remove_label(T1&,const T2&)>::type, T1>::type 
+                > 
+            {};
+            */
 
             template<typename T1, typename T2>
-            typename fusion::result_of::push_back<
-                    typename boost::result_of<remove_label(T1,T2)>::type, T1>
-            operator()(const T1& label, const T2& state) {
+            typename result<push_back_if_new(T1&, const T2&)>::type
+            operator()(T1& label, const T2& state) {
                 return fusion::push_back(remove_label()(label,state),label);
             }
         };
@@ -377,11 +400,9 @@ namespace Aboria {
                                                                     proto::_child2,
                                                                     get_labels(proto::_child3)))
                 >
-                /*
                 , proto::otherwise< 
-                    proto::fold<_, fusion::nil_(), get_labels> 
+                    proto::fold<_, proto::_state, get_labels> 
                 >
-                */
            >
         {};
 
