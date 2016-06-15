@@ -61,8 +61,8 @@ void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
     typedef typename particles_b_type::position position;
     const static unsigned int dimension = particles_b_type::dimension;                          \
 
-    const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr)).get_particles();
-    const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr)).get_particles();
+    const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
+    const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr,fusion::nil_())).get_particles();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -88,8 +88,8 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
     typedef typename particles_b_type::position position;
     const static unsigned int dimension = particles_b_type::dimension;                          \
 
-    const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr)).get_particles();
-    const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr)).get_particles();
+    const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
+    const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr,fusion::nil_())).get_particles();
 
     const size_t na = a.size();
     const size_t nb = b.size();

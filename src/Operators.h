@@ -313,8 +313,8 @@ namespace Aboria {
     }
 
 
-    template<typename Dest>
-    void evalTo_unpack_blocks(Dest& y) {}
+    template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
+    void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs) {}
      
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs, typename I, typename J, typename T1, typename ... T>
     void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const std::tuple<I,J,T1>& block, const T&... other_blocks) {

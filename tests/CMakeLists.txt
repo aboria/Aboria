@@ -13,9 +13,10 @@ set(test_package
     metafunctions
     )
 
-set(test_package
-    metafunctions
-    )
+#set(test_package
+#    diffusion_around_spheres
+#    metafunctions
+#    )
 
 foreach(test ${test_package})
     cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)

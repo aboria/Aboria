@@ -147,8 +147,8 @@ namespace Aboria {
             label_a_type la;
             label_b_type lb;
             dx(label_a_type &la, label_b_type &lb):la(la),lb(lb) {};
-            const label_a_type & get_label_a() { return la; }
-            const label_b_type & get_label_b() { return lb; }
+            const label_a_type & get_label_a() const { return la; }
+            const label_b_type & get_label_b() const { return lb; }
         };
 
         struct normal {
@@ -293,21 +293,28 @@ namespace Aboria {
             template<typename This, typename T1, typename T2>
             struct result<This(T1, T2)>:
                 fusion::result_of::as_list<
-                    typename fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>>::type
+                    typename fusion::result_of::remove_if<typename std::remove_reference<T2>::type,
+                                boost::is_same<
+                                    //typename std::remove_reference<typename std::remove_const<T1>::type>::type &,
+                                    T1,
+                                    mpl::_>
+                                >::type
                 > 
             {};
 
+            /*
             template<typename This, typename T1, typename T2>
             struct result<This(T1, const T2&)>:
                 fusion::result_of::as_list<
                     typename fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>>::type
                 > 
             {};
+            */
 
             template<typename T1, typename T2>
-            typename result<remove_label(T1&, const T2&)>::type
-            operator()(T1& label, const T2& state) {
-                return fusion::as_list(fusion::remove_if<boost::is_same<T1,mpl::_>>(state));
+            typename result<remove_label(const T1&, const T2&)>::type
+            operator()(const T1& label, const T2& state) {
+                return fusion::as_list(fusion::remove_if<boost::is_same<const T1&,mpl::_>>(state));
             }
         };
 
@@ -315,13 +322,27 @@ namespace Aboria {
             template<typename Sig>
             struct result;
 
+            /*
             template<typename This, typename T1, typename T2>
-            struct result<This(T1, T2)>:
-                fusion::result_of::as_list<
-                    typename fusion::result_of::push_back<
-                        typename boost::result_of<remove_label(T1,T2)>::type, T1>::type 
-                > 
-            {};
+            struct result<This(const T1&, const T2&)> {
+                typedef fusion::cons<const T1&, 
+                        typename boost::result_of<remove_label(const T1&,const T2&)>::type> type;
+            };
+            */
+
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1&, T2)> {
+                typedef fusion::cons<const T1&, 
+                        typename boost::result_of<remove_label(const T1&,const T2&)>::type> type;
+            };
+
+            /*
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1&, const T2&)> {
+                typedef fusion::cons<const T1&, 
+                        typename boost::result_of<remove_label(const T1&,const T2&)>::type> type;
+            };
+            */
 
             /*
             template<typename This, typename T1, typename T2>
@@ -334,9 +355,9 @@ namespace Aboria {
             */
 
             template<typename T1, typename T2>
-            typename result<push_back_if_new(T1&, const T2&)>::type
-            operator()(T1& label, const T2& state) {
-                return fusion::push_back(remove_label()(label,state),label);
+            typename result<push_back_if_new(const T1&, const T2&)>::type
+            operator()(const T1& label, const T2& state) {
+                return typename result<push_back_if_new(const T1&, const T2&)>::type(label,remove_label()(label,state));
             }
         };
 
@@ -347,7 +368,7 @@ namespace Aboria {
 
             template<typename This, typename DxType>
             struct result<This(DxType&)> {
-                typedef typename DxType::label_a_type& type;
+                typedef const typename DxType::label_a_type& type;
             };
 
             template<typename DxType>
@@ -362,7 +383,7 @@ namespace Aboria {
 
             template<typename This, typename DxType>
             struct result<This(DxType&)> {
-                typedef typename DxType::label_b_type& type;
+                typedef const typename DxType::label_b_type& type;
             };
 
             template<typename DxType>
@@ -383,7 +404,7 @@ namespace Aboria {
                 , proto::when< 
                     proto::terminal< dx<_,_> >
                     , push_back_if_new(get_a_from_dx(proto::_value),
-                            push_back_if_new(get_b_from_dx(proto::_value)))
+                            push_back_if_new(get_b_from_dx(proto::_value),proto::_state))
                 >
                 //don't add other terminals
                 , proto::when<
@@ -392,19 +413,16 @@ namespace Aboria {
                 >
                 , proto::when<
                     proto::function< proto::terminal< accumulate<_> >, _, _, _>
-                    , remove_label(proto::_value(proto::_child1), get_labels(proto::_child2))
-                >
-                , proto::when<
-                    proto::function< proto::terminal< accumulate<_> >, _, _, _, _>
-                    , remove_label(proto::_value(proto::_child1), get_labels(
-                                                                    proto::_child2,
-                                                                    get_labels(proto::_child3)))
+                    , remove_label(proto::_value(proto::_child1), 
+                                    get_labels(proto::_child2,
+                                            get_labels(proto::_child3,proto::_state)))
                 >
                 , proto::otherwise< 
                     proto::fold<_, proto::_state, get_labels> 
                 >
            >
         {};
+
 
 
         template<typename Expr>
@@ -839,7 +857,7 @@ namespace Aboria {
 
         template<typename Expr>
         struct symbolic_helper<Expr, typename boost::enable_if<is_univariate<Expr>>::type> {
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr)>::type,0>::type label_a_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr,fusion::nil_)>::type,0>::type label_a_type_ref;
             typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::double_d double_d;
@@ -850,8 +868,8 @@ namespace Aboria {
 
         template<typename Expr>
         struct symbolic_helper<Expr, typename boost::enable_if<is_bivariate<Expr>>::type> {
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr)>::type,0>::type label_a_type_ref;
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr)>::type,1>::type label_b_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr,fusion::nil_)>::type,0>::type label_a_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr,fusion::nil_)>::type,1>::type label_b_type_ref;
             typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
             typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
             typedef typename label_a_type::particles_type particles_a_type;
@@ -1009,6 +1027,8 @@ namespace Aboria {
                 template< typename ExprRight > \
                 const SymbolicExpr &operator the_op (ExprRight const & expr) const { \
                     BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
+                    //TODO: make sure ExprRight is expression!!!!
+                    static_assert(is_univariate<ExprRight>::value||is_const<ExprRight>::value,"RHS of assignment expression not univariate or constant"); \
                     this->name(proto::as_expr<SymbolicDomain>(expr)); \
                     return *this; \
                 } \

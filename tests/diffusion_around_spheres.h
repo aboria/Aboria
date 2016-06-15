@@ -94,7 +94,7 @@ public:
         auto b_s = create_label<1>(spheres);
         auto a_p = create_label<0>(points);
         auto b_p = create_label<1>(points);
-		auto dx = create_dx(a_s,b_p);
+		auto dx = create_dx(a_p,b_s);
 
 		Normal N;
 		VectorSymbolic<double> vector;		
