@@ -113,7 +113,7 @@ public:
                         0.0
                     )
                 );
-        auto Zero = create_eigen_operator(one,one, proto::lit(0.));
+        auto Zero = create_eigen_operator(one,one, 0.);
 
         auto W = create_block_eigen_operator<2,2>(G, P,
                                                   Pt,Zero);

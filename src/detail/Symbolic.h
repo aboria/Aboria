@@ -1027,8 +1027,7 @@ namespace Aboria {
                 template< typename ExprRight > \
                 const SymbolicExpr &operator the_op (ExprRight const & expr) const { \
                     BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
-                    //TODO: make sure ExprRight is expression!!!!
-                    static_assert(is_univariate<ExprRight>::value||is_const<ExprRight>::value,"RHS of assignment expression not univariate or constant"); \
+                    check_valid_assign_expr(proto::as_expr<SymbolicDomain>(expr)); \
                     this->name(proto::as_expr<SymbolicDomain>(expr)); \
                     return *this; \
                 } \
@@ -1062,6 +1061,21 @@ namespace Aboria {
                         particles.delete_particles();
                     }
                 }
+
+                template< typename Expr>
+                typename boost::enable_if<detail::is_univariate<Expr>,void >::type
+                check_valid_assign_expr(Expr const & expr) const {
+                    const ParticlesType& particles = mlabel.get_particles();
+                    typedef typename detail::symbolic_helper<Expr>::particles_a_type particles_a_type;
+                    const auto& particles_in_expr = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
+                    CHECK(&particles_in_expr == &particles, "labels on LHS and RHS of assign expression do not refer to the same particles container");
+                }
+
+                template< typename Expr>
+                typename boost::enable_if<detail::is_const<Expr>,void >::type
+                check_valid_assign_expr(Expr const & expr) const {
+                }
+
 
                 template< typename Expr>
                 const SymbolicExpr &assign(Expr const & expr) const {

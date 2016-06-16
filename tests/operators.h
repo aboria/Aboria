@@ -173,7 +173,7 @@ public:
 
         auto B = create_eigen_operator(a,one, s2[a]);
         auto C = create_eigen_operator(one,b, s2[b]);
-        auto Zero = create_eigen_operator(one,one, proto::lit(0.));
+        auto Zero = create_eigen_operator(one,one, 0.);
 
         auto Full = create_block_eigen_operator<2,2>(A,B,
                                                      C,Zero);
