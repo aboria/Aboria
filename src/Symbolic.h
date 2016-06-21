@@ -44,6 +44,14 @@ namespace Aboria {
 
     using detail::SymbolicDomain;
 
+
+    template<typename Expr>
+    typename detail::symbolic_helper<Expr>::deep_copy_type
+    deep_copy(Expr const &expr) {
+        return proto::deep_copy(
+            proto::as_expr<detail::SymbolicDomain>(expr));
+    }
+
     /// evaluate a given expression that returns a constant value (scaler or vector)
     /// \params expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables
     /// \return the result of the expression
@@ -52,7 +60,7 @@ namespace Aboria {
     template <class Expr>
     typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
-    eval(Expr const &expr) {
+    eval(Expr &expr) {
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
         return proto::eval(expr,ctx);
     }
@@ -60,7 +68,7 @@ namespace Aboria {
     template<typename Expr>  
     typename boost::enable_if<detail::is_univariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
-    eval(Expr const &expr, 
+    eval(Expr &expr, 
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a) {
         typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(particle_a);
         return proto::eval(expr, ctx);
@@ -69,7 +77,7 @@ namespace Aboria {
     template<typename Expr, typename AnyRef>  
     typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
-    eval(Expr const &expr, 
+    eval(Expr &expr, 
             const AnyRef& particle_a) {
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
         return proto::eval(expr, ctx);
@@ -78,7 +86,7 @@ namespace Aboria {
     template<typename Expr>  
     typename boost::enable_if<detail::is_bivariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
-    eval(Expr const &expr, 
+    eval(Expr &expr, 
             const typename detail::symbolic_helper<Expr>::double_d& dx,
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
             const typename detail::symbolic_helper<Expr>::particle_b_reference& particle_b) { 
@@ -89,7 +97,7 @@ namespace Aboria {
     template<typename Expr, typename AnyRef>  
     typename boost::enable_if<detail::is_univariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
-    eval(Expr const &expr, 
+    eval(Expr &expr, 
             const typename detail::symbolic_helper<Expr>::double_d& dx,
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
             const AnyRef& particle_b) { 
@@ -100,7 +108,7 @@ namespace Aboria {
     template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
     typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
-    eval(Expr const &expr, 
+    eval(Expr &expr, 
             const AnyDx& dx,
             const AnyRef1& particle_a, 
             const AnyRef2& particle_b) { 

@@ -10,12 +10,12 @@ set(test_package
     assemble
     symbolic
     rbf_pde
+    rbf_interpolation
     metafunctions
     )
 
 #set(test_package
-#    diffusion_around_spheres
-#    metafunctions
+#    rbf_pde
 #    )
 
 foreach(test ${test_package})

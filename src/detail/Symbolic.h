@@ -850,26 +850,55 @@ namespace Aboria {
         struct symbolic_helper {};
 
         template<typename Expr>
-        struct symbolic_helper<Expr, typename boost::enable_if<is_const<Expr>>::type> {
+        struct symbolic_helper<Expr, typename boost::enable_if<is_const<
+                    typename proto::result_of::as_expr<
+                                        Expr,detail::SymbolicDomain>::type
+                    >>::type> {
+
+            typedef typename proto::result_of::as_expr<
+                            Expr,detail::SymbolicDomain>::type expr_type;
+
+            typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
+
             typedef ConstantCtx const_context_type;
-            typedef typename proto::result_of::eval<Expr const, const_context_type const>::type result;
+            typedef typename proto::result_of::eval<expr_type const, const_context_type const>::type result;
+
+
+     
         };
 
         template<typename Expr>
-        struct symbolic_helper<Expr, typename boost::enable_if<is_univariate<Expr>>::type> {
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr,fusion::nil_)>::type,0>::type label_a_type_ref;
+        struct symbolic_helper<Expr, typename boost::enable_if<is_univariate<
+                    typename proto::result_of::as_expr<
+                                        Expr,detail::SymbolicDomain>::type
+                    >>::type> {
+
+            typedef typename proto::result_of::as_expr<
+                            Expr,detail::SymbolicDomain>::type expr_type;
+
+            typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
+ 
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
             typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::double_d double_d;
             typedef typename particles_a_type::const_reference particle_a_reference;
             typedef ParticleCtx<particles_a_type> univariate_context_type;
-            typedef typename proto::result_of::eval<Expr const, univariate_context_type const>::type result;
+            typedef typename proto::result_of::eval<expr_type, univariate_context_type const>::type result;
         };
 
         template<typename Expr>
-        struct symbolic_helper<Expr, typename boost::enable_if<is_bivariate<Expr>>::type> {
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr,fusion::nil_)>::type,0>::type label_a_type_ref;
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(Expr,fusion::nil_)>::type,1>::type label_b_type_ref;
+        struct symbolic_helper<Expr, typename boost::enable_if<is_bivariate<
+                    typename proto::result_of::as_expr<
+                                        Expr,detail::SymbolicDomain>::type
+                    >>::type> {
+            typedef typename proto::result_of::as_expr<
+                            Expr,detail::SymbolicDomain>::type expr_type;
+
+            typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
+
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,1>::type label_b_type_ref;
             typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
             typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
             typedef typename label_a_type::particles_type particles_a_type;
@@ -878,7 +907,8 @@ namespace Aboria {
             typedef typename particles_b_type::const_reference particle_b_reference;
             typedef typename particles_a_type::double_d double_d;
             typedef TwoParticleCtx<particles_a_type,particles_b_type> bivariate_context_type ;
-            typedef typename proto::result_of::eval<Expr const, bivariate_context_type const>::type result;
+            typedef typename proto::result_of::eval<expr_type const, bivariate_context_type const>::type result;
+             
         };
 
 

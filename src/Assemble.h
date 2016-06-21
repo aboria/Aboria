@@ -72,7 +72,7 @@ void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
     CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression. expr = ("<<na<<","<<nb<<") and matrix = ("<<matrix.rows()<<","<<matrix.cols()<<").")
 
     for (size_t i=0; i<na; ++i) {
-        for (size_t j=0; j<na; ++j) {
+        for (size_t j=0; j<nb; ++j) {
             double_d dx = a.correct_dx_for_periodicity(get<position>(b[j])-get<position>(a[i]));
             matrix(i,j) = eval(expr,dx,a[i],b[j]);
         }

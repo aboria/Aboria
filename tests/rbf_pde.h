@@ -66,7 +66,7 @@ public:
         double2 max(1);
         double2 periodic(false);
         
-        const int nx = 10;
+        const int nx = 5;
         const double delta = 1.0/nx;
         ParticlesType::value_type p;
         for (int i=0; i<=nx; ++i) {
@@ -136,7 +136,7 @@ public:
             Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
         cg.compute(W);
         gamma = cg.solve(phi);
-        std::cout << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+        std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
         
 #endif // HAVE_EIGEN
     }

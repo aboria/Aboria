@@ -187,8 +187,12 @@ namespace Aboria {
         const static unsigned int dimension = particles_b_type::dimension;
         const particles_a_type& a = std::get<0>(block);
         const particles_b_type& b = std::get<1>(block);
-        const expr_type expr = std::get<2>(block);
-        const if_expr_type if_expr = std::get<3>(block);
+
+        //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
+        //to the stored constants, and the eval product expression in eigen assumes that your matrix
+        //replacement is a constant
+        expr_type expr = std::get<2>(block);
+        if_expr_type if_expr = std::get<3>(block);
 
         const size_t na = a.size();
         const size_t nb = b.size();
@@ -209,6 +213,8 @@ namespace Aboria {
                 for (size_t j=0; j<nb; ++j) {
                     typename particles_b_type::const_reference bj = b[j];
                     const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                    //std::cout << "a = "<<get<position>(ai)<<" b = "<<get<position>(bj)<<std::endl;
+                    //std::cout << "using dx = "<<dx<<" rhs(j) = "<<rhs(j)<<" eval = "<<eval(expr,dx,ai,bj)<<std::endl;
                     sum += eval(expr,dx,ai,bj)*rhs(j);
                 }
                 y(i) += sum;
@@ -241,8 +247,8 @@ namespace Aboria {
         const static unsigned int dimension = particles_b_type::dimension;
 
         const particles_b_type& b = std::get<1>(block);
-        const expr_type expr = std::get<2>(block);
-        const if_expr_type if_expr = std::get<3>(block);
+        expr_type expr = std::get<2>(block);
+        if_expr_type if_expr = std::get<3>(block);
 
         const size_t nb = b.size();
 
@@ -272,8 +278,8 @@ namespace Aboria {
         const static unsigned int dimension = particles_a_type::dimension;
 
         const particles_a_type& a = std::get<0>(block);
-        const expr_type expr = std::get<2>(block);
-        const if_expr_type if_expr = std::get<3>(block);
+        expr_type expr = std::get<2>(block);
+        if_expr_type if_expr = std::get<3>(block);
 
         const size_t na = a.size();
 
@@ -309,7 +315,7 @@ namespace Aboria {
 
         proto::display_expr(expr);
         //std::cout << "dens one x one block" <<std::endl;
-        y(0) = eval(expr)*rhs(0);
+        y(0) += eval(expr)*rhs(0);
     }
 
 
@@ -355,83 +361,87 @@ namespace Aboria {
               typename B, unsigned int B_depth, 
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
     MatrixReplacement<1,1,std::tuple<std::tuple<const A&,const B&,
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>
+        typename detail::symbolic_helper<Expr>::deep_copy_type,
+        typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
             const Label<A_depth,A>& a, 
             const Label<B_depth,B>& b, 
             const Expr& expr, 
             const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
     {
-        return MatrixReplacement<1,1,std::tuple<std::tuple<const A&, const B&, 
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>(
+        typedef std::tuple<const A&, const B&, 
+            typename detail::symbolic_helper<Expr>::deep_copy_type,
+            typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
+        return MatrixReplacement<1,1,std::tuple<block_type>>(
                 std::make_tuple(
-                    std::tie(proto::value(a).get_particles(),proto::value(b).get_particles(),
-                        proto::as_expr<detail::SymbolicDomain>(expr),
-                        proto::as_expr<detail::SymbolicDomain>(if_expr))
+                    block_type(proto::value(a).get_particles(),proto::value(b).get_particles(),
+                        deep_copy(expr),
+                        deep_copy(if_expr))
                 ));
     }
 
     template <typename B, unsigned int B_depth, 
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
     MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&,const B&,
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>
+        typename detail::symbolic_helper<Expr>::deep_copy_type,
+        typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
             const One& a, 
             const Label<B_depth,B>& b, 
             const Expr& expr, 
             const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
     {
-        return MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&, const B&, 
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>(
+        typedef std::tuple<const SizeOne&, const B&, 
+            typename detail::symbolic_helper<Expr>::deep_copy_type,
+            typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
+        return MatrixReplacement<1,1,std::tuple<block_type>>(
                 std::make_tuple(
-                    std::tie(a.get_size_one(),proto::value(b).get_particles(),
-                        proto::as_expr<detail::SymbolicDomain>(expr),
-                        proto::as_expr<detail::SymbolicDomain>(if_expr))
+                    block_type(a.get_size_one(),proto::value(b).get_particles(),
+                        deep_copy(expr),
+                        deep_copy(if_expr))
                 ));
     }
 
     template <typename A, unsigned int A_depth, 
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
     MatrixReplacement<1,1,std::tuple<std::tuple<const A&,const SizeOne&,
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>
+        typename detail::symbolic_helper<Expr>::deep_copy_type,
+        typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
             const Label<A_depth,A>& a, 
             const One& b, 
             const Expr& expr, 
             const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
     {
-        return MatrixReplacement<1,1,std::tuple<std::tuple<const A&, const SizeOne&, 
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>(
+        typedef std::tuple<const A&, const SizeOne&, 
+            typename detail::symbolic_helper<Expr>::deep_copy_type,
+            typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
+        return MatrixReplacement<1,1,std::tuple<block_type>>(
                 std::make_tuple(
-                    std::tie(proto::value(a).get_particles(),b.get_size_one(),
-                        proto::as_expr<detail::SymbolicDomain>(expr),
-                        proto::as_expr<detail::SymbolicDomain>(if_expr))
+                    block_type(proto::value(a).get_particles(),b.get_size_one(),
+                        deep_copy(expr),
+                        deep_copy(if_expr))
                 ));
     }
 
     template <typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
     MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&,const SizeOne&,
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>
+        typename detail::symbolic_helper<Expr>::deep_copy_type,
+        typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
             const One& a, 
             const One& b, 
             const Expr& expr, 
             const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
     {
-        return MatrixReplacement<1,1,std::tuple<std::tuple<const SizeOne&, const SizeOne&, 
-           typename proto::result_of::as_expr<Expr,detail::SymbolicDomain>::type,
-           typename proto::result_of::as_expr<IfExpr,detail::SymbolicDomain>::type>>>(
+        typedef std::tuple<const SizeOne&, const SizeOne&, 
+            typename detail::symbolic_helper<Expr>::deep_copy_type,
+            typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
+        return MatrixReplacement<1,1,std::tuple<block_type>>(
                 std::make_tuple(
-                    std::tie(a.get_size_one(),b.get_size_one(),
-                        proto::as_expr<detail::SymbolicDomain>(expr),
-                        proto::as_expr<detail::SymbolicDomain>(if_expr))
+                    block_type(a.get_size_one(),b.get_size_one(),
+                        deep_copy(expr),
+                        deep_copy(if_expr))
                 ));
     }
 

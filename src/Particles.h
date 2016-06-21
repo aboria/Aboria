@@ -336,9 +336,12 @@ public:
     double_d correct_dx_for_periodicity(const double_d& uncorrected_dx) const {
         double_d dx = uncorrected_dx;
         double_d domain_width = get_max()-get_min();
+        const bool_d& periodic = get_periodic();
         for (size_t d=0; d<dimension; ++d) {
-            while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
-            while (dx[d] <= domain_width[d]/2) dx[d] += domain_width[d];
+            if (periodic[d]) {
+                while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
+                while (dx[d] <= -domain_width[d]/2) dx[d] += domain_width[d];
+            }
         }
         return dx;
     }
@@ -359,6 +362,12 @@ public:
     /// \see init_neighbour_search()
     const double_d& get_max() const {
         return bucket_search.get_max();
+    }
+
+    /// return the periodicty of the neighbourhood search
+    /// \see init_neighbour_search()
+    const bool_d& get_periodic() const {
+        return bucket_search.get_periodic();
     }
 
     /// Update the neighbourhood search data. This function must be
