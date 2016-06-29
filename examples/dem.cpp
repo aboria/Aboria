@@ -93,25 +93,25 @@ int main(int argc, char **argv) {
      * timestepping
      */
     v[a] = 0;
-    m[a] = (1.0/6.0)*PI*8*r*r*r*dem_dens;
+    m[a] = (1.0/6.0)*PI*8*r[a]*r[a]*r[a]*dem_dens;
     for (int io = 0; io < nout; ++io) {
         std::cout << "." << std::flush;
         for (int i = 0; i < timesteps_per_out; i++) {
-            p[a] += v*dt;
+            p[a] += v[a]*dt;
 
             dvdt[a] = (// spring force between dem particles
                     sum(b, id_[a]!=id_[b] && norm(dx)<r[a]+r[b], 
                           dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
                 
                     // spring force between particles and bottom wall
-                    + if_else(r-p[2] > 0, dem_k*(r-p[2]), 0.0)*double3(0,0,1) 
+                    + if_else(r[a]-p[a][2] > 0, dem_k*(r[a]-p[a][2]), 0.0)*double3(0,0,1) 
 
                     // gravity force
-                    + double3(0,0,-9.81)*m
+                    + double3(0,0,-9.81)*m[a]
 
-                    )/m;
+                    )/m[a];
 
-            v[a] += dvdt*dt;
+            v[a] += dvdt[a]*dt;
         }
 #ifdef HAVE_VTK
         dem.copy_to_vtk_grid(grid);

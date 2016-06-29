@@ -133,7 +133,7 @@ public:
 
         const double beta = gamma(knots.size());
 
-        interp[a] = sum(b,true,al[a]*exp(-pow(norm(r[a]-p),2)/c2[a])) + beta;
+        interp[a] = sum(b,true,al[a]*exp(-pow(norm(dx),2)/c2[a])) + beta;
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
@@ -142,6 +142,7 @@ public:
             TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
 
+        /*
         for (int i=0; i<=nx; ++i) {
             for (int j=0; j<=nx; ++j) {
                 double2 p(i*delta,j*delta);
@@ -151,6 +152,7 @@ public:
                 TS_ASSERT_DELTA(eval_value,truth,2e-3); 
             }
         }
+        */
 
         
 #endif // HAVE_EIGEN

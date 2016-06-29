@@ -146,33 +146,33 @@ int main(int argc, char **argv) {
 	        /*
 	         * 0 -> 1/2 step
 	         */
-            v[a] += dt/2 + dvdt;
+            v[a] += dt/2 + dvdt[a];
             if (t < time_damping) v[a] *= 0.98;
-            p[a] += dt/2 + v;
+            p[a] += dt/2 + v[a];
 
 	        /*
 	         * Calculate omega
 	         */
-            omega[a] = 1.0 - (mass/rho*NDIM)*sum(b,norm(dx)<2*h,pow(norm(dx),2)*F(norm(dx),h)+NDIM*W(norm(dx),h));
+            omega[a] = 1.0 - (mass/rho[a]*NDIM)*sum(b,norm(dx)<2*h[a],pow(norm(dx),2)*F(norm(dx),h[a])+NDIM*W(norm(dx),h[a]));
 
 	        /*
 	         * 1/2 -> 1 step
 	         */
-            rho[a] += dt*(mass/omega) * sum(b,norm(dx)<2*h,dot(v[a]-v[b],dx*F(norm(dx),h)));
-            h[a] = pow(mass/rho,1.0/NDIM);
+            rho[a] += dt*(mass/omega[a]) * sum(b,norm(dx)<2*h[a],dot(v[a]-v[b],dx*F(norm(dx),h[a])));
+            h[a] = pow(mass/rho[a],1.0/NDIM);
             
-            const double maxh = eval(max(a,true,h));
-            const double minh = eval(min(a,true,h));
+            const double maxh = eval(max(a,true,h[a]));
+            const double minh = eval(min(a,true,h[a]));
 
-            v0[a] = v;
-            v[a] += if_else(fixed==false,dt/2 * dvdt,0);
-            pdr2[a] = prb*(pow(rho/refd,gamma) - 1.0);
-            p[a] += dt/2 * v0;
+            v0[a] = v[a];
+            v[a] += if_else(fixed[a]==false,dt/2 * dvdt[a],0);
+            pdr2[a] = prb*(pow(rho[a]/refd,gamma) - 1.0);
+            p[a] += dt/2 * v0[a];
 
 	        /*
 	         * acceleration on SPH calculation (pressure and viscosity force)
 	         */
-            dvdt[a] += mass*sum_vect(b,norm(dx)<2*h,
+            dvdt[a] += mass*sum_vect(b,norm(dx)<2*h[a],
                     
                     ((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
                     + (v[a]-v[b])*visc*(rho[a]+rho[b])/(rho[a]*rho[b])*F(norm(dx),h[a])
@@ -181,7 +181,7 @@ int main(int argc, char **argv) {
 	        /*
 	         * 1/2 -> 1 step for velocity
 	         */
-            v[a] = if_else(fixed==false,v0 + dt/2 * dvdt,0);
+            v[a] = if_else(fixed[a]==false,v0[a] + dt/2 * dvdt[a],0);
 
             t += dt;
                 

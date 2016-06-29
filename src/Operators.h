@@ -488,8 +488,8 @@ namespace Aboria {
                              typename expr_type, typename if_expr_type>
     void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) {
 
-        const expr_type expr = std::get<2>(block);
-        const if_expr_type if_expr = std::get<3>(block);
+        expr_type expr = std::get<2>(block);
+        if_expr_type if_expr = std::get<3>(block);
 
         //TODO: should use return type instead of double
         if ((detail::is_const<expr_type>::value && (std::abs(eval(expr))<=std::numeric_limits<double>::epsilon())) ||

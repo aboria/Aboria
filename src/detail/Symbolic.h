@@ -536,7 +536,7 @@ namespace Aboria {
                     //TODO: get better (parallel) random number generator
                     //return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
                     return proto::value(expr)(
-                            const_cast<generator_type&>(get<random>(fusion::front(ctx.m_labels))));
+                            const_cast<generator_type&>(get<random>(fusion::front(ctx.m_labels).second)));
                 }
             };
 
@@ -580,7 +580,7 @@ namespace Aboria {
                     proto::matches<Expr, proto::terminal<dx<_,_>>>,
                     mpl::equal<size_type,mpl::int_<2>>
             >>::type> {
-                typedef typename fusion::result_of::front<dx_type>::type result_type;
+                typedef typename fusion::result_of::front<const dx_type>::type result_type;
                 typedef typename proto::result_of::value<Expr>::type expr_dx;
                 typedef typename expr_dx::label_a_type expr_label_a_type;
                 typedef typename expr_dx::label_b_type expr_label_b_type;
@@ -614,7 +614,7 @@ namespace Aboria {
                 result_type sum = accum.init;
                 for (auto i: label.get_particles()) {
                     auto new_labels = fusion::make_map<label_type>(i);
-                    EvalCtx<decltype(new_labels),decltype(ctx.m_dx)> new_ctx(new_labels,ctx.m_dx);
+                    EvalCtx<decltype(new_labels),decltype(ctx.m_dx)> const new_ctx(new_labels,ctx.m_dx);
 
                     if (proto::eval(if_expr,new_ctx)) {
                         sum = accum.functor(sum,proto::eval(expr,new_ctx));
@@ -644,6 +644,7 @@ namespace Aboria {
 
                 typedef typename label_type::particles_type particles_type;
                 typedef typename particles_type::position position;
+                typedef typename position::value_type double_d;
                 typedef typename std::remove_reference<
                     typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
 
@@ -658,14 +659,21 @@ namespace Aboria {
                     */
 
 
+                    const double_d dx = particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a));
+
+
+                    /*
                     auto new_dx = fusion::make_list(
                         particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a)));
+                        */
                     /*
                     auto new_dx = fusion::push_front(ctx.m_dx,
                         particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a))
                             );
                             */
-                    EvalCtx<decltype(new_labels),decltype(new_dx)> new_ctx(new_labels,new_dx);
+                    EvalCtx<decltype(new_labels),fusion::list<const double_d &>> const new_ctx(
+                            new_labels,
+                            fusion::make_list(boost::cref(dx)));
 
                     if (proto::eval(if_expr,new_ctx)) {
                         sum = accum.functor(sum,proto::eval(expr,new_ctx));
@@ -712,7 +720,7 @@ namespace Aboria {
                             */
                     auto new_dx = fusion::make_list(boost::cref(std::get<1>(i)));
 
-                    EvalCtx<decltype(new_labels),decltype(new_dx)> new_ctx(new_labels,new_dx);
+                    EvalCtx<decltype(new_labels),decltype(new_dx)> const new_ctx(new_labels,new_dx);
 
                     if (proto::eval(if_expr,new_ctx)) {
                         sum = accum.functor(sum,proto::eval(expr,new_ctx));
