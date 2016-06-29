@@ -60,13 +60,12 @@ public:
         typedef position_d<2> position;
        	ParticlesType knots;
 
-       	const double diameter = 0.1;
-       	const double c = 0.1;
+       	const double c2 = std::pow(0.11,2);
         double2 min(0);
         double2 max(1);
         double2 periodic(false);
         
-        const int nx = 5;
+        const int nx = 10;
         const double delta = 1.0/nx;
         ParticlesType::value_type p;
         for (int i=0; i<=nx; ++i) {
@@ -81,24 +80,21 @@ public:
             }
         }
 
-        knots.init_neighbour_search(min,max,diameter,periodic);
-
         Symbol<boundary> is_b;
-        Symbol<truth> F;
-        Symbol<estimated> Fdash;
-        Symbol<forcing> f;
+        Symbol<position> r;
         Label<0,ParticlesType> a(knots);
         Label<1,ParticlesType> b(knots);
         One one;
         auto dx = create_dx(a,b);
+        Accumulate<std::plus<double> > sum;
 
         auto H = create_eigen_operator(a,b, 
-                    sqrt(pow(norm(dx),2) + pow(c,2))
+                    sqrt(pow(norm(dx),2) + c2)
                 );
         auto G = create_eigen_operator(a,b, 
                     if_else(is_b[a],
-                        sqrt(pow(norm(dx),2) + pow(c,2)),
-                        (2*pow(c,2) + pow(norm(dx),2)) / pow(pow(norm(dx),2) + pow(c,2),1.5)
+                        sqrt(pow(norm(dx),2) + c2),
+                        (2*c2 + pow(norm(dx),2)) / pow(pow(norm(dx),2) + c2,1.5)
                     )
                 );
         auto P = create_eigen_operator(a,one,
@@ -133,10 +129,21 @@ public:
         phi[knots.size()] = 0;
 
         Eigen::ConjugateGradient<decltype(W), 
-            Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+            Eigen::Lower|Eigen::Upper,  Eigen::DiagonalPreconditioner<double>> cg;
         cg.compute(W);
         gamma = cg.solve(phi);
         std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+
+        const double beta = gamma(knots.size());
+        for (int i=0; i<knots.size(); ++i) {
+            const double2 p = get<position>(knots[i]);
+            const double truth = std::cos(4*p[0]+4*p[1]);
+            const double gamma_i = gamma(i);
+            const double eval_value = eval(sum(a,true,gamma_i*sqrt(pow(norm(r[a]-p),2) + c2))) + beta;
+            TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+        }
+
+        
         
 #endif // HAVE_EIGEN
     }

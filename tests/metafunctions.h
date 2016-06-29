@@ -49,6 +49,53 @@ using namespace Aboria;
 
 class MetafunctionsTest : public CxxTest::TestSuite {
 public:
+    void test_expr_matching(void) {
+        ABORIA_VARIABLE(scalar,double,"scalar")
+    	typedef Particles<std::tuple<scalar>> ParticlesType;
+    	ParticlesType particles;
+        Symbol<scalar> s;
+        Label<0,ParticlesType> a(particles);
+        Label<1,ParticlesType> b(particles);
+        auto dx = create_dx(a,b);
+        Accumulate<std::plus<double> > sum;
+
+        static_assert(proto::matches<decltype(norm(dx)<3),detail::range_if_expr>::value,
+                "norm(dx)<3 does not match range_if_expr");
+
+        static_assert(proto::matches<decltype(norm(dx)<=3),detail::range_if_expr>::value,
+                "norm(dx)<=3 does not match range_if_expr");
+
+        static_assert(proto::matches<decltype(norm(dx)<=s[a]),detail::range_if_expr>::value,
+                "norm(dx)<=s[a] does not match range_if_expr");
+
+       static_assert(proto::matches<decltype(s[a] > norm(dx)),detail::range_if_expr>::value,
+                "s[a] > norm(dx) does not match range_if_expr");
+
+        static_assert(proto::matches<decltype(10 > norm(dx)),detail::range_if_expr>::value,
+                "10 > norm(dx) does not match range_if_expr");
+
+        static_assert(proto::matches<decltype(10 >= norm(dx)),detail::range_if_expr>::value,
+                "10 >= norm(dx) does not match range_if_expr");
+
+        static_assert(!proto::matches<decltype(norm(dx)>3),detail::range_if_expr>::value,
+                "norm(dx)>3 matchs range_if_expr");
+
+         static_assert(!proto::matches<decltype(dx>3),detail::range_if_expr>::value,
+                "dx>3 matchs range_if_expr");
+
+        static_assert(!proto::matches<decltype(norm(dx)>=3),detail::range_if_expr>::value,
+                "norm(dx)>=3 matchs range_if_expr");
+
+        static_assert(!proto::matches<decltype(s[a]==3),detail::range_if_expr>::value,
+                "s[a]==3 matchs range_if_expr");
+
+        static_assert(!proto::matches<decltype(proto::lit(true)),detail::range_if_expr>::value,
+                "lit(true) matchs range_if_expr");
+
+        static_assert(!proto::matches<decltype(proto::lit(1)),detail::range_if_expr>::value,
+                "lit(1) matchs range_if_expr");
+    }
+
     void test_get_labels(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> ParticlesType;

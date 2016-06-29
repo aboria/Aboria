@@ -70,7 +70,7 @@ namespace Aboria {
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr, 
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a) {
-        typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(particle_a);
+        typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(fusion::make_list(particle_a));
         return proto::eval(expr, ctx);
     }
 
@@ -90,7 +90,7 @@ namespace Aboria {
             const typename detail::symbolic_helper<Expr>::double_d& dx,
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
             const typename detail::symbolic_helper<Expr>::particle_b_reference& particle_b) { 
-        typename detail::symbolic_helper<Expr>::bivariate_context_type const ctx(dx,particle_a,particle_b);
+        typename detail::symbolic_helper<Expr>::bivariate_context_type const ctx(fusion::make_list(particle_a,particle_b),fusion::make_list(dx));
         return proto::eval(expr, ctx);
     }
 
@@ -101,7 +101,7 @@ namespace Aboria {
             const typename detail::symbolic_helper<Expr>::double_d& dx,
             const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
             const AnyRef& particle_b) { 
-        typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(particle_a);
+        typename detail::symbolic_helper<Expr>::univariate_context_type const ctx(fusion::make_list(particle_a));
         return proto::eval(expr, ctx);
     }
 

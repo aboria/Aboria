@@ -97,7 +97,7 @@ public:
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
 
-    	s[a] = s + 1;
+    	s[a] = s[a] + 1;
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
@@ -119,13 +119,13 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],4);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[2],6);
 
-    	p[a] = p * s;
+    	p[a] = p[a] * s[a];
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],6);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],12);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[2],18);
 
-       	p[a] = if_else(id_ == 0, double3(0,0,0), double3(3,2,1));
+       	p[a] = if_else(id_[a] == 0, double3(0,0,0), double3(3,2,1));
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0);
@@ -166,7 +166,7 @@ public:
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
 
-       	p[a] = if_else(id_ == 0, double3(diameter/2.0,0,0), double3(0,0,0));
+       	p[a] = if_else(id_[a] == 0, double3(diameter/2.0,0,0), double3(0,0,0));
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],diameter/2.0);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0);
@@ -176,7 +176,7 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[1],0);
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],0);
 
-    	p[a] = 0.5*(p + s);
+    	p[a] = 0.5*(p[a] + s[a]);
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0.5*(diameter/2.0 + 1));
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0.5);
@@ -191,8 +191,8 @@ public:
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
 
-       	p[a] = if_else(id_ == 0, double3(0,0,0), double3(diameter/2.0,diameter/2.0,diameter/2.0));
-       	s[a] = if_else(id_ == 0, 0, 1);
+       	p[a] = if_else(id_[a] == 0, double3(0,0,0), double3(diameter/2.0,diameter/2.0,diameter/2.0));
+       	s[a] = if_else(id_[a] == 0, 0, 1);
 
        	TS_ASSERT_EQUALS(get<scalar>(particles[0]),0);
        	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
@@ -244,18 +244,18 @@ public:
        	particles.push_back(double3(0,0,0));
        	particles.push_back(double3(2,0,0));
 
-        double result = eval(sum(a, p[0]<1, 1));
+        double result = eval(sum(a, p[a][0]<1, 1));
     	TS_ASSERT_EQUALS(result,1);
        	result = eval(sum(a, true, 1));
     	TS_ASSERT_EQUALS(result,2);
-       	result = eval(sum(a, true, p[0]));
+       	result = eval(sum(a, true, p[a][0]));
     	TS_ASSERT_EQUALS(result,2);
-        int result2 = eval(max(a, true, id_));
+        int result2 = eval(max(a, true, id_[a]));
     	TS_ASSERT_EQUALS(result2,1);
-        result2 = eval(min(a, true, id_));
+        result2 = eval(min(a, true, id_[a]));
     	TS_ASSERT_EQUALS(result2,0);
        	particles.push_back(double3(0,0,0));
-        result2 = eval(max(a, true, id_));
+        result2 = eval(max(a, true, id_[a]));
     	TS_ASSERT_EQUALS(result2,2);
     }
 

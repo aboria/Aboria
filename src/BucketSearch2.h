@@ -60,7 +60,11 @@ public:
     /// a STL forward iterator type
 	class const_iterator;
 
-    BucketSearch() {};
+    BucketSearch() {
+        const double min = std::numeric_limits<double>::min();
+        const double max = std::numeric_limits<double>::max();
+        set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),double_d(max/3.0-min/3.0)); 
+    };
 
     void embed_points(particles_iterator begin, particles_iterator end) {
         m_particles_begin = begin;

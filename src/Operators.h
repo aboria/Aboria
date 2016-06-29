@@ -84,6 +84,8 @@ namespace Aboria {
         SizeOne one;
     };
 
+    namespace detail {
+
     int sum() {
         return 0;
     }
@@ -91,6 +93,8 @@ namespace Aboria {
     template<typename T1, typename... T>
     int sum(T1 s, T... ts) {
         return s + sum(ts...);
+    }
+
     }
 
     // Inheriting EigenBase should not be needed in the future.
@@ -118,12 +122,12 @@ namespace Aboria {
 
             template<std::size_t... I>
             Index rows_impl(index_sequence<I...>) const {
-                return sum(std::get<0>(std::get<I*NJ>(m_blocks)).size()...);
+                return detail::sum(std::get<0>(std::get<I*NJ>(m_blocks)).size()...);
             }
 
             template<std::size_t... J>
             Index cols_impl(index_sequence<J...>) const {
-                return sum(std::get<1>(std::get<J>(m_blocks)).size()...);
+                return detail::sum(std::get<1>(std::get<J>(m_blocks)).size()...);
             }
 
             Index rows() const { 
@@ -169,10 +173,192 @@ namespace Aboria {
                 assert(a_rows==0 && a_cols==0 || a_rows==rows() && a_cols==cols());
             }
 
+            template < 
+              typename particles_a_type, typename particles_b_type,
+              typename expr_type, typename if_expr_type>
+            Scalar coeff_impl_block(const Index i, const Index j, const std::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) const {
+                
+                typedef typename particles_b_type::double_d double_d;
+                typedef typename particles_b_type::position position;
+
+                const particles_a_type& a = std::get<0>(block);
+                const particles_b_type& b = std::get<1>(block);
+                typename particles_a_type::const_reference ai = a[i];
+                typename particles_b_type::const_reference bj = b[j];
+                const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+
+                //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
+                //to the stored constants, and if I want this to be const
+                expr_type expr = std::get<2>(block);
+                if_expr_type if_expr = std::get<3>(block);
+                 
+                if (eval(if_expr,dx,ai,bj)) {
+                    return eval(expr,dx,ai,bj);
+                } else {
+                    return 0;
+                }
+
+            }
+
+
+
+            template < 
+              typename particles_b_type,
+              typename expr_type, typename if_expr_type>
+            Scalar coeff_impl_block(const Index i, const Index j, const std::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) const {
+                
+                typedef typename particles_b_type::double_d double_d;
+                typedef typename particles_b_type::position position;
+
+                const particles_b_type& b = std::get<1>(block);
+                typename particles_b_type::const_reference bj = b[j];
+
+                //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
+                //to the stored constants, and if I want this to be const
+                expr_type expr = std::get<2>(block);
+                if_expr_type if_expr = std::get<3>(block);
+                 
+                if (eval(if_expr,bj)) {
+                    return eval(expr,bj);
+                } else {
+                    return 0;
+                }
+
+            }
+
+            template < 
+              typename particles_a_type,
+              typename expr_type, typename if_expr_type>
+            Scalar coeff_impl_block(const Index i, const Index j, const std::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) const {
+                
+                typedef typename particles_a_type::double_d double_d;
+                typedef typename particles_a_type::position position;
+
+                const particles_a_type& a = std::get<0>(block);
+                typename particles_a_type::const_reference ai = a[i];
+
+                //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
+                //to the stored constants, and if I want this to be const
+                expr_type expr = std::get<2>(block);
+                if_expr_type if_expr = std::get<3>(block);
+                 
+                if (eval(if_expr,ai)) {
+                    return eval(expr,ai);
+                } else {
+                    return 0;
+                }
+
+            }
+
+            template < 
+              typename expr_type, typename if_expr_type>
+            Scalar coeff_impl_block(const Index i, const Index j, const std::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) const {
+                //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
+                //to the stored constants, and if I want this to be const
+                expr_type expr = std::get<2>(block);
+                if_expr_type if_expr = std::get<3>(block);
+                 
+                if (eval(if_expr)) {
+                    return eval(expr);
+                } else {
+                    return 0;
+                }
+
+            }
+
+            template<std::size_t... I>
+            Scalar coeff_impl(const Index i, const Index j, index_sequence<I...>) const {
+                return detail::sum(
+                        ((i>=start_row<I>())&&(i<start_row<I+1>()))?
+                            (coeff_impl_block(i,j,std::get<I*NJ>(m_blocks))):
+                            (0.0)...
+                        );
+            }
+
+            Scalar coeff(const Index i, const Index j) const {
+                return coeff_impl(i,j,make_index_sequence<NI>());
+            }
+
             template<typename Rhs>
             Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
                 return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
             }
+
+            class InnerIterator {
+            public:
+                typedef const Scalar* pointer;
+                typedef std::forward_iterator_tag iterator_category;
+                typedef const Scalar& reference;
+                typedef const Scalar value_type;
+                typedef std::ptrdiff_t difference_type;
+
+                InnerIterator(const MatrixReplacement& mat, const Index row):
+                    m_mat(mat),m_row(row),m_col(0) {};
+
+                InnerIterator(const InnerIterator& other):
+                    m_mat(other.m_mat),m_row(other.m_row),m_col(other.m_col) {};
+
+                Scalar value() const {
+                    return dereference();
+                }
+
+                Index index() const {
+                    return m_col;
+                }
+
+                operator bool() const {
+                    return (m_row >= 0) && (m_col >= 0) && (m_row < m_mat.rows()) && (m_col < m_mat.cols());
+                }
+
+                bool equal(InnerIterator const& other) const {
+                    return (m_row == other.m_row)&&(m_col == other.m_col);
+                }
+
+                value_type dereference() const { 
+                    return m_mat.coeff(m_row,m_col); 
+                }
+
+                void increment() {
+                    m_col++;
+                    ASSERT(m_col < m_mat.cols(),"InnerIterator outside cols range");
+                }
+
+                reference operator *() {
+                    return dereference();
+                }
+                reference operator ->() {
+                    return dereference();
+                }
+                InnerIterator& operator++() {
+                    increment();
+                    return *this;
+                }
+                InnerIterator operator++(int) {
+                    InnerIterator tmp(*this);
+                    operator++();
+                    return tmp;
+                }
+
+                size_t operator-(InnerIterator start) const {
+                    ASSERT(m_row == start.m_row,"Difference between InnerIterators must have identical row numbers");
+                    return (m_col-start.m_col);
+                }
+
+                inline bool operator==(const InnerIterator& rhs) {
+                    return equal(rhs);
+                }
+
+                inline bool operator!=(const InnerIterator& rhs){
+                    return !operator==(rhs);
+                }
+
+            private:
+                friend class boost::iterator_core_access;
+                const Index m_row;
+                Index m_col;
+                const MatrixReplacement& m_mat;
+            };
+
 
             const Blocks m_blocks;
 

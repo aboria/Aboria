@@ -38,11 +38,11 @@ struct elem_by_type {
     /// 
     /// iter is a boost mpl iterator to the found element in Variable T
     typedef typename mpl::find<mpl_type_vector,T>::type iter;
-    BOOST_MPL_ASSERT_NOT(( boost::is_same< typename mpl::end<mpl_type_vector>::type, typename iter::type > ));
 
     /// 
     /// index contains the index of the found element
     static const size_t index = iter::pos::value;
+    static_assert(index < mpl::size<mpl_type_vector>::type::value,"variable not found in particle");
 };
 
 

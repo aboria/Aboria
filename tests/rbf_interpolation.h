@@ -53,27 +53,25 @@ public:
     void test_Eigen(void) {
 #ifdef HAVE_EIGEN
         auto funct = [](const double x, const double y) { 
-
-            return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
+            //return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
+            return x; 
         };
 
-        ABORIA_VARIABLE(boundary,uint8_t,"is boundary knot")
-        ABORIA_VARIABLE(truth,double,"truth value")
-        ABORIA_VARIABLE(forcing,double,"forcing value")
-        ABORIA_VARIABLE(estimated,double,"estimated value")
+        ABORIA_VARIABLE(alpha,double,"alpha value")
+        ABORIA_VARIABLE(interpolated,double,"interpolated value")
+        ABORIA_VARIABLE(constant2,double,"c2 value")
 
-    	typedef Particles<std::tuple<boundary,truth,forcing,estimated>,2> ParticlesType;
+    	typedef Particles<std::tuple<alpha,constant2,interpolated>,2> ParticlesType;
         typedef position_d<2> position;
        	ParticlesType knots;
 
-       	const double diameter = 0.1;
        	const double c = 0.1;
         double2 min(0);
         double2 max(1);
         double2 periodic(false);
         
-        const int N = 5;
-        const int nx = 5;
+        const int N = 100;
+        const int nx = 3;
         const double delta = 1.0/nx;
         ParticlesType::value_type p;
 
@@ -82,22 +80,24 @@ public:
         for (int i=0; i<N; ++i) {
             get<position>(p) = double2(distribution(generator),
                                        distribution(generator));
+            get<constant2>(p) = std::pow(c,2);  
             knots.push_back(p);
         }
 
-        knots.init_neighbour_search(min,max,diameter,periodic);
 
-        Symbol<boundary> is_b;
-        Symbol<truth> F;
-        Symbol<estimated> Fdash;
-        Symbol<forcing> f;
+        Symbol<alpha> al;
+        Symbol<interpolated> interp;
+        Symbol<position> r;
+        Symbol<constant2> c2;
         Label<0,ParticlesType> a(knots);
         Label<1,ParticlesType> b(knots);
         One one;
         auto dx = create_dx(a,b);
+        Accumulate<std::plus<double> > sum;
 
         auto G = create_eigen_operator(a,b, 
-                    sqrt(pow(norm(dx),2) + pow(c,2))
+                    //sqrt(pow(norm(dx),2) + c2[a])
+                    exp(-pow(norm(dx),2)/c2[a])
                 );
  
         auto P = create_eigen_operator(a,one,
@@ -111,7 +111,6 @@ public:
         auto W = create_block_eigen_operator<2,2>(G, P,
                                                   Pt,Zero);
 
-
         Eigen::VectorXd phi(knots.size()+1), gamma(knots.size()+1);
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
@@ -121,10 +120,38 @@ public:
         phi[knots.size()] = 0;
 
         Eigen::ConjugateGradient<decltype(W), 
-            Eigen::Lower|Eigen::Upper, Eigen::IdentityPreconditioner> cg;
+            Eigen::Lower|Eigen::Upper,  Eigen::DiagonalPreconditioner<double>> cg;
+            //Eigen::Lower|Eigen::Upper,  Eigen::IdentityPreconditioner> cg;
         cg.compute(W);
+
         gamma = cg.solve(phi);
         std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+
+        // This could be more intuitive....
+        Eigen::Map<Eigen::Matrix<double,N,1>> alpha_wrap(get<alpha>(knots).data());
+        alpha_wrap = gamma.segment<N>(0);
+
+        const double beta = gamma(knots.size());
+
+        interp[a] = sum(b,true,al*exp(-pow(norm(r[a]-p),2)/c2[a])) + beta;
+        for (int i=0; i<knots.size(); ++i) {
+            const double x = get<position>(knots[i])[0];
+            const double y = get<position>(knots[i])[1];
+            const double truth = funct(x,y);
+            const double eval_value = get<interpolated>(knots[i]);
+            TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+        }
+
+        for (int i=0; i<=nx; ++i) {
+            for (int j=0; j<=nx; ++j) {
+                double2 p(i*delta,j*delta);
+                const double truth  = funct(i*delta,j*delta);
+                //const double eval_value = eval(sum(a,true,al*sqrt(pow(norm(r[a]-p),2) + c2[a]))) + beta;
+                const double eval_value = eval(sum(a,true,al*exp(-pow(norm(r[a]-p),2)/c2[a]))) + beta;
+                TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+            }
+        }
+
         
 #endif // HAVE_EIGEN
     }
