@@ -53,6 +53,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include <boost/fusion/include/vector.hpp>
 #include <boost/fusion/include/remove_if.hpp>
 #include <boost/fusion/include/make_list.hpp>
+#include <boost/fusion/include/make_map.hpp>
 #include <boost/proto/core.hpp>
 #include <boost/proto/context.hpp>
 #include <boost/proto/traits.hpp>
@@ -551,20 +552,23 @@ namespace Aboria {
 
                 typedef typename proto::result_of::child_c<Expr, 1>::type child1_type;
                 typedef typename proto::result_of::value<child1_type>::type label_type;
+
+                /*
                 typedef typename label_type::particles_type particles_type;
                 typedef typename particles_type::const_reference particle_ref;
                 typedef typename fusion::pair<label_type,particle_ref> search_type;
-                static_assert(!boost::is_same<
-                                fusion::result_of::find<labels_type,search_type>,
-                                fusion::result_of::end<labels_type>>::value,
-                                "label_type not in context");
+
+                */
+                static_assert(fusion::result_of::has_key<labels_type,label_type>::value,
+                        "label not in evaluation context");
+
                 typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
                 typedef typename proto::result_of::value<child0_type>::type symbolic_type;
                 typedef typename symbolic_type::variable_type variable_type; 
-                typedef typename variable_type::value_type result_type;
+                typedef const typename variable_type::value_type & result_type;
 
                 result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
-                    return get<variable_type>(fusion::find<search_type>(ctx.m_labels));
+                    return get<variable_type>(fusion::at_key<label_type>(ctx.m_labels));
                 }
             };
 
@@ -580,22 +584,15 @@ namespace Aboria {
                 typedef typename proto::result_of::value<Expr>::type expr_dx;
                 typedef typename expr_dx::label_a_type expr_label_a_type;
                 typedef typename expr_dx::label_b_type expr_label_b_type;
-                typedef typename std::remove_const<
-                    typename std::remove_reference<
-                    typename fusion::result_of::at_c<labels_type,0>::type
-                    >::type::first_type>::type label_a_type;
-                typedef typename std::remove_const<
-                    typename std::remove_reference<
-                    typename fusion::result_of::at_c<labels_type,1>::type
-                    >::type::first_type>::type label_b_type;
 
-                static_assert(boost::is_same<expr_label_a_type,label_a_type>::value,
-                        "dx label types in expression not same as in evaluation context (a)");
-                static_assert(boost::is_same<expr_label_b_type,label_b_type>::value,
-                        "dx label types in expression not same as in evaluation context (b)");
+                BOOST_MPL_ASSERT_MSG((fusion::result_of::has_key<labels_type,expr_label_a_type>::value),ASDFASDFASDF,(expr_dx,labels_type,expr_label_a_type));
+                static_assert(fusion::result_of::has_key<labels_type,expr_label_a_type>::value,
+                        "dx label a not in evaluation context");
+                static_assert(fusion::result_of::has_key<labels_type,expr_label_b_type>::value,
+                        "dx label a not in evaluation context");
 
                 result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
-                    return fusion::front(m_dx);
+                    return fusion::front(ctx.m_dx);
                 }
             };
 
@@ -616,9 +613,7 @@ namespace Aboria {
 
                 result_type sum = accum.init;
                 for (auto i: label.get_particles()) {
-                    auto new_labels = fusion::push_front(ctx.m_labels,
-                        fusion::make_pair<label_type>(i)
-                            );
+                    auto new_labels = fusion::make_map<label_type>(i);
                     EvalCtx<decltype(new_labels),decltype(ctx.m_dx)> new_ctx(new_labels,ctx.m_dx);
 
                     if (proto::eval(if_expr,new_ctx)) {
@@ -645,19 +640,31 @@ namespace Aboria {
 
                 result_type sum = accum.init;
                 auto particles = label.get_particles();
-                auto a = fusion::front(ctx.m_labels);
+                auto a = fusion::front(ctx.m_labels).second;
+
+                typedef typename label_type::particles_type particles_type;
+                typedef typename particles_type::position position;
+                typedef typename std::remove_reference<
+                    typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
+
                 for (auto i: particles) {
+
+                    auto new_labels = fusion::make_map<label_a_type,label_type>(
+                                        a,i);
+                    /*
                     auto new_labels = fusion::push_front(ctx.m_labels,
                         fusion::make_pair<label_type>(i)
                             );
+                    */
 
-                    typedef typename fusion::result_of::at_c<labels_type,0>::type label_a_type;
-                    typedef typename label_a_type::particles_type particles_type;
-                    typedef typename particles_type::position position;
 
+                    auto new_dx = fusion::make_list(
+                        particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a)));
+                    /*
                     auto new_dx = fusion::push_front(ctx.m_dx,
                         particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a))
                             );
+                            */
                     EvalCtx<decltype(new_labels),decltype(new_dx)> new_ctx(new_labels,new_dx);
 
                     if (proto::eval(if_expr,new_ctx)) {
@@ -693,12 +700,17 @@ namespace Aboria {
                 typedef typename particles_type::position position;
 
                 for (auto i: particles.get_neighbours(get<position>(a))) {
+                    auto new_labels = fusion::make_map<label_a_type,label_type>(
+                                        a,std::get<0>(i));
+                    /*
                     auto new_labels = fusion::push_front(ctx.m_labels,
                             fusion::make_pair<label_type>(std::get<0>(i))
                             );
                     auto new_dx = fusion::push_front(ctx.m_dx,
                             std::get<1>(i)
                             );
+                            */
+                    auto new_dx = fusion::make_list(boost::cref(std::get<1>(i)));
 
                     EvalCtx<decltype(new_labels),decltype(new_dx)> new_ctx(new_labels,new_dx);
 
@@ -778,7 +790,7 @@ namespace Aboria {
             typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
 
             typedef EvalCtx<> const_context_type;
-            typedef typename proto::result_of::eval<expr_type const, const_context_type const>::type result;
+            typedef typename proto::result_of::eval<expr_type, const_context_type const>::type result;
 
 
      
@@ -796,11 +808,12 @@ namespace Aboria {
             typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
  
             typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
-            typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
+            typedef typename std::remove_const<
+                typename std::remove_reference<label_a_type_ref>::type>::type label_a_type;
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::double_d double_d;
             typedef typename particles_a_type::const_reference particle_a_reference;
-            typedef EvalCtx<fusion::list<fusion::pair<label_a_type,particle_a_reference>>> univariate_context_type;
+            typedef EvalCtx<fusion::map<fusion::pair<label_a_type,particle_a_reference>>> univariate_context_type;
             typedef typename proto::result_of::eval<expr_type, univariate_context_type const>::type result;
         };
 
@@ -816,18 +829,21 @@ namespace Aboria {
 
             typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
             typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,1>::type label_b_type_ref;
-            typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
-            typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
+            typedef typename std::remove_const<
+                typename std::remove_reference<label_a_type_ref>::type>::type label_a_type;
+            typedef typename std::remove_const<
+                typename std::remove_reference<label_b_type_ref>::type>::type label_b_type;
+
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename label_b_type::particles_type particles_b_type;
             typedef typename particles_a_type::const_reference particle_a_reference;
             typedef typename particles_b_type::const_reference particle_b_reference;
             typedef typename particles_a_type::double_d double_d;
-            typedef EvalCtx<fusion::list<
+            typedef EvalCtx<fusion::map<
                 fusion::pair<label_a_type,particle_a_reference>,
                 fusion::pair<label_b_type,particle_b_reference>>,
                 fusion::list<const double_d &>> bivariate_context_type;
-            typedef typename proto::result_of::eval<expr_type const, bivariate_context_type const>::type result;
+            typedef typename proto::result_of::eval<expr_type, bivariate_context_type const>::type result;
              
         };
 
@@ -945,9 +961,13 @@ namespace Aboria {
                 typedef SUBSCRIPT_TYPE Expr;
 
                 typedef typename ParticlesType::position position;
-                typedef typename proto::result_of::value< 
+                
+
+                typedef typename std::remove_const< 
+                    typename std::remove_reference<
+                    typename proto::result_of::value< 
                     typename proto::result_of::child_c<Expr,1>::type 
-                    >::type label_type;
+                    >::type>::type>::type label_type;
                 typedef typename proto::result_of::value< 
                     typename proto::result_of::child_c<Expr,0>::type 
                     >::type symbol_type;
@@ -1026,7 +1046,6 @@ namespace Aboria {
                 typename boost::enable_if<detail::is_univariate<ExprRHS>,void >::type
                 check_valid_assign_expr(ExprRHS const & expr) const {
                     const ParticlesType& particles = mlabel.get_particles();
-                    typedef typename detail::symbolic_helper<Expr>::particles_a_type particles_a_type;
                     const auto& particles_in_expr = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
                     CHECK(&particles_in_expr == &particles, "labels on LHS and RHS of assign expression do not refer to the same particles container");
                 }
@@ -1053,7 +1072,7 @@ namespace Aboria {
 
                     //TODO: if vector to assign to does not exist in depth > 0, then don't need buffer
                     for (int i=0; i<particles.size(); i++) {
-                        EvalCtx<fusion::list<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_list(particles[i]));
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
                         buffer[i] = proto::eval(expr,ctx);
                     }
 
@@ -1072,7 +1091,7 @@ namespace Aboria {
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles); \
                     buffer.resize(particles.size()); \
                     for (int i=0; i<particles.size(); i++) { \
-                        EvalCtx<fusion::list<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_list(particles[i])); \
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i])); \
                         buffer[i] = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
                     } \
                     post(); \

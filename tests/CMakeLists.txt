@@ -15,7 +15,7 @@ set(test_package
     )
 
 set(test_package
-    symbolic
+    rbf_interpolation
     )
 
 foreach(test ${test_package})
