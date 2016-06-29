@@ -53,8 +53,8 @@ public:
     void test_Eigen(void) {
 #ifdef HAVE_EIGEN
         auto funct = [](const double x, const double y) { 
-            //return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
-            return x; 
+            return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
+            //return x; 
         };
 
         ABORIA_VARIABLE(alpha,double,"alpha value")
@@ -64,14 +64,16 @@ public:
     	typedef Particles<std::tuple<alpha,constant2,interpolated>,2> ParticlesType;
         typedef position_d<2> position;
        	ParticlesType knots;
+       	ParticlesType test;
 
-       	const double c = 0.1;
+       	const double c = 0.5;
         double2 min(0);
         double2 max(1);
         double2 periodic(false);
         
         const int N = 100;
         const int nx = 3;
+        const int max_iter = 100;
         const double delta = 1.0/nx;
         ParticlesType::value_type p;
 
@@ -82,6 +84,11 @@ public:
                                        distribution(generator));
             get<constant2>(p) = std::pow(c,2);  
             knots.push_back(p);
+
+            get<position>(p) = double2(distribution(generator),
+                                       distribution(generator));
+            get<constant2>(p) = std::pow(c,2);  
+            test.push_back(p);
         }
 
 
@@ -91,13 +98,19 @@ public:
         Symbol<constant2> c2;
         Label<0,ParticlesType> a(knots);
         Label<1,ParticlesType> b(knots);
+        Label<0,ParticlesType> k(test);
         One one;
         auto dx = create_dx(a,b);
+        auto dx2 = create_dx(k,b);
         Accumulate<std::plus<double> > sum;
 
+        auto kernel = deep_copy(
+                //exp(-pow(norm(dx),2)/c2[b])
+                sqrt(pow(norm(dx),2) + c2[b])
+                );
+
         auto G = create_eigen_operator(a,b, 
-                    //sqrt(pow(norm(dx),2) + c2[a])
-                    exp(-pow(norm(dx),2)/c2[a])
+                    kernel 
                 );
  
         auto P = create_eigen_operator(a,one,
@@ -121,11 +134,44 @@ public:
 
         Eigen::ConjugateGradient<decltype(W), 
             Eigen::Lower|Eigen::Upper,  Eigen::DiagonalPreconditioner<double>> cg;
-            //Eigen::Lower|Eigen::Upper,  Eigen::IdentityPreconditioner> cg;
+        cg.setMaxIterations(max_iter);
         cg.compute(W);
-
         gamma = cg.solve(phi);
         std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+
+        Eigen::BiCGSTAB<decltype(W), Eigen::DiagonalPreconditioner<double>> bicg;
+        bicg.setMaxIterations(max_iter);
+        bicg.compute(W);
+        gamma = bicg.solve(phi);
+        std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
+
+        Eigen::MINRES<decltype(W), Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> minres;
+        minres.setMaxIterations(max_iter);
+        minres.compute(W);
+        gamma = minres.solve(phi);
+        std::cout << "MINRES:   #iterations: " << minres.iterations() << ", estimated error: " << minres.error() << std::endl;
+
+        Eigen::GMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> gmres;
+        gmres.setMaxIterations(max_iter);
+        gmres.compute(W);
+        gamma = gmres.solve(phi);
+        std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+
+        Eigen::DGMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> dgmres;
+        dgmres.setMaxIterations(max_iter);
+        dgmres.compute(W);
+        gamma = dgmres.solve(phi);
+        std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+
+        phi = W*gamma;
+        for (int i=0; i<knots.size(); ++i) {
+            const double x = get<position>(knots[i])[0];
+            const double y = get<position>(knots[i])[1];
+            phi[i] = funct(x,y);
+            TS_ASSERT_DELTA(phi[i],funct(x,y),2e-3); 
+        }
+        TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
+
 
         // This could be more intuitive....
         Eigen::Map<Eigen::Matrix<double,N,1>> alpha_wrap(get<alpha>(knots).data());
@@ -133,7 +179,8 @@ public:
 
         const double beta = gamma(knots.size());
 
-        interp[a] = sum(b,true,al[a]*exp(-pow(norm(dx),2)/c2[a])) + beta;
+        interp[a] = sum(b,true,al[b]*kernel) + beta;
+
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
@@ -142,17 +189,16 @@ public:
             TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
 
-        /*
-        for (int i=0; i<=nx; ++i) {
-            for (int j=0; j<=nx; ++j) {
-                double2 p(i*delta,j*delta);
-                const double truth  = funct(i*delta,j*delta);
-                //const double eval_value = eval(sum(a,true,al*sqrt(pow(norm(r[a]-p),2) + c2[a]))) + beta;
-                const double eval_value = eval(sum(a,true,al[a]*exp(-pow(norm(r[a]-p),2)/c2[a]))) + beta;
-                TS_ASSERT_DELTA(eval_value,truth,2e-3); 
-            }
+        //interp[k] = sum(b,true,al[b]*exp(-pow(norm(dx2),2)/c2[b])) + beta;
+        interp[k] = sum(b,true,al[b]*sqrt(pow(norm(dx2),2) + c2[b])) + beta;
+                
+        for (int i=0; i<test.size(); ++i) {
+            const double x = get<position>(test[i])[0];
+            const double y = get<position>(test[i])[1];
+            const double truth = funct(x,y);
+            const double eval_value = get<interpolated>(test[i]);
+            TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
-        */
 
         
 #endif // HAVE_EIGEN

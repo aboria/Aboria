@@ -51,21 +51,25 @@ public:
 
     void test_Eigen(void) {
 #ifdef HAVE_EIGEN
-        ABORIA_VARIABLE(boundary,uint8_t,"is boundary knot")
-        ABORIA_VARIABLE(truth,double,"truth value")
-        ABORIA_VARIABLE(forcing,double,"forcing value")
-        ABORIA_VARIABLE(estimated,double,"estimated value")
+        auto funct = [](const double x, const double y) { 
+            return std::cos(4*x+4*y);
+        };
 
-    	typedef Particles<std::tuple<boundary,truth,forcing,estimated>,2> ParticlesType;
+        ABORIA_VARIABLE(boundary,uint8_t,"is boundary knot")
+        ABORIA_VARIABLE(interpolated,double,"interpolated value")
+        ABORIA_VARIABLE(constant2,double,"c2 value")
+        ABORIA_VARIABLE(alpha,double,"alpha value")
+
+    	typedef Particles<std::tuple<alpha,boundary,constant2,interpolated>,2> ParticlesType;
         typedef position_d<2> position;
        	ParticlesType knots;
 
-       	const double c2 = std::pow(0.11,2);
-        double2 min(0);
-        double2 max(1);
+       	const double c = 0.5;
+        const int max_iter = 500;
         double2 periodic(false);
         
-        const int nx = 10;
+        const int nx = 7;
+        constexpr int N = (nx+1)*(nx+1);
         const double delta = 1.0/nx;
         ParticlesType::value_type p;
         for (int i=0; i<=nx; ++i) {
@@ -76,25 +80,36 @@ public:
                 } else {
                     get<boundary>(p) = false;
                 }
+                get<constant2>(p) = std::pow(c,2);
                 knots.push_back(p);
             }
         }
 
         Symbol<boundary> is_b;
         Symbol<position> r;
+        Symbol<constant2> c2;
+        Symbol<alpha> al;
+        Symbol<interpolated> interp;
         Label<0,ParticlesType> a(knots);
         Label<1,ParticlesType> b(knots);
         One one;
         auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
 
-        auto H = create_eigen_operator(a,b, 
-                    sqrt(pow(norm(dx),2) + c2)
+        auto kernel = deep_copy(
+                exp(-pow(norm(dx),2)/c2[b])
+                //sqrt(pow(norm(dx),2) + c2[b])
                 );
+
+        auto laplace_kernel = deep_copy(
+                //(2*c2[b] + pow(norm(dx),2)) / pow(pow(norm(dx),2) + c2[b],1.5)
+                4*(pow(norm(dx),2) - c2[b]) * exp(-pow(norm(dx),2)/c2[b])/pow(c2[a],2)
+                );
+
         auto G = create_eigen_operator(a,b, 
                     if_else(is_b[a],
-                        sqrt(pow(norm(dx),2) + c2),
-                        (2*c2 + pow(norm(dx),2)) / pow(pow(norm(dx),2) + c2,1.5)
+                        kernel,
+                        laplace_kernel
                     )
                 );
         auto P = create_eigen_operator(a,one,
@@ -119,32 +134,45 @@ public:
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
-            const double F = std::cos(4*x+4*y);
             if (get<boundary>(knots[i])) {
-                phi[i] = F;
+                phi[i] = funct(x,y);
             } else {
-                phi[i] = -32*F;
+                phi[i] = -32*funct(x,y);
             }
         }
         phi[knots.size()] = 0;
 
-        Eigen::ConjugateGradient<decltype(W), 
-            Eigen::Lower|Eigen::Upper,  Eigen::DiagonalPreconditioner<double>> cg;
-        cg.compute(W);
-        gamma = cg.solve(phi);
-        std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+        std::cout << std::endl;
+
+        Eigen::GMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> gmres;
+        gmres.setMaxIterations(max_iter);
+        gmres.compute(W);
+        gamma = gmres.solve(phi);
+        std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+
+        Eigen::DGMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> dgmres;
+        dgmres.setMaxIterations(max_iter);
+        dgmres.compute(W);
+        gamma = dgmres.solve(phi);
+        std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+
+
+        // This could be more intuitive....
+        Eigen::Map<Eigen::Matrix<double,N,1>> alpha_wrap(get<alpha>(knots).data());
+        alpha_wrap = gamma.segment<N>(0);
 
         const double beta = gamma(knots.size());
-        for (int i=0; i<knots.size(); ++i) {
-            const double2 p = get<position>(knots[i]);
-            const double truth = std::cos(4*p[0]+4*p[1]);
-            const double gamma_i = gamma(i);
-            const double eval_value = eval(sum(a,true,gamma_i*sqrt(pow(norm(r[a]-p),2) + c2))) + beta;
-            TS_ASSERT_DELTA(eval_value,truth,2e-3); 
-        }
 
-        
-        
+        interp[a] = sum(b,true,al[b]*kernel) + beta;
+
+        for (int i=0; i<knots.size(); ++i) {
+            const double x = get<position>(knots[i])[0];
+            const double y = get<position>(knots[i])[1];
+            const double truth = funct(x,y);
+            const double eval_value = get<interpolated>(knots[i]);
+            //TODO: bad point error, can we improve?
+            TS_ASSERT_DELTA(eval_value,truth,1e-1); 
+        }
 #endif // HAVE_EIGEN
     }
 

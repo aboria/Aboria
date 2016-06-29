@@ -589,7 +589,7 @@ namespace Aboria {
                 static_assert(fusion::result_of::has_key<labels_type,expr_label_a_type>::value,
                         "dx label a not in evaluation context");
                 static_assert(fusion::result_of::has_key<labels_type,expr_label_b_type>::value,
-                        "dx label a not in evaluation context");
+                        "dx label b not in evaluation context");
 
                 result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
                     return fusion::front(ctx.m_dx);
