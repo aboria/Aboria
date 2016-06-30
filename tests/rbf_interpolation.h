@@ -74,6 +74,7 @@ public:
         const int N = 100;
         const int nx = 3;
         const int max_iter = 100;
+        const int restart = 100;
         const double delta = 1.0/nx;
         ParticlesType::value_type p;
 
@@ -153,12 +154,14 @@ public:
 
         Eigen::GMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> gmres;
         gmres.setMaxIterations(max_iter);
+        gmres.set_restart(restart);
         gmres.compute(W);
         gamma = gmres.solve(phi);
         std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
         Eigen::DGMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> dgmres;
         dgmres.setMaxIterations(max_iter);
+        dgmres.set_restart(restart);
         dgmres.compute(W);
         gamma = dgmres.solve(phi);
         std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;

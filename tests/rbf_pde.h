@@ -55,6 +55,10 @@ public:
             return std::cos(4*x+4*y);
         };
 
+        auto laplace_funct = [](const double x, const double y) { 
+            return -32*std::cos(4*x+4*y);
+        };
+
         ABORIA_VARIABLE(boundary,uint8_t,"is boundary knot")
         ABORIA_VARIABLE(interpolated,double,"interpolated value")
         ABORIA_VARIABLE(constant2,double,"c2 value")
@@ -65,7 +69,8 @@ public:
        	ParticlesType knots;
 
        	const double c = 0.5;
-        const int max_iter = 500;
+        const int max_iter = 100;
+        const int restart = 100;
         double2 periodic(false);
         
         const int nx = 7;
@@ -137,24 +142,41 @@ public:
             if (get<boundary>(knots[i])) {
                 phi[i] = funct(x,y);
             } else {
-                phi[i] = -32*funct(x,y);
+                phi[i] = laplace_funct(x,y);
             }
         }
         phi[knots.size()] = 0;
 
         std::cout << std::endl;
+       
 
         Eigen::GMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> gmres;
+        gmres.set_restart(restart);
         gmres.setMaxIterations(max_iter);
         gmres.compute(W);
         gamma = gmres.solve(phi);
         std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
+
+        /*
         Eigen::DGMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> dgmres;
         dgmres.setMaxIterations(max_iter);
         dgmres.compute(W);
         gamma = dgmres.solve(phi);
         std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+        */
+
+        phi = W*gamma;
+        for (int i=0; i<knots.size(); ++i) {
+            const double x = get<position>(knots[i])[0];
+            const double y = get<position>(knots[i])[1];
+            if (get<boundary>(knots[i])) {
+                TS_ASSERT_DELTA(phi[i],funct(x,y),2e-3); 
+            } else {
+                TS_ASSERT_DELTA(phi[i],laplace_funct(x,y),2e-3); 
+            }
+        }
+        TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
 
 
         // This could be more intuitive....
@@ -171,7 +193,7 @@ public:
             const double truth = funct(x,y);
             const double eval_value = get<interpolated>(knots[i]);
             //TODO: bad point error, can we improve?
-            TS_ASSERT_DELTA(eval_value,truth,1e-1); 
+            TS_ASSERT_DELTA(eval_value,truth,1e-2); 
         }
 #endif // HAVE_EIGEN
     }
