@@ -410,11 +410,14 @@ namespace Aboria {
             for (size_t i=0; i<na; ++i) {
                 typename particles_a_type::const_reference ai = a[i];
                 double sum = 0;
+                //std::cout << "evaluating fucntion for particle at "<<get<position>(ai)<<std::endl;
                 for (auto pairj: b.get_neighbours(get<position>(ai))) {
                     const double_d & dx = std::get<1>(pairj);
                     typename particles_b_type::const_reference bj = std::get<0>(pairj);
+                    //std::cout << "looking at particle with dx = "<<dx<<std::endl;
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     if (eval(if_expr,dx,ai,bj)) {
+                        //std::cout <<"if expression is true. eval = "<<eval(expr,dx,ai,bj)<<std::endl;
                         sum += eval(expr,dx,ai,bj)*rhs(j);
                     }
                 }

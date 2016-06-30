@@ -67,6 +67,7 @@ public:
     };
 
     void embed_points(particles_iterator begin, particles_iterator end) {
+
         m_particles_begin = begin;
         m_particles_end = end;
         m_positions_begin = get<position>(m_particles_begin);
@@ -75,6 +76,7 @@ public:
         CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
         const size_t n = m_particles_end - m_particles_begin;
+	    LOG(2,"BucketSearch: embed_points: embedding "<<n<<" points");
         m_bucket_indices.resize(n);
 
         if (n > 0) {
@@ -104,7 +106,7 @@ public:
         m_bounds.bmax = max_in;
         m_periodic = periodic_in;
         m_bucket_side_length = side_length;
-        m_size = ((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
+        m_size = ceil((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
         m_bucket_side_length = (m_bounds.bmax-m_bounds.bmin)/m_size;
 	    LOG(2,"\tbounds = "<<m_bounds);
 	    LOG(2,"\tperiodic = "<<m_periodic);
@@ -262,6 +264,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
     ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);
     const unsigned_int_d my_bucket = find_bucket_index_vector(r);
 
+	LOG(3,"BucketSearch: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
     const_iterator search_iterator(this,r);
     int_d bucket_offset(-1);
     constexpr unsigned int last_d = dimension-1;

@@ -554,7 +554,8 @@ private:
         });
         if (remove_deleted_particles && (periodic==false).any()) {
             delete_particles();
-        } else {
+        }
+        if (remove_deleted_particles || (periodic==true).any()) {
             bucket_search.embed_points(begin(),end());
         }
     }

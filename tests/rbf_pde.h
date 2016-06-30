@@ -158,14 +158,6 @@ public:
         std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
 
-        /*
-        Eigen::DGMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> dgmres;
-        dgmres.setMaxIterations(max_iter);
-        dgmres.compute(W);
-        gamma = dgmres.solve(phi);
-        std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
-        */
-
         phi = W*gamma;
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];

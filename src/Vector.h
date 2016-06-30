@@ -347,12 +347,12 @@ COMPOUND_ASSIGN(*=)
 COMPOUND_ASSIGN(/=)
 
 #define UFUNC(the_op) \
-	template<typename T> \
-	Vector<T,3> the_op(const Vector<T,3> &arg1) { \
-		Vector<T,3> ret; \
-		ret[0] = std::the_op(arg1[0]); \
-		ret[1] = std::the_op(arg1[1]); \
-		ret[2] = std::the_op(arg1[2]); \
+	template<typename T,unsigned int N> \
+	Vector<T,N> the_op(const Vector<T,N> &arg1) { \
+		Vector<T,N> ret; \
+	    for (int i = 0; i < N; ++i) { \
+		    ret[i] = std::the_op(arg1[i]); \
+        }  \
 		return ret; \
 	} \
 
