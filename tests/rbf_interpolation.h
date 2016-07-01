@@ -184,24 +184,37 @@ public:
 
         interp[a] = sum(b,true,al[b]*kernel) + beta;
 
+        double rms_error = 0;
+        double scale = 0;
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
             const double eval_value = get<interpolated>(knots[i]);
+            rms_error += std::pow(eval_value-truth,2);
+            scale += std::pow(truth,2);
             TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
+
+        std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-8);
 
         //interp[k] = sum(b,true,al[b]*exp(-pow(norm(dx2),2)/c2[b])) + beta;
         interp[k] = sum(b,true,al[b]*sqrt(pow(norm(dx2),2) + c2[b])) + beta;
                 
+        rms_error = 0;
+        scale = 0;
         for (int i=0; i<test.size(); ++i) {
             const double x = get<position>(test[i])[0];
             const double y = get<position>(test[i])[1];
             const double truth = funct(x,y);
             const double eval_value = get<interpolated>(test[i]);
+            rms_error += std::pow(eval_value-truth,2);
+            scale += std::pow(truth,2);
             TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
+        std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
 
         
 #endif // HAVE_EIGEN
@@ -340,24 +353,35 @@ void test_compact(void) {
 
         interp[a] = sum(b,norm(dx)<2*h,al[b]*kernel) + beta;
 
+        double rms_error = 0;
+        double scale = 0;
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
             const double eval_value = get<interpolated>(knots[i]);
+            rms_error += std::pow(eval_value-truth,2);
+            scale += std::pow(truth,2);
             TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
+        std::cout << "rms_error for compact support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
 
         interp[k] = sum(b,norm(dx2)<2*h,al[b]*pow(2.0-norm(dx2)/h,4)*(1.0+2.0*norm(dx2)/h)) + beta;
                 
+        rms_error = 0;
+        scale = 0;
         for (int i=0; i<test.size(); ++i) {
             const double x = get<position>(test[i])[0];
             const double y = get<position>(test[i])[1];
             const double truth = funct(x,y);
             const double eval_value = get<interpolated>(test[i]);
-            //Bad error here, improve how?
+            rms_error += std::pow(eval_value-truth,2);
+            scale += std::pow(truth,2);
             TS_ASSERT_DELTA(eval_value,truth,1e-1/truth); 
         }
+        std::cout << "rms_error for compact support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),4e-2);
 
         
 #endif // HAVE_EIGEN

@@ -106,7 +106,7 @@ public:
         m_bounds.bmax = max_in;
         m_periodic = periodic_in;
         m_bucket_side_length = side_length;
-        m_size = ceil((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
+        m_size = floor((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
         m_bucket_side_length = (m_bounds.bmax-m_bounds.bmin)/m_size;
 	    LOG(2,"\tbounds = "<<m_bounds);
 	    LOG(2,"\tperiodic = "<<m_periodic);

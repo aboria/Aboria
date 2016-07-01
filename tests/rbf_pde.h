@@ -179,14 +179,19 @@ public:
 
         interp[a] = sum(b,true,al[b]*kernel) + beta;
 
+        double rms_error = 0;
+        double scale = 0;
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
             const double eval_value = get<interpolated>(knots[i]);
-            //TODO: bad point error, can we improve?
+            rms_error += std::pow(eval_value-truth,2);
+            scale += std::pow(truth,2);
             TS_ASSERT_DELTA(eval_value,truth,1e-2); 
         }
+        std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-3);
 #endif // HAVE_EIGEN
     }
 
