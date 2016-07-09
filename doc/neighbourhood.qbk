@@ -1,0 +1,62 @@
+[section Neighbourhood Searching]
+
+The `Particles` container gives you neighbourhood searching functionality, using 
+a simple Cell List or Linked-List approach. The domain is divided into a regular 
+grid of cubes with side length equal to a constant lengthscale that is supplied 
+by the user. Each particle in the container is assigned to the cell that 
+contains its position. Neighbourhood search queries at a given point return all 
+the particles within the cell that contains this point and the immediate cell 
+neighbours.
+
+Before you can use the neighbourhood searching, you need to initialise the 
+domain using the `init_neighbour_search` function
+
+``
+Vect3d min(-1,-1,-1);
+Vect3d max(1,1,1);
+Vect3b periodic(true,true,true);
+double diameter = 0.1;
+particles.init_neighbour_search(min,max,diameter,periodic);
+``
+
+Here `diameter` is the lengthscale of the neighbourhood search. That is, any 
+particles that are separated by more than `diameter` might not be classified as 
+neighbours.
+
+Once this is done you can begin using the neighbourhood search queries using the 
+`get_neighbours` function. This returns a lightweight container with `begin()` 
+and `end()` functions that return `const` forward only iterators to the 
+particles that satisfy the neighbour search. For example, the following counts 
+all the particles within a square domain of side length `diameter` of the point 
+(0,0,0)
+
+``
+int count = 0;
+for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
+   count++;
+}
+std::cout << "There are "<< count << " particles.\n";
+``
+
+When dereferenced, the neighbourhood iterator returns a tuple of size 2 
+containing 
+
+1. The found particle object
+2. $dx$, a vector pointing to the found point from the query point. I.e. if 
+   $x_a$ is the query point and $x_b$ is the found point, then $dx = x_a - x_b$.
+
+The latter is useful for periodic domains, the returned vector $dx$ takes 
+periodic domains into account and returns the $dx$ with the smallest length. 
+
+For example, 
+
+``
+for (auto i: particles.get_neighbours(Vect3d(0,0,0))) {
+   const MyParticle& b = std::get<0>(tpl);
+   const Vect3d& dx = std::get<1>(tpl);
+   std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
+}
+``
+[endsect]
+
+

@@ -8,6 +8,9 @@
 ]
 
 [include introduction.qbk]
-[include quick.qbk]
+[include container.qbk]
+[include neighbourhood.qbk]
+[include symbolic.qbk]
+[include linear_algebra.qbk]
 [include examples.qbk]
 [include reference.qbk]
