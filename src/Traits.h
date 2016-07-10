@@ -129,7 +129,7 @@ struct Traits<std::vector> {
     static void sequence (ForwardIterator first, ForwardIterator last) {
         counting_iterator<unsigned int> count(0);
         std::transform(first,last,count,first,
-            [](const typename std::iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
+            [](const typename std::iterator_traits<ForwardIterator>::reference, const unsigned int i) {
                 return i;
             });
     }
@@ -142,7 +142,7 @@ struct Traits<std::vector> {
 
         counting_iterator<unsigned int> count(0);
         std::transform(first,last,count,first,
-            [&unary_op](const typename std::iterator_traits<ForwardIterator>::value_type&, const unsigned int i) {
+            [&unary_op](const typename std::iterator_traits<ForwardIterator>::reference, const unsigned int i) {
                 return unary_op(i);
             });
 
