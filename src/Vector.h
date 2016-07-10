@@ -417,8 +417,21 @@ typedef Vector<double,5> double5;
 typedef Vector<double,6> double6;
 typedef Vector<double,7> double7;
 
+typedef Vector<int,1> int1;
+typedef Vector<int,2> int2;
 typedef Vector<int,3> int3;
+typedef Vector<int,4> int4;
+typedef Vector<int,5> int5;
+typedef Vector<int,6> int6;
+typedef Vector<int,7> int7;
+
+typedef Vector<bool,1> bool1;
+typedef Vector<bool,2> bool2;
 typedef Vector<bool,3> bool3;
+typedef Vector<bool,4> bool4;
+typedef Vector<bool,5> bool5;
+typedef Vector<bool,6> bool6;
+typedef Vector<bool,7> bool7;
 
 
 
