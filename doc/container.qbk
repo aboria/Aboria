@@ -2,51 +2,78 @@
 
 [section Creating new particles]
 
-The main particles data-structure, or container, is called [classref Aboria::Particles Particles]. It is templated on zero or more variable types. For example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting of one double variable type named scalar.
+The main particles data-structure, or container, is called [classref 
+Aboria::Particles Particles]. It is templated using a tuple of variable types, 
+explained below.  For example, the following creates a set of particles which 
+each have (along with the standard variables such as position, id etc) a data 
+package consisting of one double variable type named scalar.
 
 ``
 using namespace Aboria;
 
 ABORIA_VARIABLE(scalar,double,"my scalar")
-typedef Particles<scalar> MyParticles;
+typedef Particles<std::tuple<scalar>> MyParticles;
 MyParticles particles();
 ``
 
-If you wanted each particle to have a potential variable held as a `double`, as well as a velocity variable held as a [classref Aboria::Vect3d Vect3d] vector class, then you would write the following
+If you wanted each particle to have a potential variable held as a `double`, as 
+well as a velocity variable held as a [classref Aboria::double3 double3] vector 
+class, then you would write the following
 
 ``
 ABORIA_VARIABLE(potential,double,"potential energy")
-ABORIA_VARIABLE(velocity,Vect3d,"velocity")
-typedef Particles<potential,velocity> MyParticles;
+ABORIA_VARIABLE(velocity,double3,"velocity")
+typedef Particles<std::tuple<potential,velocity>> MyParticles;
 MyParticles particles();
 ``
 
-You can also give the `MyParticles` constructor a single `unsigned int` argument to set the random seed for the container:
+You can also give the `MyParticles` constructor a single `unsigned int` argument 
+to set the random seed for the container:
 
 ``
 MyParticles particles_with_seed(0);
 ``
 
-To create new particles simply use the `value_type` of the container type. Each particle constructor takes a single [classref Aboria::Vect3d Vect3d] type for the particle position.
+To create new particles simply use the `value_type` of the container type. Each 
+particle constructor takes a single [classref Aboria::Vector Vector] type for 
+the particle position.
 
 ``
 typedef MyParticles::value_type MyParticle;
-particles.push_back(MyParticle(Vect3d(0,0,0)));
-particles.push_back(MyParticle(Vect3d(1,0,0)));
+particles.push_back(MyParticle(double3(0,0,0)));
+particles.push_back(MyParticle(double3(1,0,0)));
 ``
 
 [endsect]
 
+[section Vector Types]
+
+Aboria provides an internal vector type [classref Aboria::Vector Vector] for 
+types representing a vector of dimension `d`. [classref Aboria::Vector Vector] 
+is templated on the type of each element and the number of dimensions:
+
+``
+Vector<double,3> dim3vector;
+``
+
+There are a number of predefined `double`, `int`, and `bool` vector types, up to 
+dimension 7, and typedefed by the pattern <type><dim>. E.g. `double3`, 
+`double4`, `int1`, `int6`, `bool3`. 
+
+[endsect]
 
 [section Particle Objects]
 
-The `value_type` of the [classref Aboria::Particles Particles] container is a data-structure representing each particle. By default each particle has a position, a unique id and a 
-boolean flag indicating if this particle is active or not. Use `get<position>()` 
-to access the position, `get<id>()` for the id and `get<alive>()` for the alive 
-flag.
+The `value_type` of the [classref Aboria::Particles Particles] container is a 
+data-structure representing each particle. By default each particle has a 
+position, a unique id and a boolean flag indicating if this particle is active 
+or not. Use `get<position_d<D>>()` to access the position (where `D` is the 
+dimension of the particle object), `get<id>()` for the id and `get<alive>()` for 
+the alive flag.
 
 ``
 MyParticle& particle = particles[0];
+typedef double_d<3> position;
 std::cout <<"Position = "<<get<position>(particle) << 
    ". Id = "<<get<id>(particle)<< ". Particle is ";
 if (get<alive>(particle)) {
@@ -62,7 +89,6 @@ for example
 ``
 std::cout << "The scalar data is " << get<scalar>(particle) << "\n";
 ``
-
 [endsect]
 
 [section Looping through the container]
@@ -101,6 +127,74 @@ std::for_each(particles.begin(), particles.end(), [](MyParticle& i) {
    std::cout << "Accessing particle with id = " << get<id>(i) << "\n";
 });
 ``
+
+[endsect]
+
+[section Variable data vectors]
+
+Each variable is held internally by STL vectors `std::vector`. You can get a 
+reference to each vector by using the [memberref Aboria::Particles::get get] 
+class member
+
+``
+std::vector<size_t>& ids = get<id>(particles);
+``
+
+[endsect]
+
+[section `value_type` versus `reference`]
+
+When you index an individual particle using the bracket operator `[]`, it 
+returns a [classref Aboria::getter_type getter_type], which is essentially a 
+tuple of references to the variables for that particle. This [classref 
+Aboria::getter_type getter_type] is `typedef`-ed to [globalref 
+Aboria::Particles::reference], and acts as the reference type for the container.  
+Similarly, the [globalref Aboria::Particles::value_type value_type] for the 
+continer is also a [classref Aboria::getter_type getter_type], but instead holds 
+a tuple of values instead of references.  
+
+Reading the above paragraph, you will note the fundamental difference from 
+normal STL containers, in that [globalref Aboria::Particles::value_type 
+value_type]& is *not the same* as [globalref Aboria::Particles::value_type 
+reference]. This is relevent when writing functors for STL algorithms, where you 
+will need to be sure if you need a [globalref Aboria::Particles::value_type 
+value_type]& or a [globalref Aboria::Particles::value_type reference].
+
+For example, the `std::sort` algorithm internally stores a `value_type` of an 
+element which is used in the comparison, so the functor needs to be equivilent 
+to the following
+
+``
+bool cmp(const value_type& a, const value_type& b)
+``
+
+However, the `std::transform` algorithm can use a `unaryop` functor equivilent 
+to
+
+``
+Ret fun(const reference a)
+``
+
+Which is more efficient than `value_type&`, since dereferencing the iterator 
+will result in a `reference`.
+
+[endsect]
+
+[section Other STL Container Methods]
+
+The [classref Aboria::Particles] data structure acts fairly typically like a 
+normal STL container, with a few important differences, most notably the 
+difference between `value_type&` and `reference` mentioned above.  It has 
+methods like `push_back()`, `clear()`, `size()`, `erase()`.  It provides 
+subtypes like `value_type`, `reference`, `const_reference`, `iterator`, 
+`const_iterator`.
+
+Note that when using the neighbourhood searching capabilities of the container, 
+the order of the particles in the particle container might change due to 
+internal sorting for neighbourhood searching efficiency. So do not assume that 
+the particle ordering is fixed. For example, the [memberref 
+Aboria::Particles::push_back push_back] member function can reorder the 
+particles if neighbourhood searching is turned on.
 
 [endsect]
 
