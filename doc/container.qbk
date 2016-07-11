@@ -27,8 +27,18 @@ typedef Particles<std::tuple<potential,velocity>> MyParticles;
 MyParticles particles();
 ``
 
-You can also give the `MyParticles` constructor a single `unsigned int` argument 
-to set the random seed for the container:
+Note that there is a special case for boolean variables, which must be 
+represented by an integer, rather than a boolean. This is due to the STL 
+specialisation of a boolean STL vector, which conflicts with the internal design 
+of Aboria. For example, here we can use an 8-bit unsigned integer to stand in 
+for the boolean `flag` variable.
+
+``
+ABORIA_VARIABLE(flag,uint_8,"my flag variable")
+``
+
+You can give the `MyParticles` constructor a single `unsigned int` argument to 
+set the random seed for the container:
 
 ``
 MyParticles particles_with_seed(0);
