@@ -50,7 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Vector.h"
 #include "Variable.h"
 #include "Traits.h"
-#include "BucketSearch2.h"
+#include "BucketSearchParallel.h"
 #include "OctTree.h"
 
 #ifdef HAVE_VTK

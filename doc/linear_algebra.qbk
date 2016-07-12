@@ -1,6 +1,22 @@
 [section Matrix-free Linear Algebra with Eigen]
 
+Given that Aboria can describe bivariate expression, it is natural to recast 
+these bivariate expressions in terms of matricies. If the bivariate expression 
+depends on labels `a` and `b`, each referring to a set of N and M particles 
+respectively, then the result of this expression over the set of NxM particle 
+pairs will form a NxM matrix. It is therefore possible to treat a bivarate 
+expression as if it where a matrix, or linear operator.
+
+To provide the concept and API of a matrix or linear operator, we will use the 
+C++ library [@eigen.tuxfamily.org Eigen]. Aboria provides functionality to wrap 
+bivariate expressions in [classref Aboria::MatrixReplacement], so that Eigen can 
+treat them as standard sparse matricies.
+
 [section Creating Operators]
+
+
+
+
 
 [endsect]
 

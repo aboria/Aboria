@@ -71,7 +71,7 @@ this expression the particle container will be empty.
 [endsect]
 
 
-[section Constant Expressions]
+[section Univariate Expressions]
 
 Single-particle dependent expressions can easily be built by using a single 
 label on the RHS of the expression. For example we can also add a constant value 
@@ -133,6 +133,7 @@ the equation above like so, using $w(p_b) = (p_b-p_a)$. Note that the first
 argument to `sum` is set to `true`, indicating the summation is over *all* 
 particles in label `b`.
 
+
 ``
 p[a] = sum(b, true, p[b]-p[a]);
 ``
@@ -155,13 +156,45 @@ Symbol<id> _id;
 p[a] = sum(b, _id[a]!=_id[b], 1.0/(p[b]-p[a]));
 ``
 
-A special case
+So the first argument to `sum` is the label to sum over, the second is the 
+conditional expression that must evaluate to `true` to be included in the 
+summation, and the third is an expression that provides the value to be included 
+in the summation.  
 
+There is a special case for the conditional expression, when you want to sum 
+over all particles within a certain radius. This might be expressed as
 
+``
+auto dx = create_dx(a,b);
+p[a] = sum(b, norm(dx)<2, 1.0/pow(norm(dx),2))
+``
 
+where `dx` is a [classref Aboria::Dx Dx] symbol representing the *shortest* 
+vector from `b` to `a`. Note that this might be different from `p[a]-p[b]` for 
+periodic domains. The symbolic function [functionref Aboria::norm norm] returns 
+the 2-norm, or magnitude, of the vector `dx`, and the symbolic function 
+[functionref Aboria::pow pow] returns the first argument to the power of the 
+second (in much the same way as std::pow, but lazily evaluated).
 
-We can use this to count the number of particles within a distance of `2` of 
-each individual particle, storing the result in a variable called `count`.
+In this case Aboria can recognise a summation over neighbours closer than a 
+radius of 2, and will use the neighbourhood searching facility described in 
+[link aboria.neighbourhood_searching] to find these neighbouring particles.  
+Note that you need to call [memberref Aboria::Particles::init_neighbour_search] 
+before any bivariate expressions using neighbourhood searching.
+
+Aboria will also recognise the following as neighbourhood-searching expressions:
+
+``
+p[a] = sum(b, 2>norm(dx), 1.0/pow(norm(dx),2))
+p[a] = sum(b, norm(dx)<=2, 1.0/pow(norm(dx),2))
+p[a] = sum(b, 2>=norm(dx), 1.0/pow(norm(dx),2))
+p[a] = sum(b, norm(dx)<2 && _id[a]!=_id[b], 1.0/pow(norm(dx),2))
+p[a] = sum(b, norm(dx)<2 && a_conditional_expression, 1.0/pow(norm(dx),2))
+``
+
+As another, more complete example, we can use the neighbourhood-searching 
+expressions to count the number of particles within a distance of `2` of each 
+individual particle, storing the result in a variable called `count`.
 
 ``
 ABORIA_VARIABLE(count,int,"number of surrounding particles")
@@ -179,6 +212,7 @@ Symbol<count> c;
 Label<0,MyParticles> a(particles);
 Label<1,MyParticles> b(particles);
 Accumulate<std::plus<int> > sum;
+auto dx = create_dx(a,b);
 
 //count neighbouring particles within a distance of 2
 c[a] = sum(b,norm(dx)<2,1)
