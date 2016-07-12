@@ -5,26 +5,88 @@ these bivariate expressions in terms of matricies. If the bivariate expression
 depends on labels `a` and `b`, each referring to a set of N and M particles 
 respectively, then the result of this expression over the set of NxM particle 
 pairs will form a NxM matrix. It is therefore possible to treat a bivarate 
-expression as if it where a matrix, or linear operator.
+expression as if it where a matrix, or linear operator. In this section we will 
+use the terms operator and matrix interchangeably.
 
 To provide the concept and API of a matrix or linear operator, we will use the 
 C++ library [@eigen.tuxfamily.org Eigen]. Aboria provides functionality to wrap 
 bivariate expressions in [classref Aboria::MatrixReplacement], so that Eigen can 
-treat them as standard sparse matricies.
+treat them as normal sparse matricies.
 
 [section Creating Operators]
 
+You can use the [funcref Aboria::create_eigen_operator] function to create an 
+Eigen operator. The function takes two labels as its first and second arguments 
+corresponding to the rows and columns of the matrix, a bivariate expression as 
+the third argument, and an optional bivariate boolean expression for the third 
+which determines the sparsity of the matrix.
 
+For example, after creating a variable symbol `v`, and two labels `a` and `b`, 
+the following code snippet creates an Eigen operator `A` that adds the `v` 
+values from all particle pairs.
 
+``
+Symbol<variable> v;
+Label<0,ParticlesType> a(particles);
+Label<1,ParticlesType> b(particles);
+auto A = create_eigen_operator(a,b, v[a] + v[b]);
+``
+
+Assuming there are 3 particles in the `particles` container, this operator can 
+then be applied to an Eigen vector like so:
+
+``
+Eigen::VectorXd v(3);
+Eigen::VectorXd ans(3);
+v << 1, 2, 3;
+
+ans = A*v;
+``
+
+You can also set the sparsity of the operator by providing a fourth parameter to 
+[funcref Aboria::create_eigen_operator], a boolean expression that is `false` 
+when the operator should evaluate to zero. For example, 
+
+``
+auto dx = create_dx(a,b);
+auto B = create_eigen_operator(a,b, s1[a] + s2[b], norm(dx) < diameter);
+``
+
+Finally, you might also want to specify an operator that only depends on a 
+single label, i.e. a vector rather than a matrix. This can be done by using the 
+[classref Aboria::One] symbol in conjunction with the [funcref 
+Aboria::create_eigen_operator] function.
+
+``
+One one;
+auto C = create_eigen_operator(a,one, v[a]);
+``
 
 
 [endsect]
 
 [section Block Operators]
 
+It is common that you would like to compose operators in a tiled or block 
+format, and Aboria provides a functionality to do this using the [funcref 
+Aboria::create_block_eigen_operator]. This function is templated by two unsigned 
+integers N and M representing an NxM block operator, and takes NM arguments for 
+the required number of operators. For example,
+
+``
+auto A = create_eigen_operator(a,b, s1[a]);
+auto B = create_eigen_operator(a,one, s2[a]);
+auto C = create_eigen_operator(one,b, s2[b]);
+auto Zero = create_eigen_operator(one,one, 0.);
+
+auto Full = create_block_eigen_operator<2,2>(A,B,C,Zero);
+``
+
 [endsect]
 
 [section Iterative Solvers]
+
+TBC.
 
 
 [endsect]
