@@ -4,6 +4,16 @@
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/6aimud6e8tvxfwgm?svg=true)](https://ci.appveyor.com/project/martinjrobins/aboria)
 -->
 
+UPDATE (12/07/2016): The next release of Aboria is currently being documented 
+and tested in the `version2` branch. It will be merged in the next few weeks. 
+This release:
+* reworks the internal storage of the container class to model a set of zipped 
+  vectors (currently `std::vector`s)
+* adds more compile-time checking of expression correctness
+* updates the bucket-search neighbourhood searching algorithm to use STL 
+  algorithms only
+* adds matrix-free linear algebra capabilities via Eigen (<eigen.tuxfamily.org>)
+
 Aboria implements an expressive Domain Specific Language (DSL) in C++ for 
 specifying expressions over particles and their neighbours in 3D space. The 
 library is header-only and based on expression templates for efficient and 
@@ -24,5 +34,7 @@ Aboria is distributed under a BSD 3-Clause License, see LICENCE for more
 details.
 
 For documentation see the [Aboria 
-website](https://martinjrobins.github.io/Aboria).
+website](https://martinjrobins.github.io/Aboria). If you are interested in 
+contributing to Aboria, having trouble getting it working or just have a 
+question, send me an email at <martin.robinson@cs.ox.ac.uk>.
 
