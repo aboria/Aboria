@@ -12,7 +12,8 @@ This release:
 * adds more compile-time checking of expression correctness
 * updates the bucket-search neighbourhood searching algorithm to use STL 
   algorithms only
-* adds matrix-free linear algebra capabilities via Eigen <eigen.tuxfamily.org>
+* adds matrix-free linear algebra capabilities via Eigen 
+  <http://eigen.tuxfamily.org>
 
 Aboria implements an expressive Domain Specific Language (DSL) in C++ for 
 specifying expressions over particles and their neighbours in 3D space. The 
