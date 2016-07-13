@@ -8,6 +8,7 @@
 ]
 
 [include introduction.qbk]
+[include installation.qbk]
 [include container.qbk]
 [include neighbourhood.qbk]
 [include symbolic.qbk]
