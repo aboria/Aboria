@@ -5,8 +5,17 @@ these bivariate expressions in terms of matricies. If the bivariate expression
 depends on labels `a` and `b`, each referring to a set of N and M particles 
 respectively, then the result of this expression over the set of NxM particle 
 pairs will form a NxM matrix. It is therefore possible to treat a bivarate 
-expression as if it where a matrix, or linear operator. In this section we will 
-use the terms operator and matrix interchangeably.
+expression as if it where a matrix, or linear operator. Since we are using 
+linear operators, In this section we will use the terms operator and matrix 
+interchangeably, however note that we are not actually forming a matrix, and do 
+not ever store the values of the matrix. Rather we simply store an expression 
+which is evaluated when needed (i.e. during a matrix-vector product or an 
+iterative solver step). Therefore this technique can be called "Matrix-free 
+Linear Algebra". It is useful when dealing with 
+
+* large dense matricies that might be too large to store in RAM
+* highly dynamic matricies whose values and sparsity are constantly changing
+* constant valued matricies 
 
 To provide the concept and API of a matrix or linear operator, we will use the 
 C++ library [@eigen.tuxfamily.org Eigen]. Aboria provides functionality to wrap 
@@ -82,12 +91,46 @@ auto Zero = create_eigen_operator(one,one, 0.);
 auto Full = create_block_eigen_operator<2,2>(A,B,C,Zero);
 ``
 
+Note also the creation of a zero block in `Full`, which is handled efficiently 
+by Aboria by simply skipping its evaluation when applying the `Full` operator.
+
 [endsect]
 
 [section Iterative Solvers]
 
-TBC.
+The [classref Aboria::MatrixReplacement] class can multiply other Eigen vectors, and can be used in Eigen's iterative solvers. Both `Eigen::IdentityPreconditioner` and `Eigen::DiagonalPreconditioner` preconditioners are supported. Below is an example of how to use Eigen's GMRES iterative solver to solve the equation $\phi = W \gamma$
 
+
+``
+Label<0,ParticlesType> a(knots);
+Label<1,ParticlesType> b(knots);
+One one;
+auto dx = create_dx(a,b);
+Accumulate<std::plus<double> > sum;
+
+auto G = create_eigen_operator(a,b, 
+            exp(-pow(norm(dx),2))
+        );
+auto P = create_eigen_operator(a,one,
+                1.0
+        );
+auto Pt = create_eigen_operator(one,b,
+                1.0
+        );
+auto Zero = create_eigen_operator(one,one, 0.);
+
+auto W = create_block_eigen_operator<2,2>(G, P,
+                                          Pt,Zero);
+
+Eigen::VectorXd phi(knots.size()+1), gamma(knots.size()+1);
+
+//setup phi values here
+
+Eigen::GMRES<decltype(W), Eigen::Lower|Eigen::Upper, 
+    Eigen::DiagonalPreconditioner<double>> cg;
+cg.compute(W);
+gamma = cg.solve(phi);
+``
 
 [endsect]
 
