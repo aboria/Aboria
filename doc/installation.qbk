@@ -8,7 +8,7 @@ You will need to install a C++ compiler with C++11 support, and the
 do on a Debian-based OS using
 
 ``
-$ sudo apt-get install build-essential cmake
+sudo apt-get install build-essential cmake
 ``
 
 The only required dependency is the [@http://www.boost.org Boost] library.  
@@ -18,16 +18,16 @@ extra functionality.  To install all these dependencies in a Debian-based OS you
 can type
 
 ``
-$ sudo apt-get install libboost-dev libvtk5-dev libeigen3-dev
+sudo apt-get install libboost-dev libvtk5-dev libeigen3-dev
 ``
 
 To build and run Aboria's testing suite, navigate to Aboria's root directory and 
 type
 
 ``
-$ cmake .
-$ make
-$ ctest
+cmake .
+make
+ctest
 ``
 
 To use Aboria in your own software, simply add the `Aboria/src` directory to 
@@ -36,6 +36,16 @@ your include path and include the `Aboria.h` header, e.g.
 ``
 #include <Aboria.h>
 ``
+
+If you wish to use [@http://www.vtk.org/ The Virtualisation Toolkit] or
+[@http://eigen.tuxfamily.org Eigen] with Aboria then you will need to define the 
+`HAVE_VTK` and `HAVE_EIGEN` compiler definitions, and include the relevant 
+headers and link the relevant libraries. Please see the 
+[@https://github.com/martinjrobins/Aboria/blob/master/CMakeLists.txt 
+Aboria/CMakeLists.txt] and 
+[@https://github.com/martinjrobins/Aboria/blob/master/tests/CMakeLists.txt 
+Aboria/tests/CMakeLists.txt] files for an example of how to do this using 
+[@https://cmake.org/ CMake].
 
 [endsect]
 
