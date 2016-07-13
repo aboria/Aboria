@@ -111,6 +111,7 @@ public:
 	    LOG(2,"\tbounds = "<<m_bounds);
 	    LOG(2,"\tperiodic = "<<m_periodic);
 	    LOG(2,"\tbucket_side_length = "<<m_bucket_side_length);
+	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
 
         // setup bucket data structures
         m_bucket_begin.resize(m_size.prod());
@@ -134,21 +135,26 @@ private:
  
 
 	inline unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
-        unsigned int index = vindex[0];
+        //std::cout << "collapsing "<<vindex;
+
+        unsigned int index = 0;
         unsigned int multiplier = 1.0;
-		ASSERT((vindex[0] >= 0) && (vindex[0] < m_size[0]), "index "<<vindex<<" is outside of dimension "<<0<<": "<<m_size);
-        for (int i=1; i<dimension; i++) {
-            multiplier *= m_size[i];
+        for (int i = dimension-1; i>=0; --i) {
+            if (i != dimension-1) {
+                multiplier *= m_size[i+1];
+            }
 		    ASSERT((vindex[i] >= 0) && (vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
             index += multiplier*vindex[i];
         }
+        //std::cout << " to "<<index<<std::endl;
         return index;
     }
 
 
 	inline unsigned_int_d find_bucket_index_vector(const double_d &r) const {
         // find the raster indices of p's bucket
-        return (r-m_bounds.bmin)/m_bucket_side_length;
+        //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
+        return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
     }
 
     // hash a point in the unit square to the index of
@@ -242,14 +248,22 @@ void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, co
 
     const size_t dist = end - start_adding;
     if (dist > 0) {
+        const size_t total = m_bucket_indices.size() + dist;
+	    LOG(2,"BucketSearch: add_points_at_end: embedding "<<dist<<" new points. Total number = "<<total);
         vector_double_d_const_iterator positions_start_adding = m_positions_end - dist;
 
-        m_bucket_indices.resize(m_bucket_indices.size() + dist);
+        m_bucket_indices.resize(total);
         vector_unsigned_int_iterator bucket_indices_start_adding = m_bucket_indices.end() - dist;
 
         build_bucket_indices(positions_start_adding,m_positions_end,bucket_indices_start_adding);
         sort_by_bucket_index();
         build_buckets();
+        /*
+        for (int i = 0; i<total; ++i) {
+            std::cout << "p = "<<*(m_positions_begin+i)<<" index = "<<m_bucket_indices[i]<<std::endl;
+        }
+        */
+
     }
 }
 

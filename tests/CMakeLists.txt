@@ -12,6 +12,9 @@ set(test_package
     rbf_pde
     rbf_interpolation
     metafunctions
+    dem
+    sph
+    bd
     )
 
 #set(test_package

@@ -41,16 +41,20 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 
 #define LOG_LEVEL 1
+
+//[rbf_pde
 #include "Aboria.h"
 
 using namespace Aboria;
 
-
+//<-
 class OperatorsTest : public CxxTest::TestSuite {
 public:
 
     void test_Eigen(void) {
 #ifdef HAVE_EIGEN
+//->
+//=int main() {
         auto funct = [](const double x, const double y) { 
             return std::cos(4*x+4*y);
         };
@@ -192,6 +196,9 @@ public:
         }
         std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-3);
+
+//=}
+//]
 #endif // HAVE_EIGEN
     }
 

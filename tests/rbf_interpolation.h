@@ -41,17 +41,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 
 #define LOG_LEVEL 1
+
+//[rbf_interpolation_global
 #include "Aboria.h"
 #include <random>
 
 using namespace Aboria;
 
 
+//<-
 class OperatorsTest : public CxxTest::TestSuite {
 public:
 
     void test_global(void) {
 #ifdef HAVE_EIGEN
+//->
+//=int main() {
         auto funct = [](const double x, const double y) { 
             return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
             //return x; 
@@ -216,7 +221,8 @@ public:
         std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
 
-        
+//=}
+//]
 #endif // HAVE_EIGEN
     }
 
@@ -388,7 +394,7 @@ void test_compact(void) {
     }
 
 
-
 };
 
 #endif /* RBF_INTERPOLATION_TEST_H_ */
+//->
