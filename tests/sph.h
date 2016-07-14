@@ -80,7 +80,7 @@ public:
         Label<0,sph_type> a(sph);
         Label<1,sph_type> b(sph);
      
-        const int timesteps = 1000;
+        const int timesteps = 100;
         const int nout = 100;
         const int timesteps_per_out = timesteps/nout;
         const double L = 31.0/1000.0;
@@ -113,24 +113,20 @@ public:
 
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < nx; j++) {
-                for (int k = -3; k < nx; k++) {
+                for (int k = 0; k < nx+3; k++) {
                     sph_type::value_type p;
-                    get<position>(p) = low + double3((i+0.5)*psep,(j+0.5)*psep,k*psep);
+                    get<position>(p) = low + double3((i+0.5)*psep,(j+0.5)*psep,(k+0.5)*psep);
                     get<kernel_radius>(p) = hfac*psep;
                     get<velocity>(p) = double3(0,0,0);
                     get<velocity_tmp>(p) = double3(0,0,0);
                     get<varh_omega>(p) = 1.0;
                     get<density>(p) = dens;
                     get<total_force>(p) = double3(0,0,0);
-                    get<is_fixed>(p) = k<0;
+                    get<is_fixed>(p) = get<position>(p)[2]<0;
                     sph.push_back(p);
                 }
             }
         }
-
-        /*
-         * setup output stuff
-         */
 
         std::cout << "starting...."<<std::endl;
         sph.init_neighbour_search(low,high,2*hfac*psep,periodic);
@@ -145,13 +141,16 @@ public:
 
 
         for (int i = 0; i < nout; ++i) {
+#ifdef HAVE_VTK
+            vtkWriteGrid("sph",i,sph.get_grid(true));
+#endif
             for (int k = 0; k < timesteps_per_out; ++k) {
                 /*
                  * 0 -> 1/2 step
                  */
-                v[a] += dt/2 + dvdt[a];
+                v[a] += if_else(fixed[a]==false,dt/2 * dvdt[a],0);
                 if (t < time_damping) v[a] *= 0.98;
-                p[a] += dt/2 + v[a];
+                p[a] += dt/2 * v[a];
 
                 /*
                  * Calculate omega
@@ -161,7 +160,7 @@ public:
                 /*
                  * 1/2 -> 1 step
                  */
-                rho[a] += dt*(mass/omega[a]) * sum(b,norm(dx)<2*h[a],dot(v[a]-v[b],dx*F(norm(dx),h[a])));
+                rho[a] += dt*(mass/omega[a]) * sum(b,norm(dx)<2*h[a],dot(v[b]-v[a],dx*F(norm(dx),h[a])));
                 h[a] = pow(mass/rho[a],1.0/NDIM);
                 
                 const double maxh = eval(max(a,true,h[a]));
@@ -172,14 +171,21 @@ public:
                 pdr2[a] = prb*(pow(rho[a]/refd,gamma) - 1.0);
                 p[a] += dt/2 * v0[a];
 
+
+                /*
+                 * acceleration due to gravity
+                 */
+                dvdt[a] = double3(0,0,-9.81);
+
                 /*
                  * acceleration on SPH calculation (pressure and viscosity force)
                  */
                 dvdt[a] += mass*sum_vect(b,norm(dx)<2*h[a],
                         
-                        ((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
+                        -((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
                         + (v[a]-v[b])*visc*(rho[a]+rho[b])/(rho[a]*rho[b])*F(norm(dx),h[a])
                         );
+
                 
                 /*
                  * 1/2 -> 1 step for velocity

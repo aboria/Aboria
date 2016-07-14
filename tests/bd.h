@@ -94,6 +94,10 @@ public:
          */
         for (int ts = 1; ts < timesteps; ++ts) {
             if (ts%10==0) {
+
+#ifdef HAVE_VTK
+                vtkWriteGrid("bd",ts/10,points.get_grid(true));
+#endif
                 std::cout << "." << std::flush;
             }
             p[i] += std::sqrt(2*D*dt)*vector(N,N,N);

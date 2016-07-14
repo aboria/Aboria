@@ -43,12 +43,12 @@ public:
         const int nout = 200;
         const int timesteps_per_out = timesteps/nout;
         const double L = 31.0/1000.0;
-        const int N = 10;
+        const int N = 30;
 
 
          /* dem parameters
          */
-        const double dem_diameter = 0.0011;
+        const double dem_diameter = 0.0022;
         const double dem_gamma = 0.0004;
         const double dem_k = 1.0e01;
         const double dem_dens = 1160.0;
@@ -98,12 +98,16 @@ public:
         m[a] = (1.0/6.0)*PI*8*r[a]*r[a]*r[a]*dem_dens;
         for (int io = 0; io < nout; ++io) {
             std::cout << "." << std::flush;
+
+#ifdef HAVE_VTK
+            vtkWriteGrid("dem",io,dem.get_grid(true));
+#endif
             for (int i = 0; i < timesteps_per_out; i++) {
                 p[a] += v[a]*dt;
 
                 dvdt[a] = (// spring force between dem particles
                         sum(b, id_[a]!=id_[b] && norm(dx)<r[a]+r[b], 
-                              dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
+                              -dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
                     
                         // spring force between particles and bottom wall
                         + if_else(r[a]-p[a][2] > 0, dem_k*(r[a]-p[a][2]), 0.0)*double3(0,0,1) 

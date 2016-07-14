@@ -470,24 +470,29 @@ public:
 
         const vtkIdType n = size();
 
-        constexpr size_t dn = std::tuple_size<tuple_type>::value;
+        constexpr size_t dn = mpl::size<mpl_type_vector>::type::value;
         vtkSmartPointer<vtkFloatArray> datas[dn];
-        mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (setup_datas_for_writing(n,datas,grid));
+        mpl::for_each<mpl::range_c<int,1,dn> > (setup_datas_for_writing(n,datas,grid));
         points->SetNumberOfPoints(n);
         cells->Reset();
         cell_types->Reset();
         int j = 0;
 
-        for(auto& i: *this) {
+        double write_point[3];
+        const unsigned int max_d = std::min(3u,D);
+        for(auto i: *this) {
             const int index = j++;
             //std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
             const double_d &r = get<position>(i);
-            points->SetPoint(index,r[0],r[1],r[2]);
+            for (int d=0; d<max_d; ++d) {
+                write_point[d] = r[d];
+            }
+            points->SetPoint(index,write_point);
             cells->InsertNextCell(1);
             cells->InsertCellPoint(index);
             cell_types->InsertNextTuple1(1);
 
-            mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (write_from_tuple(i.m_data,index,datas));
+            mpl::for_each<mpl::range_c<int,1,dn> > (write_from_tuple(i.get_tuple(),index,datas,seed + uint32_t(Aboria::get<id>(i))));
         }
     }
 
@@ -503,21 +508,24 @@ public:
             vtkSmartPointer<vtkCellArray> cells = grid->GetCells();
             CHECK(points,"No cells in vtkUnstructuredGrid");
             vtkSmartPointer<vtkUnsignedCharArray> cell_types = grid->GetCellTypesArray();
-            constexpr size_t dn = std::tuple_size<tuple_type>::value;
+            constexpr size_t dn = mpl::size<mpl_type_vector>::type::value;
 
             vtkSmartPointer<vtkFloatArray> datas[dn];
 
             const vtkIdType n = points->GetNumberOfPoints();
 
-            mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (setup_datas_for_reading(n,datas,grid));
+            mpl::for_each<mpl::range_c<int,1,dn> > (setup_datas_for_reading(n,datas,grid));
 
             this->clear();
 
+            const unsigned int max_d = std::min(3u,dimension);
             for (int j = 0; j < n; ++j) {
                 value_type particle;
                 const double *r = points->GetPoint(j);
-                set<position>(particle,double_d(r[0],r[1],r[2]));
-                mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (read_into_tuple(particle.m_data,j,datas));
+                for (int d=0; d<max_d; ++d) {
+                    get<position>(particle)[d] = r[d];
+                }
+                mpl::for_each<mpl::range_c<int,1,dn> > (read_into_tuple(particle.get_tuple(),j,datas));
                 this->push_back(particle);
             }
         }
@@ -535,6 +543,7 @@ private:
     /// \param remove_deleted_particles if true, removes particles with alive==false from 
     /// the container (default = true)
     void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
+        LOG(2,"Particle: enforce_domain: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" remove_deleted_particles = "<<remove_deleted_particles);
         std::for_each(begin(),end(),[low,high,periodic](reference i) {
             double_d &r = Aboria::get<position>(i);
             for (unsigned int d = 0; d < dimension; ++d) {
@@ -547,7 +556,8 @@ private:
                     }
                 } else {
                     if ((r[d]<low[d]) || (r[d]>=high[d])) {
-                    Aboria::get<alive>(i) = false;
+                        std::cout << "removing particle with r = "<<r<<std::endl;
+                        Aboria::get<alive>(i) = false;
                     }
                 }
             }
@@ -571,57 +581,68 @@ private:
 
 #ifdef HAVE_VTK
     struct write_from_tuple {
-        write_from_tuple(tuple_type &write_from, int index, vtkSmartPointer<vtkFloatArray>* datas):
-            write_from(write_from),index(index),datas(datas){}
+        typedef typename reference::tuple_type tuple_type;
+        template <typename U>
+        using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
+
+        write_from_tuple(tuple_type write_from, int index, vtkSmartPointer<vtkFloatArray>* datas, const uint32_t &seed):
+            write_from(write_from),index(index),datas(datas),seed(seed){}
 
         template< typename U > 
-        typename boost::enable_if<boost::is_arithmetic<typename std::tuple_element<U::value,tuple_type>::type> >::type
+        typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
         operator()(U i) {
-            typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
-            data_type &write_from_elem = std::get<U::value>(write_from);
-            datas[i]->SetValue(index,write_from_elem);
+            datas[i]->SetValue(index,std::get<U::value>(write_from));
         }
 
         template< typename U >
-        typename boost::enable_if<boost::is_same<typename std::tuple_element<U::value,tuple_type>::type,double_d> >::type
+        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,double_d> >::type
         operator()(U i) {
-            typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
-            data_type &write_from_elem = std::get<U::value>(write_from);
-            datas[i]->SetTuple3(index,write_from_elem[0],
-                                      write_from_elem[1],
-                                      write_from_elem[2]);
+            datas[i]->SetTuple(index,std::get<U::value>(write_from).data());
         }
 
-        tuple_type &write_from;
+        template< typename U >
+        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,generator_type> >::type
+        operator()(U i) {
+            //TODO: not sure what to write here, default to original seed
+            //seed + uint32_t(Aboria::get<id>(i)
+            datas[i]->SetValue(index,seed);
+        }
+
+        tuple_type write_from;
         int index;
+        uint32_t seed;
         vtkSmartPointer<vtkFloatArray>* datas;
     };
 
     struct read_into_tuple {
+        typedef typename reference::tuple_type tuple_type;
+        template <typename U>
+        using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
+
         read_into_tuple(tuple_type &read_into, int index, vtkSmartPointer<vtkFloatArray>* datas):
             read_into(read_into),index(index),datas(datas){}
 
         template< typename U > 
-        typename boost::enable_if<boost::is_arithmetic<typename std::tuple_element<U::value,tuple_type>::type> >::type
+        typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
         operator()(U i) {
             typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
-            data_type &read_into_elem = std::get<U::value>(read_into);
-            read_into_elem = datas[i]->GetValue(index);
+            std::get<U::value>(read_into) = datas[i]->GetValue(index);
         }
 
         template< typename U >
-        typename boost::enable_if<boost::is_same<typename std::tuple_element<U::value,tuple_type>::type,double_d> >::type
+        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,double_d> >::type
         operator()(U i) {
-            typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
-            data_type &read_into_elem = std::get<U::value>(read_into);
-            double *data = datas[i]->GetTuple3(index);
-            read_into_elem[0] = data[0];
-            read_into_elem[1] = data[1];
-            read_into_elem[2] = data[2];
+             datas[i]->GetTuple(index,std::get<U::value>(read_into).data());
         }
 
+        template< typename U >
+        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,generator_type> >::type
+        operator()(U i) {
+            //TODO: not sure what to read here, abandon it for now 
+            //datas[i]->SetValue(index,seed);
+        }
 
-        tuple_type &read_into;
+        tuple_type read_into;
         int index;
         vtkSmartPointer<vtkFloatArray>* datas;
     };
@@ -640,7 +661,7 @@ private:
             }
             typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
             if (boost::is_same<data_type, double_d>::value) {
-                datas[i]->SetNumberOfComponents(3);
+                datas[i]->SetNumberOfComponents(dimension);
             } else {
                 datas[i]->SetNumberOfComponents(1);
             }

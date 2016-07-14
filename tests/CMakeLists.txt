@@ -17,9 +17,11 @@ set(test_package
     bd
     )
 
-#set(test_package
-#    rbf_interpolation
-#    )
+set(test_package
+    sph
+    dem
+    bd
+    )
 
 foreach(test ${test_package})
     cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)

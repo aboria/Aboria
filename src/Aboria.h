@@ -48,5 +48,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Assemble.h"
 #include "Functions.h"
 #include "Operators.h"
+#include "Utils.h"
 
 #endif /* ABORIA_H_ */
