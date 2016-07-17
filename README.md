@@ -8,12 +8,20 @@ UPDATE (12/07/2016): The next release of Aboria is currently being documented
 and tested in the `version2` branch. It will be merged in the next few weeks. 
 This release:
 * reworks the internal storage of the container class to model a set of zipped 
-  vectors (currently `std::vector`s)
+  vectors. Currently uses `std::vector`s, but other vector types will be added 
+  in the future (e.g. CUDA Thrust vectors) using a Traits pattern.
+* adds meta-functions for determining if expressions are constant, univariate or 
+  bivariate
 * adds more compile-time checking of expression correctness
-* updates the bucket-search neighbourhood searching algorithm to use STL 
-  algorithms only
-* adds matrix-free linear algebra capabilities via Eigen 
-  <http://eigen.tuxfamily.org>
+* updates the bucket-search neighbourhood searching algorithm to use Thrust 
+  algorithms only (via the STL library), in preparation for addition of CUDA 
+  vectors 
+* adds matrix-free linear algebra capabilities. Expressions can be wrapped with 
+  a matrix replacement class that implements Eigen's 
+  <http://eigen.tuxfamily.org> sparse matrix concept. This can be used in 
+  matrix-vector products and linear algebra solvers.
+* adds examples for Radial Basis Function interpolation and solving pde's via 
+  Kansa Method
 
 Aboria implements an expressive Domain Specific Language (DSL) in C++ for 
 specifying expressions over particles and their neighbours in 3D space. The 
