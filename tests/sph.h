@@ -22,6 +22,7 @@ const unsigned int NDIM = 3;
 struct F_fun {
     typedef double result_type;
     double operator()(const double r,const double h) const {
+        if (r==0) return 0;
         const double q = r/h;
         if (q<=2.0) {
             return (1/std::pow(h,NDIM+2))*WCON_WENDLAND*(-4*std::pow(2-q,3)*(1+2*q) + 2*std::pow(2-q,4))/q;
@@ -69,6 +70,7 @@ public:
         sph_type sph;
 
         Symbol<position> p;
+        Symbol<id> id_;
         Symbol<velocity> v;
         Symbol<velocity_tmp> v0;
         Symbol<density> rho;
@@ -80,11 +82,11 @@ public:
         Label<0,sph_type> a(sph);
         Label<1,sph_type> b(sph);
      
-        const int timesteps = 100;
-        const int nout = 100;
+        const int timesteps = 500;
+        const int nout = 10;
         const int timesteps_per_out = timesteps/nout;
         const double L = 31.0/1000.0;
-        const int nx = 10;
+        const int nx = 5;
 
         /*
          * sph parameters
@@ -155,20 +157,32 @@ public:
                 /*
                  * Calculate omega
                  */
-                omega[a] = 1.0 - (mass/rho[a]*NDIM)*sum(b,norm(dx)<2*h[a],pow(norm(dx),2)*F(norm(dx),h[a])+NDIM*W(norm(dx),h[a]));
+                omega[a] = 1.0 - (mass/(rho[a]*NDIM))*sum(b,norm(dx)<2*h[a],pow(norm(dx),2)*F(norm(dx),h[a])+NDIM*W(norm(dx),h[a]));
 
                 /*
                  * 1/2 -> 1 step
                  */
-                rho[a] += dt*(mass/omega[a]) * sum(b,norm(dx)<2*h[a],dot(v[b]-v[a],dx*F(norm(dx),h[a])));
+
+                /* 
+                 * calculate change in density and kernel radius
+                 */
+                rho[a] += dt*(mass/omega[a]) * sum(b,norm(dx)<2*h[a],
+                        dot(v[b]-v[a],dx*F(norm(dx),h[a])));
                 h[a] = pow(mass/rho[a],1.0/NDIM);
                 
+                /* 
+                 * reset neighbour search for new kernel radius
+                 */
                 const double maxh = eval(max(a,true,h[a]));
                 const double minh = eval(min(a,true,h[a]));
+                sph.reset_neighbour_search(2*maxh);
 
+                /* 
+                 * advance velocity, position and calculate pdr2
+                 */
                 v0[a] = v[a];
                 v[a] += if_else(fixed[a]==false,dt/2 * dvdt[a],0);
-                pdr2[a] = prb*(pow(rho[a]/refd,gamma) - 1.0);
+                pdr2[a] = prb*(pow(rho[a]/refd,gamma) - 1.0)/pow(rho[a],2);
                 p[a] += dt/2 * v0[a];
 
 
@@ -178,11 +192,14 @@ public:
                 dvdt[a] = double3(0,0,-9.81);
 
                 /*
-                 * acceleration on SPH calculation (pressure and viscosity force)
+                 * acceleration on SPH calculation
                  */
                 dvdt[a] += mass*sum_vect(b,norm(dx)<2*h[a],
                         
-                        -((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
+                        // pressure force 
+                        ((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
+
+                        // viscous force 
                         + (v[a]-v[b])*visc*(rho[a]+rho[b])/(rho[a]*rho[b])*F(norm(dx),h[a])
                         );
 
