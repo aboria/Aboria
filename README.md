@@ -22,6 +22,7 @@ This release:
   matrix-vector products and linear algebra solvers.
 * adds examples for Radial Basis Function interpolation and solving pde's via 
   Kansa Method
+
 Known issues:
 * compile times are slower, due to the use of Boost MPL and Fusion libraries. 
   Boost v1.61 has seen the introduction of Boost Hana, a C++11 metaprogramming 
