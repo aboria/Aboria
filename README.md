@@ -22,6 +22,14 @@ This release:
   matrix-vector products and linear algebra solvers.
 * adds examples for Radial Basis Function interpolation and solving pde's via 
   Kansa Method
+Known issues:
+* compile times are slower, due to the use of Boost MPL and Fusion libraries. 
+  Boost v1.61 has seen the introduction of Boost Hana, a C++11 metaprogramming 
+  library meant to replace Fusion, which promotes significantly reduced 
+  compile-time. It is envisioned that this will eventually replace MPL and 
+  Fusion in Aboria.
+* The neighbourhood searching is no longer optimised for serial use, so might be 
+  slower for small number of particles in serial.
 
 Aboria implements an expressive Domain Specific Language (DSL) in C++ for 
 specifying expressions over particles and their neighbours in 3D space. The 
