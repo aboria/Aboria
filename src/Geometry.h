@@ -47,10 +47,13 @@ namespace Aboria {
 const double GEOMETRY_TOLERANCE = 1.0/100000.0;
 
 class GeometryBase {
+protected:
+    // restrict to 3d for now...
+    typedef Vector<double,3> double_d;
 public:
-	virtual bool is_in(const Vect3d &point) const = 0;
-	virtual std::pair<double,Vect3d> lineXsurface(const Vect3d &p1, const Vect3d &p2) const = 0;
-	virtual const Vect3d shortest_vector_to_boundary(const Vect3d &point) const = 0;
+	virtual bool is_in(const double_d &point) const = 0;
+	virtual std::pair<double,double_d> lineXsurface(const double_d &p1, const double_d &p2) const = 0;
+	virtual const double_d shortest_vector_to_boundary(const double_d &point) const = 0;
 	friend std::ostream& operator<<( std::ostream& out, const GeometryBase& b ) {
 		b.print(out);
 		return out;
@@ -59,13 +62,15 @@ public:
 };
 
 template<typename T>
-bool reflect_once(const Vect3d& p1, Vect3d &p2, const T& geometry) {
-	std::pair<double,Vect3d> res = geometry.lineXsurface(p1,p2);
+bool reflect_once(const Vector<double,3> &p1, Vector<double,3> &p2, const T& geometry) {
+    // restrict to 3d for now...
+    typedef Vector<double,3> double_d;
+	std::pair<double,double_d> res = geometry.lineXsurface(p1,p2);
 	if (res.first >= 0) {
 		/*
 		 * if line going through surface with normal then don't reflect
 		 */
-		const Vect3d dx = p2 - p1;
+		const double_d dx = p2 - p1;
 		const double dxCosTheta = res.second.dot(dx);
 		if (dxCosTheta > 0) {
 			return false;
@@ -75,7 +80,7 @@ bool reflect_once(const Vect3d& p1, Vect3d &p2, const T& geometry) {
 		 * calculate new position after reflection
 		 */
 		const double ratio = res.first/dx.norm();
-		const Vect3d v_reflect = dx - 2*dxCosTheta*res.second;
+		const double_d v_reflect = dx - 2*dxCosTheta*res.second;
 		p2 = p1 + (dx-v_reflect)*ratio + v_reflect;
 		return true;
 	} else {
@@ -84,33 +89,37 @@ bool reflect_once(const Vect3d& p1, Vect3d &p2, const T& geometry) {
 }
 
 template <typename T>
-Vect3d operator| (const Vect3d& vector, const T& geometry) {
-    Vect3d result = vector;
-    reflect_once(Vect3d(0,0,0),result,geometry);
+Vector<double,3> operator| (const Vector<double,3>& vector, const T& geometry) {
+    // restrict to 3d for now...
+    typedef Vector<double,3> double_d;
+    double_d result = vector;
+    reflect_once(double_d(0,0,0),result,geometry);
     return result;
 }
 
 template <typename T>
-Vect3d operator| (const T& geometry, const Vect3d& vector) {
-    Vect3d result = vector;
-    reflect_once(Vect3d(0,0,0),result,geometry);
+ Vector<double,3> operator| (const T& geometry, const Vector<double,3>& vector) {
+    // restrict to 3d for now...
+    typedef Vector<double,3> double_d;
+    double_d result = vector;
+    reflect_once(double_d(0,0,0),result,geometry);
     return result;
 }
 
 class Sphere : public GeometryBase {
 public:
-	Sphere(const Vect3d& position,
+	Sphere(const double_d& position,
 			const double radius,
 			const bool in) :
 				position(position),radius(radius),radius_sq(radius*radius),in(in) {
 	}
-	static ptr<Sphere> New(const Vect3d& position,
+	static ptr<Sphere> New(const double_d& position,
 			const double radius,
 			const bool in) {
 		return ptr<Sphere>(new Sphere(position,radius,in));
 	}
 
-	bool is_in(const Vect3d& point) const {
+	bool is_in(const double_d& point) const {
 		bool inside;
 		const double radial_dist_sq = radial_distance_to_boundary_sq(point);
 		if (in) {
@@ -121,12 +130,12 @@ public:
 		return inside == in;
 	}
 
-	std::pair<double,Vect3d> lineXsurface(const Vect3d &p1, const Vect3d &p2) const {
-		std::pair<double,Vect3d> ret;
-		Vect3d dx = (p2-p1);
+	std::pair<double,double_d> lineXsurface(const double_d &p1, const double_d &p2) const {
+		std::pair<double,double_d> ret;
+		double_d dx = (p2-p1);
 		const double maxd = dx.norm();
 		dx /= maxd;
-		const Vect3d dr = p1-position;
+		const double_d dr = p1-position;
 		const double dr_norm2 = dr.squaredNorm();
 		const double dx_dot_dr = dx.dot(dr);
 		const double in_sqrt = std::pow(dx_dot_dr,2) - dr_norm2 + radius_sq;
@@ -157,12 +166,12 @@ public:
 		return ret;
 	}
 
-	const Vect3d shortest_vector_to_boundary(const Vect3d& point) const {
+	const double_d shortest_vector_to_boundary(const double_d& point) const {
 		const double radial_dist = std::sqrt(radial_distance_to_boundary_sq(point));
 		return (radius/radial_dist-1.)*point;
 	}
 
-	double distance_to_boundary(const Vect3d& point) const {
+	double distance_to_boundary(const double_d& point) const {
 		double dist = shortest_vector_to_boundary(point).norm();
 		// Boundaries expect the distance to be negative if outside of
 		// geometry
@@ -178,11 +187,11 @@ public:
 	}
 private:
 	//friend std::ostream& operator<< (std::ostream& out, const Sphere& p);
-	Vect3d position;
+	double_d position;
 	double radius,radius_sq;
 	bool in;
 
-	inline double radial_distance_to_boundary_sq(const Vect3d& point) const {
+	inline double radial_distance_to_boundary_sq(const double_d& point) const {
 		return (position-point).squaredNorm();
 	}
 };

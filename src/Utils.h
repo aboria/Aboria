@@ -37,12 +37,42 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef UTILS_H_
 #define UTILS_H_
 
+#ifdef HAVE_VTK
+#include <vtkXMLUnstructuredGridWriter.h>
+#include <vtkSmartPointer.h>
+#endif
+
+#include <boost/math/constants/constants.hpp>
 #include "Aboria.h"
 
 namespace Aboria {
 
+#ifdef HAVE_VTK
+void vtkWriteGrid(const char *name, int timestep, vtkSmartPointer<vtkUnstructuredGrid> grid) {
+    vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
+        vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
+
+#if VTK_MAJOR_VERSION > 5
+    writer->SetInputData(grid);
+#else
+    writer->SetInput(grid);
+#endif
+
+    writer->SetDataModeToBinary();
+
+    char buffer[100];
+    sprintf(buffer,"%s%05d.vtu",name,timestep);
+
+    writer->SetFileName(buffer);
+    writer->Write();
+}
+#endif
+
 template<typename PTYPE, typename GTYPE, typename RNDGTYPE>
-void create_n_particles_with_rejection_sampling(const unsigned int n, PTYPE &particles, const GTYPE &generator_fun, const Vect3d &low, const Vect3d &high, RNDGTYPE &generator) {
+void create_n_particles_with_rejection_sampling(const unsigned int n, PTYPE &particles, const GTYPE &generator_fun, const Vector<double,3> &low, const Vector<double,3> &high, RNDGTYPE &generator) {
+
+    // assume 3d for now...
+    typedef Vector<double,3> Vect3d;
 
     std::uniform_real_distribution<double> uni(0,1);
     const Vect3d h = (high-low)/1000;
@@ -74,6 +104,10 @@ template<typename T>
 ptr<std::vector<double> > radial_distribution_function(ptr<Particles<T> > particles,
 							const double min, const double max,
 							const int n) {
+
+    // assume 3d for now...
+    typedef Vector<double,3> Vect3d;
+    
 	auto out = ptr<std::vector<double> >(new std::vector<double>());
 
 	out->resize(n,0);
@@ -95,6 +129,7 @@ ptr<std::vector<double> > radial_distribution_function(ptr<Particles<T> > partic
 	const double volume = (particles->get_high()-particles->get_low()).prod();
 	const double rho = particles->size()/volume;
 
+    const double PI = boost::math::constants::pi<double>();
 	for (int i = 0; i < n; ++i) {
 		(*out)[i] /= particles->size()*(4.0/3.0)*PI*(std::pow((i+1)*bsep+min,3)-std::pow(i*bsep+min,3))*rho;
 	}

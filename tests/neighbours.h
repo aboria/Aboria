@@ -49,93 +49,127 @@ class NeighboursTest : public CxxTest::TestSuite {
 public:
     void test_single_particle(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<scalar> Test_type;
+    	typedef Particles<std::tuple<scalar>> Test_type;
+        typedef position_d<3> position;
     	Test_type test;
-    	Vect3d min(-1,-1,-1);
-    	Vect3d max(1,1,1);
-    	Vect3d periodic(true,true,true);
+    	double3 min(-1,-1,-1);
+    	double3 max(1,1,1);
+    	double3 periodic(true,true,true);
     	double diameter = 0.1;
     	test.init_neighbour_search(min,max,diameter,periodic);
     	Test_type::value_type p;
 
-        set<position>(p,Vect3d(0,0,0));
+        get<position>(p) = double3(0,0,0);
     	test.push_back(p);
 
     	int count = 0;
-    	for (auto tpl: test.get_neighbours(Vect3d(diameter/2,diameter/2,0))) {
+    	for (auto tpl: test.get_neighbours(double3(diameter/2,diameter/2,0))) {
     		count++;
     	}
     	TS_ASSERT_EQUALS(count,1);
 
-    	auto tpl = test.get_neighbours(Vect3d(diameter/2,diameter/2,0));
+    	auto tpl = test.get_neighbours(double3(diameter/2,diameter/2,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
 
-    	tpl = test.get_neighbours(Vect3d(2*diameter,0,0));
+    	tpl = test.get_neighbours(double3(2*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
     void test_two_particles(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<scalar> Test_type;
+    	typedef Particles<std::tuple<scalar>> Test_type;
+        typedef position_d<3> position;
     	Test_type test;
-    	Vect3d min(-1,-1,-1);
-    	Vect3d max(1,1,1);
-    	Vect3d periodic(true,true,true);
+    	double3 min(-1,-1,-1);
+    	double3 max(1,1,1);
+    	double3 periodic(true,true,true);
     	double diameter = 0.1;
     	test.init_neighbour_search(min,max,diameter,periodic);
     	Test_type::value_type p;
 
-        set<position>(p,Vect3d(0,0,0));
+        get<position>(p) = double3(0,0,0);
     	test.push_back(p);
 
-        set<position>(p,Vect3d(diameter/2,0,0));
+        get<position>(p) = double3(diameter/2,0,0);
     	test.push_back(p);
 
-    	auto tpl = test.get_neighbours(Vect3d(1.1*diameter,0,0));
+    	auto tpl = test.get_neighbours(double3(1.1*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     	const Test_type::value_type &pfound = std::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
-    	tpl = test.get_neighbours(Vect3d(0.9*diameter,0,0));
+    	tpl = test.get_neighbours(double3(0.9*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = test.get_neighbours(Vect3d(1.6*diameter,0,0));
+    	tpl = test.get_neighbours(double3(1.6*diameter,0,0));
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
+
+    	tpl = test.get_neighbours(double3(0.25*diameter,0.99*diameter,0));
+    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
+
+    	tpl = test.get_neighbours(double3(0.25*diameter,1.01*diameter,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
-    void test_create_particles(void) {
+    template<unsigned int D>
+    void helper_d(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<scalar> Test_type;
+    	typedef Particles<std::tuple<scalar>,D> Test_type;
+        typedef position_d<D> position;
+        typedef Vector<double,D> double_d;
+        typedef Vector<bool,D> bool_d;
+        typedef Vector<unsigned int,D> uint_d;
     	Test_type test;
-    	Vect3d min(-1,-1,-1);
-    	Vect3d max(1,1,1);
-    	Vect3d periodic(true,true,true);
-    	double diameter = 0.1;
+    	double_d min(-1);
+    	double_d max(1);
+    	bool_d periodic(true);
+    	typename Test_type::value_type p;
+        uint_d index(0);
+        unsigned int n = 10;
+        double dx = 2.0/n;
+
+    	double diameter = dx*1.00001;
+        unsigned int expect_n = std::pow(3,D);
+
+        bool finished = false;
+        while (finished != true) {
+            double_d pos = index*dx+min+dx/2;
+            get<position>(p) = pos;
+            test.push_back(p);
+            index[0]++;
+            for (int i=0; i<D; i++) {
+                if (index[i] >= n) {
+                    if (i==D-1) {
+                        finished = true;
+                    } else {
+                        index[i+1]++;
+                        index[i] = 0;
+                    }
+                } else {
+                    break;
+                }
+            }
+        }
+
     	test.init_neighbour_search(min,max,diameter,periodic);
-    	int count = 0;
-    	test.create_particles(2,[&count,&test,&diameter](Test_type::value_type& i) {
-    		auto tpl = test.get_neighbours(Vect3d(diameter/2,0,0));
-    		count++;
-    		if (count == 1) {
-    			TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
-    			return Vect3d(0,0,0);
-    		} else {
-    			TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
-    			return Vect3d(diameter/2,0,0);
-    		}
 
-    	});
+        for (auto i: test) {
+            auto tpl = test.get_neighbours(get<position>(i));
+    	    TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),expect_n);
+        }
+    }
 
-    	auto tpl = test.get_neighbours(Vect3d(1.1*diameter,0,0));
-    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
-    	const Test_type::value_type &pfound = std::get<0>(*tpl.begin());
-    	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
-
-    	tpl = test.get_neighbours(Vect3d(0.9*diameter,0,0));
-    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
-
-    	tpl = test.get_neighbours(Vect3d(1.6*diameter,0,0));
-    	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
+    void test_dim1(void) {
+        helper_d<1>();
+    }
+    void test_dim2(void) {
+        helper_d<2>();
+    }
+    void test_dim3(void) {
+        helper_d<3>();
+    }
+    void test_dim4(void) {
+        helper_d<4>();
     }
 
 };

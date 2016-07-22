@@ -37,14 +37,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ABORIA_H_
 #define ABORIA_H_
 
-#include "Geometry.h"
+#include "Vector.h"
+//#include "Geometry.h"
 #include "Ptr.h"
+#include "Variable.h"
 #include "Particles.h"
 #include "PrintTuple.h"
-#include "Utils.h"
 #include "DataVector.h"
 #include "Symbolic.h"
+#include "Assemble.h"
 #include "Functions.h"
-#include "Variable.h"
+#include "Operators.h"
+#include "Utils.h"
 
 #endif /* ABORIA_H_ */

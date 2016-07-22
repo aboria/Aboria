@@ -38,6 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define VARIABLE_H_ 
 
 #include <boost/preprocessor/cat.hpp>
+#include "Vector.h"
+#include "Random.h"
 
 namespace Aboria {
 
@@ -61,9 +63,18 @@ struct Variable {
     };                                                   \
     typedef Variable<DATA_TYPE,BOOST_PP_CAT(NAME,_description)> NAME;   \
 
-ABORIA_VARIABLE(position,Vect3d,"position")
-ABORIA_VARIABLE(alive,bool,"is alive")
+#define ABORIA_VARIABLE_VECTOR(NAME,DATA_TYPE,NAME_STRING)      \
+    struct BOOST_PP_CAT(NAME,_description) {                            \
+    	const char* name = NAME_STRING; \
+    };                                                   \
+    template <unsigned int N> \
+    using NAME = Variable<Vector<DATA_TYPE,N>,BOOST_PP_CAT(NAME,_description)>;   \
+
+
+ABORIA_VARIABLE_VECTOR(position_d,double,"position")
+ABORIA_VARIABLE(alive,uint8_t,"is alive")
 ABORIA_VARIABLE(id,size_t,"id")
+ABORIA_VARIABLE(random,generator_type,"random")
 
 }
 #endif /* VARIABLE_H_ */

@@ -9,11 +9,14 @@ doxygen autodoc
     ../src/Particles.h
     ../src/Variable.h
     ../src/DataVector.h
-    ../src/BucketSearch.h
+    ../src/BucketSearchParallel.h
     ../src/Functions.h
-    ../src/Geometry.h
     ../src/Log.h
     ../src/Symbolic.h
+    ../src/Traits.h
+    ../src/Get.h
+    ../src/Assemble.h
+    ../src/Operators.h
     ../src/Vector.h
   :
     <doxygen:param>QUIET=YES
@@ -27,7 +30,8 @@ doxygen autodoc
     <doxygen:param>MACRO_EXPANSION=YES
     <doxygen:param>TAB_SIZE=4
     <doxygen:param>EXAMPLE_PATH=../
-    <doxygen:param>PREDEFINED=BOOST_COMPUTE_DOXYGEN_INVOKED
+    <doxygen:param>PREDEFINED="BOOST_COMPUTE_DOXYGEN_INVOKED HAVE_EIGEN HAVE_THRUST HAVE_VTK" 
+
   ;
 
 xml aboria : aboria.qbk : ;
@@ -41,5 +45,7 @@ boostbook standalone
       <xsl:param>boost.image.alt="\"Aboria\""
       <xsl:param>boost.image.w=200
       <xsl:param>boost.image.h=62
+      <xsl:param>boost.mathjax=1
+      <xsl:param>chunk.section.depth=1
       <xsl:param>nav.layout=none
     ;

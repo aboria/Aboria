@@ -44,16 +44,86 @@ namespace Aboria {
 
     using detail::SymbolicDomain;
 
+
+    template<typename Expr>
+    typename detail::symbolic_helper<Expr>::deep_copy_type
+    deep_copy(Expr const &expr) {
+        return proto::deep_copy(
+            proto::as_expr<detail::SymbolicDomain>(expr));
+    }
+
     /// evaluate a given expression that returns a constant value (scaler or vector)
     /// \params expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables
     /// \return the result of the expression
     //TODO: move univariate and bivariate down here to
     //TODO: check its a constant expression...
     template <class Expr>
-    typename proto::result_of::eval<Expr const,  detail::ConstantCtx const>::type
-    eval(Expr const &expr) {
-            detail::ConstantCtx const ctx;
-            return proto::eval(expr,ctx);
+    typename boost::enable_if<detail::is_const<Expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr &expr) {
+        typename detail::symbolic_helper<Expr>::const_context_type const ctx;
+        return proto::eval(expr,ctx);
+    }
+
+    template<typename Expr>  
+    typename boost::enable_if<detail::is_univariate<Expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr &expr, 
+            const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a) {
+        typedef typename detail::symbolic_helper<Expr>::univariate_context_type ctx_type;
+        typedef typename detail::symbolic_helper<Expr>::label_a_type label_type;
+        ctx_type const ctx(fusion::make_map<label_type>(particle_a));
+        return proto::eval(expr, ctx);
+    }
+
+    template<typename Expr, typename AnyRef>  
+    typename boost::enable_if<detail::is_const<Expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr &expr, 
+            const AnyRef& particle_a) {
+        typename detail::symbolic_helper<Expr>::const_context_type const ctx;
+        return proto::eval(expr, ctx);
+    }
+
+    template<typename Expr>  
+    typename boost::enable_if<detail::is_bivariate<Expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr &expr, 
+            const typename detail::symbolic_helper<Expr>::double_d& dx,
+            const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
+            const typename detail::symbolic_helper<Expr>::particle_b_reference& particle_b) { 
+
+        typedef typename detail::symbolic_helper<Expr>::bivariate_context_type ctx_type;
+        typedef typename detail::symbolic_helper<Expr>::label_a_type label_a_type;
+        typedef typename detail::symbolic_helper<Expr>::label_b_type label_b_type;
+        ctx_type const ctx(fusion::make_map<label_a_type,label_b_type>(particle_a,particle_b),fusion::make_list(boost::cref(dx)));
+        return proto::eval(expr, ctx);
+    }
+
+    template<typename Expr, typename AnyRef>  
+    typename boost::enable_if<detail::is_univariate<Expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr &expr, 
+            const typename detail::symbolic_helper<Expr>::double_d& dx,
+            const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_a, 
+            const AnyRef& particle_b) { 
+
+        typedef typename detail::symbolic_helper<Expr>::univariate_context_type ctx_type;
+        typedef typename detail::symbolic_helper<Expr>::label_a_type label_type;
+
+        ctx_type const ctx(fusion::make_map<label_type>(particle_a));
+        return proto::eval(expr, ctx);
+    }
+
+    template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
+    typename boost::enable_if<detail::is_const<Expr>,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr &expr, 
+            const AnyDx& dx,
+            const AnyRef1& particle_a, 
+            const AnyRef2& particle_b) { 
+        typename detail::symbolic_helper<Expr>::const_context_type const ctx;
+        return proto::eval(expr, ctx);
     }
 
 
@@ -75,6 +145,23 @@ namespace Aboria {
                 : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
             {}
     };
+
+    /*
+    template<unsigned int I>
+    struct Unknown 
+        : detail::SymbolicExpr<typename proto::terminal<detail::unknown<mpl::int_<I> > >::type> {
+
+            typedef typename proto::terminal<detail::unknown<mpl::int_<I>> >::type expr_type;
+            typedef detail::unknown<mpl::int_<I>> data_type;
+
+            /// constructor
+            explicit Unknown()
+                : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
+            {}
+    };
+    */
+
+
 
 
     /// define a label with a given depth \p I that referres to a particle 
@@ -102,12 +189,34 @@ namespace Aboria {
             //BOOST_PROTO_EXTENDS_USING_ASSIGN(Label)
     };
 
+
+    template<unsigned int I, typename P>
+    Label<I,P> create_label(P& p) {
+        return Label<I,P>(p);
+    }
+
     /// a symbolic class used to refer to the difference between neighbouring 
     /// particles position vectors. Note that for periodic domains this might 
     /// be different than `get<position)(a)-get<position>(b)`, and in this case 
     /// always gives the *shortest* position difference
-    struct Dx
-        : proto::terminal<detail::dx>::type {};
+    template<typename L1, typename L2>
+    struct Dx 
+        : detail::SymbolicExpr<typename proto::terminal<detail::dx<typename L1::data_type,typename L2::data_type> >::type> {
+
+            typedef typename detail::dx<typename L1::data_type,typename L2::data_type> data_type;
+            typedef typename proto::terminal<data_type>::type expr_type;
+
+            /// constructor
+            explicit Dx(L1& la, L2& lb)
+                : detail::SymbolicExpr<expr_type>( expr_type::make(data_type(proto::value(la),proto::value(lb))) )
+            {}
+    };
+
+    
+    template<typename L1, typename L2>
+    Dx<L1,L2> create_dx(L1& la, L2& lb) {
+        return Dx<L1,L2>(la,lb);
+    }
 
     /// a symbolic class used to return a normally distributed random variable. This uses
     /// the random number generator of the current particle to generate the random

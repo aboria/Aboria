@@ -53,10 +53,10 @@ public:
         ABORIA_VARIABLE(b,float,"b")
         ABORIA_VARIABLE(c,int,"c")
 
-        Particles<a,b,c>::value_type p;
-        set<a>(p,1.2);
-        set<b>(p,1.3);
-        set<c>(p,1);
+        Particles<std::tuple<a,b,c>>::value_type p;
+        get<a>(p) = 1.2;
+        get<b>(p) = 1.3;
+        get<c>(p) = 1;
 
         TS_ASSERT_DELTA(get<a>(p),1.2,std::numeric_limits<double>::epsilon());
         TS_ASSERT_DELTA(get<b>(p),1.3,std::numeric_limits<float>::epsilon());
@@ -74,23 +74,23 @@ public:
 
     void testVector(void) {
 
-        ABORIA_VARIABLE(a,Vect3d,"a")
-        ABORIA_VARIABLE(b,Vect3i,"b")
+        ABORIA_VARIABLE(a,double3,"a")
+        ABORIA_VARIABLE(b,int3,"b")
 
-        Particles<a,b>::value_type p;
+        Particles<std::tuple<a,b>>::value_type p;
 
-        set<a>(p,Vect3d(1.1,1.2,1.3));
-        set<b>(p,Vect3d(1,2,3));
+        get<a>(p) = double3(1.1,1.2,1.3);
+        get<b>(p) = double3(1,2,3);
 
         std::cout << "get<a>(p) = " << get<a>(p) <<std::endl;
-        TS_ASSERT_EQUALS(get<a>(p),Vect3d(1.1,1.2,1.3));
-        TS_ASSERT_EQUALS(get<b>(p),Vect3d(1,2,3));
+        TS_ASSERT((get<a>(p)==double3(1.1,1.2,1.3)).all());
+        TS_ASSERT((get<b>(p)==int3(1,2,3)).all());
 
-        get<a>(p) = Vect3d(2.1,2.2,2.3);
-        get<b>(p) = Vect3d(2,3,4);
+        get<a>(p) = double3(2.1,2.2,2.3);
+        get<b>(p) = int3(2,3,4);
 
-        TS_ASSERT_EQUALS(get<a>(p),Vect3d(2.1,2.2,2.3));
-        TS_ASSERT_EQUALS(get<b>(p),Vect3d(2,3,4));
+        TS_ASSERT((get<a>(p)==double3(2.1,2.2,2.3)).all());
+        TS_ASSERT((get<b>(p)==int3(2,3,4)).all());
     }
 
 };

@@ -9,6 +9,7 @@ Makefile
 cmake_install.cmake
 tests/*
 !tests/*.h
+!tests/*.py
 examples/bd
 examples/dem
 examples/sph
@@ -26,4 +27,5 @@ doc/bin
 .color_coded
 .ycm_extra_conf.*
 compile_commands.json
+python/*_generated.cpp
 

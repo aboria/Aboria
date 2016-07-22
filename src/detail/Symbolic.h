@@ -39,22 +39,36 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SYMBOLIC_DETAIL_H_
 
 #include "Vector.h"
+#include "Get.h"
+#include "Random.h"
 
 
 #include <boost/mpl/bool.hpp>
 #include <boost/mpl/assert.hpp>
+#include "boost/mpl/and.hpp"
+#include <boost/mpl/greater.hpp>
 #include <boost/mpl/equal.hpp>
+#include <boost/fusion/include/cons.hpp>
+#include <boost/fusion/include/pair.hpp>
+//#include <boost/fusion/include/vector.hpp>
+#include <boost/fusion/include/remove_if.hpp>
+#include <boost/fusion/include/make_list.hpp>
+#include <boost/fusion/include/make_map.hpp>
 #include <boost/proto/core.hpp>
 #include <boost/proto/context.hpp>
 #include <boost/proto/traits.hpp>
 #include <boost/proto/transform.hpp>
+#include <boost/proto/debug.hpp>
 #include <boost/utility/enable_if.hpp>
 #include <boost/type_traits/ice.hpp>
-#include <type_traits>
+#include <boost/type_traits/is_same.hpp>
+#include <boost/utility/result_of.hpp>
+//#include <type_traits>
 #include <tuple>
 #include <map>
 
 namespace mpl = boost::mpl;
+namespace fusion = boost::fusion;
 namespace proto = boost::proto;
 using proto::_;
 using proto::N;
@@ -97,10 +111,17 @@ namespace Aboria {
             typedef T variable_type;
             typedef typename T::value_type value_type;
 
-            std::vector<value_type>& get_buffer(void *address) { return map[address]; }
+            std::vector<value_type>& get_buffer(const void *address) { return map[address]; }
 
-            std::map<void *,std::vector<value_type> > map;
+            std::map<const void *,std::vector<value_type> > map;
         };
+
+        /*
+        template<typename I>
+        struct unknown {
+            typedef typename I::value value;
+        };
+        */
 
         template <typename T>
         struct accumulate {
@@ -124,16 +145,30 @@ namespace Aboria {
             }
         };
 
-        struct dx {};
+        template <typename L1, typename L2>
+        struct dx {
+            typedef L1 label_a_type;
+            typedef L2 label_b_type;
+            label_a_type la;
+            label_b_type lb;
+            dx(label_a_type &la, label_b_type &lb):la(la),lb(lb) {};
+            const label_a_type & get_label_a() const { return la; }
+            const label_b_type & get_label_b() const { return lb; }
+        };
 
         struct normal {
-            typedef std::mt19937 generator_type;
+            //typedef std::mt19937 generator_type;
+            normal() {};
+            normal(uint32_t seed): generator(seed) {};
             double operator()() {
-                return normal(generator);
+                std::normal_distribution<double> normal_distribution;
+                return normal_distribution(generator);
+            }
+            double operator()(generator_type& gen) const {
+                std::normal_distribution<double> normal_distribution;
+                return normal_distribution(gen);
             }
             generator_type generator;
-            std::normal_distribution<double> normal;
-
 
         };
 
@@ -211,6 +246,13 @@ namespace Aboria {
                 : boost::add_reference<typename LabelType::particles_type>
                 {};
 
+            /*
+            template<typename This, typename LabelType>
+                struct result<This(LabelType)>
+                : boost::add_reference<typename LabelType::particles_type>
+                {};
+                */
+
             template<typename LabelType>
                 typename LabelType::particles_type &operator()(const LabelType& label) {
                     return label.get_particles();
@@ -245,25 +287,225 @@ namespace Aboria {
         {}; 
 
 
-        struct AccumulateInitGrammar
-            : proto::function< proto::terminal< accumulate<_> >, LabelGrammar, SymbolicGrammar, SymbolicGrammar, SymbolicGrammar>
-        {}; 
+        struct remove_label: proto::callable {
+            template<typename Sig>
+            struct result;
 
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1, T2)>:
+                fusion::result_of::as_list<
+                    typename fusion::result_of::remove_if<typename std::remove_reference<T2>::type,
+                                boost::is_same<
+                                    //typename std::remove_reference<typename std::remove_const<T1>::type>::type &,
+                                    T1,
+                                    mpl::_>
+                                >::type
+                > 
+            {};
+
+            /*
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1, const T2&)>:
+                fusion::result_of::as_list<
+                    typename fusion::result_of::remove_if<T2,boost::is_same<T1,mpl::_>>::type
+                > 
+            {};
+            */
+
+            template<typename T1, typename T2>
+            typename result<remove_label(const T1&, const T2&)>::type
+            operator()(const T1& label, const T2& state) {
+                return fusion::as_list(fusion::remove_if<boost::is_same<const T1&,mpl::_>>(state));
+            }
+        };
+
+        struct push_back_if_new: proto::callable {
+            template<typename Sig>
+            struct result;
+
+            /*
+            template<typename This, typename T1, typename T2>
+            struct result<This(const T1&, const T2&)> {
+                typedef fusion::cons<const T1&, 
+                        typename boost::result_of<remove_label(const T1&,const T2&)>::type> type;
+            };
+            */
+
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1&, T2)> {
+                typedef fusion::cons<const T1&, 
+                        typename boost::result_of<remove_label(const T1&,const T2&)>::type> type;
+            };
+
+            /*
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1&, const T2&)> {
+                typedef fusion::cons<const T1&, 
+                        typename boost::result_of<remove_label(const T1&,const T2&)>::type> type;
+            };
+            */
+
+            /*
+            template<typename This, typename T1, typename T2>
+            struct result<This(T1&, const T2&)>:
+                fusion::result_of::as_list<
+                    typename fusion::result_of::push_back<
+                        typename boost::result_of<remove_label(T1&,const T2&)>::type, T1>::type 
+                > 
+            {};
+            */
+
+            template<typename T1, typename T2>
+            typename result<push_back_if_new(const T1&, const T2&)>::type
+            operator()(const T1& label, const T2& state) {
+                return typename result<push_back_if_new(const T1&, const T2&)>::type(label,remove_label()(label,state));
+            }
+        };
+
+
+        struct get_a_from_dx: proto::callable {
+            template<typename Sig>
+                struct result;
+
+            template<typename This, typename DxType>
+            struct result<This(DxType&)> {
+                typedef const typename DxType::label_a_type& type;
+            };
+
+            template<typename DxType>
+            const typename DxType::label_a_type & operator()(const DxType& dx) {
+                return dx.get_label_a();
+            }
+        };
+
+        struct get_b_from_dx: proto::callable {
+            template<typename Sig>
+                struct result;
+
+            template<typename This, typename DxType>
+            struct result<This(DxType&)> {
+                typedef const typename DxType::label_b_type& type;
+            };
+
+            template<typename DxType>
+            const typename DxType::label_b_type & operator()(const DxType& dx) {
+                return dx.get_label_b();
+            }
+        };
+
+        struct get_labels: 
+            proto::or_<
+                
+                // Put all label terminals at the head of the
+                // list that we're building in the "state" parameter
+                proto::when<
+                    proto::terminal< label<_,_> >
+                  , push_back_if_new(proto::_value,proto::_state)
+                >
+                , proto::when< 
+                    proto::terminal< dx<_,_> >
+                    , push_back_if_new(get_a_from_dx(proto::_value),
+                            push_back_if_new(get_b_from_dx(proto::_value),proto::_state))
+                >
+                //don't add other terminals
+                , proto::when<
+                    proto::terminal<_>
+                  , proto::_state
+                >
+                , proto::when<
+                    proto::function< proto::terminal< accumulate<_> >, _, _, _>
+                    , remove_label(proto::_value(proto::_child1), 
+                                    get_labels(proto::_child2,
+                                            get_labels(proto::_child3,proto::_state)))
+                >
+                , proto::otherwise< 
+                    proto::fold<_, proto::_state, get_labels> 
+                >
+           >
+        {};
+
+    }
+	struct norm_fun;
+    namespace detail {
+
+        struct norm_dx:
+            proto::function< proto::terminal<Aboria::norm_fun>, proto::terminal<dx<_,_>>> 
+        {};
+
+        struct range_if_expr:
+            proto::or_<
+                proto::less<norm_dx,SymbolicGrammar>
+                , proto::less_equal<norm_dx,SymbolicGrammar>
+                , proto::greater<SymbolicGrammar,norm_dx>
+                , proto::greater_equal<SymbolicGrammar,norm_dx>
+                , proto::nary_expr<_, proto::vararg<range_if_expr> >
+            >
+        {};
+
+        namespace result_of {
+            template <typename Expr>
+            struct get_labels {
+                typedef typename boost::result_of<Aboria::detail::get_labels(Expr,fusion::nil_)>::type get_labels_result;
+                typedef typename std::remove_reference<get_labels_result>::type type;
+            };
+
+        }
+
+
+        template<typename Expr>
+        struct is_const: 
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename result_of::get_labels<Expr>::type
+                >::type
+                , mpl::int_<0>
+            >
+        {};
+
+        template<typename Expr>
+        struct is_univariate: 
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename result_of::get_labels<Expr>::type
+                >::type
+                , mpl::int_<1>
+            >
+        {};
+
+        template<typename Expr>
+        struct is_bivariate: 
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename result_of::get_labels<Expr>::type
+                >::type
+                , mpl::int_<2>
+            >
+        {};
+
+        template<typename Expr,unsigned int I>
+        struct get_label_c {
+            typedef typename result_of::get_labels<Expr>::type labels_type;
+            typedef typename fusion::result_of::value_at_c<get_labels,I>::type type;
+        };
+            
 
         ////////////////
         /// Contexts ///
         ////////////////
 
-
-        template<typename ParticlesType>
-        struct ParticleCtx;
-
         // Here is an evaluation context that indexes into a lazy vector
         // expression, and combines the result.
-        template<typename ParticlesType1, typename ParticlesType2>
-        struct TwoParticleCtx {
-            TwoParticleCtx(const Vect3d& dx, const typename ParticlesType1::value_type& particle1, const typename ParticlesType2::value_type& particle2)
-                    : dx_(dx),particle1_(particle1),particle2_(particle2)
+        template<typename labels_type=fusion::nil_, typename dx_type=fusion::nil_>
+        struct EvalCtx {
+            typedef typename fusion::result_of::size<labels_type>::type size_type;
+            typedef typename fusion::result_of::size<dx_type>::type dx_size_type;
+            static constexpr int dx_size = size_type::value*(size_type::value-1)/2;
+
+            //BOOST_MPL_ASSERT_MSG(dx_size_type::value==dx_size,DX_SIZE_NOT_CONSISTENT_WITH_LABELS_SIZE,(dx_size,dx_size_type));
+            static_assert(dx_size_type::value==dx_size,"dx size not consitent with labels_size");
+            
+            EvalCtx(labels_type labels=fusion::nil_(), dx_type dx=fusion::nil())
+                : m_labels(labels),m_dx(dx)
             {}
 
             template<
@@ -273,299 +515,242 @@ namespace Aboria {
                 // special handling.
                 , typename Tag = typename proto::tag_of<Expr>::type
                 , typename Enable = void
-            >
-            struct eval: proto::default_eval<Expr, TwoParticleCtx const>
+                >
+            struct eval: proto::default_eval<Expr, EvalCtx const>
             {};
 
 
+            // Handle normal terminals here...
             template<typename Expr>
             struct eval<Expr, proto::tag::terminal,
-            typename boost::enable_if<proto::matches<Expr, proto::terminal<symbolic<_> > > >::type> {
-                typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-                typedef const typename variable_type::value_type& result_type;
+            typename boost::enable_if<
+                mpl::and_<
+                    proto::matches<Expr, proto::terminal<normal>>,
+                    mpl::greater<size_type,mpl::int_<0>>
+                >>::type> {
 
-                result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const {
-                    return get<variable_type>(ctx.particle1_);
+                typedef double result_type;
+
+                result_type operator ()(Expr &expr, EvalCtx const &ctx) const
+                {
+                    //TODO: get better (parallel) random number generator
+                    //return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
+                    return proto::value(expr)(
+                            const_cast<generator_type&>(get<random>(fusion::front(ctx.m_labels).second)));
                 }
             };
 
-            // Handle subscripted expressions here...
+            // Handle subscripts here...
             template<typename Expr>
             struct eval<Expr, proto::tag::subscript,
-                typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,SubscriptGrammar> >::type 
-            > {
+            typename boost::enable_if<
+                mpl::and_<
+                    proto::matches<typename proto::result_of::child_c<Expr,1>::type,
+                        proto::terminal<label<_,_>>>, 
+                    mpl::greater<size_type,mpl::int_<0>>
+                >>::type> {
 
-                typedef typename proto::result_of::child_c<Expr, 1>::type subscript_type;
+                typedef typename proto::result_of::child_c<Expr, 1>::type child1_type;
+                typedef typename proto::result_of::value<child1_type>::type label_type;
 
-                BOOST_MPL_ASSERT(( proto::matches< subscript_type, SubscriptGrammar > ));
+                /*
+                typedef typename label_type::particles_type particles_type;
+                typedef typename particles_type::const_reference particle_ref;
+                typedef typename fusion::pair<label_type,particle_ref> search_type;
 
-                typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
-                typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
+                */
+                static_assert(fusion::result_of::has_key<labels_type,label_type>::value,
+                        "label not in evaluation context");
 
-                BOOST_MPL_ASSERT_RELATION( subscript_depth::value , < , 2);
+                typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
+                typedef typename proto::result_of::value<child0_type>::type symbolic_type;
+                typedef typename symbolic_type::variable_type variable_type; 
+                typedef const typename variable_type::value_type & result_type;
 
-                typedef typename proto::result_of::child_c<Expr,0>::type expr_to_subscript;
-                typedef typename mpl::vector<ParticlesType1,ParticlesType2> ParticlesTypes;
-                typedef typename mpl::at<ParticlesTypes,subscript_depth>::type ParticlesType;
-
-                typedef typename proto::result_of::eval<expr_to_subscript const, ParticleCtx<ParticlesType> const>::type result_type;
-
-                result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const {
-                    auto particles = std::tie(ctx.particle1_,ctx.particle2_);
-                    ParticleCtx<ParticlesType> const single_ctx(std::get<subscript_depth::value>(particles));
-                    return proto::eval(proto::child_c<0>(expr), single_ctx);
-                            //return proto::child_c<0>(expr).eval<ParticlesType1>(ctx.particle1_);
+                result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
+                    return get<variable_type>(fusion::at_key<label_type>(ctx.m_labels));
                 }
             };
-
 
             // Handle dx terminals here...
             template<typename Expr>
             struct eval<Expr, proto::tag::terminal, 
-                typename boost::enable_if<proto::matches<Expr, proto::terminal<dx> > >::type 
-            > {
-                typedef const Vect3d& result_type;
+            typename boost::enable_if<
+                mpl::and_<
+                    proto::matches<Expr, proto::terminal<dx<_,_>>>,
+                    mpl::equal<size_type,mpl::int_<2>>
+            >>::type> {
+                typedef typename fusion::result_of::front<const dx_type>::type result_type;
+                typedef typename proto::result_of::value<Expr>::type expr_dx;
+                typedef typename expr_dx::label_a_type expr_label_a_type;
+                typedef typename expr_dx::label_b_type expr_label_b_type;
 
-                result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const {
-                    return ctx.dx_;
+                BOOST_MPL_ASSERT_MSG((fusion::result_of::has_key<labels_type,expr_label_a_type>::value),ASDFASDFASDF,(expr_dx,labels_type,expr_label_a_type));
+                static_assert(fusion::result_of::has_key<labels_type,expr_label_a_type>::value,
+                        "dx label a not in evaluation context");
+                static_assert(fusion::result_of::has_key<labels_type,expr_label_b_type>::value,
+                        "dx label b not in evaluation context");
+
+                result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
+                    return fusion::front(ctx.m_dx);
                 }
             };
 
-            // Handle normal terminals here...
+            template <typename result_type,
+                     typename label_type,
+                     typename if_expr_type, 
+                     typename expr_type,
+                     typename accumulate_type>
+            static
+            typename boost::enable_if<
+                mpl::not_<proto::matches<if_expr_type,range_if_expr>>
+            ,result_type>::type
+            sum_impl(label_type label, 
+                    if_expr_type& if_expr, 
+                    expr_type& expr, 
+                    accumulate_type& accum,
+                    const EvalCtx& ctx,mpl::int_<0>) { //note: using tag dispatching here cause I couldn't figure out how to do this via enable_if....
+
+                result_type sum = accum.init;
+                for (auto i: label.get_particles()) {
+                    auto new_labels = fusion::make_map<label_type>(i);
+                    EvalCtx<decltype(new_labels),decltype(ctx.m_dx)> const new_ctx(new_labels,ctx.m_dx);
+
+                    if (proto::eval(if_expr,new_ctx)) {
+                        sum = accum.functor(sum,proto::eval(expr,new_ctx));
+                    }
+                }
+                return sum;
+            }
+
+            template <typename result_type,
+                     typename label_type,
+                     typename if_expr_type, 
+                     typename expr_type,
+                     typename accumulate_type>
+            static
+            typename boost::enable_if<
+                    mpl::not_<proto::matches<if_expr_type,range_if_expr>>
+            ,result_type>::type
+            sum_impl(label_type label, 
+                    if_expr_type& if_expr, 
+                    expr_type& expr, 
+                    accumulate_type& accum,
+                    const EvalCtx& ctx, mpl::int_<1>) {
+
+                result_type sum = accum.init;
+                auto particles = label.get_particles();
+                auto a = fusion::front(ctx.m_labels).second;
+
+                typedef typename label_type::particles_type particles_type;
+                typedef typename particles_type::position position;
+                typedef typename position::value_type double_d;
+                typedef typename std::remove_reference<
+                    typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
+
+                for (auto i: particles) {
+
+                    auto new_labels = fusion::make_map<label_a_type,label_type>(
+                                        a,i);
+                    /*
+                    auto new_labels = fusion::push_front(ctx.m_labels,
+                        fusion::make_pair<label_type>(i)
+                            );
+                    */
+
+
+                    const double_d dx = particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a));
+
+
+                    /*
+                    auto new_dx = fusion::make_list(
+                        particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a)));
+                        */
+                    /*
+                    auto new_dx = fusion::push_front(ctx.m_dx,
+                        particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a))
+                            );
+                            */
+                    EvalCtx<decltype(new_labels),fusion::list<const double_d &>> const new_ctx(
+                            new_labels,
+                            fusion::make_list(boost::cref(dx)));
+
+                    if (proto::eval(if_expr,new_ctx)) {
+                        sum = accum.functor(sum,proto::eval(expr,new_ctx));
+                    }
+                }
+                return sum;
+            }
+
+            template <typename result_type,
+                     typename label_type,
+                     typename if_expr_type, 
+                     typename expr_type,
+                     typename accumulate_type,typename dummy=size_type>
+            static
+            typename boost::enable_if<
+                    proto::matches<if_expr_type,range_if_expr>
+            ,result_type>::type
+            sum_impl(label_type label,
+                    if_expr_type& if_expr, 
+                    expr_type& expr, 
+                    accumulate_type& accum,
+                    const EvalCtx& ctx, mpl::int_<1>) {
+
+
+                result_type sum = accum.init;
+                auto particles = label.get_particles();
+                auto a = fusion::front(ctx.m_labels).second;
+
+                typedef typename std::remove_reference<
+                    typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
+                typedef typename label_a_type::particles_type particles_type;
+                typedef typename particles_type::position position;
+
+                for (auto i: particles.get_neighbours(get<position>(a))) {
+                    auto new_labels = fusion::make_map<label_a_type,label_type>(
+                                        a,std::get<0>(i));
+                    /*
+                    auto new_labels = fusion::push_front(ctx.m_labels,
+                            fusion::make_pair<label_type>(std::get<0>(i))
+                            );
+                    auto new_dx = fusion::push_front(ctx.m_dx,
+                            std::get<1>(i)
+                            );
+                            */
+                    auto new_dx = fusion::make_list(boost::cref(std::get<1>(i)));
+
+                    EvalCtx<decltype(new_labels),decltype(new_dx)> const new_ctx(new_labels,new_dx);
+
+                    if (proto::eval(if_expr,new_ctx)) {
+                        sum = accum.functor(sum,proto::eval(expr,new_ctx));
+                    }
+                }
+                return sum;
+            }
+
             template<typename Expr>
-                struct eval<Expr, proto::tag::terminal,
-                typename boost::enable_if<proto::matches<Expr, proto::terminal<normal> > >::type 
-                    >
-                    {
-                        typedef double result_type;
+            struct eval<Expr, proto::tag::function,
+            typename boost::enable_if<
+                    proto::matches<Expr,AccumulateGrammar>
+                >::type> {
 
-                        result_type operator ()(Expr &expr, TwoParticleCtx const &ctx) const
-                        {
-                            return const_cast<typename ParticlesType1::value_type&>(ctx.particle1_).rand_normal();
-                        }
-                    };
+                typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
+                typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
+                typedef typename functor_terminal_type::functor_type functor_type;
+                typedef typename functor_type::result_type result_type;
 
-            const typename ParticlesType1::value_type& particle1_;
-            const typename ParticlesType2::value_type& particle2_;
-            const Vect3d& dx_;
-
-        };
-
-        struct ConstantCtx {
-
-            ConstantCtx() {}
-
-            template<
-                typename Expr
-                , typename Tag = typename proto::tag_of<Expr>::type
-                , typename Enable = void
-                >
-                struct eval: proto::default_eval<Expr, ConstantCtx const>
-                {};
-
-
-            // Handle normal terminals here...
-            template<typename Expr>
-                struct eval<Expr, proto::tag::terminal,
-                typename boost::enable_if<proto::matches<Expr, proto::terminal<normal> > >::type 
-                    >
-                    {
-                        typedef double result_type;
-
-                        result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
-                        {
-                            return proto::value(expr)();
-                        }
-                    };
-
-
-            // Handle sums here...
-            template<typename Expr>
-                struct eval<Expr, proto::tag::function,
-                typename boost::enable_if<proto::matches<Expr,AccumulateGrammar> >::type 
-                    > {
-                        typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
-                        typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
-                        typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
-                        typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
-
-                        typedef typename boost::result_of<LabelGrammar(child1_type)>::type particles_type_ref;
-                        typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-                        typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
-                        typedef typename functor_terminal_type::functor_type functor_type;
-                        typedef typename functor_type::result_type result_type;
-
-                        result_type operator ()(Expr &expr, ConstantCtx const &ctx) const
-                        {
-                            particles_type_ref particlesa = LabelGrammar()(proto::child_c<1>(expr));
-                            result_type sum = proto::value(proto::child_c<0>(expr)).init;
-                            functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
-                            for (auto i: particlesa) {
-                                ParticleCtx<particles_type> ctx(i);
-                                if (proto::eval(proto::child_c<2>(expr),ctx)) {
-                                    sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx));
-                                }
-                            }
-                            return sum;
-                        }
-                    };
-
-        };
-
-
-
-        // Here is an evaluation context that indexes into a lazy vector
-        // expression, and combines the result.
-        template<typename ParticlesType>
-        struct ParticleCtx {
-                ParticleCtx(const typename ParticlesType::value_type& particle)
-                    : particle_(particle)
-                {}
-
-                template<
-                    typename Expr
-                    // defaulted template parameters, so we can
-                    // specialize on the expressions that need
-                    // special handling.
-                    , typename Tag = typename proto::tag_of<Expr>::type
-                    , typename Enable = void
-                    >
-                    struct eval: proto::default_eval<Expr, ParticleCtx const>
-                    {};
-
-
-
-                // Handle unlabeled vector terminals here...
-                template<typename Expr>
-                    struct eval<Expr, proto::tag::terminal, 
-                    typename boost::enable_if<proto::matches<Expr, proto::terminal<symbolic<_> > > >::type 
-                        > 
-                        {
-                            typedef typename proto::result_of::value<Expr>::type::variable_type variable_type;
-                            typedef const typename variable_type::value_type& result_type;
-
-                            result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-                            {
-                                return get<variable_type>(ctx.particle_);
-                            }
-                        };
-
-                // Handle normal terminals here...
-                template<typename Expr>
-                    struct eval<Expr, proto::tag::terminal,
-                    typename boost::enable_if<proto::matches<Expr, proto::terminal<normal> > >::type 
-                        >
-                        {
-                            typedef double result_type;
-
-                            result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-                            {
-                                //TODO: get better (parallel) random number generator
-                                return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
-                            }
-                        };
-
-                // Handle subscripts here...
-                template<typename Expr>
-                    struct eval<Expr, proto::tag::subscript,
-                    typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,SubscriptGrammar> >::type 
-                        >
-                        {
-                            typedef typename proto::result_of::child_c<Expr, 1>::type subscript_type;
-                            typedef typename boost::result_of<SubscriptGrammar(subscript_type)>::type result_of_subscript_grammar;
-                            typedef typename std::remove_reference<result_of_subscript_grammar>::type::depth subscript_depth;
-
-                            BOOST_MPL_ASSERT_RELATION( subscript_depth::value, == , 0 );
-
-                            typedef typename proto::result_of::child_c<Expr, 0>::type ExprToSubscript;
-
-                            typedef typename proto::result_of::eval<ExprToSubscript const, ParticleCtx<ParticlesType> const>::type result_type;
-
-                            result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-                            {
-                                return proto::eval(proto::child_c<0>(expr),ctx);
-                            }
-                        };
-
-                template<typename Expr>
-                    struct eval<Expr, proto::tag::bitwise_or,
-                    typename boost::enable_if<proto::matches<typename proto::result_of::child_c<Expr,1>::type,GeometriesGrammar> >::type 
-                        >
-                        {
-
-                            typedef Vect3d result_type;
-
-                            result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-                            {
-                                typedef typename proto::result_of::child_c<Expr,1>::type geometry_expr_type;
-                                typedef typename proto::result_of::child_c<geometry_expr_type,0>::type geometry_functor_terminal_type;
-                                typedef typename proto::result_of::value<geometry_functor_terminal_type>::type geometry_functor_type;
-                                typedef typename geometry_functor_type::result_type geometry_type;
-                                geometry_expr_type geometry_expr = proto::child_c<1>(expr);
-                                Vect3d vector = proto::eval(proto::child_c<0>(expr),ctx);
-                                typedef typename proto::result_of::child_c<geometry_expr_type,1>::type label_expr_type;
-                                typedef typename proto::result_of::child_c<geometry_expr_type,2>::type arg1_expr_type;
-                                typedef typename boost::result_of<LabelGrammar(label_expr_type)>::type particles_type_ref;
-                                typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-                                particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(geometry_expr));
-                                arg1_expr_type arg1_expr = proto::child_c<2>(geometry_expr);
-                                //std::cout << "doing reflect for particle "<<get<id>(ctx.particle_)<<std::endl;
-                                bool keep_going = true;
-                                while (keep_going) {
-                                    keep_going = false;	
-                                    //std::cout << "searching around position = "<<vector + get<position>(ctx.particle_)<<std::endl;
-                                    for (auto i: particlesb.get_neighbours(vector + get<position>(ctx.particle_))) {
-                                        //std::cout << "doing neighbour "<<get<id>(std::get<0>(i))<<std::endl;
-                                        TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
-                                        geometry_type geometry(vector-ctx2.dx_,proto::eval(arg1_expr,ctx2),true);
-                                        //std::cout <<"result of evaluating geometry is "<<geometry<<std::endl;
-                                        if (reflect_once(Vect3d(0,0,0),vector,geometry)) 
-                                        {
-                                            keep_going = true;
-                                        }
-                                    }
-                                }
-                                return vector;
-                            }
-                        };
-
-
-                template<typename Expr>
-                    struct eval<Expr, proto::tag::function,
-                    typename boost::enable_if<proto::matches<Expr,AccumulateGrammar> >::type 
-                        >
-                        {
-                            typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
-                            typedef typename proto::result_of::child_c<Expr,1>::type child1_type;
-                            typedef typename proto::result_of::child_c<Expr,2>::type child2_type;
-                            typedef typename proto::result_of::child_c<Expr,3>::type child3_type;
-
-                            typedef typename boost::result_of<LabelGrammar(child1_type)>::type particles_type_ref;
-                            typedef typename std::remove_reference<particles_type_ref>::type particles_type;
-                            typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
-                            typedef typename functor_terminal_type::functor_type functor_type;
-                            typedef typename functor_type::result_type result_type;
-
-
-                            result_type operator ()(Expr &expr, ParticleCtx const &ctx) const
-                            {
-                                particles_type_ref particlesb = LabelGrammar()(proto::child_c<1>(expr));
-                                result_type sum = proto::value(proto::child_c<0>(expr)).init;
-                                functor_type accumulate = proto::value(proto::child_c<0>(expr)).functor;
-                                for (auto i: particlesb.get_neighbours(get<position>(ctx.particle_))) {
-                                    TwoParticleCtx<ParticlesType,particles_type> ctx2(std::get<1>(i),ctx.particle_,std::get<0>(i));
-                                    if (proto::eval(proto::child_c<2>(expr),ctx2)) {
-                                        sum = accumulate(sum,proto::eval(proto::child_c<3>(expr),ctx2));
-                                    }
-                                }
-                                return sum;
-                            }
-                        };
-
-                const typename ParticlesType::value_type& particle_;
+                result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
+                    return sum_impl<result_type>(proto::value(proto::child_c<1>(expr)),
+                            proto::child_c<2>(expr),
+                            proto::child_c<3>(expr),
+                            proto::value(proto::child_c<0>(expr)),ctx,size_type());
+                }
             };
 
-
+            labels_type m_labels;
+            dx_type m_dx;
+    };
 
         ////////////////
         /// Domains  ///
@@ -592,28 +777,134 @@ namespace Aboria {
         template<typename Expr>
         struct SymbolicExpr
             : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain> {
-                explicit SymbolicExpr(Expr const &expr)
-                    : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr)
-                {}
 
-                // Use the ParticleCtx to implement subscripting
-                // of a Symbolic expression tree.
-                template<typename ParticleType>
-                    typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType> const>::type
-                    eval( const typename ParticleType::value_type& particle) const
-                    {
-                        ParticleCtx<ParticleType> const ctx(particle);
-                        return proto::eval(*this, ctx);
-                    }
-                template<typename ParticleType1, typename ParticleType2>
-                    typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
-                    eval( const Vect3d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const
-                    {
-                        TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
-                        return proto::eval(*this, ctx);
-                    }
+            explicit SymbolicExpr(Expr const &expr)
+                : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr)
+            {}
+        };
 
-            };
+        template<typename Expr, typename Enable=void>
+        struct symbolic_helper {};
+
+        template<typename Expr>
+        struct symbolic_helper<Expr, typename boost::enable_if<is_const<
+                    typename proto::result_of::as_expr<
+                                        Expr,detail::SymbolicDomain>::type
+                    >>::type> {
+
+            typedef typename proto::result_of::as_expr<
+                            Expr,detail::SymbolicDomain>::type expr_type;
+
+            typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
+
+            typedef EvalCtx<> const_context_type;
+            typedef typename proto::result_of::eval<expr_type, const_context_type const>::type result;
+
+
+     
+        };
+
+        template<typename Expr>
+        struct symbolic_helper<Expr, typename boost::enable_if<is_univariate<
+                    typename proto::result_of::as_expr<
+                                        Expr,detail::SymbolicDomain>::type
+                    >>::type> {
+
+            typedef typename proto::result_of::as_expr<
+                            Expr,detail::SymbolicDomain>::type expr_type;
+
+            typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
+ 
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
+            typedef typename std::remove_const<
+                typename std::remove_reference<label_a_type_ref>::type>::type label_a_type;
+            typedef typename label_a_type::particles_type particles_a_type;
+            typedef typename particles_a_type::double_d double_d;
+            typedef typename particles_a_type::const_reference particle_a_reference;
+            typedef EvalCtx<fusion::map<fusion::pair<label_a_type,particle_a_reference>>> univariate_context_type;
+            typedef typename proto::result_of::eval<expr_type, univariate_context_type const>::type result;
+        };
+
+        template<typename Expr>
+        struct symbolic_helper<Expr, typename boost::enable_if<is_bivariate<
+                    typename proto::result_of::as_expr<
+                                        Expr,detail::SymbolicDomain>::type
+                    >>::type> {
+            typedef typename proto::result_of::as_expr<
+                            Expr,detail::SymbolicDomain>::type expr_type;
+
+            typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
+
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,1>::type label_b_type_ref;
+            typedef typename std::remove_const<
+                typename std::remove_reference<label_a_type_ref>::type>::type label_a_type;
+            typedef typename std::remove_const<
+                typename std::remove_reference<label_b_type_ref>::type>::type label_b_type;
+
+            typedef typename label_a_type::particles_type particles_a_type;
+            typedef typename label_b_type::particles_type particles_b_type;
+            typedef typename particles_a_type::const_reference particle_a_reference;
+            typedef typename particles_b_type::const_reference particle_b_reference;
+            typedef typename particles_a_type::double_d double_d;
+            typedef EvalCtx<fusion::map<
+                fusion::pair<label_a_type,particle_a_reference>,
+                fusion::pair<label_b_type,particle_b_reference>>,
+                fusion::list<const double_d &>> bivariate_context_type;
+            typedef typename proto::result_of::eval<expr_type, bivariate_context_type const>::type result;
+             
+        };
+
+
+        /*
+        template<typename Expr>
+        struct SymbolicExpr<Expr,typename boost::enable_if<proto::matches<Expr, detail::univariate_expr> >::type> 
+            : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain> {
+
+            typedef typename std::result_of<detail::univariate_expr(Expr)>::type label_a_type_ref;
+            typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
+            typedef typename label_a_type::particles_type particles_a_type;
+
+            explicit SymbolicExpr(Expr const &expr)
+                : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr)
+            {}
+
+            template <typename unknown_tuple_type=std::tuple<>>
+            typename proto::result_of::eval<Expr const, ParticleCtx<particles_a_type,unknown_tuple_type> const>::type
+            eval( typename particles_a_type::const_reference particle, unknown_tuple_type unknown_tuple = std::tuple<>()) const {
+                ParticleCtx<particles_a_type,unknown_tuple_type> const ctx(particle,unknown_tuple);
+                return proto::eval(*this, ctx);
+            }
+
+
+        };
+
+        template<typename Expr>
+        struct SymbolicExpr<Expr,typename boost::enable_if<proto::matches<Expr, detail::bivariate_expr> >::type> 
+            : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain> {
+
+            typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::first label_a_type_ref;
+            typedef typename std::result_of<detail::bivariate_expr(Expr)>::type::second label_b_type_ref;
+            typedef typename std::remove_reference<label_a_type_ref>::type label_a_type;
+            typedef typename std::remove_reference<label_b_type_ref>::type label_b_type;
+            typedef typename label_a_type::particles_type particles_a_type;
+            typedef typename label_b_type::particles_type particles_b_type;
+            typedef typename particles_a_type::double_d double_d;
+
+            explicit SymbolicExpr(Expr const &expr)
+                : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr)
+            {}
+
+            template <typename unknown_tuple_type=std::tuple<>>
+            typename proto::result_of::eval<Expr const, TwoParticleCtx<particles_a_type,particles_b_type,unknown_tuple_type> const>::type
+            eval( const double_d& dx, typename particles_a_type::const_reference particle1, typename particles_b_type::const_reference particle2,unknown_tuple_type unknown_tuple1 = std::tuple<>(), unknown_tuple_type unknown_tuple2 = std::tuple<>()) const {
+                TwoParticleCtx<particles_a_type,particles_b_type, unknown_tuple_type> const ctx(dx,particle1,particle2,unknown_tuple1,unknown_tuple2);
+                return proto::eval(*this, ctx);
+            }
+
+        }; 
+        */
+
 
 
         template<typename Expr>
@@ -677,6 +968,20 @@ namespace Aboria {
             : proto::extends<SUBSCRIPT_TYPE, SymbolicExpr<SUBSCRIPT_TYPE>, SymbolicDomain> {
                 typedef SUBSCRIPT_TYPE Expr;
 
+                typedef typename ParticlesType::position position;
+                
+
+                typedef typename std::remove_const< 
+                    typename std::remove_reference<
+                    typename proto::result_of::value< 
+                    typename proto::result_of::child_c<Expr,1>::type 
+                    >::type>::type>::type label_type;
+                typedef typename proto::result_of::value< 
+                    typename proto::result_of::child_c<Expr,0>::type 
+                    >::type symbol_type;
+
+
+
         #undef SUBSCRIPT_TYPE
 
                 explicit SymbolicExpr(Expr const &expr)
@@ -684,28 +989,31 @@ namespace Aboria {
                     msymbol(proto::value(proto::child_c<0>(expr))),
                     mlabel(proto::value(proto::child_c<1>(expr))) {}
 
+                /*
                 // Use the ParticleCtx to implement subscripting
                 // of a Symbolic expression tree.
-                template<typename ParticleType>
-                typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType> const>::type
-                eval( const typename ParticleType::value_type& particle) const {
-                    ParticleCtx<ParticleType> const ctx(particle);
+                template<typename ParticleType, typename unknown_tuple_type>
+                typename proto::result_of::eval<Expr const, ParticleCtx<ParticleType,unknown_tuple_type> const>::type
+                eval( typename ParticleType::const_reference particle, unknown_tuple_type unknown_tuple=unknown_tuple_type()) const {
+                    ParticleCtx<ParticleType,unknown_tuple_type> const ctx(particle,unknown_tuple);
                     return proto::eval(*this, ctx);
                 }
-                template<typename ParticleType1, typename ParticleType2>
-                typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2> const>::type
-                eval( const Vect3d& dx, const typename ParticleType1::value_type& particle1,  const typename ParticleType2::value_type& particle2) const {
-                    TwoParticleCtx<ParticleType1,ParticleType2> const ctx(dx, particle1, particle2);
+                template<typename ParticleType1, typename ParticleType, typename unknown_tuple_type>
+                typename proto::result_of::eval<Expr const, TwoParticleCtx<ParticleType1,ParticleType2,unknown_tuple_type> const>::type
+                eval( const typename ParticleType1::double_d& dx, typename ParticleType1::const_reference particle1,  typename ParticleType2::const_reference particle2, unknown_tuple_type unknown_tuple=unknown_tuple_type()) const {
+                    TwoParticleCtx<ParticleType1,ParticleType2,unknown_tuple_type> const ctx(dx, particle1, particle2, unknown_tuple);
                     return proto::eval(*this, ctx);
                 }
+                */
 
 
                 //mpl::for_each<mpl::range_c<int,1,label_type::number_of_particle_sets::value> > (this->name(proto::as_expr<SymbolicDomain>(expr,label))); \
 
                 #define DEFINE_THE_OP(name,the_op) \
-                template< typename ExprRight > \
-                const SymbolicExpr &operator the_op (ExprRight const & expr) const { \
+                template< typename ExprRHS > \
+                const SymbolicExpr &operator the_op (ExprRHS const & expr) const { \
                     BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
+                    check_valid_assign_expr(proto::as_expr<SymbolicDomain>(expr)); \
                     this->name(proto::as_expr<SymbolicDomain>(expr)); \
                     return *this; \
                 } \
@@ -718,8 +1026,10 @@ namespace Aboria {
 
                 private:
 
-                label<mpl::int_<0>,ParticlesType> &mlabel;
-                symbolic<VariableType> &msymbol;
+                //label<mpl::int_<0>,ParticlesType> &mlabel;
+                //symbolic<VariableType> &msymbol;
+                label_type& mlabel;
+                symbol_type& msymbol;
 
                 void post() const {
                     typedef typename VariableType::value_type value_type;
@@ -728,7 +1038,7 @@ namespace Aboria {
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
 
                     for (int i=0; i<particles.size(); i++) {
-                        set<VariableType>(particles[i],buffer[i]);	
+                        get<VariableType>(particles[i]) = buffer[i];	
                     }
 
                     if (boost::is_same<VariableType,position>::value) {
@@ -740,18 +1050,38 @@ namespace Aboria {
                     }
                 }
 
-                template< typename Expr>
-                const SymbolicExpr &assign(Expr const & expr) const {
+                template< typename ExprRHS>
+                typename boost::enable_if<detail::is_univariate<ExprRHS>,void >::type
+                check_valid_assign_expr(ExprRHS const & expr) const {
+                    const ParticlesType& particles = mlabel.get_particles();
+                    const auto& particles_in_expr = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
+                    CHECK(&particles_in_expr == &particles, "labels on LHS and RHS of assign expression do not refer to the same particles container");
+                }
+
+                template< typename ExprRHS>
+                typename boost::enable_if<detail::is_const<ExprRHS>,void >::type
+                check_valid_assign_expr(ExprRHS const & expr) const {
+                }
+
+                template< typename ExprRHS>
+                typename boost::enable_if<detail::is_bivariate<ExprRHS>,void >::type
+                check_valid_assign_expr(ExprRHS const & expr) const {
+                    static_assert(!detail::is_bivariate<ExprRHS>::value,"asignment expression must be constant or univariate");
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &assign(ExprRHS const & expr) const {
                     typedef typename VariableType::value_type value_type;
 
-                    ParticlesType& particles = mlabel.get_particles();
+                    const ParticlesType& particles = mlabel.get_particles();
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
 
                     buffer.resize(particles.size());
 
                     //TODO: if vector to assign to does not exist in depth > 0, then don't need buffer
                     for (int i=0; i<particles.size(); i++) {
-                        buffer[i] =  expr.template eval<ParticlesType>(particles[i]);	
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+                        buffer[i] = proto::eval(expr,ctx);
                     }
 
                     post();
@@ -761,15 +1091,16 @@ namespace Aboria {
 
 
                 #define DO_THE_OP(name,the_op) \
-                template< typename Expr > \
-                const SymbolicExpr & name (Expr const & expr) const \
+                template< typename ExprRHS > \
+                const SymbolicExpr & name (ExprRHS const & expr) const \
                 {                                                \
                     typedef typename VariableType::value_type value_type; \
-                    ParticlesType& particles = mlabel.get_particles(); \
+                    const ParticlesType& particles = mlabel.get_particles(); \
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles); \
                     buffer.resize(particles.size()); \
                     for (int i=0; i<particles.size(); i++) { \
-                        buffer[i] = get<VariableType>(particles[i]) the_op expr.template eval<ParticlesType>(particles[i]);	\
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i])); \
+                        buffer[i] = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
                     } \
                     post(); \
                     return *this; \

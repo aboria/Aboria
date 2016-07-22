@@ -1,40 +1,48 @@
 
 [section Examples]
 
-The *examples/* subdirectory contains a collection of examples for using Aboria. Currently these are:
+[section Brownian Dynamics (BD)]
 
-- examples/sph.cpp - An Smoothed Particle Hydrodynamics example, simulating a 2D 
-  water column over a no-slip boundary. The *x* and *y* directions are periodic.
-- examples/dem.cpp - An Discrete Element Model example , simulating a polydisperse 
-  set of spherical particles falling onto an surface.
-- examples/bd.cpp - Brownian dynamics of N point particles around a set of 
-  spheres. The point particles reflect off the spheres as they diffuse.
+Brownian dynamics of N point particles around a set of spheres. The point 
+particles reflect off the spheres as they diffuse.
 
-A short sample from the DEM example, which shows what is possible with the 
-library. This shows the dem timestepping loop, calculating spring forces between 
-close particles and between particles and a bottom wall.
-
-``
-v[a] = 0;
-m[a] = (1.0/6.0)*PI*8*r*r*r*dem_dens;
-for (int i = 0; i < timesteps; ++i) {
-    p[a] += v*dt;
-
-    dvdt[a] = (// spring force between dem particles
-            sum(b, id_[a]!=id_[b] && norm(dx)<r[a]+r[b], 
-                  dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
-        
-            // spring force between particles and bottom wall
-            + if_else(r-p[2] > 0, dem_k*(r-p[2]), 0.0)*Vect3d(0,0,1) 
-
-            // gravity force
-            + Vect3d(0,0,-9.81)*m
-
-            )/m;
-
-    v[a] += dvdt*dt;
-}
-``
+[import ../tests/bd.h]
+[bd]
 
 [endsect]
 
+[section Molecular Dynamics (MD) / Discrete Element Model (DEM)] 
+
+An Discrete Element Model example , simulating a polydisperse set of spherical 
+particles falling onto an surface.
+
+[import ../tests/dem.h]
+[dem]
+
+[endsect]
+
+[section Smoothed Particle Hydrodynamics (SPH)]
+
+An Smoothed Particle Hydrodynamics example, simulating a 2D water column over a 
+no-slip boundary. The *x* and *y* directions are periodic.
+
+[import ../tests/sph.h]
+[sph]
+
+[endsect]
+
+[section Radial Basis Function (RBF) Interpolation]
+
+[import ../tests/rbf_interpolation.h]
+[rbf_interpolation_global]
+
+[endsect]
+
+[section Kansa Method for PDEs]
+
+[import ../tests/rbf_pde.h]
+[rbf_pde]
+
+[endsect]
+
+[endsect]

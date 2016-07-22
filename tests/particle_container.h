@@ -57,16 +57,32 @@ public:
 
     void test_add_particle2(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<scalar> Test_type;
+        typedef std::tuple<scalar> variables_type;
+    	typedef Particles<variables_type> Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
     }
 
+    void test_add_particle2_dimensions(void) {
+        ABORIA_VARIABLE(scalar,double,"scalar")
+        typedef std::tuple<scalar> variables_type;
+    	typedef Particles<variables_type,6> Test_type;
+    	Test_type test;
+    	Test_type::value_type p;
+        typedef Vector<double,6> double6;
+        typedef position_d<6> position;
+        get<position>(p) = double6(2.0);
+    	test.push_back(p);
+    	TS_ASSERT_EQUALS(test.size(),1);
+        TS_ASSERT((get<position>(test[0])==double6(2.0)).all());
+    }
+
     void test_add_delete_particle(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<scalar> Test_type;
+        typedef std::tuple<scalar> variables_type;
+    	typedef Particles<variables_type> Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);

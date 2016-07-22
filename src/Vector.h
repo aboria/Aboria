@@ -46,7 +46,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 
-template<typename T,int N>
+template<typename T,unsigned int N>
 class Vector {
 public:
 	typedef T value_type;
@@ -54,9 +54,9 @@ public:
 
 	Vector() {}
 	Vector(T arg1) {
-		mem[0] = arg1;
-		mem[1] = arg1;
-		mem[2] = arg1;
+        for (unsigned int i=0; i<N; i++) {
+		    mem[i] = arg1;
+        }
 	}
 	Vector(T arg1,T arg2) {
 		mem[0] = arg1;
@@ -101,6 +101,17 @@ public:
 		}
 		return ret;
 	}
+
+    template <typename T2>
+    Vector<T2,N> cast() {
+        Vector<T2,N> ret;
+        for (int i = 0; i < N; ++i) {
+            ret[i] = static_cast<T2>(mem[i]);
+		}
+		return ret;
+	}
+
+
 	template<typename T2>
 	double dot(const Vector<T2,N> &arg) const {
 		return inner_product(arg);
@@ -180,12 +191,13 @@ private:
 	T mem[N];
 };
 
-template<typename T, int N, typename EXP_T>
+template<typename T, unsigned int N, typename EXP_T>
 Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
 	return arg.pow(exponent);
 }
 
-template<typename T1,typename T2,int N> 
+/*
+template<typename T1,typename T2,unsigned int N> 
 bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { 
     bool ret = true; 
     for (int i = 0; i < N; ++i) { 
@@ -193,10 +205,11 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
     } 
     return ret; 
 } 
+*/
 
 
 #define UNARY_OPERATOR(the_op) \
-		template<typename T,int N> \
+		template<typename T,unsigned int N> \
 				Vector<double,N> operator the_op(const Vector<T,N> &arg1) { \
 					Vector<double,N> ret; \
 					for (int i = 0; i < N; ++i) { \
@@ -208,7 +221,7 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
 UNARY_OPERATOR(-)
 
 #define OPERATOR(the_op) \
-		template<typename T1,typename T2,int N> \
+		template<typename T1,typename T2,unsigned int N> \
 				Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
 					Vector<double,N> ret; \
 					for (int i = 0; i < N; ++i) { \
@@ -216,7 +229,7 @@ UNARY_OPERATOR(-)
 					} \
 					return ret; \
 				} \
-				template<typename T1,typename T2,int N> \
+				template<typename T1,typename T2,unsigned int N> \
 								Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
 									Vector<double,N> ret; \
 									for (int i = 0; i < N; ++i) { \
@@ -224,7 +237,7 @@ UNARY_OPERATOR(-)
 									} \
 									return ret; \
 								} \
-								template<typename T1,typename T2,int N> \
+								template<typename T1,typename T2,unsigned int N> \
 												Vector<double,N> operator the_op(const T1 &arg1, const Vector<T2,N> &arg2) { \
 													Vector<double,N> ret; \
 													for (int i = 0; i < N; ++i) { \
@@ -233,7 +246,7 @@ UNARY_OPERATOR(-)
 													return ret; \
 												} \
  \
-		template<int,int,int N> \
+		template<int,int,unsigned int N> \
 		Vector<int,N> operator the_op(const Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
 			Vector<int,N> ret; \
 			for (int i = 0; i < N; ++i) { \
@@ -241,7 +254,7 @@ UNARY_OPERATOR(-)
 			} \
 			return ret; \
 		} \
-		template<int,int,int N> \
+		template<int,int,unsigned int N> \
 				Vector<int,N> operator the_op(const int &arg1, const Vector<int,N> &arg2) { \
 					Vector<int,N> ret; \
 					for (int i = 0; i < N; ++i) { \
@@ -249,7 +262,7 @@ UNARY_OPERATOR(-)
 					} \
 					return ret; \
 				} \
-				template<int,int,int N> \
+				template<int,int,unsigned int N> \
 						Vector<int,N> operator the_op(const Vector<int,N> &arg1, const int &arg2) { \
 							Vector<int,N> ret; \
 							for (int i = 0; i < N; ++i) { \
@@ -265,7 +278,7 @@ OPERATOR(/)
 OPERATOR(*)
 
 #define COMPARISON(the_op) \
-		template<typename T1,typename T2,int N> \
+		template<typename T1,typename T2,unsigned int N> \
 				Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
 					Vector<bool,N> ret; \
 					for (int i = 0; i < N; ++i) { \
@@ -273,7 +286,7 @@ OPERATOR(*)
 					} \
 					return ret; \
 				} \
-				template<typename T1,typename T2,int N> \
+				template<typename T1,typename T2,unsigned int N> \
 								Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
 									Vector<bool,N> ret; \
 									for (int i = 0; i < N; ++i) { \
@@ -281,7 +294,7 @@ OPERATOR(*)
 									} \
 									return ret; \
 								} \
-								template<typename T1,typename T2,int N> \
+								template<typename T1,typename T2,unsigned int N> \
 																Vector<bool,N> operator the_op(const T1 &arg1, const T2 &arg2) { \
 																	Vector<bool,N> ret; \
 																	for (int i = 0; i < N; ++i) { \
@@ -294,16 +307,17 @@ COMPARISON(>)
 COMPARISON(<)
 COMPARISON(<=)
 COMPARISON(>=)
+COMPARISON(==)
 
 #define COMPOUND_ASSIGN(the_op) \
-		template<typename T1,typename T2,int N> \
+		template<typename T1,typename T2,unsigned int N> \
 				Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
 					for (int i = 0; i < N; ++i) { \
 						arg1[i] the_op arg2[i]; \
 					} \
 					return arg1; \
 				} \
-				template<typename T1,typename T2,int N> \
+				template<typename T1,typename T2,unsigned int N> \
 								Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const T2 &arg2) { \
 									for (int i = 0; i < N; ++i) { \
 										arg1[i] the_op arg2; \
@@ -311,14 +325,14 @@ COMPARISON(>=)
 									return arg1; \
 								} \
  \
-		template<int,int,int N> \
+		template<int,int,unsigned int N> \
 		Vector<int,N> &operator the_op(Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
 			for (int i = 0; i < N; ++i) { \
 				arg1[i] the_op arg2[i]; \
 			} \
 			return arg1; \
 		} \
-				template<int,int,int N> \
+				template<int,int,unsigned int N> \
 						Vector<int,N> &operator the_op(Vector<int,N> &arg1, const int &arg2) { \
 							for (int i = 0; i < N; ++i) { \
 								arg1[i] the_op arg2; \
@@ -333,12 +347,12 @@ COMPOUND_ASSIGN(*=)
 COMPOUND_ASSIGN(/=)
 
 #define UFUNC(the_op) \
-	template<typename T> \
-	Vector<T,3> the_op(const Vector<T,3> &arg1) { \
-		Vector<T,3> ret; \
-		ret[0] = std::the_op(arg1[0]); \
-		ret[1] = std::the_op(arg1[1]); \
-		ret[2] = std::the_op(arg1[2]); \
+	template<typename T,unsigned int N> \
+	Vector<T,N> the_op(const Vector<T,N> &arg1) { \
+		Vector<T,N> ret; \
+	    for (int i = 0; i < N; ++i) { \
+		    ret[i] = std::the_op(arg1[i]); \
+        }  \
 		return ret; \
 	} \
 
@@ -375,7 +389,7 @@ Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
 
 
 
-template<typename T,int N>
+template<typename T,unsigned int N>
 std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 	out << "(";
 	for (int i = 0; i < N; ++i) {
@@ -385,7 +399,7 @@ std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 	return out << ")";
 }
 
-template<typename T,int N>
+template<typename T,unsigned int N>
 std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     out.get();
 	for (int i = 0; i < N; ++i) {
@@ -395,12 +409,30 @@ std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     return out;
 }
 
-typedef Vector<double,3> Vect3d;
-typedef Vector<int,3> Vect3i;
-typedef Vector<int,6> Vect6i;
-typedef Vector<bool,3> Vect3b;
-typedef Vector<double,2> Vect2d;
-typedef Vector<int,2> Array2i;
+typedef Vector<double,1> double1;
+typedef Vector<double,2> double2;
+typedef Vector<double,3> double3;
+typedef Vector<double,4> double4;
+typedef Vector<double,5> double5;
+typedef Vector<double,6> double6;
+typedef Vector<double,7> double7;
+
+typedef Vector<int,1> int1;
+typedef Vector<int,2> int2;
+typedef Vector<int,3> int3;
+typedef Vector<int,4> int4;
+typedef Vector<int,5> int5;
+typedef Vector<int,6> int6;
+typedef Vector<int,7> int7;
+
+typedef Vector<bool,1> bool1;
+typedef Vector<bool,2> bool2;
+typedef Vector<bool,3> bool3;
+typedef Vector<bool,4> bool4;
+typedef Vector<bool,5> bool5;
+typedef Vector<bool,6> bool6;
+typedef Vector<bool,7> bool7;
+
 
 
 }
