@@ -4,9 +4,8 @@
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/6aimud6e8tvxfwgm?svg=true)](https://ci.appveyor.com/project/martinjrobins/aboria)
 -->
 
-UPDATE (12/07/2016): The next release of Aboria is currently being documented 
-and tested in the `version2` branch. It will be merged in the next few weeks. 
-This release:
+UPDATE (22/07/2016): The next release of Aboria (0.2) has been merged to the 
+`master` branch. This release:
 * reworks the internal storage of the container class to model a set of zipped 
   vectors. Currently uses `std::vector`s, but other vector types will be added 
   in the future (e.g. CUDA Thrust vectors) using a Traits pattern.
