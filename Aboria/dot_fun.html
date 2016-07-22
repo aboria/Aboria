@@ -3,9 +3,9 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Struct dot_fun</title>
 <link rel="stylesheet" href="../boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.1">
-<link rel="up" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Functions_h" title="Header &lt;/home/mrobins/git/Aboria/src/Functions.h&gt;">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Functions_h" title="Header &lt;/home/mrobins/git/Aboria/src/Functions.h&gt;">
 <link rel="prev" href="DataVector.html" title="Class template DataVector">
 <link rel="next" href="exp_fun.html" title="Struct exp_fun">
 </head>
@@ -13,7 +13,7 @@
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="DataVector.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="exp_fun.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="DataVector.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="exp_fun.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.dot_fun"></a><div class="titlepage"></div>
@@ -22,32 +22,35 @@
 <p>Aboria::dot_fun</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Functions_h" title="Header &lt;/home/mrobins/git/Aboria/src/Functions.h&gt;">/home/mrobins/git/Aboria/src/Functions.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Functions_h" title="Header &lt;/home/mrobins/git/Aboria/src/Functions.h&gt;">/home/mrobins/git/Aboria/src/Functions.h</a>&gt;
 
 </span>
 <span class="keyword">struct</span> <a class="link" href="dot_fun.html" title="Struct dot_fun">dot_fun</a> <span class="special">{</span>
   <span class="comment">// types</span>
   <span class="keyword">typedef</span> <span class="keyword">double</span> <a name="Aboria.dot_fun.result_type"></a><span class="identifier">result_type</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="dot_fun.html#idm46525235324320-bb">public member functions</a></span>
-  <span class="identifier">result_type</span> <a class="link" href="dot_fun.html#idm46525235323824-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="dot_fun.html#idm45113688751984-bb">public member functions</a></span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> N<span class="special">&gt;</span> 
+    <span class="identifier">result_type</span> <a class="link" href="dot_fun.html#idm45113688751424-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45846301385200"></a><h2>Description</h2>
+<a name="idm45138571335760"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45846301384784"></a><h3>
-<a name="idm46525235324320-bb"></a><code class="computeroutput">dot_fun</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">result_type</span> <a name="idm46525235323824-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> vector1<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> vector2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+<a name="idm45138571335344"></a><h3>
+<a name="idm45113688751984-bb"></a><code class="computeroutput">dot_fun</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> N<span class="special">&gt;</span> 
+  <span class="identifier">result_type</span> <a name="idm45113688751424-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> vector1<span class="special">,</span> 
+                         <span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> vector2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Martin Robinson</div></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="DataVector.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="exp_fun.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="DataVector.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="exp_fun.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

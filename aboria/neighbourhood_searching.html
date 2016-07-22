@@ -1,0 +1,94 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Neighbourhood Searching</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index.html" title="Aboria 0.2">
+<link rel="prev" href="particle_container.html" title="Particle Container">
+<link rel="next" href="symbolic_expressions.html" title="Symbolic Expressions">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="particle_container.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="symbolic_expressions.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.neighbourhood_searching"></a><a class="link" href="neighbourhood_searching.html" title="Neighbourhood Searching">Neighbourhood Searching</a>
+</h2></div></div></div>
+<p>
+      The <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> container
+      gives you neighbourhood searching functionality, using a simple bucket-search
+      approach. The domain is divided into a regular grid of hypercubes with side
+      length equal to a lengthscale that is supplied by the user. Each particle in
+      the container is assigned to the cell that contains its position. Neighbourhood
+      search queries at a given point return all the particles within the cell that
+      contains this point and the immediate cell neighbours.
+    </p>
+<p>
+      Before you can use the neighbourhood searching, you need to initialise the
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45113688213184-bb">Aboria::Particles::init_neighbour_search</a></code>
+      function
+    </p>
+<pre class="programlisting"><span class="identifier">double2</span> <span class="identifier">min</span><span class="special">(-</span><span class="number">1</span><span class="special">,-</span><span class="number">1</span><span class="special">);</span>
+<span class="identifier">double2</span> <span class="identifier">max</span><span class="special">(</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
+<span class="identifier">bool2</span> <span class="identifier">periodic</span><span class="special">(</span><span class="keyword">true</span><span class="special">,</span><span class="keyword">true</span><span class="special">);</span>
+<span class="keyword">double</span> <span class="identifier">diameter</span> <span class="special">=</span> <span class="number">0.1</span><span class="special">;</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">min</span><span class="special">,</span><span class="identifier">max</span><span class="special">,</span><span class="identifier">diameter</span><span class="special">,</span><span class="identifier">periodic</span><span class="special">);</span>
+</pre>
+<p>
+      Here <code class="computeroutput"><span class="identifier">diameter</span></code> is the lengthscale
+      of the neighbourhood search. That is, any particles that are separated by more
+      than <code class="computeroutput"><span class="identifier">diameter</span></code> might not be
+      classified as neighbours.
+    </p>
+<p>
+      Once this is done you can begin using the neighbourhood search queries using
+      the <code class="computeroutput"><span class="identifier">get_neighbours</span></code> function.
+      This returns a lightweight container with <code class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> functions that return <code class="computeroutput"><span class="keyword">const</span></code>
+      forward only iterators to the particles that satisfy the neighbour search.
+      For example, the following counts all the particles within a square domain
+      of side length <code class="computeroutput"><span class="identifier">diameter</span></code> of
+      the point (0,0)
+    </p>
+<pre class="programlisting"><span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_neighbours</span><span class="special">(</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+   <span class="identifier">count</span><span class="special">++;</span>
+<span class="special">}</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"There are "</span><span class="special">&lt;&lt;</span> <span class="identifier">count</span> <span class="special">&lt;&lt;</span> <span class="string">" particles.\n"</span><span class="special">;</span>
+</pre>
+<p>
+      When dereferenced, the neighbourhood iterator returns a tuple of size 2 containing
+    </p>
+<p>
+      1. The found particle object 2. $dx$, a vector pointing to the query point
+      from the found point. I.e. if $x_a$ is the query point and $x_b$ is the found
+      point, then $dx = x_a - x_b$.
+    </p>
+<p>
+      The latter is useful for periodic domains, the returned vector $dx$ takes periodic
+      domains into account and returns the $dx$ with the smallest length.
+    </p>
+<p>
+      For example,
+    </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_neighbours</span><span class="special">(</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+   <span class="keyword">const</span> <span class="identifier">MyParticle</span><span class="special">&amp;</span> <span class="identifier">b</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">0</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
+   <span class="keyword">const</span> <span class="identifier">double2</span><span class="special">&amp;</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">1</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
+   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Found a particle with dx = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">dx</span> <span class="special">&lt;&lt;</span> <span class="string">" and id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">b</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="particle_container.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="symbolic_expressions.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

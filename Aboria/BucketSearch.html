@@ -3,28 +3,28 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Class template BucketSearch</title>
 <link rel="stylesheet" href="../boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.1">
-<link rel="up" href="../index/s05.html#header..home.mrobins.git.Aboria.src.BucketSearch_h" title="Header &lt;/home/mrobins/git/Aboria/src/BucketSearch.h&gt;">
-<link rel="prev" href="../index/s05.html" title="Reference">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index/s10.html#header..home.mrobins.git.Aboria.src.BucketSearchParallel_h" title="Header &lt;/home/mrobins/git/Aboria/src/BucketSearchParallel.h&gt;">
+<link rel="prev" href="../EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET_idm45113699148144.html" title="Macro EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET">
 <link rel="next" href="BucketSearch/const_iterator.html" title="Class const_iterator">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../index/s05.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.BucketSearch_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="BucketSearch/const_iterator.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET_idm45113699148144.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="BucketSearch/const_iterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.BucketSearch"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Class template BucketSearch</span></h2>
-<p>Aboria::BucketSearch &#8212; Implements neighbourhood searching using a bucket search algorithm, dividing the domain into constant size "buckets". </p>
+<p>Aboria::BucketSearch</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s05.html#header..home.mrobins.git.Aboria.src.BucketSearch_h" title="Header &lt;/home/mrobins/git/Aboria/src/BucketSearch.h&gt;">/home/mrobins/git/Aboria/src/BucketSearch.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.mrobins.git.Aboria.src.BucketSearchParallel_h" title="Header &lt;/home/mrobins/git/Aboria/src/BucketSearchParallel.h&gt;">/home/mrobins/git/Aboria/src/BucketSearchParallel.h</a>&gt;
 
-</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">typename</span> F<span class="special">&gt;</span> 
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> traits<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="BucketSearch.html" title="Class template BucketSearch">BucketSearch</a> <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// member classes/structs/unions</span>
@@ -32,364 +32,125 @@
   <span class="keyword">class</span> <a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <span class="special">{</span>
   <span class="keyword">public</span><span class="special">:</span>
     <span class="comment">// types</span>
-    <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">T</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> <span class="special">&gt;</span> <span class="special">*</span> <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.pointer"><span class="identifier">pointer</span></a><span class="special">;</span>          
+    <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="identifier">particles_value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <span class="special">&gt;</span> <span class="special">*</span> <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.pointer"><span class="identifier">pointer</span></a><span class="special">;</span>          
     <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">forward_iterator_tag</span>                                            <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.iterator_category"><span class="identifier">iterator_category</span></a><span class="special">;</span>
-    <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">T</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> <span class="special">&gt;</span>   <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.value_type"><span class="identifier">value_type</span></a><span class="special">;</span>       
-    <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">T</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> <span class="special">&gt;</span>   <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.reference"><span class="identifier">reference</span></a><span class="special">;</span>        
+    <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="identifier">particles_reference_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <span class="special">&gt;</span>       <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.reference"><span class="identifier">reference</span></a><span class="special">;</span>        
+    <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="identifier">particles_reference_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <span class="special">&gt;</span>       <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.value_type"><span class="identifier">value_type</span></a><span class="special">;</span>       
     <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>                                                       <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iterator.difference_type"><span class="identifier">difference_type</span></a><span class="special">;</span>  
 
     <span class="comment">// <a class="link" href="BucketSearch/const_iterator.html#Aboria.BucketSearch.const_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="BucketSearch/const_iterator.html#idm46525241585936-bb"><span class="identifier">const_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-    <span class="keyword">explicit</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241585392-bb"><span class="identifier">const_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="BucketSearch.html" title="Class template BucketSearch">BucketSearch</a> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span><span class="special">,</span> 
-                            <span class="keyword">const</span> <span class="keyword">int</span> <span class="special">=</span> <span class="special">-</span><span class="number">1</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="BucketSearch/const_iterator.html#idm45113699122256-bb"><span class="identifier">const_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">BucketSearch</span><span class="special">&lt;</span> <span class="identifier">traits</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="BucketSearch/const_iterator.html#idm45113699121264-bb"><span class="identifier">const_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">BucketSearch</span><span class="special">&lt;</span> <span class="identifier">traits</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="BucketSearch/const_iterator.html#idm46525241597904-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241597344-bb"><span class="identifier">go_to_next_candidate</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-    <span class="identifier">reference</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241596496-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-    <span class="identifier">reference</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241595648-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-    <a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <span class="special">&amp;</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241594800-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-    <a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <a class="link" href="BucketSearch/const_iterator.html#idm46525241593664-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-    <span class="identifier">size_t</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241592000-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241590064-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241588080-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="BucketSearch/const_iterator.html#idm45113699140320-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699139760-bb"><span class="identifier">add_range</span></a><span class="special">(</span><span class="identifier">particles_iterator</span><span class="special">,</span> <span class="identifier">particles_iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699136848-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">const_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="identifier">reference</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699135040-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699133920-bb"><span class="identifier">go_to_next_candidate</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699133072-bb"><span class="identifier">check_candidate</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">void</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699132224-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+    <span class="identifier">reference</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699131376-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+    <span class="identifier">reference</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699130528-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+    <span class="identifier">const_iterator</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699129680-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+    <span class="identifier">const_iterator</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699128832-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <span class="identifier">size_t</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699127296-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><span class="identifier">const_iterator</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699125488-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">const_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm45113699123952-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">const_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="BucketSearch/const_iterator.html#idm46525241578112-bb">private member functions</a></span>
-    <span class="keyword">bool</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241577536-bb"><span class="identifier">equal</span></a><span class="special">(</span><a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-    <span class="keyword">void</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241575440-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-    <span class="identifier">reference</span> <a class="link" href="BucketSearch/const_iterator.html#idm46525241574592-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">struct</span> <a class="link" href="BucketSearch/point_to_bucket_index.html" title="Struct point_to_bucket_index">point_to_bucket_index</a> <span class="special">{</span>
+    <span class="comment">// <a class="link" href="BucketSearch/point_to_bucket_index.html#Aboria.BucketSearch.point_to_bucket_indexconstruct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="BucketSearch/point_to_bucket_index.html#idm45113688805168-bb"><span class="identifier">point_to_bucket_index</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">BucketSearch</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="BucketSearch/point_to_bucket_index.html#idm45113688807552-bb">public member functions</a></span>
+    <span class="identifier">__host__</span> <span class="identifier">__device__</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <a class="link" href="BucketSearch/point_to_bucket_index.html#idm45113688807056-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+    <span class="comment">// public data members</span>
+    <span class="keyword">const</span> <span class="identifier">BucketSearch</span> <span class="special">&amp;</span> <span class="identifier">bs</span><span class="special">;</span>
   <span class="special">}</span><span class="special">;</span>
   <span class="comment">// <a class="link" href="BucketSearch.html#Aboria.BucketSearchconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="BucketSearch.html#idm46525235352848-bb"><span class="identifier">BucketSearch</span></a><span class="special">(</span><span class="identifier">Vect3d</span><span class="special">,</span> <span class="identifier">Vect3d</span><span class="special">,</span> <span class="identifier">Vect3b</span><span class="special">,</span> <span class="identifier">F</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="BucketSearch.html#idm45113688784784-bb"><span class="identifier">BucketSearch</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="BucketSearch.html#idm46525241573312-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525241572752-bb"><span class="identifier">reset</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3b</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch.html#idm46525241567088-bb"><span class="identifier">get_low</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch.html#idm46525235392224-bb"><span class="identifier">get_high</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">Vect3b</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch.html#idm46525235391344-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="keyword">double</span> <a class="link" href="BucketSearch.html#idm46525235390352-bb"><span class="identifier">get_lengthscale</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235389360-bb"><span class="identifier">embed_points</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235385024-bb"><span class="identifier">embed_points_incremental</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235380656-bb"><span class="identifier">update_begin_and_end</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235377920-bb"><span class="identifier">add_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235375632-bb"><span class="identifier">untrack_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235373152-bb"><span class="identifier">delete_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235370832-bb"><span class="identifier">update_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm46525235368560-bb"><span class="identifier">copy_points</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> 
-  <a class="link" href="BucketSearch.html#idm46525235365280-bb"><span class="identifier">find_broadphase_neighbours</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <a class="link" href="BucketSearch.html#idm46525235361120-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">Vect3d</span> <a class="link" href="BucketSearch.html#idm46525235359456-bb"><span class="identifier">correct_position_for_periodicity</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">Vect3d</span> <a class="link" href="BucketSearch.html#idm46525235355488-bb"><span class="identifier">correct_position_for_periodicity</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="BucketSearch.html#idm45113688804192-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm45113688803632-bb"><span class="identifier">embed_points</span></a><span class="special">(</span><span class="identifier">particles_iterator</span><span class="special">,</span> <span class="identifier">particles_iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm45113688801408-bb"><span class="identifier">add_points_at_end</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">particles_iterator</span> <span class="special">&amp;</span><span class="special">,</span> 
+                         <span class="keyword">const</span> <span class="identifier">particles_iterator</span> <span class="special">&amp;</span><span class="special">,</span> 
+                         <span class="keyword">const</span> <span class="identifier">particles_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">const_iterator</span> 
+  <a class="link" href="BucketSearch.html#idm45113688798448-bb"><span class="identifier">find_broadphase_neighbours</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">const_iterator</span> <a class="link" href="BucketSearch.html#idm45113688794144-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm45113688793024-bb"><span class="identifier">set_domain</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">,</span> 
+                  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch.html#idm45113688789424-bb"><span class="identifier">get_min</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch.html#idm45113688788304-bb"><span class="identifier">get_max</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch.html#idm45113688787184-bb"><span class="identifier">get_side_length</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="BucketSearch.html#idm45113688786064-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="BucketSearch.html#idm46525235348064-bb">private member functions</a></span>
-  <span class="keyword">int</span> <a class="link" href="BucketSearch.html#idm46525235347568-bb"><span class="identifier">vect_to_index</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3i</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">int</span> <a class="link" href="BucketSearch.html#idm46525235345952-bb"><span class="identifier">find_cell_index</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="BucketSearch.html#idm45113688784496-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm45113688783920-bb"><span class="identifier">build_buckets</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm45113688783072-bb"><span class="identifier">build_bucket_indices</span></a><span class="special">(</span><span class="identifier">vector_double_d_const_iterator</span><span class="special">,</span> 
+                            <span class="identifier">vector_double_d_const_iterator</span><span class="special">,</span> 
+                            <span class="identifier">vector_unsigned_int_iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="BucketSearch.html#idm45113688780112-bb"><span class="identifier">sort_by_bucket_index</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">unsigned</span> <span class="keyword">int</span> <a class="link" href="BucketSearch.html#idm45113688779264-bb"><span class="identifier">collapse_index_vector</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">unsigned_int_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">unsigned_int_d</span> <a class="link" href="BucketSearch.html#idm45113688777456-bb"><span class="identifier">find_bucket_index_vector</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">unsigned</span> <span class="keyword">int</span> <a class="link" href="BucketSearch.html#idm45113688775632-bb"><span class="identifier">find_bucket_index</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45846302073808"></a><h2>Description</h2>
-<p>This class implements neighbourhood searching using a bucket search algorithm. The domain is first divided up into a regular grid of constant size "buckets", either by using the class constructor to initialise the domain extents, bucket size etc., or by using the reset() member function to reset these parameters.</p>
-<p>After the buckets are created, a set of 3D points can be assigned to their respective buckets using the embed_points() member function. After this, neighbourhood queries around a given point can be performed using find_broadphase_neighbours(), which returns a const iterator to all the points in the same bucket or surrounding buckets of the given point. </p>
+<a name="idm45138572055744"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45846302072208"></a><h3>
+<a name="idm45138572055328"></a><h3>
 <a name="Aboria.BucketSearchconstruct-copy-destruct"></a><code class="computeroutput">BucketSearch</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><a name="idm46525235352848-bb"></a><span class="identifier">BucketSearch</span><span class="special">(</span><span class="identifier">Vect3d</span> low<span class="special">,</span> <span class="identifier">Vect3d</span> high<span class="special">,</span> <span class="identifier">Vect3b</span> periodic<span class="special">,</span> <span class="identifier">F</span> return_vect3d<span class="special">)</span><span class="special">;</span></pre>
-<p>This constructor sets the domain extents and their periodicity 
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody>
-<tr>
-<td><p><span class="term"><code class="computeroutput">high</code></span></p></td>
-<td><p>the upper extent of the search domain </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">low</code></span></p></td>
-<td><p>the lower extent of the search domain </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">periodic</code></span></p></td>
-<td><p>a boolean vector indicating wether each dimension is periodic or not. </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">return_vect3d</code></span></p></td>
-<td><p>a function that takes a value_type representing a particle in 3D space and returns its position </p></td>
-</tr>
-</tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idm45113688784784-bb"></a><span class="identifier">BucketSearch</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45846302056000"></a><h3>
-<a name="idm46525241573312-bb"></a><code class="computeroutput">BucketSearch</code> public member functions</h3>
+<a name="idm45138572048944"></a><h3>
+<a name="idm45113688804192-bb"></a><code class="computeroutput">BucketSearch</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45113688803632-bb"></a><span class="identifier">embed_points</span><span class="special">(</span><span class="identifier">particles_iterator</span> begin<span class="special">,</span> <span class="identifier">particles_iterator</span> end<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45113688801408-bb"></a><span class="identifier">add_points_at_end</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">particles_iterator</span> <span class="special">&amp;</span> begin<span class="special">,</span> 
+                       <span class="keyword">const</span> <span class="identifier">particles_iterator</span> <span class="special">&amp;</span> start_adding<span class="special">,</span> 
+                       <span class="keyword">const</span> <span class="identifier">particles_iterator</span> <span class="special">&amp;</span> end<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525241572752-bb"></a><span class="identifier">reset</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> low<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> high<span class="special">,</span> 
-           <span class="keyword">double</span> _max_interaction_radius<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Vect3b</span> <span class="special">&amp;</span> periodic<span class="special">)</span><span class="special">;</span></pre>
-<p>resets the domain extents, periodicity and bucket size 
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody>
-<tr>
-<td><p><span class="term"><code class="computeroutput">_max_interaction_radius</code></span></p></td>
-<td><p>the side length of each bucket </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">high</code></span></p></td>
-<td><p>the upper extent of the search domain </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">low</code></span></p></td>
-<td><p>the lower extent of the search domain </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">periodic</code></span></p></td>
-<td><p>a boolean vector indicating wether each dimension </p></td>
-</tr>
-</tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> <a name="idm46525241567088-bb"></a><span class="identifier">get_low</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> <a name="idm46525235392224-bb"></a><span class="identifier">get_high</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">Vect3b</span> <span class="special">&amp;</span> <a name="idm46525235391344-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="keyword">double</span> <a name="idm46525235390352-bb"></a><span class="identifier">get_lengthscale</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235389360-bb"></a><span class="identifier">embed_points</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> begin_iterator<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> end_iterator<span class="special">)</span><span class="special">;</span></pre>
-<p>embed a set of points into the buckets, assigning each 3D point into the bucket that contains that point. Any points already assigned to the buckets are removed. 
-</p>
-<p><span class="bold"><strong>See Also:</strong></span></p>
-<p>embed_points_incremental() </p>
-<p>
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody>
-<tr>
-<td><p><span class="term"><code class="computeroutput">begin_iterator</code></span></p></td>
-<td><p>an iterator to the beginning of the set of points </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">end_iterator</code></span></p></td>
-<td><p>an iterator to the end of the set of points </p></td>
-</tr>
-</tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235385024-bb"></a><span class="identifier">embed_points_incremental</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> begin_iterator<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> end_iterator<span class="special">)</span><span class="special">;</span></pre>
-<p>embed a set of points into the buckets, assigning each 3D point into the bucket that contains that point. The primary difference to embed_points() is that any existing points are kept 
-</p>
-<p><span class="bold"><strong>See Also:</strong></span></p>
-<p>embed_points() </p>
-<p>
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody>
-<tr>
-<td><p><span class="term"><code class="computeroutput">begin_iterator</code></span></p></td>
-<td><p>an iterator to the beginning of the set of points </p></td>
-</tr>
-<tr>
-<td><p><span class="term"><code class="computeroutput">end_iterator</code></span></p></td>
-<td><p>an iterator to the end of the set of points </p></td>
-</tr>
-</tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235380656-bb"></a><span class="identifier">update_begin_and_end</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> begin_iterator<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> end_iterator<span class="special">)</span><span class="special">;</span></pre>
-<p>This class keeps track of the searchable particles through begin and end iterators to a STL-compatible container. If these need to be updated (for example if the memory allocation is changed) this function can be used to update them. Note that if the ordering of the particles changes then the particles will need to be embedded again </p>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235377920-bb"></a><span class="identifier">add_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> point_to_add<span class="special">)</span><span class="special">;</span></pre>
-<p>add a singular point to the buckets. Note that it is assumed that this is also added to the end of the container holding the points 
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term"><code class="computeroutput">point_to_add</code></span></p></td>
-<td><p>an iterator pointing to the point to add </p></td>
-</tr></tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235375632-bb"></a><span class="identifier">untrack_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> untrack_iterator<span class="special">)</span><span class="special">;</span></pre>
-<p>remove a point from the buckets, so it will not occur in neighbourhood queries. If you wish to delete a point entirely (i.e. in the original point container), you need to use delete_point() 
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term"><code class="computeroutput">untrack_iterator</code></span></p></td>
-<td><p>an iterator pointing to the point to remove. Note that this iterator should be between begin_iterator and end_iterator </p></td>
-</tr></tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235373152-bb"></a><span class="identifier">delete_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> untrack_iterator<span class="special">)</span><span class="special">;</span></pre>
-<p>delete a point from the buckets and pop it off the linked list, so it will not occur in neighbourhood queries. Note that this point must be at (end_iterator-1), 
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term"><code class="computeroutput">untrack_iterator</code></span></p></td>
-<td><p>an iterator pointing to the point to delete. Note should be == (end_iterator-1) </p></td>
-</tr></tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235370832-bb"></a><span class="identifier">update_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> untrack_iterator<span class="special">)</span><span class="special">;</span></pre>
-<p>update the bucket for a specified point (if it has changed position sufficiently) 
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term"><code class="computeroutput">untrack_iterator</code></span></p></td>
-<td><p>an iterator pointing to the point to remove. Note that this iterator should be between begin_iterator and end_iterator </p></td>
-</tr></tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm46525235368560-bb"></a><span class="identifier">copy_points</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> copy_to_iterator<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> copy_from_iterator<span class="special">)</span><span class="special">;</span></pre>
-<p>If a point is copied from <code class="computeroutput">copy_from_iterator</code> to <code class="computeroutput">copy_to_iterator</code> in the point container, then this function can be used to still keep the bucketsearch data structures correct </p>
-</li>
-<li class="listitem">
-<pre class="literallayout"><a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> 
-<a name="idm46525235365280-bb"></a><span class="identifier">find_broadphase_neighbours</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> r<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span> my_index<span class="special">,</span> 
+<pre class="literallayout"><span class="identifier">const_iterator</span> 
+<a name="idm45113688798448-bb"></a><span class="identifier">find_broadphase_neighbours</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> r<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span> my_index<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">bool</span> self<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>return a const forward iterator to all the points in the neighbourhood of <code class="computeroutput">r</code>. If this function is being used to find all the point pairs within the same point container, then a naive looping through and using find_broadphase_neighbours() will find each pair twice. This can be avoided by setting self=true and supplying the index of each point with my_index </p>
 </li>
-<li class="listitem">
-<pre class="literallayout"><a class="link" href="BucketSearch/const_iterator.html" title="Class const_iterator">const_iterator</a> <a name="idm46525235361120-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
-<p>return an end() iterator to compare against the result of find_broadphase_neighbours in order to determine the end of the neighbour list </p>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="identifier">Vect3d</span> <a name="idm46525235359456-bb"></a><span class="identifier">correct_position_for_periodicity</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> source_r<span class="special">,</span> 
-                                        <span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> to_correct_r<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
-<p>in periodic domains a point pair can have multiple separations, but what is normally required for neighbourhood searches is the minimum separation. This function corrects <code class="computeroutput">to_correct_r</code> in relation to <code class="computeroutput">source_r</code> so that it is closest to <code class="computeroutput">source</code> r </p>
-</li>
-<li class="listitem">
-<pre class="literallayout"><span class="identifier">Vect3d</span> <a name="idm46525235355488-bb"></a><span class="identifier">correct_position_for_periodicity</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> to_correct_r<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
-<p>this function corrects the position of <code class="computeroutput">to_correct_r</code> so that it is within the extents of a periodic domain. If the domain is not periodic the Vect3d is unchanged </p>
-</li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">const_iterator</span> <a name="idm45113688794144-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45113688793024-bb"></a><span class="identifier">set_domain</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> min_in<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> max_in<span class="special">,</span> 
+                <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> periodic_in<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> side_length<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idm45113688789424-bb"></a><span class="identifier">get_min</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idm45113688788304-bb"></a><span class="identifier">get_max</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idm45113688787184-bb"></a><span class="identifier">get_side_length</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idm45113688786064-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45846301905584"></a><h3>
-<a name="idm46525235348064-bb"></a><code class="computeroutput">BucketSearch</code> private member functions</h3>
+<a name="idm45138571971280"></a><h3>
+<a name="idm45113688784496-bb"></a><code class="computeroutput">BucketSearch</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">int</span> <a name="idm46525235347568-bb"></a><span class="identifier">vect_to_index</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3i</span> <span class="special">&amp;</span> vect<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">int</span> <a name="idm46525235345952-bb"></a><span class="identifier">find_cell_index</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Vect3d</span> <span class="special">&amp;</span> r<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45113688783920-bb"></a><span class="identifier">build_buckets</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45113688783072-bb"></a><span class="identifier">build_bucket_indices</span><span class="special">(</span><span class="identifier">vector_double_d_const_iterator</span> positions_begin<span class="special">,</span> 
+                          <span class="identifier">vector_double_d_const_iterator</span> positions_end<span class="special">,</span> 
+                          <span class="identifier">vector_unsigned_int_iterator</span> bucket_indices_begin<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45113688780112-bb"></a><span class="identifier">sort_by_bucket_index</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">unsigned</span> <span class="keyword">int</span> <a name="idm45113688779264-bb"></a><span class="identifier">collapse_index_vector</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">unsigned_int_d</span> <span class="special">&amp;</span> vindex<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">unsigned_int_d</span> <a name="idm45113688777456-bb"></a><span class="identifier">find_bucket_index_vector</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> r<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">unsigned</span> <span class="keyword">int</span> <a name="idm45113688775632-bb"></a><span class="identifier">find_bucket_index</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> r<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2015 Martin Robinson</div></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../index/s05.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s05.html#header..home.mrobins.git.Aboria.src.BucketSearch_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="BucketSearch/const_iterator.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET_idm45113699148144.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="BucketSearch/const_iterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

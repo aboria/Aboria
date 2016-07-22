@@ -1,0 +1,281 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Particle Container</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index.html" title="Aboria 0.2">
+<link rel="prev" href="continuous_integration.html" title="Continuous Integration">
+<link rel="next" href="neighbourhood_searching.html" title="Neighbourhood Searching">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="continuous_integration.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="neighbourhood_searching.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.particle_container"></a><a class="link" href="particle_container.html" title="Particle Container">Particle Container</a>
+</h2></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.creating_new_particles">Creating
+      new particles</a></span></dt>
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.multidimensional_data_types">Multidimensional
+      Data Types</a></span></dt>
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.particle_objects">Particle
+      Objects</a></span></dt>
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.looping_through_the_container">Looping
+      through the container</a></span></dt>
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.internal_data_for_variables">Internal
+      Data for Variables</a></span></dt>
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.particle_s_value_type_versus_ref">Particle's
+      <code class="computeroutput"><span class="identifier">value_type</span></code> versus <code class="computeroutput"><span class="identifier">reference</span></code></a></span></dt>
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.important_differences_from_stl_c">Important
+      differences from STL containers</a></span></dt>
+</dl></div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.particle_container.creating_new_particles"></a><a class="link" href="particle_container.html#aboria.particle_container.creating_new_particles" title="Creating new particles">Creating
+      new particles</a>
+</h3></div></div></div>
+<p>
+        The main particles data-structure, or container, is called <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code>.
+        It is templated using a tuple of variable types, explained below. For example,
+        the following creates a set of particles which each have (along with the
+        standard variables such as position, id etc) a data package consisting of
+        one double variable type named scalar.
+      </p>
+<pre class="programlisting"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
+
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">scalar</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"my scalar"</span><span class="special">)</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;&gt;</span> <span class="identifier">MyParticles</span><span class="special">;</span>
+<span class="identifier">MyParticles</span> <span class="identifier">particles</span><span class="special">();</span>
+</pre>
+<p>
+        If you wanted each particle to have a potential variable held as a <code class="computeroutput"><span class="keyword">double</span></code>, as well as a velocity variable held
+        as a <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.double3">Aboria::double3</a></code> vector
+        class, then you would write the following
+      </p>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">potential</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"potential energy"</span><span class="special">)</span>
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span><span class="identifier">double3</span><span class="special">,</span><span class="string">"velocity"</span><span class="special">)</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">potential</span><span class="special">,</span><span class="identifier">velocity</span><span class="special">&gt;&gt;</span> <span class="identifier">MyParticles</span><span class="special">;</span>
+<span class="identifier">MyParticles</span> <span class="identifier">particles</span><span class="special">();</span>
+</pre>
+<p>
+        Note that there is a special case for boolean variables, which must be represented
+        by an integer, rather than a boolean. This is due to the STL specialisation
+        of a boolean STL vector, which conflicts with the internal design of Aboria.
+        For example, here we can use an 8-bit unsigned integer to stand in for the
+        boolean <code class="computeroutput"><span class="identifier">flag</span></code> variable.
+      </p>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">flag</span><span class="special">,</span><span class="identifier">uint_8</span><span class="special">,</span><span class="string">"my flag variable"</span><span class="special">)</span>
+</pre>
+<p>
+        You can give the <code class="computeroutput"><span class="identifier">MyParticles</span></code>
+        constructor a single <code class="computeroutput"><span class="keyword">unsigned</span> <span class="keyword">int</span></code> argument to set the random seed for the
+        container:
+      </p>
+<pre class="programlisting"><span class="identifier">MyParticles</span> <span class="identifier">particles_with_seed</span><span class="special">(</span><span class="number">0</span><span class="special">);</span>
+</pre>
+<p>
+        To create new particles simply use the <code class="computeroutput"><span class="identifier">value_type</span></code>
+        of the container type. Each particle constructor takes a single <code class="computeroutput"><a class="link" href="../Aboria/Vector.html" title="Class template Vector">Aboria::Vector</a></code> type for the particle position.
+      </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">MyParticles</span><span class="special">::</span><span class="identifier">value_type</span> <span class="identifier">MyParticle</span><span class="special">;</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">MyParticle</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)));</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">MyParticle</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(</span><span class="number">1</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)));</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.particle_container.multidimensional_data_types"></a><a class="link" href="particle_container.html#aboria.particle_container.multidimensional_data_types" title="Multidimensional Data Types">Multidimensional
+      Data Types</a>
+</h3></div></div></div>
+<p>
+        Aboria provides an internal vector type <code class="computeroutput"><a class="link" href="../Aboria/Vector.html" title="Class template Vector">Aboria::Vector</a></code>
+        for types representing a vector of dimension <code class="computeroutput"><span class="identifier">d</span></code>.
+        <code class="computeroutput"><a class="link" href="../Aboria/Vector.html" title="Class template Vector">Aboria::Vector</a></code> is templated on
+        the type of each element and the number of dimensions:
+      </p>
+<pre class="programlisting"><span class="identifier">Vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">,</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">dim3vector</span><span class="special">;</span>
+</pre>
+<p>
+        There are a number of predefined <code class="computeroutput"><span class="keyword">double</span></code>,
+        <code class="computeroutput"><span class="keyword">int</span></code>, and <code class="computeroutput"><span class="keyword">bool</span></code>
+        vector types, up to dimension 7, and typedefed by the pattern &lt;type&gt;&lt;dim&gt;.
+        E.g. <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.double3">Aboria::double3</a></code>, <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.double6">Aboria::double6</a></code>, <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.int2">Aboria::int2</a></code>,
+        <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.bool5">Aboria::bool5</a></code>...
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.particle_container.particle_objects"></a><a class="link" href="particle_container.html#aboria.particle_container.particle_objects" title="Particle Objects">Particle
+      Objects</a>
+</h3></div></div></div>
+<p>
+        The <code class="computeroutput"><span class="identifier">value_type</span></code> of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Particles</a></code> container is a data-structure
+        representing each particle. By default each particle has a position, a unique
+        id and a boolean flag indicating if this particle is active or not. Use
+        <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position_d</span><span class="special">&lt;</span><span class="identifier">D</span><span class="special">&gt;&gt;()</span></code>
+        to access the position (where <code class="computeroutput"><span class="identifier">D</span></code>
+        is the dimension of the particle object), <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;()</span></code> for the id and <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;()</span></code> for the alive flag.
+      </p>
+<pre class="programlisting"><span class="identifier">MyParticle</span><span class="special">&amp;</span> <span class="identifier">particle</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">[</span><span class="number">0</span><span class="special">];</span>
+<span class="keyword">typedef</span> <span class="identifier">double_d</span><span class="special">&lt;</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">position</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span><span class="string">"Position = "</span><span class="special">&lt;&lt;</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)</span> <span class="special">&lt;&lt;</span>
+   <span class="string">". Id = "</span><span class="special">&lt;&lt;</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)&lt;&lt;</span> <span class="string">". Particle is "</span><span class="special">;</span>
+<span class="keyword">if</span> <span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">))</span> <span class="special">{</span>
+   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"alive. "</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">}</span> <span class="keyword">else</span> <span class="special">{</span>
+   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"dead. "</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        You can access the data by templating the <code class="computeroutput"><span class="identifier">get</span></code>
+        function with the variable type, for example
+      </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"The scalar data is "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.particle_container.looping_through_the_container"></a><a class="link" href="particle_container.html#aboria.particle_container.looping_through_the_container" title="Looping through the container">Looping
+      through the container</a>
+</h3></div></div></div>
+<p>
+        You can use the indexing operator <code class="computeroutput"><span class="identifier">Operator</span><span class="special">[]</span></code> to simply loop through the container
+      </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">size</span><span class="special">();</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
+   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">[</span><span class="identifier">i</span><span class="special">])</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Or you can use the normal STL <code class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> functions that return random access iterators
+        to the beginning and end of the container.
+      </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">();</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
+   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(*</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Or
+      </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">)</span> <span class="special">{</span>
+   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Or you can use the STL algorithm <code class="computeroutput"><span class="identifier">for_each</span></code>.
+        If you are using a GCC compiler, you can turn on the parallel mode to enable
+        this loop to be run in parallel
+      </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">for_each</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(),</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(),</span> <span class="special">[](</span><span class="identifier">MyParticle</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">});</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.particle_container.internal_data_for_variables"></a><a class="link" href="particle_container.html#aboria.particle_container.internal_data_for_variables" title="Internal Data for Variables">Internal
+      Data for Variables</a>
+</h3></div></div></div>
+<p>
+        Each variable is held internally by a STL vector <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
+        If you already have an iterator to a <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code>,
+        for example a <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.iterator">Aboria::Particles::iterator</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_iterator">Aboria::Particles::const_iterator</a></code>,
+        then you can obtain the corresponding iterator to the internal <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>
+        by using the <code class="computeroutput"><a class="link" href="../Aboria/get_idm45113688569616.html" title="Function template get">Aboria::get</a></code> function.
+        For example,
+      </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">size_t</span><span class="special">&gt;::</span><span class="identifier">iterator</span><span class="special">&amp;</span> <span class="identifier">ids</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">());</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.particle_container.particle_s_value_type_versus_ref"></a><a class="link" href="particle_container.html#aboria.particle_container.particle_s_value_type_versus_ref" title="Particle's value_type versus reference">Particle's
+      <code class="computeroutput"><span class="identifier">value_type</span></code> versus <code class="computeroutput"><span class="identifier">reference</span></code></a>
+</h3></div></div></div>
+<p>
+        When you index an individual particle using the bracket operator <code class="computeroutput"><span class="special">[]</span></code>, it returns a <code class="computeroutput"><a class="link" href="../Aboria/getter_type.html" title="Struct template getter_type">getter_type</a></code>,
+        which is essentially a tuple of references to the variables for that particle.
+        This <code class="computeroutput"><a class="link" href="../Aboria/getter_type.html" title="Struct template getter_type">getter_type</a></code> is <code class="computeroutput"><span class="keyword">typedef</span></code>-ed to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.reference">Aboria::Particles::reference</a></code>,
+        and acts as the reference type for the container. Similarly, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">value_type</a></code> for the continer
+        is also a <code class="computeroutput"><a class="link" href="../Aboria/getter_type.html" title="Struct template getter_type">Aboria::getter_type</a></code>,
+        but instead holds a tuple of values instead of references.
+      </p>
+<p>
+        Reading the above paragraph, you will note the fundamental difference from
+        normal STL containers, in that <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">value_type</a></code>&amp;
+        is <span class="bold"><strong>not the same</strong></span> as <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">reference</a></code>.
+        This is relevant when writing functors for STL algorithms, where you will
+        need to be sure if you need a <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">value_type</a></code>&amp;
+        or a <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">reference</a></code>.
+      </p>
+<p>
+        For example, the <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">sort</span></code> algorithm internally stores a <code class="computeroutput"><span class="identifier">value_type</span></code> of an element which is used
+        in the comparison, so the functor needs to be equivalent to the following
+      </p>
+<pre class="programlisting"><span class="keyword">bool</span> <span class="identifier">cmp</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span><span class="special">&amp;</span> <span class="identifier">a</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span><span class="special">&amp;</span> <span class="identifier">b</span><span class="special">)</span>
+</pre>
+<p>
+        However, the <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">transform</span></code> algorithm can use a <code class="computeroutput"><span class="identifier">unaryop</span></code> functor equivalent to
+      </p>
+<pre class="programlisting"><span class="identifier">Ret</span> <span class="identifier">fun</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span> <span class="identifier">a</span><span class="special">)</span>
+</pre>
+<p>
+        Which is more efficient than <code class="computeroutput"><span class="identifier">value_type</span><span class="special">&amp;</span></code>, since dereferencing the iterator will
+        result in a <code class="computeroutput"><span class="identifier">reference</span></code>.
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.particle_container.important_differences_from_stl_c"></a><a class="link" href="particle_container.html#aboria.particle_container.important_differences_from_stl_c" title="Important differences from STL containers">Important
+      differences from STL containers</a>
+</h3></div></div></div>
+<p>
+        The <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> data
+        structure acts fairly typically like a normal STL random-access container,
+        with a few important differences. It has methods like <code class="computeroutput"><span class="identifier">push_back</span><span class="special">()</span></code>, <code class="computeroutput"><span class="identifier">clear</span><span class="special">()</span></code>, <code class="computeroutput"><span class="identifier">size</span><span class="special">()</span></code>, <code class="computeroutput"><span class="identifier">erase</span><span class="special">()</span></code>. It provides subtypes like <code class="computeroutput"><span class="identifier">value_type</span></code>, <code class="computeroutput"><span class="identifier">reference</span></code>,
+        <code class="computeroutput"><span class="identifier">const_reference</span></code>, <code class="computeroutput"><span class="identifier">iterator</span></code>, <code class="computeroutput"><span class="identifier">const_iterator</span></code>.
+        All of the normal algorithms in the standard library <span class="bold"><strong>should</strong></span>
+        work with this container, if you find any that don't please let us know and
+        we will try to fix this.
+      </p>
+<p>
+        The main differences between <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code>
+        and normal STL containers are:
+      </p>
+<p>
+        1. The difference between <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">Aboria::Particles::value_type</a></code>&amp;
+        and <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.reference">Aboria::Particles::reference</a></code>
+        mentioned described earlier.
+      </p>
+<p>
+        2. Additional member functions are available to suit the specific purpose
+        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45113688254208-bb">Aboria::Particles::push_back</a></code>
+        function can take a vector data-type for the particle position, and the [Aboria::Particle::get_neighbours]
+        function for neighbour searching.
+      </p>
+<p>
+        3. When using the neighbourhood searching capabilities of the container,
+        the order of the particles in the particle container might change due to
+        internal sorting for neighbourhood searching efficiency. So do not assume
+        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45113688254208-bb">push_back</a></code>
+        member function can reorder the particles if neighbourhood searching is turned
+        on.
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="continuous_integration.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="neighbourhood_searching.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
