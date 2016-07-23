@@ -16,6 +16,14 @@ typedef Particles<std::tuple<scalar>> MyParticles;
 MyParticles particles();
 ``
 
+You can set the dimension of the container by using an optional unsigned integer 
+template argument (defaults to 3). For example, if you wanted a container of 
+particles in 2D space, you would use
+
+``
+Particles<std::tuple<scalar>,2> particles();
+``
+
 If you wanted each particle to have a potential variable held as a `double`, as 
 well as a velocity variable held as a [classref Aboria::double3] vector class, 
 then you would write the following
@@ -73,7 +81,7 @@ Aboria::bool5]...
 
 [endsect]
 
-[section Particle Objects]
+[section Accessing Particle Variables]
 
 The `value_type` of the [classref Aboria::Particles Particles] container is a 
 data-structure representing each particle. By default each particle has a 
@@ -83,7 +91,7 @@ dimension of the particle object), `get<id>()` for the id and `get<alive>()` for
 the alive flag.
 
 ``
-MyParticle& particle = particles[0];
+MyParticles::reference particle = particles[0];
 typedef double_d<3> position;
 std::cout <<"Position = "<<get<position>(particle) << 
    ". Id = "<<get<id>(particle)<< ". Particle is ";
@@ -93,6 +101,10 @@ if (get<alive>(particle)) {
    std::cout << "dead. " << "\n";
 }
 ``
+
+Note that if you don't know the dimension of the container you can get it from 
+the container type (e.g. `MyParticles`) by using the subtype 
+`MyParticles::position`.
 
 You can access the data by templating the `get` function with the variable type, 
 for example
@@ -212,7 +224,7 @@ containers are:
 2. Additional member functions are available to suit the specific purpose of 
 this container, for example the [memberref Aboria::Particles::push_back] 
 function can take a vector data-type for the particle position, and the 
-[Aboria::Particle::get_neighbours] function for neighbour searching.
+[memberref Aboria::Particle::get_neighbours] function for neighbour searching.
 
 3.  When using the neighbourhood searching capabilities of the container, the 
 order of the particles in the particle container might change due to internal 

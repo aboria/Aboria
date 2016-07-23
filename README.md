@@ -6,6 +6,7 @@
 
 UPDATE (22/07/2016): The next release of Aboria (0.2) has been merged to the 
 `master` branch. This release:
+* allows particle containers of any dimension (greater than 0)
 * reworks the internal storage of the container class to model a set of zipped 
   vectors. Currently uses `std::vector`s, but other vector types will be added 
   in the future (e.g. CUDA Thrust vectors) using a Traits pattern.
