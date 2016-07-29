@@ -97,7 +97,7 @@ public:
 		auto dx = create_dx(a_p,b_s);
 
 		Normal N;
-		VectorSymbolic<double> vector;		
+		VectorSymbolic<double,3> vector;		
         Accumulate<std::bit_or<bool> > any;
         Accumulate<std::plus<double3> > sum;
 

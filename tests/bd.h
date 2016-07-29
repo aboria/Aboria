@@ -63,7 +63,7 @@ public:
         Label<1,points_type > j(points);
         auto dx = create_dx(i,b);
         Normal N;
-        VectorSymbolic<double> vector;      
+        VectorSymbolic<double,3> vector;      
         Accumulate<std::bit_or<bool> > any;
         Accumulate<std::plus<double3> > sum;
 
