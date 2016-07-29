@@ -136,12 +136,13 @@ namespace Aboria {
             init_type init;
         };
 
-        template <typename T>
+        template <typename T,unsigned int N>
         struct vector {
-            typedef Vector<T,3> result_type;
+            typedef Vector<T,N> result_type;
 
-            result_type operator()(const T arg1,const T arg2,const T arg3) const {
-                return result_type(arg1,arg2,arg3);
+            template <typename ...Types>
+            result_type operator()(const Types... args) const {
+                return result_type(args...);
             }
         };
 

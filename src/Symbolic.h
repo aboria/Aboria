@@ -226,12 +226,12 @@ namespace Aboria {
 
     
     /// a symbolic class that, when evaluated, returns a Vect3d class. 
-    template <typename T>
+    template <typename T,unsigned int N>
     struct VectorSymbolic
-        : detail::SymbolicExpr<typename proto::terminal<detail::vector<T> >::type> {
+        : detail::SymbolicExpr<typename proto::terminal<detail::vector<T,N> >::type> {
 
-            typedef typename proto::terminal<detail::vector<T> >::type expr_type;
-            typedef detail::vector<T> data_type;
+            typedef typename proto::terminal<detail::vector<T,N> >::type expr_type;
+            typedef detail::vector<T,N> data_type;
 
             explicit VectorSymbolic()
                 : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )

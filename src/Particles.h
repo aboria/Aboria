@@ -556,7 +556,7 @@ private:
                     }
                 } else {
                     if ((r[d]<low[d]) || (r[d]>=high[d])) {
-                        std::cout << "removing particle with r = "<<r<<std::endl;
+                        LOG(2,"removing particle with r = "<<r);
                         Aboria::get<alive>(i) = false;
                     }
                 }
