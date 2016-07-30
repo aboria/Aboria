@@ -15,6 +15,7 @@ set(test_package
     dem
     sph
     bd
+    md
     )
 
 #set(test_package

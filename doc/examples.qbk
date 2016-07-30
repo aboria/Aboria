@@ -1,6 +1,15 @@
 
 [section Examples]
 
+[section Molecular Dynamics (Linear Spring) (MD)]
+
+Simple Molecular Dynamics of N particles interacting via a linear spring 
+potential. 
+
+[import ../tests/md.h]
+[md]
+[endsect]
+
 [section Brownian Dynamics (BD)]
 
 Brownian dynamics of N point particles around a set of spheres. The point 
@@ -8,12 +17,11 @@ particles reflect off the spheres as they diffuse.
 
 [import ../tests/bd.h]
 [bd]
-
 [endsect]
 
-[section Molecular Dynamics (MD) / Discrete Element Model (DEM)] 
+[section Discrete Element Model (DEM)] 
 
-An Discrete Element Model example , simulating a polydisperse set of spherical 
+An Discrete Element Model example, simulating a polydisperse set of spherical 
 particles falling onto an surface.
 
 [import ../tests/dem.h]
