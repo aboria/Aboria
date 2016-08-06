@@ -38,8 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define BUCKETSEARCH_H_
 
 #include <boost/iterator/iterator_facade.hpp>
+#include "Traits.h"
 #include "Vector.h"
-#include "Constants.h"
 #include "Log.h"
 #include <vector>
 #include <iostream>
@@ -64,8 +64,9 @@ const int CELL_EMPTY = -1;
 /// a given point can be performed using find_broadphase_neighbours(), which returns a const 
 /// iterator to all the points in the same bucket or surrounding buckets of the given point.
 ///
-template<typename T, typename F>
+template <typename traits>
 class BucketSearch {
+    UNPACK_TRAITS(traits)
 public:
 
     /// A const iterator to a set of neighbouring points. This iterator implements
@@ -73,10 +74,10 @@ public:
 	class const_iterator
 	{
 	 public:
-		  typedef const std::tuple<const typename T::value_type&,const Vect3d&>* pointer;
+		  typedef const std::tuple<const typename T::value_type&,const double_d&>* pointer;
 		  typedef std::forward_iterator_tag iterator_category;
-		  typedef const std::tuple<const typename T::value_type&,const Vect3d&> value_type;
-		  typedef const std::tuple<const typename T::value_type&,const Vect3d&> reference;
+		  typedef const std::tuple<const typename T::value_type&,const double_d&> value_type;
+		  typedef const std::tuple<const typename T::value_type&,const double_d&> reference;
 		  typedef std::ptrdiff_t difference_type;
 
 
@@ -133,7 +134,7 @@ public:
         /// all point pairs within a single container and so don't return
         /// each point pair twice (i.e. only 1/2 the normal neighbour checking required)
 	    explicit const_iterator(const BucketSearch* bucket_sort,
-	    		const Vect3d centre,
+	    		const double_d centre,
 	    		const int my_index = -1, const bool self = false)
 	    : bucket_sort(bucket_sort),
 	      my_index(my_index),self(self),
@@ -200,7 +201,7 @@ public:
 	    	//std::cout <<" increment "<<std::endl;
 	    	go_to_next_candidate();
 	    	while (*m_node != CELL_EMPTY) {
-	    		const Vect3d p = bucket_sort->return_vect3d(bucket_sort->begin_iterator[*m_node]);
+	    		const double_d p = bucket_sort->return_vect3d(bucket_sort->begin_iterator[*m_node]);
 
 	    		dx = centre-bucket_sort->correct_position_for_periodicity(centre, p);
 	    		//std::cout << "testing candidate with position "<<p<<" and dx = "<<dx<<" relative to centre = "<<centre<<std::endl;
@@ -231,41 +232,32 @@ public:
 	    //Value* const linked_list;
 	    int my_index;
 	    bool self;
-	    Vect3d centre;
-	    Vect3d dx;
+	    double_d centre;
+	    double_d dx;
 	    std::vector<int> cell_empty;
-	//    std::vector<Vect3d>::const_iterator positions;
+	//    std::vector<double_d>::const_iterator positions;
 	//    std::vector<Value>::const_iterator linked_list;
 	    std::vector<int>::const_iterator surrounding_cell_offset_i,surrounding_cell_offset_end;
 	};
 
-    /// This constructor sets the domain extents and their periodicity 
-    /// \param low the lower extent of the search domain
-    /// \param high the upper extent of the search domain
-    /// \param periodic a boolean vector indicating wether each dimension
-    /// is periodic or not.
-    /// \param return_vect3d a function that takes a value_type representing
-    /// a particle in 3D space and returns its position
-	BucketSearch(Vect3d low, Vect3d high, Vect3b periodic, F return_vect3d):
-		return_vect3d(return_vect3d),
-		low(low),high(high),domain_size(high-low),periodic(periodic),
-		empty_cell(CELL_EMPTY) {
-		LOG(2,"Creating bucketsort data structure with lower corner = "<<low<<" and upper corner = "<<high);
-		const double dx = (high-low).maxCoeff()/10.0;
-		reset(low, high, dx,periodic);
-	}
+    BucketSearch() {
+        const double min = std::numeric_limits<double>::min();
+        const double max = std::numeric_limits<double>::max();
+        set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),double_d(max/3.0-min/3.0)); 
+    };
 
     /// resets the domain extents, periodicity and bucket size
     /// \param low the lower extent of the search domain
     /// \param high the upper extent of the search domain
     /// \param _max_interaction_radius the side length of each bucket
     /// \param periodic a boolean vector indicating wether each dimension
-	void reset(const Vect3d& low, const Vect3d& high, double _max_interaction_radius, const Vect3b& periodic);
+    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const double_d& side_length);
 
-	inline const Vect3d& get_low() const {return low;}
-	inline const Vect3d& get_high() const {return high;}
-	inline const Vect3b& get_periodic() const {return periodic;}
-	inline const double get_lengthscale() const {return max_interaction_radius;}
+    const double_d& get_min() const { return m_bounds.bmin; }
+    const double_d& get_max() const { return m_bounds.bmax; }
+    const double_d& get_side_length() const { return m_bucket_side_length; }
+    const bool_d& get_periodic() const { return m_periodic; }
+
 
     /// embed a set of points into the buckets, assigning each 3D point into the bucket
     /// that contains that point. Any points already assigned to the buckets are 
@@ -327,7 +319,7 @@ public:
     /// this function is being used to find all the point pairs within the same point container, then
     /// a naive looping through and using find_broadphase_neighbours() will find each pair twice. 
     /// This can be avoided by setting self=true and supplying the index of each point with my_index
-    const_iterator find_broadphase_neighbours(const Vect3d& r, const int my_index, const bool self) const;
+    const_iterator find_broadphase_neighbours(const double_d& r, const int my_index, const bool self) const;
 
     /// return an end() iterator to compare against the result of find_broadphase_neighbours in order
     /// to determine the end of the neighbour list
@@ -336,18 +328,18 @@ public:
     /// in periodic domains a point pair can have multiple separations, but what is normally required for
     /// neighbourhood searches is the minimum separation. This function corrects \p to_correct_r in relation
     /// to \p source_r so that it is closest to \p source r
-	Vect3d correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const;
+	double_d correct_position_for_periodicity(const double_d& source_r, const double_d& to_correct_r) const;
 
     /// this function corrects the position of \p to_correct_r so that it is within the extents of a periodic
-    /// domain. If the domain is not periodic the Vect3d is unchanged
-	Vect3d correct_position_for_periodicity(const Vect3d& to_correct_r) const;
+    /// domain. If the domain is not periodic the double_d is unchanged
+	double_d correct_position_for_periodicity(const double_d& to_correct_r) const;
 
 private:
 
 	inline int vect_to_index(const Vect3i& vect) const {
 		return vect[0] * num_cells_along_yz + vect[1] * num_cells_along_axes[2] + vect[2];
 	}
-	inline int find_cell_index(const Vect3d &r) const {
+	inline int find_cell_index(const double_d &r) const {
 		const Vect3i celli = floor(((r-low)*inv_cell_size)) + Vect3i(1,1,1);
 		ASSERT((celli[0] > 0) && (celli[0] < num_cells_along_axes[0]-1), "position is outside of x-range "<<r);
 		ASSERT((celli[1] > 0) && (celli[1] < num_cells_along_axes[1]-1), "position is outside of y-range "<<r);
@@ -365,9 +357,9 @@ private:
     bool use_dirty_cells;
 	std::vector<int> linked_list,linked_list_reverse;
 	std::vector<int> neighbr_list;
-	Vect3d low,high,domain_size;
+	double_d low,high,domain_size;
 	Vect3b periodic;
-	Vect3d cell_size,inv_cell_size;
+	double_d cell_size,inv_cell_size;
 	Vect3i num_cells_along_axes;
 	int num_cells_along_yz;
 	double max_interaction_radius;
@@ -618,7 +610,7 @@ void BucketSearch<T,F>::copy_points(const T copy_to_iterator, const T copy_from_
 }
 
 template<typename T, typename F>
-void BucketSearch<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _max_interaction_radius, const Vect3b& _periodic) {
+void BucketSearch<T,F>::reset(const double_d& _low, const double_d& _high, double _max_interaction_radius, const Vect3b& _periodic) {
 	LOG(2,"Resetting bucketsort data structure:");
 	LOG(2,"\tMax interaction radius = "<<_max_interaction_radius);
 	high = _high;
@@ -635,7 +627,7 @@ void BucketSearch<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _m
 			LOG(2,"\tNote: Dimension "<<i<<" has no length, setting cell side equal to interaction radius.");
 			LOG(1,"\tNote: Dimension "<<i<<" has no length, turning off neighbour search in this dimension.");
 			search[i] = false;
-            const Vect3d middle_of_range = 0.5*(high[i]-low[i]);
+            const double_d middle_of_range = 0.5*(high[i]-low[i]);
 			high[i] = low[i] + max_interaction_radius;
 			num_cells_without_ghost[i] = 1;
 		} else if (periodic[i]) {
@@ -646,7 +638,7 @@ void BucketSearch<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _m
 	LOG(2,"\tNumber of cells along each axis = "<<num_cells_along_axes);
 	cell_size = (high-low)/(num_cells_without_ghost);
 	LOG(2,"\tCell sizes along each axis = "<<cell_size);
-	inv_cell_size = Vect3d(1,1,1)/cell_size;
+	inv_cell_size = double_d(1,1,1)/cell_size;
 	num_cells_along_yz = num_cells_along_axes[2]*num_cells_along_axes[1];
 	const unsigned int num_cells = num_cells_along_axes.prod();
 	cells.assign(num_cells, CELL_EMPTY);
@@ -733,7 +725,7 @@ void BucketSearch<T,F>::reset(const Vect3d& _low, const Vect3d& _high, double _m
 	}
 }
 template<typename T, typename F>
-typename BucketSearch<T,F>::const_iterator BucketSearch<T,F>::find_broadphase_neighbours(const Vect3d& r,const int my_index, const bool self) const {
+typename BucketSearch<T,F>::const_iterator BucketSearch<T,F>::find_broadphase_neighbours(const double_d& r,const int my_index, const bool self) const {
 	return const_iterator(this,correct_position_for_periodicity(r),my_index,self);
 }
 template<typename T, typename F>
@@ -741,8 +733,8 @@ typename BucketSearch<T,F>::const_iterator BucketSearch<T,F>::end() const {
 	return const_iterator();
 }
 template<typename T, typename F>
-Vect3d BucketSearch<T,F>::correct_position_for_periodicity(const Vect3d& source_r, const Vect3d& to_correct_r) const {
-	Vect3d corrected_r = to_correct_r - source_r;
+double_d BucketSearch<T,F>::correct_position_for_periodicity(const double_d& source_r, const double_d& to_correct_r) const {
+	double_d corrected_r = to_correct_r - source_r;
 	for (int i = 0; i < NDIM; ++i) {
 		if (!periodic[i]) continue;
 		if (corrected_r[i] > domain_size[i]/2.0) corrected_r[i] -= domain_size[i];
@@ -752,8 +744,8 @@ Vect3d BucketSearch<T,F>::correct_position_for_periodicity(const Vect3d& source_
 }
 
 template<typename T, typename F>
-Vect3d BucketSearch<T,F>::correct_position_for_periodicity(const Vect3d& to_correct_r) const {
-	Vect3d corrected_r = to_correct_r;
+double_d BucketSearch<T,F>::correct_position_for_periodicity(const double_d& to_correct_r) const {
+	double_d corrected_r = to_correct_r;
 	for (int i = 0; i < NDIM; ++i) {
 		if (!periodic[i]) continue;
 		while (corrected_r[i] >= high[i]) corrected_r[i] -= domain_size[i];

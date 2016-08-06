@@ -43,7 +43,7 @@ containing
 
 1. The found particle object
 2. $dx$, a vector pointing to the query point from the found point. I.e. if 
-$x_a$ is the query point and $x_b$ is the found point, then $dx = x_a - x_b$.
+$x_a$ is the query point and $x_b$ is the found point, then $dx = x_b - x_a$.
 
 The latter is useful for periodic domains, the returned vector $dx$ takes 
 periodic domains into account and returns the $dx$ with the smallest length. 
