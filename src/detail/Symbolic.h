@@ -165,8 +165,9 @@ namespace Aboria {
                 std::normal_distribution<double> normal_distribution;
                 return normal_distribution(generator);
             }
-            double operator()(generator_type& gen) const {
+            double operator()(const size_t& id) const {
                 std::normal_distribution<double> normal_distribution;
+                generator_type gen(id);
                 return normal_distribution(gen);
             }
             generator_type generator;
@@ -537,7 +538,8 @@ namespace Aboria {
                     //TODO: get better (parallel) random number generator
                     //return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
                     return proto::value(expr)(
-                            const_cast<generator_type&>(get<random>(fusion::front(ctx.m_labels).second)));
+                            //const_cast<generator_type&>(get<id>(fusion::front(ctx.m_labels).second)));
+                            get<id>(fusion::front(ctx.m_labels).second));
                 }
             };
 

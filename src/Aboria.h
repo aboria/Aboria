@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef ABORIA_H_
 #define ABORIA_H_
 
+#include "CudaInclude.h"
 #include "Vector.h"
 //#include "Geometry.h"
 #include "Ptr.h"

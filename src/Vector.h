@@ -409,31 +409,53 @@ std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     return out;
 }
 
-typedef Vector<double,1> double1;
-typedef Vector<double,2> double2;
-typedef Vector<double,3> double3;
-typedef Vector<double,4> double4;
-typedef Vector<double,5> double5;
-typedef Vector<double,6> double6;
-typedef Vector<double,7> double7;
+typedef Vector<double,1> aboria_double1;
+typedef Vector<double,2> aboria_double2;
+typedef Vector<double,3> aboria_double3;
+typedef Vector<double,4> aboria_double4;
+typedef Vector<double,5> aboria_double5;
+typedef Vector<double,6> aboria_double6;
+typedef Vector<double,7> aboria_double7;
 
-typedef Vector<int,1> int1;
-typedef Vector<int,2> int2;
-typedef Vector<int,3> int3;
-typedef Vector<int,4> int4;
-typedef Vector<int,5> int5;
-typedef Vector<int,6> int6;
-typedef Vector<int,7> int7;
+typedef Vector<int,1> aboria_int1;
+typedef Vector<int,2> aboria_int2;
+typedef Vector<int,3> aboria_int3;
+typedef Vector<int,4> aboria_int4;
+typedef Vector<int,5> aboria_int5;
+typedef Vector<int,6> aboria_int6;
+typedef Vector<int,7> aboria_int7;
 
-typedef Vector<bool,1> bool1;
-typedef Vector<bool,2> bool2;
-typedef Vector<bool,3> bool3;
-typedef Vector<bool,4> bool4;
-typedef Vector<bool,5> bool5;
-typedef Vector<bool,6> bool6;
-typedef Vector<bool,7> bool7;
+typedef Vector<bool,1> aboria_bool1;
+typedef Vector<bool,2> aboria_bool2;
+typedef Vector<bool,3> aboria_bool3;
+typedef Vector<bool,4> aboria_bool4;
+typedef Vector<bool,5> aboria_bool5;
+typedef Vector<bool,6> aboria_bool6;
+typedef Vector<bool,7> aboria_bool7;
 
+#define double1 aboria_double1
+#define double2 aboria_double2
+#define double3 aboria_double3
+#define double4 aboria_double4
+#define double5 aboria_double5
+#define double6 aboria_double6
+#define double7 aboria_double7
 
+#define int1 aboria_int1
+#define int2 aboria_int2
+#define int3 aboria_int3
+#define int4 aboria_int4
+#define int5 aboria_int5
+#define int6 aboria_int6
+#define int7 aboria_int7
+
+#define bool1 aboria_bool1
+#define bool2 aboria_bool2
+#define bool3 aboria_bool3
+#define bool4 aboria_bool4
+#define bool5 aboria_bool5
+#define bool6 aboria_bool6
+#define bool7 aboria_bool7
 
 }
 #endif /* VECTOR_H_ */

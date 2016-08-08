@@ -3,6 +3,7 @@
 #define TRAITS_H_ 
 
 #include "Vector.h"
+#include "CudaInclude.h"
 #include "Get.h"
 #include <tuple>
 #include <vector>
@@ -202,16 +203,103 @@ struct Traits<thrust::device_vector> {
     struct vector_type {
         typedef thrust::device_vector<T> type;
     };
-    template <typename ... TupleTypes >
-    struct tuple_type {
-        typedef trust::tuple<TupleTypes...> type;
-    };
-    template <typename T>
-    struct zip_type {
-        typedef thrust::zip_iterator<T> type;
-    };
 
-    };
+    template <typename T>
+    using counting_iterator = thrust::counting_iterator<T>;
+
+    #ifdef __CUDA_ARCH__
+    static const __device__ thrust::detail::functional::placeholder<0>::type _1;
+    static const __device__ thrust::detail::functional::placeholder<1>::type _2;
+    static const __device__ thrust::detail::functional::placeholder<2>::type _3;
+    #else
+    static const thrust::detail::functional::placeholder<0>::type _1;
+    static const thrust::detail::functional::placeholder<1>::type _2;
+    static const thrust::detail::functional::placeholder<2>::type _3;
+    #endif
+
+    template<typename T1, typename T2>
+    static void sort_by_key(T1 start_keys,
+            T1 end_keys,
+            T2 start_data) {
+        thrust::sort_by_key(start_keys,end_keys,start_data);
+    }
+
+    template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
+    static void lower_bound(
+            ForwardIterator first,
+            ForwardIterator last,
+            InputIterator values_first,
+            InputIterator values_last,
+            OutputIterator result) {
+        thrust::lower_bound(first,last,values_first,values_last,result);
+    }
+
+    template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
+    static void upper_bound(
+            ForwardIterator first,
+            ForwardIterator last,
+            InputIterator values_first,
+            InputIterator values_last,
+            OutputIterator result) {
+        thrust::upper_bound(first,last,values_first,values_last,result);
+    }
+
+    template< class InputIt, class T, class BinaryOperation >
+    static T reduce( 
+        InputIt first, 
+        InputIt last, T init,
+        BinaryOperation op ) {
+        return thrust::reduce(first,last,init,op);
+    }
+
+    template <class InputIterator, class OutputIterator, class UnaryOperation>
+    static OutputIterator transform (
+            InputIterator first, InputIterator last,
+            OutputIterator result, UnaryOperation op) {
+        return thrust::transform(first,last,result,op);
+    }
+
+    template <class ForwardIterator>
+    static void sequence (ForwardIterator first, ForwardIterator last) {
+        thrust::sequence(first,last);
+    }
+
+    template<typename ForwardIterator , typename UnaryOperation >
+    static void tabulate (
+            ForwardIterator first,
+            ForwardIterator last,
+            UnaryOperation  unary_op) {	
+        thrust::tabulate(first,last,unary_op);
+
+    }
+
+    template<typename InputIterator, typename OutputIterator, typename UnaryFunction, 
+        typename T, typename AssociativeOperator>
+    static OutputIterator transform_exclusive_scan(
+        InputIterator first, InputIterator last,
+        OutputIterator result,
+        UnaryFunction unary_op, T init, AssociativeOperator binary_op) {
+        return thrust::transform_exclusive_scan(first,last,result,unary_op,init,binary_op);
+    }
+
+
+    template<typename InputIterator1, typename InputIterator2, 
+        typename InputIterator3, typename RandomAccessIterator , typename Predicate >
+    static void scatter_if(
+            InputIterator1 first, InputIterator1 last,
+            InputIterator2 map, InputIterator3 stencil,
+            RandomAccessIterator output, Predicate pred) {
+        scatter_if(first,last,map,stencil,output,pred);
+    }
+
+    template<typename InputIterator1, typename InputIterator2, 
+        typename OutputIterator, typename Predicate>
+    static OutputIterator copy_if(
+            InputIterator1 first, InputIterator1 last, 
+            InputIterator2 stencil, OutputIterator result, Predicate pred) {
+        return copy_if(first,last,stencil,result,pred);
+    }
+};
 #endif
 
 template<typename ARG,unsigned int D, typename TRAITS>
@@ -245,20 +333,20 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename position::value_type position_value_type;
     typedef alive::value_type alive_value_type;
     typedef id::value_type id_value_type;
-    typedef random::value_type random_value_type;
+    //typedef random::value_type random_value_type;
     typedef typename traits::template vector_type<position_value_type>::type position_vector_type;
     typedef typename traits::template vector_type<alive_value_type>::type alive_vector_type;
     typedef typename traits::template vector_type<id_value_type>::type id_vector_type;
-    typedef typename traits::template vector_type<random_value_type>::type random_vector_type;
+    //typedef typename traits::template vector_type<random_value_type>::type random_vector_type;
 
     typedef traits traits_type;
-    typedef mpl::vector<position,id,alive,random,TYPES...> mpl_type_vector;
+    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
 
     typedef std::tuple <
             typename position_vector_type::iterator,
             typename id_vector_type::iterator,
             typename alive_vector_type::iterator,
-            typename random_vector_type::iterator,
+            //typename random_vector_type::iterator,
             typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
             > tuple_of_iterators_type;
 
@@ -266,7 +354,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             typename position_vector_type::const_iterator,
             typename id_vector_type::const_iterator,
             typename alive_vector_type::const_iterator,
-            typename random_vector_type::const_iterator,
+            //typename random_vector_type::const_iterator,
             typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
             > tuple_of_const_iterators_type;
 
@@ -278,7 +366,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
         position_vector_type,
         id_vector_type,
         alive_vector_type,
-        random_vector_type,
+        //random_vector_type,
         typename traits::template vector_type<typename TYPES::value_type>::type...
             > vectors_data_type;
 

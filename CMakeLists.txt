@@ -14,6 +14,7 @@ endif()
 option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
 if (Aboria_USE_THRUST)
     find_package(Thrust REQUIRED)
+    find_package(CUDA REQUIRED)
     add_definitions(-DHAVE_THRUST)
 endif()
 

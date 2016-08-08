@@ -47,45 +47,68 @@ using namespace Aboria;
 
 class ConstructorsTest : public CxxTest::TestSuite {
 public:
-    void testOneDouble(void) {
+    template<template <typename,typename> class V>
+    void helper_OneDouble(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variables_type;
-    	Particles<variables_type> test;
+    	Particles<variables_type,3,V> test;
     }
 
-    void testOneVect3d(void) {
+    template<template <typename,typename> class V>
+    void helper_OneVect3d(void) {
         ABORIA_VARIABLE(vector,double3,"vector")
         typedef std::tuple<vector> variables_type;
-    	Particles<variables_type> test;
+    	Particles<variables_type,3,V> test;
     }
 
-    void testNoData(void) {
+    template<template <typename,typename> class V>
+    void helper_NoData(void) {
     	Particles<> test;
     }
 
-    void testDimension(void) {
+    template<template <typename,typename> class V>
+    void helper_Dimension(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variable_type;
-    	Particles<variable_type,8> test8d;
-    	Particles<variable_type,7> test7d;
-    	Particles<variable_type,6> test6d;
-    	Particles<variable_type,5> test5d;
-    	Particles<variable_type,4> test4d;
-    	Particles<variable_type,3> test3d;
-    	Particles<variable_type,2> test2d;
-    	Particles<variable_type,1> test1d;
+    	Particles<variable_type,8,V> test8d;
+    	Particles<variable_type,7,V> test7d;
+    	Particles<variable_type,6,V> test6d;
+    	Particles<variable_type,5,V> test5d;
+    	Particles<variable_type,4,V> test4d;
+    	Particles<variable_type,3,V> test3d;
+    	Particles<variable_type,2,V> test2d;
+    	Particles<variable_type,1,V> test1d;
     }
 
-
-    void testMultiple(void) {
+    template<template <typename,typename> class V>
+    void helper_Multiple(void) {
         ABORIA_VARIABLE(vector,double3,"vector")
         ABORIA_VARIABLE(var1,double,"var1")
         ABORIA_VARIABLE(var2,int,"var2")
         ABORIA_VARIABLE(var3,unsigned int,"var3")
         ABORIA_VARIABLE(var4,bool,"var4")
         typedef std::tuple<vector,var1,var2,var3,var4> variables_type;
-    	Particles<variables_type> test;
+    	Particles<variables_type,3,V> test;
     }
+
+    void test_std_vector(void) {
+        helper_OneDouble<std::vector>();
+        helper_OneVect3d<std::vector>();
+        helper_NoData<std::vector>();
+        helper_Dimension<std::vector>();
+        helper_Multiple<std::vector>();
+    }
+
+    void test_thrust_vector(void) {
+#ifdef HAVE_THRUST
+        helper_OneDouble<thrust::device_vector>();
+        helper_OneVect3d<thrust::device_vector>();
+        helper_NoData<thrust::device_vector>();
+        helper_Dimension<thrust::device_vector>();
+        helper_Multiple<thrust::device_vector>();
+#endif
+    }
+
 
 };
 
