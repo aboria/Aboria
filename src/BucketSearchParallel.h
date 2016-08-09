@@ -134,7 +134,9 @@ private:
     void sort_by_bucket_index();
  
 
-	inline unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
+	inline 
+    CUDA_HOST_DEVICE
+    unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
         //std::cout << "collapsing "<<vindex;
 
         unsigned int index = 0;
@@ -143,7 +145,8 @@ private:
             if (i != dimension-1) {
                 multiplier *= m_size[i+1];
             }
-		    ASSERT((vindex[i] >= 0) && (vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
+		    //ASSERT((vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
+		    ASSERT((vindex[i] < m_size[i]), "index is outside of dimension");
             index += multiplier*vindex[i];
         }
         //std::cout << " to "<<index<<std::endl;
@@ -151,7 +154,9 @@ private:
     }
 
 
-	inline unsigned_int_d find_bucket_index_vector(const double_d &r) const {
+	inline 
+    CUDA_HOST_DEVICE
+    unsigned_int_d find_bucket_index_vector(const double_d &r) const {
         // find the raster indices of p's bucket
         //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
         return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
@@ -159,7 +164,9 @@ private:
 
     // hash a point in the unit square to the index of
     // the grid bucket that contains it
-	inline unsigned int find_bucket_index(const double_d &r) const {
+	inline 
+    CUDA_HOST_DEVICE
+    unsigned int find_bucket_index(const double_d &r) const {
 	   return collapse_index_vector(find_bucket_index_vector(r));
     }
      
@@ -462,7 +469,7 @@ private:
     std::vector<particles_iterator> m_begins;
     std::vector<particles_iterator> m_ends;
     std::vector<double_d> m_transpose;
-    unsigned int m_current_index = -1;
+    int m_current_index = -1;
 };
 
 }

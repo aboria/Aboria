@@ -307,15 +307,15 @@ namespace Aboria {
                 }
 
                 operator bool() const {
-                    return (m_row >= 0) && (m_col >= 0) && (m_row < m_mat.rows()) && (m_col < m_mat.cols());
+                    return (m_row < m_mat.rows()) && (m_col < m_mat.cols());
                 }
 
                 bool equal(InnerIterator const& other) const {
                     return (m_row == other.m_row)&&(m_col == other.m_col);
                 }
 
-                value_type dereference() const { 
-                    return m_mat.coeff(m_row,m_col); 
+                reference dereference() const { 
+                    return m_mat.coeffref(m_row,m_col); 
                 }
 
                 void increment() {
@@ -370,7 +370,6 @@ namespace Aboria {
     void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const std::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) {
         typedef typename particles_b_type::double_d double_d;
         typedef typename particles_b_type::position position;
-        const static unsigned int dimension = particles_b_type::dimension;
         const particles_a_type& a = std::get<0>(block);
         const particles_b_type& b = std::get<1>(block);
 
@@ -433,7 +432,6 @@ namespace Aboria {
 
         typedef typename particles_b_type::double_d double_d;
         typedef typename particles_b_type::position position;
-        const static unsigned int dimension = particles_b_type::dimension;
 
         const particles_b_type& b = std::get<1>(block);
         expr_type expr = std::get<2>(block);
@@ -464,7 +462,6 @@ namespace Aboria {
 
         typedef typename particles_a_type::double_d double_d;
         typedef typename particles_a_type::position position;
-        const static unsigned int dimension = particles_a_type::dimension;
 
         const particles_a_type& a = std::get<0>(block);
         expr_type expr = std::get<2>(block);

@@ -79,7 +79,7 @@ namespace sitmo {
     template<typename T>
     struct has_generate_template
     {
-        typedef char (&Two)[2];;
+        typedef char (&Two)[2];
         template<typename F, void (F::*)(int *, int *)> struct helper {};
         template<typename C> static char test(helper<C, &C::template generate<int*> >*);
         template<typename C> static Two test(...);

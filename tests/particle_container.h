@@ -47,28 +47,31 @@ using namespace Aboria;
 
 class ParticleContainerTest : public CxxTest::TestSuite {
 public:
-    void test_add_particle1(void) {
-    	typedef Particles<> Test_type;
+    template<template <typename,typename> class V>
+    void helper_add_particle1(void) {
+    	typedef Particles<std::tuple<>,3,V> Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
     }
 
-    void test_add_particle2(void) {
+    template<template <typename,typename> class V>
+    void helper_add_particle2(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variables_type;
-    	typedef Particles<variables_type> Test_type;
+    	typedef Particles<variables_type,3,V> Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
     }
 
-    void test_add_particle2_dimensions(void) {
+    template<template <typename,typename> class V>
+    void helper_add_particle2_dimensions(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variables_type;
-    	typedef Particles<variables_type,6> Test_type;
+    	typedef Particles<variables_type,6,V> Test_type;
     	Test_type test;
     	Test_type::value_type p;
         typedef Vector<double,6> double6;
@@ -79,10 +82,11 @@ public:
         TS_ASSERT((get<position>(test[0])==double6(2.0)).all());
     }
 
-    void test_add_delete_particle(void) {
+    template<template <typename,typename> class V>
+    void helper_add_delete_particle(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variables_type;
-    	typedef Particles<variables_type> Test_type;
+    	typedef Particles<variables_type,3,V> Test_type;
     	Test_type test;
     	Test_type::value_type p;
     	test.push_back(p);
@@ -96,6 +100,22 @@ public:
     	TS_ASSERT_EQUALS(test.size(),2);
     	test.erase(test.begin(),test.end());
     	TS_ASSERT_EQUALS(test.size(),0);
+    }
+
+    void test_std_vector(void) {
+        helper_add_particle1<std::vector>();
+        helper_add_particle2<std::vector>();
+        helper_add_particle2_dimensions<std::vector>();
+        helper_add_delete_particle<std::vector>();
+    }
+
+    void test_thrust_vector(void) {
+#ifdef HAVE_THRUST
+        helper_add_particle1<thrust::device_vector>();
+        helper_add_particle2<thrust::device_vector>();
+        helper_add_particle2_dimensions<thrust::device_vector>();
+        helper_add_delete_particle<thrust::device_vector>();
+#endif
     }
 
 };

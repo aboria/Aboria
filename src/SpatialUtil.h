@@ -114,12 +114,8 @@ struct is_a
   int operator()(int code) { return code == CODE ? 1 : 0; }
 };
 
-
-
-
-
-CUDA_HOST_DEVICE
 template<unsigned int D>
+CUDA_HOST_DEVICE
 int point_to_tag(const Vector<double,D> &p, bbox<D> box, int max_level) {
     typedef Vector<double,D> double_d;
     typedef Vector<int,D> int_d;

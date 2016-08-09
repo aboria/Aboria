@@ -31,7 +31,7 @@ template <> struct make_index_sequence<1>: index_sequence<0>{};
 /// 
 /// helper class to find an element of mpl_type_vector from a Variable type T
 template<typename T, typename mpl_type_vector>
-struct elem_by_type {
+struct get_elem_by_type {
     typedef T type;
     typedef typename T::value_type value_type;
 
@@ -49,7 +49,7 @@ struct elem_by_type {
 /// helper class to find an element of mpl_type_vector from an
 /// unsigned int index I
 template<unsigned int I, typename mpl_type_vector>
-struct elem_by_index {
+struct get_elem_by_index {
     BOOST_MPL_ASSERT_RELATION( (mpl::size<mpl_type_vector>::type::value), >, I );
     typedef typename mpl::at<mpl_type_vector,mpl::int_<I> > type;
 
@@ -69,7 +69,7 @@ struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
 
     typedef mpl_vector_type mpl_type_vector;
     template <typename T>
-    using elem_by_type = elem_by_type<T,mpl_type_vector>;
+    using elem_by_type = get_elem_by_type<T,mpl_type_vector>;
     template <typename T>
     using return_type = std::tuple_element<elem_by_type<T>::index,tuple_type>;
 
@@ -95,8 +95,6 @@ struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
         constexpr tuple(tuple<_UElements...>&& __in)
         : _Inherited(static_cast<_Tuple_impl<0, _UElements...>&&>(__in)) { }
         */
-
-
 
     template <typename T1, typename... T2,typename = typename
 	std::enable_if<std::__and_<std::is_convertible<const T2&, tuple_elements>...>::value>::type>
@@ -184,7 +182,7 @@ public:
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
 
     template <typename T>
-    using elem_by_type = elem_by_type<T,mpl_type_vector>;
+    using elem_by_type = get_elem_by_type<T,mpl_type_vector>;
 
     template<typename T>
     struct return_type {
@@ -218,20 +216,19 @@ private:
     }
     template<std::size_t... I>
     static void increment_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
-        using expander = int[];
-        (void)expander { 0, (++std::get<I>(tuple),0)...};
+        //using expander = int[];
+        //(void)expander { 0, (++std::get<I>(tuple),0)...};
+        std::initializer_list<int>{ 0, (++std::get<I>(tuple),0)...};
     }
 
     template<std::size_t... I>
     static void decrement_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
-        using expander = int[];
-        (void)expander { 0, (--std::get<I>(tuple),void(),0)...};
+        std::initializer_list<int>{ 0, (--std::get<I>(tuple),void(),0)...};
     }
 
     template<std::size_t... I>
     static void advance_impl(iterator_tuple_type& tuple, const difference_type n,  index_sequence<I...>) {
-        using expander = int[];
-        (void)expander { 0, (std::get<I>(tuple) += n,void(),0)...};
+        std::initializer_list<int>{ 0, (std::get<I>(tuple) += n,void(),0)...};
     }
 
     void increment() { increment_impl(iter,index_type()); }

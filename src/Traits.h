@@ -158,7 +158,7 @@ struct Traits<std::vector> {
 
         const size_t n = last-first;
         result[0] = 0;
-        for (int i=1; i++; i<n) {
+        for (int i=1; i<n; ++i) {
             result[i] = binary_op(result[i-1],unary_op(first[i]));
         }
     }
@@ -172,7 +172,7 @@ struct Traits<std::vector> {
             RandomAccessIterator output, Predicate pred) {
 
         const size_t n = last-first;
-        for (int i=0; i<n; i++) {
+        for (int i=0; i<n; ++i) {
             if (pred(stencil[i])) {
                 output[map[i]] = first[i];
             }
@@ -186,7 +186,7 @@ struct Traits<std::vector> {
             InputIterator2 stencil, OutputIterator result, Predicate pred) {
 
         const size_t n = last-first;
-        for (int i=0; i<n; i++) {
+        for (int i=0; i<n; ++i) {
             if (pred(stencil[i])) {
                 *result = first[i];
                 ++result;
@@ -208,9 +208,9 @@ struct Traits<thrust::device_vector> {
     using counting_iterator = thrust::counting_iterator<T>;
 
     #ifdef __CUDA_ARCH__
-    static const __device__ thrust::detail::functional::placeholder<0>::type _1;
-    static const __device__ thrust::detail::functional::placeholder<1>::type _2;
-    static const __device__ thrust::detail::functional::placeholder<2>::type _3;
+    static const thrust::detail::functional::placeholder<0>::type _1;
+    static const thrust::detail::functional::placeholder<1>::type _2;
+    static const thrust::detail::functional::placeholder<2>::type _3;
     #else
     static const thrust::detail::functional::placeholder<0>::type _1;
     static const thrust::detail::functional::placeholder<1>::type _2;
@@ -402,8 +402,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static void clear_impl(data_type& data, index_sequence<I...>) {
-        using expander = int[];
-        (void)expander { 0, (std::get<I>(data.get_tuple()).clear())... };
+        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).clear())... };
     }
 
     template<std::size_t... I>
@@ -420,20 +419,17 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static void insert_impl(data_type& data, iterator position, const value_type& val, index_sequence<I...>) {
-        using expander = int[];
-        (void)expander { 0, (std::get<I>(data.get_tuple()).insert(position,std::get<I>(val.get_tuple())))... };
+        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).insert(position,std::get<I>(val.get_tuple())))... };
     }
 
     template<std::size_t... I>
     static void insert_impl(data_type& data, iterator position, size_t n, const value_type& val, index_sequence<I...>) {
-        using expander = int[];
-        (void)expander { 0, (std::get<I>(data.get_tuple()).insert(position,n,std::get<I>(val.get_tuple())))... };
+        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).insert(position,n,std::get<I>(val.get_tuple())))... };
     }
 
     template<class InputIterator, std::size_t... I>
     static void insert_impl(data_type& data, iterator position, InputIterator first, InputIterator last, index_sequence<I...>) {
-        using expander = int[];
-        (void)expander { 0, (std::get<I>(data.get_tuple()).insert(position,first,last))... };
+        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).insert(position,first,last))... };
     }
 
     template<typename Indices = make_index_sequence<N>>

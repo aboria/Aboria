@@ -73,11 +73,11 @@ public:
         periodic_out = periodic;
     }
     void set_max_points(int arg) { max_points = arg; }
-    void get_max_points(int arg) { return max_points; }
+    int get_max_points() { return max_points; }
     void set_max_level(int arg) { max_level = arg; }
-    void get_max_level(int arg) { return max_level; }
+    int get_max_level() { return max_level; }
     void set_threshold(int arg) { threshold = arg; }
-    void get_threshold(int arg) { return threshold; }
+    int get_threshold() { return threshold; }
 
 private:
     void build_tree();
@@ -98,7 +98,7 @@ private:
     vector_int nodes;
     vector_int indices;
     bbox<dimension> bounds;
-    vector_int2 &leaves;
+    vector_int2 leaves;
 };
 
 

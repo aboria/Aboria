@@ -122,7 +122,7 @@ public:
     /// alive flag as well as all user-supplied variables)
     typedef typename traits_type::mpl_type_vector mpl_type_vector;
     template <typename T>
-    using elem_by_type = elem_by_type<T,mpl_type_vector>;
+    using elem_by_type = get_elem_by_type<T,mpl_type_vector>;
     template <typename T>
     using return_type = std::tuple_element<elem_by_type<T>::index,typename data_type::tuple_type>;
 
@@ -177,7 +177,7 @@ public:
         reference i = *(end()-1);
         Aboria::get<position>(i) = Aboria::get<position>(val);
         Aboria::get<id>(i) = this->next_id++;
-        Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
+        //Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
         Aboria::get<alive>(i) = true;
         if (searchable && update_neighbour_search) bucket_search.add_points_at_end(begin(),end()-1,end());
     }
@@ -243,13 +243,13 @@ public:
         if (i != end()-1) {
             *i = *(end()-1);
             traits_type::pop_back(data);
-            return i;
         } else {
             traits_type::pop_back(data);
-            return end();
+            i = end();
         }
 
         if (searchable && update_neighbour_search) bucket_search.embed_points(begin(),end());
+        return i;
     }
 
 
@@ -348,7 +348,7 @@ public:
 
     /// return the length scale of the neighbourhood search
     /// \see init_neighbour_search()
-    const double get_lengthscale() const {
+    double get_lengthscale() const {
         return bucket_search.get_bucket_side_length();
     }
 

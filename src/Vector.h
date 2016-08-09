@@ -39,6 +39,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //#include <math.h>
 #include <cmath>
+#include "CudaInclude.h"
 
 #include <iostream>
 
@@ -52,48 +53,67 @@ public:
 	typedef T value_type;
 	const static int size = N;
 
+    CUDA_HOST_DEVICE
 	Vector() {}
+
+    CUDA_HOST_DEVICE
 	Vector(T arg1) {
         for (unsigned int i=0; i<N; i++) {
 		    mem[i] = arg1;
         }
 	}
+
+    CUDA_HOST_DEVICE
 	Vector(T arg1,T arg2) {
 		mem[0] = arg1;
 		mem[1] = arg2;
 	}
+
+    CUDA_HOST_DEVICE
 	Vector(T arg1,T arg2,T arg3) {
 		mem[0] = arg1;
 		mem[1] = arg2;
 		mem[2] = arg3;
 	}
+
 	template<typename T2>
+    CUDA_HOST_DEVICE
 	Vector(const Vector<T2,N> &arg) {
 		for (int i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 	}
+
 	template<typename T2>
+    CUDA_HOST_DEVICE
 	Vector<T,N> &operator =(Vector<T2,N> &arg) {
 		for (int i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 		return *this;
 	}
+
 	template<typename T2>
+    CUDA_HOST_DEVICE
 	Vector<T,N> &operator =(T2 *arg) {
 		for (int i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 		return *this;
 	}
+
+    CUDA_HOST_DEVICE
 	const T &operator[](unsigned int n) const {
 		return mem[n];
 	}
+
+    CUDA_HOST_DEVICE
 	T &operator[](unsigned int n) {
 		return mem[n];
 	}
+
 	template<typename T2>
+    CUDA_HOST_DEVICE
 	double inner_product(const Vector<T2,N> &arg) const {
 		double ret = 0;
 		for (int i = 0; i < N; ++i) {
@@ -103,6 +123,7 @@ public:
 	}
 
     template <typename T2>
+    CUDA_HOST_DEVICE
     Vector<T2,N> cast() {
         Vector<T2,N> ret;
         for (int i = 0; i < N; ++i) {
@@ -113,9 +134,12 @@ public:
 
 
 	template<typename T2>
+    CUDA_HOST_DEVICE
 	double dot(const Vector<T2,N> &arg) const {
 		return inner_product(arg);
 	}
+
+    CUDA_HOST_DEVICE
 	double squaredNorm() const {
 		double ret = 0;
 		for (int i = 0; i < N; ++i) {
@@ -125,11 +149,13 @@ public:
 	}
 
 		
+    CUDA_HOST_DEVICE
 	double norm() const {
 		return std::sqrt(squaredNorm());
 	}
 
 	template<typename EXP_T>
+    CUDA_HOST_DEVICE
 	Vector<T,N> pow(const EXP_T exponent) {
 		Vector<T,N> n = *this;
 		for (int i = 0; i < N; ++i) {
@@ -138,6 +164,7 @@ public:
 		return n;
 	}
 
+    CUDA_HOST_DEVICE
 	void normalize() {
 		double n = norm();
 		for (int i = 0; i < N; ++i) {
@@ -145,6 +172,7 @@ public:
 		}
 	} 
 		
+    CUDA_HOST_DEVICE
 	bool all() const {
 		bool ret = true;
 		for (int i = 0; i < N; ++i) {
@@ -152,6 +180,8 @@ public:
 		}
 		return ret;
 	}
+
+    CUDA_HOST_DEVICE
 	bool any() const {
 		bool ret = false;
 		for (int i = 0; i < N; ++i) {
@@ -159,6 +189,8 @@ public:
 		}
 		return ret;
 	}
+
+    CUDA_HOST_DEVICE
 	T minCoeff() const {
 		T min = mem[0];
 		for (int i = 1; i < N; ++i) {
@@ -168,6 +200,8 @@ public:
 		}
 		return min;
 	}
+
+    CUDA_HOST_DEVICE
 	T maxCoeff() const {
 		T max = mem[0];
 		for (int i = 1; i < N; ++i) {
@@ -177,6 +211,8 @@ public:
 		}
 		return max;
 	}
+
+    CUDA_HOST_DEVICE
 	T prod() const {
 		T ret = 1;
 		for (int i = 0; i < N; ++i) {
@@ -184,6 +220,8 @@ public:
 		}
 		return ret;
 	}
+
+    CUDA_HOST_DEVICE
 	T *data() {
 		return mem;
 	}
@@ -192,6 +230,7 @@ private:
 };
 
 template<typename T, unsigned int N, typename EXP_T>
+CUDA_HOST_DEVICE
 Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
 	return arg.pow(exponent);
 }
@@ -209,67 +248,74 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
 
 
 #define UNARY_OPERATOR(the_op) \
-		template<typename T,unsigned int N> \
-				Vector<double,N> operator the_op(const Vector<T,N> &arg1) { \
-					Vector<double,N> ret; \
-					for (int i = 0; i < N; ++i) { \
-						ret[i] = the_op arg1[i]; \
-					} \
-					return ret; \
-				} \
+    template<typename T,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> operator the_op(const Vector<T,N> &arg1) { \
+        Vector<double,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = the_op arg1[i]; \
+        } \
+        return ret; \
+    } \
 
 UNARY_OPERATOR(-)
 
 #define OPERATOR(the_op) \
-		template<typename T1,typename T2,unsigned int N> \
-				Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
-					Vector<double,N> ret; \
-					for (int i = 0; i < N; ++i) { \
-						ret[i] = arg1[i] the_op arg2[i]; \
-					} \
-					return ret; \
-				} \
-				template<typename T1,typename T2,unsigned int N> \
-								Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
-									Vector<double,N> ret; \
-									for (int i = 0; i < N; ++i) { \
-										ret[i] = arg1[i] the_op arg2; \
-									} \
-									return ret; \
-								} \
-								template<typename T1,typename T2,unsigned int N> \
-												Vector<double,N> operator the_op(const T1 &arg1, const Vector<T2,N> &arg2) { \
-													Vector<double,N> ret; \
-													for (int i = 0; i < N; ++i) { \
-														ret[i] = arg1 the_op arg2[i]; \
-													} \
-													return ret; \
-												} \
- \
-		template<int,int,unsigned int N> \
-		Vector<int,N> operator the_op(const Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
-			Vector<int,N> ret; \
-			for (int i = 0; i < N; ++i) { \
-				ret[i] = arg1[i] the_op arg2[i]; \
-			} \
-			return ret; \
-		} \
-		template<int,int,unsigned int N> \
-				Vector<int,N> operator the_op(const int &arg1, const Vector<int,N> &arg2) { \
-					Vector<int,N> ret; \
-					for (int i = 0; i < N; ++i) { \
-						ret[i] = arg1 the_op arg2[i]; \
-					} \
-					return ret; \
-				} \
-				template<int,int,unsigned int N> \
-						Vector<int,N> operator the_op(const Vector<int,N> &arg1, const int &arg2) { \
-							Vector<int,N> ret; \
-							for (int i = 0; i < N; ++i) { \
-								ret[i] = arg1[i] the_op arg2; \
-							} \
-							return ret; \
-						} \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
+        Vector<double,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1[i] the_op arg2[i]; \
+        } \
+        return ret; \
+    } \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
+        Vector<double,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1[i] the_op arg2; \
+        } \
+        return ret; \
+    } \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> operator the_op(const T1 &arg1, const Vector<T2,N> &arg2) { \
+        Vector<double,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1 the_op arg2[i]; \
+        } \
+        return ret; \
+    } \
+    \
+    template<int,int,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<int,N> operator the_op(const Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
+        Vector<int,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1[i] the_op arg2[i]; \
+        } \
+        return ret; \
+    } \
+    template<int,int,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<int,N> operator the_op(const int &arg1, const Vector<int,N> &arg2) { \
+        Vector<int,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1 the_op arg2[i]; \
+        } \
+        return ret; \
+    } \
+    template<int,int,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<int,N> operator the_op(const Vector<int,N> &arg1, const int &arg2) { \
+        Vector<int,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1[i] the_op arg2; \
+        } \
+        return ret; \
+    } \
 
 
 OPERATOR(+)
@@ -278,30 +324,33 @@ OPERATOR(/)
 OPERATOR(*)
 
 #define COMPARISON(the_op) \
-		template<typename T1,typename T2,unsigned int N> \
-				Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
-					Vector<bool,N> ret; \
-					for (int i = 0; i < N; ++i) { \
-						ret[i] = arg1[i] the_op arg2[i]; \
-					} \
-					return ret; \
-				} \
-				template<typename T1,typename T2,unsigned int N> \
-								Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
-									Vector<bool,N> ret; \
-									for (int i = 0; i < N; ++i) { \
-										ret[i] = arg1[i] the_op arg2; \
-									} \
-									return ret; \
-								} \
-								template<typename T1,typename T2,unsigned int N> \
-																Vector<bool,N> operator the_op(const T1 &arg1, const T2 &arg2) { \
-																	Vector<bool,N> ret; \
-																	for (int i = 0; i < N; ++i) { \
-																		ret[i] = arg1 the_op arg2; \
-																	} \
-																	return ret; \
-																} \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
+        Vector<bool,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1[i] the_op arg2[i]; \
+        } \
+        return ret; \
+    } \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
+        Vector<bool,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1[i] the_op arg2; \
+        } \
+        return ret; \
+    } \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<bool,N> operator the_op(const T1 &arg1, const T2 &arg2) { \
+        Vector<bool,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1 the_op arg2; \
+        } \
+        return ret; \
+    } \
 
 COMPARISON(>)
 COMPARISON(<)
@@ -310,35 +359,39 @@ COMPARISON(>=)
 COMPARISON(==)
 
 #define COMPOUND_ASSIGN(the_op) \
-		template<typename T1,typename T2,unsigned int N> \
-				Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
-					for (int i = 0; i < N; ++i) { \
-						arg1[i] the_op arg2[i]; \
-					} \
-					return arg1; \
-				} \
-				template<typename T1,typename T2,unsigned int N> \
-								Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const T2 &arg2) { \
-									for (int i = 0; i < N; ++i) { \
-										arg1[i] the_op arg2; \
-									} \
-									return arg1; \
-								} \
- \
-		template<int,int,unsigned int N> \
-		Vector<int,N> &operator the_op(Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
-			for (int i = 0; i < N; ++i) { \
-				arg1[i] the_op arg2[i]; \
-			} \
-			return arg1; \
-		} \
-				template<int,int,unsigned int N> \
-						Vector<int,N> &operator the_op(Vector<int,N> &arg1, const int &arg2) { \
-							for (int i = 0; i < N; ++i) { \
-								arg1[i] the_op arg2; \
-							} \
-							return arg1; \
-						} \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
+        for (int i = 0; i < N; ++i) { \
+            arg1[i] the_op arg2[i]; \
+        } \
+        return arg1; \
+    } \
+    template<typename T1,typename T2,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const T2 &arg2) { \
+        for (int i = 0; i < N; ++i) { \
+            arg1[i] the_op arg2; \
+        } \
+        return arg1; \
+    } \
+    \
+    template<int,int,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<int,N> &operator the_op(Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
+        for (int i = 0; i < N; ++i) { \
+            arg1[i] the_op arg2[i]; \
+        } \
+        return arg1; \
+    } \
+    template<int,int,unsigned int N> \
+    CUDA_HOST_DEVICE \
+    Vector<int,N> &operator the_op(Vector<int,N> &arg1, const int &arg2) { \
+        for (int i = 0; i < N; ++i) { \
+            arg1[i] the_op arg2; \
+        } \
+        return arg1; \
+    } \
 
 
 COMPOUND_ASSIGN(+=)
@@ -348,6 +401,7 @@ COMPOUND_ASSIGN(/=)
 
 #define UFUNC(the_op) \
 	template<typename T,unsigned int N> \
+    CUDA_HOST_DEVICE \
 	Vector<T,N> the_op(const Vector<T,N> &arg1) { \
 		Vector<T,N> ret; \
 	    for (int i = 0; i < N; ++i) { \
@@ -361,12 +415,14 @@ UFUNC(ceil)
 UFUNC(round)
 
 template<typename T, int I>
+CUDA_HOST_DEVICE 
 double norm(const Vector<T,I> &arg1) {
 	return arg1.norm();
 }
 
 
 template<typename T, int I>
+CUDA_HOST_DEVICE 
 double squaredNorm(const Vector<T,I> &arg1) {
 	return arg1.squaredNorm();
 }
@@ -374,11 +430,13 @@ double squaredNorm(const Vector<T,I> &arg1) {
 
 
 template<typename T1, typename T2, int I>
+CUDA_HOST_DEVICE 
 double dot(const Vector<T1,I> &arg1, const Vector<T2,I> &arg2) {
 	return arg1.inner_product(arg2);
 }
 
 template<typename T>
+CUDA_HOST_DEVICE 
 Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
 	Vector<T,3> ret;
 	ret[0] = arg1[1]*arg2[2] - arg1[2]*arg2[1];

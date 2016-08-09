@@ -59,7 +59,6 @@ void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
     typedef typename detail::symbolic_helper<Expr>::particles_b_type particles_b_type;
     typedef typename particles_b_type::double_d double_d;
     typedef typename particles_b_type::position position;
-    const static unsigned int dimension = particles_b_type::dimension;                          \
 
     const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
     const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr,fusion::nil_())).get_particles();
@@ -86,7 +85,6 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
     typedef typename detail::symbolic_helper<Expr>::particles_b_type particles_b_type;
     typedef typename particles_b_type::double_d double_d;
     typedef typename particles_b_type::position position;
-    const static unsigned int dimension = particles_b_type::dimension;                          \
 
     const particles_a_type& a = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
     const particles_b_type& b = fusion::at_c<1>(detail::get_labels()(expr,fusion::nil_())).get_particles();
