@@ -51,7 +51,7 @@ public:
     void helper_add_particle1(void) {
     	typedef Particles<std::tuple<>,3,V> Test_type;
     	Test_type test;
-    	Test_type::value_type p;
+    	typename Test_type::value_type p;
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
     }
@@ -62,7 +62,7 @@ public:
         typedef std::tuple<scalar> variables_type;
     	typedef Particles<variables_type,3,V> Test_type;
     	Test_type test;
-    	Test_type::value_type p;
+    	typename Test_type::value_type p;
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
     }
@@ -73,7 +73,7 @@ public:
         typedef std::tuple<scalar> variables_type;
     	typedef Particles<variables_type,6,V> Test_type;
     	Test_type test;
-    	Test_type::value_type p;
+    	typename Test_type::value_type p;
         typedef Vector<double,6> double6;
         typedef position_d<6> position;
         get<position>(p) = double6(2.0);
@@ -88,7 +88,7 @@ public:
         typedef std::tuple<scalar> variables_type;
     	typedef Particles<variables_type,3,V> Test_type;
     	Test_type test;
-    	Test_type::value_type p;
+    	typename Test_type::value_type p;
     	test.push_back(p);
     	test.pop_back();
     	TS_ASSERT_EQUALS(test.size(),0);
