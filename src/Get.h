@@ -243,6 +243,18 @@ private:
     friend class boost::iterator_core_access;
 };
 
+template <typename T>
+struct is_zip_iterator {
+    typedef mpl::bool_<false> type;
+    static const bool value = false; 
+};
+
+template <typename tuple_type, typename mpl_vector_type>
+struct is_zip_iterator<zip_iterator<tuple_type,mpl_vector_type>> {
+    typedef mpl::bool_<true> type;
+    static const bool value = true; 
+};
+
 
 //
 // Particle getters/setters

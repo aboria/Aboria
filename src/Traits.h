@@ -217,11 +217,54 @@ struct Traits<thrust::device_vector> {
     static const thrust::detail::functional::placeholder<2>::type _3;
     #endif
 
+    template<typename std_tuple_type>
+    struct thrust_tuple_helper {};
+
+    template<typename... Iterators>
+    struct thrust_tuple_helper<std::tuple<Iterators...>> {
+        typedef thrust::tuple<Iterators...> type;
+    };
+
+    template<typename std_tuple_type, std::size_t... I>
+    static typename thrust_tuple_helper<std_tuple_type>::type 
+    make_thrust_tuple_impl(std_tuple_type& data, index_sequence<I...>) {
+        return thrust::make_tuple(std::get<I>(data)...);
+    }
+
+    template<typename std_tuple_type, 
+        typename Indices = make_index_sequence<std::tuple_size<std_tuple_type>::value>>
+    static typename thrust_tuple_helper<std_tuple_type>::type 
+    make_thrust_tuple(std_tuple_type& data) {
+        return make_thrust_tuple_impl(data, Indices());
+    }
+
+    template<typename... Iterators>
+    static thrust::zip_iterator<thrust::tuple<Iterators...>> 
+    make_thrust_zip_iterator(std::tuple<Iterators...> its) {
+        return thrust::make_zip_iterator(make_thrust_tuple(its));
+    }
+
+    template<typename T1, typename T2>
+    static void sort_by_key_impl(T1 start_keys,
+            T1 end_keys,
+            T2 start_data,
+            mpl::bool_<true>) {
+        thrust::sort_by_key(start_keys,end_keys,make_thrust_zip_iterator(start_data.get_tuple()));
+    }
+
+    template<typename T1, typename T2>
+    static void sort_by_key_impl(T1 start_keys,
+            T1 end_keys,
+            T2 start_data,
+            mpl::bool_<false>) {
+        thrust::sort_by_key(start_keys,end_keys,start_data);
+    }
+
     template<typename T1, typename T2>
     static void sort_by_key(T1 start_keys,
             T1 end_keys,
             T2 start_data) {
-        thrust::sort_by_key(start_keys,end_keys,start_data);
+        sort_by_key_impl(start_keys,end_keys,start_data,is_zip_iterator<T2>::type());
     }
 
     template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
