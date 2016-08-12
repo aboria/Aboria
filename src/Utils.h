@@ -40,12 +40,55 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef HAVE_VTK
 #include <vtkXMLUnstructuredGridWriter.h>
 #include <vtkSmartPointer.h>
+#include <vtkUnstructuredGrid.h>
 #endif
 
 #include <boost/math/constants/constants.hpp>
 #include "Aboria.h"
 
 namespace Aboria {
+
+#ifdef HAVE_THRUST
+    template <typename T>
+    struct is_device_reference {
+        typedef std::false_type type;
+        typedef T value_type;
+    };
+
+    template <typename T>
+    struct is_device_reference<thrust::device_reference<T>&&> {
+        typedef std::true_type type;
+        typedef T value_type;
+    };
+
+    template <typename T>
+    struct is_device_reference<thrust::device_reference<T>&> {
+        typedef std::true_type type;
+        typedef T value_type;
+    };
+
+
+    template <typename T>
+    typename is_device_reference<T>::value_type copy_to_host_impl(T&& arg,std::true_type) {
+        return typename is_device_reference<T>::value_type(arg);
+    }
+
+    template <typename T>
+    T&& copy_to_host_impl(T&& arg,std::false_type) {
+        return arg;
+    }
+
+    template <typename T>
+    auto copy_to_host(T&& arg) -> decltype(copy_to_host_impl(std::forward<T>(arg),typename is_device_reference<T>::type())) {
+        return copy_to_host_impl(std::forward<T>(arg),typename is_device_reference<T>::type());
+    }
+#else
+    template <typename T>
+    T&& copy_to_host(T&& arg) {
+        return arg;
+    }
+#endif
+
 
 #ifdef HAVE_VTK
 void vtkWriteGrid(const char *name, int timestep, vtkSmartPointer<vtkUnstructuredGrid> grid) {
@@ -101,7 +144,7 @@ void create_n_particles_with_rejection_sampling(const unsigned int n, PTYPE &par
 
 
 template<typename T>
-ptr<std::vector<double> > radial_distribution_function(ptr<Particles<T> > particles,
+ptr<std::vector<double> > radial_distribution_function(const T& particles,
 							const double min, const double max,
 							const int n) {
 
@@ -115,10 +158,10 @@ ptr<std::vector<double> > radial_distribution_function(ptr<Particles<T> > partic
 	const double old_size = particles->get_lengthscale();
 	particles->reset_neighbour_search(max);
 
-	for(typename Particles<T>::Value& i: *particles) {
+	for(typename T::value_type& i: particles) {
 		for (auto tpl: i.get_neighbours(particles)) {
 			const Vect3d& dx = std::get<1>(tpl);
-			const typename Particles<T>::Value& j = std::get<0>(tpl);
+			const typename T::value_type& j = std::get<0>(tpl);
 			if (i.get_id()==j.get_id()) continue;
 			const double r = dx.norm();
 			const int index = std::floor((r-min)/bsep);

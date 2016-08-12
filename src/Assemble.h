@@ -68,7 +68,7 @@ void assemble(Eigen::DenseBase<Derived>& matrix, const Expr& expr) {
 
     //matrix.resize(na,nb);
 
-    CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression. expr = ("<<na<<","<<nb<<") and matrix = ("<<matrix.rows()<<","<<matrix.cols()<<").")
+    CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.")
 
     for (size_t i=0; i<na; ++i) {
         for (size_t j=0; j<nb; ++j) {
@@ -94,7 +94,7 @@ void assemble(Eigen::SparseMatrix<Scalar>& matrix, const Expr& expr, const ifExp
 
     matrix.resize(nb,na);
 
-    CHECK((matrix.cols() == na) && (matrix.rows() == nb), "matrix size is not compatible with expression. expr = ("<<na<<","<<nb<<") and matrix = ("<<matrix.cols()<<","<<matrix.rows()<<").")
+    CHECK((matrix.cols() == na) && (matrix.rows() == nb), "matrix size is not compatible with expression.")
 
     //std::vector<size_t> cols_sizes(na);
     typedef Eigen::Triplet<Scalar> triplet_type;

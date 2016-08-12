@@ -38,31 +38,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define LOG_H_
 
 #include <signal.h>
-#include <cstdio>
+#include <assert.h>
 
-#ifndef NDEBUG
-#   define ASSERT(condition, message) \
-    do { \
-        if (! (condition)) { \
-            printf("Assertion `%s` failed in %s line %d: %s\n", \
-                #condition,__FILE__,__LINE__,message); \
-            raise(SIGTRAP); \
-        } \
-    } while (false)
-#else
-#   define ASSERT(condition, message) do { } while (false)
-#endif
+#define ASSERT(condition, message) \
+    assert(condition)
 
 #define CHECK(condition, message) \
 		if (! (condition)) { \
-            printf("Assertion `%s` failed in %s line %d: %s\n", \
-                #condition,__FILE__,__LINE__,message); \
+            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
+                      << " line " << __LINE__ << ": " << message << std::endl; \
             raise(SIGTRAP); \
         }
 
 #define ERROR(message) \
-            printf("Error at %s line %d: %s\n", \
-                __FILE__,__LINE__,message); \
+            std::cerr << "Error at " << __FILE__ \
+                      << " line " << __LINE__ << ": " << message << std::endl; \
             raise(SIGTRAP);
 
 //std::exit(EXIT_FAILURE);

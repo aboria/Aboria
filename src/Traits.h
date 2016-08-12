@@ -264,7 +264,7 @@ struct Traits<thrust::device_vector> {
     static void sort_by_key(T1 start_keys,
             T1 end_keys,
             T2 start_data) {
-        sort_by_key_impl(start_keys,end_keys,start_data,is_zip_iterator<T2>::type());
+        sort_by_key_impl(start_keys,end_keys,start_data,typename is_zip_iterator<T2>::type());
     }
 
     template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
@@ -434,13 +434,23 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<std::size_t... I>
-    static reference index_impl(data_type& data, const size_t i, index_sequence<I...>) {
+    static reference index_impl(data_type& data, const size_t i, index_sequence<I...>, std::true_type) {
         return reference(std::tie(std::get<I>(data.get_tuple())[i]...));
     }
 
     template<std::size_t... I>
-    static const_reference index_const_impl(const data_type& data, const size_t i, index_sequence<I...>) {
+    static reference index_impl(data_type& data, const size_t i, index_sequence<I...>, std::false_type) {
+        return reference(std::make_tuple(std::get<I>(data.get_tuple())[i]...));
+    }
+
+    template<std::size_t... I>
+    static const_reference index_const_impl(const data_type& data, const size_t i, index_sequence<I...>, std::true_type) {
         return const_reference(std::tie(std::get<I>(data.get_tuple())[i]...));
+    }
+
+    template<std::size_t... I>
+    static const_reference index_const_impl(const data_type& data, const size_t i, index_sequence<I...>, std::false_type) {
+        return const_reference(std::make_tuple(std::get<I>(data.get_tuple())[i]...));
     }
 
     template<std::size_t... I>
@@ -487,12 +497,12 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<typename Indices = make_index_sequence<N>>
     static reference index(data_type& data, const size_t i) {
-        return index_impl(data, i, Indices());
+        return index_impl(data, i, Indices(),std::is_reference<decltype(get<id>(data)[0])>());
     }
 
     template<typename Indices = make_index_sequence<N>>
     static const_reference index(const data_type& data, const size_t i) {
-        return index_const_impl(data, i, Indices());
+        return index_const_impl(data, i, Indices(),std::is_reference<decltype(get<id>(data)[0])>());
     }
 
     template<typename Indices = make_index_sequence<N>>

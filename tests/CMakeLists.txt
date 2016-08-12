@@ -41,7 +41,7 @@ set(test_package
     )
 
 set(test_package
-    particle_container 
+    diffusion_around_spheres 
     )
 
 foreach(test ${test_package})

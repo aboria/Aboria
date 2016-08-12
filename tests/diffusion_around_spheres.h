@@ -104,7 +104,7 @@ public:
 		/*
 		 * Kill any points within spheres
 		 */
-		alive_[a_p] = !any(b_s, norm(dx) < r[b_s],true);
+		alive_[a_p] = !any(b_s, norm(dx) <= r[b_s],true);
 
 		/*
 		 * Check no points within spheres

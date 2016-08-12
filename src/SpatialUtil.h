@@ -4,14 +4,15 @@
 
 #include "Vector.h"
 #include "CudaInclude.h"
+#include "Log.h"
 
 #include <bitset>         // std::bitset
 #include <iomanip>      // std::setw
 
 namespace Aboria {
 
-#define FLT_MAX 1.0
-
+//#define FLT_MAX 1.0
+    
 
 template <typename T>
 struct plus {
@@ -78,6 +79,69 @@ template<unsigned int D>
 std::ostream& operator<< (std::ostream& out, const bbox<D>& b) {
 	return out << "bbox(" << b.bmin << "<->" << b.bmax << ")";
 }
+
+template<unsigned int D>
+struct point_to_bucket_index {
+    typedef Vector<double,D> double_d;
+    typedef Vector<unsigned int,D> unsigned_int_d;
+
+    bbox<D> m_bounds;
+    double_d m_bucket_side_length;
+    unsigned_int_d m_size;
+
+    CUDA_HOST_DEVICE
+    point_to_bucket_index() {};
+
+    CUDA_HOST_DEVICE
+    point_to_bucket_index(const unsigned_int_d& size, 
+                          const double_d& bucket_side_length, 
+                          const bbox<D> &bounds):
+        m_size(size),m_bucket_side_length(bucket_side_length),m_bounds(bounds) {}
+
+    CUDA_HOST_DEVICE
+    unsigned int operator()(const double_d& v) const {
+        return find_bucket_index(v);
+    }
+
+    inline 
+    CUDA_HOST_DEVICE
+    unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
+        //std::cout << "collapsing "<<vindex;
+
+        unsigned int index = 0;
+        unsigned int multiplier = 1.0;
+        for (int i = D-1; i>=0; --i) {
+            if (i != D-1) {
+                multiplier *= m_size[i+1];
+            }
+            //ASSERT((vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
+            ASSERT((vindex[i] < m_size[i]), "index is outside of dimension");
+            index += multiplier*vindex[i];
+        }
+        //std::cout << " to "<<index<<std::endl;
+        return index;
+    }
+
+
+    inline 
+    CUDA_HOST_DEVICE
+    unsigned_int_d find_bucket_index_vector(const double_d &r) const {
+        // find the raster indices of p's bucket
+        //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
+        return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
+    }
+
+    // hash a point in the unit square to the index of
+    // the grid bucket that contains it
+    inline 
+    CUDA_HOST_DEVICE
+    unsigned int find_bucket_index(const double_d &r) const {
+       return collapse_index_vector(find_bucket_index_vector(r));
+    }
+ 
+};
+
+
 
 
 // Utility functions to encode leaves and children in single int

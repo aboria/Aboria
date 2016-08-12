@@ -199,8 +199,8 @@ public:
     }
 
     /// pop (delete) the particle at the end of the container 
-    void pop_back() {
-        erase(end()-1);
+    void pop_back(bool update_neighbour_search=true) {
+        erase(end()-1,update_neighbour_search);
     }
 
     /// returns a reference to the particle at position \p idx
@@ -392,16 +392,17 @@ public:
     /// \param update_neighbour_search updates neighbourhood search
     /// information if true (default=true)
     void delete_particles(const bool update_neighbour_search = true) {
+        LOG(2,"Particle: delete_particles: update_neighbour_search = "<<update_neighbour_search);
         for (int index = 0; index < size(); ++index) {
             iterator i = begin() + index;
             while (Aboria::get<alive>(*i) == false) {
                 if ((index < size()-1) && (size() > 1)) {
                     //std::swap(*i,*(end()-1));
                     *i = *(end()-1);
-                    pop_back();
+                    pop_back(false);
                     i = begin() + index;
                 } else {
-                    pop_back();
+                    pop_back(false);
                     break;
                 }
             }

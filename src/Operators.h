@@ -314,8 +314,8 @@ namespace Aboria {
                     return (m_row == other.m_row)&&(m_col == other.m_col);
                 }
 
-                reference dereference() const { 
-                    return m_mat.coeffref(m_row,m_col); 
+                Scalar dereference() const { 
+                    return m_mat.coeff(m_row,m_col); 
                 }
 
                 void increment() {
@@ -323,10 +323,10 @@ namespace Aboria {
                     ASSERT(m_col < m_mat.cols(),"InnerIterator outside cols range");
                 }
 
-                reference operator *() {
+                Scalar operator *() {
                     return dereference();
                 }
-                reference operator ->() {
+                Scalar operator ->() {
                     return dereference();
                 }
                 InnerIterator& operator++() {

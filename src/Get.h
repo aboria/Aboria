@@ -11,6 +11,8 @@
 #include <tuple>
 #include <type_traits>
 
+#include "Utils.h"
+
 
 namespace Aboria {
 
@@ -265,9 +267,11 @@ struct is_zip_iterator<zip_iterator<tuple_type,mpl_vector_type>> {
 /// \param arg the particle
 /// \return a const reference to a T::value_type holding the variable data
 ///
+/*
 template<typename T, typename value_type>
-typename value_type::template return_type<T>::type const& 
+typename value_type::template return_type<T>::type const & 
 get(const value_type& arg) {
+    //std::cout << "get const reference" << std::endl;
     return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
     //return arg.template get<T>();
 }
@@ -275,15 +279,16 @@ get(const value_type& arg) {
 template<typename T, typename value_type>
 typename value_type::template return_type<T>::type & 
 get(value_type& arg) {
+    //std::cout << "get reference" << std::endl;
     return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
     //return arg.template get<T>();
 }
+*/
 
 template<typename T, typename value_type>
-typename value_type::template return_type<T>::type && 
-get(value_type&& arg) {
-    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
-    //return arg.template get<T>();
+auto get(value_type&& arg)
+-> decltype(copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()))) {
+     return copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()));        
 }
 
 

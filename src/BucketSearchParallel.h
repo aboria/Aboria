@@ -108,6 +108,8 @@ public:
         m_bucket_side_length = side_length;
         m_size = floor((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
         m_bucket_side_length = (m_bounds.bmax-m_bounds.bmin)/m_size;
+        m_point_to_bucket_index = point_to_bucket_index<dimension>(m_size,m_bucket_side_length,m_bounds);
+ 
 	    LOG(2,"\tbounds = "<<m_bounds);
 	    LOG(2,"\tperiodic = "<<m_periodic);
 	    LOG(2,"\tbucket_side_length = "<<m_bucket_side_length);
@@ -134,52 +136,6 @@ private:
     void sort_by_bucket_index();
  
 
-	inline 
-    CUDA_HOST_DEVICE
-    unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
-        //std::cout << "collapsing "<<vindex;
-
-        unsigned int index = 0;
-        unsigned int multiplier = 1.0;
-        for (int i = dimension-1; i>=0; --i) {
-            if (i != dimension-1) {
-                multiplier *= m_size[i+1];
-            }
-		    //ASSERT((vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
-		    ASSERT((vindex[i] < m_size[i]), "index is outside of dimension");
-            index += multiplier*vindex[i];
-        }
-        //std::cout << " to "<<index<<std::endl;
-        return index;
-    }
-
-
-	inline 
-    CUDA_HOST_DEVICE
-    unsigned_int_d find_bucket_index_vector(const double_d &r) const {
-        // find the raster indices of p's bucket
-        //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
-        return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
-    }
-
-    // hash a point in the unit square to the index of
-    // the grid bucket that contains it
-	inline 
-    CUDA_HOST_DEVICE
-    unsigned int find_bucket_index(const double_d &r) const {
-	   return collapse_index_vector(find_bucket_index_vector(r));
-    }
-     
-    struct point_to_bucket_index {
-        const BucketSearch& bs; 
-        CUDA_HOST_DEVICE
-        point_to_bucket_index(const BucketSearch& bs):bs(bs) {}
-
-        CUDA_HOST_DEVICE
-        unsigned int operator()(const double_d& v) const {
-            return bs.find_bucket_index(v);
-        }
-    };
 
     particles_iterator m_particles_begin;
     particles_iterator m_particles_end;
@@ -189,6 +145,7 @@ private:
     double_d m_bucket_side_length; 
     unsigned_int_d m_size;
     bbox<dimension> m_bounds;
+    point_to_bucket_index<dimension> m_point_to_bucket_index;
 
     // the grid data structure keeps a range per grid bucket:
     // each bucket_begin[i] indexes the first element of bucket i's list of points
@@ -211,7 +168,7 @@ void BucketSearch<traits>::build_bucket_indices(
     transform(positions_begin,
             positions_end,
             bucket_indices_begin,
-            point_to_bucket_index(*this));
+            m_point_to_bucket_index);
 }
 
 template <typename traits>
@@ -283,7 +240,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
         const bool self) const {
     
     ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);
-    const unsigned_int_d my_bucket = find_bucket_index_vector(r);
+    const unsigned_int_d my_bucket = m_point_to_bucket_index.find_bucket_index_vector(r);
 
 	LOG(3,"BucketSearch: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
     const_iterator search_iterator(this,r);
@@ -318,7 +275,7 @@ BucketSearch<traits>::find_broadphase_neighbours(
         }
 
         if (!outside) {
-            const unsigned int other_bucket_index = collapse_index_vector(other_bucket);
+            const unsigned int other_bucket_index = m_point_to_bucket_index.collapse_index_vector(other_bucket);
             const unsigned int range_start_index = m_bucket_begin[other_bucket_index]; 
             const unsigned int range_end_index = m_bucket_end[other_bucket_index]; 
 
