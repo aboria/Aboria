@@ -47,13 +47,14 @@ using namespace Aboria;
 
 class VariablesTest: public CxxTest::TestSuite {
 public:
-    void testScalar(void) {
+    template<template <typename,typename> class V>
+    void helperScalar(void) {
 
         ABORIA_VARIABLE(a,double,"a")
         ABORIA_VARIABLE(b,float,"b")
         ABORIA_VARIABLE(c,int,"c")
 
-        Particles<std::tuple<a,b,c>>::value_type p;
+        typename Particles<std::tuple<a,b,c>,3,V>::value_type p;
         get<a>(p) = 1.2;
         get<b>(p) = 1.3;
         get<c>(p) = 1;
@@ -72,12 +73,13 @@ public:
 
     }
 
-    void testVector(void) {
+    template<template <typename,typename> class V>
+    void helperVector(void) {
 
         ABORIA_VARIABLE(a,double3,"a")
         ABORIA_VARIABLE(b,int3,"b")
 
-        Particles<std::tuple<a,b>>::value_type p;
+        typename Particles<std::tuple<a,b>,3,V>::value_type p;
 
         get<a>(p) = double3(1.1,1.2,1.3);
         get<b>(p) = double3(1,2,3);
@@ -91,6 +93,18 @@ public:
 
         TS_ASSERT((get<a>(p)==double3(2.1,2.2,2.3)).all());
         TS_ASSERT((get<b>(p)==int3(2,3,4)).all());
+    }
+
+    void test_std_vector(void) {
+        helperScalar<std::vector>();
+        helperVector<std::vector>();
+    }
+
+    void test_thrust_vector(void) {
+#ifdef HAVE_THRUST
+        helperScalar<thrust::device_vector>();
+        helperVector<thrust::device_vector>();
+#endif
     }
 
 };

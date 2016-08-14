@@ -41,7 +41,7 @@ set(test_package
     )
 
 set(test_package
-    diffusion_around_spheres 
+    neighbours
     )
 
 foreach(test ${test_package})

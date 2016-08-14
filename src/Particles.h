@@ -151,7 +151,7 @@ public:
             next_id(other.next_id),
             searchable(other.searchable),
             seed(other.seed),
-            id_to_index(id_to_index)
+            id_to_index(other.id_to_index)
     {}
 
     /// range-based copy-constructor. performs deep copying of all 
@@ -315,7 +315,8 @@ public:
     /// NOTE: you must call init_neighbour_search() before using this function
     /// \param position the centre of the search region
     /// \see init_neighbour_search
-    boost::iterator_range<typename BucketSearch<traits_type>::const_iterator> get_neighbours(const double_d position) const {
+    CUDA_HOST_DEVICE 
+    boost::iterator_range<typename BucketSearch<traits_type>::const_iterator> get_neighbours(const double_d& position) const {
         ASSERT(searchable == true,"ERROR: using get_neighbours before initialising neighbour search. Please call the init_neighbour_search function before using get_neighbours");
         return boost::make_iterator_range(
                 bucket_search.find_broadphase_neighbours(position, -1,false),

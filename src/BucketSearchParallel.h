@@ -93,6 +93,7 @@ public:
     /// this function is being used to find all the point pairs within the same point container, then
     /// a naive looping through and using find_broadphase_neighbours() will find each pair twice. 
     /// This can be avoided by setting self=true and supplying the index of each point with my_index
+    CUDA_HOST_DEVICE 
     const_iterator find_broadphase_neighbours(const double_d& r, 
                                               const int my_index, 
                                               const bool self) const;
@@ -233,6 +234,7 @@ void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, co
 
 
 template <typename traits>
+CUDA_HOST_DEVICE
 typename BucketSearch<traits>::const_iterator
 BucketSearch<traits>::find_broadphase_neighbours(
         const double_d& r, 
@@ -242,7 +244,10 @@ BucketSearch<traits>::find_broadphase_neighbours(
     ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);
     const unsigned_int_d my_bucket = m_point_to_bucket_index.find_bucket_index_vector(r);
 
+#ifndef __CUDA_ARCH__
 	LOG(3,"BucketSearch: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
+#endif
+
     const_iterator search_iterator(this,r);
     int_d bucket_offset(-1);
     constexpr unsigned int last_d = dimension-1;
@@ -254,7 +259,11 @@ BucketSearch<traits>::find_broadphase_neighbours(
         double_d transpose(0);
         bool outside = false;
         for (int i=0; i<dimension; i++) {
+#ifdef __CUDA_ARCH__
+            if (other_bucket[i] >= NPP_MAX_16U) {
+#else
             if (other_bucket[i] == std::numeric_limits<unsigned int>::max()) {
+#endif
                 if (m_periodic[i]) {
                     other_bucket[i] = m_size[i]-1;
                     transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
@@ -312,16 +321,19 @@ public:
     typedef const std::tuple<particles_reference_type,const double_d&> reference;
     typedef const std::tuple<particles_reference_type,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
-
+    
+    CUDA_HOST_DEVICE
     const_iterator(const BucketSearch<traits>* bucket_sort):
         m_bucket_sort(bucket_sort),
         m_node(bucket_sort->m_particles_end) {}
 
+    CUDA_HOST_DEVICE
     const_iterator(const BucketSearch<traits>* bucket_sort, const double_d &r):
         m_bucket_sort(bucket_sort),
         m_r(r),
         m_node(bucket_sort->m_particles_end) {}
 
+    CUDA_HOST_DEVICE
     void add_range(particles_iterator begin, particles_iterator end, const double_d &transpose) {
         m_begins.push_back(begin);
         m_ends.push_back(end);
@@ -335,14 +347,17 @@ public:
         }
     }
 
+    CUDA_HOST_DEVICE
     bool equal(const_iterator const& other) const {
         return m_node == other.m_node;
     }
 
+    CUDA_HOST_DEVICE
     reference dereference() const { 
         return reference(*m_node,m_dx); 
     }
 
+    CUDA_HOST_DEVICE
     bool go_to_next_candidate() {
         m_node++;
         if (m_node == m_ends[m_current_index]) {
@@ -359,6 +374,7 @@ public:
         return true;
     }
 
+    CUDA_HOST_DEVICE
     bool check_candidate() {
         //std::cout << "check my_r = "<<m_r<<" r = "<<get<position>(*m_node)<<" trans = "<<m_transpose[m_current_index]<<" index = "<<m_current_index<<std::endl;
         const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
@@ -375,6 +391,7 @@ public:
         return !outside;
     }
 
+    CUDA_HOST_DEVICE
     void increment() {
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
@@ -382,22 +399,30 @@ public:
         }
     }
 
+    CUDA_HOST_DEVICE
     reference operator *() {
         return dereference();
     }
+
+    CUDA_HOST_DEVICE
     reference operator ->() {
         return dereference();
     }
+
+    CUDA_HOST_DEVICE
     const_iterator& operator++() {
         increment();
         return *this;
     }
+
+    CUDA_HOST_DEVICE
     const_iterator operator++(int) {
         const_iterator tmp(*this);
         operator++();
         return tmp;
     }
 
+    CUDA_HOST_DEVICE
     size_t operator-(const_iterator start) const {
         size_t count = 0;
         while (start != *this) {
@@ -407,10 +432,12 @@ public:
         return count;
     }
 
+    CUDA_HOST_DEVICE
     inline bool operator==(const const_iterator& rhs) {
         return equal(rhs);
     }
 
+    CUDA_HOST_DEVICE
     inline bool operator!=(const const_iterator& rhs){
         return !operator==(rhs);
     }

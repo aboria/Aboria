@@ -65,7 +65,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #	endif
 #endif
 
-
 #define LOG(level, message) \
     if (level <= LOG_LEVEL) { \
     	std::cout << message << std::endl; \

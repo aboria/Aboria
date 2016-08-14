@@ -44,7 +44,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace Aboria;
 
-
 class NeighboursTest : public CxxTest::TestSuite {
 public:
     void test_single_particle(void) {
@@ -111,10 +110,10 @@ public:
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
-    template<unsigned int D>
+    template<unsigned int D,template <typename,typename> class V>
     void helper_d(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<std::tuple<scalar>,D> Test_type;
+    	typedef Particles<std::tuple<scalar>,D,V> Test_type;
         typedef position_d<D> position;
         typedef Vector<double,D> double_d;
         typedef Vector<bool,D> bool_d;
@@ -151,25 +150,34 @@ public:
             }
         }
 
+        struct has_n_neighbours {
+            unsigned int n;
+            const Test_type& test;
+            has_n_neighbours(const Test_type& test, unsigned int n):test(test),n(n) {}
+            CUDA_HOST_DEVICE void operator()(typename Test_type::reference i) {
+                auto tpl = test.get_neighbours(get<position>(i));
+                TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),n);
+            }
+        };
+                
     	test.init_neighbour_search(min,max,diameter,periodic);
-
-        for (auto i: test) {
-            auto tpl = test.get_neighbours(get<position>(i));
-    	    TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),expect_n);
-        }
+        Test_type::traits_type::for_each(test.begin(),test.end(),has_n_neighbours(test,expect_n));
     }
 
-    void test_dim1(void) {
-        helper_d<1>();
+    void test_std_vector(void) {
+        helper_d<1,std::vector>();
+        helper_d<2,std::vector>();
+        helper_d<3,std::vector>();
+        helper_d<4,std::vector>();
     }
-    void test_dim2(void) {
-        helper_d<2>();
-    }
-    void test_dim3(void) {
-        helper_d<3>();
-    }
-    void test_dim4(void) {
-        helper_d<4>();
+
+    void test_thrust_vector(void) {
+#ifdef HAVE_THRUST
+        helper_d<1,thrust::device_vector>();
+        helper_d<2,thrust::device_vector>();
+        helper_d<3,thrust::device_vector>();
+        helper_d<4,thrust::device_vector>();
+#endif
     }
 
 };

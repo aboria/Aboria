@@ -194,18 +194,26 @@ public:
 
 
     typedef typename std::tuple_element<0,iterator_tuple_type>::type first_type;
+
+    CUDA_HOST_DEVICE
     zip_iterator() {}
+
+    CUDA_HOST_DEVICE
     explicit zip_iterator(iterator_tuple_type iter) : iter(iter) {}
+
     typedef typename std::iterator_traits<first_type>::difference_type difference_type;
 
-
     template<typename T>
+    CUDA_HOST_DEVICE
     const typename return_type<T>::type & get() const {
         return std::get<elem_by_type<T>::index>(iter);        
     }
 
 
+    CUDA_HOST_DEVICE
     const iterator_tuple_type & get_tuple() const { return iter; }
+
+    CUDA_HOST_DEVICE
     iterator_tuple_type & get_tuple() { return iter; }
 
 private:
@@ -220,17 +228,20 @@ private:
     static void increment_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
         //using expander = int[];
         //(void)expander { 0, (++std::get<I>(tuple),0)...};
-        std::initializer_list<int>{ 0, (++std::get<I>(tuple),0)...};
+        int dummy[] = { 0, (++std::get<I>(tuple),0)...};
+        static_cast<void>(dummy);
     }
 
     template<std::size_t... I>
     static void decrement_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
-        std::initializer_list<int>{ 0, (--std::get<I>(tuple),void(),0)...};
+        int dummy[] = { 0, (--std::get<I>(tuple),void(),0)...};
+        static_cast<void>(dummy);
     }
 
     template<std::size_t... I>
     static void advance_impl(iterator_tuple_type& tuple, const difference_type n,  index_sequence<I...>) {
-        std::initializer_list<int>{ 0, (std::get<I>(tuple) += n,void(),0)...};
+        int dummy[] = { 0, (std::get<I>(tuple) += n,void(),0)...};
+        static_cast<void>(dummy);
     }
 
     void increment() { increment_impl(iter,index_type()); }
@@ -267,7 +278,6 @@ struct is_zip_iterator<zip_iterator<tuple_type,mpl_vector_type>> {
 /// \param arg the particle
 /// \return a const reference to a T::value_type holding the variable data
 ///
-/*
 template<typename T, typename value_type>
 typename value_type::template return_type<T>::type const & 
 get(const value_type& arg) {
@@ -283,13 +293,53 @@ get(value_type& arg) {
     return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
     //return arg.template get<T>();
 }
-*/
+
+template<typename T, typename value_type>
+typename value_type::template return_type<T>::type & 
+get(value_type&& arg) {
+    //std::cout << "get reference" << std::endl;
+    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
+    //return arg.template get<T>();
+}
+
+/*
+template<typename T, typename value_type>
+typename value_type::template return_type<T>::type const & 
+get(const value_type& arg) {
+//auto get(value_type&& arg)
+//-> decltype(copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()))) {
+     typedef typename value_type::type::template return_type<T>::type element_type;
+     return copy_to_host(
+             (element_type)
+                 std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple()));        
+}
+
+template<typename T, typename value_type>
+typename value_type::template return_type<T>::type const & 
+get(const value_type& arg) {
+//auto get(value_type&& arg)
+//-> decltype(copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()))) {
+     typedef typename value_type::type::template return_type<T>::type element_type;
+     return copy_to_host(
+             (element_type)
+                 std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple()));        
+}
+
+template<typename T, typename value_type>
+typename std::remove_reference<value_type>::type::template return_type<T>::type & 
+get(value_type& arg) {
+//auto get(value_type&& arg)
+//-> decltype(copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()))) {
+     return copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()));        
+}
 
 template<typename T, typename value_type>
 auto get(value_type&& arg)
--> decltype(copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()))) {
-     return copy_to_host(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple()));        
+-> decltype(std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple())) {
+     return std::get<std::remove_reference<value_type>::type::template elem_by_type<T>::index>(arg.get_tuple());        
 }
+
+*/
 
 
 }

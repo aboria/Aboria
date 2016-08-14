@@ -39,6 +39,10 @@ struct Traits<std::vector> {
         bool operator()(const value_type& t1, const value_type& t2) { return get<0>(t1.get_tuple()) < get<0>(t2.get_tuple()); }
     };
 
+    template< class InputIt, class UnaryFunction >
+    static UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
+        return std::for_each(first,last,f);
+    }
 
     template<typename T1, typename T2>
     static void sort_by_key(T1 start_keys,
@@ -242,6 +246,11 @@ struct Traits<thrust::device_vector> {
     static thrust::zip_iterator<thrust::tuple<Iterators...>> 
     make_thrust_zip_iterator(std::tuple<Iterators...> its) {
         return thrust::make_zip_iterator(make_thrust_tuple(its));
+    }
+
+    template< class InputIt, class UnaryFunction >
+    static UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
+        return std::for_each(first,last,f);
     }
 
     template<typename T1, typename T2>
@@ -455,7 +464,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static void clear_impl(data_type& data, index_sequence<I...>) {
-        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).clear())... };
+        int dummy[] = { 0, (std::get<I>(data.get_tuple()).clear())... };
+        static_cast<void>(dummy);
     }
 
     template<std::size_t... I>
@@ -472,17 +482,20 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static void insert_impl(data_type& data, iterator position, const value_type& val, index_sequence<I...>) {
-        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).insert(position,std::get<I>(val.get_tuple())))... };
+        int dummy[] = { 0, (std::get<I>(data.get_tuple()).insert(position,std::get<I>(val.get_tuple())))... };
+        static_cast<void>(dummy);
     }
 
     template<std::size_t... I>
     static void insert_impl(data_type& data, iterator position, size_t n, const value_type& val, index_sequence<I...>) {
-        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).insert(position,n,std::get<I>(val.get_tuple())))... };
+        int dummy[] = { 0, (std::get<I>(data.get_tuple()).insert(position,n,std::get<I>(val.get_tuple())))... };
+        static_cast<void>(dummy);
     }
 
     template<class InputIterator, std::size_t... I>
     static void insert_impl(data_type& data, iterator position, InputIterator first, InputIterator last, index_sequence<I...>) {
-        std::initializer_list<int>{ 0, (std::get<I>(data.get_tuple()).insert(position,first,last))... };
+        int dummy[] = { 0, (std::get<I>(data.get_tuple()).insert(position,first,last))... };
+        static_cast<void>(dummy);
     }
 
     template<typename Indices = make_index_sequence<N>>

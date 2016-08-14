@@ -48,6 +48,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+    /*
 #ifdef HAVE_THRUST
     template <typename T>
     struct is_device_reference {
@@ -56,38 +57,35 @@ namespace Aboria {
     };
 
     template <typename T>
-    struct is_device_reference<thrust::device_reference<T>&&> {
+    struct is_device_reference<thrust::device_reference<T>>{
         typedef std::true_type type;
         typedef T value_type;
     };
 
     template <typename T>
-    struct is_device_reference<thrust::device_reference<T>&> {
-        typedef std::true_type type;
-        typedef T value_type;
-    };
-
-
-    template <typename T>
-    typename is_device_reference<T>::value_type copy_to_host_impl(T&& arg,std::true_type) {
-        return typename is_device_reference<T>::value_type(arg);
+    typename is_device_reference<typename std::remove_reference<T>::type>::value_type
+    copy_to_host_impl(T&& arg,std::true_type) {
+        return typename is_device_reference<typename std::remove_reference<T>::type>::value_type(arg);
     }
 
     template <typename T>
-    T&& copy_to_host_impl(T&& arg,std::false_type) {
+    auto copy_to_host_impl(T&& arg,std::false_type) -> decltype(arg) {
         return arg;
     }
 
     template <typename T>
-    auto copy_to_host(T&& arg) -> decltype(copy_to_host_impl(std::forward<T>(arg),typename is_device_reference<T>::type())) {
-        return copy_to_host_impl(std::forward<T>(arg),typename is_device_reference<T>::type());
+    auto copy_to_host(T&& arg) 
+    -> decltype(copy_to_host_impl(arg,typename is_device_reference<typename std::remove_reference<T>::type>::type())) {
+         return copy_to_host_impl(arg,typename is_device_reference<typename std::remove_reference<T>::type>::type());
     }
 #else
     template <typename T>
-    T&& copy_to_host(T&& arg) {
+    auto copy_to_host(T&& arg) -> decltype(arg) {
         return arg;
     }
 #endif
+*/
+
 
 
 #ifdef HAVE_VTK

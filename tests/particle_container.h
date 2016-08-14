@@ -79,7 +79,7 @@ public:
         get<position>(p) = double6(2.0);
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
-        TS_ASSERT((get<position>(test[0])==double6(2.0)).all());
+        TS_ASSERT(((double6)get<position>(test[0])==double6(2.0)).all());
     }
 
     template<template <typename,typename> class V>
