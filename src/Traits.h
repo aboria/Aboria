@@ -22,17 +22,11 @@ struct fbool {
     uint8_t data;
 };
 
-template<template<typename,typename> class VECTOR>
-struct Traits {};
-
-template <>
-struct Traits<std::vector> {
+struct default_traits {
     template <typename T>
     struct vector_type {
         typedef std::vector<T> type;
     };
-
-
 
     template <typename value_type> 
     struct iter_comp {
@@ -200,9 +194,15 @@ struct Traits<std::vector> {
     }
 };
 
+template<template<typename,typename> class VECTOR>
+struct Traits {};
+
+template <>
+struct Traits<std::vector>: public default_traits {};
+
 #ifdef HAVE_THRUST
 template <>
-struct Traits<thrust::device_vector> {
+struct Traits<thrust::device_vector>: public default_traits {
     template <typename T>
     struct vector_type {
         typedef thrust::device_vector<T> type;
@@ -394,7 +394,9 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef traits traits_type;
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
 
-    typedef std::tuple <
+
+#ifdef HAVE_THRUST
+    typedef thrust::tuple<
             typename position_vector_type::iterator,
             typename id_vector_type::iterator,
             typename alive_vector_type::iterator,
@@ -402,13 +404,30 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
             > tuple_of_iterators_type;
 
-    typedef std::tuple <
+    typedef thrust::tuple<
             typename position_vector_type::const_iterator,
             typename id_vector_type::const_iterator,
             typename alive_vector_type::const_iterator,
             //typename random_vector_type::const_iterator,
             typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
             > tuple_of_const_iterators_type;
+#else
+    typedef std::tuple<
+            typename position_vector_type::iterator,
+            typename id_vector_type::iterator,
+            typename alive_vector_type::iterator,
+            //typename random_vector_type::iterator,
+            typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
+            > tuple_of_iterators_type;
+
+    typedef std::tuple<
+            typename position_vector_type::const_iterator,
+            typename id_vector_type::const_iterator,
+            typename alive_vector_type::const_iterator,
+            //typename random_vector_type::const_iterator,
+            typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
+            > tuple_of_const_iterators_type;
+#endif
 
 
     typedef zip_helper<tuple_of_iterators_type> my_zip_helper;
