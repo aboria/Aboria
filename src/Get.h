@@ -61,21 +61,41 @@ struct get_elem_by_index {
     static const size_t index = I;
 };
 
+template<typename tuple_type>
+struct getter_helper {};
 
-template <typename tuple_type, typename mpl_vector_type> 
-struct getter_type{};
+template <typename ... T>
+struct getter_helper<std::tuple<T ...>> {
+    typedef typename std::tuple<T...> tuple_type; 
+    template <unsigned int N>
+    using return_type = std::tuple_element<N,tuple_type>;
+    template <unsigned int N, typename T2>
+    static inline auto get(T2&& tuple) -> decltype(std::get<N>(tuple)) { 
+        return std::get<N>(tuple);
+    }
+};
 
-template <typename mpl_vector_type, typename ... tuple_elements> 
-struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
-    typedef std::tuple<tuple_elements...> tuple_type;
+#ifdef HAVE_THRUST
+template <typename ... T>
+struct getter_helper<thrust::tuple<T ...>> {
+    typedef thrust::tuple<T...> tuple_type; 
+    template <unsigned int N>
+    using return_type = thrust::tuple_element<N,tuple_type>;
+    template <unsigned int N, typename T2>
+    static inline auto get(T2&& tuple) -> decltype(thrust::get<N>(tuple)) { 
+        return thrust::get<N>(tuple);
+    }
+};
+#endif
 
-    typedef mpl_vector_type mpl_type_vector;
+template <typename TUPLE, typename mpl_vector_type> 
+struct getter_type{
+    typedef TUPLE tuple_type;
     template <typename T>
-    using elem_by_type = get_elem_by_type<T,mpl_type_vector>;
+    using elem_by_type = get_elem_by_type<T,mpl_vector_type>;
     template <typename T>
-    using return_type = std::tuple_element<elem_by_type<T>::index,tuple_type>;
+    using return_type = typename getter_helper<tuple_type>::template return_type<elem_by_type<T>::index>;
 
-    //typedef getter_type<typename tuple_helper<tuple_type>::reference,mpl_type_vector> reference;
 
     getter_type() {}
     explicit getter_type(const tuple_type& data):data(data) {}
@@ -98,15 +118,36 @@ struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
         : _Inherited(static_cast<_Tuple_impl<0, _UElements...>&&>(__in)) { }
         */
 
+    template <typename... T2,typename = typename
+	//std::enable_if<std::__and_<std::is_convertible<const T2&, tuple_elements>...>::value>::type>
+    //std::enable_if<getter_helper<tuple_type>::template is_convertible<const T2&...>::value>::type>
+    std::enable_if<std::is_convertible<std::tuple<T2...>,tuple_type>::value>::type>
+    getter_type(const T2&... args):data(other.data) {}
+
+
+
     template <typename T1, typename... T2,typename = typename
-	std::enable_if<std::__and_<std::is_convertible<const T2&, tuple_elements>...>::value>::type>
+	//std::enable_if<std::__and_<std::is_convertible<const T2&, tuple_elements>...>::value>::type>
+    //std::enable_if<getter_helper<tuple_type>::template is_convertible<const T2&...>::value>::type>
+    std::enable_if<std::is_convertible<std::tuple<T2...>,tuple_type>::value>::type>
     getter_type(const getter_type<std::tuple<T2...>,T1>& other):data(other.data) {}
 
     template <typename T1, typename... T2,typename = typename
-	std::enable_if<std::__and_<std::is_convertible<T2, tuple_elements>...>::value>::type>
+	//std::enable_if<std::__and_<std::is_convertible<T2, tuple_elements>...>::value>::type>
+    //std::enable_if<getter_helper<tuple_type>::template is_convertible<T2...>::value>::type>
+    std::enable_if<std::is_convertible<std::tuple<T2...>,tuple_type>::value>::type>
     getter_type(const getter_type<std::tuple<T2...>,T1>&& other):data(std::move(other.data)) {}
 
-    
+#ifdef HAVE_THRUST
+    template <typename T1, typename... T2,typename = typename
+    std::enable_if<std::is_convertible<thrust::tuple<T2...>,tuple_type>::value>::type>
+    getter_type(const getter_type<thrust::tuple<T2...>,T1>& other):data(other.data) {}
+
+    template <typename T1, typename... T2,typename = typename
+    std::enable_if<std::is_convertible<thrust::tuple<T2...>,tuple_type>::value>::type>
+    getter_type(const getter_type<thrust::tuple<T2...>,T1>&& other):data(std::move(other.data)) {}
+#endif
+
     getter_type& operator=( const getter_type& other ) {
         data = other.data;
         return *this;
@@ -132,15 +173,28 @@ struct getter_type<std::tuple<tuple_elements...>,mpl_vector_type> {
 
     /*
     template<typename T>
-    typename return_type<T>::type & get() const {
-        return std::get<elem_by_type<T>::index>(data);        
+    const typename return_type<T>::type & 
+    get_by_type() const {
+        return getter_helper<tuple_type>::get<elem_by_type<T>::index>(data);        
     }
 
     template<typename T>
-    typename return_type<T>::type & get() {
-        return std::get<elem_by_type<T>::index>(data);        
+    typename return_type<T>::type & 
+    get_by_type() {
+        return getter_helper<tuple_type>::get<elem_by_type<T>::index>(data);        
     }
 
+    template<unsigned int N>
+    const typename getter_helper<tuple_type>::template return_type<N>::type &
+    get_by_index() const {
+        return getter_helper<tuple_type>::get<N>(data);        
+    }
+
+    template<unsigned int N>
+    typename getter_helper<tuple_type>::template return_type<N>::type &
+    get_by_index() {
+        return getter_helper<tuple_type>::get<N>(data);        
+    }
     */
 
     const tuple_type & get_tuple() const { return data; }
@@ -221,13 +275,15 @@ public:
     CUDA_HOST_DEVICE
     explicit zip_iterator(iterator_tuple_type iter) : iter(iter) {}
 
+    tempate <typename ...T>
+    CUDA_HOST_DEVICE
+    explicit zip_iterator(T... args) : iter(args...) {}
 
     template<typename T>
     CUDA_HOST_DEVICE
     const typename return_type<T>::type & get() const {
         return std::get<elem_by_type<T>::index>(iter);        
     }
-
 
     CUDA_HOST_DEVICE
     const iterator_tuple_type & get_tuple() const { return iter; }
@@ -316,7 +372,7 @@ template<typename T, typename value_type>
 typename value_type::template return_type<T>::type const & 
 get(const value_type& arg) {
     //std::cout << "get const reference" << std::endl;
-    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
+    return getter_helper<value_type::tuple_type>::get<value_type::template elem_by_type<T>::index>(data);        
     //return arg.template get<T>();
 }
 
@@ -324,7 +380,7 @@ template<typename T, typename value_type>
 typename value_type::template return_type<T>::type & 
 get(value_type& arg) {
     //std::cout << "get reference" << std::endl;
-    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
+    return getter_helper<value_type::tuple_type>::get<value_type::template elem_by_type<T>::index>(data);        
     //return arg.template get<T>();
 }
 
@@ -332,8 +388,26 @@ template<typename T, typename value_type>
 typename value_type::template return_type<T>::type & 
 get(value_type&& arg) {
     //std::cout << "get reference" << std::endl;
-    return std::get<value_type::template elem_by_type<T>::index>(arg.get_tuple());        
+    return getter_helper<value_type::tuple_type>::get<value_type::template elem_by_type<T>::index>(data);        
     //return arg.template get<T>();
+}
+
+template<unsigned int N, typename value_type>
+const typename getter_helper<tuple_type>::template return_type<N>::type &
+get_by_index(const value_type& arg) {
+    return getter_helper<tuple_type>::get<N>(data);        
+}
+
+template<unsigned int N, typename value_type>
+typename getter_helper<tuple_type>::template return_type<N>::type &
+get_by_index(value_type& arg) {
+    return getter_helper<tuple_type>::get<N>(data);        
+}
+
+template<unsigned int N, typename value_type>
+typename getter_helper<tuple_type>::template return_type<N>::type &
+get_by_index(value_type&& arg) {
+    return getter_helper<tuple_type>::get<N>(data);        
 }
 
 /*

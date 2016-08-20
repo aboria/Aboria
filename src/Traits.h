@@ -453,17 +453,17 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static iterator begin_impl(data_type& data, index_sequence<I...>) {
-        return iterator(std::make_tuple(std::get<I>(data.get_tuple()).begin()...));
+        return iterator(get_by_index<I>(data).begin()...);
     }
 
     template<std::size_t... I>
     static iterator end_impl(data_type& data, index_sequence<I...>) {
-        return iterator(std::make_tuple(std::get<I>(data.get_tuple()).end()...));
+        return iterator(get_by_index<I>(data).end()...);
     }
 
     template<std::size_t... I>
     static reference index_impl(data_type& data, const size_t i, index_sequence<I...>, std::true_type) {
-        return reference(std::tie(std::get<I>(data.get_tuple())[i]...));
+        return reference(get_by_index<I>(data)[i]...);
     }
 
     template<std::size_t... I>
@@ -489,7 +489,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static void push_back_impl(data_type& data, const value_type& val, index_sequence<I...>) {
-        int dummy[] = { 0, (std::get<I>(data.get_tuple()).push_back(std::get<I>(val.get_tuple())),void(),0)... };
+        int dummy[] = { 0, (data.template get_by_index<I>().push_back(val.template get_by_index<I>()),void(),0)... };
         static_cast<void>(dummy); // Avoid warning for unused variable.
     }
 
