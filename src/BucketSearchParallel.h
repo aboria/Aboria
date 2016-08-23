@@ -98,6 +98,7 @@ public:
                                               const int my_index, 
                                               const bool self) const;
 
+    CUDA_HOST_DEVICE 
     const_iterator end() const { return const_iterator(this); }
 
 
@@ -331,7 +332,11 @@ public:
     const_iterator(const BucketSearch<traits>* bucket_sort, const double_d &r):
         m_bucket_sort(bucket_sort),
         m_r(r),
-        m_node(bucket_sort->m_particles_end) {}
+        m_node(bucket_sort->m_particles_end),
+        m_begins(),
+        m_ends(),
+        m_transpose() 
+    {}
 
     CUDA_HOST_DEVICE
     void add_range(particles_iterator begin, particles_iterator end, const double_d &transpose) {
@@ -450,9 +455,21 @@ private:
     double_d m_r;
     double_d m_dx;
     particles_iterator m_node;
+#ifdef HAVE_THRUST
+#ifdef __CUDA_ARCH__
+    std::vector<particles_iterator> m_begins;
+    thrust::device_vector<particles_iterator> m_ends;
+    thrust::device_vector<double_d> m_transpose;
+#else
+    std::vector<particles_iterator> m_begins;
+    thrust::host_vector<particles_iterator> m_ends;
+    thrust::host_vector<double_d> m_transpose;
+#endif
+#else
     std::vector<particles_iterator> m_begins;
     std::vector<particles_iterator> m_ends;
     std::vector<double_d> m_transpose;
+#endif
     int m_current_index = -1;
 };
 

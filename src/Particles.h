@@ -65,10 +65,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_THRUST
 #include <thrust/device_vector.h>
+#include <thrust/host_vector.h>
 #endif
 
 
 namespace Aboria {
+
+    /*
+#ifdef HAVE_THUST
+template <typename T, typename Alloc> 
+using default_vector = thrust::host_vector<T,Alloc>;
+#else
+template <typename T, typename Alloc> 
+using default_vector = std::vector<T,Alloc>;
+#endif
+*/
 
 /// \brief A STL-compatable container of particles in 3D space
 ///
