@@ -287,6 +287,8 @@ struct zip_helper<tuple_ns::tuple<T ...>> {
     typedef tuple_ns::tuple<T...> tuple_iterator_type; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::value_type ...> tuple_value_type; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::reference ...> tuple_reference; 
+    typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::pointer...> tuple_pointer; 
+    typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::value_type*...> tuple_raw_pointer; 
     typedef typename tuple_ns::tuple<T...> iterator_tuple_type;
     template <unsigned int N>
     using tuple_element = tuple_ns::tuple_element<N,iterator_tuple_type>;
@@ -457,6 +459,8 @@ public:
     typedef iterator_tuple_type tuple_type;
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> raw_pointer;
     typedef typename zip_helper<iterator_tuple_type>::difference_type difference_type;
 
     template <typename T>

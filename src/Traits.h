@@ -565,6 +565,21 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef traits traits_type;
     typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
 
+    /*
+    typedef tuple_ns::tuple<
+            typename position_vector_type::pointer,
+            typename id_vector_type::pointer,
+            typename alive_vector_type::pointer,
+            typename traits::template vector_type<typename TYPES::value_type>::type::pointer...
+            > tuple_of_pointers_type;
+
+    typedef tuple_ns::tuple<
+            typename position_vector_type::value_type*,
+            typename id_vector_type::value_type*,
+            typename alive_vector_type::value_type*,
+            typename traits::template vector_type<typename TYPES::value_type>::type::value_type*...
+            > tuple_of_raw_pointers_type;
+            */
 
     typedef tuple_ns::tuple<
             typename position_vector_type::iterator,
@@ -582,8 +597,6 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
             > tuple_of_const_iterators_type;
 
-    typedef zip_helper<tuple_of_iterators_type> my_zip_helper;
-    typedef zip_helper<tuple_of_const_iterators_type> my_zip_helper_const;
 
     typedef tuple_ns::tuple<
         position_vector_type,
@@ -598,6 +611,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     typedef typename iterator::reference reference;
     typedef typename iterator::value_type value_type;
+    typedef typename iterator::pointer pointer;
+    typedef typename iterator::value_type* raw_pointer;
     typedef typename const_iterator::reference const_reference;
     typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
@@ -742,6 +757,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename traits::vector_unsigned_int vector_unsigned_int;                   \
     typedef typename vector_unsigned_int::iterator vector_unsigned_int_iterator;        \
     typedef typename traits::iterator particles_iterator;                               \
+    typedef typename traits::pointer particles_pointer;                               \
+    typedef typename traits::raw_pointer particles_raw_pointer;                               \
     typedef typename traits::const_iterator const_particles_iterator;                   \
     typedef typename traits::value_type particles_value_type;                           \
     typedef typename traits::reference particles_reference_type;                        \
