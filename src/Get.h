@@ -256,6 +256,7 @@ namespace thrust {
     struct iterator_traits<thrust::null_type> {
         typedef thrust::null_type value_type;
         typedef thrust::null_type reference;
+        typedef thrust::null_type pointer;
     };
 }
 namespace Aboria {
@@ -446,12 +447,12 @@ template <typename iter>
     }
 }
 
-
+struct zip_iterator_tag: boost::random_access_traversal_tag {};
 
 template <typename iterator_tuple_type, typename mpl_vector_type=mpl::vector<int>>
 class zip_iterator: public boost::iterator_facade<zip_iterator<iterator_tuple_type,mpl_vector_type>,
     getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type>,
-    boost::random_access_traversal_tag,
+    zip_iterator_tag,
     getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type>
         > {
 
@@ -525,6 +526,47 @@ private:
     iterator_tuple_type iter;
     friend class boost::iterator_core_access;
 };
+
+template <typename ZipIterator, std::size_t... I>
+CUDA_HOST_DEVICE
+typename ZipIterator::pointer 
+raw_pointer_cast_impl(const ZipIterator& arg, index_sequence<I...>) {
+#ifdef HAVE_CUDA
+    return typename ZipIterator::pointer(thrust::raw_pointer_cast(thrust::get<I>(arg.get_tuple()))...);
+#else
+    return typename ZipIterator::pointer(&*std::get<I>(arg.get_tuple())...);
+#endif
+}
+    
+template <typename iterator_tuple_type, typename mpl_vector_type>
+CUDA_HOST_DEVICE
+typename std::iterator_traits<Iterator>::pointer
+raw_pointer_cast(const zip_iterator<iterator_tuple_type,mpl_vector_type>& arg, std::true_type) {
+    typedef typename zip_helper<iterator_tuple_type>::index_type index_type;
+    return raw_pointer_cast_impl(arg,index_type());
+}
+
+template <typename Iterator>
+CUDA_HOST_DEVICE
+typename std::iterator_traits<Iterator>::pointer
+raw_pointer_cast(const Iterator& arg, std::false_type) {
+#ifdef HAVE_CUDA
+    return thrust::raw_pointer_cast(arg);
+#else
+    return &*arg;
+#endif
+}
+
+template <typename Iterator>
+CUDA_HOST_DEVICE
+typename std::iterator_traits<Iterator>::pointer
+raw_pointer_cast(const Iterator& arg) {
+    return raw_pointer_cast(arg,std::is_same<
+                                    std::iterator_traits<Iterator>::iterator_catagory,
+                                    zip_iterator_tag>()
+                           );
+}
+
 
 /*
 template <typename mpl_vector_type, typename ... tuple_args>

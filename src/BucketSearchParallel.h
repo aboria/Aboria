@@ -50,6 +50,29 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+
+template <typename IteratorType>
+struct iterator_range {
+    IteratorType m_begin;
+    IteratorType m_end;
+    CUDA_HOST_DEVICE
+    iterator_range(IteratorType&& begin, IteratorType&& end):
+        m_begin(begin),m_end(end) 
+    {}
+    CUDA_HOST_DEVICE
+    IteratorType &begin() { return m_begin; }
+    CUDA_HOST_DEVICE
+    IteratorType &end() { return m_end; }
+};
+
+template <typename IteratorType>
+iterator_range<IteratorType> make_iterator_range(IteratorType&& begin, IteratorType&& end) {
+    return iterator_range<IteratorType>(begin,end);
+}
+
+
+
+
 template <typename traits>
 class BucketSearch {
     UNPACK_TRAITS(traits)
@@ -89,7 +112,6 @@ public:
         m_neighbour_search.m_particles_begin = raw_pointer_cast(m_particles_begin); 
         m_neighbour_search.m_particles_end = raw_pointer_cast(m_particles_end); 
         m_neighbour_search.m_bucket_indices= raw_pointer_cast(m_bucket_indices); 
-        m_neighbour_search.m_nparticles = n; 
     }
 
 
@@ -99,11 +121,9 @@ public:
     /// this function is being used to find all the point pairs within the same point container, then
     /// a naive looping through and using find_broadphase_neighbours() will find each pair twice. 
     /// This can be avoided by setting self=true and supplying the index of each point with my_index
-    const_iterator find_broadphase_neighbours(const double_d& r, 
-                                              const int my_index, 
-                                              const bool self) const;
-
-    const_iterator end() const { return const_iterator(this); }
+    iterator_range<const_iterator> get_neighbours(const double_d& position) const {
+        return m_neighbour_search.get_neighbours(position);
+    }
 
     const neighbour_search& get_neighbour_search() const {
         return m_neighbour_search;
@@ -115,9 +135,18 @@ public:
         m_neighbour_search.m_bounds.bmax = max_in;
         m_neighbour_search.m_periodic = periodic_in;
         m_neighbour_search.m_bucket_side_length = side_length;
-        m_neighbour_search.m_size = floor((m_bounds.bmax-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
-        m_neighbour_search.m_bucket_side_length = (m_bounds.bmax-m_bounds.bmin)/m_size;
-        m_neighbour_search.m_point_to_bucket_index = point_to_bucket_index<dimension>(m_size,m_bucket_side_length,m_bounds);
+        m_neighbour_search.m_size = 
+            floor((m_neighbour_search.m_bounds.bmax-
+                    m_neighbour_search.m_bounds.bmin)
+                    /m_neighbour_search.m_bucket_side_length)
+            .template cast<unsigned int>();
+        m_neighbour_search.m_bucket_side_length = 
+            (m_neighbour_search.m_bounds.bmax-m_neighbour_search.m_bounds.bmin)
+            /m_neighbour_search.m_size;
+        m_neighbour_search.m_point_to_bucket_index = 
+            point_to_bucket_index<dimension>(
+                m_neighbour_search.m_size,m_neighbour_search.m_bucket_side_length,
+                m_neighbour_search.m_bounds);
  
 	    LOG(2,"\tbounds = "<<m_neighbour_search.m_bounds);
 	    LOG(2,"\tperiodic = "<<m_neighbour_search.m_periodic);
@@ -125,14 +154,20 @@ public:
 	    LOG(2,"\tnumber of buckets = "<<m_neighbour_search.m_size<<" (total="<<m_neighbour_search.m_size.prod()<<")");
 
         // setup bucket data structures
-        m_bucket_begin.resize(m_size.prod());
-        m_bucket_end.resize(m_size.prod());
+        m_bucket_begin.resize(m_neighbour_search.m_size.prod());
+        m_bucket_end.resize(m_neighbour_search.m_size.prod());
 
-        m_neighbour_search.m_bucket_begin = raw_pointer_cast(m_bucket_begin.data());
-        m_neighbour_search.m_bucket_end = raw_pointer_cast(m_bucket_begin.data());
+        m_neighbour_search.m_bucket_begin = raw_pointer_cast(m_bucket_begin.begin());
+        m_neighbour_search.m_bucket_end = raw_pointer_cast(m_bucket_begin.begin());
         m_neighbour_search.nbuckets = m_bucket_begin.size();
     }
 
+    const_iterator find_broadphase_neighbours(
+            const double_d& r, 
+            const int my_index, 
+            const bool self) const {
+        return m_neighbour_search.find_broadphase_neighbours(r,my_index,self);
+    }
 
     const double_d& get_min() const { return m_neighbour_search.m_bounds.bmin; }
     const double_d& get_max() const { return m_neighbour_search.m_bounds.bmax; }
@@ -249,11 +284,18 @@ struct BucketSearch<traits>::neighbour_search {
     point_to_bucket_index<dimension> m_point_to_bucket_index;
 
     particles_raw_pointer m_particles_begin;
-    unsigned int nparticles;
+    particles_raw_pointer m_particles_end;
+
     unsigned int *m_bucket_begin;
     unsigned int *m_bucket_end;
     unsigned int *m_bucket_indices;
     unsigned int nbuckets;
+
+    CUDA_HOST_DEVICE
+    iterator_range<const_iterator> get_neighbours(const double_d& position) const {
+        return iterator_range<const_iterator>(find_broadphase_neighbours(r,-1,false),
+                                              const_iterator(this));
+    }
 
     CUDA_HOST_DEVICE
     const_iterator find_broadphase_neighbours(
@@ -334,13 +376,17 @@ struct BucketSearch<traits>::neighbour_search {
 
 };
 
-};
+constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
+      return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
+    }
+    
+
 
 template <typename traits>
 class BucketSearch<traits>::const_iterator {
 public:
     typedef const tuple_ns::tuple<const particles_value_type&,const double_d&>* pointer;
-	typedef tuple_ns::forward_iterator_tag iterator_category;
+	typedef std::forward_iterator_tag iterator_category;
     typedef const tuple_ns::tuple<particles_reference_type,const double_d&> reference;
     typedef const tuple_ns::tuple<particles_reference_type,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
@@ -349,23 +395,30 @@ public:
     const_iterator(const neighbour_search* neighbour_search):
         m_neighbour_search(neighbour_search),
         m_nbuckets(0),
-        m_node(neighbour_search->m_particles_begin + neighbour_search.nparticles) {}
+        m_node(neighbour_search->m_particles_end) {}
 
     CUDA_HOST_DEVICE
     const_iterator(const neighbour_search* neighbour_search, const double_d &r):
         m_neighbour_search(neighbour_search),
         m_nbuckets(0),
         m_r(r),
-        m_node(neighbour_search->m_particles_begin + neighbour_search.nparticles)
+        m_node(neighbour_search->m_particles_end)
     {}
 
     CUDA_HOST_DEVICE
     void add_range(particles_raw_pointer begin, particles_raw_pointer end, const double_d &transpose) {
+        /*
         m_begins.push_back(begin);
         m_ends.push_back(end);
         m_transpose.push_back(transpose);
-        if (m_node == m_bucket_sort->m_particles_end) {
-            m_current_index = m_begins.size()-1;
+        */
+        m_begins[m_nbuckets] = begin;
+        m_ends[m_nbuckets] = end;
+        m_transpose[m_nbuckets] = transpose;
+        m_nbuckets++;
+
+        if (m_node == m_neighbour_search->m_particles_end) {
+            m_current_index = m_nbuckets-1;
             m_node = m_begins[m_current_index];
             if (!check_candidate()) {
                 increment(); 
@@ -389,11 +442,11 @@ public:
         if (m_node == m_ends[m_current_index]) {
             m_current_index++;
             //std::cout << "moving on to next index i = "<<m_current_index<<" with range "<<m_begins[m_current_index]-m_bucket_sort->m_particles_begin<<" to "<<m_ends[m_current_index]-m_bucket_sort->m_particles_begin<<std::endl;
-            if (m_current_index < m_begins.size()) {
+            if (m_current_index < m_nbuckets) {
                 m_node = m_begins[m_current_index];
                 //std::cout << "particle index = "<<m_node-m_bucket_sort->m_particles_begin<<std::endl;
             } else {
-                m_node = m_bucket_sort->m_particles_end;
+                m_node = m_neighbour_search->m_particles_end;
                 return false;
             }
         }
@@ -408,7 +461,7 @@ public:
 
         bool outside = false;
         for (int i=0; i < dimension; i++) {
-            if (std::abs(m_dx[i]) > m_bucket_sort->m_bucket_side_length[i]) {
+            if (std::abs(m_dx[i]) > m_neighbour_search->m_bucket_side_length[i]) {
                 outside = true;
                 break;
             } 
@@ -471,19 +524,15 @@ public:
 private:
     friend class boost::iterator_core_access;
     
-    constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
-      return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
-    }
-    
-    const BucketSearch* m_bucket_sort;
+    const neighbour_search *m_neighbour_search;
     double_d m_r;
     double_d m_dx;
     particles_raw_pointer m_node;
-    static const unsigned int max_nbuckets = ipow(3,dimension); 
+    const static unsigned int max_nbuckets = ipow(3,traits::dimension); 
     unsigned int m_nbuckets; 
-    particles_raw_pointer m_begins[nbuckets];
-    particles_raw_pointer m_ends[nbuckets];
-    double_d m_transpose[nbuckets];
+    particles_raw_pointer m_begins[max_nbuckets];
+    particles_raw_pointer m_ends[max_nbuckets];
+    double_d m_transpose[max_nbuckets];
     int m_current_index = -1;
 };
 

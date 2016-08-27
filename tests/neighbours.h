@@ -94,7 +94,7 @@ public:
 
     	auto tpl = test.get_neighbours(double3(1.1*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
-    	const Test_type::value_type &pfound = std::get<0>(*tpl.begin());
+    	const Test_type::value_type &pfound = tuple_ns::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
     	tpl = test.get_neighbours(double3(0.9*diameter,0,0));

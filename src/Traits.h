@@ -741,7 +741,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 };
 
 #define UNPACK_TRAITS(traits)      \
-    const static unsigned int dimension = traits::dimension;                          \
+    static const unsigned int dimension = traits::dimension;                          \
     typedef typename traits::vector_double_d vector_double_d;                           \
     typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;    \
     typedef typename traits::vector_int_d vector_int_d;                                 \
