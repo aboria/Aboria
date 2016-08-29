@@ -95,7 +95,7 @@ public:
         m_particles_begin = begin;
         m_particles_end = end;
 
-        CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
+        CHECK(!m_neighbour_search.m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
         const size_t n = m_particles_end - m_particles_begin;
 	    LOG(2,"BucketSearch: embed_points: embedding "<<n<<" points");
@@ -103,15 +103,15 @@ public:
 
         if (n > 0) {
             build_bucket_indices(
-                    get<position>(m_paticles_begin),
-                    get<position<(m_particles_end),m_bucket_indices.begin());
+                    get<position>(m_particles_begin),
+                    get<position>(m_particles_end),m_bucket_indices.begin());
             sort_by_bucket_index();
         }
         build_buckets();
 
-        m_neighbour_search.m_particles_begin = raw_pointer_cast(m_particles_begin); 
-        m_neighbour_search.m_particles_end = raw_pointer_cast(m_particles_end); 
-        m_neighbour_search.m_bucket_indices= raw_pointer_cast(m_bucket_indices); 
+        m_neighbour_search.m_particles_begin = iterator_to_raw_pointer(m_particles_begin); 
+        m_neighbour_search.m_particles_end = iterator_to_raw_pointer(m_particles_end); 
+        m_neighbour_search.m_bucket_indices= iterator_to_raw_pointer(m_bucket_indices.begin()); 
     }
 
 
@@ -157,9 +157,9 @@ public:
         m_bucket_begin.resize(m_neighbour_search.m_size.prod());
         m_bucket_end.resize(m_neighbour_search.m_size.prod());
 
-        m_neighbour_search.m_bucket_begin = raw_pointer_cast(m_bucket_begin.begin());
-        m_neighbour_search.m_bucket_end = raw_pointer_cast(m_bucket_begin.begin());
-        m_neighbour_search.nbuckets = m_bucket_begin.size();
+        m_neighbour_search.m_bucket_begin = iterator_to_raw_pointer(m_bucket_begin.begin());
+        m_neighbour_search.m_bucket_end = iterator_to_raw_pointer(m_bucket_begin.begin());
+        m_neighbour_search.m_nbuckets = m_bucket_begin.size();
     }
 
     const_iterator find_broadphase_neighbours(
@@ -208,7 +208,7 @@ void BucketSearch<traits>::build_bucket_indices(
     transform(positions_begin,
             positions_end,
             bucket_indices_begin,
-            m_point_to_bucket_index);
+            m_neighbour_search.m_point_to_bucket_index);
 }
 
 template <typename traits>
@@ -228,14 +228,14 @@ void BucketSearch<traits>::build_buckets() {
     traits::lower_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
-            search_begin + m_size.prod(),
+            search_begin + m_neighbour_search.m_size.prod(),
             m_bucket_begin.begin());
 
     // find the end of each bucket's list of points
     traits::upper_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
-            search_begin + m_size.prod(),
+            search_begin + m_neighbour_search.m_size.prod(),
             m_bucket_end.begin());
 }
 
@@ -246,7 +246,7 @@ void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, co
     m_particles_end = end;
 
     CHECK(start_adding-begin == m_bucket_indices.size(), "prior number of particles embedded into domain is not consistent with distance between begin and start_adding");
-    CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
+    CHECK(!m_neighbour_search.m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
     const size_t dist = end - start_adding;
     if (dist > 0) {
@@ -258,7 +258,7 @@ void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, co
         m_bucket_indices.resize(total);
         auto bucket_indices_start_adding = m_bucket_indices.end() - dist;
 
-        build_bucket_indices(positions_start_adding,m_positions_end,bucket_indices_start_adding);
+        build_bucket_indices(positions_start_adding,positions_end,bucket_indices_start_adding);
         sort_by_bucket_index();
         build_buckets();
         /*
@@ -269,14 +269,15 @@ void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, co
 
     }
 
-    m_neighbour_search.m_particles_begin = raw_pointer_cast(m_particles_begin);
-    m_neighbour_search.m_particles_end = raw_pointer_cast(m_particles_end);
-    m_neighbour_search.m_bucket_indices = raw_pointer_cast(m_bucket_indices);
-    m_neighbour_search.m_nparticles = m_particles_end-m_particles_begin;
+    m_neighbour_search.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
+    m_neighbour_search.m_particles_end = iterator_to_raw_pointer(m_particles_end);
+    m_neighbour_search.m_bucket_indices = iterator_to_raw_pointer(m_bucket_indices.begin());
 }
 
 template <typename traits>
 struct BucketSearch<traits>::neighbour_search {
+    UNPACK_TRAITS(traits)
+
     bool_d m_periodic;
     double_d m_bucket_side_length; 
     unsigned_int_d m_size;
@@ -289,11 +290,19 @@ struct BucketSearch<traits>::neighbour_search {
     unsigned int *m_bucket_begin;
     unsigned int *m_bucket_end;
     unsigned int *m_bucket_indices;
-    unsigned int nbuckets;
+    unsigned int m_nbuckets;
+
+    inline
+    CUDA_HOST_DEVICE
+    neighbour_search():
+        m_periodic(),
+        m_particles_begin(),
+        m_bucket_begin()
+    {}
 
     CUDA_HOST_DEVICE
     iterator_range<const_iterator> get_neighbours(const double_d& position) const {
-        return iterator_range<const_iterator>(find_broadphase_neighbours(r,-1,false),
+        return iterator_range<const_iterator>(find_broadphase_neighbours(position,-1,false),
                                               const_iterator(this));
     }
 
@@ -387,8 +396,8 @@ class BucketSearch<traits>::const_iterator {
 public:
     typedef const tuple_ns::tuple<const particles_value_type&,const double_d&>* pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const tuple_ns::tuple<particles_reference_type,const double_d&> reference;
-    typedef const tuple_ns::tuple<particles_reference_type,const double_d&> value_type;
+    typedef const tuple_ns::tuple<particles_reference,const double_d&> reference;
+    typedef const tuple_ns::tuple<particles_reference,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
     
     CUDA_HOST_DEVICE

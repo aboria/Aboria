@@ -61,168 +61,6 @@ struct get_elem_by_index {
     static const size_t index = I;
 };
 
-template<typename tuple_type>
-struct getter_helper {};
-
-template <typename ... T>
-struct getter_helper<tuple_ns::tuple<T ...>> {
-    typedef typename tuple_ns::tuple<T...> tuple_type; 
-    template <unsigned int N>
-    using return_type = tuple_ns::tuple_element<N,tuple_type>;
-    template <unsigned int N, typename T2>
-    static inline auto get(T2&& tuple) -> decltype(tuple_ns::get<N>(tuple)) { 
-        return tuple_ns::get<N>(tuple);
-    }
-};
-
-/*
-
-template <typename ... T>
-struct getter_helper<std::tuple<T ...>> {
-    typedef typename std::tuple<T...> tuple_type; 
-    template <unsigned int N>
-    using return_type = std::tuple_element<N,tuple_type>;
-    template <unsigned int N, typename T2>
-    static inline auto get(T2&& tuple) -> decltype(std::get<N>(tuple)) { 
-        return std::get<N>(tuple);
-    }
-};
-
-#ifdef HAVE_THRUST
-template <typename ... T>
-struct getter_helper<thrust::tuple<T ...>> {
-    typedef thrust::tuple<T...> tuple_type; 
-    template <unsigned int N>
-    using return_type = thrust::tuple_element<N,tuple_type>;
-    template <unsigned int N, typename T2>
-    static inline auto get(T2&& tuple) -> decltype(thrust::get<N>(tuple)) { 
-        return thrust::get<N>(tuple);
-    }
-};
-#endif
-*/
-
-template <typename TUPLE, typename mpl_vector_type> 
-struct getter_type{
-    typedef TUPLE tuple_type;
-    template <typename T>
-    using elem_by_type = get_elem_by_type<T,mpl_vector_type>;
-    template <typename T>
-    using return_type = typename getter_helper<tuple_type>::template return_type<elem_by_type<T>::index>;
-
-
-    getter_type() {}
-    explicit getter_type(const tuple_type& data):data(data) {}
-    getter_type(const getter_type& other):data(other.data) {}
-    getter_type(getter_type&& other):data(std::move(other.data)) {}
-    //getter_type(const reference& other):data(other.data) {}
-
-    /*
-    template<typename... _UElements, typename = typename
-        enable_if<__and_<is_convertible<const _UElements&,
-					_Elements>...>::value>::type>
-        constexpr tuple(const tuple<_UElements...>& __in)
-        : _Inherited(static_cast<const _Tuple_impl<0, _UElements...>&>(__in))
-        { }
-
-      template<typename... _UElements, typename = typename
-        enable_if<__and_<is_convertible<_UElements,
-					_Elements>...>::value>::type>
-        constexpr tuple(tuple<_UElements...>&& __in)
-        : _Inherited(static_cast<_Tuple_impl<0, _UElements...>&&>(__in)) { }
-        */
-
-
-    template <typename tuple_type2, typename = typename
-	//std::enable_if<std::__and_<std::is_convertible<const T2&, tuple_elements>...>::value>::type>
-    //std::enable_if<getter_helper<tuple_type>::template is_convertible<const T2&...>::value>::type>
-    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
-    getter_type(const getter_type<tuple_type2,mpl_vector_type>& other):data(other.data) {}
-
-    template <typename tuple_type2, typename = typename
-	//std::enable_if<std::__and_<std::is_convertible<T2, tuple_elements>...>::value>::type>
-    //std::enable_if<getter_helper<tuple_type>::template is_convertible<T2...>::value>::type>
-    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
-    getter_type(const getter_type<tuple_type2,mpl_vector_type>&& other):data(std::move(other.data)) {}
-
-    template <typename T1, typename T2, typename... T3>
-    getter_type(T1&& arg1, T2&& arg2, T3&&... args):data(std::forward<T1>(arg1),std::forward<T2>(arg2),std::forward<T3>(args)...) {}
-
-    /*
-#ifdef HAVE_THRUST
-    template <typename T1, typename... T2,typename = typename
-    std::enable_if<std::is_convertible<thrust::tuple<T2...>,tuple_type>::value>::type>
-    getter_type(const getter_type<thrust::tuple<T2...>,T1>& other):data(other.data) {}
-
-    template <typename T1, typename... T2,typename = typename
-    std::enable_if<std::is_convertible<thrust::tuple<T2...>,tuple_type>::value>::type>
-    getter_type(const getter_type<thrust::tuple<T2...>,T1>&& other):data(std::move(other.data)) {}
-#endif
-*/
-
-    getter_type& operator=( const getter_type& other ) {
-        data = other.data;
-        return *this;
-    }
-    getter_type& operator=( getter_type&& other ) {
-        data = std::move(other.data);
-        return *this;
-    }
-    template <typename T1, typename T2> 
-    getter_type& operator=( const getter_type<T1,T2>& other) {
-        data = other.data;
-        return *this;
-    }
-    template <typename T1, typename T2> 
-    getter_type& operator=( getter_type<T1,T2>&& other) {
-        data = std::move(other.data);
-        return *this;
-    }
-    
-    void swap(getter_type &other) {
-        data.swap(other.data);
-    }
-
-    /*
-    template<typename T>
-    const typename return_type<T>::type & 
-    get_by_type() const {
-        return getter_helper<tuple_type>::get<elem_by_type<T>::index>(data);        
-    }
-
-    template<typename T>
-    typename return_type<T>::type & 
-    get_by_type() {
-        return getter_helper<tuple_type>::get<elem_by_type<T>::index>(data);        
-    }
-
-    template<unsigned int N>
-    const typename getter_helper<tuple_type>::template return_type<N>::type &
-    get_by_index() const {
-        return getter_helper<tuple_type>::get<N>(data);        
-    }
-
-    template<unsigned int N>
-    typename getter_helper<tuple_type>::template return_type<N>::type &
-    get_by_index() {
-        return getter_helper<tuple_type>::get<N>(data);        
-    }
-    */
-
-    const tuple_type & get_tuple() const { return data; }
-    tuple_type & get_tuple() { return data; }
-            
-    tuple_type data;
-};
-
-
-template <typename tuple_type, typename mpl_vector_type> 
-void swap(getter_type<tuple_type,mpl_vector_type> x,
-          getter_type<tuple_type,mpl_vector_type> y) {
-    x.swap(y);
-}
-
-
 
 
 template<typename tuple_of_iterators>
@@ -260,6 +98,18 @@ namespace thrust {
     };
 }
 namespace Aboria {
+
+namespace detail {
+    template<typename T>
+    struct remove_pointer_for_null_type {
+        typedef T type;
+    };
+    template<>
+    struct remove_pointer_for_null_type<thrust::null_type*> {
+        typedef thrust::null_type type;
+    };
+}
+
     /*
 template <typename ... T>
 struct zip_helper<thrust::tuple<T ...>> {
@@ -289,7 +139,10 @@ struct zip_helper<tuple_ns::tuple<T ...>> {
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::value_type ...> tuple_value_type; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::reference ...> tuple_reference; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::pointer...> tuple_pointer; 
-    typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::value_type*...> tuple_raw_pointer; 
+    typedef tuple_ns::tuple<
+        typename detail::remove_pointer_for_null_type<
+            typename tuple_ns::iterator_traits<T>::value_type*>::type...
+        > tuple_raw_pointer; 
     typedef typename tuple_ns::tuple<T...> iterator_tuple_type;
     template <unsigned int N>
     using tuple_element = tuple_ns::tuple_element<N,iterator_tuple_type>;
@@ -298,6 +151,21 @@ struct zip_helper<tuple_ns::tuple<T ...>> {
     typedef make_index_sequence<tuple_ns::tuple_size<iterator_tuple_type>::value> index_type;
     template <unsigned int N, typename T2>
     CUDA_HOST_DEVICE
+    static inline auto get(T2&& tuple) -> decltype(tuple_ns::get<N>(tuple)) { 
+        return tuple_ns::get<N>(tuple);
+    }
+};
+
+
+template<typename tuple_type>
+struct getter_helper {};
+
+template <typename ... T>
+struct getter_helper<tuple_ns::tuple<T ...>> {
+    typedef typename tuple_ns::tuple<T...> tuple_type; 
+    template <unsigned int N>
+    using return_type = tuple_ns::tuple_element<N,tuple_type>;
+    template <unsigned int N, typename T2>
     static inline auto get(T2&& tuple) -> decltype(tuple_ns::get<N>(tuple)) { 
         return tuple_ns::get<N>(tuple);
     }
@@ -400,7 +268,6 @@ template <typename iter>
 #endif
 
 
-    namespace zip_iterator {
 
     template<typename reference, typename iterator_tuple_type, std::size_t... I>
     CUDA_HOST_DEVICE
@@ -444,8 +311,246 @@ template <typename iter>
         static_cast<void>(dummy);
     }
     
-    }
 }
+
+template <typename TUPLE, typename mpl_vector_type> 
+struct getter_type{
+    typedef TUPLE tuple_type;
+    template <typename T>
+    using elem_by_type = get_elem_by_type<T,mpl_vector_type>;
+    template <typename T>
+    using return_type = typename getter_helper<tuple_type>::template return_type<elem_by_type<T>::index>;
+
+
+    CUDA_HOST_DEVICE
+    getter_type() {}
+    CUDA_HOST_DEVICE
+    explicit getter_type(const tuple_type& data):data(data) {}
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type& other):data(other.data) {}
+    CUDA_HOST_DEVICE
+    getter_type(getter_type&& other):data(std::move(other.data)) {}
+
+    template <typename tuple_type2, typename = typename
+    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type<tuple_type2,mpl_vector_type>& other):data(other.data) {}
+
+    template <typename tuple_type2, typename = typename
+    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type<tuple_type2,mpl_vector_type>&& other):data(std::move(other.data)) {}
+
+    template <typename T1, typename T2, typename... T3>
+    CUDA_HOST_DEVICE
+    getter_type(T1&& arg1, T2&& arg2, T3&&... args):data(std::forward<T1>(arg1),std::forward<T2>(arg2),std::forward<T3>(args)...) {}
+
+    CUDA_HOST_DEVICE
+    getter_type& operator=( const getter_type& other ) {
+        data = other.data;
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    getter_type& operator=( getter_type&& other ) {
+        data = std::move(other.data);
+        return *this;
+    }
+    template <typename T1, typename T2> 
+    CUDA_HOST_DEVICE
+    getter_type& operator=( const getter_type<T1,T2>& other) {
+        data = other.data;
+        return *this;
+    }
+    template <typename T1, typename T2> 
+    CUDA_HOST_DEVICE
+    getter_type& operator=( getter_type<T1,T2>&& other) {
+        data = std::move(other.data);
+        return *this;
+    }
+    
+    CUDA_HOST_DEVICE
+    void swap(getter_type &other) {
+        data.swap(other.data);
+    }
+
+    CUDA_HOST_DEVICE
+    const tuple_type & get_tuple() const { return data; }
+    CUDA_HOST_DEVICE
+    tuple_type & get_tuple() { return data; }
+
+
+    tuple_type data;
+};
+
+/*
+ * specialisation for tuple of pointers. Note hack to detect tuple of pointers.. could be better?
+ */
+template <typename mpl_vector_type, typename FirstType, typename ... OtherTypes> 
+struct getter_type<tuple_ns::tuple<FirstType*, OtherTypes...>, mpl_vector_type>{
+    typedef tuple_ns::tuple<FirstType*, OtherTypes...> tuple_type;
+    template <typename T>
+    using elem_by_type = get_elem_by_type<T,mpl_vector_type>;
+    template <typename T>
+    using return_type = typename getter_helper<tuple_type>::template return_type<elem_by_type<T>::index>;
+
+    typedef getter_type<typename zip_helper<tuple_type>::tuple_reference,mpl_vector_type> reference;
+    typedef typename zip_helper<tuple_type>::difference_type difference_type;
+    typedef typename zip_helper<tuple_type>::index_type index_type;
+
+
+    CUDA_HOST_DEVICE
+    getter_type() {}
+    CUDA_HOST_DEVICE
+    explicit getter_type(const tuple_type& data):data(data) {}
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type& other):data(other.data) {}
+    CUDA_HOST_DEVICE
+    getter_type(getter_type&& other):data(std::move(other.data)) {}
+
+    template <typename tuple_type2, typename = typename
+    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type<tuple_type2,mpl_vector_type>& other):data(other.data) {}
+
+    template <typename tuple_type2, typename = typename
+    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type<tuple_type2,mpl_vector_type>&& other):data(std::move(other.data)) {}
+
+    template <typename T1, typename T2, typename... T3>
+    CUDA_HOST_DEVICE
+    getter_type(T1&& arg1, T2&& arg2, T3&&... args):data(std::forward<T1>(arg1),std::forward<T2>(arg2),std::forward<T3>(args)...) {}
+
+    CUDA_HOST_DEVICE
+    getter_type& operator=( const getter_type& other ) {
+        data = other.data;
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    getter_type& operator=( getter_type&& other ) {
+        data = std::move(other.data);
+        return *this;
+    }
+    template <typename T1, typename T2> 
+    CUDA_HOST_DEVICE
+    getter_type& operator=( const getter_type<T1,T2>& other) {
+        data = other.data;
+        return *this;
+    }
+    template <typename T1, typename T2> 
+    CUDA_HOST_DEVICE
+    getter_type& operator=( getter_type<T1,T2>&& other) {
+        data = std::move(other.data);
+        return *this;
+    }
+    
+    CUDA_HOST_DEVICE
+    void swap(getter_type &other) {
+        data.swap(other.data);
+    }
+
+    CUDA_HOST_DEVICE
+    const tuple_type & get_tuple() const { return data; }
+    CUDA_HOST_DEVICE
+    tuple_type & get_tuple() { return data; }
+
+    
+    CUDA_HOST_DEVICE
+    bool operator==(const getter_type& other) const {
+        return equal(other);
+    }
+
+    CUDA_HOST_DEVICE
+    getter_type& operator++() {
+        advance(1);
+        return *this;
+    }
+    
+    CUDA_HOST_DEVICE
+    getter_type operator++(int) {
+        getter_type temp(*this);
+        advance(1);
+        return temp; // return saved state
+    }
+
+
+    CUDA_HOST_DEVICE
+    getter_type operator+(const difference_type& n) const {
+        getter_type ret(*this);
+        ret.advance(n);
+        return ret;
+    }
+
+    CUDA_HOST_DEVICE
+    getter_type& operator--() {
+        decrement();
+        return *this;
+    }
+    
+    CUDA_HOST_DEVICE
+    getter_type operator--(int) {
+        getter_type temp(*this);
+        decrement();
+        return temp; // return saved state
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference operator*() const {
+        return dereference();
+    }
+
+
+
+    CUDA_HOST_DEVICE
+    void increment() { 
+        detail::increment_impl(data,index_type()); 
+    }
+    CUDA_HOST_DEVICE
+    void decrement() { detail::decrement_impl(data,index_type()); }
+
+    CUDA_HOST_DEVICE
+    bool equal(getter_type const& other) const { 
+        return detail::equal(
+                zip_helper<tuple_type>::get<0>(other.data),
+                zip_helper<tuple_type>::get<0>(data),
+                zip_helper<tuple_type>::iterator_category());
+    }
+
+
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { return detail::make_reference<reference>(data,index_type(),std::false_type()); }
+
+
+
+    CUDA_HOST_DEVICE
+    difference_type distance_to(getter_type const& other) const { 
+        return detail::distance(
+                zip_helper<tuple_type>::get<0>(other.data),
+                zip_helper<tuple_type>::get<0>(data),
+                zip_helper<tuple_type>::iterator_category());
+    }
+
+    CUDA_HOST_DEVICE
+    void advance(difference_type n) { detail::advance_impl(data,n,index_type()); }
+
+    tuple_type data;
+};
+
+
+template <typename tuple_type, typename mpl_vector_type> 
+void swap(getter_type<tuple_type,mpl_vector_type> x,
+          getter_type<tuple_type,mpl_vector_type> y) {
+    x.swap(y);
+}
+
+
+
+ 
+
+
+
 
 struct zip_iterator_tag: boost::random_access_traversal_tag {};
 
@@ -463,6 +568,7 @@ public:
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> raw_pointer;
     typedef typename zip_helper<iterator_tuple_type>::difference_type difference_type;
+    typedef zip_iterator_tag iterator_category;
 
     template <typename T>
     using elem_by_type = get_elem_by_type<T,mpl_vector_type>;
@@ -495,11 +601,11 @@ private:
 
     CUDA_HOST_DEVICE
     void increment() { 
-        detail::zip_iterator::increment_impl(iter,index_type()); 
+        detail::increment_impl(iter,index_type()); 
     }
     
     CUDA_HOST_DEVICE
-    void decrement() { detail::zip_iterator::decrement_impl(iter,index_type()); }
+    void decrement() { detail::decrement_impl(iter,index_type()); }
 
     CUDA_HOST_DEVICE
     bool equal(zip_iterator const& other) const { 
@@ -510,7 +616,7 @@ private:
     }
 
     CUDA_HOST_DEVICE
-    reference dereference() const { return detail::zip_iterator::make_reference<reference>(iter,index_type(),std::false_type()); }
+    reference dereference() const { return detail::make_reference<reference>(iter,index_type(),std::false_type()); }
 
     CUDA_HOST_DEVICE
     difference_type distance_to(zip_iterator const& other) const { 
@@ -521,48 +627,49 @@ private:
     }
 
     CUDA_HOST_DEVICE
-    void advance(difference_type n) { detail::zip_iterator::advance_impl(iter,n,index_type()); }
+    void advance(difference_type n) { detail::advance_impl(iter,n,index_type()); }
 
     iterator_tuple_type iter;
     friend class boost::iterator_core_access;
 };
 
 template <typename ZipIterator, std::size_t... I>
-CUDA_HOST_DEVICE
-typename ZipIterator::pointer 
-raw_pointer_cast_impl(const ZipIterator& arg, index_sequence<I...>) {
-#ifdef HAVE_CUDA
-    return typename ZipIterator::pointer(thrust::raw_pointer_cast(thrust::get<I>(arg.get_tuple()))...);
+typename ZipIterator::raw_pointer 
+iterator_to_raw_pointer_impl(const ZipIterator& arg, index_sequence<I...>) {
+#ifdef HAVE_THRUST
+    return typename ZipIterator::pointer(thrust::raw_pointer_cast(&*thrust::get<I>(arg.get_tuple()))...);
 #else
     return typename ZipIterator::pointer(&*std::get<I>(arg.get_tuple())...);
 #endif
 }
     
 template <typename iterator_tuple_type, typename mpl_vector_type>
-CUDA_HOST_DEVICE
-typename std::iterator_traits<Iterator>::pointer
-raw_pointer_cast(const zip_iterator<iterator_tuple_type,mpl_vector_type>& arg, std::true_type) {
+typename zip_iterator<iterator_tuple_type,mpl_vector_type>::raw_pointer
+iterator_to_raw_pointer(const zip_iterator<iterator_tuple_type,mpl_vector_type>& arg, std::true_type) {
     typedef typename zip_helper<iterator_tuple_type>::index_type index_type;
-    return raw_pointer_cast_impl(arg,index_type());
+    return iterator_to_raw_pointer_impl(arg,index_type());
 }
 
 template <typename Iterator>
-CUDA_HOST_DEVICE
-typename std::iterator_traits<Iterator>::pointer
-raw_pointer_cast(const Iterator& arg, std::false_type) {
-#ifdef HAVE_CUDA
-    return thrust::raw_pointer_cast(arg);
+typename std::iterator_traits<Iterator>::value_type*
+iterator_to_raw_pointer(const Iterator& arg, std::false_type) {
+#ifdef HAVE_THRUST
+    return thrust::raw_pointer_cast(&*arg);
 #else
     return &*arg;
 #endif
 }
 
 template <typename Iterator>
-CUDA_HOST_DEVICE
-typename std::iterator_traits<Iterator>::pointer
-raw_pointer_cast(const Iterator& arg) {
-    return raw_pointer_cast(arg,std::is_same<
-                                    std::iterator_traits<Iterator>::iterator_catagory,
+auto iterator_to_raw_pointer(const Iterator& arg) ->
+    decltype(iterator_to_raw_pointer(arg,std::is_same<
+                                    typename std::iterator_traits<Iterator>::iterator_category,
+                                    zip_iterator_tag>()
+                           ))
+
+{
+    return iterator_to_raw_pointer(arg,std::is_same<
+                                    typename std::iterator_traits<Iterator>::iterator_category,
                                     zip_iterator_tag>()
                            );
 }

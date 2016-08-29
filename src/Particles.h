@@ -128,6 +128,8 @@ public:
     /// const iterator type
     typedef typename traits_type::const_iterator const_iterator;
 
+    typedef typename BucketSearch<traits_type>::neighbour_search neighbour_search;
+
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
     /// alive flag as well as all user-supplied variables)

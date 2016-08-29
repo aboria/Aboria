@@ -110,6 +110,21 @@ public:
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
+    template <typename Search>
+    struct has_n_neighbours {
+        unsigned int n;
+        Search search;
+
+        CUDA_HOST_DEVICE 
+        has_n_neighbours(const Search& search, unsigned int n):search(search),n(n) {}
+
+        CUDA_HOST_DEVICE 
+        void operator()(typename Search::particles_reference i) {
+            auto tpl = search.get_neighbours(get<typename Search::position>(i));
+            TS_ASSERT_EQUALS(tpl.end()-tpl.begin(),n);
+        }
+    };
+
     template<unsigned int D,template <typename,typename> class V>
     void helper_d(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
@@ -150,18 +165,9 @@ public:
             }
         }
 
-        struct has_n_neighbours {
-            unsigned int n;
-            const Test_type& test;
-            has_n_neighbours(const Test_type& test, unsigned int n):test(test),n(n) {}
-            CUDA_HOST_DEVICE void operator()(typename Test_type::reference i) {
-                auto tpl = test.get_neighbours(get<position>(i));
-                TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),n);
-            }
-        };
-                
     	test.init_neighbour_search(min,max,diameter,periodic);
-        Test_type::traits_type::for_each(test.begin(),test.end(),has_n_neighbours(test,expect_n));
+        Test_type::traits_type::for_each(test.begin(),test.end(),
+                has_n_neighbours<typename Test_type::neighbour_search>(test.get_neighbour_search(),expect_n));
     }
 
     void test_std_vector(void) {

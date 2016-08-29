@@ -544,7 +544,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename traits::template vector_type<Vector<unsigned int,D> >::type vector_unsigned_int_d;
     typedef typename traits::template vector_type<Vector<bool,D> >::type vector_bool_d;
     typedef typename traits::template vector_type<int>::type vector_int;
-    typedef typename traits::template vector_type<int>::type vector_unsigned_int;
+    typedef typename traits::template vector_type<unsigned int>::type vector_unsigned_int;
     typedef typename traits::template vector_type<Vector<int,2> >::type vector_int2;
 
     typedef Vector<double,dimension> double_d;
@@ -612,7 +612,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename iterator::reference reference;
     typedef typename iterator::value_type value_type;
     typedef typename iterator::pointer pointer;
-    typedef typename iterator::value_type* raw_pointer;
+    typedef typename iterator::raw_pointer raw_pointer;
     typedef typename const_iterator::reference const_reference;
     typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
@@ -761,7 +761,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename traits::raw_pointer particles_raw_pointer;                               \
     typedef typename traits::const_iterator const_particles_iterator;                   \
     typedef typename traits::value_type particles_value_type;                           \
-    typedef typename traits::reference particles_reference_type;                        \
+    typedef typename traits::reference particles_reference;                        \
     typedef typename traits::position position;                                         \
 
 
