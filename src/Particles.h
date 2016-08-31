@@ -70,7 +70,50 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace Aboria {
+namespace detail {
+template <unsigned int D>
+struct enforce_domain_impl {
+    typedef Vector<double,D> double_d;
+    typedef Vector<bool,D> bool_d;
+    typedef position_d<D> position;
+    static const unsigned int dimension = D;
+    const double_d low,high;
+    const bool_d periodic;
 
+    enforce_domain_impl(const double_d &low, const double_d &high, const bool_d &periodic):
+            low(low),high(high),periodic(periodic) {}
+
+    /*
+    enforce_domain_impl(const enforce_domain_impl& arg) = default;
+    enforce_domain_impl(enforce_domain_impl&& arg) = default;
+    */
+
+    template <typename T>
+    CUDA_HOST_DEVICE
+    void operator()(T&& i) const {
+        auto &r = Aboria::get<position>(i);
+        for (unsigned int d = 0; d < dimension; ++d) {
+            if (periodic[d]) {
+                while (r[d]<low[d]) {
+                    r[d] += (high[d]-low[d]);
+                }
+                while (r[d]>=high[d]) {
+                    r[d] -= (high[d]-low[d]);
+                }
+            } else {
+                if ((r[d]<low[d]) || (r[d]>=high[d])) {
+#ifdef __CUDA_ARCH__
+                    LOG_CUDA(2,"removing particle");
+#else
+                    LOG(2,"removing particle with r = "<<r);
+#endif
+                    Aboria::get<alive>(i) = false;
+                }
+            }
+        }
+    }
+};
+}
     /*
 #ifdef HAVE_THUST
 template <typename T, typename Alloc> 
@@ -560,24 +603,11 @@ private:
     /// the container (default = true)
     void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
         LOG(2,"Particle: enforce_domain: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" remove_deleted_particles = "<<remove_deleted_particles);
-        std::for_each(begin(),end(),[low,high,periodic](reference i) {
-            double_d &r = Aboria::get<position>(i);
-            for (unsigned int d = 0; d < dimension; ++d) {
-                if (periodic[d]) {
-                    while (r[d]<low[d]) {
-                        r[d] += (high[d]-low[d]);
-                    }
-                    while (r[d]>=high[d]) {
-                        r[d] -= (high[d]-low[d]);
-                    }
-                } else {
-                    if ((r[d]<low[d]) || (r[d]>=high[d])) {
-                        LOG(2,"removing particle with r = "<<r);
-                        Aboria::get<alive>(i) = false;
-                    }
-                }
-            }
-        });
+        
+
+        traits_type::for_each(begin(),end(),
+                detail::enforce_domain_impl<dimension>(low,high,periodic));
+
         if (remove_deleted_particles && (periodic==false).any()) {
             delete_particles();
         }

@@ -70,6 +70,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     	std::cout << message << std::endl; \
     }
 
+#define LOG_CUDA(level,message) \
+    if (level <= LOG_LEVEL) { \
+        printf("%s\n",message); \
+    }
+
 
 
 #endif /* LOG_H_ */

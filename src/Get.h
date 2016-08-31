@@ -139,6 +139,7 @@ struct zip_helper<tuple_ns::tuple<T ...>> {
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::value_type ...> tuple_value_type; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::reference ...> tuple_reference; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::pointer...> tuple_pointer; 
+
     typedef tuple_ns::tuple<
         typename detail::remove_pointer_for_null_type<
             typename tuple_ns::iterator_traits<T>::value_type*>::type...
@@ -214,7 +215,7 @@ template <typename iter>
 
 template <typename iter>
     CUDA_HOST_DEVICE
-    inline void increment(const iter& arg, std::random_access_iterator_tag) {
+    inline void increment(iter& arg, std::random_access_iterator_tag) {
 #ifdef __CUDA_ARCH__
         assert(false); 
 #else
@@ -225,7 +226,7 @@ template <typename iter>
 #ifdef HAVE_THRUST
     template <typename iter>
     CUDA_HOST_DEVICE
-    inline void increment(const iter& arg, thrust::random_access_device_iterator_tag) {
+    inline void increment(iter& arg, thrust::random_access_device_iterator_tag) {
         ++arg;
     }
 #endif
@@ -233,7 +234,7 @@ template <typename iter>
 
 template <typename iter>
     CUDA_HOST_DEVICE
-    inline void decrement(const iter& arg, std::random_access_iterator_tag) {
+    inline void decrement(iter& arg, std::random_access_iterator_tag) {
 #ifdef __CUDA_ARCH__
         assert(false); 
 #else
@@ -244,14 +245,14 @@ template <typename iter>
 #ifdef HAVE_THRUST
     template <typename iter>
     CUDA_HOST_DEVICE
-    inline void decrement(const iter& arg, thrust::random_access_device_iterator_tag) {
+    inline void decrement(iter& arg, thrust::random_access_device_iterator_tag) {
         --arg;
     }
 #endif
 
 template <typename iter>
     CUDA_HOST_DEVICE
-    inline void advance(const iter& arg, const typename std::iterator_traits<iter>::difference_type& n, std::random_access_iterator_tag) {
+    inline void advance(iter& arg, const typename std::iterator_traits<iter>::difference_type& n, std::random_access_iterator_tag) {
 #ifdef __CUDA_ARCH__
         assert(false); 
 #else
@@ -262,7 +263,7 @@ template <typename iter>
 #ifdef HAVE_THRUST
     template <typename iter>
     CUDA_HOST_DEVICE
-    inline void advance(const iter& arg, const typename thrust::iterator_traits<iter>::difference_type& n, thrust::random_access_device_iterator_tag) {
+    inline void advance(iter& arg, const typename thrust::iterator_traits<iter>::difference_type& n, thrust::random_access_device_iterator_tag) {
         arg += n;
     }
 #endif
@@ -552,12 +553,10 @@ void swap(getter_type<tuple_type,mpl_vector_type> x,
 
 
 
-struct zip_iterator_tag: boost::random_access_traversal_tag {};
-
 template <typename iterator_tuple_type, typename mpl_vector_type=mpl::vector<int>>
 class zip_iterator: public boost::iterator_facade<zip_iterator<iterator_tuple_type,mpl_vector_type>,
     getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type>,
-    zip_iterator_tag,
+    typename zip_helper<iterator_tuple_type>::iterator_category,
     getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type>
         > {
 
@@ -568,7 +567,7 @@ public:
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
     typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> raw_pointer;
     typedef typename zip_helper<iterator_tuple_type>::difference_type difference_type;
-    typedef zip_iterator_tag iterator_category;
+    typedef typename zip_helper<iterator_tuple_type>::iterator_category iterator_category;
 
     template <typename T>
     using elem_by_type = get_elem_by_type<T,mpl_vector_type>;
@@ -633,13 +632,24 @@ private:
     friend class boost::iterator_core_access;
 };
 
+#ifdef HAVE_THRUST
+}
+namespace thrust {
+    template <typename mpl_vector_type, typename T0, typename ... T>
+    struct iterator_system<Aboria::zip_iterator<tuple_ns::tuple<T0,T...>,mpl_vector_type>> {
+        typedef typename iterator_system<T0>::type type;
+    };
+}
+namespace Aboria {
+#endif
+
 template <typename ZipIterator, std::size_t... I>
 typename ZipIterator::raw_pointer 
 iterator_to_raw_pointer_impl(const ZipIterator& arg, index_sequence<I...>) {
 #ifdef HAVE_THRUST
-    return typename ZipIterator::pointer(thrust::raw_pointer_cast(&*thrust::get<I>(arg.get_tuple()))...);
+    return typename ZipIterator::raw_pointer(thrust::raw_pointer_cast(&*thrust::get<I>(arg.get_tuple()))...);
 #else
-    return typename ZipIterator::pointer(&*std::get<I>(arg.get_tuple())...);
+    return typename ZipIterator::raw_pointer(&*std::get<I>(arg.get_tuple())...);
 #endif
 }
     
@@ -660,17 +670,27 @@ iterator_to_raw_pointer(const Iterator& arg, std::false_type) {
 #endif
 }
 
+
+template <typename T>
+struct is_zip_iterator {
+    typedef mpl::bool_<false> type;
+    static const bool value = false; 
+};
+
+template <typename tuple_type, typename mpl_vector_type>
+struct is_zip_iterator<zip_iterator<tuple_type,mpl_vector_type>> {
+    typedef mpl::bool_<true> type;
+    static const bool value = true; 
+};
+
+
 template <typename Iterator>
 auto iterator_to_raw_pointer(const Iterator& arg) ->
-    decltype(iterator_to_raw_pointer(arg,std::is_same<
-                                    typename std::iterator_traits<Iterator>::iterator_category,
-                                    zip_iterator_tag>()
+    decltype(iterator_to_raw_pointer(arg,is_zip_iterator<Iterator>::type()
                            ))
 
 {
-    return iterator_to_raw_pointer(arg,std::is_same<
-                                    typename std::iterator_traits<Iterator>::iterator_category,
-                                    zip_iterator_tag>()
+    return iterator_to_raw_pointer(arg,is_zip_iterator<Iterator>::type()
                            );
 }
 
@@ -740,19 +760,6 @@ private:
     friend class boost::iterator_core_access;
 };
 */
-
-
-template <typename T>
-struct is_zip_iterator {
-    typedef mpl::bool_<false> type;
-    static const bool value = false; 
-};
-
-template <typename tuple_type, typename mpl_vector_type>
-struct is_zip_iterator<zip_iterator<tuple_type,mpl_vector_type>> {
-    typedef mpl::bool_<true> type;
-    static const bool value = true; 
-};
 
 
 //

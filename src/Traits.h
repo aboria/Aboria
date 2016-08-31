@@ -397,6 +397,7 @@ struct Traits<thrust::device_vector>: public default_traits {
     static const thrust::detail::functional::placeholder<2>::type _3;
     #endif
 
+    /*
     template<typename std_tuple_type>
     struct thrust_tuple_helper {};
 
@@ -423,10 +424,11 @@ struct Traits<thrust::device_vector>: public default_traits {
     make_thrust_zip_iterator(std::tuple<Iterators...> its) {
         return thrust::make_zip_iterator(make_thrust_tuple(its));
     }
+    */
 
     template< class InputIt, class UnaryFunction >
     static UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
-        return std::for_each(first,last,f);
+        return thrust::for_each(first,last,f);
     }
 
     template<typename T1, typename T2>
@@ -434,7 +436,7 @@ struct Traits<thrust::device_vector>: public default_traits {
             T1 end_keys,
             T2 start_data,
             mpl::bool_<true>) {
-        thrust::sort_by_key(start_keys,end_keys,make_thrust_zip_iterator(start_data.get_tuple()));
+        thrust::sort_by_key(start_keys,end_keys,thrust::make_zip_iterator(start_data.get_tuple()));
     }
 
     template<typename T1, typename T2>

@@ -6,6 +6,7 @@
     #include <thrust/host_vector.h>
     #include <thrust/sort.h>
     #include <thrust/binary_search.h>
+    #include <thrust/iterator/iterator_facade.h>
     #include <thrust/sequence.h>
     #include <thrust/transform_scan.h>
     #include <nppdefs.h>
