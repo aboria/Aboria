@@ -47,5 +47,5 @@ set(test_package
 foreach(test ${test_package})
     aboria_cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)
     #cxxtest_add_test(${test} ${test}.cpp ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)
-    target_link_libraries(${test} ${VTK_LIBRARIES} ${Boost_LIBRARIES})
+    target_link_libraries(${test} ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES})
 endforeach(test)

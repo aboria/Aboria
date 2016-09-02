@@ -41,10 +41,6 @@ struct default_traits {
         bool operator()(const value_type& t1, const value_type& t2) { return get<0>(t1.get_tuple()) < get<0>(t2.get_tuple()); }
     };
 
-    template< class InputIt, class UnaryFunction >
-    static UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
-        return std::for_each(first,last,f);
-    }
 
     template<typename T1, typename T2>
     static void sort_by_key(T1 start_keys,
@@ -267,16 +263,12 @@ struct Traits<thrust::host_vector>: public default_traits {
         return thrust::make_zip_iterator(its);
     }
 
-    template< class InputIt, class UnaryFunction >
-    static UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
-        return std::for_each(first,last,f);
-    }
 
     template<typename T1, typename T2>
     static void sort_by_key_impl(T1 start_keys,
             T1 end_keys,
             T2 start_data,
-            mpl::bool_<true>) {
+            std::true_type) {
         thrust::sort_by_key(start_keys,end_keys,make_thrust_zip_iterator(start_data.get_tuple()));
     }
 
@@ -284,7 +276,7 @@ struct Traits<thrust::host_vector>: public default_traits {
     static void sort_by_key_impl(T1 start_keys,
             T1 end_keys,
             T2 start_data,
-            mpl::bool_<false>) {
+            std::false_type) {
         thrust::sort_by_key(start_keys,end_keys,start_data);
     }
 
@@ -372,6 +364,15 @@ struct Traits<thrust::host_vector>: public default_traits {
     }
 };
 
+template< class InputIt, class UnaryFunction >
+InputIt for_each( InputIt first, InputIt last, UnaryFunction f ) {
+#ifdef HAVE_THRUST
+    return thrust::for_each(first,last,f);
+#else
+    return std::for_each(first,last,f);
+#endif
+}
+
 template <>
 struct Traits<thrust::device_vector>: public default_traits {
     template <typename T>
@@ -426,16 +427,13 @@ struct Traits<thrust::device_vector>: public default_traits {
     }
     */
 
-    template< class InputIt, class UnaryFunction >
-    static UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
-        return thrust::for_each(first,last,f);
-    }
+    
 
     template<typename T1, typename T2>
     static void sort_by_key_impl(T1 start_keys,
             T1 end_keys,
             T2 start_data,
-            mpl::bool_<true>) {
+            std::true_type) {
         thrust::sort_by_key(start_keys,end_keys,thrust::make_zip_iterator(start_data.get_tuple()));
     }
 
@@ -443,7 +441,7 @@ struct Traits<thrust::device_vector>: public default_traits {
     static void sort_by_key_impl(T1 start_keys,
             T1 end_keys,
             T2 start_data,
-            mpl::bool_<false>) {
+            std::false_type) {
         thrust::sort_by_key(start_keys,end_keys,start_data);
     }
 

@@ -71,7 +71,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 namespace detail {
-template <unsigned int D>
+template <unsigned int D, typename Reference>
 struct enforce_domain_impl {
     typedef Vector<double,D> double_d;
     typedef Vector<bool,D> bool_d;
@@ -83,15 +83,9 @@ struct enforce_domain_impl {
     enforce_domain_impl(const double_d &low, const double_d &high, const bool_d &periodic):
             low(low),high(high),periodic(periodic) {}
 
-    /*
-    enforce_domain_impl(const enforce_domain_impl& arg) = default;
-    enforce_domain_impl(enforce_domain_impl&& arg) = default;
-    */
-
-    template <typename T>
     CUDA_HOST_DEVICE
-    void operator()(T&& i) const {
-        auto &r = Aboria::get<position>(i);
+    void operator()(Reference i) const {
+        double_d r = Aboria::get<position>(i);
         for (unsigned int d = 0; d < dimension; ++d) {
             if (periodic[d]) {
                 while (r[d]<low[d]) {
@@ -107,10 +101,11 @@ struct enforce_domain_impl {
 #else
                     LOG(2,"removing particle with r = "<<r);
 #endif
-                    Aboria::get<alive>(i) = false;
+                    Aboria::get<alive>(i) = uint8_t(false);
                 }
             }
         }
+        Aboria::get<position>(i) = r;
     }
 };
 }
@@ -604,9 +599,8 @@ private:
     void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
         LOG(2,"Particle: enforce_domain: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" remove_deleted_particles = "<<remove_deleted_particles);
         
-
-        traits_type::for_each(begin(),end(),
-                detail::enforce_domain_impl<dimension>(low,high,periodic));
+        Aboria::for_each(begin(), end(),
+                detail::enforce_domain_impl<dimension,reference>(low,high,periodic));
 
         if (remove_deleted_particles && (periodic==false).any()) {
             delete_particles();

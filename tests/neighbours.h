@@ -166,7 +166,7 @@ public:
         }
 
     	test.init_neighbour_search(min,max,diameter,periodic);
-        Test_type::traits_type::for_each(test.begin(),test.end(),
+        Aboria::for_each(test.begin(),test.end(),
                 has_n_neighbours<typename Test_type::neighbour_search>(test.get_neighbour_search(),expect_n));
     }
 

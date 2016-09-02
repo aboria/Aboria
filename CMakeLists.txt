@@ -6,7 +6,8 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
 
 
 
-list(APPEND CMAKE_CXX_FLAGS "-Wno-deprecated -std=c++11 -ftemplate-backtrace-limit=0")
+                    #list(APPEND CMAKE_CXX_FLAGS "-Wno-deprecated -std=c++11 -ftemplate-backtrace-limit=0")
+list(APPEND CMAKE_CXX_FLAGS "-Wno-deprecated -std=c++11")
 list(APPEND CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
 
 find_package(Boost 1.50.0 REQUIRED)
@@ -23,7 +24,15 @@ if (Aboria_USE_THRUST)
     find_package(CUDA REQUIRED)
     add_definitions(-DHAVE_THRUST)
     #http://stackoverflow.com/questions/34996295/trying-to-get-cuda-7-5-to-work-with-gcc-5-x
+
     add_definitions(-D_MWAITXINTRIN_H_INCLUDED)
+    set(
+    CUDA_NVCC_FLAGS
+    ${CUDA_NVCC_FLAGS};
+    --keep
+    #--std=c++11
+    #-gencode arch=compute_20,code=sm_20
+    )
 endif()
 
 option(Aboria_USE_EIGEN "Use Eigen Linear Algebra library" OFF)
