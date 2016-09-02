@@ -52,6 +52,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Traits.h"
 #include "BucketSearchParallel.h"
 #include "OctTree.h"
+#include "CudaInclude.h"
 
 #ifdef HAVE_VTK
 #include <vtkUnstructuredGrid.h>
@@ -61,11 +62,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkPointData.h>
 #include <vtkCellArray.h>
 #include <vtkUnsignedCharArray.h>
-#endif
-
-#ifdef HAVE_THRUST
-#include <thrust/device_vector.h>
-#include <thrust/host_vector.h>
 #endif
 
 

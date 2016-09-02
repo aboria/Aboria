@@ -18,7 +18,7 @@
     namespace tuple_ns = thrust;
 #else
     #define CUDA_HOST_DEVICE 
-    #define __thrust_hd_warning_disable__
+    #define __aboria_hd_warning_disable__
 
     namespace tuple_ns = std;
 #endif

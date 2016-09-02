@@ -88,8 +88,17 @@ struct zip_helper<std::tuple<T ...>> {
 };
 */
 
-#ifdef HAVE_THRUST
+
+namespace detail {
+    template<typename T>
+    struct remove_pointer_for_null_type {
+        typedef T type;
+    };
 }
+
+#if defined(__CUDACC__)
+}
+
 namespace thrust {
     template <>
     struct iterator_traits<thrust::null_type> {
@@ -101,10 +110,7 @@ namespace thrust {
 namespace Aboria {
 
 namespace detail {
-    template<typename T>
-    struct remove_pointer_for_null_type {
-        typedef T type;
-    };
+
     template<>
     struct remove_pointer_for_null_type<thrust::null_type*> {
         typedef thrust::null_type type;
@@ -150,7 +156,7 @@ struct zip_helper<tuple_ns::tuple<T ...>> {
     using tuple_element = tuple_ns::tuple_element<N,iterator_tuple_type>;
     typedef typename tuple_ns::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
     typedef typename tuple_ns::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
-    typedef typename tuple_ns::iterator_system<typename tuple_element<0>::type> system;
+    //typedef typename tuple_ns::iterator_system<typename tuple_element<0>::type> system;
     typedef make_index_sequence<tuple_ns::tuple_size<iterator_tuple_type>::value> index_type;
     template <unsigned int N, typename T2>
     CUDA_HOST_DEVICE
@@ -188,7 +194,7 @@ namespace detail {
 #endif
     }
 
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
     template <typename iter>
     CUDA_HOST_DEVICE
     typename thrust::iterator_traits<iter>::difference_type distance(const iter& from, const iter& to, thrust::random_access_device_iterator_tag) {
@@ -207,7 +213,7 @@ template <typename iter>
 #endif
     }
 
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
     template <typename iter>
     CUDA_HOST_DEVICE
     bool equal(const iter& from, const iter& to, thrust::random_access_device_iterator_tag) {
@@ -225,7 +231,7 @@ template <typename iter>
 #endif
     }
 
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
     template <typename iter>
     CUDA_HOST_DEVICE
     inline void increment(iter& arg, thrust::random_access_device_iterator_tag) {
@@ -244,7 +250,7 @@ template <typename iter>
 #endif
     }
 
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
     template <typename iter>
     CUDA_HOST_DEVICE
     inline void decrement(iter& arg, thrust::random_access_device_iterator_tag) {
@@ -262,7 +268,7 @@ template <typename iter>
 #endif
     }
 
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
     template <typename iter>
     CUDA_HOST_DEVICE
     inline void advance(iter& arg, const typename thrust::iterator_traits<iter>::difference_type& n, thrust::random_access_device_iterator_tag) {
@@ -274,7 +280,7 @@ template <typename iter>
     template<typename reference, typename iterator_tuple_type, std::size_t... I>
     CUDA_HOST_DEVICE
     static reference make_reference(const iterator_tuple_type& tuple, index_sequence<I...>) {
-        return reference(*(zip_helper<iterator_tuple_type>::get<I>(tuple))...);
+        return reference(*(tuple_ns::get<I>(tuple))...);
     }
 
     __aboria_hd_warning_disable__
@@ -493,8 +499,6 @@ struct getter_type<tuple_ns::tuple<FirstType*, OtherTypes...>, mpl_vector_type>{
         return dereference();
     }
 
-
-
     CUDA_HOST_DEVICE
     void increment() { 
         detail::increment_impl(data,index_type()); 
@@ -504,25 +508,15 @@ struct getter_type<tuple_ns::tuple<FirstType*, OtherTypes...>, mpl_vector_type>{
 
     CUDA_HOST_DEVICE
     bool equal(getter_type const& other) const { 
-        return detail::equal(
-                zip_helper<tuple_type>::get<0>(other.data),
-                zip_helper<tuple_type>::get<0>(data),
-                zip_helper<tuple_type>::iterator_category());
+        return tuple_ns::get<0>(other.data) == tuple_ns::get<0>(data);
     }
-
-
 
     CUDA_HOST_DEVICE
     reference dereference() const { return detail::make_reference<reference>(data,index_type()); }
 
-
-
     CUDA_HOST_DEVICE
     difference_type distance_to(getter_type const& other) const { 
-        return detail::distance(
-                zip_helper<tuple_type>::get<0>(other.data),
-                zip_helper<tuple_type>::get<0>(data),
-                zip_helper<tuple_type>::iterator_category());
+        return tuple_ns::get<0>(other.data) - tuple_ns::get<0>(data);
     }
 
     CUDA_HOST_DEVICE
@@ -594,23 +588,19 @@ private:
     CUDA_HOST_DEVICE
     void decrement() { detail::decrement_impl(iter,index_type()); }
 
+    __aboria_hd_warning_disable__
     CUDA_HOST_DEVICE
     bool equal(zip_iterator const& other) const { 
-        return detail::equal(
-                zip_helper<iterator_tuple_type>::get<0>(other.iter),
-                zip_helper<iterator_tuple_type>::get<0>(iter),
-                zip_helper<iterator_tuple_type>::iterator_category());
+        return tuple_ns::get<0>(other.iter) == tuple_ns::get<0>(iter);
     }
 
     CUDA_HOST_DEVICE
     reference dereference() const { return detail::make_reference<reference>(iter,index_type()); }
 
+    __aboria_hd_warning_disable__
     CUDA_HOST_DEVICE
     difference_type distance_to(zip_iterator const& other) const { 
-        return detail::distance(
-                zip_helper<iterator_tuple_type>::get<0>(other.iter),
-                zip_helper<iterator_tuple_type>::get<0>(iter),
-                zip_helper<iterator_tuple_type>::iterator_category());
+        return tuple_ns::get<0>(other.iter)-tuple_ns::get<0>(iter);
     }
 
     CUDA_HOST_DEVICE
@@ -620,7 +610,8 @@ private:
     friend class boost::iterator_core_access;
 };
 
-#ifdef HAVE_THRUST
+
+#if defined(__CUDACC__)
 }
 namespace thrust {
     template <typename mpl_vector_type, typename T0, typename ... T>
@@ -634,7 +625,7 @@ namespace Aboria {
 template <typename ZipIterator, std::size_t... I>
 typename ZipIterator::raw_pointer 
 iterator_to_raw_pointer_impl(const ZipIterator& arg, index_sequence<I...>) {
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
     return typename ZipIterator::raw_pointer(thrust::raw_pointer_cast(&*thrust::get<I>(arg.get_tuple()))...);
 #else
     return typename ZipIterator::raw_pointer(&*std::get<I>(arg.get_tuple())...);
@@ -651,7 +642,7 @@ iterator_to_raw_pointer2(const zip_iterator<iterator_tuple_type,mpl_vector_type>
 template <typename Iterator>
 typename std::iterator_traits<Iterator>::value_type*
 iterator_to_raw_pointer2(const Iterator& arg, std::false_type) {
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
     return thrust::raw_pointer_cast(&*arg);
 #else
     return &*arg;

@@ -22,7 +22,7 @@ option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
 if (Aboria_USE_THRUST)
     find_package(Thrust REQUIRED)
     find_package(CUDA REQUIRED)
-    add_definitions(-DHAVE_THRUST)
+    #add_definitions(-DHAVE_THRUST)
     #http://stackoverflow.com/questions/34996295/trying-to-get-cuda-7-5-to-work-with-gcc-5-x
 
     add_definitions(-D_MWAITXINTRIN_H_INCLUDED)
