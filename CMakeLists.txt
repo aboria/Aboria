@@ -1,5 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
 project(Aboria)
+
+set(Aboria_LOG_LEVEL 1 CACHE STRING "Logging level (1 = least, 3 = most)")
+add_definitions(-DABORIA_LOG_LEVEL=${Aboria_LOG_LEVEL})
+
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
                       "${CMAKE_SOURCE_DIR}/cmake"
                         ${CMAKE_MODULE_PATH})

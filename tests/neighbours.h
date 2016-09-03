@@ -39,7 +39,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
-#define LOG_LEVEL 1
+#define LOG_LEVEL 3
 #include "Aboria.h"
 
 using namespace Aboria;
@@ -178,7 +178,7 @@ public:
     }
 
     void test_thrust_vector(void) {
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
         helper_d<1,thrust::device_vector>();
         helper_d<2,thrust::device_vector>();
         helper_d<3,thrust::device_vector>();

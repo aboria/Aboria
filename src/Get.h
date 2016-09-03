@@ -383,6 +383,7 @@ struct getter_type{
 
 /*
  * specialisation for tuple of pointers. Note hack to detect tuple of pointers.. could be better?
+ * TODO: api is not good, consider doing an iterator_facade type thing
  */
 template <typename mpl_vector_type, typename FirstType, typename ... OtherTypes> 
 struct getter_type<tuple_ns::tuple<FirstType*, OtherTypes...>, mpl_vector_type>{
@@ -478,6 +479,11 @@ struct getter_type<tuple_ns::tuple<FirstType*, OtherTypes...>, mpl_vector_type>{
         getter_type ret(*this);
         ret.advance(n);
         return ret;
+    }
+
+    CUDA_HOST_DEVICE
+    difference_type operator-(const getter_type& other) const {
+        return other.distance_to(*this);
     }
 
     CUDA_HOST_DEVICE

@@ -36,9 +36,10 @@ set(test_package
     md
     )
 
-set(test_package
-    neighbours
-    )
+
+#set(test_package
+#    neighbours
+#    )
 
 foreach(test ${test_package})
     aboria_cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cpp)

@@ -57,21 +57,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //std::exit(EXIT_FAILURE);
 
-#ifndef LOG_LEVEL
+#ifndef ABORIA_LOG_LEVEL
 #	ifdef NDEBUG
-#		define LOG_LEVEL 1
+#		define ABORIA_LOG_LEVEL 1
 #	else
-#		define LOG_LEVEL 2
+#		define ABORIA_LOG_LEVEL 2
 #	endif
 #endif
 
 #define LOG(level, message) \
-    if (level <= LOG_LEVEL) { \
+    if (level <= ABORIA_LOG_LEVEL) { \
     	std::cout << message << std::endl; \
     }
 
 #define LOG_CUDA(level,message) \
-    if (level <= LOG_LEVEL) { \
+    if (level <= ABORIA_LOG_LEVEL) { \
         printf("%s\n",message); \
     }
 

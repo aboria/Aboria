@@ -158,7 +158,7 @@ public:
         m_bucket_end.resize(m_neighbour_search.m_size.prod());
 
         m_neighbour_search.m_bucket_begin = iterator_to_raw_pointer(m_bucket_begin.begin());
-        m_neighbour_search.m_bucket_end = iterator_to_raw_pointer(m_bucket_begin.begin());
+        m_neighbour_search.m_bucket_end = iterator_to_raw_pointer(m_bucket_end.begin());
         m_neighbour_search.m_nbuckets = m_bucket_begin.size();
     }
 
@@ -261,17 +261,22 @@ void BucketSearch<traits>::add_points_at_end(const particles_iterator &begin, co
         build_bucket_indices(positions_start_adding,positions_end,bucket_indices_start_adding);
         sort_by_bucket_index();
         build_buckets();
-        /*
-        for (int i = 0; i<total; ++i) {
-            std::cout << "p = "<<*(m_positions_begin+i)<<" index = "<<m_bucket_indices[i]<<std::endl;
-        }
-        */
-
+        
     }
 
     m_neighbour_search.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
     m_neighbour_search.m_particles_end = iterator_to_raw_pointer(m_particles_end);
     m_neighbour_search.m_bucket_indices = iterator_to_raw_pointer(m_bucket_indices.begin());
+
+#ifndef __CUDA_ARCH__
+    if (4 <= ABORIA_LOG_LEVEL) { 
+        for (int i = 0; i<m_bucket_indices.size(); ++i) {
+            LOG(4,"\tp = "<<get<position>(*(m_neighbour_search.m_particles_begin+i))<<" index = "<<m_neighbour_search.m_bucket_indices[i]<<". m_bucket_begin[index] = "<<m_neighbour_search.m_bucket_begin[m_bucket_indices[i]]<<". m_bucket_end[index] = "<<m_neighbour_search.m_bucket_end[m_bucket_indices[i]]);
+        }
+    }
+#endif
+
+
 }
 
 template <typename traits>
@@ -317,6 +322,10 @@ struct BucketSearch<traits>::neighbour_search {
 
 #ifndef __CUDA_ARCH__
         LOG(3,"BucketSearch: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
+        LOG(3,"\tbounds = "<<m_bounds);
+	    LOG(3,"\tperiodic = "<<m_periodic);
+	    LOG(3,"\tbucket_side_length = "<<m_bucket_side_length);
+	    LOG(3,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
 #endif
 
         const_iterator search_iterator(this,r);
@@ -355,9 +364,14 @@ struct BucketSearch<traits>::neighbour_search {
             }
 
             if (!outside) {
+
                 const unsigned int other_bucket_index = m_point_to_bucket_index.collapse_index_vector(other_bucket);
                 const unsigned int range_start_index = m_bucket_begin[other_bucket_index]; 
                 const unsigned int range_end_index = m_bucket_end[other_bucket_index]; 
+
+#ifndef __CUDA_ARCH__
+                LOG(4,"\tlooking in bucket "<<other_bucket<<" = "<<other_bucket_index<<". found "<<range_end_index-range_start_index<<" particles");
+#endif
 
                 if (range_end_index-range_start_index > 0) {
 
@@ -416,6 +430,9 @@ public:
 
     CUDA_HOST_DEVICE
     void add_range(particles_raw_pointer begin, particles_raw_pointer end, const double_d &transpose) {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tconst_iterator::add_range. Adding "<<end-begin<<" particles with transpose = "<<transpose<<". Number of bucket ranges already here  = "<<m_nbuckets);
+#endif
         /*
         m_begins.push_back(begin);
         m_ends.push_back(end);
@@ -514,8 +531,7 @@ public:
     size_t operator-(const_iterator start) const {
         size_t count = 0;
         while (start != *this) {
-            start++;
-            count++;
+            ++start; ++count;
         }
         return count;
     }
