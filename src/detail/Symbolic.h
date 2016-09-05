@@ -1115,9 +1115,8 @@ namespace Aboria {
                 DO_THE_OP(decrement,-)
         };
 
-    }
+   }
+
 }
-
-
 
 #endif /* SYMBOLIC_H_ */

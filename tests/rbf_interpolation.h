@@ -219,7 +219,7 @@ public:
             TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
         std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1.5e-4);
 
 //=}
 //]

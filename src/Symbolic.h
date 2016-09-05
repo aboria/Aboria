@@ -73,7 +73,7 @@ namespace Aboria {
         typedef typename detail::symbolic_helper<Expr>::univariate_context_type ctx_type;
         typedef typename detail::symbolic_helper<Expr>::label_a_type label_type;
         ctx_type const ctx(fusion::make_map<label_type>(particle_a));
-        return proto::eval(expr, ctx);
+        return proto::eval(expr,ctx);
     }
 
     template<typename Expr, typename AnyRef>  
@@ -82,7 +82,7 @@ namespace Aboria {
     eval(Expr &expr, 
             const AnyRef& particle_a) {
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
-        return proto::eval(expr, ctx);
+        return proto::eval(expr,ctx);
     }
 
     template<typename Expr>  
@@ -97,7 +97,7 @@ namespace Aboria {
         typedef typename detail::symbolic_helper<Expr>::label_a_type label_a_type;
         typedef typename detail::symbolic_helper<Expr>::label_b_type label_b_type;
         ctx_type const ctx(fusion::make_map<label_a_type,label_b_type>(particle_a,particle_b),fusion::make_list(boost::cref(dx)));
-        return proto::eval(expr, ctx);
+        return proto::eval(expr,ctx);
     }
 
     template<typename Expr, typename AnyRef>  
@@ -112,7 +112,7 @@ namespace Aboria {
         typedef typename detail::symbolic_helper<Expr>::label_a_type label_type;
 
         ctx_type const ctx(fusion::make_map<label_type>(particle_a));
-        return proto::eval(expr, ctx);
+        return proto::eval(expr,ctx);
     }
 
     template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
@@ -123,7 +123,7 @@ namespace Aboria {
             const AnyRef1& particle_a, 
             const AnyRef2& particle_b) { 
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
-        return proto::eval(expr, ctx);
+        return proto::eval(expr,ctx);
     }
 
 

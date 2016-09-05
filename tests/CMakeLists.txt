@@ -44,7 +44,7 @@ set(test_package
 foreach(test ${test_package})
     aboria_cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cpp)
     #cxxtest_add_test(${test} ${test}.cpp ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)
-    target_link_libraries(${test} ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES})
+    target_link_libraries(${test} ${VTK_LIBRARIES} ${Boost_LIBRARIES})
     if (Aboria_USE_THRUST)
         aboria_cxx_test(${test}_cuda ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cu)
         target_link_libraries(${test}_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES})
