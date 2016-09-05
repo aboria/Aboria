@@ -121,23 +121,23 @@ namespace Aboria {
 
 
             template<std::size_t... I>
-            Index rows_impl(index_sequence<I...>) const {
+            Index rows_impl(detail::index_sequence<I...>) const {
                 return detail::sum(std::get<0>(std::get<I*NJ>(m_blocks)).size()...);
             }
 
             template<std::size_t... J>
-            Index cols_impl(index_sequence<J...>) const {
+            Index cols_impl(detail::index_sequence<J...>) const {
                 return detail::sum(std::get<1>(std::get<J>(m_blocks)).size()...);
             }
 
             Index rows() const { 
-                //std::cout << "rows = " << rows_impl(make_index_sequence<NI>()) << std::endl;
-                return rows_impl(make_index_sequence<NI>());
+                //std::cout << "rows = " << rows_impl(detail::make_index_sequence<NI>()) << std::endl;
+                return rows_impl(detail::make_index_sequence<NI>());
             }
 
             Index cols() const { 
-                //std::cout << "cols = " << cols_impl(make_index_sequence<NJ>())<< std::endl;
-                return cols_impl(make_index_sequence<NJ>());
+                //std::cout << "cols = " << cols_impl(detail::make_index_sequence<NJ>())<< std::endl;
+                return cols_impl(detail::make_index_sequence<NJ>());
             }
 
             Index innerSize() const { 
@@ -150,7 +150,7 @@ namespace Aboria {
 
             template <int I>
             Index start_col() const { 
-                return cols_impl(make_index_sequence<I>());
+                return cols_impl(detail::make_index_sequence<I>());
             }
 
             template <int I>
@@ -160,7 +160,7 @@ namespace Aboria {
 
             template <int I>
             Index start_row() const { 
-                return rows_impl(make_index_sequence<I>());
+                return rows_impl(detail::make_index_sequence<I>());
             }
 
             template <int I>
@@ -267,7 +267,7 @@ namespace Aboria {
             }
 
             template<std::size_t... I>
-            Scalar coeff_impl(const Index i, const Index j, index_sequence<I...>) const {
+            Scalar coeff_impl(const Index i, const Index j, detail::index_sequence<I...>) const {
                 return detail::sum(
                         ((i>=start_row<I>())&&(i<start_row<I+1>()))?
                             (coeff_impl_block(i,j,std::get<I*NJ>(m_blocks))):
@@ -276,7 +276,7 @@ namespace Aboria {
             }
 
             Scalar coeff(const Index i, const Index j) const {
-                return coeff_impl(i,j,make_index_sequence<NI>());
+                return coeff_impl(i,j,detail::make_index_sequence<NI>());
             }
 
             template<typename Rhs>
@@ -517,7 +517,7 @@ namespace Aboria {
     }
 
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs, std::size_t... I>
-    void evalTo_impl(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, index_sequence<I...>) {
+    void evalTo_impl(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, detail::index_sequence<I...>) {
         evalTo_unpack_blocks(y,lhs,rhs,std::make_tuple(mpl::int_<I/NJ>(), mpl::int_<I%NJ>(), std::get<I>(lhs.m_blocks))...);
     }
 }
@@ -536,7 +536,7 @@ struct generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>, Rhs, Sparse
         // This method should implement "y += alpha * lhs * rhs" inplace,
         // however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
         assert(alpha==Scalar(1) && "scaling is not implemented");
-        evalTo_impl(y, lhs, rhs, Aboria::make_index_sequence<NI*NJ>());
+        evalTo_impl(y, lhs, rhs, Aboria::detail::make_index_sequence<NI*NJ>());
     }
 };
 }

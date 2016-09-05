@@ -41,11 +41,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BUCKETSEARCH_H_
 #define BUCKETSEARCH_H_
 
+#include "detail/Algorithms.h"
+#include "detail/SpatialUtil.h"
 #include "Traits.h"
 #include "CudaInclude.h"
-#include "Algorithms.h"
 #include "Vector.h"
-#include "SpatialUtil.h"
 #include "Get.h"
 #include "Log.h"
 
@@ -70,8 +70,6 @@ template <typename IteratorType>
 iterator_range<IteratorType> make_iterator_range(IteratorType&& begin, IteratorType&& end) {
     return iterator_range<IteratorType>(begin,end);
 }
-
-
 
 
 template <typename traits>
@@ -145,7 +143,7 @@ public:
             (m_neighbour_search.m_bounds.bmax-m_neighbour_search.m_bounds.bmin)
             /m_neighbour_search.m_size;
         m_neighbour_search.m_point_to_bucket_index = 
-            point_to_bucket_index<dimension>(
+            detail::point_to_bucket_index<dimension>(
                 m_neighbour_search.m_size,m_neighbour_search.m_bucket_side_length,
                 m_neighbour_search.m_bounds);
  
@@ -206,7 +204,7 @@ void BucketSearch<traits>::build_bucket_indices(
         vector_unsigned_int_iterator bucket_indices_begin
         ) {
     // transform the points to their bucket indices
-    transform(positions_begin,
+    detail::transform(positions_begin,
             positions_end,
             bucket_indices_begin,
             m_neighbour_search.m_point_to_bucket_index);
@@ -215,7 +213,7 @@ void BucketSearch<traits>::build_bucket_indices(
 template <typename traits>
 void BucketSearch<traits>::sort_by_bucket_index() {
     // sort the points by their bucket index
-    traits::sort_by_key(m_bucket_indices.begin(),
+    detail::sort_by_key(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             m_particles_begin);
 }
@@ -225,15 +223,15 @@ template <typename traits>
 void BucketSearch<traits>::build_buckets() {
 
     // find the beginning of each bucket's list of points
-    typename traits::template counting_iterator<unsigned int> search_begin(0);
-    traits::lower_bound(m_bucket_indices.begin(),
+    detail::counting_iterator<unsigned int> search_begin(0);
+    detail::lower_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
             search_begin + m_neighbour_search.m_size.prod(),
             m_bucket_begin.begin());
 
     // find the end of each bucket's list of points
-    traits::upper_bound(m_bucket_indices.begin(),
+    detail::upper_bound(m_bucket_indices.begin(),
             m_bucket_indices.end(),
             search_begin,
             search_begin + m_neighbour_search.m_size.prod(),
@@ -287,8 +285,8 @@ struct BucketSearch<traits>::neighbour_search {
     bool_d m_periodic;
     double_d m_bucket_side_length; 
     unsigned_int_d m_size;
-    bbox<dimension> m_bounds;
-    point_to_bucket_index<dimension> m_point_to_bucket_index;
+    detail::bbox<dimension> m_bounds;
+    detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 
     particles_raw_pointer m_particles_begin;
     particles_raw_pointer m_particles_end;
@@ -340,11 +338,7 @@ struct BucketSearch<traits>::neighbour_search {
             double_d transpose(0);
             bool outside = false;
             for (int i=0; i<dimension; i++) {
-#ifdef __CUDA_ARCH__
-                if (other_bucket[i] >= NPP_MAX_16U) {
-#else
-                if (other_bucket[i] == std::numeric_limits<unsigned int>::max()) {
-#endif
+                if (other_bucket[i] >= detail::get_max<unsigned int>()) {
                     if (m_periodic[i]) {
                         other_bucket[i] = m_size[i]-1;
                         transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
@@ -400,10 +394,7 @@ struct BucketSearch<traits>::neighbour_search {
 
 };
 
-constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
-      return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
-    }
-    
+   
 
 
 template <typename traits>
@@ -554,7 +545,7 @@ private:
     double_d m_r;
     double_d m_dx;
     particles_raw_pointer m_node;
-    const static unsigned int max_nbuckets = ipow(3,traits::dimension); 
+    const static unsigned int max_nbuckets = detail::ipow(3,traits::dimension); 
     unsigned int m_nbuckets; 
     particles_raw_pointer m_begins[max_nbuckets];
     particles_raw_pointer m_ends[max_nbuckets];

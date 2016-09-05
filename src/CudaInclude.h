@@ -1,7 +1,7 @@
 #ifndef CUDA_INCLUDE_H_ 
 #define CUDA_INCLUDE_H_ 
 
-#if defined(__CUDACC__)
+#if defined(__aboria_use_thrust_algorithms__) || defined(__CUDACC__)
     #include <thrust/device_vector.h>
     #include <thrust/host_vector.h>
     #include <thrust/sort.h>
@@ -10,7 +10,12 @@
     #include <thrust/sequence.h>
     #include <thrust/transform_scan.h>
     #include <nppdefs.h>
+#endif
+
+#if defined(__CUDACC__)
     #define CUDA_HOST_DEVICE __host__ __device__
+
+    #define __aboria_use_thrust_algorithms__
 
     #define __aboria_hd_warning_disable__ \
     #pragma hd_warning_disable

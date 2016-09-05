@@ -8,14 +8,14 @@ function(aboria_cxx_test target source ext)
         COMMAND ${CXXTESTGEN} --runner=ErrorPrinter --output "${CPP_FULL_NAME}" "${source}"
         DEPENDS "${source}"
     )
-if (Aboria_USE_THRUST)
+if (${ext} MATCHES cu)
     cuda_add_executable(${target} ${CPP_FULL_NAME})
 else()
     add_executable(${target} ${CPP_FULL_NAME})
 endif()
     set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-Wno-effc++")
     add_test(${target} ${RUNTIME_OUTPUT_DIRECTORY}/${target})
-endfunction(abori_cxx_test)
+endfunction(aboria_cxx_test)
 
 set(test_package 
     operators
@@ -45,7 +45,7 @@ foreach(test ${test_package})
     aboria_cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cpp)
     #cxxtest_add_test(${test} ${test}.cpp ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)
     target_link_libraries(${test} ${VTK_LIBRARIES} ${Boost_LIBRARIES})
-    if (Aboria_USE_THRUST)
+    if (Aboria_THRUST_TEST_DEVICE_VECTOR)
         aboria_cxx_test(${test}_cuda ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cu)
         target_link_libraries(${test}_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES})
     endif()

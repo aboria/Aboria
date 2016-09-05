@@ -169,7 +169,7 @@ public:
     /// alive flag as well as all user-supplied variables)
     typedef typename traits_type::mpl_type_vector mpl_type_vector;
     template <typename T>
-    using elem_by_type = get_elem_by_type<T,mpl_type_vector>;
+    using elem_by_type = detail::get_elem_by_type<T,mpl_type_vector>;
     template <typename T>
     using return_type = std::tuple_element<elem_by_type<T>::index,typename data_type::tuple_type>;
 
@@ -595,7 +595,7 @@ private:
     void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
         LOG(2,"Particle: enforce_domain: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" remove_deleted_particles = "<<remove_deleted_particles);
         
-        Aboria::for_each(begin(), end(),
+        detail::for_each(begin(), end(),
                 detail::enforce_domain_impl<dimension,reference>(low,high,periodic));
 
         if (remove_deleted_particles && (periodic==false).any()) {

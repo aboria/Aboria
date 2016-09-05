@@ -44,7 +44,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Variable.h"
 #include "Traits.h"
 #include "Get.h"
-#include "Algorithms.h"
 #include "Particles.h"
 #include "PrintTuple.h"
 #include "DataVector.h"

@@ -42,7 +42,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OCTTREE_H_
 
 #include "CudaInclude.h"
-#include "SpatialUtil.h"
+#include "detail/SpatialUtil.h"
 #include "Particles.h"
 
 namespace Aboria {
@@ -97,7 +97,7 @@ private:
     vector_int tags;
     vector_int nodes;
     vector_int indices;
-    bbox<dimension> bounds;
+    detail::bbox<dimension> bounds;
     vector_int2 leaves;
 };
 
@@ -116,7 +116,7 @@ void OctTree<traits>::embed_points(vector_double_d& points) {
      * 2. Compute bounding box                *
      ******************************************/
 
-    bbox<dimension> points_bounds = traits::reduce(points.begin(), points.end(), bbox<dimension>(), plus<bbox<dimension> >());
+    detail::bbox<dimension> points_bounds = detail::reduce(points.begin(), points.end(), detail::bbox<dimension>(), std::plus<detail::bbox<dimension> >());
     assert(points_bounds < bounds);
 
     /******************************************
@@ -206,23 +206,23 @@ void OctTree<traits>::build_tree() {
     vector_int nodes_on_this_level(child_node_kind.size());
 
     // Enumerate nodes at this level
-    traits::transform_exclusive_scan(child_node_kind.begin(), 
+    detail::transform_exclusive_scan(child_node_kind.begin(), 
                                    child_node_kind.end(), 
                                    nodes_on_this_level.begin(), 
-                                   is_a<NODE>(), 
+                                   detail::is_a<detail::NODE>(), 
                                    0, 
-                                   plus<int>());
+                                   std::plus<int>());
   
     // Enumerate leaves at this level
-    traits::transform_exclusive_scan(child_node_kind.begin(), 
+    detail::transform_exclusive_scan(child_node_kind.begin(), 
                                    child_node_kind.end(), 
                                    leaves_on_this_level.begin(), 
-                                   is_a<LEAF>(), 
+                                   detail::is_a<detail::LEAF>(), 
                                    0, 
-                                   plus<int>());
+                                   std::plus<int>());
 
-    int num_nodes_on_this_level = nodes_on_this_level.back() + (child_node_kind.back() == NODE ? 1 : 0);
-    int num_leaves_on_this_level = leaves_on_this_level.back() + (child_node_kind.back() == LEAF ? 1 : 0);
+    int num_nodes_on_this_level = nodes_on_this_level.back() + (child_node_kind.back() == detail::NODE ? 1 : 0);
+    int num_leaves_on_this_level = leaves_on_this_level.back() + (child_node_kind.back() == detail::LEAF ? 1 : 0);
 
 
     /******************************************
@@ -234,7 +234,7 @@ void OctTree<traits>::build_tree() {
     int children_begin = nodes.size();
     nodes.resize(nodes.size() + num_children);
       
-    traits::transform(
+    detail::transform(
             make_zip_iterator(
                 make_tuple(child_node_kind.begin(), nodes_on_this_level.begin(), leaves_on_this_level.begin())),
              make_zip_iterator(
@@ -262,7 +262,7 @@ void OctTree<traits>::build_tree() {
                      leaves_on_this_level.begin(),
                      child_node_kind.begin(),
                      leaves.begin() + children_begin,
-                     is_a<LEAF>());
+                     detail::is_a<detail::LEAF>());
 
 
     /******************************************
@@ -276,7 +276,7 @@ void OctTree<traits>::build_tree() {
                   children.end(),
                   child_node_kind.begin(),
                   active_nodes.begin(),
-                  is_a<NODE>());
+                  detail::is_a<detail::NODE>());
 
   }
 }
@@ -284,11 +284,11 @@ void OctTree<traits>::build_tree() {
 // Classify a point with respect to the bounding box.
 template <typename traits>
 struct OctTree<traits>::classify_point {
-    bbox<dimension> box;
+    detail::bbox<dimension> box;
     int max_level;
 
     // Create the classifier
-    classify_point(const bbox<dimension> &b, int lvl) : box(b), max_level(lvl) {}
+    classify_point(const detail::bbox<dimension> &b, int lvl) : box(b), max_level(lvl) {}
 
     // Classify a point
     inline CUDA_HOST_DEVICE
@@ -328,15 +328,15 @@ struct OctTree<traits>::classify_node
             int count = upper_bound - lower_bound;
             if (count == 0)
             {
-                return EMPTY;
+                return detail::EMPTY;
             }
             else if (last_level || count < threshold)
             {
-                return LEAF;
+                return detail::LEAF;
             }
             else
             {
-                return NODE;
+                return detail::NODE;
             }
         }
 };
@@ -357,13 +357,13 @@ struct OctTree<traits>::write_nodes {
             int node_idx  = get<1>(t);
             int leaf_idx  = get<2>(t);
 
-            if (node_type == EMPTY)
+            if (node_type == detail::EMPTY)
             {
-                return get_empty_id();
+                return detail::get_empty_id();
             }
-            else if (node_type == LEAF)
+            else if (node_type == detail::LEAF)
             {
-                return get_leaf_id(num_leaves + leaf_idx);
+                return detail::get_leaf_id(num_leaves + leaf_idx);
             }
             else
             {

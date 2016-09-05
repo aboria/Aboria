@@ -8,11 +8,30 @@
 
 #include <bitset>         // std::bitset
 #include <iomanip>      // std::setw
+#include <limits>
 
 namespace Aboria {
+namespace detail {
 
-//#define FLT_MAX 1.0
-    
+constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
+      return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
+}
+
+template <typename T>
+constexpr T get_max() {
+    return std::numeric_limits<T>::max();
+}
+#ifdef __CUDA_ARCH__
+template <>
+constexpr T get_max<unsigned int>() {
+    return NPP_MAX_16U;
+}
+template <>
+constexpr T get_max<double>() {
+    return NPP_MAXABS_32F;
+}
+#endif
+
 
 template <typename T>
 struct plus {
@@ -26,7 +45,7 @@ struct bbox {
     double_d bmin;
 
     inline CUDA_HOST_DEVICE
-    bbox() : bmin(double_d(FLT_MAX)), bmax(double_d(-FLT_MAX))
+    bbox() : bmin(double_d(get_max<double>())), bmax(double_d(-get_max<double>()))
     {}
 
     inline CUDA_HOST_DEVICE
@@ -387,5 +406,6 @@ void print_leaves(const Vector &leaves)
   }
 }
 
+}
 }
 #endif //SPATIAL_UTIL_H_ 
