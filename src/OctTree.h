@@ -305,12 +305,12 @@ struct OctTree<traits>::child_index_to_tag_mask {
     child_index_to_tag_mask(int lvl, int max_lvl, ptr_type nodes) : level(lvl), max_level(max_lvl), nodes(nodes) {}
 
     inline CUDA_HOST_DEVICE
-        int operator()(int idx) const
-        {
-            int tag = nodes[idx/4];
-            int which_child = (idx&3);
-            return child_tag_mask(tag, which_child, level, max_level);
-        }
+    int operator()(int idx) const
+    {
+        int tag = nodes[idx/4];
+        int which_child = (idx&3);
+        return detail::child_tag_mask(tag, which_child, level, max_level);
+    }
 };
 
 
