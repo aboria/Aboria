@@ -122,11 +122,17 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     const static unsigned int dimension = D;
     typedef typename traits::template vector_type<Vector<double,D> >::type vector_double_d;
+    typedef typename vector_double_d::iterator vector_double_d_iterator;
+    typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;
     typedef typename traits::template vector_type<Vector<int,D> >::type vector_int_d;
     typedef typename traits::template vector_type<Vector<unsigned int,D> >::type vector_unsigned_int_d;
+    typedef typename vector_unsigned_int_d::iterator vector_unsigned_int_d_iterator;
+    typedef typename vector_unsigned_int_d::const_iterator vector_unsigned_int_d_const_iterator;
     typedef typename traits::template vector_type<Vector<bool,D> >::type vector_bool_d;
     typedef typename traits::template vector_type<int>::type vector_int;
     typedef typename traits::template vector_type<unsigned int>::type vector_unsigned_int;
+    typedef typename vector_unsigned_int::iterator vector_unsigned_int_iterator;
+    typedef typename vector_unsigned_int::const_iterator vector_unsigned_int_const_iterator;
     typedef typename traits::template vector_type<Vector<int,2> >::type vector_int2;
 
     typedef Vector<double,dimension> double_d;
@@ -321,30 +327,6 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename position_vector_type::size_type size_type; 
     typedef typename position_vector_type::difference_type difference_type; 
 };
-
-#define UNPACK_TRAITS(traits)      \
-    static const unsigned int dimension = traits::dimension;                          \
-    typedef typename traits::vector_double_d vector_double_d;                           \
-    typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;    \
-    typedef typename traits::vector_int_d vector_int_d;                                 \
-    typedef typename traits::vector_unsigned_int_d vector_unsigned_int_d;               \
-    typedef typename traits::vector_bool_d vector_bool_d;                               \
-    typedef typename traits::vector_int2 vector_int2;                               \
-    typedef Vector<double,dimension> double_d;                                        \
-    typedef Vector<int,dimension> int_d;                                              \
-    typedef Vector<unsigned int,dimension> unsigned_int_d;                            \
-    typedef Vector<bool,dimension> bool_d;                                            \
-    typedef Vector<int,2> int2;                                            \
-    typedef typename traits::vector_int vector_int;                                     \
-    typedef typename traits::vector_unsigned_int vector_unsigned_int;                   \
-    typedef typename vector_unsigned_int::iterator vector_unsigned_int_iterator;        \
-    typedef typename traits::iterator particles_iterator;                               \
-    typedef typename traits::pointer particles_pointer;                               \
-    typedef typename traits::raw_pointer particles_raw_pointer;                               \
-    typedef typename traits::const_iterator const_particles_iterator;                   \
-    typedef typename traits::value_type particles_value_type;                           \
-    typedef typename traits::reference particles_reference;                        \
-    typedef typename traits::position position;                                         \
 
 
 }

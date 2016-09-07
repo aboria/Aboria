@@ -119,7 +119,7 @@ public:
         has_n_neighbours(const Search& search, unsigned int n):search(search),n(n) {}
 
         CUDA_HOST_DEVICE 
-        void operator()(typename Search::particles_reference i) {
+        void operator()(typename Search::reference i) {
             auto tpl = search.get_neighbours(get<typename Search::position>(i));
             TS_ASSERT_EQUALS(tpl.end()-tpl.begin(),n);
         }
@@ -167,7 +167,7 @@ public:
 
     	test.init_neighbour_search(min,max,diameter,periodic);
         for_each(test.begin(),test.end(),
-                has_n_neighbours<typename Test_type::neighbour_search>(test.get_neighbour_search(),expect_n));
+                has_n_neighbours<typename Test_type::query_type>(test.get_query(),expect_n));
     }
 
     void test_std_vector(void) {

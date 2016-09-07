@@ -43,7 +43,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
     using detail::SymbolicDomain;
+    
 
+    
 
     template<typename Expr>
     typename detail::symbolic_helper<Expr>::deep_copy_type
@@ -124,6 +126,49 @@ namespace Aboria {
             const AnyRef2& particle_b) { 
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
         return proto::eval(expr,ctx);
+    }
+
+    template <class Expr>
+    typename boost::enable_if<detail::is_const<Expr>,
+    bool>::type
+    is_trivially_zero(Expr &expr) {
+        //TODO: should use return type instead of double
+        return std::abs(eval(expr))<=std::numeric_limits<double>::epsilon();
+    }
+
+    template <class Expr>
+    typename boost::enable_if<mpl::not_<detail::is_const<Expr>>,
+    bool>::type
+    is_trivially_zero(Expr &expr) {
+        return false;
+    }
+
+    template <class IfExpr>
+    typename boost::enable_if<detail::is_const<IfExpr>,
+    bool>::type
+    is_trivially_false(IfExpr &expr) {
+        return eval(expr)==false;
+    }
+
+    template <class IfExpr>
+    typename boost::enable_if<mpl::not_<detail::is_const<IfExpr>>,
+    bool>::type
+    is_trivially_false(IfExpr &expr) {
+        return false;
+    }
+
+    template <class IfExpr>
+    typename boost::enable_if<detail::is_const<IfExpr>,
+    bool>::type
+    is_trivially_true(IfExpr &expr) {
+        return eval(expr)==true;
+    }
+
+    template <class IfExpr>
+    typename boost::enable_if<mpl::not_<detail::is_const<IfExpr>>,
+    bool>::type
+    is_trivially_true(IfExpr &expr) {
+        return false;
     }
 
 

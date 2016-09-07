@@ -122,9 +122,11 @@ public:
         auto P = create_eigen_operator(a,one,
                         1.0
                 );
+
         auto Pt = create_eigen_operator(one,b,
                         1.0
                 );
+
         auto Zero = create_eigen_operator(one,one, 0.);
 
         auto W = create_block_eigen_operator<2,2>(G, P,
@@ -144,6 +146,7 @@ public:
         cg.compute(W);
         gamma = cg.solve(phi);
         std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+
 
         Eigen::BiCGSTAB<decltype(W), Eigen::DiagonalPreconditioner<double>> bicg;
         bicg.setMaxIterations(max_iter);

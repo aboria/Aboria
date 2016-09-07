@@ -178,24 +178,28 @@ namespace Aboria {
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const std::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) const {
                 
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-
-                const particles_a_type& a = std::get<0>(block);
-                const particles_b_type& b = std::get<1>(block);
-                typename particles_a_type::const_reference ai = a[i];
-                typename particles_b_type::const_reference bj = b[j];
-                const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
                 //to the stored constants, and if I want this to be const
                 expr_type expr = std::get<2>(block);
                 if_expr_type if_expr = std::get<3>(block);
-                 
-                if (eval(if_expr,dx,ai,bj)) {
-                    return eval(expr,dx,ai,bj);
-                } else {
+
+                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
                     return 0;
+                } else {
+                    typedef typename particles_b_type::double_d double_d;
+                    typedef typename particles_b_type::position position;
+
+                    const particles_a_type& a = std::get<0>(block);
+                    const particles_b_type& b = std::get<1>(block);
+                    typename particles_a_type::const_reference ai = a[i];
+                    typename particles_b_type::const_reference bj = b[j];
+                    const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+
+                    if (eval(if_expr,dx,ai,bj)) {
+                        return eval(expr,dx,ai,bj);
+                    } else {
+                        return 0;
+                    }
                 }
 
             }
@@ -206,22 +210,27 @@ namespace Aboria {
               typename particles_b_type,
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const std::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) const {
-                
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-
-                const particles_b_type& b = std::get<1>(block);
-                typename particles_b_type::const_reference bj = b[j];
-
+             
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
                 //to the stored constants, and if I want this to be const
                 expr_type expr = std::get<2>(block);
                 if_expr_type if_expr = std::get<3>(block);
-                 
-                if (eval(if_expr,bj)) {
-                    return eval(expr,bj);
-                } else {
+                
+                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
                     return 0;
+                } else {
+                    typedef typename particles_b_type::double_d double_d;
+                    typedef typename particles_b_type::position position;
+
+                    const particles_b_type& b = std::get<1>(block);
+                    typename particles_b_type::const_reference bj = b[j];
+
+                    
+                    if (eval(if_expr,bj)) {
+                        return eval(expr,bj);
+                    } else {
+                        return 0;
+                    }
                 }
 
             }
@@ -230,22 +239,27 @@ namespace Aboria {
               typename particles_a_type,
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const std::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) const {
-                
-                typedef typename particles_a_type::double_d double_d;
-                typedef typename particles_a_type::position position;
-
-                const particles_a_type& a = std::get<0>(block);
-                typename particles_a_type::const_reference ai = a[i];
-
+ 
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
                 //to the stored constants, and if I want this to be const
                 expr_type expr = std::get<2>(block);
                 if_expr_type if_expr = std::get<3>(block);
-                 
-                if (eval(if_expr,ai)) {
-                    return eval(expr,ai);
-                } else {
+                             
+
+                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
                     return 0;
+                } else {
+                    typedef typename particles_a_type::double_d double_d;
+                    typedef typename particles_a_type::position position;
+
+                    const particles_a_type& a = std::get<0>(block);
+                    typename particles_a_type::const_reference ai = a[i];
+       
+                    if (eval(if_expr,ai)) {
+                        return eval(expr,ai);
+                    } else {
+                        return 0;
+                    }
                 }
 
             }
@@ -382,15 +396,13 @@ namespace Aboria {
         const size_t na = a.size();
         const size_t nb = b.size();
 
-        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon()))
-                ||
-                (detail::is_const<if_expr_type>::value && (!eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())))
-           ) {
+
+        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
             //std::cout << "zero a x b block" <<std::endl;
             return;
         }
 
-        if (detail::is_const<if_expr_type>::value && eval(if_expr,double_d(),typename particles_a_type::value_type(),typename particles_b_type::value_type())==true) {
+        if (is_trivially_true(if_expr)) {
             //std::cout << "dense a x b block" <<std::endl;
             for (size_t i=0; i<na; ++i) {
                 typename particles_a_type::const_reference ai = a[i];
@@ -439,8 +451,7 @@ namespace Aboria {
 
         const size_t nb = b.size();
 
-        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr,typename particles_b_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
-                (detail::is_const<if_expr_type>::value && (!eval(if_expr,typename particles_b_type::value_type())))) {
+        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
             //std::cout << "zero one x b block" <<std::endl;
             return;
         }
@@ -469,8 +480,7 @@ namespace Aboria {
 
         const size_t na = a.size();
 
-        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr,typename particles_a_type::value_type()))<=std::numeric_limits<double>::epsilon())) ||
-            (detail::is_const<if_expr_type>::value && (!eval(if_expr,typename particles_a_type::value_type())))) {
+        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
             //std::cout << "zero a x one block" <<std::endl;
             return;
         }
@@ -491,10 +501,7 @@ namespace Aboria {
         expr_type expr = std::get<2>(block);
         if_expr_type if_expr = std::get<3>(block);
 
-        //TODO: should use return type instead of double
-        if ((detail::is_const<expr_type>::value && (std::abs(eval(expr))<=std::numeric_limits<double>::epsilon())) ||
-
-            (detail::is_const<if_expr_type>::value && (!eval(if_expr)))) {
+        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
             //std::cout << "zero one x one block" <<std::endl;
             return;
         }

@@ -38,6 +38,7 @@ set(test_package
 
 
 #set(test_package
+#    rbf_interpolation
 #    neighbours
 #    )
 

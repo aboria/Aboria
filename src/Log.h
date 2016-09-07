@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define LOG_H_
 
 #include <signal.h>
+#include <iostream>
 #include <assert.h>
 
 #define ASSERT(condition, message) \

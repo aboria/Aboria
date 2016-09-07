@@ -51,7 +51,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Variable.h"
 #include "Traits.h"
 #include "BucketSearchParallel.h"
-#include "OctTree.h"
+//#include "OctTree.h"
 #include "CudaInclude.h"
 
 #ifdef HAVE_VTK
@@ -162,7 +162,8 @@ public:
     /// const iterator type
     typedef typename traits_type::const_iterator const_iterator;
 
-    typedef typename BucketSearch<traits_type>::neighbour_search neighbour_search;
+    typedef typename bucket_search_parallel<traits_type>::query_type query_type;
+    typedef typename bucket_search_parallel<traits_type>::query_iterator query_iterator;
 
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
@@ -174,7 +175,10 @@ public:
     using return_type = std::tuple_element<elem_by_type<T>::index,typename data_type::tuple_type>;
 
 
-    UNPACK_TRAITS(traits_type)
+    typedef typename traits_type::double_d double_d;
+    typedef typename traits_type::bool_d bool_d;
+    typedef typename traits_type::position position;
+
 
     /// Contructs an empty container with no searching or id tracking enabled
     Particles():
@@ -358,17 +362,12 @@ public:
         searchable = true;
     }
 
-    /// get all particles within the neighbourhood length scale of a point. 
-    /// NOTE: you must call init_neighbour_search() before using this function
-    /// \param position the centre of the search region
-    /// \see init_neighbour_search
-    iterator_range<typename BucketSearch<traits_type>::const_iterator> get_neighbours(const double_d& position) const {
-        ASSERT(searchable == true,"ERROR: using get_neighbours before initialising neighbour search. Please call the init_neighbour_search function before using get_neighbours");
-        return bucket_search.get_neighbours(position);
+    const iterator_range<query_iterator> get_neighbours(const double_d& position) const {
+        return bucket_search.get_query().get_neighbours(position);
     }
 
-    const typename BucketSearch<traits_type>::neighbour_search& get_neighbour_search() const {
-        return bucket_search.get_neighbour_search();
+    const query_type& get_query() const {
+        return bucket_search.get_query();
     }
 
     /// set the length scale of the neighbourhood search to be equal to \p length_scale
@@ -386,7 +385,7 @@ public:
         double_d dx = uncorrected_dx;
         double_d domain_width = get_max()-get_min();
         const bool_d& periodic = get_periodic();
-        for (size_t d=0; d<dimension; ++d) {
+        for (size_t d=0; d<traits_type::dimension; ++d) {
             if (periodic[d]) {
                 while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
                 while (dx[d] <= -domain_width[d]/2) dx[d] += domain_width[d];
@@ -568,7 +567,7 @@ public:
 
             this->clear();
 
-            const unsigned int max_d = std::min(3u,dimension);
+            const unsigned int max_d = std::min(3u,traits_type::dimension);
             for (int j = 0; j < n; ++j) {
                 value_type particle;
                 const double *r = points->GetPoint(j);
@@ -596,7 +595,7 @@ private:
         LOG(2,"Particle: enforce_domain: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" remove_deleted_particles = "<<remove_deleted_particles);
         
         detail::for_each(begin(), end(),
-                detail::enforce_domain_impl<dimension,reference>(low,high,periodic));
+                detail::enforce_domain_impl<traits_type::dimension,reference>(low,high,periodic));
 
         if (remove_deleted_particles && (periodic==false).any()) {
             delete_particles();
@@ -612,7 +611,7 @@ private:
     int next_id;
     const uint32_t seed;
     std::map<size_t,size_t> id_to_index;
-    BucketSearch<traits_type> bucket_search;
+    bucket_search_parallel<traits_type> bucket_search;
 
 
 #ifdef HAVE_VTK
@@ -697,7 +696,7 @@ private:
             }
             typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
             if (boost::is_same<data_type, double_d>::value) {
-                datas[i]->SetNumberOfComponents(dimension);
+                datas[i]->SetNumberOfComponents(traits_type::dimension);
             } else {
                 datas[i]->SetNumberOfComponents(1);
             }
