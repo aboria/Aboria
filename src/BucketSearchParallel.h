@@ -90,6 +90,34 @@ class bucket_search_parallel:
                                  ranges_iterator<Traits>,
                                  bucket_search_parallel_query<Traits>>;
 
+    void set_domain_impl(const params_type params) {
+        m_bucket_side_length = params.side_length; 
+        m_size = 
+            floor((this->m_bounds.bmax-this->m_bounds.bmin)/m_bucket_side_length)
+            .template cast<unsigned int>();
+        m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
+        m_point_to_bucket_index = 
+            detail::point_to_bucket_index<Traits::dimension>(m_size,m_bucket_side_length,this->m_bounds);
+ 
+	    LOG(2,"\tbucket_side_length = "<<m_bucket_side_length);
+	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
+
+        // setup bucket data structures
+        m_bucket_begin.resize(m_size.prod());
+        m_bucket_end.resize(m_size.prod());
+
+        this->m_query.m_bucket_begin = iterator_to_raw_pointer(m_bucket_begin.begin());
+        this->m_query.m_bucket_end = iterator_to_raw_pointer(m_bucket_end.begin());
+        this->m_query.m_nbuckets = m_bucket_begin.size();
+
+        this->m_query.m_bounds.bmin = this->m_bounds.bmin;
+        this->m_query.m_bounds.bmax = this->m_bounds.bmax;
+        this->m_query.m_periodic = this->m_periodic;
+        this->m_query.m_size = m_size;
+        this->m_query.m_bucket_side_length = m_bucket_side_length;
+        this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
+    }
+
     void embed_points_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         m_bucket_indices.resize(n);
@@ -130,32 +158,32 @@ class bucket_search_parallel:
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
-    void set_domain_impl(const params_type params) {
-        m_bucket_side_length = params.side_length; 
-        m_size = 
-            floor((this->m_bounds.bmax-this->m_bounds.bmin)/m_bucket_side_length)
-            .template cast<unsigned int>();
-        m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
-        m_point_to_bucket_index = 
-            detail::point_to_bucket_index<Traits::dimension>(m_size,m_bucket_side_length,this->m_bounds);
- 
-	    LOG(2,"\tbucket_side_length = "<<m_bucket_side_length);
-	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
+    void delete_points_at_end_impl(const size_t dist) {
+        const size_t n = this->m_particles_end - this->m_particles_begin;
+        const size_t start_delete = n-dist;
+        ASSERT(m_bucket_indices.size()-n = dist);
+        const size_t oldn = m_bucket_indices.size();
+        m_bucket_indices.resize(n);
 
-        // setup bucket data structures
-        m_bucket_begin.resize(m_size.prod());
-        m_bucket_end.resize(m_size.prod());
+        build_buckets();
 
-        this->m_query.m_bucket_begin = iterator_to_raw_pointer(m_bucket_begin.begin());
-        this->m_query.m_bucket_end = iterator_to_raw_pointer(m_bucket_end.begin());
-        this->m_query.m_nbuckets = m_bucket_begin.size();
+        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+    }
 
-        this->m_query.m_bounds.bmin = this->m_bounds.bmin;
-        this->m_query.m_bounds.bmax = this->m_bounds.bmax;
-        this->m_query.m_periodic = this->m_periodic;
-        this->m_query.m_size = m_size;
-        this->m_query.m_bucket_side_length = m_bucket_side_length;
-        this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
+    void copy_points_impl(const_iterator copy_from_iterator, const_iterator copy_to_iterator) {
+        auto positions_from = get<position>(copy_from_iterator);
+        auto positions_to = get<position>(copy_to_iterator);
+
+        const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
+        const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
+        auto bucket_indicies_from = m_bucket_indices.begin() + fromi;
+        auto bucket_indicies_to = m_bucket_indices.begin() + toi;
+
+        build_bucket_indices(positions_from,positions_from+1,bucket_indices_from);
+        build_bucket_indices(positions_to,positions_to+1,bucket_indices_to);
+        sort_by_bucket_index();
+        build_buckets();
     }
 
     const bucket_search_parallel_query<Traits>& get_query_impl() const {
