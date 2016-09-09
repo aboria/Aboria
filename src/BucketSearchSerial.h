@@ -41,6 +41,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Traits.h"
 #include "Vector.h"
 #include "Log.h"
+#include "Get.h"
+#include "NeighbourSearchBase.h"
+#include "detail/SpatialUtil.h"
 #include <vector>
 #include <iostream>
 #include <set>
@@ -84,10 +87,10 @@ class bucket_search_serial:
 
     typedef typename Traits::double_d double_d;
     typedef typename Traits::position position;
-    typedef typename Traits::vector_double_d_const_iterator vector_double_d_const_iterator;
-    typedef typename Traits::vector_unsigned_int_iterator vector_unsigned_int_iterator;
-    typedef typename Traits::vector_unsigned_int vector_unsigned_int;
+    typedef typename Traits::vector_size_t vector_size_t;
+    typedef typename Traits::iterator iterator;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
+
     typedef bucket_search_serial_params<Traits> params_type;
 
     friend neighbour_search_base<bucket_search_serial<Traits>,
@@ -97,6 +100,12 @@ class bucket_search_serial:
                                  bucket_search_serial_query<Traits>>;
 
 
+public:
+    static constexpr bool unordered() {
+        return true;
+    }
+
+private:
     void set_domain_impl(const params_type params) {
         m_bucket_side_length = params.side_length; 
         m_size = 
@@ -109,11 +118,10 @@ class bucket_search_serial:
 	    LOG(2,"\tbucket_side_length = "<<m_bucket_side_length);
 	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
 
-        m_buckets.assign(m_size.prod(), CELL_EMPTY);
-        use_dirty_cells = false;
+        m_buckets.assign(m_size.prod(), detail::get_empty_id());
+        m_use_dirty_cells = false;
 
-        this->m_query.m_buckets = iterator_to_raw_pointer(this->m_buckets);
-        this->m_query.m_nbuckets = m_bucket_begin.size();
+        this->m_query.m_buckets_begin = iterator_to_raw_pointer(m_buckets.begin());
 
         this->m_query.m_bounds.bmin = this->m_bounds.bmin;
         this->m_query.m_bounds.bmax = this->m_bounds.bmax;
@@ -129,73 +137,72 @@ class bucket_search_serial:
         /*
          * clear head of linked lists (m_buckets)
          */
-        if (use_dirty_cells) {
+        if (m_use_dirty_cells) {
             if (m_dirty_buckets.size()<m_buckets.size()) {
                 for (int i: m_dirty_buckets) {
-                    m_buckets[i] = CELL_EMPTY;
-                    for (int j: ghosting_indices_pb[i]) {
-                        m_buckets[j] = CELL_EMPTY;
-                    }
+                    m_buckets[i] = detail::get_empty_id();
                 }
             } else {
-                m_buckets.assign(m_buckets.size(), CELL_EMPTY);
+                m_buckets.assign(m_buckets.size(), detail::get_empty_id());
             }
         }
-        use_dirty_cells = true;
+        m_use_dirty_cells = true;
 
-        m_linked_list.assign(n, CELL_EMPTY);
-        m_linked_list_reverse.assign(n, CELL_EMPTY);
-        m_m_dirty_buckets.assign(n,CELL_EMPTY);
+        m_linked_list.assign(n, detail::get_empty_id());
+        m_linked_list_reverse.assign(n, detail::get_empty_id());
+        m_dirty_buckets.assign(n,detail::get_empty_id());
         int i = 0;
         for (size_t i; i<n; ++i) {
-            const int celli = find_cell_index(get<position>(this->m_particles_begin[i]));
-            const int cell_entry = m_buckets[celli];
+            const double_d& r = get<position>(this->m_particles_begin)[i];
+            const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+            const int bucket_entry = m_buckets[bucketi];
 
-            // Insert into own cell
-            m_buckets[celli] = i;
-            m_dirty_buckets[i] = celli;
-            m_linked_list[i] = cell_entry;
-            m_linked_list_reverse[i] = CELL_EMPTY;
-            if (cell_entry != CELL_EMPTY) m_linked_list_reverse[cell_entry] = i;
+            // Insert into own bucket
+            m_buckets[bucketi] = i;
+            m_dirty_buckets[i] = bucketi;
+            m_linked_list[i] = bucket_entry;
+            m_linked_list_reverse[i] = detail::get_empty_id();
+            if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
         }
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_linked_list = iterator_to_raw_pointer(this->m_linked_list);
+        this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
 
 
     void add_points_at_end_impl(const size_t dist) {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         const size_t start_adding = n-dist;
-        ASSERT(m_linked_list.size() = start_adding);
-        ASSERT(m_linked_list_reverse.size() = start_adding);
-        ASSERT(m_dirty_buckets.size() = start_adding);
-        m_linked_list.resize(n,CELL_EMPTY);
-        m_linked_list_reverse.resize(n,CELL_EMPTY);
-        m_dirty_buckets.resize(n,CELL_EMPTY);
+        ASSERT(m_linked_list.size() == start_adding, "m_linked_list not consistent with dist");
+        ASSERT(m_linked_list_reverse.size() == start_adding, "m_linked_list_reverse not consistent with dist");
+        ASSERT(m_dirty_buckets.size() == start_adding, "m_dirty_buckets not consistent with dist");
+        m_linked_list.resize(n,detail::get_empty_id());
+        m_linked_list_reverse.resize(n,detail::get_empty_id());
+        m_dirty_buckets.resize(n,detail::get_empty_id());
 
         for (size_t i = start_adding; i<n; ++i) {
-            const int celli = find_cell_index(get<position>(this->m_particles_begin[i]));
-            const int cell_entry = m_buckets[celli];
+            const double_d& r = get<position>(this->m_particles_begin)[i];
+            const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+            const int bucket_entry = m_buckets[bucketi];
 
             // Insert into own cell
-            m_buckets[celli] = i;
-            m_dirty_buckets[i] = celli;
-            m_linked_list[i] = cell_entry;
-            m_linked_list_reverse[i] = CELL_EMPTY;
-            if (cell_entry != CELL_EMPTY) m_linked_list_reverse[cell_entry] = i;
+            m_buckets[bucketi] = i;
+            m_dirty_buckets[i] = bucketi;
+            m_linked_list[i] = bucket_entry;
+            m_linked_list_reverse[i] = detail::get_empty_id();
+            if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
         }
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_linked_list = iterator_to_raw_pointer(this->m_linked_list);
+        this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
 
     void delete_points_at_end_impl(const size_t dist) {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         const size_t start_delete = n-dist;
-        ASSERT(m_linked_list.size()-n = dist);
-        ASSERT(m_linked_list_reverse.size()-n = dist);
-        ASSERT(m_dirty_buckets.size()-n = dist);
+        ASSERT(m_linked_list.size()-n == dist, "m_linked_list not consistent with dist");
+        ASSERT(m_linked_list_reverse.size()-n == dist, "m_linked_list_reverse not consistent with dist");
+        ASSERT(m_dirty_buckets.size()-n == dist, "m_dirty_buckets not consistent with dist");
         const size_t oldn = m_linked_list.size();
         for (size_t i = n; i<oldn; ++i) {
             untrack_point(i); 
@@ -205,18 +212,18 @@ class bucket_search_serial:
         m_dirty_buckets.resize(n);
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_linked_list = iterator_to_raw_pointer(this->m_linked_list);
+        this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
 
-    void update_point(const_iterator update_iterator) {
-        const unsigned int i = std::distance(begin_iterator,update_iterator);
+    void update_point(iterator update_iterator) {
+        const size_t i = std::distance(this->m_particles_begin,update_iterator);
         const bool particle_based = true;
 
         const int forwardi = m_linked_list[i];
         const int backwardsi = m_linked_list_reverse[i];
 
-        if (forwardi != CELL_EMPTY) m_linked_list_reverse[forwardi] = backwardsi;
-        if (backwardsi != CELL_EMPTY) {
+        if (forwardi != detail::get_empty_id()) m_linked_list_reverse[forwardi] = backwardsi;
+        if (backwardsi != detail::get_empty_id()) {
             m_linked_list[backwardsi] = forwardi;
         } else {
             const int celli = m_dirty_buckets[i];
@@ -231,8 +238,8 @@ class bucket_search_serial:
         m_buckets[celli] = i;
         m_dirty_buckets[i] = celli;
         m_linked_list[i] = cell_entry;
-        m_linked_list_reverse[i] = CELL_EMPTY;
-        if (cell_entry != CELL_EMPTY) m_linked_list_reverse[cell_entry] = i;
+        m_linked_list_reverse[i] = detail::get_empty_id();
+        if (cell_entry != detail::get_empty_id()) m_linked_list_reverse[cell_entry] = i;
 
     }
 
@@ -242,8 +249,8 @@ class bucket_search_serial:
         const int forwardi = m_linked_list[i];
         const int backwardsi = m_linked_list_reverse[i];
 
-        if (forwardi != CELL_EMPTY) m_linked_list_reverse[forwardi] = backwardsi;
-        if (backwardsi != CELL_EMPTY) {
+        if (forwardi != detail::get_empty_id()) m_linked_list_reverse[forwardi] = backwardsi;
+        if (backwardsi != detail::get_empty_id()) {
             m_linked_list[backwardsi] = forwardi;
         } else {
             const int celli = m_dirty_buckets[i];
@@ -253,7 +260,7 @@ class bucket_search_serial:
     }
 
 
-    void copy_points_impl(const_iterator copy_from_iterator, const_iterator copy_to_iterator) {
+    void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
         const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
         const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
                 const int forwardi = m_linked_list[fromi];
@@ -265,65 +272,139 @@ class bucket_search_serial:
         m_dirty_buckets[toi] = m_dirty_buckets[fromi];
     }
 
-    const bucket_search_parallel_query<Traits>& get_query_impl() const {
+    const bucket_search_serial_query<Traits>& get_query_impl() const {
         return m_query;
     }
 
-    /*
-    const bucket_search_parallel_query<Traits>& get_query() const {
-        return m_query;
+    vector_size_t m_buckets;
+    vector_size_t m_linked_list;
+    vector_size_t m_linked_list_reverse;
+    vector_size_t m_dirty_buckets;
+    bucket_search_serial_query<Traits> m_query;
+    bool m_use_dirty_cells;
+
+    double_d m_bucket_side_length; 
+    unsigned_int_d m_size;
+    detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
+
+};
+
+template <typename Traits>
+struct bucket_search_serial_query {
+
+    typedef typename Traits::raw_pointer raw_pointer;
+    typedef typename Traits::double_d double_d;
+    typedef typename Traits::bool_d bool_d;
+    typedef typename Traits::int_d int_d;
+    typedef typename Traits::unsigned_int_d unsigned_int_d;
+    typedef typename Traits::reference reference;
+    typedef typename Traits::position position;
+
+    bool_d m_periodic;
+    double_d m_bucket_side_length; 
+    unsigned_int_d m_size;
+    detail::bbox<Traits::dimension> m_bounds;
+    detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
+
+    raw_pointer m_particles_begin;
+    size_t *m_buckets_begin;
+    size_t *m_linked_list_begin;
+
+    inline
+    CUDA_HOST_DEVICE
+    bucket_search_serial_query():
+        m_periodic(),
+        m_particles_begin(),
+        m_buckets_begin()
+    {}
+
+    CUDA_HOST_DEVICE
+    iterator_range<linked_list_iterator<Traits>> get_neighbours(const double_d& position) const {
+        return iterator_range<linked_list_iterator<Traits>>(find_broadphase_neighbours(position,-1,false),
+                                              linked_list_iterator<Traits>());
     }
-    */
+
+    CUDA_HOST_DEVICE
+    linked_list_iterator<Traits> find_broadphase_neighbours(
+            const double_d& r, 
+            const int my_index, 
+            const bool self) const {
+        
+        ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);
+        const unsigned_int_d my_bucket = m_point_to_bucket_index.find_bucket_index_vector(r);
+
+#ifndef __CUDA_ARCH__
+        LOG(3,"BucketSearch: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
+        LOG(3,"\tbounds = "<<m_bounds);
+	    LOG(3,"\tperiodic = "<<m_periodic);
+	    LOG(3,"\tbucket_side_length = "<<m_bucket_side_length);
+	    LOG(3,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
+#endif
+
+        linked_list_iterator<Traits> search_iterator(m_particles_begin,
+                            m_bucket_side_length,
+                            m_linked_list_begin,
+                            m_buckets_begin,r);
+
+        int_d bucket_offset(-1);
+        constexpr unsigned int last_d = Traits::dimension-1;
+        bool still_going = true;
+        while (still_going) {
+            unsigned_int_d other_bucket = my_bucket + bucket_offset; 
+
+            // handle end cases
+            double_d transpose(0);
+            bool outside = false;
+            for (int i=0; i<Traits::dimension; i++) {
+                if (other_bucket[i] >= detail::get_max<unsigned int>()) {
+                    if (m_periodic[i]) {
+                        other_bucket[i] = m_size[i]-1;
+                        transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
+                    } else {
+                        outside = true;
+                        break;
+                    }
+                }
+                if (other_bucket[i] == m_size[i]) {
+                    if (m_periodic[i]) {
+                        other_bucket[i] = 0;
+                        transpose[i] = (m_bounds.bmax-m_bounds.bmin)[i];
+                    } else {
+                        outside = true;
+                        break;
+                    }
+                }
+            }
+
+            if (!outside) {
+                const unsigned int other_bucket_index = m_point_to_bucket_index.collapse_index_vector(other_bucket);
+
+#ifndef __CUDA_ARCH__
+                LOG(4,"\tlooking in bucket "<<other_bucket<<" = "<<other_bucket_index<<".");
+#endif
+
+                if (m_buckets_begin[other_bucket_index] != detail::get_empty_id()) {
+
+                    //std::cout << "adding range for my_bucket = "<<my_bucket<<" other_bucket = "<<other_bucket<<" range_start_index = "<<range_start_index<<" range_end_index = "<<range_end_index<< " transpose = "<<transpose<<std::endl;
+                    search_iterator.add_bucket(other_bucket_index,transpose);
+                }
+
+            }
+
+            // go to next candidate bucket
+            for (int i=0; i<Traits::dimension; i++) {
+                bucket_offset[i]++;
+                if (bucket_offset[i] <= 1) break;
+                if (i == last_d) still_going = false;
+                bucket_offset[i] = -1;
+            }
+        }
+        
+        return search_iterator;
+    }
 
 
-template<typename T, typename F>
-void BucketSearch<T,F>::embed_points(const T _begin_iterator, const T _end_iterator) {
-	
-}
-
-template<typename T, typename F>
-void BucketSearch<T,F>::add_point(const T point_to_add_iterator) {
-	
-}
-
-template<typename T, typename F>
-void BucketSearch<T,F>::
-
-template<typename T, typename F>
-void BucketSearch<T,F>::reset(const double_d& _low, const double_d& _high, double _max_interaction_radius, const Vect3b& _periodic) {
-	
-}
-template<typename T, typename F>
-typename BucketSearch<T,F>::const_iterator BucketSearch<T,F>::find_broadphase_neighbours(const double_d& r,const int my_index, const bool self) const {
-	return const_iterator(this,correct_position_for_periodicity(r),my_index,self);
-}
-template<typename T, typename F>
-typename BucketSearch<T,F>::const_iterator BucketSearch<T,F>::end() const {
-	return const_iterator();
-}
-template<typename T, typename F>
-double_d BucketSearch<T,F>::correct_position_for_periodicity(const double_d& source_r, const double_d& to_correct_r) const {
-	double_d corrected_r = to_correct_r - source_r;
-	for (int i = 0; i < NDIM; ++i) {
-		if (!periodic[i]) continue;
-		if (corrected_r[i] > domain_size[i]/2.0) corrected_r[i] -= domain_size[i];
-		else if (corrected_r[i] < -domain_size[i]/2.0) corrected_r[i] += domain_size[i];
-	}
-	return corrected_r + source_r;
-}
-
-template<typename T, typename F>
-double_d BucketSearch<T,F>::correct_position_for_periodicity(const double_d& to_correct_r) const {
-	double_d corrected_r = to_correct_r;
-	for (int i = 0; i < NDIM; ++i) {
-		if (!periodic[i]) continue;
-		while (corrected_r[i] >= high[i]) corrected_r[i] -= domain_size[i];
-		while (corrected_r[i] < low[i]) corrected_r[i] += domain_size[i];
-	}
-	return corrected_r;
-}
-
-
+};
 
 }
 

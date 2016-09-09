@@ -95,6 +95,10 @@ public:
         set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),double_d(max/3.0-min/3.0),false); 
     };
 
+    static constexpr bool unordered() {
+        return true;
+    }
+
     /// resets the domain extents, periodicity and bucket size
     /// \param low the lower extent of the search domain
     /// \param high the upper extent of the search domain
@@ -149,13 +153,13 @@ public:
         }
     }
 
-    void copy_points(const_iterator copy_from_iterator, const_iterator copy_to_iterator) {
+    void copy_points(iterator copy_from_iterator, iterator copy_to_iterator) {
             ASSERT((copy_to_iterator-m_particles_begin>=0) && 
                     (m_particles_end-copy_to_iterator>0),"invalid copy to iterator");
             ASSERT((copy_from_iterator-m_particles_begin>=0) && 
                     (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
             if (copy_to_iterator==copy_from_iterator) return;
-            cast().copy_points.impl(copy_from_iterator,copy_from_iterator);
+            cast().copy_points_impl(copy_from_iterator,copy_from_iterator);
     }
 
 
@@ -360,6 +364,7 @@ private:
 
 /// A const iterator to a set of neighbouring points. This iterator implements
 /// a STL forward iterator type
+template <typename Traits>
 class linked_list_iterator {
     typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
@@ -376,7 +381,7 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     linked_list_iterator(): 
-        m_cell_empty(CELL_EMPTY) {
+        m_cell_empty(detail::get_empty_id()) {
         m_node = &m_cell_empty;
     }
 
@@ -387,16 +392,18 @@ public:
     /// \param centre the neighbourhood query point
     linked_list_iterator(
             const raw_pointer begin,
+            const double_d box_side_length, 
             size_t* linked_list_begin,
             size_t* buckets_begin,
             const double_d& r):
         m_begin(begin),
+        m_box_side_length(box_side_length),
         m_linked_list_begin(linked_list_begin),
         m_buckets_begin(buckets_begin),
         m_r(r),
         m_bucket_i(0),
         m_nbuckets(0),
-        m_cell_empty(CELL_EMPTY) {
+        m_cell_empty(detail::get_empty_id()) {
 
         m_node = &m_cell_empty;
     }
@@ -406,40 +413,45 @@ public:
         m_transpose[m_nbuckets] = transpose;
         ++m_nbuckets;
 
-        if (m_node == CELL_EMPTY) {
+        if (*m_node == detail::get_empty_id()) {
             increment();
         }
     }
 
-     void go_to_next_candidate() {
-        if (*m_node != CELL_EMPTY) {
+     bool go_to_next_candidate() {
+        if (*m_node != detail::get_empty_id()) {
             m_node = m_linked_list_begin + *m_node;
             //std::cout << "going to new particle *mnode = "<<*m_node<<std::endl;
         }
-        while ((*m_node == CELL_EMPTY) && (m_bucket_i < m_nbuckets)) {
+        while ((*m_node == detail::get_empty_id()) && (m_bucket_i < m_nbuckets)) {
             //std::cout << "going to new_cell with offset = "<<*surrounding_cell_offset_i<<std::endl;
             m_node = m_buckets_begin + m_buckets_to_search[m_bucket_i];
             ++m_bucket_i;
         }
+        if (m_bucket_i == m_nbuckets) {
+            return false;
+        } else {
+            return true;
+        }
     }
 
-
-    reference operator *() {
+    
+    reference operator *() const {
         return dereference();
     }
     reference operator ->() {
         return dereference();
     }
-    const_iterator& operator++() {
+    linked_list_iterator& operator++() {
         increment();
         return *this;
-   }
-    const_iterator operator++(int) {
-        const_iterator tmp(*this);
+    }
+    linked_list_iterator operator++(int) {
+        linked_list_iterator tmp(*this);
         operator++();
         return tmp;
     }
-    size_t operator-(const_iterator start) const {
+    size_t operator-(linked_list_iterator start) const {
         size_t count = 0;
         while (start != *this) {
             start++;
@@ -447,26 +459,25 @@ public:
         }
         return count;
     }
-    inline bool operator==(const const_iterator& rhs) {
+    inline bool operator==(const linked_list_iterator& rhs) {
         return equal(rhs);
     }
-    inline bool operator!=(const const_iterator& rhs){
+    inline bool operator!=(const linked_list_iterator& rhs){
         return !operator==(rhs);
     }
 
  private:
     friend class boost::iterator_core_access;
 
-    bool equal(const_iterator const& other) const {
+    bool equal(linked_list_iterator const& other) const {
         //std::cout <<" testing equal *m_node = "<<*m_node<<" other.m_node = "<<*(other.m_node)<<std::endl;
         return *m_node == *(other.m_node);
     }
 
 
-    void check_candidate() {
-        const double_d& p = get<position>(m_begin[*m_node]) + m_transpose[m_bucket_i];
-
-        dx = p - m_r;
+    bool check_candidate() {
+        const double_d& p = get<position>(m_begin)[*m_node] + m_transpose[m_bucket_i];
+        m_dx = p - m_r;
 
         bool outside = false;
         for (int i=0; i < Traits::dimension; i++) {
@@ -488,7 +499,7 @@ public:
 
 
     reference dereference() const
-    { return reference(m_begin[*m_node],m_dx); }
+    { return reference(*(m_begin + *m_node),m_dx); }
 
 
     size_t* m_node;
@@ -502,6 +513,7 @@ public:
     size_t m_nbuckets;
     size_t m_empty_bucket;
     size_t m_bucket_i;
+    size_t m_cell_empty;
 
     raw_pointer m_begin;
     size_t* m_buckets_begin;

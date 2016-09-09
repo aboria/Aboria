@@ -37,10 +37,10 @@ set(test_package
     )
 
 
-#set(test_package
+set(test_package
 #    rbf_interpolation
-#    neighbours
-#    )
+    neighbours
+    )
 
 foreach(test ${test_package})
     aboria_cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cpp)

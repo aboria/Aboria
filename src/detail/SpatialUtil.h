@@ -174,7 +174,7 @@ inline CUDA_HOST_DEVICE
 bool is_leaf(int id) { return id < 0; }
 
 inline CUDA_HOST_DEVICE
-int get_empty_id() { return 0xffffffff; }
+constexpr int get_empty_id() { return 0xffffffff; }
 
 inline CUDA_HOST_DEVICE
 int get_leaf_id(int offset) { return 0x80000000 | offset; }

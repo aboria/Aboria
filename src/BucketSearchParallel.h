@@ -82,6 +82,7 @@ class bucket_search_parallel:
     typedef typename Traits::vector_unsigned_int_iterator vector_unsigned_int_iterator;
     typedef typename Traits::vector_unsigned_int vector_unsigned_int;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
+    typedef typename Traits::iterator iterator;
     typedef bucket_search_parallel_params<Traits> params_type;
 
     friend neighbour_search_base<bucket_search_parallel<Traits>,
@@ -89,6 +90,13 @@ class bucket_search_parallel:
                                  bucket_search_parallel_params<Traits>,
                                  ranges_iterator<Traits>,
                                  bucket_search_parallel_query<Traits>>;
+
+public:
+    static constexpr bool unordered() {
+        return false;
+    }
+
+private:
 
     void set_domain_impl(const params_type params) {
         m_bucket_side_length = params.side_length; 
@@ -161,7 +169,7 @@ class bucket_search_parallel:
     void delete_points_at_end_impl(const size_t dist) {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         const size_t start_delete = n-dist;
-        ASSERT(m_bucket_indices.size()-n = dist);
+        ASSERT(m_bucket_indices.size()-n == dist,"m_bucket_indices size not consistent with dist argument");
         const size_t oldn = m_bucket_indices.size();
         m_bucket_indices.resize(n);
 
@@ -171,17 +179,17 @@ class bucket_search_parallel:
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
-    void copy_points_impl(const_iterator copy_from_iterator, const_iterator copy_to_iterator) {
+    void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
         auto positions_from = get<position>(copy_from_iterator);
         auto positions_to = get<position>(copy_to_iterator);
 
         const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
         const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
-        auto bucket_indicies_from = m_bucket_indices.begin() + fromi;
-        auto bucket_indicies_to = m_bucket_indices.begin() + toi;
 
-        build_bucket_indices(positions_from,positions_from+1,bucket_indices_from);
-        build_bucket_indices(positions_to,positions_to+1,bucket_indices_to);
+        build_bucket_indices(positions_from,positions_from+1,
+               m_bucket_indices.begin() + fromi);
+        build_bucket_indices(positions_to,positions_to+1,
+               m_bucket_indices.begin() + toi);
         sort_by_bucket_index();
         build_buckets();
     }

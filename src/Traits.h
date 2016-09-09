@@ -131,6 +131,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename traits::template vector_type<Vector<bool,D> >::type vector_bool_d;
     typedef typename traits::template vector_type<int>::type vector_int;
     typedef typename traits::template vector_type<unsigned int>::type vector_unsigned_int;
+    typedef typename traits::template vector_type<size_t>::type vector_size_t;
     typedef typename vector_unsigned_int::iterator vector_unsigned_int_iterator;
     typedef typename vector_unsigned_int::const_iterator vector_unsigned_int_const_iterator;
     typedef typename traits::template vector_type<Vector<int,2> >::type vector_int2;

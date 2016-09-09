@@ -46,9 +46,11 @@ using namespace Aboria;
 
 class NeighboursTest : public CxxTest::TestSuite {
 public:
-    void test_single_particle(void) {
+
+    template<template <typename,typename> class Vector,template <typename> class SearchMethod>
+    void helper_single_particle(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<std::tuple<scalar>> Test_type;
+    	typedef Particles<std::tuple<scalar>,3,Vector,SearchMethod> Test_type;
         typedef position_d<3> position;
     	Test_type test;
     	double3 min(-1,-1,-1);
@@ -56,7 +58,7 @@ public:
     	double3 periodic(true,true,true);
     	double diameter = 0.1;
     	test.init_neighbour_search(min,max,diameter,periodic);
-    	Test_type::value_type p;
+    	typename Test_type::value_type p;
 
         get<position>(p) = double3(0,0,0);
     	test.push_back(p);
@@ -74,9 +76,10 @@ public:
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
-    void test_two_particles(void) {
+    template<template <typename,typename> class Vector,template <typename> class SearchMethod>
+    void helper_two_particles(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<std::tuple<scalar>> Test_type;
+    	typedef Particles<std::tuple<scalar>,3,Vector,SearchMethod> Test_type;
         typedef position_d<3> position;
     	Test_type test;
     	double3 min(-1,-1,-1);
@@ -84,7 +87,7 @@ public:
     	double3 periodic(true,true,true);
     	double diameter = 0.1;
     	test.init_neighbour_search(min,max,diameter,periodic);
-    	Test_type::value_type p;
+    	typename Test_type::value_type p;
 
         get<position>(p) = double3(0,0,0);
     	test.push_back(p);
@@ -94,7 +97,7 @@ public:
 
     	auto tpl = test.get_neighbours(double3(1.1*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
-    	const Test_type::value_type &pfound = tuple_ns::get<0>(*tpl.begin());
+    	const typename Test_type::value_type &pfound = tuple_ns::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
     	tpl = test.get_neighbours(double3(0.9*diameter,0,0));
@@ -125,10 +128,12 @@ public:
         }
     };
 
-    template<unsigned int D,template <typename,typename> class V>
+    template<unsigned int D, 
+             template <typename,typename> class VectorType,
+             template <typename> class SearchMethod>
     void helper_d(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
-    	typedef Particles<std::tuple<scalar>,D,V> Test_type;
+    	typedef Particles<std::tuple<scalar>,D,VectorType,SearchMethod> Test_type;
         typedef position_d<D> position;
         typedef Vector<double,D> double_d;
         typedef Vector<bool,D> bool_d;
@@ -170,19 +175,43 @@ public:
                 has_n_neighbours<typename Test_type::query_type>(test.get_query(),expect_n));
     }
 
-    void test_std_vector(void) {
-        helper_d<1,std::vector>();
-        helper_d<2,std::vector>();
-        helper_d<3,std::vector>();
-        helper_d<4,std::vector>();
+    void test_std_vector_bucket_search_serial(void) {
+        helper_single_particle<std::vector,bucket_search_serial>();
+        helper_two_particles<std::vector,bucket_search_serial>();
+        helper_d<1,std::vector,bucket_search_serial>();
+        helper_d<2,std::vector,bucket_search_serial>();
+        helper_d<3,std::vector,bucket_search_serial>();
+        helper_d<4,std::vector,bucket_search_serial>();
     }
 
-    void test_thrust_vector(void) {
+    void test_std_vector_bucket_search_parallel(void) {
+        helper_single_particle<std::vector,bucket_search_parallel>();
+        helper_two_particles<std::vector,bucket_search_parallel>();
+        helper_d<1,std::vector,bucket_search_parallel>();
+        helper_d<2,std::vector,bucket_search_parallel>();
+        helper_d<3,std::vector,bucket_search_parallel>();
+        helper_d<4,std::vector,bucket_search_parallel>();
+    }
+
+    void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__CUDACC__)
-        helper_d<1,thrust::device_vector>();
-        helper_d<2,thrust::device_vector>();
-        helper_d<3,thrust::device_vector>();
-        helper_d<4,thrust::device_vector>();
+        helper_single_particle<thrust::device_vector,bucket_search_serial>();
+        helper_two_particles<thrust::device_vector,bucket_search_serial>();
+        helper_d<1,thrust::device_vector,bucket_search_serial>();
+        helper_d<2,thrust::device_vector,bucket_search_serial>();
+        helper_d<3,thrust::device_vector,bucket_search_serial>();
+        helper_d<4,thrust::device_vector,bucket_search_serial>();
+#endif
+    }
+
+    void test_thrust_vector_bucket_search_parallel(void) {
+#if defined(__CUDACC__)
+        helper_single_particle<thrust::device_vector,bucket_search_parallel>();
+        helper_two_particles<thrust::device_vector,bucket_search_parallel>();
+        helper_d<1,thrust::device_vector,bucket_search_parallel>();
+        helper_d<2,thrust::device_vector,bucket_search_parallel>();
+        helper_d<3,thrust::device_vector,bucket_search_parallel>();
+        helper_d<4,thrust::device_vector,bucket_search_parallel>();
 #endif
     }
 

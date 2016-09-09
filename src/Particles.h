@@ -50,7 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Vector.h"
 #include "Variable.h"
 #include "Traits.h"
-#include "BucketSearchParallel.h"
+#include "BucketSearchSerial.h"
 //#include "OctTree.h"
 #include "CudaInclude.h"
 
@@ -137,11 +137,11 @@ using default_vector = std::vector<T,Alloc>;
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VAR=std::tuple<>, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, typename TRAITS_USER=Traits<VECTOR> > 
+template<typename VAR=std::tuple<>, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, template <typename> class SearchMethod=bucket_search_serial, typename TRAITS_USER=Traits<VECTOR> > 
 class Particles {
 public:
 
-    typedef Particles<VAR,D,VECTOR,TRAITS_USER> particles_type;
+    typedef Particles<VAR,D,VECTOR,SearchMethod,TRAITS_USER> particles_type;
 
     typedef TraitsCommon<VAR,D,TRAITS_USER> traits_type;
 
@@ -162,8 +162,9 @@ public:
     /// const iterator type
     typedef typename traits_type::const_iterator const_iterator;
 
-    typedef typename bucket_search_parallel<traits_type>::query_type query_type;
-    typedef typename bucket_search_parallel<traits_type>::query_iterator query_iterator;
+    typedef SearchMethod<traits_type> search_type;
+    typedef typename search_type::query_type query_type;
+    typedef typename search_type::query_iterator query_iterator;
 
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
@@ -198,7 +199,7 @@ public:
     /// copy-constructor. performs deep copying of all particles
     Particles(const particles_type &other):
             data(other.data),
-            bucket_search(other.bucket_search),
+            search(other.search),
             next_id(other.next_id),
             searchable(other.searchable),
             seed(other.seed),
@@ -230,7 +231,9 @@ public:
         Aboria::get<id>(i) = this->next_id++;
         //Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
         Aboria::get<alive>(i) = true;
-        if (searchable && update_neighbour_search) bucket_search.add_points_at_end(begin(),end()-1,end());
+        if (searchable && update_neighbour_search) {
+            search.add_points_at_end(begin(),end()-1,end());
+        }
     }
 
     /// push a new particle with position \p position
@@ -246,7 +249,9 @@ public:
         for (const value_type& i: particles) {
             this->push_back(i,false);
         }
-        if (searchable) bucket_search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end());
+        if (searchable) {
+            search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end());
+        }
     }
 
     /// pop (delete) the particle at the end of the container 
@@ -281,7 +286,6 @@ public:
         return traits_type::end(data);
     }
 
-
     /// sets container to empty and deletes all particles
     void clear() {
         return traits_type::clear(data);
@@ -293,13 +297,21 @@ public:
     iterator erase (iterator i, bool update_neighbour_search = true) {
         if (i != end()-1) {
             *i = *(end()-1);
+            if (search.unordered()) {
+                search.copy_points(end()-1,i);
+            }
             traits_type::pop_back(data);
         } else {
             traits_type::pop_back(data);
             i = end();
         }
-
-        if (searchable && update_neighbour_search) bucket_search.embed_points(begin(),end());
+        if (searchable && update_neighbour_search) {
+            if (search.unordered()) {
+                search.delete_points_at_end(begin(),end());
+            } else {
+                search.embed_points(begin(),end());
+            }
+        }
         return i;
     }
 
@@ -314,7 +326,13 @@ public:
                 erase(i,false);
             }
             return_iterator = erase(last-1,false);
-            if (searchable) bucket_search.embed_points(begin(),end());
+            if (searchable) {
+                if (search.unordered()) {
+                    search.delete_points_at_end(begin(),end());
+                } else {
+                    search.embed_points(begin(),end());
+                }
+            }
         }
         return return_iterator;
     }
@@ -357,27 +375,27 @@ public:
     /// \param periodic a boolean 3d vector indicating whether each dimension 
     /// is periodic (true) or not (false)
     void init_neighbour_search(const double_d& low, const double_d& high, const double length_scale, const bool_d& periodic) {
-        bucket_search.set_domain(low,high,periodic,double_d(length_scale));
-        enforce_domain(bucket_search.get_min(),bucket_search.get_max(),bucket_search.get_periodic());
+        search.set_domain(low,high,periodic,double_d(length_scale));
+        enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
         searchable = true;
     }
 
     const iterator_range<query_iterator> get_neighbours(const double_d& position) const {
-        return bucket_search.get_query().get_neighbours(position);
+        return search.get_query().get_neighbours(position);
     }
 
     const query_type& get_query() const {
-        return bucket_search.get_query();
+        return search.get_query();
     }
 
     /// set the length scale of the neighbourhood search to be equal to \p length_scale
     /// \see init_neighbour_search()
     void reset_neighbour_search(const double length_scale) {
-        bucket_search.set_domain(bucket_search.get_min(),
-                                    bucket_search.get_max(),
-                                    bucket_search.get_periodic(),
+        search.set_domain(search.get_min(),
+                                    search.get_max(),
+                                    search.get_periodic(),
                                     double_d(length_scale));
-        bucket_search.embed_points(begin(),end());
+        search.embed_points(begin(),end());
         searchable = true;
     }
 
@@ -397,25 +415,25 @@ public:
     /// return the length scale of the neighbourhood search
     /// \see init_neighbour_search()
     double get_lengthscale() const {
-        return bucket_search.get_bucket_side_length();
+        return search.get_bucket_side_length();
     }
 
     /// return the lower extent of the neighbourhood search
     /// \see init_neighbour_search()
     const double_d& get_min() const {
-        return bucket_search.get_min();
+        return search.get_min();
     }
 
     /// return the upper extent of the neighbourhood search
     /// \see init_neighbour_search()
     const double_d& get_max() const {
-        return bucket_search.get_max();
+        return search.get_max();
     }
 
     /// return the periodicty of the neighbourhood search
     /// \see init_neighbour_search()
     const bool_d& get_periodic() const {
-        return bucket_search.get_periodic();
+        return search.get_periodic();
     }
 
     /// Update the neighbourhood search data. This function must be
@@ -425,7 +443,7 @@ public:
     /// \see get_neighbours()
     void update_positions() {
         if (searchable) {
-            enforce_domain(bucket_search.get_min(),bucket_search.get_max(),bucket_search.get_periodic());
+            enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
         }
     }
 
@@ -445,8 +463,10 @@ public:
             iterator i = begin() + index;
             while (Aboria::get<alive>(*i) == false) {
                 if ((index < size()-1) && (size() > 1)) {
-                    //std::swap(*i,*(end()-1));
                     *i = *(end()-1);
+                    if (search.unordered()) {
+                        search.copy_points(end()-1,i);
+                    }
                     pop_back(false);
                     i = begin() + index;
                 } else {
@@ -455,7 +475,13 @@ public:
                 }
             }
         }
-        if (searchable && update_neighbour_search) bucket_search.embed_points(begin(),end());
+        if (searchable && update_neighbour_search) {
+            if (search.unordered()) {
+                search.delete_points_at_end(begin(),end());
+            } else {
+                search.embed_points(begin(),end());
+            }
+        }
     }
 
     const typename data_type::tuple_type & get_tuple() const { return data.get_tuple(); }
@@ -601,7 +627,7 @@ private:
             delete_particles();
         }
         if (remove_deleted_particles || (periodic==true).any()) {
-            bucket_search.embed_points(begin(),end());
+            search.embed_points(begin(),end());
         }
     }
 
@@ -611,7 +637,7 @@ private:
     int next_id;
     const uint32_t seed;
     std::map<size_t,size_t> id_to_index;
-    bucket_search_parallel<traits_type> bucket_search;
+    search_type search;
 
 
 #ifdef HAVE_VTK
