@@ -282,7 +282,7 @@ public:
         m_dx = p - m_r;
 
         bool outside = false;
-        for (int i=0; i < Traits::dimension; i++) {
+        for (int i=0; i < Traits::dimension; ++i{
             if (std::abs(m_dx[i]) > m_box_side_length[i]) {
                 outside = true;
                 break;
@@ -383,6 +383,7 @@ public:
     linked_list_iterator(): 
         m_cell_empty(detail::get_empty_id()) {
         m_node = &m_cell_empty;
+        //std::cout << "empty linked_list_iterator with m_node = "<<*m_node<<std::endl;
     }
 
    
@@ -393,8 +394,8 @@ public:
     linked_list_iterator(
             const raw_pointer begin,
             const double_d box_side_length, 
-            size_t* linked_list_begin,
-            size_t* buckets_begin,
+            int* linked_list_begin,
+            int* buckets_begin,
             const double_d& r):
         m_begin(begin),
         m_box_side_length(box_side_length),
@@ -406,6 +407,28 @@ public:
         m_cell_empty(detail::get_empty_id()) {
 
         m_node = &m_cell_empty;
+    }
+
+    linked_list_iterator(const linked_list_iterator& other):
+        m_node(other.m_node),
+        m_r(other.m_r),
+        m_dx(other.m_dx),
+        m_box_side_length(other.m_box_side_length),
+        m_nbuckets(other.m_nbuckets),
+        m_bucket_i(other.m_bucket_i),
+        m_cell_empty(other.m_cell_empty),
+        m_begin(other.m_begin),
+        m_buckets_begin(other.m_buckets_begin),
+        m_linked_list_begin(other.m_linked_list_begin) 
+    {
+        //std::cout <<"copy iterator!!"<<std::endl;
+        for (size_t i; i<max_nbuckets; ++i) {
+            m_transpose[i] = other.m_transpose[i];
+            m_buckets_to_search[i] = other.m_buckets_to_search[i];
+        }
+        if (m_node == &(other.m_cell_empty)) {
+            m_node = &m_cell_empty;
+        }
     }
 
     void add_bucket(const size_t bucket_index, const double_d& transpose) {
@@ -424,9 +447,9 @@ public:
             //std::cout << "going to new particle *mnode = "<<*m_node<<std::endl;
         }
         while ((*m_node == detail::get_empty_id()) && (m_bucket_i < m_nbuckets)) {
-            //std::cout << "going to new_cell with offset = "<<*surrounding_cell_offset_i<<std::endl;
             m_node = m_buckets_begin + m_buckets_to_search[m_bucket_i];
             ++m_bucket_i;
+            //std::cout << "going to new bucket m_bucket_i = "<<m_bucket_i<<" and m_node = "<<*m_node<<std::endl;
         }
         if (m_bucket_i == m_nbuckets) {
             return false;
@@ -491,6 +514,8 @@ public:
     }
 
     void increment() {
+
+        //std::cout << "increment: m_bucket_i = "<<m_bucket_i<<" m_nbuckets ="<<m_nbuckets<<" and m_node = "<<*m_node<< ". cell_empty = "<<detail::get_empty_id()<<std::endl;
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
             found_good_candidate = check_candidate();
@@ -502,7 +527,7 @@ public:
     { return reference(*(m_begin + *m_node),m_dx); }
 
 
-    size_t* m_node;
+    int* m_node;
     double_d m_r;
     double_d m_dx;
     double_d m_box_side_length;
@@ -511,13 +536,12 @@ public:
     double_d m_transpose[max_nbuckets];
     size_t m_buckets_to_search[max_nbuckets];
     size_t m_nbuckets;
-    size_t m_empty_bucket;
     size_t m_bucket_i;
-    size_t m_cell_empty;
+    int m_cell_empty;
 
     raw_pointer m_begin;
-    size_t* m_buckets_begin;
-    size_t* m_linked_list_begin;
+    int* m_buckets_begin;
+    int* m_linked_list_begin;
 
 };
 

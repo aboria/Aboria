@@ -87,7 +87,7 @@ class bucket_search_serial:
 
     typedef typename Traits::double_d double_d;
     typedef typename Traits::position position;
-    typedef typename Traits::vector_size_t vector_size_t;
+    typedef typename Traits::vector_int vector_int;
     typedef typename Traits::iterator iterator;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
 
@@ -193,6 +193,21 @@ private:
             if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
         }
 
+#ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            LOG(4,"\tbuckets:");
+            for (int i = 0; i<m_buckets.size(); ++i) {
+                if (m_buckets[i] != detail::get_empty_id()) {
+                    LOG(4,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
+                }
+            }
+            LOG(4,"\tend buckets");
+            for (int i = 0; i<m_linked_list.size(); ++i) {
+                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+            }
+        }
+#endif
+
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
@@ -276,10 +291,10 @@ private:
         return m_query;
     }
 
-    vector_size_t m_buckets;
-    vector_size_t m_linked_list;
-    vector_size_t m_linked_list_reverse;
-    vector_size_t m_dirty_buckets;
+    vector_int m_buckets;
+    vector_int m_linked_list;
+    vector_int m_linked_list_reverse;
+    vector_int m_dirty_buckets;
     bucket_search_serial_query<Traits> m_query;
     bool m_use_dirty_cells;
 
@@ -307,8 +322,8 @@ struct bucket_search_serial_query {
     detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
 
     raw_pointer m_particles_begin;
-    size_t *m_buckets_begin;
-    size_t *m_linked_list_begin;
+    int *m_buckets_begin;
+    int *m_linked_list_begin;
 
     inline
     CUDA_HOST_DEVICE
