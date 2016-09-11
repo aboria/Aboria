@@ -11,14 +11,15 @@
 
 //[bd
 #include <random>
-typedef std::mt19937 generator_type;
-generator_type generator;
 #include "Aboria.h"
 using namespace Aboria;
 
 //<-
 class BDTest : public CxxTest::TestSuite {
 public:
+
+    typedef std::mt19937 generator_type;
+    generator_type generator;
 
     void test_bd(void) {
 //->

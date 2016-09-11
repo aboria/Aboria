@@ -9,11 +9,8 @@
 
 #include <cxxtest/TestSuite.h>
 
-#define LOG_LEVEL 1
 //[dem
 #include <random>
-typedef std::mt19937 generator_type;
-generator_type generator;
 
 #include "Aboria.h"
 using namespace Aboria;
@@ -24,6 +21,8 @@ using namespace Aboria;
 class DEMTest : public CxxTest::TestSuite {
 public:
 
+    typedef std::mt19937 generator_type;
+    generator_type generator;
     void test_dem(void) {
 //->
 //=int main() {

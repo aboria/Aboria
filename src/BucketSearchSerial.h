@@ -151,8 +151,7 @@ private:
         m_linked_list.assign(n, detail::get_empty_id());
         m_linked_list_reverse.assign(n, detail::get_empty_id());
         m_dirty_buckets.assign(n,detail::get_empty_id());
-        int i = 0;
-        for (size_t i; i<n; ++i) {
+        for (size_t i=0; i<n; ++i) {
             const double_d& r = get<position>(this->m_particles_begin)[i];
             const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
             const int bucket_entry = m_buckets[bucketi];
@@ -164,6 +163,22 @@ private:
             m_linked_list_reverse[i] = detail::get_empty_id();
             if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
         }
+
+#ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            LOG(4,"\tbuckets:");
+            for (int i = 0; i<m_buckets.size(); ++i) {
+                if (m_buckets[i] != detail::get_empty_id()) {
+                    LOG(4,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
+                }
+            }
+            LOG(4,"\tend buckets");
+            for (int i = 0; i<m_linked_list.size(); ++i) {
+                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+            }
+        }
+#endif
+
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
@@ -349,7 +364,7 @@ struct bucket_search_serial_query {
         const unsigned_int_d my_bucket = m_point_to_bucket_index.find_bucket_index_vector(r);
 
 #ifndef __CUDA_ARCH__
-        LOG(3,"BucketSearch: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
+        LOG(3,"bucket_search_serial: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
         LOG(3,"\tbounds = "<<m_bounds);
 	    LOG(3,"\tperiodic = "<<m_periodic);
 	    LOG(3,"\tbucket_side_length = "<<m_bucket_side_length);
@@ -400,7 +415,10 @@ struct bucket_search_serial_query {
 
                 if (m_buckets_begin[other_bucket_index] != detail::get_empty_id()) {
 
-                    //std::cout << "adding range for my_bucket = "<<my_bucket<<" other_bucket = "<<other_bucket<<" range_start_index = "<<range_start_index<<" range_end_index = "<<range_end_index<< " transpose = "<<transpose<<std::endl;
+#ifndef __CUDA_ARCH__
+                    LOG(4,"\tadding bucket: "<<other_bucket_index<<". transpose = "<<transpose<<".");
+#endif
+
                     search_iterator.add_bucket(other_bucket_index,transpose);
                 }
 
@@ -414,6 +432,10 @@ struct bucket_search_serial_query {
                 bucket_offset[i] = -1;
             }
         }
+        
+#ifndef __CUDA_ARCH__
+        LOG(4,"bucket_search_serial: finished creating iterator.");
+#endif
         
         return search_iterator;
     }

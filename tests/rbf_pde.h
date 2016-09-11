@@ -40,7 +40,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
-#define LOG_LEVEL 1
 
 //[rbf_pde
 #include "Aboria.h"
@@ -48,7 +47,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 using namespace Aboria;
 
 //<-
-class OperatorsTest : public CxxTest::TestSuite {
+class RbfPdeTest : public CxxTest::TestSuite {
 public:
 
     void test_Eigen(void) {

@@ -9,7 +9,6 @@
 
 #include <cxxtest/TestSuite.h>
 
-#define LOG_LEVEL 1
 //[sph
 #include "Aboria.h"
 using namespace Aboria;

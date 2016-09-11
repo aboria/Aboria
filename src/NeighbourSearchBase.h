@@ -277,12 +277,12 @@ public:
 
     CUDA_HOST_DEVICE
     bool check_candidate() {
-        //std::cout << "check my_r = "<<m_r<<" r = "<<get<position>(*m_node)<<" trans = "<<m_transpose[m_current_index]<<" index = "<<m_current_index<<std::endl;
+        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<get<position>(*m_node)<<" trans = "<<m_transpose[m_current_index]<<" index = "<<m_current_index); 
         const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
         m_dx = p - m_r;
 
         bool outside = false;
-        for (int i=0; i < Traits::dimension; ++i{
+        for (int i=0; i < Traits::dimension; ++i) {
             if (std::abs(m_dx[i]) > m_box_side_length[i]) {
                 outside = true;
                 break;
@@ -422,7 +422,7 @@ public:
         m_linked_list_begin(other.m_linked_list_begin) 
     {
         //std::cout <<"copy iterator!!"<<std::endl;
-        for (size_t i; i<max_nbuckets; ++i) {
+        for (size_t i=0; i<max_nbuckets; ++i) {
             m_transpose[i] = other.m_transpose[i];
             m_buckets_to_search[i] = other.m_buckets_to_search[i];
         }
@@ -431,27 +431,30 @@ public:
         }
     }
 
-    void add_bucket(const size_t bucket_index, const double_d& transpose) {
+    void add_bucket(const unsigned int bucket_index, const double_d& transpose) {
         m_buckets_to_search[m_nbuckets] = bucket_index;
         m_transpose[m_nbuckets] = transpose;
         ++m_nbuckets;
 
         if (*m_node == detail::get_empty_id()) {
-            increment();
+            m_bucket_i = m_nbuckets-1;
+            m_node = m_buckets_begin + m_buckets_to_search[m_bucket_i];
+            if (!check_candidate()) {
+                increment();
+            }
         }
     }
 
      bool go_to_next_candidate() {
         if (*m_node != detail::get_empty_id()) {
             m_node = m_linked_list_begin + *m_node;
-            //std::cout << "going to new particle *mnode = "<<*m_node<<std::endl;
+            LOG(4,"\tgoing to new particle *mnode = "<<*m_node);
         }
-        while ((*m_node == detail::get_empty_id()) && (m_bucket_i < m_nbuckets)) {
+        while ((*m_node == detail::get_empty_id()) && (++m_bucket_i < m_nbuckets)) {
             m_node = m_buckets_begin + m_buckets_to_search[m_bucket_i];
-            ++m_bucket_i;
-            //std::cout << "going to new bucket m_bucket_i = "<<m_bucket_i<<" and m_node = "<<*m_node<<std::endl;
+            LOG(4,"\tgoing to new bucket m_bucket_i = "<<m_bucket_i<<" and m_node = "<<*m_node);
         }
-        if (m_bucket_i == m_nbuckets) {
+        if ((m_bucket_i == m_nbuckets) && (*m_node == detail::get_empty_id())) {
             return false;
         } else {
             return true;
@@ -502,6 +505,8 @@ public:
         const double_d& p = get<position>(m_begin)[*m_node] + m_transpose[m_bucket_i];
         m_dx = p - m_r;
 
+        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<p<<" trans = "<<m_transpose[m_bucket_i]<<" index = "<<m_bucket_i<<". m_box_side_length = "<<m_box_side_length); 
+
         bool outside = false;
         for (int i=0; i < Traits::dimension; i++) {
             if (std::abs(m_dx[i]) > m_box_side_length[i]) {
@@ -515,11 +520,13 @@ public:
 
     void increment() {
 
-        //std::cout << "increment: m_bucket_i = "<<m_bucket_i<<" m_nbuckets ="<<m_nbuckets<<" and m_node = "<<*m_node<< ". cell_empty = "<<detail::get_empty_id()<<std::endl;
+        LOG(4,"\tincrement:"); 
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
             found_good_candidate = check_candidate();
+            LOG(4,"\tfound_good_candidate = "<<found_good_candidate); 
         }
+        LOG(4,"\tend increment: m_node = "<<*m_node); 
     }
 
 
@@ -534,7 +541,7 @@ public:
 
     const static unsigned int max_nbuckets = detail::ipow(3,Traits::dimension); 
     double_d m_transpose[max_nbuckets];
-    size_t m_buckets_to_search[max_nbuckets];
+    unsigned int m_buckets_to_search[max_nbuckets];
     size_t m_nbuckets;
     size_t m_bucket_i;
     int m_cell_empty;

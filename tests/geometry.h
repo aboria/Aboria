@@ -40,10 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 
 #include <random>
-typedef std::mt19937 generator_type;
-generator_type generator;
 
-#define LOG_LEVEL 1
 #include "Aboria.h"
 
 using namespace Aboria;
@@ -51,6 +48,9 @@ using namespace Aboria;
 
 class GeometryTest : public CxxTest::TestSuite {
 public:
+
+    typedef std::mt19937 generator_type;
+    generator_type generator;
 	void test_diffusion_reflection(void) {
 		const double tol = 1e-9;
 		Sphere sp_centre(double3(0,0,0),0.5,false);

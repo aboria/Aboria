@@ -1,53 +1,63 @@
-function(aboria_cxx_test target source ext)
-    get_filename_component(CPP_FILE_NAME ${source} NAME)
-    string(REGEX REPLACE "h$|hpp$" ${ext} CPP_FILE_NAME ${CPP_FILE_NAME})
-    message(${CPP_FILE_NAME})
+macro(aboria_cxx_test target target_file)
+    set(test_files "")
+    set(list_var "${ARGN}")
+    foreach(filename IN LISTS list_var)
+        set(test_files ${test_files} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
+    endforeach()
+    get_filename_component(CPP_FILE_NAME ${target_file} NAME)
+    message("${CPP_FILE_NAME}: ${test_files}")
     set(CPP_FULL_NAME "${CMAKE_CURRENT_BINARY_DIR}/${CPP_FILE_NAME}")
     add_custom_command(
         OUTPUT "${CPP_FULL_NAME}"
-        COMMAND ${CXXTESTGEN} --runner=ErrorPrinter --output "${CPP_FULL_NAME}" "${source}"
+        COMMAND ${CXXTESTGEN} --runner=ErrorPrinter --output "${CPP_FULL_NAME}" ${test_files}
         DEPENDS "${source}"
+        VERBATIM
     )
-if (${ext} MATCHES cu)
+if (${target_file} MATCHES .cu$)
     cuda_add_executable(${target} ${CPP_FULL_NAME})
 else()
     add_executable(${target} ${CPP_FULL_NAME})
 endif()
     set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-Wno-effc++")
-    add_test(${target} ${RUNTIME_OUTPUT_DIRECTORY}/${target})
-endfunction(aboria_cxx_test)
+endmacro(aboria_cxx_test)
 
-set(test_package 
-    operators
-    constructors 
-    variables
-    particle_container
-    neighbours
+set(test_files
+    operators.h
+    constructors.h 
+    variables.h
+    particle_container.h
+    neighbours.h
     #geometry
-    diffusion_around_spheres
-    assemble
-    symbolic
-    rbf_pde
-    rbf_interpolation
-    metafunctions
-    dem
-    sph
-    bd
-    md
+    diffusion_around_spheres.h
+    assemble.h
+    symbolic.h
+    rbf_pde.h
+    rbf_interpolation.h
+    metafunctions.h
+    dem.h
+    sph.h
+    bd.h
+    md.h
     )
-
-
-set(test_package
-#    rbf_interpolation
-    neighbours
+set(test_suites
+    NeighboursTest
     )
+set(NeighboursTest
+    test_std_vector_bucket_search_serial
+    test_std_vector_bucket_search_parallel
+    )
+    
 
-foreach(test ${test_package})
-    aboria_cxx_test(${test} ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cpp)
-    #cxxtest_add_test(${test} ${test}.cpp ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h)
-    target_link_libraries(${test} ${VTK_LIBRARIES} ${Boost_LIBRARIES})
-    if (Aboria_THRUST_TEST_DEVICE_VECTOR)
-        aboria_cxx_test(${test}_cuda ${CMAKE_CURRENT_SOURCE_DIR}/${test}.h cu)
-        target_link_libraries(${test}_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES})
-    endif()
-endforeach(test)
+
+aboria_cxx_test(tests tests.cpp ${test_files})
+target_link_libraries(tests ${VTK_LIBRARIES} ${Boost_LIBRARIES})
+if (Aboria_THRUST_TEST_DEVICE_VECTOR)
+    aboria_cxx_test(tests_cuda tests_cuda.cu ${test_files})
+    target_link_libraries(tests_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES})
+endif()
+
+foreach(test_suite ${test_suites})
+    foreach(test_name ${${test_suite}})
+        add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/tests ${test_suite} ${test_name})
+    endforeach()
+endforeach()
