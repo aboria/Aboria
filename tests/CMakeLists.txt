@@ -5,7 +5,6 @@ macro(aboria_cxx_test target target_file)
         set(test_files ${test_files} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
     endforeach()
     get_filename_component(CPP_FILE_NAME ${target_file} NAME)
-    message("${CPP_FILE_NAME}: ${test_files}")
     set(CPP_FULL_NAME "${CMAKE_CURRENT_BINARY_DIR}/${CPP_FILE_NAME}")
     add_custom_command(
         OUTPUT "${CPP_FULL_NAME}"
