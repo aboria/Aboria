@@ -52,7 +52,8 @@ ABORIA_BINARY_FUNCTION(W, W_fun, SymbolicDomain);
 class SPHTest : public CxxTest::TestSuite {
 public:
 
-    void test_sph(void) {
+    template<template <typename> class SearchMethod>
+    void helper_sph(void) {
 //->
 //=int main() {
         ABORIA_VARIABLE(kernel_radius,double,"kernel radius");
@@ -64,7 +65,7 @@ public:
         ABORIA_VARIABLE(is_fixed,uint8_t,"fixed boundary");
         ABORIA_VARIABLE(pressure_div_density2,double,"pressure div density2");
 
-        typedef Particles<std::tuple<kernel_radius,velocity,velocity_tmp,varh_omega,density,total_force,is_fixed,pressure_div_density2>> sph_type;
+        typedef Particles<std::tuple<kernel_radius,velocity,velocity_tmp,varh_omega,density,total_force,is_fixed,pressure_div_density2>,3,std::vector,SearchMethod> sph_type;
         typedef position_d<3> position;
         sph_type sph;
 
@@ -115,7 +116,7 @@ public:
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < nx; j++) {
                 for (int k = 0; k < nx+3; k++) {
-                    sph_type::value_type p;
+                    typename sph_type::value_type p;
                     get<position>(p) = low + double3((i+0.5)*psep,(j+0.5)*psep,(k+0.5)*psep);
                     get<kernel_radius>(p) = hfac*psep;
                     get<velocity>(p) = double3(0,0,0);
@@ -220,6 +221,17 @@ public:
         }
     }
 //]
+
+
+    void test_bucket_search_parallel() {
+        helper_sph<bucket_search_parallel>();
+    }
+
+    void test_bucket_search_serial() {
+        helper_sph<bucket_search_serial>();
+    }
+
+
 
 };
 

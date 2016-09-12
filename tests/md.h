@@ -25,7 +25,8 @@ public:
     typedef std::mt19937 generator_type;
     generator_type generator;
 
-    void test_md(void) {
+    template<template <typename> class SearchMethod>
+    void helper_md(void) {
 //->
 //=int main() {
         const double PI = boost::math::constants::pi<double>();
@@ -35,8 +36,8 @@ public:
          * "velocity", represented by a 2d double vector
          */
         ABORIA_VARIABLE(velocity,double2,"velocity")
-        typedef Particles<std::tuple<velocity>,2> container_type;
-        typedef container_type::position position;
+        typedef Particles<std::tuple<velocity>,2,std::vector,SearchMethod> container_type;
+        typedef typename container_type::position position;
         container_type particles;
 
         /*
@@ -72,7 +73,7 @@ public:
             /*
              * create new particle
              */
-            container_type::value_type p;
+            typename container_type::value_type p;
 
             /*
              * set a random direction, and initialise velocity
@@ -101,7 +102,7 @@ public:
                      *         from query point
                      */
                     const double2& dx = std::get<1>(tpl);
-                    const container_type::value_type& j = std::get<0>(tpl);
+                    const typename container_type::value_type& j = std::get<0>(tpl);
                     if (dx.norm() < diameter) {
                         free_position = false;
                         break;
@@ -160,6 +161,15 @@ public:
         std::cout << std::endl;
     }
 //]
+
+    void test_bucket_search_parallel() {
+        helper_md<bucket_search_parallel>();
+    }
+
+    void test_bucket_search_serial() {
+        helper_md<bucket_search_serial>();
+    }
+
 
 };
 

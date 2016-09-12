@@ -46,31 +46,31 @@ using namespace Aboria;
 
 class ParticleContainerTest : public CxxTest::TestSuite {
 public:
-    template<template <typename,typename> class V>
+    template<template <typename,typename> class V, template <typename> class SearchMethod>
     void helper_add_particle1(void) {
-    	typedef Particles<std::tuple<>,3,V> Test_type;
+    	typedef Particles<std::tuple<>,3,V,SearchMethod> Test_type;
     	Test_type test;
     	typename Test_type::value_type p;
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
     }
 
-    template<template <typename,typename> class V>
+    template<template <typename,typename> class V, template <typename> class SearchMethod>
     void helper_add_particle2(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variables_type;
-    	typedef Particles<variables_type,3,V> Test_type;
+    	typedef Particles<variables_type,3,V,SearchMethod> Test_type;
     	Test_type test;
     	typename Test_type::value_type p;
     	test.push_back(p);
     	TS_ASSERT_EQUALS(test.size(),1);
     }
 
-    template<template <typename,typename> class V>
+    template<template <typename,typename> class V, template <typename> class SearchMethod>
     void helper_add_particle2_dimensions(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variables_type;
-    	typedef Particles<variables_type,6,V> Test_type;
+    	typedef Particles<variables_type,6,V,SearchMethod> Test_type;
     	Test_type test;
     	typename Test_type::value_type p;
         typedef Vector<double,6> double6;
@@ -81,11 +81,11 @@ public:
         TS_ASSERT(((double6)get<position>(test[0])==double6(2.0)).all());
     }
 
-    template<template <typename,typename> class V>
+    template<template <typename,typename> class V, template <typename> class SearchMethod>
     void helper_add_delete_particle(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
         typedef std::tuple<scalar> variables_type;
-    	typedef Particles<variables_type,3,V> Test_type;
+    	typedef Particles<variables_type,3,V,SearchMethod> Test_type;
     	Test_type test;
     	typename Test_type::value_type p;
     	test.push_back(p);
@@ -101,11 +101,18 @@ public:
     	TS_ASSERT_EQUALS(test.size(),0);
     }
 
-    void test_std_vector(void) {
-        helper_add_particle1<std::vector>();
-        helper_add_particle2<std::vector>();
-        helper_add_particle2_dimensions<std::vector>();
-        helper_add_delete_particle<std::vector>();
+    void test_std_vector_bucket_search_serial(void) {
+        helper_add_particle1<std::vector,bucket_search_serial>();
+        helper_add_particle2<std::vector,bucket_search_serial>();
+        helper_add_particle2_dimensions<std::vector,bucket_search_serial>();
+        helper_add_delete_particle<std::vector,bucket_search_serial>();
+    }
+
+    void test_std_vector_bucket_search_parallel(void) {
+        helper_add_particle1<std::vector,bucket_search_parallel>();
+        helper_add_particle2<std::vector,bucket_search_parallel>();
+        helper_add_particle2_dimensions<std::vector,bucket_search_parallel>();
+        helper_add_delete_particle<std::vector,bucket_search_parallel>();
     }
 
     void test_thrust_vector(void) {

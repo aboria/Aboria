@@ -297,7 +297,7 @@ public:
     iterator erase (iterator i, bool update_neighbour_search = true) {
         if (i != end()-1) {
             *i = *(end()-1);
-            if (search.unordered()) {
+            if (search.unordered() && searchable) {
                 search.copy_points(end()-1,i);
             }
             traits_type::pop_back(data);

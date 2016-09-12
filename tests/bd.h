@@ -21,13 +21,14 @@ public:
     typedef std::mt19937 generator_type;
     generator_type generator;
 
-    void test_bd(void) {
+    template<template <typename> class SearchMethod>
+    void helper_bd(void) {
 //->
 //=int main() {
         ABORIA_VARIABLE(radius,double,"radius")
 
-        typedef Particles<std::tuple<radius>> spheres_type;
-        typedef Particles<> points_type;
+        typedef Particles<std::tuple<radius>,3,std::vector,SearchMethod> spheres_type;
+        typedef Particles<std::tuple<>,3,std::vector,SearchMethod> points_type;
         typedef position_d<3> position;
         spheres_type spheres;
 
@@ -109,6 +110,14 @@ public:
         std::cout << std::endl;
     }
 //]
+
+    void test_bucket_search_parallel() {
+        helper_bd<bucket_search_parallel>();
+    }
+
+    void test_bucket_search_serial() {
+        helper_bd<bucket_search_serial>();
+    }
 
 };
 

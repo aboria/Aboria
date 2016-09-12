@@ -50,7 +50,8 @@ using namespace Aboria;
 class RbfPdeTest : public CxxTest::TestSuite {
 public:
 
-    void test_Eigen(void) {
+    template<template <typename> class SearchMethod>
+    void helper_Eigen(void) {
 #ifdef HAVE_EIGEN
 //->
 //=int main() {
@@ -67,7 +68,7 @@ public:
         ABORIA_VARIABLE(constant2,double,"c2 value")
         ABORIA_VARIABLE(alpha,double,"alpha value")
 
-    	typedef Particles<std::tuple<alpha,boundary,constant2,interpolated>,2> ParticlesType;
+    	typedef Particles<std::tuple<alpha,boundary,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
        	ParticlesType knots;
 
@@ -79,7 +80,7 @@ public:
         const int nx = 7;
         constexpr int N = (nx+1)*(nx+1);
         const double delta = 1.0/nx;
-        ParticlesType::value_type p;
+        typename ParticlesType::value_type p;
         for (int i=0; i<=nx; ++i) {
             for (int j=0; j<=nx; ++j) {
                 get<position>(p) = double2(i*delta,j*delta);
@@ -199,6 +200,15 @@ public:
 //=}
 //]
 #endif // HAVE_EIGEN
+    }
+
+
+    void test_bucket_search_parallel() {
+        helper_Eigen<bucket_search_parallel>();
+    }
+
+    void test_bucket_search_serial() {
+        helper_Eigen<bucket_search_serial>();
     }
 
 

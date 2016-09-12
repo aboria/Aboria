@@ -47,7 +47,7 @@ using namespace Aboria;
 
 class SymbolicTest : public CxxTest::TestSuite {
 public:
-    void test_create_double_vector(void) {
+    void helper_create_double_vector(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> ParticlesType;
     	ParticlesType particles;
@@ -56,7 +56,7 @@ public:
         Label<0,ParticlesType> a(particles);
     }
 
-    void test_create_default_vectors(void) {
+    void helper_create_default_vectors(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> ParticlesType;
         typedef position_d<3> position;
@@ -68,7 +68,7 @@ public:
 
     }
 
-    void test_transform(void) {
+    void helper_transform(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> ParticlesType;
         typedef position_d<3> position;
@@ -135,7 +135,7 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],1);
     }
 
-    void test_neighbours(void) {
+    void helper_neighbours(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
 
     	typedef Particles<std::tuple<scalar>> ParticlesType;
@@ -219,7 +219,7 @@ public:
     }
 
 
-    void test_level0_expressions(void) {
+    void helper_level0_expressions(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
 
     	typedef Particles<std::tuple<scalar>> ParticlesType;
@@ -258,6 +258,13 @@ public:
     	TS_ASSERT_EQUALS(result2,2);
     }
 
+    void test_default() {
+        helper_create_default_vectors();
+        helper_create_double_vector();
+        helper_transform();
+        helper_neighbours();
+        helper_level0_expressions();
+    }
 
 };
 

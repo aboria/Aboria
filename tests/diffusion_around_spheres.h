@@ -52,12 +52,13 @@ public:
     generator_type generator;
 
 
-	void test_diffusion_around_spheres(void) {
+    template<template <typename> class SearchMethod>
+	void helper_diffusion_around_spheres(void) {
 		//const double tol = GEOMETRY_TOLERANCE;
 
 		ABORIA_VARIABLE(radius,double,"radius")
 
-		typedef Particles<std::tuple<radius>> spheres_type;
+		typedef Particles<std::tuple<radius>,3,std::vector,SearchMethod> spheres_type;
 		typedef Particles<> points_type;
         typedef position_d<3> position;
 		spheres_type spheres;
@@ -189,6 +190,17 @@ public:
 			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,5)).norm(), 1.0);
 		}
 	}
+
+
+    void test_bucket_search_parallel() {
+        helper_diffusion_around_spheres<bucket_search_parallel>();
+    }
+
+    void test_bucket_search_serial() {
+        helper_diffusion_around_spheres<bucket_search_serial>();
+    }
+
+
 };
 
 #endif /* DIFFUSION_AROUND_SPHERES_H_ */

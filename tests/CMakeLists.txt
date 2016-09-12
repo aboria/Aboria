@@ -10,7 +10,7 @@ macro(aboria_cxx_test target target_file)
     add_custom_command(
         OUTPUT "${CPP_FULL_NAME}"
         COMMAND ${CXXTESTGEN} --runner=ErrorPrinter --output "${CPP_FULL_NAME}" ${test_files}
-        DEPENDS "${source}"
+        DEPENDS ${test_files}
         VERBATIM
     )
 if (${target_file} MATCHES .cu$)
@@ -29,7 +29,7 @@ set(test_files
     neighbours.h
     #geometry
     diffusion_around_spheres.h
-    assemble.h
+    #assemble.h
     symbolic.h
     rbf_pde.h
     rbf_interpolation.h
@@ -41,13 +41,75 @@ set(test_files
     )
 set(test_suites
     NeighboursTest
+    BDTest
+    SPHTest
+    MDTest
+    RbfInterpolationTest 
+    RbfPdeTest 
+    DiffusionAroundSpheres 
+    ParticleContainerTest 
+    SymbolicTest 
+    VariablesTest
+    #AssembleTest
+    ConstructorsTest
+    OperatorsTest 
     )
+
+set(SymbolicTest
+    test_default
+    )
+
+set(VariablesTest
+    test_std_vector
+    )
+
+set(OperatorsTest
+    test_Eigen
+    )
+
+set(ConstructorsTest
+    test_std_vector
+    )
+
 set(NeighboursTest
     test_std_vector_bucket_search_serial
     test_std_vector_bucket_search_parallel
     )
-    
 
+set(ParticleContainerTest 
+    test_std_vector_bucket_search_serial
+    test_std_vector_bucket_search_parallel
+    )
+
+set(BDTest
+    test_bucket_search_serial
+    test_bucket_search_parallel
+    )
+
+set(SPHTest
+    test_bucket_search_serial
+    test_bucket_search_parallel
+    )
+ 
+set(MDTest
+    test_bucket_search_serial
+    test_bucket_search_parallel
+    )
+ 
+set(RbfInterpolationTest 
+    test_bucket_search_serial
+    test_bucket_search_parallel
+    )
+    
+set(RbfPdeTest 
+    test_bucket_search_serial
+    test_bucket_search_parallel
+    )
+
+set(DiffusionAroundSpheres 
+    test_bucket_search_serial
+    test_bucket_search_parallel
+    )
 
 aboria_cxx_test(tests tests.cpp ${test_files})
 target_link_libraries(tests ${VTK_LIBRARIES} ${Boost_LIBRARIES})

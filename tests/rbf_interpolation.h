@@ -49,10 +49,11 @@ using namespace Aboria;
 
 
 //<-
-class OperatorsTest : public CxxTest::TestSuite {
+class RbfInterpolationTest : public CxxTest::TestSuite {
 public:
 
-    void test_global(void) {
+    template<template <typename> class SearchMethod>
+    void helper_global(void) {
 #ifdef HAVE_EIGEN
 //->
 //=int main() {
@@ -65,7 +66,7 @@ public:
         ABORIA_VARIABLE(interpolated,double,"interpolated value")
         ABORIA_VARIABLE(constant2,double,"c2 value")
 
-    	typedef Particles<std::tuple<alpha,constant2,interpolated>,2> ParticlesType;
+    	typedef Particles<std::tuple<alpha,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
        	ParticlesType knots;
        	ParticlesType test;
@@ -80,7 +81,7 @@ public:
         const int max_iter = 100;
         const int restart = 100;
         const double delta = 1.0/nx;
-        ParticlesType::value_type p;
+        typename ParticlesType::value_type p;
 
         std::default_random_engine generator;
         std::uniform_real_distribution<double> distribution(0.0,1.0);
@@ -228,7 +229,8 @@ public:
 #endif // HAVE_EIGEN
     }
 
-void test_compact(void) {
+template<template <typename> class SearchMethod>
+void helper_compact(void) {
 #ifdef HAVE_EIGEN
         auto funct = [](const double x, const double y) { 
             return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
@@ -239,7 +241,7 @@ void test_compact(void) {
         ABORIA_VARIABLE(interpolated,double,"interpolated value")
         ABORIA_VARIABLE(constant2,double,"c2 value")
 
-    	typedef Particles<std::tuple<alpha,constant2,interpolated>,2> ParticlesType;
+    	typedef Particles<std::tuple<alpha,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
        	ParticlesType knots;
        	ParticlesType test;
@@ -255,7 +257,7 @@ void test_compact(void) {
         const double delta = std::pow(double(N),-1.0/2.0);
        	const double h = hfac*delta;
         std::cout << "using h = "<<h<<std::endl;
-        ParticlesType::value_type p;
+        typename ParticlesType::value_type p;
 
         std::default_random_engine generator(123);
         std::uniform_real_distribution<double> distribution(0.0,1.0);
@@ -394,6 +396,17 @@ void test_compact(void) {
         
 #endif // HAVE_EIGEN
     }
+
+    void test_bucket_search_parallel() {
+        helper_global<bucket_search_parallel>();
+        helper_compact<bucket_search_parallel>();
+    }
+
+    void test_bucket_search_serial() {
+        helper_global<bucket_search_serial>();
+        helper_compact<bucket_search_serial>();
+    }
+
 
 
 };
