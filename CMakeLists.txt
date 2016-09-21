@@ -22,6 +22,14 @@ if (Aboria_USE_VTK)
     add_definitions(-DHAVE_VTK)
 endif()
 
+option(Aboria_USE_GPERFTOOLS "Use Google Profiling tools" OFF)
+if (Aboria_USE_GPERFTOOLS)
+    find_package(Gperftools REQUIRED)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
+    set(GPERFTOOLS_LIBRARIES "-Wl,--no-as-needed ${GPERFTOOLS_LIBRARIES} -Wl,--as-needed") 
+endif()
+
+
 option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
 if (Aboria_USE_THRUST)
     find_package(Thrust REQUIRED)
