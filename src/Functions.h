@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FUNCTIONS_H_
 #define FUNCTIONS_H_
 
+#include <math.h> 
 #include "Symbolic.h"
 
 namespace mpl = boost::mpl;
@@ -200,6 +201,20 @@ namespace Aboria {
     /// a symbolic square root function for scalars
     ///
     ABORIA_UNARY_FUNCTION(sqrt, sqrt_fun, SymbolicDomain);
+
+    struct erf_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const double& arg) const
+		{
+			return std::erf(arg);
+		}
+	};
+
+    /// a symbolic error function for scalars
+    ///
+    ABORIA_UNARY_FUNCTION(erf, erf_fun, SymbolicDomain);
     
     struct pow_fun
     {
