@@ -215,7 +215,36 @@ namespace Aboria {
     /// a symbolic error function for scalars
     ///
     ABORIA_UNARY_FUNCTION(erf, erf_fun, SymbolicDomain);
+
+    struct erfc_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const double& arg) const
+		{
+			return std::erfc(arg);
+		}
+	};
+
+    /// a symbolic complimentary error function for scalars
+    ///
+    ABORIA_UNARY_FUNCTION(erfc, erfc_fun, SymbolicDomain);
     
+    struct abs_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const double& arg) const
+		{
+			return std::abs(arg);
+		}
+	};
+
+    /// a symbolic absolute value function for scalars
+    ///
+    ABORIA_UNARY_FUNCTION(abs, abs_fun, SymbolicDomain);
+    
+
     struct pow_fun
     {
         typedef double result_type;

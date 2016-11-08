@@ -662,7 +662,7 @@ namespace Aboria {
                     */
 
 
-                    const double_d dx = particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a));
+                    const double_d dx = particles.correct_dx_for_periodicity(get<position>(a)-get<position>(i));
 
 
                     /*
