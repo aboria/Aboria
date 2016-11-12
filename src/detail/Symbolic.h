@@ -128,7 +128,7 @@ namespace Aboria {
             typedef T functor_type;
             typedef typename T::result_type init_type;
             accumulate():init(0) {};
-            accumulate(const T& functor):functor(functor) {};
+            accumulate(const T& functor):functor(functor),init(0) {};
             void set_init(const init_type& arg) {
                 init = arg;
             }
@@ -662,7 +662,7 @@ namespace Aboria {
                     */
 
 
-                    const double_d dx = particles.correct_dx_for_periodicity(get<position>(a)-get<position>(i));
+                    const double_d dx = particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a));
 
 
                     /*
@@ -727,6 +727,7 @@ namespace Aboria {
 
                     if (proto::eval(if_expr,new_ctx)) {
                         sum = accum.functor(sum,proto::eval(expr,new_ctx));
+                        
                     }
                 }
                 return sum;
