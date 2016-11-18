@@ -202,6 +202,20 @@ namespace Aboria {
     ///
     ABORIA_UNARY_FUNCTION(sqrt, sqrt_fun, SymbolicDomain);
 
+    struct sign_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const double& arg) const
+		{
+            return (0.0 < arg) - (arg < 0.0);
+		}
+	};
+
+    /// a symbolic sign function for scalars
+    ///
+    ABORIA_UNARY_FUNCTION(sign, sign_fun, SymbolicDomain);
+
     struct erf_fun
 	{
 		typedef double result_type;
