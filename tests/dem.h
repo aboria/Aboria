@@ -68,8 +68,8 @@ public:
                 get<position>(p) = double3(uni(generator)*L/3,uni(generator)*L/3,uni(generator)*(L-dem_diameter)+dem_diameter/2);
                 free_position = true;
                 for (auto tpl: dem.get_neighbours(get<position>(p))) {
-                    const double3& dx = std::get<1>(tpl);
-                    const dem_type::value_type& j = std::get<0>(tpl);
+                    const double3& dx = tuple_ns::get<1>(tpl);
+                    const dem_type::value_type& j = tuple_ns::get<0>(tpl);
                     if (dx.norm() < get<radius>(j) + get<radius>(p)) {
                         free_position = false;
                         break;

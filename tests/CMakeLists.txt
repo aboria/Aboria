@@ -1,15 +1,16 @@
 macro(aboria_cxx_test target target_file)
-    set(test_files "")
+    set(_test_files "")
     set(list_var "${ARGN}")
     foreach(filename IN LISTS list_var)
-        set(test_files ${test_files} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
+        set(_test_files ${_test_files} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
     endforeach()
+    message(${_test_files})
     get_filename_component(CPP_FILE_NAME ${target_file} NAME)
     set(CPP_FULL_NAME "${CMAKE_CURRENT_BINARY_DIR}/${CPP_FILE_NAME}")
     add_custom_command(
         OUTPUT "${CPP_FULL_NAME}"
-        COMMAND ${CXXTESTGEN} --runner=ErrorPrinter --output "${CPP_FULL_NAME}" ${test_files}
-        DEPENDS ${test_files}
+        COMMAND ${CXXTESTGEN} --runner=ErrorPrinter --output "${CPP_FULL_NAME}" ${_test_files}
+        DEPENDS ${_test_files}
         VERBATIM
     )
 if (${target_file} MATCHES .cu$)
@@ -81,6 +82,10 @@ set(ConstructorsTest
     test_std_vector
     )
 
+set(ConstructorsTestCuda
+    test_thrust_vector
+    )
+
 set(NeighboursTest
     test_std_vector_bucket_search_serial
     test_std_vector_bucket_search_parallel
@@ -131,5 +136,10 @@ endif()
 foreach(test_suite ${test_suites})
     foreach(test_name ${${test_suite}})
         add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/tests ${test_suite} ${test_name})
+    endforeach()
+    foreach(test_name ${${test_suite}Cuda})
+        if (Aboria_THRUST_TEST_DEVICE_VECTOR)
+            add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/tests ${test_suite} ${test_name})
+        endif()
     endforeach()
 endforeach()

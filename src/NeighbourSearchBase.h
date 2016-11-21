@@ -388,6 +388,7 @@ public:
     typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
 
+    CUDA_HOST_DEVICE
     linked_list_iterator(): 
         m_cell_empty(detail::get_empty_id()) {
         m_node = &m_cell_empty;
@@ -399,6 +400,7 @@ public:
     /// list
     /// \param bucket_sort a pointer to the parent BucketSearch class
     /// \param centre the neighbourhood query point
+    CUDA_HOST_DEVICE
     linked_list_iterator(
             const raw_pointer begin,
             const double_d box_side_length, 
@@ -417,6 +419,7 @@ public:
         m_node = &m_cell_empty;
     }
 
+    CUDA_HOST_DEVICE
     linked_list_iterator(const linked_list_iterator& other):
         m_node(other.m_node),
         m_r(other.m_r),
@@ -439,6 +442,7 @@ public:
         }
     }
 
+    CUDA_HOST_DEVICE
     void add_bucket(const unsigned int bucket_index, const double_d& transpose) {
         m_buckets_to_search[m_nbuckets] = bucket_index;
         m_transpose[m_nbuckets] = transpose;
@@ -453,7 +457,8 @@ public:
         }
     }
 
-     bool go_to_next_candidate() {
+    CUDA_HOST_DEVICE
+    bool go_to_next_candidate() {
         if (*m_node != detail::get_empty_id()) {
             m_node = m_linked_list_begin + *m_node;
             LOG(4,"\tgoing to new particle *mnode = "<<*m_node);
@@ -469,22 +474,26 @@ public:
         }
     }
 
-    
+    CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
     }
+    CUDA_HOST_DEVICE
     reference operator ->() {
         return dereference();
     }
+    CUDA_HOST_DEVICE
     linked_list_iterator& operator++() {
         increment();
         return *this;
     }
+    CUDA_HOST_DEVICE
     linked_list_iterator operator++(int) {
         linked_list_iterator tmp(*this);
         operator++();
         return tmp;
     }
+    CUDA_HOST_DEVICE
     size_t operator-(linked_list_iterator start) const {
         size_t count = 0;
         while (start != *this) {
@@ -493,9 +502,11 @@ public:
         }
         return count;
     }
+    CUDA_HOST_DEVICE
     inline bool operator==(const linked_list_iterator& rhs) {
         return equal(rhs);
     }
+    CUDA_HOST_DEVICE
     inline bool operator!=(const linked_list_iterator& rhs){
         return !operator==(rhs);
     }
@@ -503,12 +514,14 @@ public:
  private:
     friend class boost::iterator_core_access;
 
+    CUDA_HOST_DEVICE
     bool equal(linked_list_iterator const& other) const {
         //std::cout <<" testing equal *m_node = "<<*m_node<<" other.m_node = "<<*(other.m_node)<<std::endl;
         return *m_node == *(other.m_node);
     }
 
 
+    CUDA_HOST_DEVICE
     bool check_candidate() {
         const double_d& p = get<position>(m_begin)[*m_node] + m_transpose[m_bucket_i];
         m_dx = p - m_r;
@@ -526,8 +539,8 @@ public:
 
     }
 
+    CUDA_HOST_DEVICE
     void increment() {
-
         LOG(4,"\tincrement:"); 
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
@@ -538,6 +551,7 @@ public:
     }
 
 
+    CUDA_HOST_DEVICE
     reference dereference() const
     { return reference(*(m_begin + *m_node),m_dx); }
 

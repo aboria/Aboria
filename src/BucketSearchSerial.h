@@ -229,7 +229,6 @@ private:
 
     void delete_points_at_end_impl(const size_t dist) {
         const size_t n = this->m_particles_end - this->m_particles_begin;
-        const size_t start_delete = n-dist;
         ASSERT(m_linked_list.size()-n == dist, "m_linked_list not consistent with dist");
         ASSERT(m_linked_list_reverse.size()-n == dist, "m_linked_list_reverse not consistent with dist");
         ASSERT(m_dirty_buckets.size()-n == dist, "m_dirty_buckets not consistent with dist");
