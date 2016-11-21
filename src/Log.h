@@ -56,6 +56,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                       << " line " << __LINE__ << ": " << message << std::endl; \
             raise(SIGTRAP);
 
+#define ERROR_CUDA(message) \
+            printf("%s\n",message); \
+            raise(SIGTRAP);
+
+
+
 //std::exit(EXIT_FAILURE);
 
 #ifndef ABORIA_LOG_LEVEL

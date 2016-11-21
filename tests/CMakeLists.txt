@@ -40,6 +40,7 @@ set(test_files
     md.h
     linear_algebra_compare.h
     )
+
 set(test_suites
     NeighboursTest
     BDTest

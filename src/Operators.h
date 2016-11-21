@@ -129,22 +129,47 @@ namespace Aboria {
                 return detail::sum(tuple_ns::get<1>(tuple_ns::get<J>(m_blocks)).size()...);
             }
 
+            CUDA_HOST_DEVICE 
             Index rows() const { 
                 //std::cout << "rows = " << rows_impl(detail::make_index_sequence<NI>()) << std::endl;
+                //
+#ifdef __CUDA_ARCH__
+                ERROR_CUDA("MatrixReplacement class unusable from device code");
+                return 0;
+#else
                 return rows_impl(detail::make_index_sequence<NI>());
+#endif
             }
 
+            CUDA_HOST_DEVICE 
             Index cols() const { 
                 //std::cout << "cols = " << cols_impl(detail::make_index_sequence<NJ>())<< std::endl;
+#ifdef __CUDA_ARCH__
+                ERROR_CUDA("MatrixReplacement class unusable from device code");
+                return 0;
+#else
                 return cols_impl(detail::make_index_sequence<NJ>());
+#endif
             }
 
+            CUDA_HOST_DEVICE 
             Index innerSize() const { 
+#ifdef __CUDA_ARCH__
+                ERROR_CUDA("MatrixReplacement class unusable from device code");
+                return 0;
+#else
                 return rows();
+#endif
             }
 
+            CUDA_HOST_DEVICE 
             Index outerSize() const { 
+#ifdef __CUDA_ARCH__
+                ERROR_CUDA("MatrixReplacement class unusable from device code");
+                return 0;
+#else
                 return cols();
+#endif
             }
 
             template <int I>
@@ -538,11 +563,16 @@ struct generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>, Rhs, Sparse
 
     typedef typename Product<Aboria::MatrixReplacement<NI,NJ,Blocks>,Rhs>::Scalar Scalar;
     template<typename Dest>
+    CUDA_HOST_DEVICE 
     static void scaleAndAddTo(Dest& y, const Aboria::MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const Scalar& alpha) {
         // This method should implement "y += alpha * lhs * rhs" inplace,
         // however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
+#ifdef __CUDA_ARCH__
+        ERROR_CUDA("MatrixReplacement class unusable from device code");
+#else
         assert(alpha==Scalar(1) && "scaling is not implemented");
         evalTo_impl(y, lhs, rhs, Aboria::detail::make_index_sequence<NI*NJ>());
+#endif
     }
 };
 }
@@ -643,9 +673,9 @@ namespace Aboria {
         */
         
     template <unsigned int NI, unsigned int NJ, typename ... T>
-    MatrixReplacement<NI,NJ,tuple_ns::tuple<tuple_ns::tuple_element<0,T>...>> 
+    MatrixReplacement<NI,NJ,tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...>> 
     create_block_eigen_operator(const MatrixReplacement<1,1,T>&... operators) {
-        typedef tuple_ns::tuple<tuple_ns::tuple_element<0,T>...> tuple_type;
+        typedef tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...> tuple_type;
         return MatrixReplacement<NI,NJ,tuple_type>(tuple_type(tuple_ns::get<0>(operators.m_blocks)...));
     }
 

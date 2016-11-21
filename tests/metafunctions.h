@@ -107,10 +107,12 @@ public:
 
         // test constant expressions behave as expected
         auto nil_vect = detail::get_labels()(proto::lit(1),fusion::nil_());
+#if not defined(__CUDACC__)
         BOOST_MPL_ASSERT_MSG(
                 (std::is_same<decltype(nil_vect), fusion::nil_>::value),
                 RESULT_OF_GET_LABELS_ON_CONSTANT_EXPRESSION_IS_NOT_A_NIL_LIST,
                 (decltype(nil_vect)));
+#endif
         static_assert(detail::is_const<proto::literal<int>>::value,
                 "result of is_const on constant expression is not true");
         static_assert(!detail::is_univariate<proto::literal<int>>::value,
@@ -124,6 +126,7 @@ public:
 
         typedef const detail::label<boost::mpl::int_<0>, ParticlesType>& expected_type_a;
         typedef const detail::label<boost::mpl::int_<1>, ParticlesType>& expected_type_b;
+#if not defined(__CUDACC__)
         BOOST_MPL_ASSERT_MSG(
                 (std::is_same<
                     decltype(vect_w_a), 
@@ -131,16 +134,19 @@ public:
                     >::value),
                 RESULT_OF_GET_LABELS_ON_UNIVARIATE_EXPRESSION_S_A_IS_NOT_CORRECT,
                 (decltype(vect_w_a)));
+#endif
         static_assert(std::is_same<
                 std::result_of<detail::get_labels(decltype(s[a]),fusion::nil_)>::type
                 , fusion::cons<expected_type_a>>::value,
                 "result of get_labels on univariate expression s[a] is not correct");
+#if not defined(__CUDACC__)
         BOOST_MPL_ASSERT_MSG(
                 (std::is_same<
                 std::result_of<detail::get_labels(decltype(s[a]+s[a]),fusion::nil_)>::type
                 , fusion::cons<expected_type_a>>::value),
                 RESULT_OF_GET_LABELS_ON_UNIVARIATE_EXPRESSION_S_A_PLUS_S_A_IS_NOT_CORRECT,
                 (std::result_of<detail::get_labels(decltype(s[a]+s[a]),fusion::nil_)>::type));
+#endif
         static_assert(detail::is_univariate<decltype(s[a])>::value,
                 "result of is_univariate on expression s[a] is not true");
         static_assert(detail::is_univariate<decltype(s[a]+s[a])>::value,
@@ -152,12 +158,14 @@ public:
 
         // test bivariate expressions behave as expected
         auto vect_w_a_and_b = detail::get_labels()(s[a] + s[b],fusion::nil_());
+#if not defined(__CUDACC__)
         BOOST_MPL_ASSERT_MSG(
                 (std::is_same<
                 decltype(vect_w_a_and_b) 
                 , fusion::cons<expected_type_b,fusion::cons<expected_type_a>>>::value),
                 RESULT_OF_GET_LABELS_ON_BIVARIATE_EXPRESSION_S_A_PLUS_S_B_IS_NOT_CORRECT,
                 (decltype(vect_w_a_and_b)));
+#endif
         static_assert(detail::is_bivariate<decltype(s[a]+s[b])>::value,
                 "result of is_bivariate on expression s[a]+s[b] is not true");
         auto vect_w_a_and_b2 = detail::get_labels()(s[a] + s[b] + s[a] * s[b],fusion::nil_());
@@ -179,12 +187,14 @@ public:
 
         // check sums 
         auto vect_w_a_and_b3 = detail::get_labels()(sum(b,norm(dx)<2,s[a]+s[a]),fusion::nil_());
+#if not defined(__CUDACC__)
         BOOST_MPL_ASSERT_MSG(
                 (std::is_same<
                 decltype(vect_w_a_and_b3) 
                 , fusion::cons<expected_type_a>>::value),
                 RESULT_OF_GET_LABELS_ON_UNIVARIATE_EXPRESSION_SUM_IS_NOT_CORRECT,
                 (decltype(vect_w_a_and_b3)));
+#endif
 
         static_assert(detail::is_univariate<decltype(sum(b,norm(dx)<2,s[a]+s[a]))>::value,
             "result of is_univariate on expression sum(b,norm(dx)<2,s[a]+s[a]) is not true");

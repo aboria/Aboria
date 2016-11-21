@@ -461,11 +461,15 @@ public:
     bool go_to_next_candidate() {
         if (*m_node != detail::get_empty_id()) {
             m_node = m_linked_list_begin + *m_node;
+#ifndef __CUDA_ARCH__
             LOG(4,"\tgoing to new particle *mnode = "<<*m_node);
+#endif
         }
         while ((*m_node == detail::get_empty_id()) && (++m_bucket_i < m_nbuckets)) {
             m_node = m_buckets_begin + m_buckets_to_search[m_bucket_i];
+#ifndef __CUDA_ARCH__
             LOG(4,"\tgoing to new bucket m_bucket_i = "<<m_bucket_i<<" and m_node = "<<*m_node);
+#endif
         }
         if ((m_bucket_i == m_nbuckets) && (*m_node == detail::get_empty_id())) {
             return false;
@@ -526,7 +530,9 @@ public:
         const double_d& p = get<position>(m_begin)[*m_node] + m_transpose[m_bucket_i];
         m_dx = p - m_r;
 
+#ifndef __CUDA_ARCH__
         LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<p<<" trans = "<<m_transpose[m_bucket_i]<<" index = "<<m_bucket_i<<". m_box_side_length = "<<m_box_side_length); 
+#endif
 
         bool outside = false;
         for (int i=0; i < Traits::dimension; i++) {
@@ -541,13 +547,19 @@ public:
 
     CUDA_HOST_DEVICE
     void increment() {
+#ifndef __CUDA_ARCH__
         LOG(4,"\tincrement:"); 
+#endif
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
             found_good_candidate = check_candidate();
+#ifndef __CUDA_ARCH__
             LOG(4,"\tfound_good_candidate = "<<found_good_candidate); 
+#endif
         }
+#ifndef __CUDA_ARCH__
         LOG(4,"\tend increment: m_node = "<<*m_node); 
+#endif
     }
 
 
