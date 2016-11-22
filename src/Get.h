@@ -55,6 +55,7 @@ struct getter_type{
     CUDA_HOST_DEVICE
     getter_type(const getter_type<tuple_type2,mpl_vector_type>&& other):data(std::move(other.data)) {}
 
+
     template <typename T1, typename T2, typename... T3>
     CUDA_HOST_DEVICE
     getter_type(T1&& arg1, T2&& arg2, T3&&... args):data(std::forward<T1>(arg1),std::forward<T2>(arg2),std::forward<T3>(args)...) {}
@@ -81,6 +82,15 @@ struct getter_type{
         data = std::move(other.data);
         return *this;
     }
+
+#if defined(__aboria_use_thrust_algorithms__) || defined(__CUDACC__)
+    template <typename T1, typename T2, typename PointerType, typename DerivedType> 
+    CUDA_HOST_DEVICE
+    getter_type& operator=( const thrust::reference<getter_type<T1,T2>,PointerType,DerivedType>& other) {
+        data = static_cast<getter_type<T1,T2>>(other).data;
+        return *this;
+    }
+#endif
     
     CUDA_HOST_DEVICE
     void swap(getter_type &other) {
@@ -268,6 +278,7 @@ public:
     typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
     typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
     typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> raw_pointer;
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_reference,mpl_vector_type> raw_reference;
     typedef typename detail::zip_helper<iterator_tuple_type>::difference_type difference_type;
     typedef typename detail::zip_helper<iterator_tuple_type>::iterator_category iterator_category;
 

@@ -318,6 +318,7 @@ private:
 
 };
 
+// assume that query functions, are only called from device code
 template <typename Traits>
 struct bucket_search_serial_query {
 

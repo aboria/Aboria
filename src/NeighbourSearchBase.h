@@ -205,31 +205,32 @@ protected:
 };
 
 
+// assume that these iterators, and query functions, are only called from device code
 template <typename Traits>
 class ranges_iterator {
     typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::value_type p_value_type;
-    typedef typename Traits::reference p_reference;
-    typedef typename Traits::raw_pointer raw_pointer;
+    typedef typename Traits::raw_reference p_reference;
+    typedef typename Traits::raw_pointer p_pointer;
 
 public:
-    typedef const tuple_ns::tuple<const p_value_type&,const double_d&>* pointer;
+    typedef const tuple_ns::tuple<p_reference,const double_d&>* pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const tuple_ns::tuple<p_reference,const double_d&> reference;
     typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    ranges_iterator(const raw_pointer end):
+    ranges_iterator(const p_pointer end):
         m_end(end),
         m_nbuckets(0),
         m_node(end)
     {}
 
     CUDA_HOST_DEVICE
-    ranges_iterator(const raw_pointer end, const double_d box_side_length, const double_d &r):
+    ranges_iterator(const p_pointer end, const double_d box_side_length, const double_d &r):
         m_end(end),
         m_box_side_length(box_side_length),
         m_nbuckets(0),
@@ -238,7 +239,7 @@ public:
     {}
 
     CUDA_HOST_DEVICE
-    void add_range(raw_pointer begin, raw_pointer end, const double_d &transpose) {
+    void add_range(p_pointer begin, p_pointer end, const double_d &transpose) {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tranges_iterator::add_range. Adding "<<end-begin<<" particles with transpose = "<<transpose<<". Number of bucket ranges already here  = "<<m_nbuckets);
 #endif
@@ -285,7 +286,9 @@ public:
 
     CUDA_HOST_DEVICE
     bool check_candidate() {
+#ifndef __CUDA_ARCH__
         LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<get<position>(*m_node)<<" trans = "<<m_transpose[m_current_index]<<" index = "<<m_current_index); 
+#endif
         const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
         m_dx = p - m_r;
 
@@ -353,36 +356,37 @@ public:
 private:
     friend class boost::iterator_core_access;
 
-    raw_pointer m_end;
+    p_pointer m_end;
     double_d m_box_side_length;
     
     double_d m_r;
     double_d m_dx;
     double_d m_search_side;
-    raw_pointer m_node;
-    raw_pointer m_node_end;
+    p_pointer m_node;
+    p_pointer m_node_end;
     
     const static unsigned int max_nbuckets = detail::ipow(3,Traits::dimension); 
     unsigned int m_nbuckets; 
-    raw_pointer m_begins[max_nbuckets];
-    raw_pointer m_ends[max_nbuckets];
+    p_pointer m_begins[max_nbuckets];
+    p_pointer m_ends[max_nbuckets];
     double_d m_transpose[max_nbuckets];
     int m_current_index = -1;
 };
 
 /// A const iterator to a set of neighbouring points. This iterator implements
 /// a STL forward iterator type
+// assume that these iterators, and query functions, are only called from device code
 template <typename Traits>
 class linked_list_iterator {
     typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::value_type p_value_type;
-    typedef typename Traits::reference p_reference;
-    typedef typename Traits::raw_pointer raw_pointer;
+    typedef typename Traits::raw_reference p_reference;
+    typedef typename Traits::raw_pointer p_pointer;
 
 public:
-    typedef const tuple_ns::tuple<const p_value_type&,const double_d&>* pointer;
+    typedef const tuple_ns::tuple<p_reference,const double_d&>* pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const tuple_ns::tuple<p_reference,const double_d&> reference;
     typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
@@ -402,7 +406,7 @@ public:
     /// \param centre the neighbourhood query point
     CUDA_HOST_DEVICE
     linked_list_iterator(
-            const raw_pointer begin,
+            const p_pointer begin,
             const double_d box_side_length, 
             int* linked_list_begin,
             int* buckets_begin,
@@ -580,7 +584,7 @@ public:
     size_t m_bucket_i;
     int m_cell_empty;
 
-    raw_pointer m_begin;
+    p_pointer m_begin;
     int* m_buckets_begin;
     int* m_linked_list_begin;
 

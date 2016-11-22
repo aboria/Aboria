@@ -80,13 +80,18 @@ struct get_elem_by_index {
 
 
 template<typename T>
-struct remove_pointer_for_null_type {
+struct remove_pointer_or_reference_for_null_type {
     typedef T type;
 };
 
 #if defined(__CUDACC__)
 template<>
-struct remove_pointer_for_null_type<thrust::null_type*> {
+struct remove_pointer_or_reference_for_null_type<thrust::null_type*> {
+    typedef thrust::null_type type;
+};
+
+template<>
+struct remove_pointer_or_reference_for_null_type<thrust::null_type&> {
     typedef thrust::null_type type;
 };
 #endif
@@ -105,9 +110,13 @@ struct zip_helper<tuple_ns::tuple<T ...>> {
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::pointer...> tuple_pointer; 
 
     typedef tuple_ns::tuple<
-        typename detail::remove_pointer_for_null_type<
+        typename detail::remove_pointer_or_reference_for_null_type<
             typename tuple_ns::iterator_traits<T>::value_type*>::type...
         > tuple_raw_pointer; 
+    typedef tuple_ns::tuple<
+        typename detail::remove_pointer_or_reference_for_null_type<
+            typename tuple_ns::iterator_traits<T>::value_type&>::type...
+        > tuple_raw_reference; 
     typedef typename tuple_ns::tuple<T...> iterator_tuple_type;
     template <unsigned int N>
     using tuple_element = tuple_ns::tuple_element<N,iterator_tuple_type>;

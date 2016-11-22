@@ -170,8 +170,13 @@ public:
         }
 
     	test.init_neighbour_search(min,max,diameter,periodic);
-        for_each(test.begin(),test.end(),
+#if defined(__aboria_use_thrust_algorithms__)
+        thrust::for_each(test.begin(),test.end(),
                 has_n_neighbours<typename Test_type::query_type>(test.get_query(),expect_n));
+#else
+        std::for_each(test.begin(),test.end(),
+                has_n_neighbours<typename Test_type::query_type>(test.get_query(),expect_n));
+#endif
     }
 
     void test_std_vector_bucket_search_serial(void) {
@@ -194,8 +199,6 @@ public:
 
     void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__CUDACC__)
-        helper_single_particle<thrust::device_vector,bucket_search_serial>();
-        helper_two_particles<thrust::device_vector,bucket_search_serial>();
         helper_d<1,thrust::device_vector,bucket_search_serial>();
         helper_d<2,thrust::device_vector,bucket_search_serial>();
         helper_d<3,thrust::device_vector,bucket_search_serial>();
@@ -205,8 +208,6 @@ public:
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__CUDACC__)
-        helper_single_particle<thrust::device_vector,bucket_search_parallel>();
-        helper_two_particles<thrust::device_vector,bucket_search_parallel>();
         helper_d<1,thrust::device_vector,bucket_search_parallel>();
         helper_d<2,thrust::device_vector,bucket_search_parallel>();
         helper_d<3,thrust::device_vector,bucket_search_parallel>();
