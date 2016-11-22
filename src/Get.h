@@ -264,23 +264,21 @@ void swap(getter_type<tuple_type,mpl_vector_type> x,
 }
 
 
-template <typename iterator_tuple_type, typename mpl_vector_type>
-class zip_iterator: public boost::iterator_facade<
-    zip_iterator<iterator_tuple_type,mpl_vector_type>,
-    getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type>,
-    typename detail::zip_helper<iterator_tuple_type>::iterator_category,
-    getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type>
-        > {
 
+template <typename iterator_tuple_type, typename mpl_vector_type>
+class zip_iterator: 
+    public detail::zip_iterator_base<iterator_tuple_type,mpl_vector_type>::type {
 public:
     typedef iterator_tuple_type tuple_type;
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
+    typedef typename detail::zip_iterator_base<tuple_type,mpl_vector_type>::value_type value_type;
+    typedef typename detail::zip_iterator_base<tuple_type,mpl_vector_type>::reference reference;
+
+    typedef typename detail::zip_helper<iterator_tuple_type>::difference_type difference_type;
+    typedef typename detail::zip_helper<iterator_tuple_type>::iterator_category iterator_category;
+
     typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
     typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> raw_pointer;
     typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_reference,mpl_vector_type> raw_reference;
-    typedef typename detail::zip_helper<iterator_tuple_type>::difference_type difference_type;
-    typedef typename detail::zip_helper<iterator_tuple_type>::iterator_category iterator_category;
 
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;

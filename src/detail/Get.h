@@ -31,6 +31,7 @@ namespace thrust {
 
 namespace Aboria {
 
+
 namespace detail {
 
 namespace mpl = boost::mpl;
@@ -103,7 +104,7 @@ struct zip_helper {};
 
 template <typename ... T>
 struct zip_helper<tuple_ns::tuple<T ...>> {
-    typedef std::false_type is_thrust;
+    //typedef std::false_type is_thrust;
     typedef tuple_ns::tuple<T...> tuple_iterator_type; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::value_type ...> tuple_value_type; 
     typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::reference ...> tuple_reference; 
@@ -122,9 +123,40 @@ struct zip_helper<tuple_ns::tuple<T ...>> {
     using tuple_element = tuple_ns::tuple_element<N,iterator_tuple_type>;
     typedef typename tuple_ns::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
     typedef typename tuple_ns::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
-    //typedef typename tuple_ns::iterator_system<typename tuple_element<0>::type> system;
+#if defined(__CUDACC__)
+    typedef typename thrust::iterator_system<typename tuple_element<0>::type> system;
+#endif
     typedef make_index_sequence<tuple_ns::tuple_size<iterator_tuple_type>::value> index_type;
 };
+
+template<typename IteratorTuple, typename MplVector>
+struct zip_iterator_base {
+
+    typedef getter_type<typename zip_helper<IteratorTuple>::tuple_value_type,MplVector> value_type;
+    typedef getter_type<typename zip_helper<IteratorTuple>::tuple_reference,MplVector> reference;
+  
+ public:
+  
+#if defined(__CUDACC__)
+    typedef iterator_facade_ns::iterator_facade<
+        zip_iterator<IteratorTuple,MplVector>,
+        value_type,  
+        typename zip_helper<IteratorTuple>::system,
+        typename zip_helper<IteratorTuple>::iterator_category,
+        reference,
+        typename zip_helper<IteratorTuple>::difference_type
+    > type;
+#else
+    typedef iterator_facade_ns::iterator_facade<
+        zip_iterator<IteratorTuple,MplVector>,
+        value_type,  
+        typename zip_helper<IteratorTuple>::iterator_category,
+        reference,
+        typename zip_helper<IteratorTuple>::difference_type
+    > type;
+#endif
+
+}; // end zip_iterator_base
 
 
 template<typename tuple_type>
