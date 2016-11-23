@@ -204,6 +204,29 @@ public:
         
     }
 
+    void test_thrust(void) {
+#if defined(__aboria_use_thrust_algorithms__) || defined(__CUDACC__)
+        ABORIA_VARIABLE(scalar,double,"scalar")
+    	typedef Particles<std::tuple<scalar>> ParticlesType;
+    	ParticlesType particles;
+        auto b = particles.begin();
+
+        static_assert(!(thrust::detail::is_trivial_iterator<decltype(b)>::value),
+                "aboria zip iterator is a trivial iterator!");
+        static_assert(!(thrust::detail::is_pointer<decltype(b)>::value),
+                "aboria zip iterator is a pointer!");
+        static_assert(!(thrust::detail::is_thrust_pointer<decltype(b)>::value),
+                "aboria zip iterator is a thrust pointer!");
+
+
+        thrust::device_vector<float> A0;
+        thrust::device_vector<float> A1; 
+        auto thrust_zip = thrust::make_zip_iterator(thrust::make_tuple(A0.begin(), A1.begin()));
+        static_assert(!(thrust::detail::is_trivial_iterator<decltype(thrust_zip)>::value),
+                "thrust zip iterator is a trivial iterator!");
+#endif
+    }
+
 };
 
 #endif /* SYMBOLICTEST_H_ */

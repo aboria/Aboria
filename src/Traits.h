@@ -201,8 +201,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename iterator::reference reference;
     typedef typename iterator::value_type value_type;
     typedef typename iterator::pointer pointer;
-    typedef typename iterator::raw_pointer raw_pointer;
-    typedef typename iterator::raw_reference raw_reference;
+    typedef typename iterator::tuple_raw_pointer raw_pointer;
+    typedef typename iterator::tuple_raw_reference raw_reference;
     typedef typename const_iterator::reference const_reference;
     typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
