@@ -44,9 +44,13 @@ namespace raw_reference_detail
 
 
 // recurse on tuples
-template <typename TUPLE, typename mpl_vector_type> 
-struct raw_reference_tuple_helper<Aboria::getter_type<TUPLE,mpl_vector_type>> {
-  typedef Aboria::getter_type<raw_reference_tuple_helper<TUPLE>,mpl_vector_type> type;
+template <typename mpl_vector_type, typename ... T> 
+struct raw_reference_tuple_helper<
+    Aboria::getter_type<tuple_ns::tuple<T ...>,mpl_vector_type>
+    > {
+  typedef Aboria::getter_type<
+        tuple_ns::tuple<typename raw_reference_tuple_helper<T>::type ...>
+        ,mpl_vector_type> type;
 };
 
 } //namespace raw_reference_detail
