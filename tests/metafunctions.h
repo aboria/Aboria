@@ -189,6 +189,10 @@ public:
         static_assert(detail::is_univariate<decltype(sum(b,norm(dx)<2,s[a]+s[a]))>::value,
             "result of is_univariate on expression sum(b,norm(dx)<2,s[a]+s[a]) is not true");
 
+        static_assert(detail::is_univariate<decltype(sum(b,norm(dx)<2,norm(dx)))>::value,
+            "result of is_univariate on expression sum(b,norm(dx)<2,norm(dx)) is not true");
+
+
         static_assert(detail::is_const<decltype(sum(b,s[b]==1,s[b]))>::value,
             "result of is_const on expression sum(b,s[b]==1,s[b]) is not true");
         
