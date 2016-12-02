@@ -6,7 +6,6 @@
 #include <boost/mpl/find.hpp>
 #include <boost/mpl/for_each.hpp>
 #include <boost/mpl/range_c.hpp>
-#include <boost/iterator/iterator_facade.hpp>
 #include <algorithm>
 #include <tuple>
 #include <type_traits>
@@ -35,6 +34,7 @@ struct getter_type{
     template <typename T>
     using return_type = typename detail::getter_helper<tuple_type>::template return_type<elem_by_type<T>::index>;
 
+    //typedef typename detail::zip_helper<tuple_type>::pointer pointer;
 
     CUDA_HOST_DEVICE
     getter_type() {}
@@ -54,6 +54,7 @@ struct getter_type{
     std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
     CUDA_HOST_DEVICE
     getter_type(const getter_type<tuple_type2,mpl_vector_type>&& other):data(std::move(other.data)) {}
+
 
     template <typename T1, typename T2, typename... T3>
     CUDA_HOST_DEVICE
@@ -81,6 +82,15 @@ struct getter_type{
         data = std::move(other.data);
         return *this;
     }
+
+#if defined(__aboria_use_thrust_algorithms__) || defined(__CUDACC__)
+    template <typename T1, typename T2, typename PointerType, typename DerivedType> 
+    CUDA_HOST_DEVICE
+    getter_type& operator=( const thrust::reference<getter_type<T1,T2>,PointerType,DerivedType>& other) {
+        data = static_cast<getter_type<T1,T2>>(other).data;
+        return *this;
+    }
+#endif
     
     CUDA_HOST_DEVICE
     void swap(getter_type &other) {
@@ -254,22 +264,23 @@ void swap(getter_type<tuple_type,mpl_vector_type> x,
 }
 
 
-template <typename iterator_tuple_type, typename mpl_vector_type>
-class zip_iterator: public boost::iterator_facade<
-    zip_iterator<iterator_tuple_type,mpl_vector_type>,
-    getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type>,
-    typename detail::zip_helper<iterator_tuple_type>::iterator_category,
-    getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type>
-        > {
 
+template <typename iterator_tuple_type, typename mpl_vector_type>
+class zip_iterator: 
+    public detail::zip_iterator_base<iterator_tuple_type,mpl_vector_type>::type {
 public:
     typedef iterator_tuple_type tuple_type;
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> raw_pointer;
+    typedef typename detail::zip_iterator_base<tuple_type,mpl_vector_type>::value_type value_type;
+    typedef typename detail::zip_iterator_base<tuple_type,mpl_vector_type>::reference reference;
+
     typedef typename detail::zip_helper<iterator_tuple_type>::difference_type difference_type;
     typedef typename detail::zip_helper<iterator_tuple_type>::iterator_category iterator_category;
+
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
+
+    // Note: Can't call it raw_pointer or thrust thinks it is a trivial iterator!
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> tuple_raw_pointer;
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_reference,mpl_vector_type> tuple_raw_reference;
 
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;
@@ -327,7 +338,7 @@ private:
     void advance(difference_type n) { detail::advance_impl(iter,n,index_type()); }
 
     iterator_tuple_type iter;
-    friend class boost::iterator_core_access;
+    friend class iterator_facade_ns::iterator_core_access;
 };
 
 

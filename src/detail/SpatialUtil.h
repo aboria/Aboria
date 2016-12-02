@@ -13,21 +13,25 @@
 namespace Aboria {
 namespace detail {
 
+CUDA_HOST_DEVICE
 constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
       return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
 }
 
 template <typename T>
+CUDA_HOST_DEVICE
 constexpr T get_max() {
     return std::numeric_limits<T>::max();
 }
 #ifdef __CUDA_ARCH__
 template <>
-constexpr T get_max<unsigned int>() {
+CUDA_HOST_DEVICE
+constexpr unsigned int get_max<unsigned int>() {
     return NPP_MAX_16U;
 }
 template <>
-constexpr T get_max<double>() {
+CUDA_HOST_DEVICE
+constexpr double get_max<double>() {
     return NPP_MAXABS_32F;
 }
 #endif

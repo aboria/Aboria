@@ -168,7 +168,6 @@ private:
 
     void delete_points_at_end_impl(const size_t dist) {
         const size_t n = this->m_particles_end - this->m_particles_begin;
-        const size_t start_delete = n-dist;
         ASSERT(m_bucket_indices.size()-n == dist,"m_bucket_indices size not consistent with dist argument");
         const size_t oldn = m_bucket_indices.size();
         m_bucket_indices.resize(n);
@@ -257,6 +256,7 @@ private:
 };
 
 
+// assume that query functions, are only called from device code
 template <typename Traits>
 struct bucket_search_parallel_query {
 

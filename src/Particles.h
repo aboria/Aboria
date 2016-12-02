@@ -170,10 +170,13 @@ public:
     /// attached to the particles (includes position, id and 
     /// alive flag as well as all user-supplied variables)
     typedef typename traits_type::mpl_type_vector mpl_type_vector;
+
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_type_vector>;
     template <typename T>
-    using return_type = std::tuple_element<elem_by_type<T>::index,typename data_type::tuple_type>;
+    using return_type = typename detail::getter_helper<typename data_type::tuple_type>::template return_type<elem_by_type<T>::index>;
+
+
 
 
     typedef typename traits_type::double_d double_d;
@@ -484,7 +487,12 @@ public:
         }
     }
 
+    // Need to be mark as device to enable get functions being device/host
+    CUDA_HOST_DEVICE
     const typename data_type::tuple_type & get_tuple() const { return data.get_tuple(); }
+
+    // Need to be mark as device to enable get functions being device/host
+    CUDA_HOST_DEVICE
     typename data_type::tuple_type & get_tuple() { return data.get_tuple(); }
 
     /*
