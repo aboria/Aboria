@@ -64,7 +64,7 @@ struct raw_reference<Aboria::getter_type<TUPLE,mpl_vector_type>> {
     typedef typename eval_if<
       is_unwrappable<tuple_type>::value,
       raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
-      add_reference<tuple_type>
+      add_reference<Aboria::getter_type<TUPLE,mpl_vector_type>>
     >::type type;
 };
 
