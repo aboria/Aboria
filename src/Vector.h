@@ -110,6 +110,7 @@ public:
 		return *this;
 	}
 
+
     CUDA_HOST_DEVICE
 	const T &operator[](unsigned int n) const {
 		return mem[n];
@@ -188,6 +189,10 @@ public:
 		}
 		return ret;
 	}
+
+    operator bool() const { 
+        return all();
+    }
 
     CUDA_HOST_DEVICE
 	bool any() const {
@@ -378,6 +383,7 @@ COMPARISON(<)
 COMPARISON(<=)
 COMPARISON(>=)
 COMPARISON(==)
+COMPARISON(!=)
 
 #define COMPOUND_ASSIGN(the_op) \
     template<typename T1,typename T2,unsigned int N> \
