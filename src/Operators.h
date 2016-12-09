@@ -62,6 +62,30 @@ namespace Eigen {
         template<unsigned int NI, unsigned int NJ, typename Blocks>
         struct traits<Aboria::MatrixReplacement<NI, NJ, Blocks>> :  public Eigen::internal::traits<Eigen::SparseMatrix<double> > {};
     }
+
+template<typename T,unsigned int N>
+struct NumTraits<Aboria::Vector<T,N>> {
+  typedef Aboria::Vector<T,N> Scalar;
+  typedef Aboria::Vector<T,N> Real;
+  typedef Aboria::Vector<T,N> NonInteger;
+  typedef Aboria::Vector<T,N> Literal;
+  typedef Aboria::Vector<T,N> Nested;
+  enum {
+    IsComplex = 0,
+    IsInteger = 0,
+    IsSigned = 1,
+    RequireInitialization = 0,
+    ReadCost = N,
+    AddCost = N,
+    MulCost = N
+  };
+
+  inline static Real epsilon() { return Real(std::numeric_limits<T>::epsilon()); }
+  inline static Real dummy_precision() { return Real(std::numeric_limits<T>::epsilon()); }
+  inline static Scalar highest() { return Scalar(std::numeric_limits<T>::max()); }
+  inline static Scalar lowest() { return Scalar(std::numeric_limits<T>::lowest()); }
+  inline static int digits10() { return N*std::numeric_limits<T>::digits10;}
+};
 }
 
 namespace Aboria {
@@ -101,12 +125,13 @@ namespace Aboria {
     template <unsigned int NI, unsigned int NJ, typename Blocks> 
     class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks>> {
 
+            typedef typename tuple_ns::tuple_element<0,Blocks>::type first_block_type;
+            typedef typename tuple_ns::tuple_element<2,first_block_type>::type first_expr_type;
         public:
-        
     
             // Expose some compile-time information to Eigen:
-            typedef double Scalar;
-            typedef double RealScalar;
+            typedef typename detail::symbolic_helper<first_expr_type>::result_base_type Scalar;
+            typedef Scalar RealScalar;
             typedef size_t Index;
             typedef int StorageIndex;
             enum {

@@ -804,7 +804,9 @@ namespace Aboria {
             typedef EvalCtx<> const_context_type;
             typedef typename proto::result_of::eval<expr_type, const_context_type const>::type result;
 
-
+            typedef typename std::remove_cv<typename std::remove_reference<
+                        result
+                        >::type>::type result_base_type;
      
         };
 
@@ -827,6 +829,12 @@ namespace Aboria {
             typedef typename particles_a_type::const_reference particle_a_reference;
             typedef EvalCtx<fusion::map<fusion::pair<label_a_type,particle_a_reference>>> univariate_context_type;
             typedef typename proto::result_of::eval<expr_type, univariate_context_type const>::type result;
+
+            typedef typename std::remove_cv<typename std::remove_reference<
+                        result
+                        >::type>::type result_base_type;
+            
+
         };
 
         template<typename Expr>
@@ -856,6 +864,10 @@ namespace Aboria {
                 fusion::pair<label_b_type,particle_b_reference>>,
                 fusion::list<const double_d &>> bivariate_context_type;
             typedef typename proto::result_of::eval<expr_type, bivariate_context_type const>::type result;
+
+            typedef typename std::remove_cv<typename std::remove_reference<
+                        result
+                        >::type>::type result_base_type;
              
         };
 
