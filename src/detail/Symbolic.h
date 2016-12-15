@@ -847,12 +847,27 @@ namespace Aboria {
 
             typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
 
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,1>::type label_b_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_first_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,1>::type label_second_type_ref;
             typedef typename std::remove_const<
-                typename std::remove_reference<label_a_type_ref>::type>::type label_a_type;
+                typename std::remove_reference<label_first_type_ref>::type>::type label_first_type;
             typedef typename std::remove_const<
-                typename std::remove_reference<label_b_type_ref>::type>::type label_b_type;
+                typename std::remove_reference<label_second_type_ref>::type>::type label_second_type;
+
+            static_assert(mpl::not_equal_to<typename label_first_type::depth
+                                           ,typename label_second_type::depth>::value,
+                                         "label a depth equal to label b");
+
+            typedef typename mpl::if_<
+                                mpl::less<typename label_first_type::depth
+                                         ,typename label_second_type::depth>
+                                    ,label_first_type
+                                    ,label_second_type>::type label_a_type;
+            typedef typename mpl::if_<
+                                mpl::greater<typename label_first_type::depth
+                                            ,typename label_second_type::depth>
+                                    ,label_first_type
+                                    ,label_second_type>::type label_b_type;
 
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename label_b_type::particles_type particles_b_type;

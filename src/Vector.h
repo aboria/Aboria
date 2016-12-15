@@ -190,9 +190,11 @@ public:
 		return ret;
 	}
 
+    /*
     operator bool() const { 
         return all();
     }
+    */
 
     CUDA_HOST_DEVICE
 	bool any() const {
@@ -336,6 +338,7 @@ OPERATOR(-)
 OPERATOR(/)
 OPERATOR(*)
 
+/*
 template<typename T1,typename T2,unsigned int N> 
 CUDA_HOST_DEVICE 
 Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2) { 
@@ -348,6 +351,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
     } 
     return ret; 
 }
+*/
 
 #define COMPARISON(the_op) \
     template<typename T1,typename T2,unsigned int N> \

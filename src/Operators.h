@@ -115,7 +115,7 @@ namespace Aboria {
     }
 
     template<typename T1, typename... T>
-    int sum(T1 s, T... ts) {
+    T1 sum(T1 s, T... ts) {
         return s + sum(ts...);
     }
 
