@@ -46,6 +46,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+template<typename T,unsigned int N>
+class Vector;	
+
+template <typename T>
+struct is_vector: std::false_type {};
+
+template <typename T, unsigned int N>
+struct is_vector<Vector<T,N>>: std::true_type {};
 
 template<typename T,unsigned int N>
 class Vector {
@@ -101,6 +109,7 @@ public:
 		}
 		return *this;
 	}
+
 
     CUDA_HOST_DEVICE
 	const T &operator[](unsigned int n) const {
@@ -180,6 +189,12 @@ public:
 		}
 		return ret;
 	}
+
+    /*
+    operator bool() const { 
+        return all();
+    }
+    */
 
     CUDA_HOST_DEVICE
 	bool any() const {
@@ -323,6 +338,21 @@ OPERATOR(-)
 OPERATOR(/)
 OPERATOR(*)
 
+/*
+template<typename T1,typename T2,unsigned int N> 
+CUDA_HOST_DEVICE 
+Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2) { 
+    Vector<double,N> ret; 
+    for (int i = 0; i < N; ++i) { 
+        ret[i] = arg1[i*N] * arg2[0];
+        for (int j = 1; j < N; ++j) { 
+            ret[i] += arg1[i*N+j] * arg2[j]; 
+        }
+    } 
+    return ret; 
+}
+*/
+
 #define COMPARISON(the_op) \
     template<typename T1,typename T2,unsigned int N> \
     CUDA_HOST_DEVICE \
@@ -357,6 +387,7 @@ COMPARISON(<)
 COMPARISON(<=)
 COMPARISON(>=)
 COMPARISON(==)
+COMPARISON(!=)
 
 #define COMPOUND_ASSIGN(the_op) \
     template<typename T1,typename T2,unsigned int N> \
@@ -445,7 +476,37 @@ Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
 	return ret;
 }
 
+/* for eigen
+ */
+template <typename T, unsigned int N>
+CUDA_HOST_DEVICE 
+inline const Vector<T,N>& conj(const Vector<T,N>& x)  { return x; }
 
+template <typename T, unsigned int N>
+CUDA_HOST_DEVICE 
+inline const Vector<T,N>& real(const Vector<T,N>& x)  { return x; }
+
+template <typename T, unsigned int N>
+CUDA_HOST_DEVICE 
+inline const Vector<T,N> imag(const Vector<T,N>& x)  { return 0; }
+
+template <typename T, unsigned int N>
+inline const Vector<T,N> abs(const Vector<T,N>& x)  { 
+	Vector<T,N> ret;
+    for (int i; i<N; ++i) {
+        ret[i] = std::fabs(x[i]);
+    }
+    return ret; 
+}
+
+template <typename T, unsigned int N>
+inline const Vector<T,N> abs2(const Vector<T,N>& x)  { 
+	Vector<T,N> ret;
+    for (int i; i<N; ++i) {
+        ret[i] = std::pow(x[i],2);
+    }
+    return ret; 
+}
 
 template<typename T,unsigned int N>
 std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {

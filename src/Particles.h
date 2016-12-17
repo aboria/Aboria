@@ -664,7 +664,7 @@ private:
         }
 
         template< typename U >
-        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,double_d> >::type
+        typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
         operator()(U i) {
             datas[i]->SetTuple(index,std::get<U::value>(write_from).data());
         }
@@ -699,7 +699,7 @@ private:
         }
 
         template< typename U >
-        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,double_d> >::type
+        typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
         operator()(U i) {
              datas[i]->GetTuple(index,std::get<U::value>(read_into).data());
         }
@@ -717,9 +717,17 @@ private:
     };
     
     struct setup_datas_for_writing {
+        typedef typename reference::tuple_type tuple_type;
+        template <typename U>
+        using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
+
+
         setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
             n(n),datas(datas),grid(grid){}
-        template< typename U > void operator()(U i) {
+
+        template< typename U > 
+        typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
+        operator()(U i) {
             typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
             const char *name = variable_type().name;
             datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
@@ -729,11 +737,23 @@ private:
                 grid->GetPointData()->AddArray(datas[i]);
             }
             typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
-            if (boost::is_same<data_type, double_d>::value) {
-                datas[i]->SetNumberOfComponents(traits_type::dimension);
-            } else {
-                datas[i]->SetNumberOfComponents(1);
+            datas[i]->SetNumberOfComponents(1);
+            datas[i]->SetNumberOfTuples(n);
+        }
+
+        template< typename U > 
+        typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
+        operator()(U i) {
+            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
+            const char *name = variable_type().name;
+            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
+            if (!datas[i]) {
+                datas[i] = vtkSmartPointer<vtkFloatArray>::New();
+                datas[i]->SetName(name);
+                grid->GetPointData()->AddArray(datas[i]);
             }
+            typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
+            datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
             datas[i]->SetNumberOfTuples(n);
         }
 
