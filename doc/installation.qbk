@@ -12,7 +12,7 @@ sudo apt-get install build-essential cmake
 ``
 
 The only required dependency is the [@http://www.boost.org Boost] library.  
-Optional dependencies are [@http://www.vtk.org/ The Virtualisation Toolkit] and 
+Optional dependencies are [@http://www.vtk.org/ The Visualization Toolkit] and 
 [@http://eigen.tuxfamily.org Eigen] (version >= 3.3~beta1), both of which add 
 extra functionality.  To install all these dependencies in a Debian-based OS you 
 can type
