@@ -232,7 +232,7 @@ public:
         reference i = *(end()-1);
         Aboria::get<position>(i) = Aboria::get<position>(val);
         Aboria::get<id>(i) = this->next_id++;
-        //Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
+        Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
         Aboria::get<alive>(i) = true;
         if (searchable && update_neighbour_search) {
             search.add_points_at_end(begin(),end()-1,end());
