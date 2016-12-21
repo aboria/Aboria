@@ -145,14 +145,14 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename position::value_type position_value_type;
     typedef alive::value_type alive_value_type;
     typedef id::value_type id_value_type;
-    //typedef random::value_type random_value_type;
+    typedef random::value_type random_value_type;
     typedef typename traits::template vector_type<position_value_type>::type position_vector_type;
     typedef typename traits::template vector_type<alive_value_type>::type alive_vector_type;
     typedef typename traits::template vector_type<id_value_type>::type id_vector_type;
-    //typedef typename traits::template vector_type<random_value_type>::type random_vector_type;
+    typedef typename traits::template vector_type<random_value_type>::type random_vector_type;
 
     typedef traits traits_type;
-    typedef mpl::vector<position,id,alive,TYPES...> mpl_type_vector;
+    typedef mpl::vector<position,id,alive,random,TYPES...> mpl_type_vector;
 
     /*
     typedef tuple_ns::tuple<
@@ -174,7 +174,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             typename position_vector_type::iterator,
             typename id_vector_type::iterator,
             typename alive_vector_type::iterator,
-            //typename random_vector_type::iterator,
+            typename random_vector_type::iterator,
             typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
             > tuple_of_iterators_type;
 
@@ -182,7 +182,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             typename position_vector_type::const_iterator,
             typename id_vector_type::const_iterator,
             typename alive_vector_type::const_iterator,
-            //typename random_vector_type::const_iterator,
+            typename random_vector_type::const_iterator,
             typename traits::template vector_type<typename TYPES::value_type>::type::const_iterator...
             > tuple_of_const_iterators_type;
 
@@ -191,7 +191,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
         position_vector_type,
         id_vector_type,
         alive_vector_type,
-        //random_vector_type,
+        random_vector_type,
         typename traits::template vector_type<typename TYPES::value_type>::type...
             > vectors_data_type;
 

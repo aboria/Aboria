@@ -165,13 +165,41 @@ namespace Aboria {
                 std::normal_distribution<double> normal_distribution;
                 return normal_distribution(generator);
             }
+            /*
             double operator()(const size_t& id) const {
                 std::normal_distribution<double> normal_distribution;
                 generator_type gen(id);
                 return normal_distribution(gen);
             }
+            */
+            double operator()(generator_type& gen) const {
+                std::normal_distribution<double> normal_distribution;
+                return normal_distribution(gen);
+            }
             generator_type generator;
 
+        };
+
+        struct uniform {
+            //typedef std::mt19937 generator_type;
+            uniform() {};
+            uniform(uint32_t seed): generator(seed) {};
+            double operator()() {
+                std::uniform_real_distribution<double> uniform_distribution;
+                return uniform_distribution(generator);
+            }
+            /*
+            double operator()(const size_t& id) const {
+                std::uniform_real_distribution<double> uniform_distribution;
+                generator_type gen(id);
+                return uniform_distribution(gen);
+            }
+            */
+            double operator()(generator_type& gen) const {
+                std::uniform_real_distribution<double> normal_distribution;
+                return normal_distribution(gen);
+            }
+            generator_type generator;
         };
 
         template <typename T>
@@ -522,12 +550,15 @@ namespace Aboria {
             {};
 
 
-            // Handle normal terminals here...
+            // Handle normal and uniform terminals here...
             template<typename Expr>
             struct eval<Expr, proto::tag::terminal,
             typename boost::enable_if<
                 mpl::and_<
-                    proto::matches<Expr, proto::terminal<normal>>,
+                    mpl::or_<
+                        proto::matches<Expr, proto::terminal<normal>>,
+                        proto::matches<Expr, proto::terminal<uniform>>
+                            >,
                     mpl::greater<size_type,mpl::int_<0>>
                 >>::type> {
 
@@ -538,10 +569,11 @@ namespace Aboria {
                     //TODO: get better (parallel) random number generator
                     //return const_cast<typename ParticlesType::value_type&>(ctx.particle_).rand_normal();
                     return proto::value(expr)(
-                            //const_cast<generator_type&>(get<id>(fusion::front(ctx.m_labels).second)));
-                            get<id>(fusion::front(ctx.m_labels).second));
+                            const_cast<generator_type&>(get<random>(fusion::front(ctx.m_labels).second)));
+                            //get<id>(fusion::front(ctx.m_labels).second));
                 }
             };
+
 
             // Handle subscripts here...
             template<typename Expr>

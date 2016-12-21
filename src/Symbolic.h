@@ -269,6 +269,11 @@ namespace Aboria {
     struct Normal
         : proto::terminal<detail::normal>::type {};
 
+    /// a symbolic class used to return a uniformly distributed random variable. This uses
+    /// the random number generator of the current particle to generate the random
+    /// variable
+    struct Uniform 
+        : proto::terminal<detail::uniform>::type {};
     
     /// a symbolic class that, when evaluated, returns a Vect3d class. 
     template <typename T,unsigned int N>

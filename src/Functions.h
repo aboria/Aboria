@@ -240,9 +240,26 @@ namespace Aboria {
 		}
 	};
 
+
     /// a symbolic complimentary error function for scalars
     ///
     ABORIA_UNARY_FUNCTION(erfc, erfc_fun, SymbolicDomain);
+
+    struct log_fun
+	{
+		typedef double result_type;
+
+		result_type operator()(const double& arg) const
+		{
+			return std::log(arg);
+		}
+	};
+
+
+    /// a symbolic log function for scalars
+    ///
+    ABORIA_UNARY_FUNCTION(log, log_fun, SymbolicDomain);
+ 
     
     struct abs_fun
 	{
@@ -264,6 +281,11 @@ namespace Aboria {
         typedef double result_type;
         
         double operator()(const double d, const double exp) const
+        {
+            return std::pow(d, exp);
+        }
+
+        double operator()(const double d, const int exp) const
         {
             return std::pow(d, exp);
         }
