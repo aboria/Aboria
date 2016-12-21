@@ -726,7 +726,7 @@ private:
             n(n),datas(datas),grid(grid){}
 
         template< typename U > 
-        typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
+        typename boost::enable_if<mpl::not_<is_vector<non_ref_tuple_element<U>>>>::type
         operator()(U i) {
             typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
             const char *name = variable_type().name;
