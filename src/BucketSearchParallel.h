@@ -103,6 +103,11 @@ private:
         m_size = 
             floor((this->m_bounds.bmax-this->m_bounds.bmin)/m_bucket_side_length)
             .template cast<unsigned int>();
+        for (int i=0; i<Traits::dimension; ++i) {
+            if (m_size[i] == 0) {
+                m_size[i] = this->m_bounds.bmax[i]-this->m_bounds.bmin[i];
+            }
+        }
         m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
         m_point_to_bucket_index = 
             detail::point_to_bucket_index<Traits::dimension>(m_size,m_bucket_side_length,this->m_bounds);

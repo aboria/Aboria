@@ -836,7 +836,9 @@ namespace Aboria {
             typedef EvalCtx<> const_context_type;
             typedef typename proto::result_of::eval<expr_type, const_context_type const>::type result;
 
-
+            typedef typename std::remove_cv<typename std::remove_reference<
+                        result
+                        >::type>::type result_base_type;
      
         };
 
@@ -859,6 +861,12 @@ namespace Aboria {
             typedef typename particles_a_type::const_reference particle_a_reference;
             typedef EvalCtx<fusion::map<fusion::pair<label_a_type,particle_a_reference>>> univariate_context_type;
             typedef typename proto::result_of::eval<expr_type, univariate_context_type const>::type result;
+
+            typedef typename std::remove_cv<typename std::remove_reference<
+                        result
+                        >::type>::type result_base_type;
+            
+
         };
 
         template<typename Expr>
@@ -871,12 +879,27 @@ namespace Aboria {
 
             typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
 
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_a_type_ref;
-            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,1>::type label_b_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,0>::type label_first_type_ref;
+            typedef typename fusion::result_of::at_c<typename std::result_of<get_labels(expr_type,fusion::nil_)>::type,1>::type label_second_type_ref;
             typedef typename std::remove_const<
-                typename std::remove_reference<label_a_type_ref>::type>::type label_a_type;
+                typename std::remove_reference<label_first_type_ref>::type>::type label_first_type;
             typedef typename std::remove_const<
-                typename std::remove_reference<label_b_type_ref>::type>::type label_b_type;
+                typename std::remove_reference<label_second_type_ref>::type>::type label_second_type;
+
+            static_assert(mpl::not_equal_to<typename label_first_type::depth
+                                           ,typename label_second_type::depth>::value,
+                                         "label a depth equal to label b");
+
+            typedef typename mpl::if_<
+                                mpl::less<typename label_first_type::depth
+                                         ,typename label_second_type::depth>
+                                    ,label_first_type
+                                    ,label_second_type>::type label_a_type;
+            typedef typename mpl::if_<
+                                mpl::greater<typename label_first_type::depth
+                                            ,typename label_second_type::depth>
+                                    ,label_first_type
+                                    ,label_second_type>::type label_b_type;
 
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename label_b_type::particles_type particles_b_type;
@@ -888,6 +911,10 @@ namespace Aboria {
                 fusion::pair<label_b_type,particle_b_reference>>,
                 fusion::list<const double_d &>> bivariate_context_type;
             typedef typename proto::result_of::eval<expr_type, bivariate_context_type const>::type result;
+
+            typedef typename std::remove_cv<typename std::remove_reference<
+                        result
+                        >::type>::type result_base_type;
              
         };
 
