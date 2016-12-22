@@ -225,18 +225,29 @@ public:
     // STL Container
     //
     
-    /// push the particle \p val to the back of the container
+    /// push the particle \p val to the back of the container (if its within
+    /// the searchable domain)
     void push_back (const value_type& val, bool update_neighbour_search=true) {
         traits_type::push_back(data,val);
-        const int index = size();
         reference i = *(end()-1);
-        Aboria::get<position>(i) = Aboria::get<position>(val);
-        Aboria::get<id>(i) = this->next_id++;
-        Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
         Aboria::get<alive>(i) = true;
-        if (searchable && update_neighbour_search) {
-            search.add_points_at_end(begin(),end()-1,end());
+        if (searchable) {
+            detail::enforce_domain_impl<traits_type::dimension,reference> enforcer(search.get_min(),search.get_max(),search.get_periodic());
+            enforcer(i);
         }
+        if (get<alive>(i)) {
+            //Aboria::get<position>(i) = Aboria::get<position>(val);
+            Aboria::get<id>(i) = this->next_id++;
+            Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
+            //Aboria::get<alive>(i) = true;
+            if (searchable && update_neighbour_search) {
+                search.add_points_at_end(begin(),end()-1,end());
+            }
+        } else {
+            LOG(2,"WARNING: particle you tried to push back with r = "<<Aboria::get<position>(i)<<" is outside the domain and has been removed");
+            pop_back(false);
+        }
+
     }
 
     /// push a new particle with position \p position
