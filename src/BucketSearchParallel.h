@@ -131,6 +131,11 @@ private:
         this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
     }
 
+    void update_iterator_impl() {
+        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+    }
+
     void embed_points_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         m_bucket_indices.resize(n);

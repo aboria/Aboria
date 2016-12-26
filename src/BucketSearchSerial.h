@@ -124,7 +124,8 @@ private:
 	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
 
         m_buckets.assign(m_size.prod(), detail::get_empty_id());
-        m_use_dirty_cells = false;
+        //TODO: should always be true?
+        m_use_dirty_cells = true;
 
         this->m_query.m_buckets_begin = iterator_to_raw_pointer(m_buckets.begin());
 
@@ -136,6 +137,44 @@ private:
         this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
     }
 
+    void check_data_structure() {
+        int num_particles = 0;
+        for (int i=0; i<m_buckets.size(); i++) {
+            int j = m_buckets[i];
+            int old_j = detail::get_empty_id();
+            while (j != detail::get_empty_id()) {
+                ASSERT(m_linked_list_reverse[j] == old_j, "m_linked_list_reverse not right: m_linked_list_reverse[j] = "<<m_linked_list_reverse[j]<<", j = "<<j<<", old_j = "<<old_j); 
+                ASSERT(m_dirty_buckets[j] == i, "m_dirty_buckets not right: m_dirty_buckets[j] = "<<m_dirty_buckets[j]<<", i = "<<i<<", j = "<<j); 
+                ASSERT(j < m_linked_list.size(), "j index too large");
+                ASSERT(j >= 0, "j index less than zero");
+                num_particles++;
+                old_j = j;
+                j = m_linked_list[old_j];
+            }
+        }
+        ASSERT(num_particles == m_linked_list.size(), "m_linked_list size inconsistent");
+        ASSERT(num_particles == m_linked_list_reverse.size(), "m_linked_list_reverse size inconsistent");
+        ASSERT(num_particles == m_dirty_buckets.size(), "m_dirty_buckets size inconsistent");
+        for (int i=0; i<m_linked_list.size(); ++i) {
+            ASSERT(i < m_linked_list.size(), "i index too large");
+            ASSERT(i >= 0, "i index less than zero");
+            ASSERT(m_dirty_buckets[i] < m_buckets.size(), "m_dirty_buckets not right");
+            ASSERT(m_dirty_buckets[i] >= 0, "m_dirty_buckets not right");
+            ASSERT(m_linked_list[i] < m_linked_list.size() || m_linked_list[i] == detail::get_empty_id(), "m_linked_list not right: m_linked_list[i] = "<<m_linked_list[i]<<", m_linked_list.size() = "<<m_linked_list.size());
+            ASSERT(m_linked_list[i] >= 0 || m_linked_list[i] == detail::get_empty_id(), "m_linked_list not right");
+            ASSERT(m_linked_list_reverse[i] < m_linked_list_reverse.size() || m_linked_list_reverse[i] == detail::get_empty_id(), "m_linked_list_reverse not right");
+            ASSERT(m_linked_list_reverse[i] >= 0 || m_linked_list_reverse[i] == detail::get_empty_id(), "m_linked_list_reverse not right");
+        }
+    }
+
+
+
+    void update_iterator_impl() {
+        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+        //check_data_structure();
+    }
+
+
     void embed_points_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
 
@@ -143,6 +182,7 @@ private:
          * clear head of linked lists (m_buckets)
          */
         if (m_use_dirty_cells) {
+            //TODO: wont ever be true??
             if (m_dirty_buckets.size()<m_buckets.size()) {
                 for (int i: m_dirty_buckets) {
                     m_buckets[i] = detail::get_empty_id();
@@ -159,6 +199,7 @@ private:
         for (size_t i=0; i<n; ++i) {
             const double_d& r = get<position>(this->m_particles_begin)[i];
             const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+            ASSERT(bucketi < m_buckets.size() && bucketi >= 0, "bucket index out of range");
             const int bucket_entry = m_buckets[bucketi];
 
             // Insert into own bucket
@@ -184,6 +225,7 @@ private:
         }
 #endif
 
+        //check_data_structure();
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
@@ -203,6 +245,7 @@ private:
         for (size_t i = start_adding; i<n; ++i) {
             const double_d& r = get<position>(this->m_particles_begin)[i];
             const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+            ASSERT(bucketi < m_buckets.size() && bucketi >= 0, "bucket index out of range");
             const int bucket_entry = m_buckets[bucketi];
 
             // Insert into own cell
@@ -228,6 +271,8 @@ private:
         }
 #endif
 
+        //check_data_structure();
+
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
@@ -239,11 +284,40 @@ private:
         ASSERT(m_dirty_buckets.size()-n == dist, "m_dirty_buckets not consistent with dist");
         const size_t oldn = m_linked_list.size();
         for (size_t i = n; i<oldn; ++i) {
-            untrack_point(i); 
+            if (m_dirty_buckets[i] == detail::get_empty_id()) continue;
+            const int celli = m_dirty_buckets[i];
+
+            //get first backwards index < n
+            int backwardsi = i;
+            while (backwardsi >= n) {
+                backwardsi = m_linked_list_reverse[backwardsi];
+                if (backwardsi == detail::get_empty_id()) break;
+            }
+
+            //get first forward index < n
+            int forwardi = i;
+            while (forwardi >= n) {
+                forwardi = m_linked_list[forwardi];
+                if (forwardi == detail::get_empty_id()) break;
+            }
+
+            if (forwardi != detail::get_empty_id()) {
+                m_linked_list_reverse[forwardi] = backwardsi;
+            }
+            if (backwardsi != detail::get_empty_id()) {
+                m_linked_list[backwardsi] = forwardi;
+            } else if (forwardi != detail::get_empty_id()) {
+                m_buckets[celli] = forwardi;
+            } else {
+                m_buckets[celli] = detail::get_empty_id();
+            }
         }
         m_linked_list.resize(n);
         m_linked_list_reverse.resize(n);
         m_dirty_buckets.resize(n);
+
+
+        //check_data_structure();
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
@@ -256,7 +330,9 @@ private:
         const int forwardi = m_linked_list[i];
         const int backwardsi = m_linked_list_reverse[i];
 
-        if (forwardi != detail::get_empty_id()) m_linked_list_reverse[forwardi] = backwardsi;
+        if (forwardi != detail::get_empty_id()) {
+            m_linked_list_reverse[forwardi] = backwardsi;
+        }
         if (backwardsi != detail::get_empty_id()) {
             m_linked_list[backwardsi] = forwardi;
         } else {
@@ -283,7 +359,14 @@ private:
         const int forwardi = m_linked_list[i];
         const int backwardsi = m_linked_list_reverse[i];
 
-        if (forwardi != detail::get_empty_id()) m_linked_list_reverse[forwardi] = backwardsi;
+        ASSERT(forwardi == detail::get_empty_id() ||
+                ((forwardi>=0) && (forwardi<m_linked_list_reverse.size())),"invalid untrack index (forwards)");
+        ASSERT(backwardsi == detail::get_empty_id() ||
+                ((backwardsi>=0) && (backwardsi<m_linked_list.size())),"invalid untrack index (backwards)");
+
+        if (forwardi != detail::get_empty_id()) {
+            m_linked_list_reverse[forwardi] = backwardsi;
+        }
         if (backwardsi != detail::get_empty_id()) {
             m_linked_list[backwardsi] = forwardi;
         } else {
@@ -297,13 +380,48 @@ private:
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
         const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
         const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
-                const int forwardi = m_linked_list[fromi];
+        ASSERT(toi != fromi,"toi and fromi are the same");
+
+        // unlink old toi pointers
+        const int toi_back = m_linked_list_reverse[toi];
+        const int toi_forward = m_linked_list[toi];
+        ASSERT(toi_back == detail::get_empty_id() ||
+            (toi_back < m_linked_list_reverse.size() && toi_back >= 0),
+            "invalid index of "<<toi_back <<". Note linked list reverse size is "
+            << m_linked_list_reverse.size());
+        ASSERT(toi_forward == detail::get_empty_id() ||
+            (toi_forward < m_linked_list_reverse.size() && toi_forward >= 0),
+            "invalid index of "<<toi_back <<". Note linked list reverse size is "
+            << m_linked_list_reverse.size());
+        if (toi_back != detail::get_empty_id()) {
+            m_linked_list[toi_back] = toi_forward;
+        } else {
+            m_buckets[m_dirty_buckets[toi]] = toi_forward;
+        }
+        if (toi_forward != detail::get_empty_id()) {
+            m_linked_list_reverse[toi_forward] = toi_back;
+        }
+
+        // setup fromi <-> toi 
+        const int forwardi = m_linked_list[fromi];
+        const int bucketi = m_dirty_buckets[fromi];
+        ASSERT(toi < m_linked_list.size() && toi >= 0,"invalid index");
+        ASSERT(bucketi < m_buckets.size() && bucketi >= 0,"invalid index");
+        ASSERT(fromi < m_linked_list_reverse.size() && fromi >= 0,"invalid index");
+        ASSERT(forwardi == detail::get_empty_id() ||
+            (forwardi < m_linked_list_reverse.size() && forwardi>= 0),
+            "invalid index of "<<forwardi<<". Note linked list reverse size is "
+            << m_linked_list_reverse.size());
 
         m_linked_list[toi] = forwardi;
         m_linked_list_reverse[toi] = fromi;
         m_linked_list[fromi] = toi;
-        m_linked_list_reverse[forwardi] = toi;
-        m_dirty_buckets[toi] = m_dirty_buckets[fromi];
+        if (forwardi != detail::get_empty_id()) { //check this
+            m_linked_list_reverse[forwardi] = toi; 
+        }
+        m_dirty_buckets[toi] = bucketi;
+
+        //check_data_structure();
     }
 
     const bucket_search_serial_query<Traits>& get_query_impl() const {

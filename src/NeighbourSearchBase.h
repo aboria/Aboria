@@ -136,6 +136,14 @@ public:
 
     }
 
+    void update_iterators(iterator begin, iterator end) {
+        m_particles_begin = begin;
+        m_particles_end = end;
+
+	    LOG(2,"neighbour_search_base: update iterators");
+        cast().update_iterator_impl();
+    }
+
     void add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
                            const iterator &end) {
@@ -150,24 +158,21 @@ public:
         if (dist > 0) {
             LOG(2,"neighbour_search_base: add_points_at_end: embedding "<<dist<<" new points. Total number = "<<end-begin);
             cast().add_points_at_end_impl(dist);
+            LOG(2,"neighbour_search_base: add_points_at_end: done.");
+
         }
         ASSERT(m_particles_begin==begin, "did not update m_particles_begin correctly");
         ASSERT(m_particles_end==end, "did not update m_particles_end correctly");
     }
 
     void copy_points(iterator copy_from_iterator, iterator copy_to_iterator) {
-        /*
-        std::cout <<"copy_to = "<<get<position>(*copy_to_iterator)<<std::endl;
-        std::cout <<" begin = "<<get<position>(*m_particles_begin)<<std::endl;
-        std::cout <<"copy_to = "<<get<position>(*copy_to_iterator)<<" begin = "<<get<position>(*m_particles_begin)<<std::endl;
-        std::cout <<"1st:"<< copy_to_iterator-m_particles_begin <<" 2nd: "<< m_particles_end-copy_to_iterator<<std::endl; 
-        */
+        LOG(4,"neighbour_search_base: copy_points: fromi = "<<copy_from_iterator-m_particles_begin<<" toi = "<<copy_to_iterator-m_particles_begin);
         ASSERT((copy_to_iterator-m_particles_begin>=0) && 
                 (m_particles_end-copy_to_iterator>0),"invalid copy to iterator");
         ASSERT((copy_from_iterator-m_particles_begin>=0) && 
                 (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
         if (copy_to_iterator==copy_from_iterator) return;
-        cast().copy_points_impl(copy_from_iterator,copy_from_iterator);
+        cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
     }
 
 
