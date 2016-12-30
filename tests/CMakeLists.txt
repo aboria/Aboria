@@ -27,9 +27,7 @@ set(test_files
     variables.h
     particle_container.h
     neighbours.h
-    #geometry
     diffusion_around_spheres.h
-    #assemble.h
     symbolic.h
     rbf_pde.h
     rbf_interpolation.h
@@ -39,6 +37,7 @@ set(test_files
     bd.h
     md.h
     linear_algebra_compare.h
+    speed_test.h
     )
 
 set(test_suites
@@ -52,19 +51,19 @@ set(test_suites
     ParticleContainerTest 
     SymbolicTest 
     VariablesTest
-    #AssembleTest
     ConstructorsTest
     OperatorsTest 
-    #LinearAlgebraCompareTest 
+    SpeedTest
     )
 
 
-#set(test_files linear_algebra_compare.h)
-#set(test_suites LinearAlgebraCompareTest)
+#set(test_files speed_test.h)
+#set(test_suites SpeedTest)
 
-set(LinearAlgebraCompareTest 
-    test_aboria
-    test_eigen
+set(SpeedTest 
+    #test_aboria
+    #test_eigen
+    test_vector_addition
     )
 
 set(SymbolicTest
@@ -144,3 +143,4 @@ foreach(test_suite ${test_suites})
         endif()
     endforeach()
 endforeach()
+
