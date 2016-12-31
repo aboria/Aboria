@@ -48,6 +48,44 @@ using namespace Aboria;
 
 class MetafunctionsTest : public CxxTest::TestSuite {
 public:
+    void test_aliasing(void) {
+        ABORIA_VARIABLE(scalar,double,"scalar")
+    	typedef Particles<std::tuple<scalar>> ParticlesType;
+    	ParticlesType particles;
+        Symbol<scalar> s;
+        Symbol<position_d<3>> r;
+        Label<0,ParticlesType> a(particles);
+        Label<1,ParticlesType> b(particles);
+        auto dx = create_dx(a,b);
+        Accumulate<std::plus<double> > sum;
+        Accumulate<std::plus<double3> > sumv;
+
+        static_assert(decltype(s[a].alias_check(sum(b,true,s[b])))::value,
+                "should be aliased");
+
+        static_assert(decltype(s[a].alias_check(sum(b,true,1 + s[b])))::value,
+                "should be aliased");
+
+        static_assert(decltype(r[a].alias_check(sumv(b,true,r[b])))::value,
+                "should be aliased");
+
+        static_assert(decltype(r[a].alias_check(sumv(b,true,double3(1,2,3) + dx)))::value,
+                "should be aliased");
+
+        static_assert(!decltype(s[a].alias_check(sum(b,true,s[a])))::value,
+                "should not be aliased");
+
+        static_assert(!decltype(s[a].alias_check(sum(b,true,norm(dx))))::value,
+                "should not be aliased");
+
+        static_assert(!decltype(s[a].alias_check(s[a]))::value,
+                "should not be aliased");
+
+        static_assert(!decltype(s[a].alias_check(s[a] + r[a][1]))::value,
+                "should not be aliased");
+
+    }
+     
     void test_expr_matching(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>> ParticlesType;

@@ -117,6 +117,67 @@ public:
 #endif
     }
 
+    // Daxpy (b += a*0.001) 
+    double daxpy_aboria_level1(const size_t N) {
+        std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(a,double,"a")
+        ABORIA_VARIABLE(b,double,"b")
+    	typedef Particles<std::tuple<a,b>,3> nodes_type;
+       	nodes_type nodes;
+        nodes_type::value_type node;
+        for (int i=0; i<N; i++) {
+            get<a>(node) = i;
+            get<b>(node) = i*2;
+            nodes.push_back(node);
+        }
+        auto t0 = Clock::now();
+        for (int i=0; i<N; i++) {
+            get<b>(nodes)[i] += get<a>(nodes)[i]*0.001;
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+    }
+    
+    double daxpy_aboria_level2(const size_t N) {
+        std::cout << "daxpy_aboria_level2: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(a,double,"a")
+        ABORIA_VARIABLE(b,double,"b")
+    	typedef Particles<std::tuple<a,b>,3> nodes_type;
+       	nodes_type nodes;
+        nodes_type::value_type node;
+        for (int i=0; i<N; i++) {
+            get<a>(node) = i;
+            get<b>(node) = i*2;
+            nodes.push_back(node);
+        }
+        Symbol<a> A;
+        Symbol<b> B;
+        Label<0,nodes_type> i(nodes);
+        auto t0 = Clock::now();
+        B[i] += A[i]*0.001;
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+    }
+
+    double daxpy_eigen(const size_t N) {
+        std::cout << "daxpy_eigen: N = "<<N<<std::endl;
+#ifdef HAVE_EIGEN
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        vector_type A(N),B(N);
+        for (int i=0; i<N; i++) {
+            A[i] = i;
+            B[i] = 2*i;
+        }
+        auto t0 = Clock::now();
+        B += A*0.001;
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+#endif
+    }
+
 
     void finite_difference_eigen(const size_t N, const size_t timesteps) {
 #ifdef HAVE_EIGEN
@@ -234,7 +295,7 @@ public:
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
              << std::setw(15) << "eigen" << std::endl;
-        for (int i = 10; i < 1e7; i*=1.2) {
+        for (int i = 10; i < 8e6; i*=1.2) {
             const size_t N = i;
             file << std::setw(15) << N
                  << std::setw(15) << N/vector_addition_aboria_level1(N)
@@ -243,6 +304,22 @@ public:
                  << std::endl;
         }
         file.close();
+
+        file.open("daxpy.csv");
+        file <<"#"<< std::setw(14) << "N" 
+             << std::setw(15) << "aboria_level1" 
+             << std::setw(15) << "aboria_level2" 
+             << std::setw(15) << "eigen" << std::endl;
+        for (int i = 10; i < 8e6; i*=1.2) {
+            const size_t N = i;
+            file << std::setw(15) << N
+                 << std::setw(15) << N/daxpy_aboria_level1(N)
+                 << std::setw(15) << N/daxpy_aboria_level2(N)
+                 << std::setw(15) << N/daxpy_eigen(N)
+                 << std::endl;
+        }
+        file.close();
+
     }
 
 

@@ -1043,7 +1043,37 @@ namespace Aboria {
                     typename proto::result_of::child_c<Expr,0>::type 
                     >::type symbol_type;
 
+                struct is_not_my_label
+                    : proto::and_<
+                        proto::terminal<label<_,_>>
+                        , proto::if_< mpl::not_<
+                                boost::is_same< proto::_value, label_type>>() >
+                      >
+                {};
 
+                struct is_my_symbol
+                    : proto::terminal<symbol_type>
+                {};
+
+                struct is_not_aliased
+                    : proto::or_<
+                        proto::and_<
+                            proto::terminal<proto::_>
+                            ,proto::not_< 
+                                proto::and_<
+                                    proto::if_<boost::is_same<symbol_type,
+                                                       symbolic<position>>()>
+                                    , proto::terminal<dx<_,_>>
+                                >
+                             >
+                          >
+                        , proto::and_<
+                            proto::nary_expr< proto::_, proto::vararg<is_not_aliased>>
+                            ,proto::not_<proto::subscript<is_my_symbol,is_not_my_label>>
+                          >
+                      >
+                {};
+                
 
         #undef SUBSCRIPT_TYPE
 
@@ -1072,12 +1102,29 @@ namespace Aboria {
 
                 //mpl::for_each<mpl::range_c<int,1,label_type::number_of_particle_sets::value> > (this->name(proto::as_expr<SymbolicDomain>(expr,label))); \
 
+                template< typename ExprRHS > 
+                typename boost::enable_if<
+                    mpl::not_<proto::matches<ExprRHS, is_not_aliased>>
+                    ,mpl::true_>::type
+                alias_check(ExprRHS const & expr) const {
+                    return mpl::true_();
+                }
+
+                template< typename ExprRHS > 
+                typename boost::enable_if<
+                    proto::matches<ExprRHS, is_not_aliased>
+                    ,mpl::false_>::type
+                alias_check(ExprRHS const & expr) const {
+                    return mpl::false_();
+                }
+
                 #define DEFINE_THE_OP(name,the_op) \
                 template< typename ExprRHS > \
                 const SymbolicExpr &operator the_op (ExprRHS const & expr) const { \
                     BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
                     check_valid_assign_expr(proto::as_expr<SymbolicDomain>(expr)); \
-                    this->name(proto::as_expr<SymbolicDomain>(expr)); \
+                    this->name(proto::as_expr<SymbolicDomain>(expr), \
+                            proto::matches<ExprRHS, is_not_aliased>()); \
                     return *this; \
                 } \
 
@@ -1087,6 +1134,8 @@ namespace Aboria {
                 DEFINE_THE_OP(divide,/=)
                 DEFINE_THE_OP(multiply,*=)
 
+                
+
                 private:
 
                 //label<mpl::int_<0>,ParticlesType> &mlabel;
@@ -1094,15 +1143,18 @@ namespace Aboria {
                 label_type& mlabel;
                 symbol_type& msymbol;
 
-                void post() const {
+                void copy_from_buffer() const {
                     typedef typename VariableType::value_type value_type;
-
                     ParticlesType& particles = mlabel.get_particles();
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
 
                     for (int i=0; i<particles.size(); i++) {
                         get<VariableType>(particles[i]) = buffer[i];	
                     }
+                }
+
+                void post() const {
+                    ParticlesType& particles = mlabel.get_particles();
 
                     if (boost::is_same<VariableType,position>::value) {
                         particles.update_positions();
@@ -1133,18 +1185,34 @@ namespace Aboria {
                 }
 
                 template< typename ExprRHS>
-                const SymbolicExpr &assign(ExprRHS const & expr) const {
+                const SymbolicExpr &assign(ExprRHS const & expr,
+                        mpl::false_) const {
                     typedef typename VariableType::value_type value_type;
 
                     const ParticlesType& particles = mlabel.get_particles();
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
-
                     buffer.resize(particles.size());
 
-                    //TODO: if vector to assign to does not exist in depth > 0, then don't need buffer
                     for (int i=0; i<particles.size(); i++) {
                         EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
                         buffer[i] = proto::eval(expr,ctx);
+                    }
+
+                    copy_from_buffer();
+                    post();
+
+                    return *this;
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &assign(ExprRHS const & expr,
+                        mpl::true_) const {
+                    ParticlesType& particles = mlabel.get_particles();
+
+                    for (int i=0; i<particles.size(); i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+
+                        get<VariableType>(particles)[i] = proto::eval(expr,ctx);
                     }
 
                     post();
@@ -1155,7 +1223,8 @@ namespace Aboria {
 
                 #define DO_THE_OP(name,the_op) \
                 template< typename ExprRHS > \
-                const SymbolicExpr & name (ExprRHS const & expr) const \
+                const SymbolicExpr & name (ExprRHS const & expr, \
+                                            mpl::false_) const \
                 {                                                \
                     typedef typename VariableType::value_type value_type; \
                     const ParticlesType& particles = mlabel.get_particles(); \
@@ -1165,9 +1234,24 @@ namespace Aboria {
                         EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i])); \
                         buffer[i] = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
                     } \
+                    copy_from_buffer(); \
                     post(); \
                     return *this; \
                 } \
+                template< typename ExprRHS > \
+                const SymbolicExpr & name (ExprRHS const & expr, \
+                                            mpl::true_) const \
+                {                                                \
+                    ParticlesType& particles = mlabel.get_particles(); \
+                    for (int i=0; i<particles.size(); i++) { \
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i])); \
+                        get<VariableType>(particles[i]) = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
+                    } \
+                    post(); \
+                    return *this; \
+                } \
+
+
 
                 DO_THE_OP(increment,+)
                 DO_THE_OP(multiply,*)
