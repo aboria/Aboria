@@ -1104,7 +1104,7 @@ namespace Aboria {
 
                 template< typename ExprRHS > 
                 typename boost::enable_if<
-                    mpl::not_<proto::matches<ExprRHS, is_not_aliased>>
+                    mpl::not_<proto::matches<typename proto::result_of::as_expr<ExprRHS>::type, is_not_aliased>>
                     ,mpl::true_>::type
                 alias_check(ExprRHS const & expr) const {
                     return mpl::true_();
@@ -1112,7 +1112,7 @@ namespace Aboria {
 
                 template< typename ExprRHS > 
                 typename boost::enable_if<
-                    proto::matches<ExprRHS, is_not_aliased>
+                    proto::matches<typename proto::result_of::as_expr<ExprRHS>::type, is_not_aliased>
                     ,mpl::false_>::type
                 alias_check(ExprRHS const & expr) const {
                     return mpl::false_();
@@ -1124,7 +1124,7 @@ namespace Aboria {
                     BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
                     check_valid_assign_expr(proto::as_expr<SymbolicDomain>(expr)); \
                     this->name(proto::as_expr<SymbolicDomain>(expr), \
-                            proto::matches<ExprRHS, is_not_aliased>()); \
+                            proto::matches<typename proto::result_of::as_expr<ExprRHS>::type, is_not_aliased>()); \
                     return *this; \
                 } \
 
