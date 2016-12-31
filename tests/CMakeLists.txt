@@ -59,8 +59,8 @@ set(test_suites
 
 #set(test_files metafunctions.h)
 #set(test_suites )
-set(test_files speed_test.h)
-set(test_suites SpeedTest)
+#set(test_files speed_test.h)
+#set(test_suites SpeedTest)
 
 set(SpeedTest 
     #test_aboria

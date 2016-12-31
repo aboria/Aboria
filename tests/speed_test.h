@@ -45,6 +45,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Aboria.h"
 #include <chrono>
 typedef std::chrono::system_clock Clock;
+#include <fstream>      // std::ofstream
 
 using namespace Aboria;
 
