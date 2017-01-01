@@ -189,6 +189,11 @@ namespace Aboria {
             explicit Symbol()
                 : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
             {}
+
+            template <typename Particles>
+            void resize_buffer(const Particles &particles) {
+                proto::value(*this).get_buffer(&particles).resize(particles.size());
+            }
     };
 
     /*

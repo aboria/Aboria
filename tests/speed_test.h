@@ -180,7 +180,8 @@ public:
     }
 
 
-    void finite_difference_eigen(const size_t N, const size_t timesteps) {
+    double finite_difference_eigen(const size_t N) {
+        std::cout << "finite_difference_eigen: N = "<<N<<std::endl;
 #ifdef HAVE_EIGEN
         const size_t N3 = N*N*N;
         Eigen::SparseMatrix<double> A(N3,N3);
@@ -190,9 +191,8 @@ public:
         Eigen::VectorXd s(N3);
         const double h = 1.0/N; 
         const double invh2 = 1.0/(h*h);
-        const double dt = 0.1;
+        const double delta_t = 0.1;
 
-        printf("eigen: start setup.\n");
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 for (size_t k=0; k<N; ++k) {
@@ -211,19 +211,17 @@ public:
         }
         A.setFromTriplets(tripletList.begin(),tripletList.end());
 
-        printf("eigen: end setup.\n");
-
-
-        for (size_t i=0; i<timesteps; ++i) {
-            std::cout << "." <<std::flush;
-            s += dt*A*s;
-        }
-
-        printf("eigen: end run.\n");
+        auto t0 = Clock::now();
+        s += A*s;
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+    
 #endif
     }
 
-    void finite_difference_aboria(const size_t N, const size_t timesteps) {
+    double finite_difference_aboria(const size_t N) {
+        std::cout << "finite_difference_aboria: N = "<<N<<std::endl;
         ABORIA_VARIABLE(scalar,double,"scalar")
 
     	typedef Particles<std::tuple<scalar>,3> nodes_type;
@@ -236,9 +234,8 @@ public:
         double3 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
-        const double dt = 0.1;
+        const double delta_t = 0.1;
         
-        printf("aboria: start setup.\n");
         nodes_type::value_type p;
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
@@ -252,41 +249,245 @@ public:
 
         nodes.init_neighbour_search(min,max,h,periodic);
 
-        printf("aboria: end setup.\n");
         Symbol<scalar> s;
         Symbol<id> id_;
         Label<0,nodes_type> a(nodes);
         Label<1,nodes_type> b(nodes);
         auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
+        s.resize_buffer(nodes);
 
-        for (size_t i=0; i<timesteps; ++i) {
-            std::cout << "." <<std::flush;
-            //s[a] += dt*invh2*sum(b, norm(dx)<htol, if_else(id_[a]==id_[b],-6,1)*s[b]);
-            s[a] += dt*invh2*sum(b, norm(dx)<htol, 6*s[b]);
+        auto t0 = Clock::now();
+        s[a] += invh2*sum(b, norm(dx)<htol, if_else(id_[a]==id_[b],-6,1)*s[b]);
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+    }
+
+    double finite_difference_aboria_eigen(const size_t N) {
+#ifdef HAVE_EIGEN
+        std::cout << "finite_difference_aboria_eigen: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(scalar,double,"scalar")
+
+    	typedef Particles<std::tuple<scalar>,3> nodes_type;
+        typedef position_d<3> position;
+       	nodes_type nodes;
+
+        const double h = 1.0/N; 
+        double3 min(-h/2);
+        double3 max(1+h/2);
+        double3 periodic(false);
+        Eigen::VectorXd s(N*N*N);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+        
+        nodes_type::value_type p;
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                for (size_t k=0; k<N; ++k) {
+                    get<position>(p) = double3(i*h,j*h,k*h);
+                    get<scalar>(p) = std::exp((get<position>(p)-double3(0.5,0.5,0.5)).squaredNorm());
+       	            nodes.push_back(p);
+                }
+            }
         }
-        printf("aboria: end run.\n");
 
-        /*
+        nodes.init_neighbour_search(min,max,h,periodic);
+
+        Symbol<id> id_;
+        Label<0,nodes_type> a(nodes);
+        Label<1,nodes_type> b(nodes);
+        auto dx = create_dx(a,b);
+        Accumulate<std::plus<double> > sum;
+
         auto A = create_eigen_operator(a,b, 
                 if_else(id_[a]==id_[b],6,-1), norm(dx)<htol );
 
-        Eigen::VectorXd u(N);
-        v << 1, 2, 3;
-        Eigen::VectorXd ans(3);
-        ans = A*v;
-
-        */
-
-
+        auto t0 = Clock::now();
+        s += A*s;
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+#endif
     }
 
-    void test_finite_difference_eigen() {
-        finite_difference_eigen(20,100); 
+    double multiquadric_aboria(const size_t N) {
+        std::cout << "multiquadric_aboria: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(scalar,double,"scalar")
+        ABORIA_VARIABLE(kernel_constant,double,"kernel constant")
+
+    	typedef Particles<std::tuple<scalar,kernel_constant>,3> nodes_type;
+        typedef position_d<3> position;
+       	nodes_type nodes;
+
+        const double h = 1.0/N; 
+        double3 min(-h/2);
+        double3 max(1+h/2);
+        double3 periodic(false);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+        
+        nodes_type::value_type p;
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                for (size_t k=0; k<N; ++k) {
+                    get<position>(p) = double3(i*h,j*h,k*h);
+                    get<scalar>(p) = 1.5;
+                    get<kernel_constant>(p) = 0.1;
+       	            nodes.push_back(p);
+                }
+            }
+        }
+
+        nodes.init_neighbour_search(min,max,h,periodic);
+
+        Symbol<scalar> s;
+        Symbol<kernel_constant> c;
+        Label<0,nodes_type> a(nodes);
+        Label<1,nodes_type> b(nodes);
+        auto dx = create_dx(a,b);
+        Accumulate<std::plus<double> > sum;
+        s.resize_buffer(nodes);
+        auto t0 = Clock::now();
+        s[a] += sum(b,true,sqrt(dot(dx,dx)+pow(c[b],2))*s[b]);
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
     }
 
-    void test_finite_difference_eigen_aboria() {
-        finite_difference_aboria(20,100); 
+    double multiquadric_aboria_eigen(const size_t N) {
+        std::cout << "multiquadric_aboria_eigen: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(scalar,double,"scalar")
+        ABORIA_VARIABLE(kernel_constant,double,"kernel constant")
+
+    	typedef Particles<std::tuple<scalar,kernel_constant>,3> nodes_type;
+        typedef position_d<3> position;
+       	nodes_type nodes;
+
+        const double h = 1.0/N; 
+        double3 min(-h/2);
+        double3 max(1+h/2);
+        double3 periodic(false);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+        Eigen::VectorXd s(N*N*N);
+        
+        nodes_type::value_type p;
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                for (size_t k=0; k<N; ++k) {
+                    const size_t index = i*N*N + j*N + k;
+                    get<position>(p) = double3(i*h,j*h,k*h);
+                    s[index] = 1.5;
+                    get<kernel_constant>(p) = 0.1;
+       	            nodes.push_back(p);
+                }
+            }
+        }
+
+        nodes.init_neighbour_search(min,max,h,periodic);
+
+        Symbol<kernel_constant> c;
+        Label<0,nodes_type> a(nodes);
+        Label<1,nodes_type> b(nodes);
+        auto dx = create_dx(a,b);
+        Accumulate<std::plus<double> > sum;
+
+        auto A = create_eigen_operator(a,b, 
+                sqrt(dot(dx,dx)+pow(c[b],2))
+                );
+
+        auto t0 = Clock::now();
+        s += A*s;
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+    }
+
+    double multiquadric_eigen(const size_t N) {
+#ifdef HAVE_EIGEN
+        std::cout << "multiquadric_eigen: N = "<<N<<std::endl;
+
+        const double h = 1.0/N; 
+        double3 min(-h/2);
+        double3 max(1+h/2);
+        double3 periodic(false);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+        const size_t N3 = N*N*N;
+        Eigen::VectorXd s(N3);
+        Eigen::MatrixXd A(N3,N3);
+        
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                for (size_t k=0; k<N; ++k) {
+                    const size_t index = i*N*N + j*N + k;
+                    const double3 r = double3(i*h,j*h,k*h);
+                    const double c = 1.5;
+                    for (size_t ii=0; ii<N; ++ii) {
+                        for (size_t jj=0; jj<N; ++jj) {
+                            for (size_t kk=0; kk<N; ++kk) {
+                                const double3 r2 = double3(ii*h,jj*h,kk*h);
+                                const double3 dx = r2-r;
+                                const size_t index2 = ii*N*N + jj*N + kk;
+                                A(index,index2) = std::sqrt(dx.dot(dx)+std::pow(c,2));
+                            }
+                        }
+                    }
+                    s[index] = 0.1;
+                }
+            }
+        }
+
+        auto t0 = Clock::now();
+        s += A*s;
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count();
+#endif
+    }
+
+
+    void test_multiquadric() {
+        std::ofstream file;
+        file.open("multiquadric.csv");
+        file <<"#"<< std::setw(14) << "N" 
+             << std::setw(15) << "aboria" 
+             << std::setw(15) << "aboria_eigen" 
+             << std::setw(15) << "eigen" << std::endl;
+        for (int i = 2; i < 25; ++i) {
+            const size_t N = i;
+            file << std::setw(15) << std::pow(N,6)
+                 << std::setw(15) << std::pow(N,6)/multiquadric_aboria(N)
+                 << std::setw(15) << std::pow(N,6)/multiquadric_aboria_eigen(N)
+                 << std::setw(15) << std::pow(N,6)/multiquadric_eigen(N)
+                 << std::endl;
+        }
+        file.close();
+    }
+
+
+
+    void test_finite_difference() {
+        std::ofstream file;
+        file.open("finite_difference.csv");
+        file <<"#"<< std::setw(14) << "N" 
+             << std::setw(15) << "aboria" 
+             << std::setw(15) << "aboria_eigen" 
+             << std::setw(15) << "eigen" << std::endl;
+        for (int i = 2; i < 25; ++i) {
+            const size_t N = i;
+            file << std::setw(15) << std::pow(N,3)
+                 << std::setw(15) << std::pow(N,3)/finite_difference_aboria(N)
+                 << std::setw(15) << std::pow(N,3)/finite_difference_aboria_eigen(N)
+                 << std::setw(15) << std::pow(N,3)/finite_difference_eigen(N)
+                 << std::endl;
+        }
+        file.close();
     }
 
     void test_vector_addition() {
@@ -305,7 +506,10 @@ public:
                  << std::endl;
         }
         file.close();
+    }
 
+    void test_daxpy() {
+        std::ofstream file;
         file.open("daxpy.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 

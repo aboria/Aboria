@@ -59,13 +59,14 @@ set(test_suites
 
 #set(test_files metafunctions.h)
 #set(test_suites )
-#set(test_files speed_test.h)
-#set(test_suites SpeedTest)
+set(test_files speed_test.h)
+set(test_suites SpeedTest)
 
 set(SpeedTest 
-    #test_aboria
-    #test_eigen
-    test_vector_addition
+    #test_vector_addition
+    #test_daxpy
+    test_finite_difference
+    test_multiquadric
     )
 
 set(SymbolicTest

@@ -659,7 +659,7 @@ namespace Aboria {
             }
 
             template <typename result_type,
-                     typename label_type,
+                     typename label_b_type,
                      typename if_expr_type, 
                      typename expr_type,
                      typename accumulate_type>
@@ -667,45 +667,32 @@ namespace Aboria {
             typename boost::enable_if<
                     mpl::not_<proto::matches<if_expr_type,range_if_expr>>
             ,result_type>::type
-            sum_impl(label_type label, 
+            sum_impl(label_b_type label, 
                     if_expr_type& if_expr, 
                     expr_type& expr, 
                     accumulate_type& accum,
                     const EvalCtx& ctx, mpl::int_<1>) {
 
                 result_type sum = accum.init;
-                auto particles = label.get_particles();
-                auto a = fusion::front(ctx.m_labels).second;
+                auto particlesb = label.get_particles();
+                auto ai = fusion::front(ctx.m_labels).second;
 
-                typedef typename label_type::particles_type particles_type;
-                typedef typename particles_type::position position;
+                typedef typename label_b_type::particles_type particles_b_type;
+                typedef typename particles_b_type::position position;
                 typedef typename position::value_type double_d;
                 typedef typename std::remove_reference<
                     typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
 
-                for (auto i: particles) {
+                const size_t nb = particlesb.size();
+                for (size_t i=0; i<nb; ++i) {
+                    typename particles_b_type::const_reference bi = particlesb[i];
 
-                    auto new_labels = fusion::make_map<label_a_type,label_type>(
-                                        a,i);
-                    /*
-                    auto new_labels = fusion::push_front(ctx.m_labels,
-                        fusion::make_pair<label_type>(i)
-                            );
-                    */
+                    auto new_labels = fusion::make_map<label_a_type,label_b_type>(
+                                        ai,bi);
 
-
-                    const double_d dx = particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a));
+                    const double_d dx = particlesb.correct_dx_for_periodicity(get<position>(bi)-get<position>(ai));
 
 
-                    /*
-                    auto new_dx = fusion::make_list(
-                        particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a)));
-                        */
-                    /*
-                    auto new_dx = fusion::push_front(ctx.m_dx,
-                        particles.correct_dx_for_periodicity(get<position>(i)-get<position>(a))
-                            );
-                            */
                     EvalCtx<decltype(new_labels),fusion::list<const double_d &>> const new_ctx(
                             new_labels,
                             fusion::make_list(boost::cref(dx)));
@@ -718,7 +705,7 @@ namespace Aboria {
             }
 
             template <typename result_type,
-                     typename label_type,
+                     typename label_b_type,
                      typename if_expr_type, 
                      typename expr_type,
                      typename accumulate_type,typename dummy=size_type>
@@ -726,7 +713,7 @@ namespace Aboria {
             typename boost::enable_if<
                     proto::matches<if_expr_type,range_if_expr>
             ,result_type>::type
-            sum_impl(label_type label,
+            sum_impl(label_b_type label,
                     if_expr_type& if_expr, 
                     expr_type& expr, 
                     accumulate_type& accum,
@@ -734,25 +721,18 @@ namespace Aboria {
 
 
                 result_type sum = accum.init;
-                auto particles = label.get_particles();
-                auto a = fusion::front(ctx.m_labels).second;
+                auto particlesb = label.get_particles();
+                auto ai = fusion::front(ctx.m_labels).second;
 
                 typedef typename std::remove_reference<
                     typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
-                typedef typename label_a_type::particles_type particles_type;
-                typedef typename particles_type::position position;
+                typedef typename label_a_type::particles_type particles_a_type;
+                typedef typename particles_a_type::position position;
 
-                for (auto i: particles.get_neighbours(get<position>(a))) {
-                    auto new_labels = fusion::make_map<label_a_type,label_type>(
-                                        a,std::get<0>(i));
-                    /*
-                    auto new_labels = fusion::push_front(ctx.m_labels,
-                            fusion::make_pair<label_type>(std::get<0>(i))
-                            );
-                    auto new_dx = fusion::push_front(ctx.m_dx,
-                            std::get<1>(i)
-                            );
-                            */
+                for (auto i: particlesb.get_neighbours(get<position>(ai))) {
+                    auto new_labels = fusion::make_map<label_a_type,label_b_type>(
+                                        ai,std::get<0>(i));
+
                     auto new_dx = fusion::make_list(boost::cref(std::get<1>(i)));
 
                     EvalCtx<decltype(new_labels),decltype(new_dx)> const new_ctx(new_labels,new_dx);
