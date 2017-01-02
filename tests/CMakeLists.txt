@@ -65,7 +65,7 @@ set(test_suites SpeedTest)
 set(SpeedTest 
     #test_vector_addition
     #test_daxpy
-    test_finite_difference
+    #test_finite_difference
     test_multiquadric
     )
 

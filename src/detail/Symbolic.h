@@ -620,7 +620,11 @@ namespace Aboria {
                 typedef typename expr_dx::label_a_type expr_label_a_type;
                 typedef typename expr_dx::label_b_type expr_label_b_type;
 
+                /*
                 BOOST_MPL_ASSERT_MSG((fusion::result_of::has_key<labels_type,expr_label_a_type>::value),ASDFASDFASDF,(expr_dx,labels_type,expr_label_a_type));
+                BOOST_MPL_ASSERT_MSG((fusion::result_of::has_key<labels_type,expr_label_b_type>::value),ASDFASDFASDF,(expr_dx));
+                */
+
                 static_assert(fusion::result_of::has_key<labels_type,expr_label_a_type>::value,
                         "dx label a not in evaluation context");
                 static_assert(fusion::result_of::has_key<labels_type,expr_label_b_type>::value,
@@ -673,15 +677,18 @@ namespace Aboria {
                     accumulate_type& accum,
                     const EvalCtx& ctx, mpl::int_<1>) {
 
+                typedef typename label_b_type::particles_type particles_b_type;
+
                 result_type sum = accum.init;
-                auto particlesb = label.get_particles();
+                const particles_b_type& particlesb = label.get_particles(); //copies particles!!!!
                 auto ai = fusion::front(ctx.m_labels).second;
 
-                typedef typename label_b_type::particles_type particles_b_type;
                 typedef typename particles_b_type::position position;
                 typedef typename position::value_type double_d;
                 typedef typename std::remove_reference<
                     typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
+
+
 
                 const size_t nb = particlesb.size();
                 for (size_t i=0; i<nb; ++i) {
@@ -720,8 +727,9 @@ namespace Aboria {
                     const EvalCtx& ctx, mpl::int_<1>) {
 
 
+                typedef typename label_b_type::particles_type particles_b_type;
                 result_type sum = accum.init;
-                auto particlesb = label.get_particles();
+                const particles_b_type& particlesb = label.get_particles(); //copies particles!!!!
                 auto ai = fusion::front(ctx.m_labels).second;
 
                 typedef typename std::remove_reference<
