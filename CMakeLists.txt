@@ -27,6 +27,7 @@ if (Aboria_USE_GPERFTOOLS)
     find_package(Gperftools REQUIRED)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -g")
     set(GPERFTOOLS_LIBRARIES "-Wl,--no-as-needed ${GPERFTOOLS_LIBRARIES} -Wl,--as-needed") 
+    add_definitions(-DHAVE_GPERFTOOLS)
 endif()
 
 

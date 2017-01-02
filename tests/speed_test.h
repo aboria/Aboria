@@ -46,7 +46,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 typedef std::chrono::system_clock Clock;
 #include <fstream>      // std::ofstream
+#ifdef HAVE_GPERFTOOLS
 #include <gperftools/profiler.h>
+#endif
 
 using namespace Aboria;
 
@@ -352,9 +354,13 @@ public:
         Accumulate<std::plus<double> > sum;
         s.resize_buffer(nodes);
         auto t0 = Clock::now();
+#ifdef HAVE_GPERFTOOLS
         ProfilerStart("multiquadric_aboria");
+#endif
         s[a] += sum(b,true,sqrt(dot(dx,dx)+pow(c[b],2))*s[b]);
+#ifdef HAVE_GPERFTOOLS
         ProfilerStop();
+#endif
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
         return dt.count();
