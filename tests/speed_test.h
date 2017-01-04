@@ -50,6 +50,8 @@ typedef std::chrono::system_clock Clock;
 #include <gperftools/profiler.h>
 #endif
 
+
+
 using namespace Aboria;
 
 
@@ -381,6 +383,7 @@ public:
 
     template <unsigned int Dim>
     double multiquadric_aboria_eigen(const size_t N, const size_t repeats) {
+#ifdef HAVE_EIGEN
         //typedef Vector<double,Dim> double_d;
         typedef double double_d;
         std::cout << "multiquadric_aboria_eigen: N = "<<N<<std::endl;
@@ -443,6 +446,9 @@ public:
         std::chrono::duration<double> dt = t1 - t0;
         std::cout << "time = "<<dt.count()/repeats<<std::endl;
         return dt.count()/repeats;
+#else
+        return 0.0;
+#endif
     }
 
     template <unsigned int Dim>
@@ -496,6 +502,8 @@ public:
         std::chrono::duration<double> dt = t1 - t0;
         std::cout << "time = "<<dt.count()/repeats<<std::endl;
         return dt.count()/repeats;
+#else
+        return 0.0;
 #endif
     }
 
@@ -511,11 +519,15 @@ public:
         for (double i = 2; i < 50; i *= 1.05) {
             const size_t N = i;
             file << std::setw(15) << std::pow(N,2);
+#ifdef HAVE_OPENMP
             omp_set_num_threads(1);
+#endif
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
+#ifdef HAVE_OPENMP
             omp_set_num_threads(4);
+#endif
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
