@@ -83,7 +83,6 @@ if (Aboria_COVERAGE)
 endif()
 
 include_directories(src)
-include_directories(libmorton)
 include_directories(SYSTEM ${CXXTEST_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS})
 
 enable_testing()

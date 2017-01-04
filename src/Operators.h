@@ -49,9 +49,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unsupported/Eigen/IterativeSolvers>
 #endif
 
-#include "morton.h"
-
-
 namespace Aboria {
 #ifdef HAVE_EIGEN
     template <unsigned int NI, unsigned int NJ, typename Blocks> 
