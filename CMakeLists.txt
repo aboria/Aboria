@@ -15,7 +15,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -std=c++11")
 #set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} "-Wno-deprecated -std=c++11"")
 
-option(Aboria_USE_OPENMP "Use OpenMP for shared memory parallism" ON)
+option(Aboria_USE_OPENMP "Use OpenMP for shared memory parallism" OFF)
 if (Aboria_USE_OPENMP)
     find_package(OpenMP REQUIRED)
     add_definitions(-DHAVE_OPENMP)
