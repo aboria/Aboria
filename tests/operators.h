@@ -100,6 +100,8 @@ public:
 
 
         auto C = create_eigen_operator(a,b, s1[a] + s2[b], norm(dx) < diameter);
+        
+
         v << 1, 2, 3;
         ans = C*v;
         
@@ -117,6 +119,20 @@ public:
             TS_ASSERT_EQUALS(ans[i],sum); 
         }
 
+        Eigen::MatrixXd C_copy(n,n);
+        Eigen::VectorXd ans_copy(n);
+        C.assemble(C_copy);
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                TS_ASSERT_EQUALS(C_copy(i,j),C.coeff(i,j)); 
+            }
+        }
+
+        ans_copy = C_copy*v;
+        
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
 
 #endif // HAVE_EIGEN
     }
@@ -185,6 +201,21 @@ public:
         TS_ASSERT_DELTA(ans[1],6.2,std::numeric_limits<double>::epsilon()); 
         TS_ASSERT_DELTA(ans[2],9.3,std::numeric_limits<double>::epsilon()); 
         TS_ASSERT_DELTA(ans[3],0.6,std::numeric_limits<double>::epsilon()); 
+
+        Eigen::MatrixXd Full_copy(n+1,n+1);
+        Eigen::VectorXd ans_copy(n+1);
+        Full.assemble(Full_copy);
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                TS_ASSERT_EQUALS(Full_copy(i,j),Full.coeff(i,j)); 
+            }
+        }
+
+        ans_copy = Full_copy*v;
+        
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
 
 #endif // HAVE_EIGEN
     }

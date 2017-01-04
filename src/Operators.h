@@ -226,6 +226,8 @@ namespace Aboria {
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) const {
                 
+                ASSERT(i>=0, "i less than zero");
+                ASSERT(j>=0, "j less than zero");
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
                 //to the stored constants, and if I want this to be const
                 expr_type expr = tuple_ns::get<2>(block);
@@ -237,8 +239,11 @@ namespace Aboria {
                     typedef typename particles_b_type::double_d double_d;
                     typedef typename particles_b_type::position position;
 
+
                     const particles_a_type& a = tuple_ns::get<0>(block);
                     const particles_b_type& b = tuple_ns::get<1>(block);
+                    ASSERT(i < a.size(),"i greater than a.size()");
+                    ASSERT(j < b.size(),"j greater than b.size()");
                     typename particles_a_type::const_reference ai = a[i];
                     typename particles_b_type::const_reference bj = b[j];
                     const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
@@ -331,14 +336,18 @@ namespace Aboria {
             template<std::size_t... I>
             Scalar coeff_impl(const Index i, const Index j, detail::index_sequence<I...>) const {
                 return detail::sum(
-                        ((i>=start_row<I>())&&(i<start_row<I+1>()))?
-                            (coeff_impl_block(i,j,tuple_ns::get<I*NJ>(m_blocks))):
+                        ((i>=start_row<I/NJ>())&&(i<start_row<I/NJ+1>())
+                         &&
+                         (j>=start_col<I%NJ>())&&(j<start_col<I%NJ+1>()))?
+                            (coeff_impl_block(i-start_row<I/NJ>(),
+                                              j-start_col<I%NJ>(),
+                                              tuple_ns::get<I>(m_blocks))):
                             (0.0)...
                         );
             }
 
             Scalar coeff(const Index i, const Index j) const {
-                return coeff_impl(i,j,detail::make_index_sequence<NI>());
+                return coeff_impl(i,j,detail::make_index_sequence<NI*NJ>());
             }
 
             template<typename Rhs>
