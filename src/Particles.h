@@ -416,12 +416,13 @@ public:
 
     double_d correct_dx_for_periodicity(const double_d& uncorrected_dx) const {
         double_d dx = uncorrected_dx;
-        double_d domain_width = get_max()-get_min();
+        //double_d domain_width = get_max()-get_min();
         const bool_d& periodic = get_periodic();
         for (size_t d=0; d<traits_type::dimension; ++d) {
             if (periodic[d]) {
-                while (dx[d] > domain_width[d]/2) dx[d] -= domain_width[d];
-                while (dx[d] <= -domain_width[d]/2) dx[d] += domain_width[d];
+                const double domain_width = get_max()[d]-get_min()[d];
+                while (dx[d] > domain_width/2) dx[d] -= domain_width;
+                while (dx[d] <= -domain_width/2) dx[d] += domain_width;
             }
         }
         return dx;

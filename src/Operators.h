@@ -49,6 +49,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <unsupported/Eigen/IterativeSolvers>
 #endif
 
+#include "morton.h"
+
 
 namespace Aboria {
 #ifdef HAVE_EIGEN
@@ -347,6 +349,19 @@ namespace Aboria {
                 return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
             }
 
+            template<typename Derived>
+            void assemble(Eigen::DenseBase<Derived>& matrix) {
+                const size_t na = rows();
+                const size_t nb = cols();
+                matrix.resize(na,nb);
+                CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
+                for (size_t i=0; i<na; ++i) {
+                    for (size_t j=0; j<nb; ++j) {
+                        matrix(i,j) = coeff(i,j);
+                    }
+                }
+            }
+
             class InnerIterator {
             public:
                 typedef const Scalar* pointer;
@@ -453,20 +468,37 @@ namespace Aboria {
 
         if (is_trivially_true(if_expr)) {
             //std::cout << "dense a x b block" <<std::endl;
-            for (size_t i=0; i<na; ++i) {
-                typename particles_a_type::const_reference ai = a[i];
-                double sum = 0;
-                for (size_t j=0; j<nb; ++j) {
-                    typename particles_b_type::const_reference bj = b[j];
-                    const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                    //std::cout << "a = "<<get<position>(ai)<<" b = "<<get<position>(bj)<<std::endl;
-                    //std::cout << "using dx = "<<dx<<" rhs(j) = "<<rhs(j)<<" eval = "<<eval(expr,dx,ai,bj)<<std::endl;
-                    sum += eval(expr,dx,ai,bj)*rhs(j);
+            ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+            
+            const size_t parallel_size = 20;
+            const size_t block_size = 20;
+            if (na > parallel_size) {
+                #pragma omp parallel for
+                for (size_t i=0; i<na; ++i) {
+                    typename particles_a_type::const_reference ai = a[i];
+                    double sum = 0;
+                    for (size_t j=0; j<na; ++j) {
+                        typename particles_b_type::const_reference bj = b[j];
+                        sum += eval(expr,get<position>(bj)-get<position>(ai),ai,bj)*rhs(j);
+                    }
+                    y(i) += sum;
                 }
-                y(i) += sum;
+            } else {
+                for (size_t i=0; i<na; ++i) {
+                    typename particles_a_type::const_reference ai = a[i];
+                    double sum = 0;
+                    for (size_t j=0; j<na; ++j) {
+                        typename particles_b_type::const_reference bj = b[j];
+                        //std::cout << "a = "<<get<position>(ai)<<" b = "<<get<position>(bj)<<std::endl;
+                        //std::cout << "using dx = "<<dx<<" rhs(j) = "<<rhs(j)<<" eval = "<<eval(expr,dx,ai,bj)<<std::endl;
+                        sum += eval(expr,get<position>(bj)-get<position>(ai),ai,bj)*rhs(j);
+                    }
+                    y(i) += sum;
+                }
             }
         } else {
             //std::cout << "sparse a x b block" <<std::endl;
+            #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 typename particles_a_type::const_reference ai = a[i];
                 double sum = 0;

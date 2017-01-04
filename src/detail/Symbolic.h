@@ -690,6 +690,7 @@ namespace Aboria {
 
 
 
+                ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
                 const size_t nb = particlesb.size();
                 for (size_t i=0; i<nb; ++i) {
                     typename particles_b_type::const_reference bi = particlesb[i];
@@ -697,7 +698,7 @@ namespace Aboria {
                     auto new_labels = fusion::make_map<label_a_type,label_b_type>(
                                         ai,bi);
 
-                    const double_d dx = particlesb.correct_dx_for_periodicity(get<position>(bi)-get<position>(ai));
+                    const double_d dx = get<position>(bi)-get<position>(ai);
 
 
                     EvalCtx<decltype(new_labels),fusion::list<const double_d &>> const new_ctx(
@@ -1136,7 +1137,9 @@ namespace Aboria {
                     ParticlesType& particles = mlabel.get_particles();
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
 
-                    for (int i=0; i<particles.size(); i++) {
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
                         get<VariableType>(particles[i]) = buffer[i];	
                     }
                 }
@@ -1181,7 +1184,9 @@ namespace Aboria {
                     std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
                     buffer.resize(particles.size());
 
-                    for (int i=0; i<particles.size(); i++) {
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (int i=0; i<n; i++) {
                         EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
                         buffer[i] = proto::eval(expr,ctx);
                     }
@@ -1197,7 +1202,9 @@ namespace Aboria {
                         mpl::true_) const {
                     ParticlesType& particles = mlabel.get_particles();
 
-                    for (int i=0; i<particles.size(); i++) {
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
                         EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
 
                         get<VariableType>(particles)[i] = proto::eval(expr,ctx);
@@ -1208,46 +1215,168 @@ namespace Aboria {
                     return *this;
                 }
 
+                template< typename ExprRHS>
+                const SymbolicExpr &increment(ExprRHS const & expr,
+                        mpl::false_) const {
+                    typedef typename VariableType::value_type value_type;
 
-                #define DO_THE_OP(name,the_op) \
-                template< typename ExprRHS > \
-                const SymbolicExpr & name (ExprRHS const & expr, \
-                                            mpl::false_) const \
-                {                                                \
-                    typedef typename VariableType::value_type value_type; \
-                    const ParticlesType& particles = mlabel.get_particles(); \
-                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles); \
-                    buffer.resize(particles.size()); \
-                    for (int i=0; i<particles.size(); i++) { \
-                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i])); \
-                        buffer[i] = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
-                    } \
-                    copy_from_buffer(); \
-                    post(); \
-                    return *this; \
-                } \
-                template< typename ExprRHS > \
-                const SymbolicExpr & name (ExprRHS const & expr, \
-                                            mpl::true_) const \
-                {                                                \
-                    ParticlesType& particles = mlabel.get_particles(); \
-                    for (int i=0; i<particles.size(); i++) { \
-                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i])); \
-                        get<VariableType>(particles[i]) = get<VariableType>(particles[i]) the_op proto::eval(expr,ctx);	\
-                    } \
-                    post(); \
-                    return *this; \
-                } \
+                    const ParticlesType& particles = mlabel.get_particles();
+                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
+                    buffer.resize(particles.size());
 
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+                        buffer[i] = get<VariableType>(particles[i]) + proto::eval(expr,ctx);
+                    }
 
+                    copy_from_buffer();
+                    post();
 
-                DO_THE_OP(increment,+)
-                DO_THE_OP(multiply,*)
-                DO_THE_OP(divide,/)
-                DO_THE_OP(decrement,-)
-        };
+                    return *this;
+                }
 
-   }
+                template< typename ExprRHS>
+                const SymbolicExpr &increment(ExprRHS const & expr,
+                        mpl::true_) const {
+                    ParticlesType& particles = mlabel.get_particles();
+
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+
+                        get<VariableType>(particles)[i] += proto::eval(expr,ctx);
+                    }
+
+                    post();
+
+                    return *this;
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &decrement(ExprRHS const & expr,
+                        mpl::false_) const {
+                    typedef typename VariableType::value_type value_type;
+
+                    const ParticlesType& particles = mlabel.get_particles();
+                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
+                    buffer.resize(particles.size());
+
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+                        buffer[i] = get<VariableType>(particles[i]) - proto::eval(expr,ctx);
+                    }
+
+                    copy_from_buffer();
+                    post();
+
+                    return *this;
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &decrement(ExprRHS const & expr,
+                        mpl::true_) const {
+                    ParticlesType& particles = mlabel.get_particles();
+
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+
+                        get<VariableType>(particles)[i] -= proto::eval(expr,ctx);
+                    }
+
+                    post();
+
+                    return *this;
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &multiply(ExprRHS const & expr,
+                        mpl::false_) const {
+                    typedef typename VariableType::value_type value_type;
+
+                    const ParticlesType& particles = mlabel.get_particles();
+                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
+                    buffer.resize(particles.size());
+
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+                        buffer[i] = get<VariableType>(particles[i]) * proto::eval(expr,ctx);
+                    }
+
+                    copy_from_buffer();
+                    post();
+
+                    return *this;
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &multiply(ExprRHS const & expr,
+                        mpl::true_) const {
+                    ParticlesType& particles = mlabel.get_particles();
+
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+
+                        get<VariableType>(particles)[i] *= proto::eval(expr,ctx);
+                    }
+
+                    post();
+
+                    return *this;
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &divide(ExprRHS const & expr,
+                        mpl::false_) const {
+                    typedef typename VariableType::value_type value_type;
+
+                    const ParticlesType& particles = mlabel.get_particles();
+                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
+                    buffer.resize(particles.size());
+
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+                        buffer[i] = get<VariableType>(particles[i]) * proto::eval(expr,ctx);
+                    }
+
+                    copy_from_buffer();
+                    post();
+
+                    return *this;
+                }
+
+                template< typename ExprRHS>
+                const SymbolicExpr &divide(ExprRHS const & expr,
+                        mpl::true_) const {
+                    ParticlesType& particles = mlabel.get_particles();
+
+                    const size_t n = particles.size();
+                    #pragma omp parallel for
+                    for (size_t i=0; i<n; i++) {
+                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
+
+                        get<VariableType>(particles)[i] *= proto::eval(expr,ctx);
+                    }
+
+                    post();
+
+                    return *this;
+                }
+            };
+
+    }
 
 }
 

@@ -98,7 +98,13 @@ public:
         Symbol<c> C;
         Label<0,nodes_type> i(nodes);
         auto t0 = Clock::now();
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStart("vector_addition_aboria_level2");
+#endif
         C[i] = A[i] + B[i];
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
         return dt.count();
@@ -305,7 +311,7 @@ public:
         Accumulate<std::plus<double> > sum;
 
         auto A = create_eigen_operator(a,b, 
-                if_else(id_[a]==id_[b],6,-1), norm(dx)<htol );
+                if_else(id_[a]==id_[b],6.0,-1.0), norm(dx)<htol );
 
         auto t0 = Clock::now();
         s += A*s;
@@ -315,32 +321,34 @@ public:
 #endif
     }
 
-    double multiquadric_aboria(const size_t N) {
-        std::cout << "multiquadric_aboria: N = "<<N<<std::endl;
-        ABORIA_VARIABLE(scalar,double,"scalar")
-        ABORIA_VARIABLE(kernel_constant,double,"kernel constant")
 
-    	typedef Particles<std::tuple<scalar,kernel_constant>,3> nodes_type;
-        typedef position_d<3> position;
+    template <unsigned int Dim>
+    double multiquadric_aboria(const size_t N, const size_t repeats) {
+        //typedef Vector<double,Dim> double_d;
+        typedef double double_d;
+        std::cout << "multiquadric_aboria: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(scalar,double_d,"scalar")
+        ABORIA_VARIABLE(kernel_constant,double_d,"kernel constant")
+
+    	typedef Particles<std::tuple<scalar,kernel_constant>,2> nodes_type;
+        typedef position_d<2> position;
        	nodes_type nodes;
 
         const double h = 1.0/N; 
-        double3 min(-h/2);
-        double3 max(1+h/2);
-        double3 periodic(false);
+        double2 min(-h/2);
+        double2 max(1+h/2);
+        double2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
         
-        nodes_type::value_type p;
+        typename nodes_type::value_type p;
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
-                for (size_t k=0; k<N; ++k) {
-                    get<position>(p) = double3(i*h,j*h,k*h);
-                    get<scalar>(p) = 1.5;
-                    get<kernel_constant>(p) = 0.1;
-       	            nodes.push_back(p);
-                }
+                get<position>(p) = double2(i*h,j*h);
+                get<scalar>(p) = double_d(1.5);
+                get<kernel_constant>(p) = double_d(0.1);
+                nodes.push_back(p);
             }
         }
 
@@ -354,46 +362,52 @@ public:
         Accumulate<std::plus<double> > sum;
         s.resize_buffer(nodes);
         auto t0 = Clock::now();
+        s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b])*s[b]);
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("multiquadric_aboria");
 #endif
-        s[a] += sum(b,true,sqrt(dot(dx,dx)+pow(c[b],2))*s[b]);
+        for (int i=0; i<repeats; ++i) {
+            s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b])*s[b]);
+            //s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b]));
+        }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
 #endif
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+        return dt.count()/repeats;
     }
 
-    double multiquadric_aboria_eigen(const size_t N) {
+    template <unsigned int Dim>
+    double multiquadric_aboria_eigen(const size_t N, const size_t repeats) {
+        //typedef Vector<double,Dim> double_d;
+        typedef double double_d;
         std::cout << "multiquadric_aboria_eigen: N = "<<N<<std::endl;
-        ABORIA_VARIABLE(scalar,double,"scalar")
-        ABORIA_VARIABLE(kernel_constant,double,"kernel constant")
+        ABORIA_VARIABLE(scalar,double_d,"scalar")
+        ABORIA_VARIABLE(kernel_constant,double_d,"kernel constant")
 
-    	typedef Particles<std::tuple<scalar,kernel_constant>,3> nodes_type;
-        typedef position_d<3> position;
+    	typedef Particles<std::tuple<scalar,kernel_constant>,2> nodes_type;
+        typedef position_d<2> position;
        	nodes_type nodes;
 
         const double h = 1.0/N; 
-        double3 min(-h/2);
-        double3 max(1+h/2);
-        double3 periodic(false);
+        double2 min(-h/2);
+        double2 max(1+h/2);
+        double2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
-        Eigen::VectorXd s(N*N*N);
+        Eigen::Matrix<double_d,Eigen::Dynamic,1> s(N*N);
         
-        nodes_type::value_type p;
+        typename nodes_type::value_type p;
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
-                for (size_t k=0; k<N; ++k) {
-                    const size_t index = i*N*N + j*N + k;
-                    get<position>(p) = double3(i*h,j*h,k*h);
-                    s[index] = 1.5;
-                    get<kernel_constant>(p) = 0.1;
-       	            nodes.push_back(p);
-                }
+                const size_t index = i*N + j;
+                get<position>(p) = double2(i*h,j*h);
+                s[index] = double_d(1.5);
+                get<kernel_constant>(p) = double_d(0.1);
+                nodes.push_back(p);
             }
         }
 
@@ -406,75 +420,106 @@ public:
         Accumulate<std::plus<double> > sum;
 
         auto A = create_eigen_operator(a,b, 
-                sqrt(dot(dx,dx)+pow(c[b],2))
+                c[b]
+                //sqrt(dot(dx,dx)+c[b]*c[b])
                 );
 
-        auto t0 = Clock::now();
         s += A*s;
+        auto t0 = Clock::now();
+#ifdef HAVE_GPERFTOOLS
+        if (omp_get_max_threads() > 1) {
+            ProfilerStart("multiquadric_aboria_eigen_parallel");
+        } else {
+            ProfilerStart("multiquadric_aboria_eigen_serial");
+        }
+#endif
+        for (int i=0; i<repeats; ++i) {
+            s += A*s;
+        }
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+        return dt.count()/repeats;
     }
 
-    double multiquadric_eigen(const size_t N) {
+    template <unsigned int Dim>
+    double multiquadric_eigen(const size_t N, const size_t repeats) {
+        //typedef Vector<double,Dim> double_d;
+        typedef double double_d;
 #ifdef HAVE_EIGEN
-        std::cout << "multiquadric_eigen: N = "<<N<<std::endl;
+        std::cout << "multiquadric_eigen: N = "<<N<<" with "<<Eigen::nbThreads()<<" threads"<<std::endl;
 
         const double h = 1.0/N; 
-        double3 min(-h/2);
-        double3 max(1+h/2);
-        double3 periodic(false);
+        double2 min(-h/2);
+        double2 max(1+h/2);
+        double2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
-        const size_t N3 = N*N*N;
-        Eigen::VectorXd s(N3);
-        Eigen::MatrixXd A(N3,N3);
+        const size_t N2 = N*N;
+        Eigen::Matrix<double_d,Eigen::Dynamic,1> s(N2);
+        Eigen::Matrix<double_d,Eigen::Dynamic,1> c(N2);
+        Eigen::Matrix<double_d,Eigen::Dynamic,Eigen::Dynamic> A(N2,N2);
+
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                const size_t index = i*N + j;
+                s[index] = double_d(0.1);
+                c[index] = double_d(1.0);
+            }
+        }
+         
         
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
-                for (size_t k=0; k<N; ++k) {
-                    const size_t index = i*N*N + j*N + k;
-                    const double3 r = double3(i*h,j*h,k*h);
-                    const double c = 1.5;
-                    for (size_t ii=0; ii<N; ++ii) {
-                        for (size_t jj=0; jj<N; ++jj) {
-                            for (size_t kk=0; kk<N; ++kk) {
-                                const double3 r2 = double3(ii*h,jj*h,kk*h);
-                                const double3 dx = r2-r;
-                                const size_t index2 = ii*N*N + jj*N + kk;
-                                A(index,index2) = std::sqrt(dx.dot(dx)+std::pow(c,2));
-                            }
-                        }
+                const size_t index = i*N + j;
+                const double2 r = double2(i*h,j*h);
+                for (size_t ii=0; ii<N; ++ii) {
+                    for (size_t jj=0; jj<N; ++jj) {
+                        const double2 r2 = double2(ii*h,jj*h);
+                        const double2 dx = r2-r;
+                        const size_t index2 = ii*N + jj;
+                        A(index,index2) = std::sqrt(dx.dot(dx)+c[index2]*c[index2]);
                     }
-                    s[index] = 0.1;
                 }
             }
         }
 
         auto t0 = Clock::now();
-        s += A*s;
+        for (int i=0; i<repeats; ++i) {
+            s += A*s;
+        }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+        return dt.count()/repeats;
 #endif
     }
 
 
     void test_multiquadric() {
         std::ofstream file;
+        const size_t repeats = 10;
         file.open("multiquadric.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria" 
              << std::setw(15) << "aboria_eigen" 
              << std::setw(15) << "eigen" << std::endl;
-        for (int i = 2; i < 25; ++i) {
+        for (double i = 2; i < 50; i *= 1.05) {
             const size_t N = i;
-            file << std::setw(15) << std::pow(N,6)
-                 << std::setw(15) << std::pow(N,6)/multiquadric_aboria(N)
-                 << std::setw(15) << std::pow(N,6)/multiquadric_aboria_eigen(N)
-                 << std::setw(15) << std::pow(N,6)/multiquadric_eigen(N)
-                 << std::endl;
+            file << std::setw(15) << std::pow(N,2);
+            omp_set_num_threads(1);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
+            omp_set_num_threads(4);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
+            file << std::endl;
         }
         file.close();
     }

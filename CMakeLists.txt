@@ -11,8 +11,16 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
 
 
 #list(APPEND CMAKE_CXX_FLAGS "-Wno-deprecated -std=c++11 -ftemplate-backtrace-limit=0")
-list(APPEND CMAKE_CXX_FLAGS "-Wno-deprecated -std=c++11")
-list(APPEND CMAKE_SHARED_LINKER_FLAGS "-Wl,--no-undefined")
+
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wno-deprecated -std=c++11")
+#set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} "-Wno-deprecated -std=c++11"")
+
+option(Aboria_USE_OPENMP "Use OpenMP for shared memory parallism" ON)
+if (Aboria_USE_OPENMP)
+    find_package(OpenMP REQUIRED)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+endif()
 
 find_package(Boost 1.50.0 REQUIRED)
 
@@ -75,6 +83,7 @@ if (Aboria_COVERAGE)
 endif()
 
 include_directories(src)
+include_directories(libmorton)
 include_directories(SYSTEM ${CXXTEST_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS})
 
 enable_testing()
