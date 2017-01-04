@@ -37,7 +37,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef SPEED_TEST_H_
 #define SPEED_TEST_H_
 
-
 #include <cxxtest/TestSuite.h>
 #ifdef HAVE_EIGEN
 #include <Eigen/Core>
@@ -49,8 +48,6 @@ typedef std::chrono::system_clock Clock;
 #ifdef HAVE_GPERFTOOLS
 #include <gperftools/profiler.h>
 #endif
-
-
 
 using namespace Aboria;
 

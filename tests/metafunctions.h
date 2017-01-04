@@ -91,6 +91,7 @@ public:
     	typedef Particles<std::tuple<scalar>> ParticlesType;
     	ParticlesType particles;
         Symbol<scalar> s;
+        Symbol<id> id_;
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
         auto dx = create_dx(a,b);
@@ -98,6 +99,12 @@ public:
 
         static_assert(proto::matches<decltype(norm(dx)<3),detail::range_if_expr>::value,
                 "norm(dx)<3 does not match range_if_expr");
+
+        static_assert(proto::matches<decltype(id_[a] != id_[b] && norm(dx)<3),detail::range_if_expr>::value,
+                "id_[a] != id_b[] && norm(dx)<3 does not match range_if_expr");
+
+        static_assert(proto::matches<decltype(norm(dx)<3 && id_[a] != id_[b]),detail::range_if_expr>::value,
+                "norm(dx)<3 && id_[a] != id_b[] does not match range_if_expr");
 
         static_assert(proto::matches<decltype(norm(dx)<=3),detail::range_if_expr>::value,
                 "norm(dx)<=3 does not match range_if_expr");

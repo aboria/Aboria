@@ -468,6 +468,8 @@ namespace Aboria {
                 , proto::less_equal<norm_dx,SymbolicGrammar>
                 , proto::greater<SymbolicGrammar,norm_dx>
                 , proto::greater_equal<SymbolicGrammar,norm_dx>
+                , proto::logical_and<range_if_expr,SymbolicGrammar>
+                , proto::logical_and<SymbolicGrammar,range_if_expr>
                 , proto::nary_expr<_, proto::vararg<range_if_expr> >
             >
         {};
