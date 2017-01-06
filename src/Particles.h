@@ -191,13 +191,20 @@ public:
         seed(time(NULL))
     {}
 
-    /// Contructs an empty container with no searching or id tracking enabled
-    /// \param seed initialises the base random seed for the container
-    Particles(const uint32_t seed):
+    Particles(const size_t size):
         next_id(0),
         searchable(false),
-        seed(seed)
-    {}
+        seed(time(NULL))
+    {
+        traits_type::resize(data,size);         
+        for (int i=0; i<size; ++i) {
+            Aboria::get<alive>(data)[i] = true;
+            Aboria::get<id>(data)[i] = this->next_id++;
+            Aboria::get<random>(data)[i].seed(
+                        seed + uint32_t(Aboria::get<id>(data)[i])
+                    );
+        }
+    }
 
     /// copy-constructor. performs deep copying of all particles
     Particles(const particles_type &other):
@@ -236,10 +243,8 @@ public:
             enforcer(i);
         }
         if (get<alive>(i)) {
-            //Aboria::get<position>(i) = Aboria::get<position>(val);
             Aboria::get<id>(i) = this->next_id++;
             Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
-            //Aboria::get<alive>(i) = true;
             if (searchable && update_neighbour_search) {
                 search.add_points_at_end(begin(),end()-1,end());
             }
@@ -249,6 +254,15 @@ public:
             search.update_iterators(begin(),end());
         }
 
+    }
+
+    void set_seed(const uint32_t value) {
+        seed = value;
+        for (size_t i=0; i<size(); ++i) {
+            Aboria::get<random>(data[i]).seed(
+                        seed + uint32_t(Aboria::get<id>(data[i]))
+                    );
+        }
     }
 
     /// push a new particle with position \p position

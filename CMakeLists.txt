@@ -66,7 +66,11 @@ endif()
 option(Aboria_USE_EIGEN "Use Eigen Linear Algebra library" OFF)
 if (Aboria_USE_EIGEN)
     find_package(Eigen3 REQUIRED)
+    option(Aboria_USE_INTEL_MKL "Use Intel MKL for all supported Eigen ops" OFF)
     add_definitions(-DHAVE_EIGEN)
+    if (Aboria_USE_INTEL_MKL)
+        add_definitions(-DEIGEN_USE_MKL_ALL)
+    endif()
 endif()
 
 #export compiler flags for code completion engines

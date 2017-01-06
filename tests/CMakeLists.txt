@@ -67,6 +67,7 @@ set(SpeedTest
     test_daxpy
     test_finite_difference
     test_multiquadric
+    test_multiquadric_scaling
     )
 
 set(SymbolicTest

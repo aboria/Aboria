@@ -51,7 +51,6 @@ typedef std::chrono::system_clock Clock;
 
 using namespace Aboria;
 
-
 class SpeedTest : public CxxTest::TestSuite {
 public:
     // BLAS Level 1
@@ -331,7 +330,7 @@ public:
 
     	typedef Particles<std::tuple<scalar,kernel_constant>,2> nodes_type;
         typedef position_d<2> position;
-       	nodes_type nodes;
+       	nodes_type nodes(N*N);
 
         const double h = 1.0/N; 
         double2 min(-h/2);
@@ -341,13 +340,12 @@ public:
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
         
-        typename nodes_type::value_type p;
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
-                get<position>(p) = double2(i*h,j*h);
-                get<scalar>(p) = double_d(1.5);
-                get<kernel_constant>(p) = double_d(0.1);
-                nodes.push_back(p);
+                const size_t index = i*N + j;
+                get<position>(nodes)[index] = double2(i*h,j*h);
+                get<scalar>(nodes)[index] = double_d(1.5);
+                get<kernel_constant>(nodes)[index] = double_d(0.1);
             }
         }
 
@@ -360,14 +358,13 @@ public:
         auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
         s.resize_buffer(nodes);
-        auto t0 = Clock::now();
         s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b])*s[b]);
+        auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("multiquadric_aboria");
 #endif
         for (int i=0; i<repeats; ++i) {
             s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b])*s[b]);
-            //s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b]));
         }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
@@ -389,7 +386,7 @@ public:
 
     	typedef Particles<std::tuple<scalar,kernel_constant>,2> nodes_type;
         typedef position_d<2> position;
-       	nodes_type nodes;
+       	nodes_type nodes(N*N);
 
         const double h = 1.0/N; 
         double2 min(-h/2);
@@ -400,14 +397,12 @@ public:
         const double delta_t = 0.1;
         Eigen::Matrix<double_d,Eigen::Dynamic,1> s(N*N);
         
-        typename nodes_type::value_type p;
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 const size_t index = i*N + j;
-                get<position>(p) = double2(i*h,j*h);
+                get<position>(nodes)[index] = double2(i*h,j*h);
                 s[index] = double_d(1.5);
-                get<kernel_constant>(p) = double_d(0.1);
-                nodes.push_back(p);
+                get<kernel_constant>(nodes)[index] = double_d(0.1);
             }
         }
 
@@ -420,8 +415,7 @@ public:
         Accumulate<std::plus<double> > sum;
 
         auto A = create_eigen_operator(a,b, 
-                c[b]
-                //sqrt(dot(dx,dx)+c[b]*c[b])
+                sqrt(dot(dx,dx)+c[b]*c[b])
                 );
 
         s += A*s;
@@ -475,7 +469,6 @@ public:
             }
         }
          
-        
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 const size_t index = i*N + j;
@@ -504,7 +497,6 @@ public:
 #endif
     }
 
-
     void test_multiquadric() {
         std::ofstream file;
         const size_t repeats = 10;
@@ -518,12 +510,18 @@ public:
             file << std::setw(15) << std::pow(N,2);
 #ifdef HAVE_OPENMP
             omp_set_num_threads(1);
+#ifdef HAVE_EIGEN
+            Eigen::setNbThreads(1);
+#endif
 #endif
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
 #ifdef HAVE_OPENMP
             omp_set_num_threads(4);
+#ifdef HAVE_EIGEN
+            Eigen::setNbThreads(4);
+#endif
 #endif
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
@@ -533,6 +531,30 @@ public:
         file.close();
     }
 
+    void test_multiquadric_scaling() {
+#ifdef HAVE_OPENMP
+        std::ofstream file;
+        const size_t repeats = 2;
+        const size_t N = 100;
+        file.open("multiquadric_scaling.csv");
+        file <<"#"<< std::setw(14) << "N" 
+             << std::setw(15) << "aboria" 
+             << std::setw(15) << "aboria_eigen" 
+             << std::setw(15) << "eigen" << std::endl;
+        for (int i = 1; i < omp_get_max_threads(); ++i) {
+            omp_set_num_threads(i);
+#ifdef HAVE_EIGEN
+            Eigen::setNbThreads(i);
+#endif
+            file << std::setw(15) << i;
+            file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
+            file << std::endl;
+        }
+        file.close();
+#endif //HAVE_OPENMP
+    }
 
 
     void test_finite_difference() {

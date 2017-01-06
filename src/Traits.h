@@ -240,7 +240,13 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<std::size_t... I>
     static void clear_impl(data_type& data, detail::index_sequence<I...>) {
-        int dummy[] = { 0, (get_by_index<I>(data.get_tuple()).clear())... };
+        int dummy[] = { 0, (get_by_index<I>(data).clear(),void(),0)... };
+        static_cast<void>(dummy);
+    }
+
+    template<std::size_t... I>
+    static void resize_impl(data_type& data, const size_t new_size, detail::index_sequence<I...>) {
+        int dummy[] = { 0, (get_by_index<I>(data).resize(new_size),void(),0)... };
         static_cast<void>(dummy);
     }
 
@@ -297,6 +303,11 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     template<typename Indices = detail::make_index_sequence<N>>
     static void clear(data_type& data) {
         clear_impl(data, Indices());
+    }
+
+    template<typename Indices = detail::make_index_sequence<N>>
+    static void resize(data_type& data, const size_t new_size) {
+        resize_impl(data, new_size, Indices());
     }
 
     template<typename Indices = detail::make_index_sequence<N>>
