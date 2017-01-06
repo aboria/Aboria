@@ -11,6 +11,7 @@ tests/*
 !tests/*.h
 !tests/*.py
 !tests/*.m
+!tests/*.sh
 examples/bd
 examples/dem
 examples/sph

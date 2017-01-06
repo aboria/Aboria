@@ -45,6 +45,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 typedef std::chrono::system_clock Clock;
 #include <fstream>      // std::ofstream
+#include <thread>
 #ifdef HAVE_GPERFTOOLS
 #include <gperftools/profiler.h>
 #endif
@@ -505,7 +506,7 @@ public:
              << std::setw(15) << "aboria" 
              << std::setw(15) << "aboria_eigen" 
              << std::setw(15) << "eigen" << std::endl;
-        for (double i = 2; i < 50; i *= 1.05) {
+        for (double i = 2; i < 100; i *= 1.05) {
             const size_t N = i;
             file << std::setw(15) << std::pow(N,2);
 #ifdef HAVE_OPENMP
@@ -537,11 +538,13 @@ public:
         const size_t repeats = 2;
         const size_t N = 100;
         file.open("multiquadric_scaling.csv");
+        
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria" 
              << std::setw(15) << "aboria_eigen" 
              << std::setw(15) << "eigen" << std::endl;
-        for (int i = 1; i < omp_get_max_threads(); ++i) {
+        int num_cores  = std::thread::hardware_concurrency();
+        for (int i = 1; i <= num_cores; ++i) {
             omp_set_num_threads(i);
 #ifdef HAVE_EIGEN
             Eigen::setNbThreads(i);
