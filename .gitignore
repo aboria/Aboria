@@ -10,6 +10,7 @@ cmake_install.cmake
 tests/*
 !tests/*.h
 !tests/*.py
+!tests/*.m
 examples/bd
 examples/dem
 examples/sph
