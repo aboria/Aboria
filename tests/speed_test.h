@@ -320,6 +320,70 @@ public:
 #endif
     }
 
+    template <unsigned int Dim>
+    double multiquadric_vector(const size_t N, const size_t repeats) {
+        //typedef Vector<double,Dim> double_d;
+        typedef double double_d;
+        std::cout << "multiquadric_vector: N = "<<N<<std::endl;
+
+        std::vector<double_d> x(N*N);
+        std::vector<double_d> y(N*N);
+        std::vector<double_d> c(N*N);
+        std::vector<double_d> s(N*N);
+        std::vector<double_d> s_buffer(N*N);
+
+        const double h = 1.0/N; 
+        double2 min(-h/2);
+        double2 max(1+h/2);
+        double2 periodic(false);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+        
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                const size_t index = i*N + j;
+                x[index] = i*h;
+                y[index] = j*h;
+                c[index] = double_d(0.1);
+                s[index] = double_d(1.5);
+            }
+        }
+
+        #pragma omp parallel for
+        for (int i = 0; i < N*N; ++i) {
+            for (int j = 0; j < N*N; ++j) {
+                const double dx_x = x[i]-x[j];
+                const double dx_y = y[i]-x[j];
+                s_buffer[i] = std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
+            }
+        }
+        #pragma omp parallel for
+        for (int i = 0; i < N*N; ++i) {
+            s[i] += s_buffer[i];
+        }
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            #pragma omp parallel for
+            for (int i = 0; i < N*N; ++i) {
+                for (int j = 0; j < N*N; ++j) {
+                    const double dx_x = x[i]-x[j];
+                    const double dx_y = y[i]-x[j];
+                    s_buffer[i] = std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
+                }
+            }
+            #pragma omp parallel for
+            for (int i = 0; i < N*N; ++i) {
+                s[i] += s_buffer[i];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+        return dt.count()/repeats;
+    }
+
+
 
     template <unsigned int Dim>
     double multiquadric_aboria(const size_t N, const size_t repeats) {
@@ -518,6 +582,7 @@ public:
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_vector<1>(N,repeats);
 #ifdef HAVE_OPENMP
             omp_set_num_threads(4);
 #ifdef HAVE_EIGEN
@@ -527,6 +592,7 @@ public:
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_vector<1>(N,repeats);
             file << std::endl;
         }
         file.close();
@@ -535,7 +601,7 @@ public:
     void test_multiquadric_scaling() {
 #ifdef HAVE_OPENMP
         std::ofstream file;
-        const size_t repeats = 2;
+        const size_t repeats = 10;
         const size_t N = 100;
         file.open("multiquadric_scaling.csv");
         
@@ -553,6 +619,7 @@ public:
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_aboria_eigen<1>(N,repeats);
             file << std::setw(15) << std::pow(N,4)/multiquadric_eigen<1>(N,repeats);
+            file << std::setw(15) << std::pow(N,4)/multiquadric_vector<1>(N,repeats);
             file << std::endl;
         }
         file.close();
