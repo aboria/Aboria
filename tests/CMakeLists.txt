@@ -131,10 +131,10 @@ set(DiffusionAroundSpheres
     )
 
 aboria_cxx_test(tests tests.cpp ${test_files})
-target_link_libraries(tests ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES})
+target_link_libraries(tests ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBARIES})
 if (Aboria_THRUST_TEST_DEVICE_VECTOR)
     aboria_cxx_test(tests_cuda tests_cuda.cu ${test_files})
-    target_link_libraries(tests_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} )
+    target_link_libraries(tests_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBARIES})
 endif()
 
 foreach(test_suite ${test_suites})
