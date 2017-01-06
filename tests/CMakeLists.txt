@@ -21,46 +21,46 @@ endif()
     set_target_properties(${target} PROPERTIES COMPILE_FLAGS "-Wno-effc++")
 endmacro(aboria_cxx_test)
 
-set(test_files
-    operators.h
-    constructors.h 
-    variables.h
-    particle_container.h
-    neighbours.h
-    diffusion_around_spheres.h
-    symbolic.h
-    rbf_pde.h
-    rbf_interpolation.h
-    metafunctions.h
-    dem.h
-    sph.h
-    bd.h
-    md.h
-    linear_algebra_compare.h
-    speed_test.h
-    )
+option(Aboria_RUN_TESTS "run main test suite with ctest" ON)
+if (Aboria_RUN_TESTS)
+    set(test_files
+        operators.h
+        constructors.h
+        variables.h
+        particle_container.h
+        neighbours.h
+        diffusion_around_spheres.h
+        symbolic.h
+        rbf_pde.h
+        rbf_interpolation.h
+        metafunctions.h
+        dem.h
+        sph.h
+        bd.h
+        md.h
+        linear_algebra_compare.h
+        )
+    set(test_suites
+        NeighboursTest
+        BDTest
+        SPHTest
+        MDTest
+        RbfInterpolationTest
+        RbfPdeTest
+        DiffusionAroundSpheres
+        ParticleContainerTest
+        SymbolicTest
+        VariablesTest
+        ConstructorsTest
+        OperatorsTest
+        )
+endif()
 
-set(test_suites
-    NeighboursTest
-    BDTest
-    SPHTest
-    MDTest
-    RbfInterpolationTest 
-    RbfPdeTest 
-    DiffusionAroundSpheres 
-    ParticleContainerTest 
-    SymbolicTest 
-    VariablesTest
-    ConstructorsTest
-    OperatorsTest 
-    SpeedTest
-    )
-
-
-#set(test_files metafunctions.h)
-#set(test_suites )
-#set(test_files speed_test.h)
-#set(test_suites SpeedTest)
+option(Aboria_RUN_BENCHMARKS "run benchmarks during testing" OFF)
+if (Aboria_RUN_BENCHMARKS)
+    set(test_files ${test_files} speed_test.h)
+    set(test_suites ${test_suites} SpeedTest)
+endif()
 
 set(SpeedTest 
     test_vector_addition
