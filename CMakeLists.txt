@@ -23,6 +23,7 @@ if (Aboria_USE_OPENMP)
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 endif()
 
+
 find_package(Boost 1.50.0 REQUIRED)
 
 option(Aboria_USE_VTK "Use VTK library" OFF)
@@ -72,7 +73,7 @@ if (Aboria_USE_EIGEN)
         set(BLA_VENDOR Intel10_64lp)
         find_package(BLAS REQUIRED)
         set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
-        set(Aboria_LIBRARIES "${Aboria_LIBRARIES} ${BLAS_LIBRARIES}")
+        list(APPEND Aboria_LIBRARIES "${BLAS_LIBRARIES}")
         add_definitions(-DEIGEN_USE_MKL_ALL)
     endif()
 endif()

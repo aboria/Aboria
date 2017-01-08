@@ -58,6 +58,13 @@ endif()
 
 option(Aboria_RUN_BENCHMARKS "run benchmarks during testing" OFF)
 if (Aboria_RUN_BENCHMARKS)
+    find_package(GROMACS)
+    if (GROMACS_FOUND)
+        add_definitions(-DHAVE_GROMACS)
+        list(APPEND Aboria_LIBRARIES "${GROMACS_LIBRARIES}")
+        include_directories(${GROMACS_INCLUDE_DIRS})
+        #note, for ubuntu had to modify /usr/share/gromacs/cmake/gromacs/libgromacs.cmake
+    endif()
     set(test_files ${test_files} speed_test.h)
     set(test_suites ${test_suites} SpeedTest)
 endif()
@@ -68,6 +75,7 @@ set(SpeedTest
     test_finite_difference
     test_multiquadric
     test_multiquadric_scaling
+    test_linear_spring
     )
 
 set(SymbolicTest
@@ -131,10 +139,10 @@ set(DiffusionAroundSpheres
     )
 
 aboria_cxx_test(tests tests.cpp ${test_files})
-target_link_libraries(tests ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBARIES})
+target_link_libraries(tests ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
 if (Aboria_THRUST_TEST_DEVICE_VECTOR)
     aboria_cxx_test(tests_cuda tests_cuda.cu ${test_files})
-    target_link_libraries(tests_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBARIES})
+    target_link_libraries(tests_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBRARIES})
 endif()
 
 foreach(test_suite ${test_suites})

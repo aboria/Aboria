@@ -50,6 +50,13 @@ typedef std::chrono::system_clock Clock;
 #include <gperftools/profiler.h>
 #endif
 
+#ifdef HAVE_GROMACS
+#include <gromacs/selection/nbsearch.h>
+#include <gromacs/pbcutil/pbc.h>
+
+#endif
+
+
 using namespace Aboria;
 
 class SpeedTest : public CxxTest::TestSuite {
@@ -562,6 +569,173 @@ public:
 #endif
     }
 
+    double linear_spring_aboria(const size_t N, const double radius, const size_t repeats) {
+        std::cout << "linear_spring_aboria: N = "<<N<<std::endl;
+
+        ABORIA_VARIABLE(results,double3,"results")
+    	typedef Particles<std::tuple<results>,3> nodes_type;
+        typedef position_d<3> position;
+       	nodes_type nodes(N*N*N);
+
+        const double h = 1.0/N; 
+        double3 min(-h/2);
+        double3 max(1+h/2);
+        double3 periodic(false);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+        
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                for (size_t k=0; k<N; ++k) {
+                    const size_t index = i*N*N + j*N + k;
+                    get<position>(nodes)[index] = double3(i*h,j*h,k*h);
+                }
+            }
+        }
+
+        nodes.init_neighbour_search(min,max,2*radius,periodic);
+
+        Symbol<position> r;
+        Symbol<results> dr;
+        Label<0,nodes_type> a(nodes);
+        Label<1,nodes_type> b(nodes);
+        auto dx = create_dx(a,b);
+        Accumulate<std::plus<double3> > sum;
+
+        dr[a] = sum(b,norm(dx)<2*radius,(2*radius-norm(dx))/norm(dx)*dx);
+        auto t0 = Clock::now();
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStart("linear_spring_aboria");
+#endif
+        for (int i=0; i<repeats; ++i) {
+            dr[a] = sum(b,norm(dx)<2*radius,(2*radius-norm(dx))/norm(dx)*dx);
+        }
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+        return dt.count()/repeats;
+    }
+
+    double linear_spring_gromacs(const size_t N, const double radius, const size_t repeats) {
+#ifdef HAVE_GROMACS
+        std::cout << "linear_spring_gromacs: N = "<<N<<std::endl;
+
+    	typedef Particles<std::tuple<>,2> nodes_type;
+        typedef position_d<2> position;
+       	nodes_type nodes(N*N*N);
+
+        const double h = 1.0/N; 
+        double2 min(-h/2);
+        double2 max(1+h/2);
+        double2 periodic(false);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+
+        std::vector<gmx::RVec> positions(N*N*N);
+        std::vector<gmx::RVec> results(N*N*N);
+        
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                for (size_t k=0; k<N; ++k) {
+                    const size_t index = i*N*N + j*N + k;
+                    positions[index][0] = i*h;
+                    positions[index][1] = j*h;
+                    positions[index][2] = k*h;
+                }
+            }
+        }
+
+        t_pbc pbc;
+        matrix box;
+        // not sure on format of box, but since using epbcNONE I
+        // think I can ignore it
+        set_pbc(&pbc, epbcNONE, box);
+        gmx::AnalysisNeighborhoodPositions analysis_positions(positions);
+        gmx::AnalysisNeighborhood neighborhood;
+        neighborhood.setCutoff(2*radius);
+        //neighborhood.setMode(gmx::eSearchMode_Grid)
+        gmx::AnalysisNeighborhoodSearch nbsearch = neighborhood.initSearch(&pbc,analysis_positions);
+
+        for (int a=0; a<N*N*N; ++a) {
+            results[a][0] = 0;
+            results[a][1] = 0;
+            results[a][2] = 0;
+        }
+        gmx::AnalysisNeighborhoodPairSearch pairSearch = nbsearch.startPairSearch(analysis_positions);
+        gmx::AnalysisNeighborhoodPair pair;
+        while (pairSearch.findNextPair(&pair)) {
+            const double d2 = pair.distance2();
+            ASSERT(d2<=4*radius*radius,"bad search? ");
+            const int a = pair.refIndex();
+            const int b = pair.testIndex();
+            const rvec& dx = pair.dx();
+            const double norm_dx = std::sqrt(d2);
+            const double scale = (2*radius-norm_dx)/norm_dx;
+            results[a][0] += scale*dx[0]; 
+            results[a][1] += scale*dx[1]; 
+            results[a][2] += scale*dx[2]; 
+        }
+        
+
+        auto t0 = Clock::now();
+        for (int i=0; i<repeats; ++i) {
+            for (int a=0; a<N*N*N; ++a) {
+                results[a][0] = 0;
+                results[a][1] = 0;
+                results[a][2] = 0;
+            }
+            gmx::AnalysisNeighborhoodPairSearch pairSearch = nbsearch.startPairSearch(analysis_positions);
+            gmx::AnalysisNeighborhoodPair pair;
+            while (pairSearch.findNextPair(&pair)) {
+                const double d2 = pair.distance2();
+                ASSERT(d2<=4*radius*radius,"bad search?");
+                const int a = pair.refIndex();
+                const int b = pair.testIndex();
+                const rvec& dx = pair.dx();
+                const double norm_dx = std::sqrt(d2);
+                const double scale = (2*radius-norm_dx)/norm_dx;
+                results[a][0] += scale*dx[0]; 
+                results[a][1] += scale*dx[1]; 
+                results[a][2] += scale*dx[2]; 
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+        return dt.count()/repeats;
+#else
+        return 0;
+#endif
+    }
+
+    void test_linear_spring() {
+        std::ofstream file;
+        const size_t repeats = 3;
+        for (double radius_div_h = 1.1; radius_div_h < 10; radius_div_h += 1) {
+            char buffer[100];
+            sprintf(buffer,"linear_spring%4.4f.csv",radius_div_h);
+            file.open(buffer);
+            file <<"#"<< std::setw(14) << "N" 
+                << std::setw(15) << "aboria" 
+                << std::setw(15) << "gromacs" << std::endl;
+            for (double i = 2; i < 30; i *= 1.05) {
+                const size_t N = i;
+                const double h = 1.0/N; 
+                const double radius = radius_div_h*h;
+                file << std::setw(15) << std::pow(N,3);
+                file << std::setw(15) << std::pow(N,6)/linear_spring_aboria(N,radius,repeats);
+                file << std::setw(15) << std::pow(N,6)/linear_spring_gromacs(N,radius,repeats);
+                file << std::endl;
+            }
+            file.close();
+        }
+    }
+
     void test_multiquadric() {
         std::ofstream file;
         const size_t repeats = 10;
@@ -681,6 +855,7 @@ public:
         file.close();
 
     }
+
 
 
 
