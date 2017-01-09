@@ -4,6 +4,11 @@ import matplotlib.pyplot as plt
 import numpy as np
 import glob
 import re
+from matplotlib import rc
+rc('font',**{'family':'sans-serif','sans-serif':['Helvetica']})
+rc('text', usetex=True)
+
+
 
 #for filename in ['vector_addition','daxpy','finite_difference','multiquadric','multiquadric_scaling','linear_spring']:
 for filename in ['linear_spring']:
@@ -40,9 +45,9 @@ for filename in ['linear_spring']:
         plt.plot(data_matlab[:,0],data_matlab[:,1]/1e6,label='matlab')
     elif filename in ['linear_spring']:
         for data,radius in zip(datas,radius_div_h):
-            plt.semilogx(data[:,0],data[:,1]/1e6,label='aboria %f'%radius)
-            plt.semilogx(data[:,0],data[:,2]/1e6,linestyle='--',label='gromacs %f'%radius)
-        print 'dummy'
+            plt.loglog(data[:,0],data[:,1]/1e6,label='aboria %f'%radius)
+            plt.loglog(data[:,0],data[:,2]/1e6,linestyle='--',label='gromacs %f'%radius)
+        plt.ylim(10,1e4)
     else:
         plt.semilogx(data[:,0],data[:,1]/1e6,label='aboria')
         plt.semilogx(data[:,0],data[:,2]/1e6,label='aboria_eigen')
@@ -54,8 +59,8 @@ for filename in ['linear_spring']:
     else:
         leg = plt.legend(fancybox=True,loc='upper left')
     leg.get_frame().set_alpha(0.3)
-    plt.xlabel('N')
-    plt.ylabel('MFLOPS')
+    plt.xlabel(r'$N$')
+    plt.ylabel(r'$N_e / T_e$ ($\times 10^6$)')
     plt.tight_layout()
     plt.savefig(filename+'.pdf')
 

@@ -56,6 +56,8 @@ typedef std::chrono::system_clock Clock;
 
 #endif
 
+#include <boost/math/constants/constants.hpp>
+const double PI = boost::math::constants::pi<double>();
 
 using namespace Aboria;
 
@@ -714,17 +716,23 @@ public:
     }
 
     void test_linear_spring() {
+#ifdef HAVE_OPENMP
+            omp_set_num_threads(1);
+#endif
         std::ofstream file;
         const size_t repeats = 3;
-        for (double radius_div_h = 1.1; radius_div_h < 10; radius_div_h += 1) {
+        for (double radius_div_h = 1.1; radius_div_h < 5; radius_div_h += 1) {
             char buffer[100];
             sprintf(buffer,"linear_spring%4.4f.csv",radius_div_h);
             file.open(buffer);
             file <<"#"<< std::setw(14) << "N" 
                 << std::setw(15) << "aboria" 
                 << std::setw(15) << "gromacs" << std::endl;
+
+
             for (double i = 2; i < 30; i *= 1.05) {
                 const size_t N = i;
+                const size_t matrix_size = std::pow(N,3)*(4.0/3.0)*PI*std::pow(radius_div_h,3);
                 const double h = 1.0/N; 
                 const double radius = radius_div_h*h;
                 file << std::setw(15) << std::pow(N,3);
