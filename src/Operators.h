@@ -355,8 +355,68 @@ namespace Aboria {
                 return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
             }
 
+            template <typename particles_a_type, typename particles_b_type,
+                      typename expr_type, typename if_expr_type>
+            void assemble_block_impl(const size_t startI, const size_t startJ,
+                    std::vector<Eigen::Triplet<Scalar>>& triplets, 
+                    const tuple_ns::tuple<
+                            const particles_a_type&,
+                            const particles_b_type&,
+                            expr_type,if_expr_type>& block) const {
+                typedef typename particles_b_type::double_d double_d;
+                typedef typename particles_b_type::position position;
+                const particles_a_type& a = tuple_ns::get<0>(block);
+                const particles_b_type& b = tuple_ns::get<1>(block);
+
+                expr_type expr = tuple_ns::get<2>(block);
+                if_expr_type if_expr = tuple_ns::get<3>(block);
+
+                const size_t na = a.size();
+                const size_t nb = b.size();
+
+                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
+                    //zero a x b block
+                    return;
+                }
+
+                if (is_trivially_true(if_expr)) {
+                    //dense a x b block
+                    ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+
+                    for (size_t i=0; i<na; ++i) {
+                        typename particles_a_type::const_reference ai = a[i];
+                        for (size_t j=0; j<na; ++j) {
+                            typename particles_b_type::const_reference bj = b[j];
+                            triplets.push_back(Eigen::Triplet<Scalar>(i+startI,j+startJ,eval(expr,get<position>(bj)-get<position>(ai),ai,bj)));
+                        }
+                    }
+                } else {
+                    //sparse a x b block
+                    for (size_t i=0; i<na; ++i) {
+                        typename particles_a_type::const_reference ai = a[i];
+                        for (auto pairj: b.get_neighbours(get<position>(ai))) {
+                            const double_d & dx = tuple_ns::get<1>(pairj);
+                            typename particles_b_type::const_reference bj = tuple_ns::get<0>(pairj);
+                            const size_t j = &get<position>(bj) - get<position>(b).data();
+                            if (eval(if_expr,dx,ai,bj)) {
+                                triplets.push_back(Eigen::Triplet<Scalar>(i+startI,j+startJ,eval(expr,dx,ai,bj)));
+                            }
+                        }
+                    }
+                }
+            }
+
+            template<std::size_t... I>
+            void assemble_impl(std::vector<Eigen::Triplet<Scalar>>& triplets, detail::index_sequence<I...>) const {
+                int dummy[] = { 0, (
+                        assemble_block_impl(
+                            start_row<I/NJ>(),start_col<I%NJ>(),
+                            triplets,tuple_ns::get<I>(m_blocks)),void(),0)... };
+                static_cast<void>(dummy);
+            }
+
             template<typename Derived>
-            void assemble(Eigen::DenseBase<Derived>& matrix) {
+            void assemble(Eigen::DenseBase<Derived>& matrix) const {
                 const size_t na = rows();
                 const size_t nb = cols();
                 matrix.resize(na,nb);
@@ -366,6 +426,22 @@ namespace Aboria {
                         matrix(i,j) = coeff(i,j);
                     }
                 }
+            }
+
+            void assemble(Eigen::SparseMatrix<Scalar>& matrix) {
+                const size_t na = rows();
+                const size_t nb = cols();
+                //matrix.resize(na,nb);
+                CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
+
+                typedef Eigen::Triplet<Scalar> triplet_type;
+                std::vector<triplet_type> tripletList;
+                // TODO: can we estimate this better?
+                tripletList.reserve(na*5); 
+
+                assemble_impl(tripletList,detail::make_index_sequence<NI*NJ>());
+
+                matrix.setFromTriplets(tripletList.begin(),tripletList.end());
             }
 
             class InnerIterator {

@@ -134,6 +134,21 @@ public:
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
 
+        Eigen::SparseMatrix<double> C_sparse(n,n);
+        C.assemble(C_sparse);
+        TS_ASSERT_EQUALS(C_sparse.nonZeros(),7);
+        for (int k=0; k<C_sparse.outerSize(); ++k) {
+            for (Eigen::SparseMatrix<double>::InnerIterator it(C_sparse,k); it; ++it) {
+                TS_ASSERT_EQUALS(it.value(),C.coeff(it.row(),it.col())); 
+            }
+        }
+
+        ans_copy = C_sparse*v;
+        
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
+
 #endif // HAVE_EIGEN
     }
 
@@ -216,6 +231,24 @@ public:
         for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
+
+        /*
+         * TODO: need to get rid of ones stuff, so won't bother testing it here
+        Eigen::SparseMatrix<double> Full_sparse(n,n);
+        Full.assemble(Full_sparse);
+        TS_ASSERT_EQUALS(Full_sparse.nonZeros(),7);
+        for (int k=0; k<Full_sparse.outerSize(); ++k) {
+            for (SparseMatrix<double>::InnerIterator it(Full_sparse,k); it; ++it) {
+                TS_ASSERT_EQUALS(it.value(),Full.coeff(it.row(),it.col())); 
+            }
+        }
+
+        ans_copy = Full_sparse*v;
+        
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
+        */
 
 #endif // HAVE_EIGEN
     }
