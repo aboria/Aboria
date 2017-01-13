@@ -20,7 +20,10 @@ matrix:
           env: CMAKE_BUILD_TYPE=Debug Travis_UPDATE_DOC=on
     exclude:
         - compiler: clang
-          env: Aboria_USE_OPENMP=on
+          env: Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
+    exclude:
+        - compiler: clang
+          env: Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
 
 addons:
   apt:
@@ -37,6 +40,10 @@ addons:
     - clang-3.8
       # cant find this package
       #- libomp-dev
+    - doxygen
+    - xsltproc
+    - docbook-xml 
+    - docbook-xsl
     - texlive-latex-base
     - valgrind
 
