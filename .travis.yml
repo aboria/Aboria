@@ -62,6 +62,7 @@ before_install:
 before_script:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
+- "echo \"using gcc : cpp11 : ccache g++-5 : <cflags>-std=c11 <cxxflags>-std=c++11 ;\" > ~/user-config.jam",
 - uname -a
 - printenv
 - clang++ --version 2>&1 | grep clang
@@ -72,6 +73,7 @@ before_script:
 - doxygen --version
 - ls
 - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
+- if [ "$Travis_UPDATE_DOC" == "on" ]; then cp doc/user-config.jam ~; fi
 - git config --global user.email "martinjrobins@gmail.com"
 - git config --global user.name "Martin Robinson"
 - git remote rm origin
