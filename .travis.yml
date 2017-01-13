@@ -18,11 +18,13 @@ matrix:
     include:
         - compiler: gcc
           env: CMAKE_BUILD_TYPE=Debug Travis_UPDATE_DOC=on
+    exclude:
+        - compiler: clang
+          env: Aboria_USE_OPENMP=on
 
 addons:
   apt:
     sources:
-    - debian-sid
     - boost-latest
     - ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.8
@@ -33,7 +35,8 @@ addons:
     - gcc-4.8
     - g++-4.8
     - clang-3.8
-    - libomp-dev
+      # cant find this package
+      #- libomp-dev
     - texlive-latex-base
     - valgrind
 
