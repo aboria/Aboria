@@ -1,46 +1,55 @@
 sudo: false
 language: cpp
 compiler:
-        - gcc
+- gcc
 env:
-    - Aboria_COVERAGE=off CMAKE_BUILD_TYPE=Release
-    - Aboria_COVERAGE=on CMAKE_BUILD_TYPE=Debug
-
+  matrix:
+  - Aboria_COVERAGE=off CMAKE_BUILD_TYPE=Release
+  - Aboria_COVERAGE=on CMAKE_BUILD_TYPE=Debug
+  global:
+    secure: Us0XAC9as4WOpXotIR0dHd8jHt+c2M5KXGOSQmE+gX/o30GMtBE7V/YkzHvbql+t0H+OkfIaBvHxYk30KHqCYiQJJpsbjjvmCLxm/+f+Vuw0J5D6yrYRJBS+6gdflU0lF/M19S1Mjl5u3uf5kLnWli8h8Hw2ZAnzmD+2vxRYO3UHfio1ACLGE3o6tBuyt9scFg0Vrg0f37o6jBdCiWzYyReBnc2bFvZBACR9iTIPdO0hwe27Td0GaPJzxm4yq0gDu6itMGzRMk1XpV79dfA3jZj2xhZqXSam4weAawDzk8J8nb1Tjv3pajuvJVn4HZ/QQIAvq7A4D5/m/mVuV37sAZIdZd4aGt8LYz1f9F0rpFBYckN5BMOttkrHAsw6W4caCexNw2KI+M7Fkubre0EBxb1arQYpOlA5OdGCDYprckffA6JPx6PRO/Dh2bLD2Wok+HtMtLg8Yv8h1oD1FqQvB6T7WDtVnq4sf1VXi2gz6zGAOCVInjCossy5FXGGKEX4QYdCiKVaqpEsmPxfOeQ3X/mlz1z796kYgoUiRSHajsL5ZGi9q+ba5eo0KK6H22GxOq7gU+AahL+rpyiwTX54C05lbR8VhyOx9yVm9AUTr0E3nuUgPmPQypuDlLVuVjTFc0iIScAVymve7M/0n3VSoOFCtXncNWePm9E+sCglm2k=
 addons:
-    apt:
-        sources:
-            - boost-latest
-            - ubuntu-toolchain-r-test
-        packages:
-            - libboost1.55-dev
-            - libeigen3-dev
-            - gcc-4.8
-            - g++-4.8
-            - clang
-            - doxygen
-            - valgrind
-              #- libvtk5-dev
-              #- cxxtest
+  apt:
+    sources:
+    - boost-latest
+    - ubuntu-toolchain-r-test
+    packages:
+    - libboost1.55-dev
+    - libeigen3-dev
+    - gcc-4.8
+    - g++-4.8
+    - clang
+    - doxygen
+    - valgrind
 before_install:
-    - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
-
+- if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
 before_script:
-    - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
-    - uname -a
-    - printenv
-    - clang++ --version 2>&1 | grep clang
-    - g++ --version 2>&1 | grep g++
-    - gcov --version | grep gcov
-    - valgrind --version
-    - grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
-    - doxygen --version
-    - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
-script: 
-    - make
-    - ctest --output-on-failure 
+- if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+- uname -a
+- printenv
+- clang++ --version 2>&1 | grep clang
+- g++ --version 2>&1 | grep g++
+- gcov --version | grep gcov
+- valgrind --version
+- grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
+- doxygen --version
+- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
+- git config --global user.email "martinjrobins@gmail.com"
+- git config --global user.name "Martin Robinson"
+- git remote rm origin
+- git remote add origin https://user:${GH_TOKEN}@github.com/user/repo.git
+script:
+- make
+- ctest --output-on-failure
 after_success:
-    - coveralls -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
+- coveralls -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
+- make generate_doc
+- git checkout gh-pages
+- cp -R doc/html/* .
+- git add *
+- git commit -m "Updated documentation by TravisCI"
+- git push
 notifications:
-    email:
-        recipients:
-            - martinjrobins@gmail.com
+  email:
+    recipients:
+    - martinjrobins@gmail.com
