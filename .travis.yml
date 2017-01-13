@@ -26,6 +26,7 @@ addons:
     - boost-latest
     - ubuntu-toolchain-r-test
     packages:
+    - libopenmpi-dev
     - libboost1.55-dev
     - gcc-4.8
     - g++-4.8
