@@ -27,12 +27,15 @@ addons:
     - llvm-toolchain-precise-3.8
     packages:
     - libopenmpi-dev
-    - libboost1.55-dev
-    - bjam
+    - libboost1.55-all-dev
     - gcc-4.8
     - g++-4.8
     - clang-3.8
+    - xsltproc 
+    - docbook-xsl 
+    - docbook-xml 
     - doxygen
+    - texlive-latex-base
     - valgrind
 
 before_install:
