@@ -359,31 +359,34 @@ public:
             }
         }
 
+        
         #pragma omp parallel for
         for (int i = 0; i < N*N; ++i) {
+            s_buffer[i] = s[i];
             for (int j = 0; j < N*N; ++j) {
-                const double dx_x = x[i]-x[j];
-                const double dx_y = y[i]-x[j];
-                s_buffer[i] = std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
+                const double dx_x = x[j]-x[i];
+                const double dx_y = y[j]-x[i];
+                s_buffer[i] += std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
             }
         }
         #pragma omp parallel for
         for (int i = 0; i < N*N; ++i) {
-            s[i] += s_buffer[i];
+            s[i] = s_buffer[i];
         }
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             #pragma omp parallel for
             for (int i = 0; i < N*N; ++i) {
+                s_buffer[i] = s[i];
                 for (int j = 0; j < N*N; ++j) {
-                    const double dx_x = x[i]-x[j];
-                    const double dx_y = y[i]-x[j];
-                    s_buffer[i] = std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
+                    const double dx_x = x[j]-x[i];
+                    const double dx_y = y[j]-x[i];
+                    s_buffer[i] += std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
                 }
             }
             #pragma omp parallel for
             for (int i = 0; i < N*N; ++i) {
-                s[i] += s_buffer[i];
+                s[i] = s_buffer[i];
             }
         }
         auto t1 = Clock::now();
