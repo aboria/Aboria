@@ -21,7 +21,6 @@ matrix:
         - compiler: gcc
           env: CMAKE_BUILD_TYPE=Release Travis_UPDATE_DOC=on
     # Coverage
-    include:
         - compiler: gcc
           env: CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on Aboria_COVERAGE=on 
     # Exclude openmp from clang cause can't get it to work on travis
@@ -70,7 +69,6 @@ before_script:
 - valgrind --version
 - grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
 - doxygen --version
-- ls
 - if [ "$Travis_UPDATE_DOC" == "on" ]; then cp doc/user-config.jam ~; fi
 - git config --global user.email "martinjrobins@gmail.com"
 - git config --global user.name "Martin Robinson"
