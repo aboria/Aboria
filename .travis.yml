@@ -37,7 +37,8 @@ before_script:
 - valgrind --version
 - grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
 - doxygen --version
-- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
+- ls
+- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
 - git config --global user.email "martinjrobins@gmail.com"
 - git config --global user.name "Martin Robinson"
 - git remote rm origin
