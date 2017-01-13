@@ -21,7 +21,6 @@ matrix:
     exclude:
         - compiler: clang
           env: Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
-    exclude:
         - compiler: clang
           env: Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
 
