@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="../../index.html" title="Aboria 0.2">
-<link rel="up" href="../MatrixReplacement.html#idm45138568888384" title="Description">
+<link rel="up" href="../MatrixReplacement.html#idm45082349206640" title="Description">
 <link rel="prev" href="../MatrixReplacement.html" title="Class template MatrixReplacement">
 <link rel="next" href="../One.html" title="Struct One">
 </head>
@@ -13,7 +13,7 @@
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../MatrixReplacement.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../MatrixReplacement.html#idm45138568888384"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../One.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../MatrixReplacement.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../MatrixReplacement.html#idm45082349206640"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../One.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.MatrixReplacement.InnerIterator"></a><div class="titlepage"></div>
@@ -22,7 +22,7 @@
 <p>Aboria::MatrixReplacement::InnerIterator</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h" title="Header &lt;/home/mrobins/git/Aboria/src/Operators.h&gt;">/home/mrobins/git/Aboria/src/Operators.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s10.html#header..home.mrobins.tmp.Aboria.src.Operators_h" title="Header &lt;/home/mrobins/tmp/Aboria/src/Operators.h&gt;">/home/mrobins/tmp/Aboria/src/Operators.h</a>&gt;
 
 </span>
 
@@ -36,53 +36,53 @@
   <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>            <a name="Aboria.MatrixReplacement.InnerIterator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>  
 
   <span class="comment">// <a class="link" href="InnerIterator.html#Aboria.MatrixReplacement.InnerIteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="InnerIterator.html#idm45113688524960-bb"><span class="identifier">InnerIterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">MatrixReplacement</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Index</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="InnerIterator.html#idm45113688523280-bb"><span class="identifier">InnerIterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="InnerIterator.html#idm45227995740944-bb"><span class="identifier">InnerIterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">MatrixReplacement</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Index</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="InnerIterator.html#idm45227995739264-bb"><span class="identifier">InnerIterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="InnerIterator.html#idm45113688541776-bb">public member functions</a></span>
-  <span class="identifier">Scalar</span> <a class="link" href="InnerIterator.html#idm45113688541216-bb"><span class="identifier">value</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">Index</span> <a class="link" href="InnerIterator.html#idm45113688540096-bb"><span class="identifier">index</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="InnerIterator.html#idm45113688538976-bb"><span class="keyword">operator</span> <span class="keyword">bool</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="InnerIterator.html#idm45113688537856-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">InnerIterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">value_type</span> <a class="link" href="InnerIterator.html#idm45113688536048-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="InnerIterator.html#idm45113688534928-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="InnerIterator.html#idm45113688534080-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="InnerIterator.html#idm45113688533232-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> <a class="link" href="InnerIterator.html#idm45113688532384-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">InnerIterator</span> <a class="link" href="InnerIterator.html#idm45113688531536-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="InnerIterator.html#idm45113688530000-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><span class="identifier">InnerIterator</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="InnerIterator.html#idm45113688528192-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="InnerIterator.html#idm45113688526656-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="InnerIterator.html#idm45227995757760-bb">public member functions</a></span>
+  <span class="identifier">Scalar</span> <a class="link" href="InnerIterator.html#idm45227995757200-bb"><span class="identifier">value</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">Index</span> <a class="link" href="InnerIterator.html#idm45227995756080-bb"><span class="identifier">index</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="InnerIterator.html#idm45227995754960-bb"><span class="keyword">operator</span> <span class="keyword">bool</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="InnerIterator.html#idm45227995753840-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">InnerIterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">Scalar</span> <a class="link" href="InnerIterator.html#idm45227995752032-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="InnerIterator.html#idm45227995750912-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">Scalar</span> <a class="link" href="InnerIterator.html#idm45227995750064-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">Scalar</span> <a class="link" href="InnerIterator.html#idm45227995749216-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> <a class="link" href="InnerIterator.html#idm45227995748368-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">InnerIterator</span> <a class="link" href="InnerIterator.html#idm45227995747520-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="InnerIterator.html#idm45227995745984-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><span class="identifier">InnerIterator</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="InnerIterator.html#idm45227995744176-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="InnerIterator.html#idm45227995742640-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45138568544528"></a><h2>Description</h2>
+<a name="idm45082348797136"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45138568544112"></a><h3>
+<a name="idm45082348796720"></a><h3>
 <a name="Aboria.MatrixReplacement.InnerIteratorconstruct-copy-destruct"></a><code class="computeroutput">InnerIterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idm45113688524960-bb"></a><span class="identifier">InnerIterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">MatrixReplacement</span> <span class="special">&amp;</span> mat<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Index</span> row<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a name="idm45113688523280-bb"></a><span class="identifier">InnerIterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45227995740944-bb"></a><span class="identifier">InnerIterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">MatrixReplacement</span> <span class="special">&amp;</span> mat<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Index</span> row<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45227995739264-bb"></a><span class="identifier">InnerIterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45138568528176"></a><h3>
-<a name="idm45113688541776-bb"></a><code class="computeroutput">InnerIterator</code> public member functions</h3>
+<a name="idm45082348780784"></a><h3>
+<a name="idm45227995757760-bb"></a><code class="computeroutput">InnerIterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">Scalar</span> <a name="idm45113688541216-bb"></a><span class="identifier">value</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">Index</span> <a name="idm45113688540096-bb"></a><span class="identifier">index</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a name="idm45113688538976-bb"></a><span class="keyword">operator</span> <span class="keyword">bool</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45113688537856-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="identifier">InnerIterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">value_type</span> <a name="idm45113688536048-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45113688534928-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45113688534080-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45113688533232-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">InnerIterator</span> <span class="special">&amp;</span> <a name="idm45113688532384-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">InnerIterator</span> <a name="idm45113688531536-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idm45113688530000-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span><span class="identifier">InnerIterator</span> start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45113688528192-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45113688526656-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">Scalar</span> <a name="idm45227995757200-bb"></a><span class="identifier">value</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">Index</span> <a name="idm45227995756080-bb"></a><span class="identifier">index</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45227995754960-bb"></a><span class="keyword">operator</span> <span class="keyword">bool</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45227995753840-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="identifier">InnerIterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">Scalar</span> <a name="idm45227995752032-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45227995750912-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">Scalar</span> <a name="idm45227995750064-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">Scalar</span> <a name="idm45227995749216-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">InnerIterator</span> <span class="special">&amp;</span> <a name="idm45227995748368-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">InnerIterator</span> <a name="idm45227995747520-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idm45227995745984-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span><span class="identifier">InnerIterator</span> start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45227995744176-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45227995742640-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">InnerIterator</span> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -93,7 +93,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../MatrixReplacement.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../MatrixReplacement.html#idm45138568888384"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../One.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../MatrixReplacement.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../MatrixReplacement.html#idm45082349206640"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../One.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

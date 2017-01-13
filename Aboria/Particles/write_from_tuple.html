@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="../../index.html" title="Aboria 0.2">
-<link rel="up" href="../Particles.html#idm45138567511408" title="Description">
+<link rel="up" href="../Particles.html#idm45082347676768" title="Description">
 <link rel="prev" href="setup_datas_for_writing.html" title="Struct setup_datas_for_writing">
 <link rel="next" href="../Accumulate.html" title="Struct template Accumulate">
 </head>
@@ -13,7 +13,7 @@
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="setup_datas_for_writing.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45138567511408"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../Accumulate.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="setup_datas_for_writing.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45082347676768"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../Accumulate.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.Particles.write_from_tuple"></a><div class="titlepage"></div>
@@ -22,7 +22,7 @@
 <p>Aboria::Particles::write_from_tuple</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s10.html#header..home.mrobins.git.Aboria.src.Particles_h" title="Header &lt;/home/mrobins/git/Aboria/src/Particles.h&gt;">/home/mrobins/git/Aboria/src/Particles.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s10.html#header..home.mrobins.tmp.Aboria.src.Particles_h" title="Header &lt;/home/mrobins/tmp/Aboria/src/Particles.h&gt;">/home/mrobins/tmp/Aboria/src/Particles.h</a>&gt;
 
 </span>
 
@@ -32,19 +32,19 @@
   <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span><span class="special">::</span><span class="identifier">value</span><span class="special">,</span> <span class="identifier">tuple_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a name="Aboria.Particles.write_from_tuple.non_ref_tuple_element"></a><span class="identifier">non_ref_tuple_element</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="write_from_tuple.html#Aboria.Particles.write_from_tupleconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="write_from_tuple.html#idm45113688290352-bb"><span class="identifier">write_from_tuple</span></a><span class="special">(</span><span class="identifier">tuple_type</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> 
+  <a class="link" href="write_from_tuple.html#idm45227995466976-bb"><span class="identifier">write_from_tuple</span></a><span class="special">(</span><span class="identifier">tuple_type</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> 
                    <span class="keyword">const</span> <span class="identifier">uint32_t</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="write_from_tuple.html#idm45113688298416-bb">public member functions</a></span>
+  <span class="comment">// <a class="link" href="write_from_tuple.html#idm45227995475024-bb">public member functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
     <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_arithmetic</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="write_from_tuple.html#idm45113688297856-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="write_from_tuple.html#idm45227995474464-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
-    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">double_d</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="write_from_tuple.html#idm45113688295408-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+    <a class="link" href="write_from_tuple.html#idm45227995472016-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
     <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">generator_type</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="write_from_tuple.html#idm45113688292960-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="write_from_tuple.html#idm45227995469584-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="identifier">tuple_type</span> <span class="identifier">write_from</span><span class="special">;</span>
@@ -53,29 +53,29 @@
   <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> <span class="identifier">datas</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45138566780112"></a><h2>Description</h2>
+<a name="idm45082346875904"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45138566779696"></a><h3>
+<a name="idm45082346875488"></a><h3>
 <a name="Aboria.Particles.write_from_tupleconstruct-copy-destruct"></a><code class="computeroutput">write_from_tuple</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idm45113688290352-bb"></a><span class="identifier">write_from_tuple</span><span class="special">(</span><span class="identifier">tuple_type</span> write_from<span class="special">,</span> <span class="keyword">int</span> index<span class="special">,</span> 
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idm45227995466976-bb"></a><span class="identifier">write_from_tuple</span><span class="special">(</span><span class="identifier">tuple_type</span> write_from<span class="special">,</span> <span class="keyword">int</span> index<span class="special">,</span> 
                  <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> datas<span class="special">,</span> 
                  <span class="keyword">const</span> <span class="identifier">uint32_t</span> <span class="special">&amp;</span> seed<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45138566764880"></a><h3>
-<a name="idm45113688298416-bb"></a><code class="computeroutput">write_from_tuple</code> public member functions</h3>
+<a name="idm45082346860800"></a><h3>
+<a name="idm45227995475024-bb"></a><code class="computeroutput">write_from_tuple</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
   <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_arithmetic</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idm45113688297856-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <a name="idm45227995474464-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
-  <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">double_d</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idm45113688295408-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+  <a name="idm45227995472016-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
   <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">generator_type</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idm45113688292960-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <a name="idm45227995469584-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -86,7 +86,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="setup_datas_for_writing.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45138567511408"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../Accumulate.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="setup_datas_for_writing.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45082347676768"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../Accumulate.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

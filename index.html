@@ -35,8 +35,8 @@
       new particles</a></span></dt>
 <dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.multidimensional_data_types">Multidimensional
       Data Types</a></span></dt>
-<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.particle_objects">Particle
-      Objects</a></span></dt>
+<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.accessing_particle_variables">Accessing
+      Particle Variables</a></span></dt>
 <dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.looping_through_the_container">Looping
       through the container</a></span></dt>
 <dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.internal_data_for_variables">Internal
@@ -69,10 +69,12 @@
 </dl></dd>
 <dt><span class="section"><a href="aboria/examples.html">Examples</a></span></dt>
 <dd><dl>
+<dt><span class="section"><a href="aboria/examples.html#aboria.examples.molecular_dynamics_linear_spring">Molecular
+      Dynamics (Linear Spring) (MD)</a></span></dt>
 <dt><span class="section"><a href="aboria/examples.html#aboria.examples.brownian_dynamics_bd">Brownian Dynamics
       (BD)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.molecular_dynamics_md_discrete_e">Molecular
-      Dynamics (MD) / Discrete Element Model (DEM)</a></span></dt>
+<dt><span class="section"><a href="aboria/examples.html#aboria.examples.discrete_element_model_dem">Discrete
+      Element Model (DEM)</a></span></dt>
 <dt><span class="section"><a href="aboria/examples.html#aboria.examples.smoothed_particle_hydrodynamics_">Smoothed
       Particle Hydrodynamics (SPH)</a></span></dt>
 <dt><span class="section"><a href="aboria/examples.html#aboria.examples.radial_basis_function_rbf_interp">Radial
@@ -83,18 +85,18 @@
 <dt><span class="section"><a href="aboria/api_overview.html">API Overview</a></span></dt>
 <dt><span class="section"><a href="index/s10.html">Reference</a></span></dt>
 <dd><dl>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Assemble_h">Header &lt;/home/mrobins/git/Aboria/src/Assemble.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.BucketSearchParallel_h">Header &lt;/home/mrobins/git/Aboria/src/BucketSearchParallel.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.DataVector_h">Header &lt;/home/mrobins/git/Aboria/src/DataVector.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Functions_h">Header &lt;/home/mrobins/git/Aboria/src/Functions.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Get_h">Header &lt;/home/mrobins/git/Aboria/src/Get.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Log_h">Header &lt;/home/mrobins/git/Aboria/src/Log.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h">Header &lt;/home/mrobins/git/Aboria/src/Operators.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Particles_h">Header &lt;/home/mrobins/git/Aboria/src/Particles.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Symbolic_h">Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Traits_h">Header &lt;/home/mrobins/git/Aboria/src/Traits.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Variable_h">Header &lt;/home/mrobins/git/Aboria/src/Variable.h&gt;</a></span></dt>
-<dt><span class="section"><a href="index/s10.html#header..home.mrobins.git.Aboria.src.Vector_h">Header &lt;/home/mrobins/git/Aboria/src/Vector.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Assemble_h">Header &lt;/home/mrobins/tmp/Aboria/src/Assemble.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.BucketSearchParallel_h">Header &lt;/home/mrobins/tmp/Aboria/src/BucketSearchParallel.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.DataVector_h">Header &lt;/home/mrobins/tmp/Aboria/src/DataVector.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Functions_h">Header &lt;/home/mrobins/tmp/Aboria/src/Functions.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Get_h">Header &lt;/home/mrobins/tmp/Aboria/src/Get.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Log_h">Header &lt;/home/mrobins/tmp/Aboria/src/Log.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Operators_h">Header &lt;/home/mrobins/tmp/Aboria/src/Operators.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Particles_h">Header &lt;/home/mrobins/tmp/Aboria/src/Particles.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Symbolic_h">Header &lt;/home/mrobins/tmp/Aboria/src/Symbolic.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Traits_h">Header &lt;/home/mrobins/tmp/Aboria/src/Traits.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Variable_h">Header &lt;/home/mrobins/tmp/Aboria/src/Variable.h&gt;</a></span></dt>
+<dt><span class="section"><a href="index/s10.html#header..home.mrobins.tmp.Aboria.src.Vector_h">Header &lt;/home/mrobins/tmp/Aboria/src/Vector.h&gt;</a></span></dt>
 </dl></dd>
 </dl>
 </div>
@@ -128,7 +130,7 @@
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
-<td align="left"><p><small>Last revised: July 22, 2016 at 08:57:02 GMT</small></p></td>
+<td align="left"><p><small>Last revised: January 13, 2017 at 05:56:31 GMT</small></p></td>
 <td align="right"><div class="copyright-footer"></div></td>
 </tr></table>
 <hr>

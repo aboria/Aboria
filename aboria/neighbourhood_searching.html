@@ -30,7 +30,7 @@
     </p>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45113688213184-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45227995399328-bb">Aboria::Particles::init_neighbour_search</a></code>
       function
     </p>
 <pre class="programlisting"><span class="identifier">double2</span> <span class="identifier">min</span><span class="special">(-</span><span class="number">1</span><span class="special">,-</span><span class="number">1</span><span class="special">);</span>
@@ -66,7 +66,7 @@
 <p>
       1. The found particle object 2. $dx$, a vector pointing to the query point
       from the found point. I.e. if $x_a$ is the query point and $x_b$ is the found
-      point, then $dx = x_a - x_b$.
+      point, then $dx = x_b - x_a$.
     </p>
 <p>
       The latter is useful for periodic domains, the returned vector $dx$ takes periodic

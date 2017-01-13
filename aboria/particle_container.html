@@ -24,8 +24,8 @@
       new particles</a></span></dt>
 <dt><span class="section"><a href="particle_container.html#aboria.particle_container.multidimensional_data_types">Multidimensional
       Data Types</a></span></dt>
-<dt><span class="section"><a href="particle_container.html#aboria.particle_container.particle_objects">Particle
-      Objects</a></span></dt>
+<dt><span class="section"><a href="particle_container.html#aboria.particle_container.accessing_particle_variables">Accessing
+      Particle Variables</a></span></dt>
 <dt><span class="section"><a href="particle_container.html#aboria.particle_container.looping_through_the_container">Looping
       through the container</a></span></dt>
 <dt><span class="section"><a href="particle_container.html#aboria.particle_container.internal_data_for_variables">Internal
@@ -54,8 +54,15 @@
 <span class="identifier">MyParticles</span> <span class="identifier">particles</span><span class="special">();</span>
 </pre>
 <p>
+        You can set the dimension of the container by using an optional unsigned
+        integer template argument (defaults to 3). For example, if you wanted a container
+        of particles in 2D space, you would use
+      </p>
+<pre class="programlisting"><span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;,</span><span class="number">2</span><span class="special">&gt;</span> <span class="identifier">particles</span><span class="special">();</span>
+</pre>
+<p>
         If you wanted each particle to have a potential variable held as a <code class="computeroutput"><span class="keyword">double</span></code>, as well as a velocity variable held
-        as a <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.double3">Aboria::double3</a></code> vector
+        as a <code class="computeroutput">Aboria::double3</code> vector
         class, then you would write the following
       </p>
 <pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">potential</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"potential energy"</span><span class="special">)</span>
@@ -105,14 +112,14 @@
         There are a number of predefined <code class="computeroutput"><span class="keyword">double</span></code>,
         <code class="computeroutput"><span class="keyword">int</span></code>, and <code class="computeroutput"><span class="keyword">bool</span></code>
         vector types, up to dimension 7, and typedefed by the pattern &lt;type&gt;&lt;dim&gt;.
-        E.g. <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.double3">Aboria::double3</a></code>, <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.double6">Aboria::double6</a></code>, <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.int2">Aboria::int2</a></code>,
-        <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.bool5">Aboria::bool5</a></code>...
+        E.g. <code class="computeroutput">Aboria::double3</code>, <code class="computeroutput">Aboria::double6</code>, <code class="computeroutput">Aboria::int2</code>,
+        <code class="computeroutput">Aboria::bool5</code>...
       </p>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
-<a name="aboria.particle_container.particle_objects"></a><a class="link" href="particle_container.html#aboria.particle_container.particle_objects" title="Particle Objects">Particle
-      Objects</a>
+<a name="aboria.particle_container.accessing_particle_variables"></a><a class="link" href="particle_container.html#aboria.particle_container.accessing_particle_variables" title="Accessing Particle Variables">Accessing
+      Particle Variables</a>
 </h3></div></div></div>
 <p>
         The <code class="computeroutput"><span class="identifier">value_type</span></code> of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Particles</a></code> container is a data-structure
@@ -122,7 +129,7 @@
         to access the position (where <code class="computeroutput"><span class="identifier">D</span></code>
         is the dimension of the particle object), <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;()</span></code> for the id and <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;()</span></code> for the alive flag.
       </p>
-<pre class="programlisting"><span class="identifier">MyParticle</span><span class="special">&amp;</span> <span class="identifier">particle</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">[</span><span class="number">0</span><span class="special">];</span>
+<pre class="programlisting"><span class="identifier">MyParticles</span><span class="special">::</span><span class="identifier">reference</span> <span class="identifier">particle</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">[</span><span class="number">0</span><span class="special">];</span>
 <span class="keyword">typedef</span> <span class="identifier">double_d</span><span class="special">&lt;</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">position</span><span class="special">;</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span><span class="string">"Position = "</span><span class="special">&lt;&lt;</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)</span> <span class="special">&lt;&lt;</span>
    <span class="string">". Id = "</span><span class="special">&lt;&lt;</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)&lt;&lt;</span> <span class="string">". Particle is "</span><span class="special">;</span>
@@ -132,6 +139,11 @@
    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"dead. "</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
+<p>
+        Note that if you don't know the dimension of the container you can get it
+        from the container type (e.g. <code class="computeroutput"><span class="identifier">MyParticles</span></code>)
+        by using the subtype <code class="computeroutput"><span class="identifier">MyParticles</span><span class="special">::</span><span class="identifier">position</span></code>.
+      </p>
 <p>
         You can access the data by templating the <code class="computeroutput"><span class="identifier">get</span></code>
         function with the variable type, for example
@@ -187,7 +199,7 @@
         for example a <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.iterator">Aboria::Particles::iterator</a></code>
         or <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_iterator">Aboria::Particles::const_iterator</a></code>,
         then you can obtain the corresponding iterator to the internal <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>
-        by using the <code class="computeroutput"><a class="link" href="../Aboria/get_idm45113688569616.html" title="Function template get">Aboria::get</a></code> function.
+        by using the <code class="computeroutput"><a class="link" href="../Aboria/get_idm45227995798560.html" title="Function template get">Aboria::get</a></code> function.
         For example,
       </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">size_t</span><span class="special">&gt;::</span><span class="identifier">iterator</span><span class="special">&amp;</span> <span class="identifier">ids</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">());</span>
@@ -255,15 +267,16 @@
       </p>
 <p>
         2. Additional member functions are available to suit the specific purpose
-        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45113688254208-bb">Aboria::Particles::push_back</a></code>
-        function can take a vector data-type for the particle position, and the [Aboria::Particle::get_neighbours]
+        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45227995443024-bb">Aboria::Particles::push_back</a></code>
+        function can take a vector data-type for the particle position, and the
+        <code class="computeroutput">Aboria::Particle::get_neighbours</code>
         function for neighbour searching.
       </p>
 <p>
         3. When using the neighbourhood searching capabilities of the container,
         the order of the particles in the particle container might change due to
         internal sorting for neighbourhood searching efficiency. So do not assume
-        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45113688254208-bb">push_back</a></code>
+        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45227995443024-bb">push_back</a></code>
         member function can reorder the particles if neighbourhood searching is turned
         on.
       </p>
