@@ -24,6 +24,7 @@ addons:
     sources:
     - boost-latest
     - ubuntu-toolchain-r-test
+    - llvm-toolchain-precise-3.6
     packages:
     - libopenmpi-dev
     - libboost1.55-dev
@@ -39,6 +40,7 @@ before_install:
 
 before_script:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+- if [ "$CXX" = "clang++" ]; then export CXX="clang++-4.6" CC="clang-4.6"; fi
 - uname -a
 - printenv
 - clang++ --version 2>&1 | grep clang
