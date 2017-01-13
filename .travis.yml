@@ -2,17 +2,14 @@ sudo: false
 language: cpp
 compiler:
     - gcc
+    - clang
 env:
   matrix:
-    - CMAKE_BUILD_TYPE=Release
-    - CMAKE_BUILD_TYPE=Debug
-    - Aboria_USE_EIGEN=on
-    - Aboria_USE_EIGEN=off
-    - Aboria_USE_OPENMP=on
-    - Aboria_USE_OPENMP=off
-    - Aboria_COVERAGE=off 
-    - Aboria_COVERAGE=on
-    - Travis_UPDATE_DOC=off
+    - Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
+    - Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
+    - Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
+    - CMAKE_BUILD_TYPE=Debug Aboria_COVERAGE=on Aboria_USE_EIGEN=on Aboria_USE_OPENMP=on
+    - CMAKE_BUILD_TYPE=Debug Travis_UPDATE_DOC=on
   global:
     secure: Us0XAC9as4WOpXotIR0dHd8jHt+c2M5KXGOSQmE+gX/o30GMtBE7V/YkzHvbql+t0H+OkfIaBvHxYk30KHqCYiQJJpsbjjvmCLxm/+f+Vuw0J5D6yrYRJBS+6gdflU0lF/M19S1Mjl5u3uf5kLnWli8h8Hw2ZAnzmD+2vxRYO3UHfio1ACLGE3o6tBuyt9scFg0Vrg0f37o6jBdCiWzYyReBnc2bFvZBACR9iTIPdO0hwe27Td0GaPJzxm4yq0gDu6itMGzRMk1XpV79dfA3jZj2xhZqXSam4weAawDzk8J8nb1Tjv3pajuvJVn4HZ/QQIAvq7A4D5/m/mVuV37sAZIdZd4aGt8LYz1f9F0rpFBYckN5BMOttkrHAsw6W4caCexNw2KI+M7Fkubre0EBxb1arQYpOlA5OdGCDYprckffA6JPx6PRO/Dh2bLD2Wok+HtMtLg8Yv8h1oD1FqQvB6T7WDtVnq4sf1VXi2gz6zGAOCVInjCossy5FXGGKEX4QYdCiKVaqpEsmPxfOeQ3X/mlz1z796kYgoUiRSHajsL5ZGi9q+ba5eo0KK6H22GxOq7gU+AahL+rpyiwTX54C05lbR8VhyOx9yVm9AUTr0E3nuUgPmPQypuDlLVuVjTFc0iIScAVymve7M/0n3VSoOFCtXncNWePm9E+sCglm2k=
 addons:
@@ -22,7 +19,6 @@ addons:
     - ubuntu-toolchain-r-test
     packages:
     - libboost1.55-dev
-    - libeigen3-dev
     - gcc-4.8
     - g++-4.8
     - clang
@@ -30,6 +26,7 @@ addons:
     - valgrind
 before_install:
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
+- if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .; fi
 before_script:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
 - uname -a
@@ -50,7 +47,6 @@ script:
 - ctest --output-on-failure
 after_success:
 - coveralls -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'
-- make generate_doc
 - if [ "$Travis_UPDATE_DOC" == "on" ]; then source update_doc.sh
 notifications:
   email:
