@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../../index.html" title="Aboria 0.2">
-<link rel="up" href="../Particles.html#idp45944091040992" title="Description">
+<link rel="up" href="../Particles.html#idp46842765973920" title="Description">
 <link rel="prev" href="../Particles.html" title="Class template Particles">
 <link rel="next" href="setup_datas_for_reading.html" title="Struct setup_datas_for_reading">
 </head>
@@ -13,7 +13,7 @@
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../Particles.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idp45944091040992"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="setup_datas_for_reading.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../Particles.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idp46842765973920"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="setup_datas_for_reading.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.Particles.read_into_tuple"></a><div class="titlepage"></div>
@@ -32,18 +32,18 @@
   <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span><span class="special">::</span><span class="identifier">value</span><span class="special">,</span> <span class="identifier">tuple_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a name="Aboria.Particles.read_into_tuple.non_ref_tuple_element"></a><span class="identifier">non_ref_tuple_element</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="read_into_tuple.html#Aboria.Particles.read_into_tupleconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="read_into_tuple.html#idp47358432026688-bb"><span class="identifier">read_into_tuple</span></a><span class="special">(</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="read_into_tuple.html#idp47879346105264-bb"><span class="identifier">read_into_tuple</span></a><span class="special">(</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="read_into_tuple.html#idp47358432018624-bb">public member functions</a></span>
+  <span class="comment">// <a class="link" href="read_into_tuple.html#idp47879346097200-bb">public member functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
     <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_arithmetic</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="read_into_tuple.html#idp47358432019024-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="read_into_tuple.html#idp47879346097600-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
     <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="read_into_tuple.html#idp47358432021584-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="read_into_tuple.html#idp47879346100160-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
     <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">generator_type</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="read_into_tuple.html#idp47358432024128-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="read_into_tuple.html#idp47879346102704-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="identifier">tuple_type</span> <span class="identifier">read_into</span><span class="special">;</span>
@@ -51,28 +51,28 @@
   <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> <span class="identifier">datas</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp45944091477296"></a><h2>Description</h2>
+<a name="idp46842766409984"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp45944091477712"></a><h3>
+<a name="idp46842766410400"></a><h3>
 <a name="Aboria.Particles.read_into_tupleconstruct-copy-destruct"></a><code class="computeroutput">read_into_tuple</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47358432026688-bb"></a><span class="identifier">read_into_tuple</span><span class="special">(</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> read_into<span class="special">,</span> <span class="keyword">int</span> index<span class="special">,</span> 
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47879346105264-bb"></a><span class="identifier">read_into_tuple</span><span class="special">(</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> read_into<span class="special">,</span> <span class="keyword">int</span> index<span class="special">,</span> 
                 <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> datas<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp45944091490304"></a><h3>
-<a name="idp47358432018624-bb"></a><code class="computeroutput">read_into_tuple</code> public member functions</h3>
+<a name="idp46842766423104"></a><h3>
+<a name="idp47879346097200-bb"></a><code class="computeroutput">read_into_tuple</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
   <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_arithmetic</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idp47358432019024-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <a name="idp47879346097600-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
   <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idp47358432021584-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <a name="idp47879346100160-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
   <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">generator_type</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idp47358432024128-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <a name="idp47879346102704-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -83,7 +83,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../Particles.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idp45944091040992"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="setup_datas_for_reading.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../Particles.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idp46842765973920"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="setup_datas_for_reading.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
