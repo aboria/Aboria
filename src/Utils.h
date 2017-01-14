@@ -46,6 +46,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/math/constants/constants.hpp>
 #include "Aboria.h"
 
+#include <random>
+
 namespace Aboria {
 
     /*
