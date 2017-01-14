@@ -23,23 +23,6 @@ endmacro(aboria_cxx_test)
 
 option(Aboria_RUN_TESTS "run main test suite with ctest" ON)
 if (Aboria_RUN_TESTS)
-    set(test_files
-        operators.h
-        constructors.h
-        variables.h
-        particle_container.h
-        neighbours.h
-        diffusion_around_spheres.h
-        symbolic.h
-        rbf_pde.h
-        rbf_interpolation.h
-        metafunctions.h
-        dem.h
-        sph.h
-        bd.h
-        md.h
-        linear_algebra_compare.h
-        )
     set(test_suites
         NeighboursTest
         BDTest
@@ -65,10 +48,10 @@ if (Aboria_RUN_BENCHMARKS)
         include_directories(${GROMACS_INCLUDE_DIRS})
         #note, for ubuntu had to modify /usr/share/gromacs/cmake/gromacs/libgromacs.cmake
     endif()
-    set(test_files ${test_files} speed_test.h)
     set(test_suites ${test_suites} SpeedTest)
 endif()
 
+set(SpeedTestFile speed_test.h)
 set(SpeedTest 
     test_vector_addition
     test_daxpy
@@ -78,18 +61,23 @@ set(SpeedTest
     test_linear_spring
     )
 
+
+set(SymbolicTestFile symbolic.h)
 set(SymbolicTest
     test_default
     )
 
+set(VariablesTestFile variables.h)
 set(VariablesTest
     test_std_vector
     )
 
+set(OperatorsTestFile operators.h)
 set(OperatorsTest
     test_Eigen
     )
 
+set(ConstructorsTestFile constructors.h)
 set(ConstructorsTest
     test_std_vector
     )
@@ -98,60 +86,71 @@ set(ConstructorsTestCuda
     test_thrust_vector
     )
 
+set(NeighboursTestFile neighbours.h)
 set(NeighboursTest
     test_std_vector_bucket_search_serial
     test_std_vector_bucket_search_parallel
     )
 
+set(ParticleContainerTestFile particle_container.h)
 set(ParticleContainerTest 
     test_std_vector_bucket_search_serial
     test_std_vector_bucket_search_parallel
     )
 
+set(BDTestFile bd.h)
 set(BDTest
     test_bucket_search_serial
     test_bucket_search_parallel
     )
 
+set(SPHTestFile sph.h)
 set(SPHTest
     test_bucket_search_serial
     test_bucket_search_parallel
     )
  
+set(MDTestFile md.h)
 set(MDTest
     test_bucket_search_serial
     test_bucket_search_parallel
     )
  
+set(RbfInterpolationTestFile rbf_interpolation.h)
 set(RbfInterpolationTest 
     test_bucket_search_serial
     test_bucket_search_parallel
     )
     
+set(RbfPdeTestFile rbf_pde.h)
 set(RbfPdeTest 
     test_bucket_search_serial
     test_bucket_search_parallel
     )
 
+set(DiffusionAroundSpheresFile diffusion_around_spheres.h)
 set(DiffusionAroundSpheres 
     test_bucket_search_serial
     test_bucket_search_parallel
     )
 
-aboria_cxx_test(tests tests.cpp ${test_files})
-target_link_libraries(tests ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
-if (Aboria_THRUST_TEST_DEVICE_VECTOR)
-    aboria_cxx_test(tests_cuda tests_cuda.cu ${test_files})
-    target_link_libraries(tests_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBRARIES})
-endif()
 
 foreach(test_suite ${test_suites})
+
+    aboria_cxx_test(${test_suite} ${test_suite}.cpp ${${test_suite}File})
+    target_link_libraries(${test_suite} ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
+    if (Aboria_THRUST_TEST_DEVICE_VECTOR)
+        #aboria_cxx_test(tests_cuda tests_cuda.cu ${test_files})
+        aboria_cxx_test(${test_suite}_cuda ${test_suite}.cu ${${test_suite}File})
+        target_link_libraries(${test_suite}_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBRARIES})
+    endif()
+
     foreach(test_name ${${test_suite}})
-        add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/tests ${test_suite} ${test_name})
+        add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
     endforeach()
     foreach(test_name ${${test_suite}Cuda})
         if (Aboria_THRUST_TEST_DEVICE_VECTOR)
-            add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/tests ${test_suite} ${test_name})
+            add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite}_cuda ${test_suite} ${test_name})
         endif()
     endforeach()
 endforeach()

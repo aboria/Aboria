@@ -9,29 +9,31 @@ compiler:
     - clang
 env:
     matrix:
+        # default options
         - CMAKE_BUILD_TYPE=Release
         - CMAKE_BUILD_TYPE=Debug 
         # turn on all options
         - Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
+        - Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Debug
     global:
         - secure: Us0XAC9as4WOpXotIR0dHd8jHt+c2M5KXGOSQmE+gX/o30GMtBE7V/YkzHvbql+t0H+OkfIaBvHxYk30KHqCYiQJJpsbjjvmCLxm/+f+Vuw0J5D6yrYRJBS+6gdflU0lF/M19S1Mjl5u3uf5kLnWli8h8Hw2ZAnzmD+2vxRYO3UHfio1ACLGE3o6tBuyt9scFg0Vrg0f37o6jBdCiWzYyReBnc2bFvZBACR9iTIPdO0hwe27Td0GaPJzxm4yq0gDu6itMGzRMk1XpV79dfA3jZj2xhZqXSam4weAawDzk8J8nb1Tjv3pajuvJVn4HZ/QQIAvq7A4D5/m/mVuV37sAZIdZd4aGt8LYz1f9F0rpFBYckN5BMOttkrHAsw6W4caCexNw2KI+M7Fkubre0EBxb1arQYpOlA5OdGCDYprckffA6JPx6PRO/Dh2bLD2Wok+HtMtLg8Yv8h1oD1FqQvB6T7WDtVnq4sf1VXi2gz6zGAOCVInjCossy5FXGGKEX4QYdCiKVaqpEsmPxfOeQ3X/mlz1z796kYgoUiRSHajsL5ZGi9q+ba5eo0KK6H22GxOq7gU+AahL+rpyiwTX54C05lbR8VhyOx9yVm9AUTr0E3nuUgPmPQypuDlLVuVjTFc0iIScAVymve7M/0n3VSoOFCtXncNWePm9E+sCglm2k=
 
 matrix:
-    # Documentation
     include:
+        # Documentation
         - compiler: gcc
-          env: CMAKE_BUILD_TYPE=Release Travis_UPDATE_DOC=on
-    # Coverage
+          env: Travis_UPDATE_DOC=on CMAKE_BUILD_TYPE=Release 
+        # Coverage
         - compiler: gcc
-          env: CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on Aboria_COVERAGE=on 
-    # Exclude openmp from clang cause can't get it to work on travis
+          env: Aboria_COVERAGE=on CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on  
     exclude:
+        # Exclude openmp from clang cause can't get it to work on travis
         - compiler: clang
           env: Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
         - compiler: clang
           env: Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
         - compiler: clang
-          env: CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on Aboria_USE_OPENMP=on
+          env: Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Debug
 
 addons:
   apt:
@@ -72,7 +74,7 @@ before_script:
 - git config --global user.email "martinjrobins@gmail.com"
 - git config --global user.name "Martin Robinson"
 - git remote rm origin
-- git remote add origin https://user:${GH_TOKEN}@github.com/user/repo.git
+- git remote add origin https://martinjrobins:${GH_TOKEN}@github.com/martinjrobins/Aboria.git
 
 script:
 - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
