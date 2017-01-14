@@ -1,0 +1,100 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class const_iterator</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../../index.html" title="Aboria 0.2">
+<link rel="up" href="../BucketSearch.html#idm45334004322320" title="Description">
+<link rel="prev" href="../BucketSearch.html" title="Class template BucketSearch">
+<link rel="next" href="point_to_bucket_index.html" title="Struct point_to_bucket_index">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../BucketSearch.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../BucketSearch.html#idm45334004322320"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="point_to_bucket_index.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.BucketSearch.const_iterator"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class const_iterator</span></h2>
+<p>Aboria::BucketSearch::const_iterator</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s10.html#header..home.mrobins.git.Aboria.src.BucketSearchParallel_h" title="Header &lt;/home/mrobins/git/Aboria/src/BucketSearchParallel.h&gt;">/home/mrobins/git/Aboria/src/BucketSearchParallel.h</a>&gt;
+
+</span>
+
+<span class="keyword">class</span> <a class="link" href="const_iterator.html" title="Class const_iterator">const_iterator</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="identifier">particles_value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <span class="special">&gt;</span> <span class="special">*</span> <a name="Aboria.BucketSearch.const_iterator.pointer"></a><span class="identifier">pointer</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">forward_iterator_tag</span>                                            <a name="Aboria.BucketSearch.const_iterator.iterator_category"></a><span class="identifier">iterator_category</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="identifier">particles_reference_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <span class="special">&gt;</span>       <a name="Aboria.BucketSearch.const_iterator.reference"></a><span class="identifier">reference</span><span class="special">;</span>        
+  <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span> <span class="identifier">particles_reference_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <span class="special">&gt;</span>       <a name="Aboria.BucketSearch.const_iterator.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>       
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>                                                       <a name="Aboria.BucketSearch.const_iterator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>  
+
+  <span class="comment">// <a class="link" href="const_iterator.html#Aboria.BucketSearch.const_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="const_iterator.html#idm45687053693280-bb"><span class="identifier">const_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">BucketSearch</span><span class="special">&lt;</span> <span class="identifier">traits</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="const_iterator.html#idm45687053692288-bb"><span class="identifier">const_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">BucketSearch</span><span class="special">&lt;</span> <span class="identifier">traits</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="const_iterator.html#idm45687053711344-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="const_iterator.html#idm45687053710784-bb"><span class="identifier">add_range</span></a><span class="special">(</span><span class="identifier">particles_iterator</span><span class="special">,</span> <span class="identifier">particles_iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="const_iterator.html#idm45687053707872-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">const_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="const_iterator.html#idm45687053706064-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="const_iterator.html#idm45687053704944-bb"><span class="identifier">go_to_next_candidate</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="const_iterator.html#idm45687053704096-bb"><span class="identifier">check_candidate</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="const_iterator.html#idm45687053703248-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="const_iterator.html#idm45687053702400-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="const_iterator.html#idm45687053701552-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">const_iterator</span> <span class="special">&amp;</span> <a class="link" href="const_iterator.html#idm45687053700704-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">const_iterator</span> <a class="link" href="const_iterator.html#idm45687053699856-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="const_iterator.html#idm45687053698320-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><span class="identifier">const_iterator</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="const_iterator.html#idm45687053696512-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">const_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="const_iterator.html#idm45687053694976-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">const_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm45334004067280"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm45334004066864"></a><h3>
+<a name="Aboria.BucketSearch.const_iteratorconstruct-copy-destruct"></a><code class="computeroutput">const_iterator</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idm45687053693280-bb"></a><span class="identifier">const_iterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">BucketSearch</span><span class="special">&lt;</span> <span class="identifier">traits</span> <span class="special">&gt;</span> <span class="special">*</span> bucket_sort<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45687053692288-bb"></a><span class="identifier">const_iterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">BucketSearch</span><span class="special">&lt;</span> <span class="identifier">traits</span> <span class="special">&gt;</span> <span class="special">*</span> bucket_sort<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> r<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm45334004046736"></a><h3>
+<a name="idm45687053711344-bb"></a><code class="computeroutput">const_iterator</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45687053710784-bb"></a><span class="identifier">add_range</span><span class="special">(</span><span class="identifier">particles_iterator</span> begin<span class="special">,</span> <span class="identifier">particles_iterator</span> end<span class="special">,</span> 
+               <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> transpose<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45687053707872-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="identifier">const_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45687053706064-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45687053704944-bb"></a><span class="identifier">go_to_next_candidate</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45687053704096-bb"></a><span class="identifier">check_candidate</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45687053703248-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45687053702400-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45687053701552-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">const_iterator</span> <span class="special">&amp;</span> <a name="idm45687053700704-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">const_iterator</span> <a name="idm45687053699856-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idm45687053698320-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span><span class="identifier">const_iterator</span> start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45687053696512-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">const_iterator</span> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45687053694976-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">const_iterator</span> <span class="special">&amp;</span> rhs<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../BucketSearch.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../BucketSearch.html#idm45334004322320"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="point_to_bucket_index.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

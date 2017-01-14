@@ -1,0 +1,69 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template elem_by_index</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h" title="Header &lt;/home/mrobins/git/Aboria/src/Get.h&gt;">
+<link rel="prev" href="concat_i_idm45687042586176.html" title="Struct template concat&lt;index_sequence&lt; I1... &gt;, index_sequence&lt; I2... &gt;&gt;">
+<link rel="next" href="elem_by_type.html" title="Struct template elem_by_type">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="concat_i_idm45687042586176.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="elem_by_type.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.elem_by_index"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template elem_by_index</span></h2>
+<p>Aboria::elem_by_index</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h" title="Header &lt;/home/mrobins/git/Aboria/src/Get.h&gt;">/home/mrobins/git/Aboria/src/Get.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">unsigned</span> <span class="keyword">int</span> I<span class="special">,</span> <span class="keyword">typename</span> mpl_type_vector<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="elem_by_index.html" title="Struct template elem_by_index">elem_by_index</a> <span class="special">{</span>
+  <span class="comment">// <a class="link" href="elem_by_index.html#Aboria.elem_by_indextypes">types</a></span>
+  <span class="keyword">typedef</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">at</span><span class="special">&lt;</span> <span class="identifier">mpl_type_vector</span><span class="special">,</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">int_</span><span class="special">&lt;</span> <span class="identifier">I</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <a name="Aboria.elem_by_index.type"></a><span class="identifier">type</span><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">type</span><span class="special">::</span><span class="identifier">value_type</span>                           <a class="link" href="elem_by_index.html#Aboria.elem_by_index.value_type"><span class="identifier">value_type</span></a><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="elem_by_index.html#idm45687042576624-bb">public member functions</a></span>
+   <a class="link" href="elem_by_index.html#idm45687042576064-bb"><span class="identifier">BOOST_MPL_ASSERT_RELATION</span></a><span class="special">(</span><span class="special">(</span><span class="identifier">mpl</span><span class="special">::</span><span class="identifier">size</span><span class="special">&lt;</span> <span class="identifier">mpl_type_vector</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">::</span><span class="identifier">value</span><span class="special">)</span><span class="special">,</span> <span class="identifier">I</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="identifier">size_t</span> <span class="identifier">index</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm45334002958944"></a><h2>Description</h2>
+<p>helper class to find an element of mpl_type_vector from an unsigned int index I </p>
+<div class="refsect2">
+<a name="idm45334002958272"></a><h3>
+<a name="Aboria.elem_by_indextypes"></a><code class="computeroutput">elem_by_index</code> 
+        public
+       types</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">type</span><span class="special">::</span><span class="identifier">value_type</span> <a name="Aboria.elem_by_index.value_type"></a><span class="identifier">value_type</span><span class="special">;</span></p>
+<p>value_type is the variable's value_type at index I </p>
+</li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idm45334002951248"></a><h3>
+<a name="idm45687042576624-bb"></a><code class="computeroutput">elem_by_index</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"> <a name="idm45687042576064-bb"></a><span class="identifier">BOOST_MPL_ASSERT_RELATION</span><span class="special">(</span><span class="special">(</span><span class="identifier">mpl</span><span class="special">::</span><span class="identifier">size</span><span class="special">&lt;</span> <span class="identifier">mpl_type_vector</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">::</span><span class="identifier">value</span><span class="special">)</span><span class="special">,</span> <span class="identifier">I</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="concat_i_idm45687042586176.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="elem_by_type.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

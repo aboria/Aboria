@@ -1,0 +1,278 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Symbolic Expressions</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index.html" title="Aboria 0.2">
+<link rel="prev" href="neighbourhood_searching.html" title="Neighbourhood Searching">
+<link rel="next" href="matrix_free_linear_algebra_with_.html" title="Matrix-free Linear Algebra with Eigen">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="neighbourhood_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="matrix_free_linear_algebra_with_.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.symbolic_expressions"></a><a class="link" href="symbolic_expressions.html" title="Symbolic Expressions">Symbolic Expressions</a>
+</h2></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="symbolic_expressions.html#aboria.symbolic_expressions.setup">Setup</a></span></dt>
+<dt><span class="section"><a href="symbolic_expressions.html#aboria.symbolic_expressions.constant_expressions">Constant
+      Expressions</a></span></dt>
+<dt><span class="section"><a href="symbolic_expressions.html#aboria.symbolic_expressions.univariate_expressions">Univariate
+      Expressions</a></span></dt>
+<dt><span class="section"><a href="symbolic_expressions.html#aboria.symbolic_expressions.bivariate_expressions">Bivariate
+      Expressions</a></span></dt>
+</dl></div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.symbolic_expressions.setup"></a><a class="link" href="symbolic_expressions.html#aboria.symbolic_expressions.setup" title="Setup">Setup</a>
+</h3></div></div></div>
+<p>
+        To start using symbolic expressions, you first need to define a set of symbols
+        to represent your variables, as well as labels to represent your particle
+        set(s).
+      </p>
+<p>
+        A symbol representing each particle's <code class="computeroutput"><span class="identifier">position</span></code>
+        is defined as
+      </p>
+<pre class="programlisting"><span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;</span> <span class="identifier">p</span><span class="special">;</span>
+</pre>
+<p>
+        A symbol representing the variable <code class="computeroutput"><span class="identifier">alive</span></code>
+        is defined as
+      </p>
+<pre class="programlisting"><span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;</span> <span class="identifier">_alive</span><span class="special">;</span>
+</pre>
+<p>
+        A label representing the particle set <code class="computeroutput"><span class="identifier">particles</span></code>
+        with type <code class="computeroutput"><span class="identifier">MyParticles</span></code> is
+        defined as
+      </p>
+<pre class="programlisting"><span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
+</pre>
+<p>
+        The first template argument is the <span class="bold"><strong>id</strong></span> of
+        the label, and the second is the type of the particle set label refers to.
+        Note that the type of each label must be unique, as this type is used to
+        determine which particle you mean when using the label within expressions.
+        You can use the <span class="bold"><strong>id</strong></span> template argument to
+        ensure that each label type is unique.
+      </p>
+<p>
+        Labels refer to a specific particle set. For example, given a bivariate neighbour
+        expression involving two particles from <code class="computeroutput"><span class="identifier">particles</span></code>,
+        the label <code class="computeroutput"><span class="identifier">a</span></code> defined above
+        would refer to the first particle, and <code class="computeroutput"><span class="identifier">b</span></code>
+        would refer to the second. Note that the result values of a bivariate expression
+        will form a matrix of values, with particle <code class="computeroutput"><span class="identifier">a</span></code>
+        corresponding to the row of the matrix, and particle <code class="computeroutput"><span class="identifier">b</span></code>
+        corresponding to the column.
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.symbolic_expressions.constant_expressions"></a><a class="link" href="symbolic_expressions.html#aboria.symbolic_expressions.constant_expressions" title="Constant Expressions">Constant
+      Expressions</a>
+</h3></div></div></div>
+<p>
+        Now we have defined our labels and symbols, we can create a simple expression
+        to set the position of all particles to <code class="computeroutput"><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">1</span><span class="special">)</span></code>
+      </p>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
+</pre>
+<p>
+        If we want to add <code class="computeroutput"><span class="number">1</span></code> to every
+        particle position, we can use an increment expression
+      </p>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">+=</span> <span class="number">1</span><span class="special">;</span>
+</pre>
+<p>
+        A special case involves the <code class="computeroutput"><span class="identifier">alive</span></code>
+        variable flag. If we use our <code class="computeroutput"><span class="identifier">_alive</span></code>
+        symbol to set all the alive flag's to <code class="computeroutput"><span class="keyword">false</span></code>
+        like so
+      </p>
+<pre class="programlisting"><span class="identifier">_alive</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
+</pre>
+<p>
+        Then after the expression is complete Aboria will call the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45745929354080-bb">delete_particles</a></code>
+        member function to delete all the particles with <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)</span> <span class="special">==</span> <span class="keyword">false</span></code>
+        (i.e. all of them). After this expression the particle container will be
+        empty.
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.symbolic_expressions.univariate_expressions"></a><a class="link" href="symbolic_expressions.html#aboria.symbolic_expressions.univariate_expressions" title="Univariate Expressions">Univariate
+      Expressions</a>
+</h3></div></div></div>
+<p>
+        Single-particle dependent expressions can easily be built by using a single
+        label on the RHS of the expression. For example we can also add a constant
+        value <code class="computeroutput"><span class="number">1</span></code> to each particle position
+        like so
+      </p>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">+</span> <span class="number">1</span><span class="special">;</span>
+</pre>
+<p>
+        Or we can use a flag variable <code class="computeroutput"><span class="identifier">flag</span></code>,
+        along with its symbol <code class="computeroutput"><span class="identifier">f</span></code>,
+        so define two sets of particles within the same container and only change
+        the particle position if <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">flag</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)</span> <span class="special">==</span> <span class="keyword">true</span></code>.
+        Recall that we can't use boolean flags so we can instead use a <code class="computeroutput"><span class="identifier">uint_8</span></code> datatype. For example
+      </p>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">flag</span><span class="special">,</span><span class="identifier">uint_8</span><span class="special">,</span><span class="string">"my flag"</span><span class="special">);</span>
+
+<span class="comment">// create particle container and set flags and positions here</span>
+
+<span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">flag</span><span class="special">&gt;</span> <span class="identifier">f</span><span class="special">;</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">if_else</span><span class="special">(</span><span class="identifier">f</span><span class="special">[</span><span class="identifier">a</span><span class="special">],</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">+</span> <span class="number">1</span><span class="special">,</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
+</pre>
+<p>
+        We can even selectively delete particle using our <code class="computeroutput"><span class="identifier">f</span></code>
+        and <code class="computeroutput"><span class="identifier">_alive</span></code> symbols.
+      </p>
+<pre class="programlisting"><span class="identifier">_alive</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">if_else</span><span class="special">(</span><span class="identifier">f</span><span class="special">[</span><span class="identifier">a</span><span class="special">],</span> <span class="keyword">true</span><span class="special">,</span> <span class="keyword">false</span><span class="special">);</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.symbolic_expressions.bivariate_expressions"></a><a class="link" href="symbolic_expressions.html#aboria.symbolic_expressions.bivariate_expressions" title="Bivariate Expressions">Bivariate
+      Expressions</a>
+</h3></div></div></div>
+<p>
+        So far we have used constant or univariate expressions on the RHS of an assignment
+        operator. This makes sense because we can only assign an expression to a
+        single particle if that expression depends on a constant or that particle's
+        variables. However, we might also want our expression to depend on the other
+        particles in the container, or another container. In this case we wish to
+        use a bivariate expression. For example, the following equation defined a
+        sum over all other particles (with label <code class="computeroutput"><span class="identifier">b</span></code>),
+        using the function <code class="computeroutput"><span class="identifier">w</span></code>, which
+        depends on the separation of particle <code class="computeroutput"><span class="identifier">a</span></code>
+        and <code class="computeroutput"><span class="identifier">b</span></code>.
+      </p>
+<p>
+        $$ p_a = \sum_b w(p_b-p_a) $$
+      </p>
+<p>
+        Normally for a bivariate expression we wish to accumulate the contribution
+        from other particles in order to arrive at a result. This is most often done
+        with a summation. In Aboria, we can define an accumulator object, which takes
+        a single template argument which is the function or functor to accumulate
+        with. For example, the following defines a summation accumulator using <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span></code>
+      </p>
+<pre class="programlisting"><span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
+</pre>
+<p>
+        Once we have this summation accumulator, we can write an expression similar
+        to the equation above like so, using $w(p_b) = (p_b-p_a)$. Note that the
+        first argument to <code class="computeroutput"><span class="identifier">sum</span></code> is
+        set to <code class="computeroutput"><span class="keyword">true</span></code>, indicating the
+        summation is over <span class="bold"><strong>all</strong></span> particles in label
+        <code class="computeroutput"><span class="identifier">b</span></code>.
+      </p>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="keyword">true</span><span class="special">,</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]-</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
+</pre>
+<p>
+        We might also want to sum the inverse distance between particle pairs, like
+        so
+      </p>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="keyword">true</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/(</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]-</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]));</span>
+</pre>
+<p>
+        Unfortunately if <code class="computeroutput"><span class="identifier">a</span></code> and <code class="computeroutput"><span class="identifier">b</span></code> refer to the same particle container
+        this will result a divide-by-zero at runtime, when <code class="computeroutput"><span class="identifier">a</span></code>
+        and <code class="computeroutput"><span class="identifier">b</span></code> are labels for the
+        same particle. Therefore we can restrict the evaluation of the sum by setting
+        the second argument to ensure that the <code class="computeroutput"><span class="identifier">id</span></code>
+        of particles <code class="computeroutput"><span class="identifier">a</span></code> and <code class="computeroutput"><span class="identifier">b</span></code> are non-identical. Recall that <code class="computeroutput"><span class="identifier">id</span></code> is a built-in variable that contains
+        a unique id for each particle in the container.
+      </p>
+<pre class="programlisting"><span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;</span> <span class="identifier">_id</span><span class="special">;</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">_id</span><span class="special">[</span><span class="identifier">a</span><span class="special">]!=</span><span class="identifier">_id</span><span class="special">[</span><span class="identifier">b</span><span class="special">],</span> <span class="number">1.0</span><span class="special">/(</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]-</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]));</span>
+</pre>
+<p>
+        So the first argument to <code class="computeroutput"><span class="identifier">sum</span></code>
+        is the label to sum over, the second is the conditional expression that must
+        evaluate to <code class="computeroutput"><span class="keyword">true</span></code> to be included
+        in the summation, and the third is an expression that provides the value
+        to be included in the summation.
+      </p>
+<p>
+        There is a special case for the conditional expression, when you want to
+        sum over all particles within a certain radius. This might be expressed as
+      </p>
+<pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">b</span><span class="special">);</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+</pre>
+<p>
+        where <code class="computeroutput"><span class="identifier">dx</span></code> is a <code class="computeroutput"><a class="link" href="../Aboria/Dx.html" title="Struct template Dx">Dx</a></code> symbol representing the <span class="bold"><strong>shortest</strong></span>
+        vector from <code class="computeroutput"><span class="identifier">b</span></code> to <code class="computeroutput"><span class="identifier">a</span></code>. Note that this might be different from
+        <code class="computeroutput"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]-</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]</span></code>
+        for periodic domains. The symbolic function [functionref Aboria::norm norm]
+        returns the 2-norm, or magnitude, of the vector <code class="computeroutput"><span class="identifier">dx</span></code>,
+        and the symbolic function [functionref Aboria::pow pow] returns the first
+        argument to the power of the second (in much the same way as std::pow, but
+        lazily evaluated).
+      </p>
+<p>
+        In this case Aboria can recognise a summation over neighbours closer than
+        a radius of 2, and will use the neighbourhood searching facility described
+        in <a class="link" href="neighbourhood_searching.html" title="Neighbourhood Searching">aboria.neighbourhood_searching</a>
+        to find these neighbouring particles. Note that you need to call <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45745929383520-bb">Aboria::Particles::init_neighbour_search</a></code>
+        before any bivariate expressions using neighbourhood searching.
+      </p>
+<p>
+        Aboria will also recognise the following as neighbourhood-searching expressions:
+      </p>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="number">2</span><span class="special">&gt;</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;=</span><span class="number">2</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="number">2</span><span class="special">&gt;=</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span> <span class="special">&amp;&amp;</span> <span class="identifier">_id</span><span class="special">[</span><span class="identifier">a</span><span class="special">]!=</span><span class="identifier">_id</span><span class="special">[</span><span class="identifier">b</span><span class="special">],</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span> <span class="special">&amp;&amp;</span> <span class="identifier">a_conditional_expression</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+</pre>
+<p>
+        As another, more complete example, we can use the neighbourhood-searching
+        expressions to count the number of particles within a distance of <code class="computeroutput"><span class="number">2</span></code> of each individual particle, storing the
+        result in a variable called <code class="computeroutput"><span class="identifier">count</span></code>.
+      </p>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">count</span><span class="special">,</span><span class="keyword">int</span><span class="special">,</span><span class="string">"number of surrounding particles"</span><span class="special">)</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;</span> <span class="identifier">MyParticles</span><span class="special">;</span>
+<span class="identifier">MyParticles</span> <span class="identifier">particles</span><span class="special">();</span>
+
+<span class="comment">//add some particles</span>
+<span class="special">...</span>
+
+<span class="comment">//initialise neighbour searching</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">Vect3d</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">),</span><span class="identifier">Vect3d</span><span class="special">(</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">),</span><span class="number">4</span><span class="special">,</span><span class="identifier">Vect3b</span><span class="special">(</span><span class="keyword">false</span><span class="special">,</span><span class="keyword">false</span><span class="special">,</span><span class="keyword">false</span><span class="special">));</span>
+
+<span class="comment">//define symbols and labels, and sum</span>
+<span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;</span> <span class="identifier">c</span><span class="special">;</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
+<span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
+<span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">b</span><span class="special">);</span>
+
+<span class="comment">//count neighbouring particles within a distance of 2</span>
+<span class="identifier">c</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span><span class="special">,</span><span class="number">1</span><span class="special">)</span>
+</pre>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="neighbourhood_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="matrix_free_linear_algebra_with_.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

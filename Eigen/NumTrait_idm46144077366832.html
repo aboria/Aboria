@@ -1,0 +1,71 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template NumTraits&lt;Aboria::Vector&lt; T, N &gt;&gt;</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h" title="Header &lt;/home/mrobins/git/Aboria/src/Operators.h&gt;">
+<link rel="prev" href="internal/traits_A_idm46144077334816.html" title="Struct template traits&lt;Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;&gt;">
+<link rel="next" href="../EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET_idm46144077329936.html" title="Macro EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="internal/traits_A_idm46144077334816.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="../EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET_idm46144077329936.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Eigen.NumTrait_idm46144077366832"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template NumTraits&lt;Aboria::Vector&lt; T, N &gt;&gt;</span></h2>
+<p>Eigen::NumTraits&lt;Aboria::Vector&lt; T, N &gt;&gt;</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h" title="Header &lt;/home/mrobins/git/Aboria/src/Operators.h&gt;">/home/mrobins/git/Aboria/src/Operators.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> N<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="NumTrait_idm46144077366832.html" title="Struct template NumTraits&lt;Aboria::Vector&lt; T, N &gt;&gt;">NumTraits</a><span class="special">&lt;</span><span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span><span class="special">&gt;</span> <span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="Eigen.NumTrait_idm46144077366832.Scalar"></a><span class="identifier">Scalar</span><span class="special">;</span>    
+  <span class="keyword">typedef</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="Eigen.NumTrait_idm46144077366832.Real"></a><span class="identifier">Real</span><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="Eigen.NumTrait_idm46144077366832.NonInteger"></a><span class="identifier">NonInteger</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="Eigen.NumTrait_idm46144077366832.Literal"></a><span class="identifier">Literal</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="Eigen.NumTrait_idm46144077366832.Nested"></a><span class="identifier">Nested</span><span class="special">;</span>    
+
+  <span class="keyword">enum</span> <a name="Eigen.NumTrait_idm46144077366832.@0"></a>@0 <span class="special">{</span> IsComplex = = 0, IsInteger = = 0, IsSigned = = 1, 
+            RequireInitialization = = 0, ReadCost = = N, AddCost = = N, 
+            MulCost = = N <span class="special">}</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="NumTrait_idm46144077366832.html#idm46144077354416-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="identifier">Real</span> <a class="link" href="NumTrait_idm46144077366832.html#idm46144077353856-bb"><span class="identifier">epsilon</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="identifier">Real</span> <a class="link" href="NumTrait_idm46144077366832.html#idm46144077352736-bb"><span class="identifier">dummy_precision</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="identifier">Scalar</span> <a class="link" href="NumTrait_idm46144077366832.html#idm46144077351616-bb"><span class="identifier">highest</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="identifier">Scalar</span> <a class="link" href="NumTrait_idm46144077366832.html#idm46144077350496-bb"><span class="identifier">lowest</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="keyword">int</span> <a class="link" href="NumTrait_idm46144077366832.html#idm46144077349376-bb"><span class="identifier">digits10</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm46145737882352"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm46145737881936"></a><h3>
+<a name="idm46144077354416-bb"></a><code class="computeroutput">NumTraits</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="identifier">Real</span> <a name="idm46144077353856-bb"></a><span class="identifier">epsilon</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="identifier">Real</span> <a name="idm46144077352736-bb"></a><span class="identifier">dummy_precision</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="identifier">Scalar</span> <a name="idm46144077351616-bb"></a><span class="identifier">highest</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="identifier">Scalar</span> <a name="idm46144077350496-bb"></a><span class="identifier">lowest</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">int</span> <a name="idm46144077349376-bb"></a><span class="identifier">digits10</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="internal/traits_A_idm46144077334816.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="../EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET_idm46144077329936.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
