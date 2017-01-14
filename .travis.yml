@@ -54,7 +54,6 @@ addons:
     - docbook-xml 
     - docbook-xsl
     - texlive-latex-base
-      #- valgrind
 
 before_install:
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
@@ -68,7 +67,6 @@ before_script:
 - clang++ --version 2>&1 | grep clang
 - g++ --version 2>&1 | grep g++
 - gcov --version | grep gcov
-- valgrind --version
 - grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
 - doxygen --version
 - if [ "$Travis_UPDATE_DOC" == "on" ]; then cp doc/user-config.jam ~; fi
