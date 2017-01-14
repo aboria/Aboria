@@ -14,8 +14,8 @@ if [ $? -eq 0 ]; then
     git commit -m "Updated documentation by TravisCI"
     git push
     git checkout master
-    echo UPDATE_DOC SUCCEEDED :)
+    echo 'UPDATE_DOC SUCCEEDED :)'
 else
-    echo UPDATE_DOC FAILED :(
+    echo 'UPDATE_DOC FAILED :('
 fi
 
