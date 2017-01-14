@@ -26,13 +26,13 @@ matrix:
         - compiler: gcc
           env: CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on Aboria_COVERAGE=on 
     # Exclude openmp from clang cause can't get it to work on travis
-    exclude:
-        - compiler: clang
-          env: Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
-        - compiler: clang
-          env: Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
-        - compiler: clang
-          env: CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on Aboria_USE_OPENMP=on
+    #exclude:
+    #    - compiler: clang
+    #      env: Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
+    #    - compiler: clang
+    #      env: Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
+    #    - compiler: clang
+    #      env: CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on Aboria_USE_OPENMP=on
 
 addons:
   apt:
@@ -44,11 +44,11 @@ addons:
     - libopenmpi-dev
     - libboost1.55-dev
     - libboost1.55-tools-dev
-    - gcc-4.8
-    - g++-4.8
+    - gcc-5
+    - g++-5
     - clang-3.8
       # cant find this package
-      #- libomp-dev
+    - libomp-dev
     - doxygen
     - xsltproc
     - docbook-xml 
@@ -61,7 +61,7 @@ before_install:
 - if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;mv eigen*/unsupported .; fi
 
 before_script:
-- if [ "$CXX" = "g++" ]; then export CXX="g++-4.8" CC="gcc-4.8"; fi
+- if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
 - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
 - uname -a
 - printenv
