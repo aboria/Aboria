@@ -1,7 +1,8 @@
 #!/usr/bash
 
+git fetch origin gh-pages
+git checkout --track origin/gh-pages
 make generate_doc
-git checkout gh-pages
 cp -R doc/html/* .
 git add *.html
 git add Aboria/*
