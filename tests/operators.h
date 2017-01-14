@@ -60,7 +60,7 @@ public:
        	double diameter = 0.1;
         double3 min(-1);
         double3 max(1);
-        double3 periodic(true);
+        double3 periodic(false);
         
         double s_init1 = 1.0;
         double s_init2 = 2.0;
@@ -164,7 +164,7 @@ public:
        	double diameter = 0.1;
         double3 min(-1);
         double3 max(1);
-        double3 periodic(true);
+        double3 periodic(false);
         
         ParticlesType::value_type p;
         get<position>(p) = double3(0,0,0);
