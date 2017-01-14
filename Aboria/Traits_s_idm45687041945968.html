@@ -1,0 +1,178 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct Traits&lt;std::vector&gt;</title>
+<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.2">
+<link rel="up" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Traits_h" title="Header &lt;/home/mrobins/git/Aboria/src/Traits.h&gt;">
+<link rel="prev" href="Traits.html" title="Struct template Traits">
+<link rel="next" href="Traits_s_idm45687041945968/iter_comp.html" title="Struct template iter_comp">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Traits.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Traits_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Traits_s_idm45687041945968/iter_comp.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.Traits_s_idm45687041945968"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct Traits&lt;std::vector&gt;</span></h2>
+<p>Aboria::Traits&lt;std::vector&gt;</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Traits_h" title="Header &lt;/home/mrobins/git/Aboria/src/Traits.h&gt;">/home/mrobins/git/Aboria/src/Traits.h</a>&gt;
+
+</span>
+<span class="keyword">struct</span> <a class="link" href="Traits_s_idm45687041945968.html" title="Struct Traits&lt;std::vector&gt;">Traits</a><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&gt;</span> <span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">counting_iterator</span><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span> <a name="Aboria.Traits_s_idm45687041945968.counting_iterator"></a><span class="identifier">counting_iterator</span><span class="special">;</span>
+
+  <span class="comment">// member classes/structs/unions</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> value_type<span class="special">&gt;</span> 
+  <span class="keyword">struct</span> <a class="link" href="Traits_s_idm45687041945968/iter_comp.html" title="Struct template iter_comp">iter_comp</a> <span class="special">{</span>
+
+    <span class="comment">// <a class="link" href="Traits_s_idm45687041945968/iter_comp.html#idm45687041943616-bb">public member functions</a></span>
+    <span class="keyword">bool</span> <a class="link" href="Traits_s_idm45687041945968/iter_comp.html#idm45687041943056-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> 
+  <span class="keyword">struct</span> <a class="link" href="Traits_s_idm45687041945968/lower_bound_impl.html" title="Struct template lower_bound_impl">lower_bound_impl</a> <span class="special">{</span>
+    <span class="comment">// types</span>
+    <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">iterator_traits</span><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">value_type</span>      <a class="link" href="Traits_s_idm45687041945968/lower_bound_impl.html#Aboria.Traits_s_idm45687041945968.lower_bound_impl.value_type"><span class="identifier">value_type</span></a><span class="special">;</span>     
+    <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">iterator_traits</span><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">difference_type</span> <a class="link" href="Traits_s_idm45687041945968/lower_bound_impl.html#Aboria.Traits_s_idm45687041945968.lower_bound_impl.difference_type"><span class="identifier">difference_type</span></a><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Traits_s_idm45687041945968/lower_bound_impl.html#Aboria.Traits_s_idm45687041945968.lower_bound_implconstruct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="Traits_s_idm45687041945968/lower_bound_impl.html#idm45687041933728-bb"><span class="identifier">lower_bound_impl</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Traits_s_idm45687041945968/lower_bound_impl.html#idm45687041935984-bb">public member functions</a></span>
+    <span class="identifier">difference_type</span> <a class="link" href="Traits_s_idm45687041945968/lower_bound_impl.html#idm45687041935424-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// public data members</span>
+    <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <span class="identifier">values_first</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="identifier">T</span> <span class="identifier">values_last</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> 
+  <span class="keyword">struct</span> <a class="link" href="Traits_s_idm45687041945968/upper_bound_impl.html" title="Struct template upper_bound_impl">upper_bound_impl</a> <span class="special">{</span>
+    <span class="comment">// types</span>
+    <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">iterator_traits</span><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">value_type</span>      <a class="link" href="Traits_s_idm45687041945968/upper_bound_impl.html#Aboria.Traits_s_idm45687041945968.upper_bound_impl.value_type"><span class="identifier">value_type</span></a><span class="special">;</span>     
+    <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">iterator_traits</span><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">difference_type</span> <a class="link" href="Traits_s_idm45687041945968/upper_bound_impl.html#Aboria.Traits_s_idm45687041945968.upper_bound_impl.difference_type"><span class="identifier">difference_type</span></a><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Traits_s_idm45687041945968/upper_bound_impl.html#Aboria.Traits_s_idm45687041945968.upper_bound_implconstruct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="Traits_s_idm45687041945968/upper_bound_impl.html#idm45687041925120-bb"><span class="identifier">upper_bound_impl</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Traits_s_idm45687041945968/upper_bound_impl.html#idm45687041927376-bb">public member functions</a></span>
+    <span class="identifier">difference_type</span> <a class="link" href="Traits_s_idm45687041945968/upper_bound_impl.html#idm45687041926816-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// public data members</span>
+    <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <span class="identifier">values_first</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="identifier">T</span> <span class="identifier">values_last</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> 
+  <span class="keyword">struct</span> <a class="link" href="Traits_s_idm45687041945968/vector_type.html" title="Struct template vector_type">vector_type</a> <span class="special">{</span>
+    <span class="comment">// types</span>
+    <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">T</span> <span class="special">&gt;</span> <a class="link" href="Traits_s_idm45687041945968/vector_type.html#Aboria.Traits_s_idm45687041945968.vector_type.type"><span class="identifier">type</span></a><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="Traits_s_idm45687041945968.html#idm45687041917088-bb">public static functions</a></span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T1<span class="special">,</span> <span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">static</span> <span class="keyword">void</span> <a class="link" href="Traits_s_idm45687041945968.html#idm45687041916528-bb"><span class="identifier">sort_by_key</span></a><span class="special">(</span><span class="identifier">T1</span><span class="special">,</span> <span class="identifier">T1</span><span class="special">,</span> <span class="identifier">T2</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">,</span> <span class="keyword">typename</span> InputIterator<span class="special">,</span> 
+           <span class="keyword">typename</span> OutputIterator<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="keyword">void</span> <a class="link" href="Traits_s_idm45687041945968.html#idm45687041911936-bb"><span class="identifier">lower_bound</span></a><span class="special">(</span><span class="identifier">ForwardIterator</span><span class="special">,</span> <span class="identifier">ForwardIterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">,</span> 
+                            <span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">OutputIterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">,</span> <span class="keyword">typename</span> InputIterator<span class="special">,</span> 
+           <span class="keyword">typename</span> OutputIterator<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="keyword">void</span> <a class="link" href="Traits_s_idm45687041945968.html#idm45687041905408-bb"><span class="identifier">upper_bound</span></a><span class="special">(</span><span class="identifier">ForwardIterator</span><span class="special">,</span> <span class="identifier">ForwardIterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">,</span> 
+                            <span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">OutputIterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIt<span class="special">,</span> <span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">typename</span> BinaryOperation<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="identifier">T</span> <a class="link" href="Traits_s_idm45687041945968.html#idm45687041898880-bb"><span class="identifier">reduce</span></a><span class="special">(</span><span class="identifier">InputIt</span><span class="special">,</span> <span class="identifier">InputIt</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">BinaryOperation</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator<span class="special">,</span> <span class="keyword">typename</span> OutputIterator<span class="special">,</span> 
+           <span class="keyword">typename</span> UnaryOperation<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="identifier">OutputIterator</span> 
+    <a class="link" href="Traits_s_idm45687041945968.html#idm45687041893040-bb"><span class="identifier">transform</span></a><span class="special">(</span><span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">OutputIterator</span><span class="special">,</span> <span class="identifier">UnaryOperation</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="keyword">void</span> <a class="link" href="Traits_s_idm45687041945968.html#idm45687041887200-bb"><span class="identifier">sequence</span></a><span class="special">(</span><span class="identifier">ForwardIterator</span><span class="special">,</span> <span class="identifier">ForwardIterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">,</span> <span class="keyword">typename</span> UnaryOperation<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="keyword">void</span> <a class="link" href="Traits_s_idm45687041945968.html#idm45687041883856-bb"><span class="identifier">tabulate</span></a><span class="special">(</span><span class="identifier">ForwardIterator</span><span class="special">,</span> <span class="identifier">ForwardIterator</span><span class="special">,</span> <span class="identifier">UnaryOperation</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator<span class="special">,</span> <span class="keyword">typename</span> OutputIterator<span class="special">,</span> 
+           <span class="keyword">typename</span> UnaryFunction<span class="special">,</span> <span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">typename</span> AssociativeOperator<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="identifier">OutputIterator</span> 
+    <a class="link" href="Traits_s_idm45687041945968.html#idm45687041879264-bb"><span class="identifier">transform_exclusive_scan</span></a><span class="special">(</span><span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">OutputIterator</span><span class="special">,</span> 
+                             <span class="identifier">UnaryFunction</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">AssociativeOperator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator1<span class="special">,</span> <span class="keyword">typename</span> InputIterator2<span class="special">,</span> 
+           <span class="keyword">typename</span> InputIterator3<span class="special">,</span> <span class="keyword">typename</span> RandomAccessIterator<span class="special">,</span> 
+           <span class="keyword">typename</span> Predicate<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="keyword">void</span> <a class="link" href="Traits_s_idm45687041945968.html#idm45687041870912-bb"><span class="identifier">scatter_if</span></a><span class="special">(</span><span class="identifier">InputIterator1</span><span class="special">,</span> <span class="identifier">InputIterator1</span><span class="special">,</span> <span class="identifier">InputIterator2</span><span class="special">,</span> 
+                           <span class="identifier">InputIterator3</span><span class="special">,</span> <span class="identifier">RandomAccessIterator</span><span class="special">,</span> <span class="identifier">Predicate</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator1<span class="special">,</span> <span class="keyword">typename</span> InputIterator2<span class="special">,</span> 
+           <span class="keyword">typename</span> OutputIterator<span class="special">,</span> <span class="keyword">typename</span> Predicate<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="identifier">OutputIterator</span> 
+    <a class="link" href="Traits_s_idm45687041945968.html#idm45687041862576-bb"><span class="identifier">copy_if</span></a><span class="special">(</span><span class="identifier">InputIterator1</span><span class="special">,</span> <span class="identifier">InputIterator1</span><span class="special">,</span> <span class="identifier">InputIterator2</span><span class="special">,</span> <span class="identifier">OutputIterator</span><span class="special">,</span> 
+            <span class="identifier">Predicate</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">lambda</span><span class="special">::</span><span class="identifier">placeholder1_type</span> <span class="identifier">_1</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">lambda</span><span class="special">::</span><span class="identifier">placeholder2_type</span> <span class="identifier">_2</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">lambda</span><span class="special">::</span><span class="identifier">placeholder3_type</span> <span class="identifier">_3</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm45333998041056"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm45333998040640"></a><h3>
+<a name="idm45687041917088-bb"></a><code class="computeroutput">Traits</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T1<span class="special">,</span> <span class="keyword">typename</span> T2<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="keyword">void</span> <a name="idm45687041916528-bb"></a><span class="identifier">sort_by_key</span><span class="special">(</span><span class="identifier">T1</span> start_keys<span class="special">,</span> <span class="identifier">T1</span> end_keys<span class="special">,</span> <span class="identifier">T2</span> start_data<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">,</span> <span class="keyword">typename</span> InputIterator<span class="special">,</span> 
+         <span class="keyword">typename</span> OutputIterator<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="keyword">void</span> <a name="idm45687041911936-bb"></a><span class="identifier">lower_bound</span><span class="special">(</span><span class="identifier">ForwardIterator</span> first<span class="special">,</span> <span class="identifier">ForwardIterator</span> last<span class="special">,</span> 
+                          <span class="identifier">InputIterator</span> values_first<span class="special">,</span> 
+                          <span class="identifier">InputIterator</span> values_last<span class="special">,</span> <span class="identifier">OutputIterator</span> result<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">,</span> <span class="keyword">typename</span> InputIterator<span class="special">,</span> 
+         <span class="keyword">typename</span> OutputIterator<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="keyword">void</span> <a name="idm45687041905408-bb"></a><span class="identifier">upper_bound</span><span class="special">(</span><span class="identifier">ForwardIterator</span> first<span class="special">,</span> <span class="identifier">ForwardIterator</span> last<span class="special">,</span> 
+                          <span class="identifier">InputIterator</span> values_first<span class="special">,</span> 
+                          <span class="identifier">InputIterator</span> values_last<span class="special">,</span> <span class="identifier">OutputIterator</span> result<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIt<span class="special">,</span> <span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">typename</span> BinaryOperation<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="identifier">T</span> <a name="idm45687041898880-bb"></a><span class="identifier">reduce</span><span class="special">(</span><span class="identifier">InputIt</span> first<span class="special">,</span> <span class="identifier">InputIt</span> last<span class="special">,</span> <span class="identifier">T</span> init<span class="special">,</span> <span class="identifier">BinaryOperation</span> op<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator<span class="special">,</span> <span class="keyword">typename</span> OutputIterator<span class="special">,</span> 
+         <span class="keyword">typename</span> UnaryOperation<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="identifier">OutputIterator</span> 
+  <a name="idm45687041893040-bb"></a><span class="identifier">transform</span><span class="special">(</span><span class="identifier">InputIterator</span> first<span class="special">,</span> <span class="identifier">InputIterator</span> last<span class="special">,</span> <span class="identifier">OutputIterator</span> result<span class="special">,</span> 
+            <span class="identifier">UnaryOperation</span> op<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="keyword">void</span> <a name="idm45687041887200-bb"></a><span class="identifier">sequence</span><span class="special">(</span><span class="identifier">ForwardIterator</span> first<span class="special">,</span> <span class="identifier">ForwardIterator</span> last<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> ForwardIterator<span class="special">,</span> <span class="keyword">typename</span> UnaryOperation<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="keyword">void</span> <a name="idm45687041883856-bb"></a><span class="identifier">tabulate</span><span class="special">(</span><span class="identifier">ForwardIterator</span> first<span class="special">,</span> <span class="identifier">ForwardIterator</span> last<span class="special">,</span> 
+                       <span class="identifier">UnaryOperation</span> unary_op<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator<span class="special">,</span> <span class="keyword">typename</span> OutputIterator<span class="special">,</span> 
+         <span class="keyword">typename</span> UnaryFunction<span class="special">,</span> <span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">typename</span> AssociativeOperator<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="identifier">OutputIterator</span> 
+  <a name="idm45687041879264-bb"></a><span class="identifier">transform_exclusive_scan</span><span class="special">(</span><span class="identifier">InputIterator</span> first<span class="special">,</span> <span class="identifier">InputIterator</span> last<span class="special">,</span> 
+                           <span class="identifier">OutputIterator</span> result<span class="special">,</span> <span class="identifier">UnaryFunction</span> unary_op<span class="special">,</span> 
+                           <span class="identifier">T</span> init<span class="special">,</span> <span class="identifier">AssociativeOperator</span> binary_op<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator1<span class="special">,</span> <span class="keyword">typename</span> InputIterator2<span class="special">,</span> 
+         <span class="keyword">typename</span> InputIterator3<span class="special">,</span> <span class="keyword">typename</span> RandomAccessIterator<span class="special">,</span> 
+         <span class="keyword">typename</span> Predicate<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="keyword">void</span> <a name="idm45687041870912-bb"></a><span class="identifier">scatter_if</span><span class="special">(</span><span class="identifier">InputIterator1</span> first<span class="special">,</span> <span class="identifier">InputIterator1</span> last<span class="special">,</span> 
+                         <span class="identifier">InputIterator2</span> map<span class="special">,</span> <span class="identifier">InputIterator3</span> stencil<span class="special">,</span> 
+                         <span class="identifier">RandomAccessIterator</span> output<span class="special">,</span> <span class="identifier">Predicate</span> pred<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator1<span class="special">,</span> <span class="keyword">typename</span> InputIterator2<span class="special">,</span> 
+         <span class="keyword">typename</span> OutputIterator<span class="special">,</span> <span class="keyword">typename</span> Predicate<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="identifier">OutputIterator</span> 
+  <a name="idm45687041862576-bb"></a><span class="identifier">copy_if</span><span class="special">(</span><span class="identifier">InputIterator1</span> first<span class="special">,</span> <span class="identifier">InputIterator1</span> last<span class="special">,</span> <span class="identifier">InputIterator2</span> stencil<span class="special">,</span> 
+          <span class="identifier">OutputIterator</span> result<span class="special">,</span> <span class="identifier">Predicate</span> pred<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="Traits.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Traits_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Traits_s_idm45687041945968/iter_comp.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

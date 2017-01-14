@@ -5,15 +5,15 @@
 <link rel="stylesheet" href="../boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="../index.html" title="Aboria 0.2">
-<link rel="up" href="../index/s10.html#header..home.mrobins.tmp.Aboria.src.Get_h" title="Header &lt;/home/mrobins/tmp/Aboria/src/Get.h&gt;">
-<link rel="prev" href="getter_t_idm45227995889264.html" title="Struct template getter_type&lt;tuple_ns::tuple&lt; FirstType *, OtherTypes... &gt;, mpl_vector_type&gt;">
+<link rel="up" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h" title="Header &lt;/home/mrobins/git/Aboria/src/Get.h&gt;">
+<link rel="prev" href="getter_t_idm45745929873456.html" title="Struct template getter_type&lt;tuple_ns::tuple&lt; FirstType *, OtherTypes... &gt;, mpl_vector_type&gt;">
 <link rel="next" href="zip_iterator/return_type.html" title="Struct template return_type">
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="getter_t_idm45227995889264.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.tmp.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="getter_t_idm45745929873456.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.zip_iterator"></a><div class="titlepage"></div>
@@ -22,7 +22,7 @@
 <p>Aboria::zip_iterator</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.mrobins.tmp.Aboria.src.Get_h" title="Header &lt;/home/mrobins/tmp/Aboria/src/Get.h&gt;">/home/mrobins/tmp/Aboria/src/Get.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h" title="Header &lt;/home/mrobins/git/Aboria/src/Get.h&gt;">/home/mrobins/git/Aboria/src/Get.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> iterator_tuple_type<span class="special">,</span> <span class="keyword">typename</span> mpl_vector_type<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="special">{</span>
@@ -49,53 +49,53 @@
   <span class="special">}</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="zip_iterator.html#Aboria.zip_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="zip_iterator.html#idm45227995817440-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idm45227995817152-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">iterator_tuple_type</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idm45227995815904-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">...</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="zip_iterator.html#idm45745929801632-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idm45745929801344-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">iterator_tuple_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idm45745929800096-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">...</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="zip_iterator.html#idm45227995820144-bb">public member functions</a></span>
-  <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idm45227995819584-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idm45227995818448-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="zip_iterator.html#idm45745929804336-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idm45745929803776-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idm45745929802640-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="zip_iterator.html#idm45227995813520-bb">private member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45227995812944-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45227995812096-bb"><span class="identifier">decrement</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="zip_iterator.html#idm45227995811248-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="zip_iterator.html#idm45227995809440-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">difference_type</span> <a class="link" href="zip_iterator.html#idm45227995808320-bb"><span class="identifier">distance_to</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45227995806512-bb"><span class="identifier">advance</span></a><span class="special">(</span><span class="identifier">difference_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="zip_iterator.html#idm45745929797712-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45745929797136-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45745929796288-bb"><span class="identifier">decrement</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="zip_iterator.html#idm45745929795440-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="zip_iterator.html#idm45745929793632-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">difference_type</span> <a class="link" href="zip_iterator.html#idm45745929792512-bb"><span class="identifier">distance_to</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45745929790704-bb"><span class="identifier">advance</span></a><span class="special">(</span><span class="identifier">difference_type</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45082350294064"></a><h2>Description</h2>
+<a name="idm45933740420320"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45082350293648"></a><h3>
+<a name="idm45933740419904"></a><h3>
 <a name="Aboria.zip_iteratorconstruct-copy-destruct"></a><code class="computeroutput">zip_iterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idm45227995817440-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idm45227995817152-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">iterator_tuple_type</span> iter<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idm45227995815904-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">T</span><span class="special">...</span> args<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idm45745929801632-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idm45745929801344-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">iterator_tuple_type</span> iter<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idm45745929800096-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">T</span><span class="special">...</span> args<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45082350274240"></a><h3>
-<a name="idm45227995820144-bb"></a><code class="computeroutput">zip_iterator</code> public member functions</h3>
+<a name="idm45933740400368"></a><h3>
+<a name="idm45745929804336-bb"></a><code class="computeroutput">zip_iterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idm45227995819584-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idm45227995818448-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idm45745929803776-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idm45745929802640-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45082350260624"></a><h3>
-<a name="idm45227995813520-bb"></a><code class="computeroutput">zip_iterator</code> private member functions</h3>
+<a name="idm45933740386816"></a><h3>
+<a name="idm45745929797712-bb"></a><code class="computeroutput">zip_iterator</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45227995812944-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45227995812096-bb"></a><span class="identifier">decrement</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45227995811248-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45227995809440-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">difference_type</span> <a name="idm45227995808320-bb"></a><span class="identifier">distance_to</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45227995806512-bb"></a><span class="identifier">advance</span><span class="special">(</span><span class="identifier">difference_type</span> n<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45745929797136-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45745929796288-bb"></a><span class="identifier">decrement</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45745929795440-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45745929793632-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">difference_type</span> <a name="idm45745929792512-bb"></a><span class="identifier">distance_to</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45745929790704-bb"></a><span class="identifier">advance</span><span class="special">(</span><span class="identifier">difference_type</span> n<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -106,7 +106,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="getter_t_idm45227995889264.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.tmp.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="getter_t_idm45745929873456.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.mrobins.git.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

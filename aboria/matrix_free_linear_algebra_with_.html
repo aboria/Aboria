@@ -65,7 +65,7 @@
       Operators</a>
 </h3></div></div></div>
 <p>
-        You can use the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idm45227995601104">Aboria::create_eigen_operator</a></code>
+        You can use the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idm45745929585296">Aboria::create_eigen_operator</a></code>
         function to create an Eigen operator. The function takes two labels as its
         first and second arguments corresponding to the rows and columns of the matrix,
         a bivariate expression as the third argument, and an optional bivariate boolean
@@ -95,7 +95,7 @@
 </pre>
 <p>
         You can also set the sparsity of the operator by providing a fourth parameter
-        to <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idm45227995601104">Aboria::create_eigen_operator</a></code>,
+        to <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idm45745929585296">Aboria::create_eigen_operator</a></code>,
         a boolean expression that is <code class="computeroutput"><span class="keyword">false</span></code>
         when the operator should evaluate to zero. For example,
       </p>
@@ -106,7 +106,7 @@
         Finally, you might also want to specify an operator that only depends on
         a single label, i.e. a vector rather than a matrix. This can be done by using
         the <code class="computeroutput"><a class="link" href="../Aboria/One.html" title="Struct One">Aboria::One</a></code> symbol in conjunction
-        with the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idm45227995601104">Aboria::create_eigen_operator</a></code>
+        with the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idm45745929585296">Aboria::create_eigen_operator</a></code>
         function.
       </p>
 <pre class="programlisting"><span class="identifier">One</span> <span class="identifier">one</span><span class="special">;</span>
@@ -120,7 +120,7 @@
 </h3></div></div></div>
 <p>
         It is common that you would like to compose operators in a tiled or block
-        format, and Aboria provides a functionality to do this using the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_b_idm45227995570512">Aboria::create_block_eigen_operator</a></code>.
+        format, and Aboria provides a functionality to do this using the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_b_idm45745929554704">Aboria::create_block_eigen_operator</a></code>.
         This function is templated by two unsigned integers N and M representing
         an NxM block operator, and takes NM arguments for the required number of
         operators. For example,
