@@ -1,9 +1,9 @@
 #!/bin/bash
 
+make generate_doc
 git fetch origin gh-pages
 git checkout gh-pages
 if [ $? -eq 0 ]; then
-    make generate_doc
     cp -R doc/html/* .
     git add *.html
     git add standalone_HTML.manifest
