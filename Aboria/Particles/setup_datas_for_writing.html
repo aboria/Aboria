@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="../../index.html" title="Aboria 0.2">
-<link rel="up" href="../Particles.html#idm45971656817360" title="Description">
+<link rel="up" href="../Particles.html#idm45715999191664" title="Description">
 <link rel="prev" href="setup_datas_for_reading.html" title="Struct setup_datas_for_reading">
 <link rel="next" href="write_from_tuple.html" title="Struct write_from_tuple">
 </head>
@@ -13,7 +13,7 @@
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="setup_datas_for_reading.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45971656817360"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="write_from_tuple.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="setup_datas_for_reading.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45715999191664"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="write_from_tuple.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.Particles.setup_datas_for_writing"></a><div class="titlepage"></div>
@@ -32,16 +32,16 @@
   <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span><span class="special">::</span><span class="identifier">value</span><span class="special">,</span> <span class="identifier">tuple_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a name="Aboria.Particles.setup_datas_for_writing.non_ref_tuple_element"></a><span class="identifier">non_ref_tuple_element</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="setup_datas_for_writing.html#Aboria.Particles.setup_datas_for_writingconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="setup_datas_for_writing.html#idm45556843511232-bb"><span class="identifier">setup_datas_for_writing</span></a><span class="special">(</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> 
+  <a class="link" href="setup_datas_for_writing.html#idm46167658454416-bb"><span class="identifier">setup_datas_for_writing</span></a><span class="special">(</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> 
                           <span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="setup_datas_for_writing.html#idm45556843516832-bb">public member functions</a></span>
+  <span class="comment">// <a class="link" href="setup_datas_for_writing.html#idm46167658460016-bb">public member functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
     <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">not_</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="setup_datas_for_writing.html#idm45556843516272-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="setup_datas_for_writing.html#idm46167658459456-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
     <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-    <a class="link" href="setup_datas_for_writing.html#idm45556843513824-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="setup_datas_for_writing.html#idm46167658457008-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="identifier">size_t</span> <span class="identifier">n</span><span class="special">;</span>
@@ -49,25 +49,25 @@
   <span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span> <span class="identifier">grid</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45971656169312"></a><h2>Description</h2>
+<a name="idm45715998543360"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45971656168896"></a><h3>
+<a name="idm45715998542944"></a><h3>
 <a name="Aboria.Particles.setup_datas_for_writingconstruct-copy-destruct"></a><code class="computeroutput">setup_datas_for_writing</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idm45556843511232-bb"></a><span class="identifier">setup_datas_for_writing</span><span class="special">(</span><span class="identifier">size_t</span> n<span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> datas<span class="special">,</span> 
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idm46167658454416-bb"></a><span class="identifier">setup_datas_for_writing</span><span class="special">(</span><span class="identifier">size_t</span> n<span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> datas<span class="special">,</span> 
                         <span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span> grid<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45971656156240"></a><h3>
-<a name="idm45556843516832-bb"></a><code class="computeroutput">setup_datas_for_writing</code> public member functions</h3>
+<a name="idm45715998530208"></a><h3>
+<a name="idm46167658460016-bb"></a><code class="computeroutput">setup_datas_for_writing</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
   <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">not_</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idm45556843516272-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <a name="idm46167658459456-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
   <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">is_vector</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
-  <a name="idm45556843513824-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
+  <a name="idm46167658457008-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="identifier">U</span> i<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -78,7 +78,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="setup_datas_for_reading.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45971656817360"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="write_from_tuple.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="setup_datas_for_reading.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../Particles.html#idm45715999191664"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="write_from_tuple.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

@@ -1,0 +1,60 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template generic_product_impl&lt;Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;, Rhs, SparseShape, DenseShape, GemvProduct&gt;</title>
+<link rel="stylesheet" href="../../boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../../index.html" title="Aboria 0.2">
+<link rel="up" href="../../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h" title="Header &lt;/home/mrobins/git/Aboria/src/Operators.h&gt;">
+<link rel="prev" href="../../Aboria/SizeOne.html" title="Struct SizeOne">
+<link rel="next" href="traits_A_idm46167658504672.html" title="Struct template traits&lt;Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;&gt;">
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../../Aboria/SizeOne.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="traits_A_idm46167658504672.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Eigen.internal.generic__idm46167658517392"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template generic_product_impl&lt;Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;, Rhs, SparseShape, DenseShape, GemvProduct&gt;</span></h2>
+<p>Eigen::internal::generic_product_impl&lt;Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;, Rhs, SparseShape, DenseShape, GemvProduct&gt;</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h" title="Header &lt;/home/mrobins/git/Aboria/src/Operators.h&gt;">/home/mrobins/git/Aboria/src/Operators.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Rhs<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> NI<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> NJ<span class="special">,</span> <span class="keyword">typename</span> Blocks<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="generic__idm46167658517392.html" title="Struct template generic_product_impl&lt;Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;, Rhs, SparseShape, DenseShape, GemvProduct&gt;">generic_product_impl</a><span class="special">&lt;</span><span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">MatrixReplacement</span><span class="special">&lt;</span> <span class="identifier">NI</span><span class="special">,</span> <span class="identifier">NJ</span><span class="special">,</span> <span class="identifier">Blocks</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">Rhs</span><span class="special">,</span> <span class="identifier">SparseShape</span><span class="special">,</span> <span class="identifier">DenseShape</span><span class="special">,</span> <span class="identifier">GemvProduct</span><span class="special">&gt;</span> <span class="special">:</span> <span class="keyword">public</span> generic_product_impl_base&lt; Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;, Rhs, generic_product_impl&lt; Aboria::MatrixReplacement&lt; NI, NJ, Blocks &gt;, Rhs &gt; &gt;
+<span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">Product</span><span class="special">&lt;</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">MatrixReplacement</span><span class="special">&lt;</span> <span class="identifier">NI</span><span class="special">,</span> <span class="identifier">NJ</span><span class="special">,</span> <span class="identifier">Blocks</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">Rhs</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">Scalar</span> <a name="Eigen.internal.generic__idm46167658517392.Scalar"></a><span class="identifier">Scalar</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="generic__idm46167658517392.html#idm46167658510144-bb">public static functions</a></span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Dest<span class="special">&gt;</span> 
+    <span class="keyword">static</span> <span class="keyword">void</span> <a class="link" href="generic__idm46167658517392.html#idm46167658509584-bb"><span class="identifier">scaleAndAddTo</span></a><span class="special">(</span><span class="identifier">Dest</span> <span class="special">&amp;</span><span class="special">,</span> 
+                              <span class="keyword">const</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">MatrixReplacement</span><span class="special">&lt;</span> <span class="identifier">NI</span><span class="special">,</span> <span class="identifier">NJ</span><span class="special">,</span> <span class="identifier">Blocks</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> 
+                              <span class="keyword">const</span> <span class="identifier">Rhs</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Scalar</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm45716000060496"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm45716000060080"></a><h3>
+<a name="idm46167658510144-bb"></a><code class="computeroutput">generic_product_impl</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Dest<span class="special">&gt;</span> 
+  <span class="keyword">static</span> <span class="keyword">void</span> <a name="idm46167658509584-bb"></a><span class="identifier">scaleAndAddTo</span><span class="special">(</span><span class="identifier">Dest</span> <span class="special">&amp;</span> y<span class="special">,</span> 
+                            <span class="keyword">const</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">MatrixReplacement</span><span class="special">&lt;</span> <span class="identifier">NI</span><span class="special">,</span> <span class="identifier">NJ</span><span class="special">,</span> <span class="identifier">Blocks</span> <span class="special">&gt;</span> <span class="special">&amp;</span> lhs<span class="special">,</span> 
+                            <span class="keyword">const</span> <span class="identifier">Rhs</span> <span class="special">&amp;</span> rhs<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Scalar</span> <span class="special">&amp;</span> alpha<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015, 2016 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../../Aboria/SizeOne.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../../index/s10.html#header..home.mrobins.git.Aboria.src.Operators_h"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="traits_A_idm46167658504672.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
