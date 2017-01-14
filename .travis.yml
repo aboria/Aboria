@@ -48,7 +48,7 @@ addons:
     - g++-5
     - clang-3.8
       # cant find this package
-    - libomp-dev
+      #- libomp-dev
     - doxygen
     - xsltproc
     - docbook-xml 
