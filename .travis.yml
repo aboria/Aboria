@@ -38,14 +38,14 @@ addons:
   apt:
     sources:
     - boost-latest
-    - ubuntu-toolchain-r-test
+      #- ubuntu-toolchain-r-test
     - llvm-toolchain-precise-3.8
     packages:
-    - libopenmpi-dev
+        #- libopenmpi-dev
     - libboost1.55-dev
     - libboost1.55-tools-dev
-    - gcc-5
-    - g++-5
+      #- gcc-5
+      #- g++-5
     - clang-3.8
       # cant find this package
       #- libomp-dev
@@ -54,14 +54,14 @@ addons:
     - docbook-xml 
     - docbook-xsl
     - texlive-latex-base
-    - valgrind
+      #- valgrind
 
 before_install:
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
 - if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;mv eigen*/unsupported .; fi
 
 before_script:
-- if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
+    #- if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
 - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
 - uname -a
 - printenv
