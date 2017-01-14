@@ -1,7 +1,8 @@
 [section Installation]
 
-This software has been tested on Ubuntu 12.04LTS, 14.04LTS and 16.04LTS, and 
-with gcc compilers 4.6.3 and 5.3.1.
+This software is tested on Ubuntu 14.04LTS with the GCC compiler (version 
+4.8.4), and Clang compiler (version 3.8.0). See our 
+[@https://travis-ci.org/martinjrobins/Aboria Travis CI page] for more details.
 
 You will need to install a C++ compiler with C++11 support, and the 
 [@https://cmake.org/ CMake] build software prior to using Aboria, which you can 
@@ -37,7 +38,7 @@ your include path and include the `Aboria.h` header, e.g.
 #include <Aboria.h>
 ``
 
-If you wish to use [@http://www.vtk.org/ The Virtualisation Toolkit] or
+If you wish to use [@http://www.vtk.org/ The Visualisation Toolkit] or
 [@http://eigen.tuxfamily.org Eigen] with Aboria then you will need to define the 
 `HAVE_VTK` and `HAVE_EIGEN` compiler definitions, and include the relevant 
 headers and link the relevant libraries. Please see the 
