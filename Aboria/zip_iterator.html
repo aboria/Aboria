@@ -49,53 +49,53 @@
   <span class="special">}</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="zip_iterator.html#Aboria.zip_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="zip_iterator.html#idp47879345759120-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idp47879345759248-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">iterator_tuple_type</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idp47879345760336-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">...</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="zip_iterator.html#idp46457631873808-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idp46457631873936-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">iterator_tuple_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idp46457631875024-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">...</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="zip_iterator.html#idp47879345756784-bb">public member functions</a></span>
-  <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idp47879345757184-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idp47879345758160-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="zip_iterator.html#idp46457631871472-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idp46457631871872-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idp46457631872848-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="zip_iterator.html#idp47879345762560-bb">private member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp47879345762976-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp47879345763936-bb"><span class="identifier">decrement</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="zip_iterator.html#idp47879345764896-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="zip_iterator.html#idp47879345766544-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">difference_type</span> <a class="link" href="zip_iterator.html#idp47879345767504-bb"><span class="identifier">distance_to</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp47879345769152-bb"><span class="identifier">advance</span></a><span class="special">(</span><span class="identifier">difference_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="zip_iterator.html#idp46457631877248-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp46457631877664-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp46457631878624-bb"><span class="identifier">decrement</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="zip_iterator.html#idp46457631879584-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="zip_iterator.html#idp46457631881232-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">difference_type</span> <a class="link" href="zip_iterator.html#idp46457631882192-bb"><span class="identifier">distance_to</span></a><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp46457631883840-bb"><span class="identifier">advance</span></a><span class="special">(</span><span class="identifier">difference_type</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46842762879904"></a><h2>Description</h2>
+<a name="idp46161607155712"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46842762880320"></a><h3>
+<a name="idp46161607156128"></a><h3>
 <a name="Aboria.zip_iteratorconstruct-copy-destruct"></a><code class="computeroutput">zip_iterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idp47879345759120-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idp47879345759248-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">iterator_tuple_type</span> iter<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idp47879345760336-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">T</span><span class="special">...</span> args<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp46457631873808-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idp46457631873936-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">iterator_tuple_type</span> iter<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idp46457631875024-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">T</span><span class="special">...</span> args<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46842762899728"></a><h3>
-<a name="idp47879345756784-bb"></a><code class="computeroutput">zip_iterator</code> public member functions</h3>
+<a name="idp46161607175440"></a><h3>
+<a name="idp46457631871472-bb"></a><code class="computeroutput">zip_iterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idp47879345757184-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idp47879345758160-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idp46457631871872-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idp46457631872848-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46842762913280"></a><h3>
-<a name="idp47879345762560-bb"></a><code class="computeroutput">zip_iterator</code> private member functions</h3>
+<a name="idp46161607188928"></a><h3>
+<a name="idp46457631877248-bb"></a><code class="computeroutput">zip_iterator</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47879345762976-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47879345763936-bb"></a><span class="identifier">decrement</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47879345764896-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47879345766544-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">difference_type</span> <a name="idp47879345767504-bb"></a><span class="identifier">distance_to</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47879345769152-bb"></a><span class="identifier">advance</span><span class="special">(</span><span class="identifier">difference_type</span> n<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46457631877664-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46457631878624-bb"></a><span class="identifier">decrement</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46457631879584-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp46457631881232-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">difference_type</span> <a name="idp46457631882192-bb"></a><span class="identifier">distance_to</span><span class="special">(</span><span class="identifier">zip_iterator</span> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46457631883840-bb"></a><span class="identifier">advance</span><span class="special">(</span><span class="identifier">difference_type</span> n<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
