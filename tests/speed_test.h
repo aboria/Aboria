@@ -71,12 +71,14 @@ public:
         ABORIA_VARIABLE(b,double,"b")
         ABORIA_VARIABLE(c,double,"c")
     	typedef Particles<std::tuple<a,b,c>,3> nodes_type;
-       	nodes_type nodes;
-        nodes_type::value_type node;
+       	nodes_type nodes(N);
         for (int i=0; i<N; i++) {
-            get<a>(node) = i;
-            get<b>(node) = i*2;
-            nodes.push_back(node);
+            get<a>(nodes)[i] = i;
+            get<b>(nodes)[i] = i*2;
+        }
+        for (int i=0; i<N; i++) {
+            get<c>(nodes)[i] = get<a>(nodes)[i] + get<b>(nodes)[i];
+            //get<c>(nodes[i]) = get<a>(nodes[i]) + get<b>(nodes[i]);
         }
         auto t0 = Clock::now();
         for (int i=0; i<N; i++) {
@@ -94,17 +96,16 @@ public:
         ABORIA_VARIABLE(b,double,"b")
         ABORIA_VARIABLE(c,double,"c")
     	typedef Particles<std::tuple<a,b,c>,3> nodes_type;
-       	nodes_type nodes;
-        nodes_type::value_type node;
+       	nodes_type nodes(N);
         for (int i=0; i<N; i++) {
-            get<a>(node) = i;
-            get<b>(node) = i*2;
-            nodes.push_back(node);
+            get<a>(nodes)[i] = i;
+            get<b>(nodes)[i] = i*2;
         }
         Symbol<a> A;
         Symbol<b> B;
         Symbol<c> C;
         Label<0,nodes_type> i(nodes);
+        C[i] = A[i] + B[i];
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("vector_addition_aboria_level2");
@@ -127,6 +128,7 @@ public:
             A[i] = i;
             B[i] = 2*i;
         }
+        C = A + B;
         auto t0 = Clock::now();
         C = A + B;
         auto t1 = Clock::now();
@@ -141,12 +143,13 @@ public:
         ABORIA_VARIABLE(a,double,"a")
         ABORIA_VARIABLE(b,double,"b")
     	typedef Particles<std::tuple<a,b>,3> nodes_type;
-       	nodes_type nodes;
-        nodes_type::value_type node;
+       	nodes_type nodes(N);
         for (int i=0; i<N; i++) {
-            get<a>(node) = i;
-            get<b>(node) = i*2;
-            nodes.push_back(node);
+            get<a>(nodes)[i] = i;
+            get<b>(nodes)[i] = i*2;
+        }
+        for (int i=0; i<N; i++) {
+            get<b>(nodes)[i] += get<a>(nodes)[i]*0.001;
         }
         auto t0 = Clock::now();
         for (int i=0; i<N; i++) {
@@ -162,16 +165,15 @@ public:
         ABORIA_VARIABLE(a,double,"a")
         ABORIA_VARIABLE(b,double,"b")
     	typedef Particles<std::tuple<a,b>,3> nodes_type;
-       	nodes_type nodes;
-        nodes_type::value_type node;
+       	nodes_type nodes(N);
         for (int i=0; i<N; i++) {
-            get<a>(node) = i;
-            get<b>(node) = i*2;
-            nodes.push_back(node);
+            get<a>(nodes)[i] = i;
+            get<b>(nodes)[i] = i*2;
         }
         Symbol<a> A;
         Symbol<b> B;
         Label<0,nodes_type> i(nodes);
+        B[i] += A[i]*0.001;
         auto t0 = Clock::now();
         B[i] += A[i]*0.001;
         auto t1 = Clock::now();
@@ -188,6 +190,7 @@ public:
             A[i] = i;
             B[i] = 2*i;
         }
+        B += A*0.001;
         auto t0 = Clock::now();
         B += A*0.001;
         auto t1 = Clock::now();

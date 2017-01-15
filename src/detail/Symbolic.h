@@ -103,6 +103,9 @@ namespace Aboria {
             P& get_particles() const { return p; }
 
             P& p;
+            typename P::data_type *buffers;
+            typename P::value_type *min;
+            typename P::value_type *max;
         };
 
 
@@ -1109,22 +1112,44 @@ namespace Aboria {
                     return mpl::false_();
                 }
 
-                #define DEFINE_THE_OP(name,the_op) \
+                template< typename ExprRHS >
+                const SymbolicExpr &operator = (ExprRHS const & expr) const {
+                    BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > ));
+                    check_valid_assign_expr(proto::as_expr<SymbolicDomain>(expr));
+                    this->assign<
+                        proto::matches<typename proto::result_of::as_expr<ExprRHS>::type,
+                            is_not_aliased>
+                                >(proto::as_expr<SymbolicDomain>(expr));
+                    return *this;
+                }
+
+                #define DEFINE_THE_OP(functor,the_op) \
                 template< typename ExprRHS > \
                 const SymbolicExpr &operator the_op (ExprRHS const & expr) const { \
                     BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
                     check_valid_assign_expr(proto::as_expr<SymbolicDomain>(expr)); \
-                    this->name(proto::as_expr<SymbolicDomain>(expr), \
-                            proto::matches<typename proto::result_of::as_expr<ExprRHS>::type, is_not_aliased>()); \
+                    this->evaluate< \
+                        proto::matches< \
+                                typename proto::result_of::as_expr<ExprRHS>::type, \
+                                is_not_aliased> \
+                        , functor \
+                            >(proto::as_expr<SymbolicDomain>(expr)); \
                     return *this; \
                 } \
 
-                DEFINE_THE_OP(assign,=)
-                DEFINE_THE_OP(increment,+=)
-                DEFINE_THE_OP(decrement,-=)
-                DEFINE_THE_OP(divide,/=)
-                DEFINE_THE_OP(multiply,*=)
-
+                /*
+                template <typename T>
+                struct return_second {
+                    T& operator()(const T&, T& second) {
+                        return second;
+                    }
+                };
+                DEFINE_THE_OP(return_second<typename VariableType::value_type>,=)
+                */
+                DEFINE_THE_OP(std::plus<typename VariableType::value_type>,+=)
+                DEFINE_THE_OP(std::minus<typename VariableType::value_type>,-=)
+                DEFINE_THE_OP(std::divides<typename VariableType::value_type>,/=)
+                DEFINE_THE_OP(std::multiplies<typename VariableType::value_type>,*=)
                 
 
                 private:
@@ -1177,68 +1202,69 @@ namespace Aboria {
                     static_assert(!detail::is_bivariate<ExprRHS>::value,"asignment expression must be constant or univariate");
                 }
 
-                template< typename ExprRHS>
-                const SymbolicExpr &assign(ExprRHS const & expr,
-                        mpl::false_) const {
+
+                template<typename NotAliased, typename ExprRHS>
+                const SymbolicExpr &assign(ExprRHS const & expr) const {
                     typedef typename VariableType::value_type value_type;
 
-                    const ParticlesType& particles = mlabel.get_particles();
-                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
+                    ParticlesType& particles = mlabel.get_particles();
+
+                    // if aliased then need to copy to a tempory buffer first 
+                    std::vector<value_type>& buffer =
+                        (NotAliased::value) ?
+                            get<VariableType>(particles)
+                            : msymbol.get_buffer(&particles);
                     buffer.resize(particles.size());
+
 
                     const size_t n = particles.size();
                     #pragma omp parallel for
-                    for (int i=0; i<n; i++) {
+                    for (size_t i=0; i<n; i++) {
                         EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
                         buffer[i] = proto::eval(expr,ctx);
                     }
 
-                    copy_from_buffer();
-                    post();
-
-                    return *this;
-                }
-
-                template< typename ExprRHS>
-                const SymbolicExpr &assign(ExprRHS const & expr,
-                        mpl::true_) const {
-                    ParticlesType& particles = mlabel.get_particles();
-
-                    const size_t n = particles.size();
-                    #pragma omp parallel for
-                    for (size_t i=0; i<n; i++) {
-                        EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
-
-                        get<VariableType>(particles)[i] = proto::eval(expr,ctx);
+                    //if aliased then copy back from the buffer
+                    if (NotAliased::value == false) {
+                        copy_from_buffer();
                     }
-
                     post();
 
                     return *this;
                 }
 
-                template< typename ExprRHS>
-                const SymbolicExpr &increment(ExprRHS const & expr,
-                        mpl::false_) const {
+                template<typename NotAliased, typename Functor, typename ExprRHS>
+                const SymbolicExpr &evaluate(ExprRHS const & expr) const {
                     typedef typename VariableType::value_type value_type;
 
-                    const ParticlesType& particles = mlabel.get_particles();
-                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
+                    ParticlesType& particles = mlabel.get_particles();
+
+                    // if aliased then need to copy to a tempory buffer first 
+                    std::vector<value_type>& buffer =
+                        (NotAliased::value) ?
+                            get<VariableType>(particles)
+                            : msymbol.get_buffer(&particles);
                     buffer.resize(particles.size());
 
+
                     const size_t n = particles.size();
+                    Functor functor;
                     #pragma omp parallel for
                     for (size_t i=0; i<n; i++) {
                         EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
-                        buffer[i] = get<VariableType>(particles[i]) + proto::eval(expr,ctx);
+                        buffer[i] = functor(get<VariableType>(particles)[i],proto::eval(expr,ctx));
                     }
 
-                    copy_from_buffer();
+                    //if aliased then copy back from the buffer
+                    if (NotAliased::value == false) {
+                        copy_from_buffer();
+                    }
                     post();
 
                     return *this;
                 }
 
+                /*
                 template< typename ExprRHS>
                 const SymbolicExpr &increment(ExprRHS const & expr,
                         mpl::true_) const {
@@ -1249,7 +1275,7 @@ namespace Aboria {
                     for (size_t i=0; i<n; i++) {
                         EvalCtx<fusion::map<fusion::pair<label_type,typename ParticlesType::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
 
-                        get<VariableType>(particles)[i] += proto::eval(expr,ctx);
+                        get<VariableType>(particles)[i] = Functor::operator(proto::eval(expr,ctx);
                     }
 
                     post();
@@ -1376,6 +1402,7 @@ namespace Aboria {
 
                     return *this;
                 }
+                */
             };
 
     }

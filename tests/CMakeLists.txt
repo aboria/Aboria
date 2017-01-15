@@ -24,6 +24,7 @@ endmacro(aboria_cxx_test)
 option(Aboria_RUN_TESTS "run main test suite with ctest" ON)
 if (Aboria_RUN_TESTS)
     set(test_suites
+        MetafunctionsTest 
         NeighboursTest
         BDTest
         SPHTest
@@ -61,6 +62,13 @@ set(SpeedTest
     test_linear_spring
     )
 
+set(MetafunctionsTestFile metafunctions.h) 
+set(MetafunctionsTest
+    test_aliasing
+    test_expr_matching
+    test_get_labels
+    test_thrust
+    ) 
 
 set(SymbolicTestFile symbolic.h)
 set(SymbolicTest
