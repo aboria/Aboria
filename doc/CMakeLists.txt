@@ -39,10 +39,33 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         symbolic.qbk
         )
 
-   file(WRITE html.xsl "<?xml version='1.0'?>
+    file(WRITE html.xsl "<?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">
 <xsl:import href=\"${BOOSTBOOK_XSL_DIR}/html.xsl\"/>
 <xsl:template name=\"user.head.content\">
+<script type=\"text/javascript\" 
+  src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML\">
+</script>
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</xsl:template>
+</xsl:stylesheet>")
+
+   file(WRITE html-website.xsl "<?xml version='1.0'?>
+<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">
+<xsl:import href=\"${BOOSTBOOK_XSL_DIR}/html.xsl\"/>
+<xsl:template name=\"user.head.content\">
+<script type=\"text/javascript\" 
+  src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML\">
+</script>
 <script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
   (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
