@@ -2,18 +2,31 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Struct template Symbol</title>
-<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.2">
-<link rel="up" href="../index/s10.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">
-<link rel="prev" href="Particles/write_from_tuple.html" title="Struct write_from_tuple">
+<link rel="up" href="../header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">
+<link rel="prev" href="../header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">
 <link rel="next" href="Label.html" title="Struct template Label">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Particles/write_from_tuple.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Label.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Label.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.Symbol"></a><div class="titlepage"></div>
@@ -22,7 +35,7 @@
 <p>Aboria::Symbol</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../index/s10.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Symbolic.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Symbolic.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">&gt;</span> 
 <span class="keyword">struct</span> <a class="link" href="Symbol.html" title="Struct template Symbol">Symbol</a> <span class="special">{</span>
@@ -32,27 +45,27 @@
   <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>   <a name="Aboria.Symbol.data_type"></a><span class="identifier">data_type</span><span class="special">;</span>   <span class="comment">// type of internal data class used to store <a class="link" href="Symbol.html" title="Struct template Symbol">Symbol</a> information (e.g. buffering) </span>
 
   <span class="comment">// <a class="link" href="Symbol.html#Aboria.Symbolconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <span class="keyword">explicit</span> <a class="link" href="Symbol.html#idp46457632386912-bb"><span class="identifier">Symbol</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="Symbol.html#idp46958967613680-bb"><span class="identifier">Symbol</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Symbol.html#idp46457632383568-bb">public member functions</a></span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Particles<span class="special">&gt;</span> <span class="keyword">void</span> <a class="link" href="Symbol.html#idp46457632383968-bb"><span class="identifier">resize_buffer</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html" title="Class template Particles">Particles</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="Symbol.html#idp46958967610336-bb">public member functions</a></span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Particles<span class="special">&gt;</span> <span class="keyword">void</span> <a class="link" href="Symbol.html#idp46958967610736-bb"><span class="identifier">resize_buffer</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html" title="Class template Particles">Particles</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46161611371312"></a><h2>Description</h2>
+<a name="idp47141218188816"></a><h2>Description</h2>
 <p>define a symbol from a <a class="link" href="Variable.html" title="Struct template Variable">Variable</a> type T. This symbol can then be used in expressions 
 </p>
 <div class="refsect2">
-<a name="idp46161611372880"></a><h3>
+<a name="idp47141218190384"></a><h3>
 <a name="Aboria.Symbolconstruct-copy-destruct"></a><code class="computeroutput">Symbol</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><span class="keyword">explicit</span> <a name="idp46457632386912-bb"></a><span class="identifier">Symbol</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>constructor </li></ol></div>
+<pre class="literallayout"><span class="keyword">explicit</span> <a name="idp46958967613680-bb"></a><span class="identifier">Symbol</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>constructor </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46161611379680"></a><h3>
-<a name="idp46457632383568-bb"></a><code class="computeroutput">Symbol</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Particles<span class="special">&gt;</span> <span class="keyword">void</span> <a name="idp46457632383968-bb"></a><span class="identifier">resize_buffer</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html" title="Class template Particles">Particles</a> <span class="special">&amp;</span> particles<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp47141218197120"></a><h3>
+<a name="idp46958967610336-bb"></a><code class="computeroutput">Symbol</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Particles<span class="special">&gt;</span> <span class="keyword">void</span> <a name="idp46958967610736-bb"></a><span class="identifier">resize_buffer</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html" title="Class template Particles">Particles</a> <span class="special">&amp;</span> particles<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>
@@ -62,7 +75,7 @@
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Particles/write_from_tuple.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index/s10.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Label.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Label.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
