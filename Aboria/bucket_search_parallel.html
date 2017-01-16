@@ -5,9 +5,9 @@
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.2">
-<link rel="up" href="../header//home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel_h.html" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h&gt;">
-<link rel="prev" href="bucket_s_idp46958956737600.html" title="Struct template bucket_search_parallel_query">
-<link rel="next" href="../header//home/travis/build/martinjrobins/Aboria/src/DataVector_h.html" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/DataVector.h&gt;">
+<link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h&gt;">
+<link rel="prev" href="bucket_s_idp46647382446160.html" title="Struct template bucket_search_parallel_query">
+<link rel="next" href="DataVector.html" title="Class template DataVector">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
@@ -26,7 +26,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="bucket_s_idp46958956737600.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../header//home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel_h.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="../header//home/travis/build/martinjrobins/Aboria/src/DataVector_h.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="bucket_s_idp46647382446160.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="DataVector.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.bucket_search_parallel"></a><div class="titlepage"></div>
@@ -35,53 +35,53 @@ MathJax.Hub.Config({
 <p>Aboria::bucket_search_parallel</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../header//home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel_h.html" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h&gt;">/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h&gt;">/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Traits<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="bucket_search_parallel.html" title="Class template bucket_search_parallel">bucket_search_parallel</a> <span class="special">:</span> <span class="keyword">public</span> neighbour_search_base&lt; bucket_search_parallel&lt; Traits &gt;, Traits, bucket_search_parallel_params&lt; Traits &gt;, ranges_iterator&lt; Traits &gt;, bucket_search_parallel_query&lt; Traits &gt; &gt;
 <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
 
-  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp46958956759088-bb">public static functions</a></span>
-  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="bucket_search_parallel.html#idp46958956759488-bb"><span class="identifier">unordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp46647382467728-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="bucket_search_parallel.html#idp46647382468128-bb"><span class="identifier">unordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp46958956760448-bb">private member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956760864-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="keyword">const</span> params_type<span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956762800-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956763760-bb"><span class="identifier">embed_points_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956764720-bb"><span class="identifier">add_points_at_end_impl</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956766368-bb"><span class="identifier">delete_points_at_end_impl</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956768032-bb"><span class="identifier">copy_points_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <a class="link" href="bucket_s_idp46958956737600.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="bucket_search_parallel.html#idp46958956770368-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956772240-bb"><span class="identifier">build_buckets</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958956773200-bb"><span class="identifier">build_bucket_indices</span></a><span class="special">(</span><span class="identifier">vector_double_d_const_iterator</span><span class="special">,</span> 
+  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp46647382469088-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382469504-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="keyword">const</span> params_type<span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382471440-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382472400-bb"><span class="identifier">embed_points_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382473360-bb"><span class="identifier">add_points_at_end_impl</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382475008-bb"><span class="identifier">delete_points_at_end_impl</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382476672-bb"><span class="identifier">copy_points_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <a class="link" href="bucket_s_idp46647382446160.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="bucket_search_parallel.html#idp46647382479008-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382480880-bb"><span class="identifier">build_buckets</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647382481840-bb"><span class="identifier">build_bucket_indices</span></a><span class="special">(</span><span class="identifier">vector_double_d_const_iterator</span><span class="special">,</span> 
                             <span class="identifier">vector_double_d_const_iterator</span><span class="special">,</span> 
                             <span class="identifier">vector_unsigned_int_iterator</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46958967211200-bb"><span class="identifier">sort_by_bucket_index</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46647392919456-bb"><span class="identifier">sort_by_bucket_index</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47141215194192"></a><h2>Description</h2>
+<a name="idp46519860518448"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp47141215194608"></a><h3>
-<a name="idp46958956759088-bb"></a><code class="computeroutput">bucket_search_parallel</code> public static functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp46958956759488-bb"></a><span class="identifier">unordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp46519860518864"></a><h3>
+<a name="idp46647382467728-bb"></a><code class="computeroutput">bucket_search_parallel</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp46647382468128-bb"></a><span class="identifier">unordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47141215202400"></a><h3>
-<a name="idp46958956760448-bb"></a><code class="computeroutput">bucket_search_parallel</code> private member functions</h3>
+<a name="idp46519860526656"></a><h3>
+<a name="idp46647382469088-bb"></a><code class="computeroutput">bucket_search_parallel</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956760864-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="keyword">const</span> params_type params<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956762800-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956763760-bb"></a><span class="identifier">embed_points_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956764720-bb"></a><span class="identifier">add_points_at_end_impl</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> dist<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956766368-bb"></a><span class="identifier">delete_points_at_end_impl</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> dist<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956768032-bb"></a><span class="identifier">copy_points_impl</span><span class="special">(</span><span class="identifier">iterator</span> copy_from_iterator<span class="special">,</span> <span class="identifier">iterator</span> copy_to_iterator<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="bucket_s_idp46958956737600.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp46958956770368-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956772240-bb"></a><span class="identifier">build_buckets</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958956773200-bb"></a><span class="identifier">build_bucket_indices</span><span class="special">(</span><span class="identifier">vector_double_d_const_iterator</span> positions_begin<span class="special">,</span> 
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382469504-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="keyword">const</span> params_type params<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382471440-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382472400-bb"></a><span class="identifier">embed_points_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382473360-bb"></a><span class="identifier">add_points_at_end_impl</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> dist<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382475008-bb"></a><span class="identifier">delete_points_at_end_impl</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> dist<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382476672-bb"></a><span class="identifier">copy_points_impl</span><span class="special">(</span><span class="identifier">iterator</span> copy_from_iterator<span class="special">,</span> <span class="identifier">iterator</span> copy_to_iterator<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="bucket_s_idp46647382446160.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp46647382479008-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382480880-bb"></a><span class="identifier">build_buckets</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647382481840-bb"></a><span class="identifier">build_bucket_indices</span><span class="special">(</span><span class="identifier">vector_double_d_const_iterator</span> positions_begin<span class="special">,</span> 
                           <span class="identifier">vector_double_d_const_iterator</span> positions_end<span class="special">,</span> 
                           <span class="identifier">vector_unsigned_int_iterator</span> bucket_indices_begin<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46958967211200-bb"></a><span class="identifier">sort_by_bucket_index</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46647392919456-bb"></a><span class="identifier">sort_by_bucket_index</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -92,7 +92,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="bucket_s_idp46958956737600.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../header//home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel_h.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="../header//home/travis/build/martinjrobins/Aboria/src/DataVector_h.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="bucket_s_idp46647382446160.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="DataVector.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

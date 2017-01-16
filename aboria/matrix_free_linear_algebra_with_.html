@@ -2,12 +2,25 @@
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Matrix-free Linear Algebra with Eigen</title>
-<link rel="stylesheet" href="../boostbook.css" type="text/css">
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.2">
 <link rel="up" href="../index.html" title="Aboria 0.2">
 <link rel="prev" href="symbolic_expressions.html" title="Symbolic Expressions">
 <link rel="next" href="examples.html" title="Examples">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
 </head>
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
@@ -56,7 +69,7 @@
 <p>
       To provide the concept and API of a matrix or linear operator, we will use
       the C++ library <a href="../eigen.tuxfamily.org" target="_top">Eigen</a>. Aboria provides
-      functionality to wrap bivariate expressions in <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html" title="Class template MatrixReplacement">Aboria::MatrixReplacement</a></code>,
+      functionality to wrap bivariate expressions in <code class="computeroutput">Aboria::MatrixReplacement</code>,
       so that Eigen can treat them as normal sparse matricies.
     </p>
 <div class="section">
@@ -65,7 +78,7 @@
       Operators</a>
 </h3></div></div></div>
 <p>
-        You can use the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idp46457632128336">Aboria::create_eigen_operator</a></code>
+        You can use the <code class="computeroutput">Aboria::create_eigen_operator</code>
         function to create an Eigen operator. The function takes two labels as its
         first and second arguments corresponding to the rows and columns of the matrix,
         a bivariate expression as the third argument, and an optional bivariate boolean
@@ -95,7 +108,7 @@
 </pre>
 <p>
         You can also set the sparsity of the operator by providing a fourth parameter
-        to <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idp46457632128336">Aboria::create_eigen_operator</a></code>,
+        to <code class="computeroutput">Aboria::create_eigen_operator</code>,
         a boolean expression that is <code class="computeroutput"><span class="keyword">false</span></code>
         when the operator should evaluate to zero. For example,
       </p>
@@ -105,8 +118,8 @@
 <p>
         Finally, you might also want to specify an operator that only depends on
         a single label, i.e. a vector rather than a matrix. This can be done by using
-        the <code class="computeroutput"><a class="link" href="../Aboria/One.html" title="Struct One">Aboria::One</a></code> symbol in conjunction
-        with the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_e_idp46457632128336">Aboria::create_eigen_operator</a></code>
+        the <code class="computeroutput">Aboria::One</code> symbol in conjunction
+        with the <code class="computeroutput">Aboria::create_eigen_operator</code>
         function.
       </p>
 <pre class="programlisting"><span class="identifier">One</span> <span class="identifier">one</span><span class="special">;</span>
@@ -120,7 +133,7 @@
 </h3></div></div></div>
 <p>
         It is common that you would like to compose operators in a tiled or block
-        format, and Aboria provides a functionality to do this using the <code class="computeroutput"><a class="link" href="../index/s10.html#Aboria.create_b_idp46457632158288">Aboria::create_block_eigen_operator</a></code>.
+        format, and Aboria provides a functionality to do this using the <code class="computeroutput">Aboria::create_block_eigen_operator</code>.
         This function is templated by two unsigned integers N and M representing
         an NxM block operator, and takes NM arguments for the required number of
         operators. For example,
@@ -144,11 +157,14 @@
       Solvers</a>
 </h3></div></div></div>
 <p>
-        The <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html" title="Class template MatrixReplacement">Aboria::MatrixReplacement</a></code>
+        The <code class="computeroutput">Aboria::MatrixReplacement</code>
         class can multiply other Eigen vectors, and can be used in Eigen's iterative
         solvers. Both <code class="computeroutput"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">IdentityPreconditioner</span></code> and <code class="computeroutput"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DiagonalPreconditioner</span></code> preconditioners
         are supported. Below is an example of how to use Eigen's GMRES iterative
-        solver to solve the equation $\phi = W \gamma$
+        solver to solve the equation
+      </p>
+<p>
+        $$\phi = W \gamma$$
       </p>
 <pre class="programlisting"><span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">ParticlesType</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">knots</span><span class="special">);</span>
 <span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">ParticlesType</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">knots</span><span class="special">);</span>
