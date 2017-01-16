@@ -84,6 +84,7 @@ set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
 set(CXXTEST_ROOT ${CMAKE_SOURCE_DIR})
 find_package(CxxTest)
 
+option(Aboria_COVERAGE "Compile with coverage info" OFF)
 if (Aboria_COVERAGE)
     #set(COVERAGE_FLAGS --coverage)
     set(COVERAGE_FLAGS -fprofile-arcs -ftest-coverage)
