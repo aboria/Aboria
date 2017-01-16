@@ -82,11 +82,11 @@ MathJax.Hub.Config({
     boost.image.w=200
     boost.image.h=62
     boost.mathjax=1
-    chunk.section.depth=4
+    chunk.section.depth=1
     #<xsl:param>chunk.first.sections=1
-    toc.section.depth=3
-    toc.max.depth=2
-    generate.section.toc.level=4
+    #toc.section.depth=3
+    #toc.max.depth=2
+    #generate.section.toc.level=4
     nav.layout=none
     #admon.graphics.path=images/admonition/
     #navig.graphics.path=images/navigation/
