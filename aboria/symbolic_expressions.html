@@ -115,7 +115,7 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">_alive</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
 </pre>
 <p>
-        Then after the expression is complete Aboria will call the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46647393292352-bb">delete_particles</a></code>
+        Then after the expression is complete Aboria will call the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46577198603392-bb">delete_particles</a></code>
         member function to delete all the particles with <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;(</span><span class="identifier">particle</span><span class="special">)</span> <span class="special">==</span> <span class="keyword">false</span></code>
         (i.e. all of them). After this expression the particle container will be
         empty.
@@ -240,7 +240,7 @@ MathJax.Hub.Config({
         In this case Aboria can recognise a summation over neighbours closer than
         a radius of 2, and will use the neighbourhood searching facility described
         in <a class="link" href="neighbourhood_searching.html" title="Neighbourhood Searching">aboria.neighbourhood_searching</a>
-        to find these neighbouring particles. Note that you need to call <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46647393263696-bb">Aboria::Particles::init_neighbour_search</a></code>
+        to find these neighbouring particles. Note that you need to call <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46577198574736-bb">Aboria::Particles::init_neighbour_search</a></code>
         before any bivariate expressions using neighbourhood searching.
       </p>
 <p>

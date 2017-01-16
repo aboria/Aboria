@@ -1,13 +1,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
-<title>Struct Normal</title>
+<title>Function template eval</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.2">
 <link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">
-<link rel="prev" href="Dx.html" title="Struct template Dx">
-<link rel="next" href="Uniform.html" title="Struct Uniform">
+<link rel="prev" href="GeometriesSymbolic.html" title="Struct template GeometriesSymbolic">
+<link rel="next" href="default_traits.html" title="Struct default_traits">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
@@ -26,23 +26,33 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Dx.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Uniform.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="GeometriesSymbolic.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="default_traits.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
-<a name="Aboria.Normal"></a><div class="titlepage"></div>
+<a name="Aboria.eval_idp46577198688240"></a><div class="titlepage"></div>
 <div class="refnamediv">
-<h2><span class="refentrytitle">Struct Normal</span></h2>
-<p>Aboria::Normal</p>
+<h2><span class="refentrytitle">Function template eval</span></h2>
+<p>Aboria::eval</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Symbolic.h</a>&gt;
 
 </span>
-<span class="keyword">struct</span> <a class="link" href="Normal.html" title="Struct Normal">Normal</a> <span class="special">{</span>
-<span class="special">}</span><span class="special">;</span></pre></div>
+<span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Expr<span class="special">&gt;</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span> <span class="identifier">eval</span><span class="special">(</span><span class="identifier">Expr</span> <span class="special">&amp;</span> expr<span class="special">)</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47648767166912"></a><h2>Description</h2>
-<p>a symbolic class used to return a normally distributed random variable. This uses the random number generator of the current particle to generate the random variable </p>
+<a name="idp47648767417088"></a><h2>Description</h2>
+<p>evaluate a given expression that returns a constant value (scaler or vector)  expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the result of the expression </p></td>
+</tr></tbody>
+</table></div>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
@@ -51,7 +61,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Dx.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Uniform.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="GeometriesSymbolic.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="default_traits.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
