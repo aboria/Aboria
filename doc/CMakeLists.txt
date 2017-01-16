@@ -25,7 +25,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Vector.h
     )
 
-  add_reference(libaboria.xml ${ABORIA_HEADERS} BOOSTBOOK boost.doxygen.reftitle="Aboria")
+  add_reference(libaboria.xml ${ABORIA_HEADERS} BOOSTBOOK boost.doxygen.reftitle="libaboria")
   
     set(QBK_SOURCES
         aboria.qbk

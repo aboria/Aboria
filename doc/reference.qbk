@@ -46,5 +46,5 @@ Header: `<Aboria.h>`
 
 [endsect] [/ overview]
 
-[xinclude autodoc.xml]
+[xinclude libaboria.xml]
 
