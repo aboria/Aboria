@@ -1,10 +1,10 @@
 #!/bin/bash
 
-make aboria-html
+make aboria-html-website
 git fetch origin gh-pages
 git checkout gh-pages
 if [ $? -eq 0 ]; then
-    cp -R doc/html/* .
+    cp -R doc/html-website/* .
     git add *.html
     git add standalone_HTML.manifest
     git add Aboria/*

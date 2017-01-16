@@ -25,7 +25,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Vector.h
     )
 
-  add_reference(libaboria-ref.xml    ${ABORIA_HEADERS}   BOOSTBOOK boost.doxygen.reftitle="Aboria")
+  add_reference(libaboria.xml ${ABORIA_HEADERS} BOOSTBOOK boost.doxygen.reftitle="Aboria")
   
     set(QBK_SOURCES
         aboria.qbk
@@ -39,11 +39,28 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         symbolic.qbk
         )
 
+   file(WRITE html.xsl "<?xml version='1.0'?>
+<xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">
+<xsl:import href=\"${BOOSTBOOK_XSL_DIR}/html.xsl\"/>
+<xsl:template name=\"user.head.content\">
+<script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+
+</script>
+</xsl:template>
+</xsl:stylesheet>")
+
     # PARAMETERS : http://docbook.sourceforge.net/release/xsl/current/doc/
   add_documentation(
   #  quickstart.cpp
     ${QBK_SOURCES}
-    libaboria-ref.xml
+    libaboria.xml
   PARAMETERS
     #boost.root=./
     html.stylesheet=css/boostbook.css
@@ -51,6 +68,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     boost.image.alt="Aboria"
     boost.image.w=200
     boost.image.h=62
+    boost.mathjax=1
     chunk.section.depth=4
     #<xsl:param>chunk.first.sections=1
     toc.section.depth=3
