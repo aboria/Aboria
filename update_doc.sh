@@ -1,6 +1,6 @@
 #!/bin/bash
 
-make generate_doc
+make aboria-html
 git fetch origin gh-pages
 git checkout gh-pages
 if [ $? -eq 0 ]; then

@@ -98,7 +98,13 @@ by Aboria by simply skipping its evaluation when applying the `Full` operator.
 
 [section Iterative Solvers]
 
-The [classref Aboria::MatrixReplacement] class can multiply other Eigen vectors, and can be used in Eigen's iterative solvers. Both `Eigen::IdentityPreconditioner` and `Eigen::DiagonalPreconditioner` preconditioners are supported. Below is an example of how to use Eigen's GMRES iterative solver to solve the equation $\phi = W \gamma$
+The [classref Aboria::MatrixReplacement] class can multiply other Eigen vectors, 
+and can be used in Eigen's iterative solvers. Both 
+`Eigen::IdentityPreconditioner` and `Eigen::DiagonalPreconditioner` 
+preconditioners are supported. Below is an example of how to use Eigen's GMRES 
+iterative solver to solve the equation 
+
+$$\phi = W \gamma$$
 
 
 ``

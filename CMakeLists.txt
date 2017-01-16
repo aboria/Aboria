@@ -99,11 +99,6 @@ enable_testing()
 if (CXXTEST_FOUND)
     add_subdirectory(tests)
 endif()
-#add_subdirectory(examples)
+add_subdirectory(doc)
 
 
-add_custom_target(generate_doc 
-    bjam
-    WORKING_DIRECTORY doc
-    COMMENT Generating documentation...
-    VERBATIM)
