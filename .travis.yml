@@ -76,7 +76,7 @@ script:
 - ctest --output-on-failure
 
 after_success:
-- if [ "$Aboria_COVERAGE" == "on" ]; then coveralls -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'; fi
+- if [ "$Aboria_COVERAGE" == "on" ]; then coveralls -t Fs16djSuS92togKrtBmOi6SFV85s8UVIgYoeD -e cxxtest -i src --gcov /usr/bin/gcov-4.8 --gcov-options '\-lp'; fi
 - if [ "$Travis_UPDATE_DOC" == "on" ] && [ "$TRAVIS_BRANCH" == 'master' ]; then source update_doc.sh; fi
 
 notifications:
