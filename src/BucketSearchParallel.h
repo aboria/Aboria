@@ -307,6 +307,12 @@ struct bucket_search_parallel_query {
     }
 
     CUDA_HOST_DEVICE
+    iterator_range<bucket_iterator<Traits>> get_buckets() const {
+        return iterator_range<ranges_iterator<Traits>>(find_broadphase_neighbours(position,-1,false),
+                                              ranges_iterator<Traits>(m_particles_end));
+    }
+
+    CUDA_HOST_DEVICE
     ranges_iterator<Traits> find_broadphase_neighbours(
             const double_d& r, 
             const int my_index, 
