@@ -452,12 +452,13 @@ struct bucket_search_serial_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     typedef typename Traits::reference reference;
     typedef typename Traits::position position;
+    const static unsigned int dimension = Traits::dimension;
 
     bool_d m_periodic;
     double_d m_bucket_side_length; 
     unsigned_int_d m_size;
-    detail::bbox<Traits::dimension> m_bounds;
-    detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
+    detail::bbox<dimension> m_bounds;
+    detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 
     raw_pointer m_particles_begin;
     int *m_buckets_begin;
@@ -473,14 +474,33 @@ struct bucket_search_serial_query {
 
     CUDA_HOST_DEVICE
     iterator_range<linked_list_iterator<Traits>> get_neighbours(const double_d& position) const {
-        return iterator_range<linked_list_iterator<Traits>>(find_broadphase_neighbours(position,-1,false),
-                                              linked_list_iterator<Traits>());
+        return iterator_range<linked_list_iterator<Traits>>(
+                find_broadphase_neighbours(position,1,false),
+                linked_list_iterator<Traits>());
+    }
+
+    CUDA_HOST_DEVICE
+    iterator_range<linked_list_iterator<Traits>> get_bucket_particles(const size_t id) const {
+        return iterator_range<linked_list_iterator<Traits>>(
+                find_broadphase_neighbours(get_bucket_bbox(id).centre(),0,false),
+                linked_list_iterator<Traits>());
+    }
+
+    CUDA_HOST_DEVICE
+    detail::bbox<dimension> get_bucket_bbox(const size_t id) const {
+    }
+
+    CUDA_HOST_DEVICE
+    iterator_range<detail::counting_iterator<unsigned int>> get_bucket_id_range() const {
+        return iterator_range<detail::counting_iterator<unsigned int>>(
+                detail::counting_iterator<unsigned int>(0),
+                detail::counting_iterator<unsigned int>(m_size.prod()));
     }
 
     CUDA_HOST_DEVICE
     linked_list_iterator<Traits> find_broadphase_neighbours(
             const double_d& r, 
-            const int my_index, 
+            const double box_radius, 
             const bool self) const {
         
         ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);

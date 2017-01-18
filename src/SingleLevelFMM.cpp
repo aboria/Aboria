@@ -61,60 +61,80 @@ struct mq_expansions {
         etc.
 }
 
-template <typename Expansions, 
-          typename SourceNeighbourSearch>
-struct evaluate_B_l {
-    size_t r;
-    evaluate_B_l(size_t r,NeighbourSearch search),r(r) {}
+template <typename Expansions, unsigned int R, 
+          typename SourceNeighbourQuery>
+struct calculate_S_expansion {
+    SourceNeighbourQuery &search;
+    
+    calculate_S_expansion(SourceNeighbourQuery search):
+        search(search) {}
 
-    double operator()(detail centre) {
-        sum = 0
-            for (xi = search.all in I1(centre)) {
-                sum += Expansions::b(r,xi,centre)
-            }
+    Vector<double,R> operator()(size_t bucket_id) {
+        Vector<double,R> sum = 0;
+        for (auto i&: search.get_bucket_particles(bucket_id)) {
+            sum += Expansions::b<R>(r,xi,centre);
+        }
         return sum;
     }
 };
 
-template <typename Expansions>
-struct translate_S_R {
-    size_t q;
-    evaluate_B_l(size_t q,
-            vector<bbox> centres,
-            vector<Expansions::Scalar> Brs)
-        :q(q) {}
+template <typename Expansions, unsigned int P1, unsigned int P2,
+          typename SourceNeighbourQuery, typename TargetNeighbourQuery>
+struct translate_S_R_accumulator {
+    TargetNeighbourQuery &target;
+    SourceNeighbourQuery &source;
+    const static unsigned int Dsource = TargetNeighbourQuery::dimension;
+    const static unsigned int Dtarget = SourceNeighbourQuery::dimension;
+    detail::bbox<Dtarget> target_bbox;
 
-    double operator()(detail centre) {
-        sum = 0
-            for (xi = all centres) {
-                for (size_t i=0; i<q; ++i) {
-                    sum += Expansions::S_R(r,xi,centre)*Br
-                }
-            }
-        return sum;
+    evaluate_B_l(SourceNeighbourQuery &source,
+                 TargetNeighbourQuery &target,
+                 size_t target_centre)
+        :q(q),target(target),source(source),target_centre(target_centre) {}
+
+    double operator()(const Vector& sum, const size_t& source_bucket_id) {
+        detail::bbox<Dsource> source_bbox = source.get_bucket_bbox(source_bucket_id);
+        if (well_separated(source_bbox,target_bbox)) {
+            return sum + Expansions::S_R();
+        } else {
+            return sum;
+        }
+    }
+};
+ 
+
+template <typename Expansions, unsigned int P1, unsigned int P2,
+          typename SourceNeighbourQuery, typename TargetNeighbourQuery>
+struct translate_S_R {
+    SourceNeighbourQuery &search;
+    TargetNeighbourQuery &target;
+    Traits::template vector_type<Vector<double,P1> &B;
+    const static unsigned int Dtarget = SourceNeighbourQuery::dimension;
+
+    evaluate_B_l(SourceNeighbourQuery &source,
+                 TargetNeighbourQuery &target,
+                 Traits::template vector_type<Vector<double,P1> &B
+                 )
+        :target(target),source(source),B(B) {}
+
+    Vector<double,P2> operator()(size_t target_bucket_id) {
+        detail::bbox<Dtarget> target_bbox = target.get_bucket_bbox(target_bucket_id);
+        auto source_bucket_ids = source.get_bucket_range();
+        return Aboria::accumulate(source_bucket_ids.begin(),
+                           source_bucket_ids.end(),
+                           Vector<double,P2>(0),
+                           translate_S_R_accumulator(source,target,target_bbox));
+        
     }
 };
    
-template <typename Traits, typename Expansions, 
+template <typename Traits, typename Expansions, unsigned int P1, unsigned int P2,
          typename SourceNeighbourSearch, typename TargetNeighbourSearch>
 class SingleLevelFMM {
-    SourceNeighbourSearch m_source;
-    TargetNeighbourSearch m_target;
-
-    size_t p1,p2;
-
-    struct evaluate_B_l {
-        size_t r;
-        evaluate_B_l(size_t r),r(r) {}
-        double operator()(size_t l) {
-            for (all in I1) {
-                qi*
-            }
-        }
-    }
-
-    struct 
-
+    SourceNeighbourQuery m_source;
+    TargetNeighbourQuery m_target;
+    Traits::template vector_type<Vector<double,P2> A;
+    Traits::template vector_type<Vector<double,P1> B;
 
 public:
 
@@ -125,12 +145,32 @@ public:
 
     // calculate S expansions for source buckets
     calculate_S_expansions() {
-
+        auto source_bucket_ids = m_source.get_bucket_range();
+        B.resize(source_bucket_ids.size());
+        return Aboria::transform(source_bucket_ids.begin(),
+                                 source_bucket_ids.end(),
+                                 B.begin(), 
+                                 calculate_S_expansion<
+                                    Expansions,
+                                    P1,
+                                    SourceNeighbourQuery>(m_source));
+        
     }
 
     // calculate S|R translations for target buckets
     calculate_S_R_translations() {
-
+        auto target_bucket_ids = m_target.get_bucket_range();
+        A.resize(target_bucket_ids.size());
+        return Aboria::transform(target_bucket_ids.begin(),
+                                 target_bucket_ids.end(),
+                                 A.begin(), 
+                                 translate_S_R<
+                                    Expansions,
+                                    P1,P2,
+                                    SourceNeighbourQuery,
+                                    TargetNeighbourQuery>(m_source,
+                                                          m_target,
+                                                          B));
     }
 
     // evaluate R expansions for given particle set

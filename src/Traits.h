@@ -121,6 +121,10 @@ template <typename traits, unsigned int D, typename ... TYPES>
 struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     const static unsigned int dimension = D;
+    template <typename T>
+    struct vector_type {
+        typedef traits::template vector_type<T> type;
+    };
     typedef typename traits::template vector_type<Vector<double,D> >::type vector_double_d;
     typedef typename vector_double_d::iterator vector_double_d_iterator;
     typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;
