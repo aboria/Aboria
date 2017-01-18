@@ -125,17 +125,17 @@ MathJax.Hub.Config({
     </p>
 <p>
       The particle data is contained in a C++ Standard Template Library (STL) compatible
-      container. Each particle has a a 3D position and user-defined data-package
+      container. Each particle has a n-dimensional position and user-defined data-package
       (for other variables such as velocity, density etc) and is optionally embedded
       within a hypercube spatial domain (for neighbourhood searches) that can be
       periodic or not. Users can implement standard C++ and STL algorithms directly
       on the particle data, or use the expression template API to naturally form
-      operations over the particle set.
+      non-linear operators over the particle set.
     </p>
 <p>
       The motivation behind Aboria is to provide a useful library for implementing
-      particle-based numerical algorithms, for example Smoothed Particle Hydrodynamics
-      or Molecular Dynamics.
+      particle-based numerical algorithms, for example Molecular Dynamics, Radial
+      Basis Functions or Smoothed Particle Hydrodynamics.
     </p>
 <p>
       Aboria is distributed under a BSD 3-Clause License, see LICENCE for more details.
@@ -143,7 +143,7 @@ MathJax.Hub.Config({
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
-<td align="left"><p><small>Last revised: January 16, 2017 at 12:32:33 GMT</small></p></td>
+<td align="left"><p><small>Last revised: January 18, 2017 at 09:29:55 GMT</small></p></td>
 <td align="right"><div class="copyright-footer"></div></td>
 </tr></table>
 <hr>
