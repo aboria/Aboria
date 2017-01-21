@@ -37,6 +37,7 @@ if (Aboria_RUN_TESTS)
         VariablesTest
         ConstructorsTest
         OperatorsTest
+        SpatialUtilsTest
         )
 endif()
 
@@ -69,6 +70,11 @@ set(MetafunctionsTest
     test_get_labels
     test_thrust
     ) 
+
+set(SpatialUtilsTest spatial_utils.h)
+set(SpatialUtilsTest
+    test_bucket_indicies
+    )
 
 set(SymbolicTestFile symbolic.h)
 set(SymbolicTest

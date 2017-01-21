@@ -104,13 +104,58 @@ std::ostream& operator<< (std::ostream& out, const bbox<D>& b) {
 }
 
 template<unsigned int D>
+struct bucket_index {
+    typedef Vector<double,D> double_d;
+    typedef Vector<unsigned int,D> unsigned_int_d;
+    typedef Vector<int,D> int_d;
+
+    unsigned_int_d m_size;
+
+    CUDA_HOST_DEVICE
+    bucket_index() {};
+
+    CUDA_HOST_DEVICE
+    bucket_index(const unsigned_int_d& size): 
+        m_size(size) {
+        }
+
+    inline 
+    CUDA_HOST_DEVICE
+    int collapse_index_vector(const int_d &vindex) const {
+        int index = 0;
+        unsigned int multiplier = 1.0;
+        for (int i = D-1; i>=0; --i) {
+            if (i != D-1) {
+                multiplier *= m_size[i+1];
+            }
+            index += multiplier*vindex[i];
+        }
+        return index;
+    }
+
+    inline 
+    CUDA_HOST_DEVICE
+    int_d& reassemble_index_vector(const int index) const {
+        int_d vindex;
+        int i = index;
+        for (int i = D-1; i>=0; --i) {
+            double div = i/m_size[i];
+            i = std::floor(div);
+            vindex[i] = (div-i)*m_size[i];
+        }
+        return vindex;
+    }
+};
+
+template<unsigned int D>
 struct point_to_bucket_index {
     typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
     typedef Vector<unsigned int,D> unsigned_int_d;
 
     bbox<D> m_bounds;
     double_d m_bucket_side_length;
-    unsigned_int_d m_size;
+    bucket_index<D> m_bucket_index;
 
     CUDA_HOST_DEVICE
     point_to_bucket_index() {};
@@ -119,38 +164,27 @@ struct point_to_bucket_index {
     point_to_bucket_index(const unsigned_int_d& size, 
                           const double_d& bucket_side_length, 
                           const bbox<D> &bounds):
-        m_size(size),m_bucket_side_length(bucket_side_length),m_bounds(bounds) {}
+        m_bucket_index(size),m_bucket_side_length(bucket_side_length),m_bounds(bounds) {}
 
     CUDA_HOST_DEVICE
     unsigned int operator()(const double_d& v) const {
         return find_bucket_index(v);
     }
 
+    /*
     inline 
     CUDA_HOST_DEVICE
     unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
-        //std::cout << "collapsing "<<vindex;
-
-        unsigned int index = 0;
-        unsigned int multiplier = 1.0;
-        for (int i = D-1; i>=0; --i) {
-            if (i != D-1) {
-                multiplier *= m_size[i+1];
-            }
-            //ASSERT((vindex[i] < m_size[i]), "index "<<vindex<<" is outside of dimension "<<i<<": "<<m_size);
-            ASSERT((vindex[i] < m_size[i]), "index is outside of dimension");
-            index += multiplier*vindex[i];
-        }
-        //std::cout << " to "<<index<<std::endl;
-        return index;
-    }
-
+        return m_bucket_index.collapse_index_vector(vindex);
+    }*/
 
     inline 
     CUDA_HOST_DEVICE
-    unsigned_int_d find_bucket_index_vector(const double_d &r) const {
+    int_d find_bucket_index_vector(const double_d &r) const {
         // find the raster indices of p's bucket
         //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
+        ASSERT(((r-m_bounds.bmin) >= 0).all(),"point r less than min bound");
+        ASSERT(((r-m_bounds.bmin) < m_bounds.bmax).all(),"point r greater than max bound");
         return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
     }
 
@@ -159,7 +193,7 @@ struct point_to_bucket_index {
     inline 
     CUDA_HOST_DEVICE
     unsigned int find_bucket_index(const double_d &r) const {
-       return collapse_index_vector(find_bucket_index_vector(r));
+        return m_bucket_index.collapse_index_vector(find_bucket_index_vector(r));
     }
  
 };

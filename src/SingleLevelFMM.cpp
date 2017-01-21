@@ -65,13 +65,14 @@ template <typename Expansions, unsigned int R,
           typename SourceNeighbourQuery>
 struct calculate_S_expansion {
     SourceNeighbourQuery &search;
+    typedef typename SourceNeighbourQuery::bucket_reference reference;
     
     calculate_S_expansion(SourceNeighbourQuery search):
         search(search) {}
 
-    Vector<double,R> operator()(size_t bucket_id) {
+    Vector<double,R> operator()(const reference bucket) {
         Vector<double,R> sum = 0;
-        for (auto i&: search.get_bucket_particles(bucket_id)) {
+        for (auto i&: search.get_bucket_particles(bucket)) {
             sum += Expansions::b<R>(r,xi,centre);
         }
         return sum;
@@ -86,14 +87,15 @@ struct translate_S_R_accumulator {
     const static unsigned int Dsource = TargetNeighbourQuery::dimension;
     const static unsigned int Dtarget = SourceNeighbourQuery::dimension;
     detail::bbox<Dtarget> target_bbox;
+    typedef typename SourceNeighbourQuery::bucket_reference reference;
 
     evaluate_B_l(SourceNeighbourQuery &source,
                  TargetNeighbourQuery &target,
                  size_t target_centre)
         :q(q),target(target),source(source),target_centre(target_centre) {}
 
-    double operator()(const Vector& sum, const size_t& source_bucket_id) {
-        detail::bbox<Dsource> source_bbox = source.get_bucket_bbox(source_bucket_id);
+    double operator()(const Vector& sum, const reference source_bucket) {
+        detail::bbox<Dsource> source_bbox = source.get_bucket_bbox(source_bucket);
         if (well_separated(source_bbox,target_bbox)) {
             return sum + Expansions::S_R();
         } else {
@@ -110,6 +112,7 @@ struct translate_S_R {
     TargetNeighbourQuery &target;
     Traits::template vector_type<Vector<double,P1> &B;
     const static unsigned int Dtarget = SourceNeighbourQuery::dimension;
+    typedef typename TargetNeighbourQuery::bucket_reference reference;
 
     evaluate_B_l(SourceNeighbourQuery &source,
                  TargetNeighbourQuery &target,
@@ -117,11 +120,11 @@ struct translate_S_R {
                  )
         :target(target),source(source),B(B) {}
 
-    Vector<double,P2> operator()(size_t target_bucket_id) {
-        detail::bbox<Dtarget> target_bbox = target.get_bucket_bbox(target_bucket_id);
-        auto source_bucket_ids = source.get_bucket_range();
-        return Aboria::accumulate(source_bucket_ids.begin(),
-                           source_bucket_ids.end(),
+    Vector<double,P2> operator()(const reference target_bucket) {
+        detail::bbox<Dtarget> target_bbox = target.get_bucket_bbox(target_bucket);
+        auto source_buckets = source.get_bucket_range();
+        return Aboria::accumulate(source_buckets.begin(),
+                           source_buckets.end(),
                            Vector<double,P2>(0),
                            translate_S_R_accumulator(source,target,target_bbox));
         
@@ -145,10 +148,10 @@ public:
 
     // calculate S expansions for source buckets
     calculate_S_expansions() {
-        auto source_bucket_ids = m_source.get_bucket_range();
+        auto source_buckets = m_source.get_bucket_range();
         B.resize(source_bucket_ids.size());
-        return Aboria::transform(source_bucket_ids.begin(),
-                                 source_bucket_ids.end(),
+        return Aboria::transform(source_buckets.begin(),
+                                 source_buckets.end(),
                                  B.begin(), 
                                  calculate_S_expansion<
                                     Expansions,
@@ -159,10 +162,10 @@ public:
 
     // calculate S|R translations for target buckets
     calculate_S_R_translations() {
-        auto target_bucket_ids = m_target.get_bucket_range();
+        auto target_buckets = m_target.get_bucket_range();
         A.resize(target_bucket_ids.size());
-        return Aboria::transform(target_bucket_ids.begin(),
-                                 target_bucket_ids.end(),
+        return Aboria::transform(target_buckets.begin(),
+                                 target_buckets.end(),
                                  A.begin(), 
                                  translate_S_R<
                                     Expansions,

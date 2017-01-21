@@ -453,6 +453,7 @@ struct bucket_search_serial_query {
     typedef typename Traits::reference reference;
     typedef typename Traits::position position;
     const static unsigned int dimension = Traits::dimension;
+    typedef lattice_iterator<Traits> bucket_iterator;
 
     bool_d m_periodic;
     double_d m_bucket_side_length; 
@@ -480,21 +481,21 @@ struct bucket_search_serial_query {
     }
 
     CUDA_HOST_DEVICE
-    iterator_range<linked_list_iterator<Traits>> get_bucket_particles(const size_t id) const {
+    iterator_range<linked_list_iterator<Traits>> get_bucket_particles(const bucket_iterator::reference bucket) const {
         return iterator_range<linked_list_iterator<Traits>>(
                 find_broadphase_neighbours(get_bucket_bbox(id).centre(),0,false),
                 linked_list_iterator<Traits>());
     }
 
     CUDA_HOST_DEVICE
-    detail::bbox<dimension> get_bucket_bbox(const size_t id) const {
+    detail::bbox<dimension> get_bucket_bbox(const bucket_iterator::reference bucket) const {
     }
 
     CUDA_HOST_DEVICE
-    iterator_range<detail::counting_iterator<unsigned int>> get_bucket_id_range() const {
-        return iterator_range<detail::counting_iterator<unsigned int>>(
-                detail::counting_iterator<unsigned int>(0),
-                detail::counting_iterator<unsigned int>(m_size.prod()));
+    iterator_range<bucket_iterator> get_bucket_id_range() const {
+        return iterator_range<bucket_iterator>(
+                bucket_iterator(0),
+                bucket_iterator(m_size.prod()));
     }
 
     CUDA_HOST_DEVICE
@@ -519,17 +520,18 @@ struct bucket_search_serial_query {
                             m_linked_list_begin,
                             m_buckets_begin,r);
 
-        int_d bucket_offset(-1);
-        constexpr unsigned int last_d = Traits::dimension-1;
-        bool still_going = true;
-        while (still_going) {
-            unsigned_int_d other_bucket = my_bucket + bucket_offset; 
+        lattice_iterator<Traits> bucket_iterator(my_bucket+int_d(-1),
+                                                 my_bucket+ind_d(1),
+                                                 my_bucket+int_d(-1));
+
+        while ((*bucket_iterator)[0] <= my_bucket[0]+1) { 
+            int_d& other_bucket = *bucket_iterator; 
 
             // handle end cases
             double_d transpose(0);
             bool outside = false;
             for (int i=0; i<Traits::dimension; i++) {
-                if (other_bucket[i] >= detail::get_max<unsigned int>()) {
+                if (other_bucket[i] < 0) {
                     if (m_periodic[i]) {
                         other_bucket[i] = m_size[i]-1;
                         transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
@@ -550,7 +552,7 @@ struct bucket_search_serial_query {
             }
 
             if (!outside) {
-                const unsigned int other_bucket_index = m_point_to_bucket_index.collapse_index_vector(other_bucket);
+                const int other_bucket_index = m_point_to_bucket_index.collapse_index_vector(other_bucket);
 
 #ifndef __CUDA_ARCH__
                 LOG(4,"\tlooking in bucket "<<other_bucket<<" = "<<other_bucket_index<<".");
