@@ -65,7 +65,7 @@ class SpeedTest : public CxxTest::TestSuite {
 public:
     // BLAS Level 1
     // Dense Vector Addition (c = a + b)
-    double vector_addition_aboria_level1(const size_t N) {
+    double vector_addition_aboria_level1(const size_t N, const size_t repeats) {
         std::cout << "vector_addition_aboria_level1: N = "<<N<<std::endl;
         ABORIA_VARIABLE(a,double,"a")
         ABORIA_VARIABLE(b,double,"b")
@@ -81,16 +81,18 @@ public:
             //get<c>(nodes[i]) = get<a>(nodes[i]) + get<b>(nodes[i]);
         }
         auto t0 = Clock::now();
-        for (int i=0; i<N; i++) {
-            get<c>(nodes)[i] = get<a>(nodes)[i] + get<b>(nodes)[i];
-            //get<c>(nodes[i]) = get<a>(nodes[i]) + get<b>(nodes[i]);
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                get<c>(nodes)[i] = get<a>(nodes)[i] + get<b>(nodes)[i];
+                //get<c>(nodes[i]) = get<a>(nodes[i]) + get<b>(nodes[i]);
+            }
         }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        return dt.count()/repeats;
     }
     
-    double vector_addition_aboria_level2(const size_t N) {
+    double vector_addition_aboria_level2(const size_t N, const size_t repeats) {
         std::cout << "vector_addition_aboria_level2: N = "<<N<<std::endl;
         ABORIA_VARIABLE(a,double,"a")
         ABORIA_VARIABLE(b,double,"b")
@@ -110,16 +112,18 @@ public:
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("vector_addition_aboria_level2");
 #endif
-        C[i] = A[i] + B[i];
+        for (int r=0; r<repeats; ++r) {
+            C[i] = A[i] + B[i];
+        }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
 #endif
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        return dt.count()/repeats;
     }
 
-    double vector_addition_eigen(const size_t N) {
+    double vector_addition_eigen(const size_t N, const size_t repeats) {
         std::cout << "vector_addition_eigen: N = "<<N<<std::endl;
 #ifdef HAVE_EIGEN
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
@@ -130,15 +134,17 @@ public:
         }
         C = A + B;
         auto t0 = Clock::now();
-        C = A + B;
+        for (int r=0; r<repeats; ++r) {
+            C = A + B;
+        }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        return dt.count()/repeats;
 #endif
     }
 
     // Daxpy (b += a*0.001) 
-    double daxpy_aboria_level1(const size_t N) {
+    double daxpy_aboria_level1(const size_t N, const size_t repeats) {
         std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
         ABORIA_VARIABLE(a,double,"a")
         ABORIA_VARIABLE(b,double,"b")
@@ -152,15 +158,17 @@ public:
             get<b>(nodes)[i] += get<a>(nodes)[i]*0.001;
         }
         auto t0 = Clock::now();
-        for (int i=0; i<N; i++) {
-            get<b>(nodes)[i] += get<a>(nodes)[i]*0.001;
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                get<b>(nodes)[i] += get<a>(nodes)[i]*0.001;
+            }
         }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        return dt.count()/repeats;
     }
     
-    double daxpy_aboria_level2(const size_t N) {
+    double daxpy_aboria_level2(const size_t N, const size_t repeats) {
         std::cout << "daxpy_aboria_level2: N = "<<N<<std::endl;
         ABORIA_VARIABLE(a,double,"a")
         ABORIA_VARIABLE(b,double,"b")
@@ -175,13 +183,15 @@ public:
         Label<0,nodes_type> i(nodes);
         B[i] += A[i]*0.001;
         auto t0 = Clock::now();
-        B[i] += A[i]*0.001;
+        for (int r=0; r<repeats; ++r) {
+            B[i] += A[i]*0.001;
+        }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        return dt.count()/repeats;
     }
 
-    double daxpy_eigen(const size_t N) {
+    double daxpy_eigen(const size_t N, const size_t repeats) {
         std::cout << "daxpy_eigen: N = "<<N<<std::endl;
 #ifdef HAVE_EIGEN
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
@@ -192,10 +202,12 @@ public:
         }
         B += A*0.001;
         auto t0 = Clock::now();
-        B += A*0.001;
+        for (int r=0; r<repeats; ++r) {
+            B += A*0.001;
+        }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
-        return dt.count();
+        return dt.count()/repeats;
 #endif
     }
 
@@ -835,17 +847,21 @@ public:
 
     void test_vector_addition() {
         std::ofstream file;
+        const size_t repeats = 20;
         file.open("vector_addition.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
              << std::setw(15) << "eigen" << std::endl;
+#ifdef HAVE_OPENMP
+            omp_set_num_threads(1);
+#endif
         for (int i = 10; i < 8e6; i*=1.2) {
             const size_t N = i;
             file << std::setw(15) << N
-                 << std::setw(15) << N/vector_addition_aboria_level1(N)
-                 << std::setw(15) << N/vector_addition_aboria_level2(N)
-                 << std::setw(15) << N/vector_addition_eigen(N)
+                 << std::setw(15) << N/vector_addition_aboria_level1(N,repeats)
+                 << std::setw(15) << N/vector_addition_aboria_level2(N,repeats)
+                 << std::setw(15) << N/vector_addition_eigen(N,repeats)
                  << std::endl;
         }
         file.close();
@@ -854,16 +870,20 @@ public:
     void test_daxpy() {
         std::ofstream file;
         file.open("daxpy.csv");
+        const size_t repeats = 20;
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
              << std::setw(15) << "eigen" << std::endl;
+#ifdef HAVE_OPENMP
+            omp_set_num_threads(1);
+#endif
         for (int i = 10; i < 8e6; i*=1.2) {
             const size_t N = i;
             file << std::setw(15) << N
-                 << std::setw(15) << N/daxpy_aboria_level1(N)
-                 << std::setw(15) << N/daxpy_aboria_level2(N)
-                 << std::setw(15) << N/daxpy_eigen(N)
+                 << std::setw(15) << N/daxpy_aboria_level1(N,repeats)
+                 << std::setw(15) << N/daxpy_aboria_level2(N,repeats)
+                 << std::setw(15) << N/daxpy_eigen(N,repeats)
                  << std::endl;
         }
         file.close();

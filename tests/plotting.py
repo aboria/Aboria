@@ -25,7 +25,13 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','m
     plt.figure(figsize= (6,5))
 
     handles = []
-    if filename in ['vector_addition','daxpy']:
+    if filename in ['vector_addition']:
+        plt.title(r'$a_i = b_i + c_i$')
+        plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria (Level 1)')
+        plt.semilogx(data[:,0],data[:,2]/1e6,label='Aboria (Level 2)')
+        plt.semilogx(data[:,0],data[:,3]/1e6,label='Eigen')
+    elif filename in ['daxpy']:
+        plt.title(r'$a_i = a_i + 0.1\, b_i $')
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria (Level 1)')
         plt.semilogx(data[:,0],data[:,2]/1e6,label='Aboria (Level 2)')
         plt.semilogx(data[:,0],data[:,3]/1e6,label='Eigen')
@@ -68,12 +74,17 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','m
         leg = plt.legend(fancybox=True,loc='upper right')
     elif filename in ['linear_spring']:
         leg = plt.legend(handles=handles,fancybox=True,loc='upper left')
+    elif filename in ['daxpy']:
+        leg = plt.legend(fancybox=True,loc='upper right')
     else:
         leg = plt.legend(fancybox=True,loc='upper left')
 
     leg.get_frame().set_alpha(0.3)
     plt.xlabel(r'$N$')
-    plt.ylabel(r'$N^2 / T_e$ ($\times 10^6$)')
+    if filename in ['vector_addition', 'daxpy']:
+        plt.ylabel(r'$N / T_e$ ($\times 10^6$)')
+    else:
+        plt.ylabel(r'$N^2 / T_e$ ($\times 10^6$)')
     plt.tight_layout()
     plt.savefig(filename+'.pdf')
 
