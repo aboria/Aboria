@@ -302,20 +302,41 @@ struct bucket_search_parallel_query {
 
     CUDA_HOST_DEVICE
     iterator_range<ranges_iterator<Traits>> get_neighbours(const double_d& position) const {
-        return iterator_range<ranges_iterator<Traits>>(find_broadphase_neighbours(position,-1,false),
+        return iterator_range<ranges_iterator<Traits>>(find_broadphase_neighbours(position,1,false),
                                               ranges_iterator<Traits>(m_particles_end));
     }
 
+
     CUDA_HOST_DEVICE
-    iterator_range<bucket_iterator<Traits>> get_buckets() const {
-        return iterator_range<ranges_iterator<Traits>>(find_broadphase_neighbours(position,-1,false),
-                                              ranges_iterator<Traits>(m_particles_end));
+    iterator_range<linked_list_iterator<Traits>> get_bucket_particles(const bucket_iterator::reference bucket) const {
+        linked_list_iterator<Traits> search_iterator(m_particles_begin,
+                            m_bucket_side_length,
+                            m_linked_list_begin,
+                            m_buckets_begin,get_bucket_bbox(bucket).centre());
+        const int bucket_index = m_point_to_bucket_index.collapse_index_vector(*bucket);
+        search_iterator.add_bucket(bucket_index,transpose);
+        return iterator_range<linked_list_iterator<Traits>>(
+                search_iterator,
+                linked_list_iterator<Traits>());
     }
+
+    CUDA_HOST_DEVICE
+    detail::bbox<dimension>& get_bucket_bbox(const bucket_iterator::reference bucket) const {
+        return detail::bbox<dimension>((*bucket)*m_bucket_side_length + m_bounds.bmin);
+    }
+
+    CUDA_HOST_DEVICE
+    iterator_range<bucket_iterator> get_all_buckets() const {
+        return iterator_range<bucket_iterator>(
+                bucket_iterator(0),
+                bucket_iterator(m_size.prod()));
+    }
+
 
     CUDA_HOST_DEVICE
     ranges_iterator<Traits> find_broadphase_neighbours(
             const double_d& r, 
-            const int my_index, 
+            const double bucket_radius, 
             const bool self) const {
         
         ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);
@@ -330,17 +351,19 @@ struct bucket_search_parallel_query {
 #endif
 
         ranges_iterator<Traits> search_iterator(m_particles_end,m_bucket_side_length,r);
-        int_d bucket_offset(-1);
-        constexpr unsigned int last_d = Traits::dimension-1;
-        bool still_going = true;
-        while (still_going) {
-            unsigned_int_d other_bucket = my_bucket + bucket_offset; 
+        lattice_iterator<Traits> bucket_iterator(my_bucket+int_d(-1),
+                                                 my_bucket+ind_d(1),
+                                                 my_bucket+int_d(-1));
+
+
+        while ((*bucket_iterator)[0] <= my_bucket[0]+1) { 
+            int_d& other_bucket = *bucket_iterator; 
 
             // handle end cases
             double_d transpose(0);
             bool outside = false;
             for (int i=0; i<Traits::dimension; i++) {
-                if (other_bucket[i] >= detail::get_max<unsigned int>()) {
+                if (other_bucket[i] < 0) {
                     if (m_periodic[i]) {
                         other_bucket[i] = m_size[i]-1;
                         transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
@@ -382,12 +405,8 @@ struct bucket_search_parallel_query {
             }
 
             // go to next candidate bucket
-            for (int i=0; i<Traits::dimension; i++) {
-                bucket_offset[i]++;
-                if (bucket_offset[i] <= 1) break;
-                if (i == last_d) still_going = false;
-                bucket_offset[i] = -1;
-            }
+            bucket_iterator++;
+            
         }
         
         return search_iterator;

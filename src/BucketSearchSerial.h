@@ -482,17 +482,24 @@ struct bucket_search_serial_query {
 
     CUDA_HOST_DEVICE
     iterator_range<linked_list_iterator<Traits>> get_bucket_particles(const bucket_iterator::reference bucket) const {
+        linked_list_iterator<Traits> search_iterator(m_particles_begin,
+                            m_bucket_side_length,
+                            m_linked_list_begin,
+                            m_buckets_begin,get_bucket_bbox(bucket).centre());
+        const int bucket_index = m_point_to_bucket_index.collapse_index_vector(*bucket);
+        search_iterator.add_bucket(bucket_index,transpose);
         return iterator_range<linked_list_iterator<Traits>>(
-                find_broadphase_neighbours(get_bucket_bbox(id).centre(),0,false),
+                search_iterator,
                 linked_list_iterator<Traits>());
     }
 
     CUDA_HOST_DEVICE
-    detail::bbox<dimension> get_bucket_bbox(const bucket_iterator::reference bucket) const {
+    detail::bbox<dimension>& get_bucket_bbox(const bucket_iterator::reference bucket) const {
+        return detail::bbox<dimension>((*bucket)*m_bucket_side_length + m_bounds.bmin);
     }
 
     CUDA_HOST_DEVICE
-    iterator_range<bucket_iterator> get_bucket_id_range() const {
+    iterator_range<bucket_iterator> get_all_buckets() const {
         return iterator_range<bucket_iterator>(
                 bucket_iterator(0),
                 bucket_iterator(m_size.prod()));
@@ -570,12 +577,8 @@ struct bucket_search_serial_query {
             }
 
             // go to next candidate bucket
-            for (int i=0; i<Traits::dimension; i++) {
-                bucket_offset[i]++;
-                if (bucket_offset[i] <= 1) break;
-                if (i == last_d) still_going = false;
-                bucket_offset[i] = -1;
-            }
+            bucket_iterator++;
+            
         }
         
 #ifndef __CUDA_ARCH__

@@ -57,6 +57,10 @@ struct bbox {
     {}
 
     inline CUDA_HOST_DEVICE
+    bbox(const double_d &min, const double_d &max) : bmin(min),bmax(max)
+    {}
+
+    inline CUDA_HOST_DEVICE
     bbox operator+(const bbox &arg) {
         bbox bounds;
         for (int i=0; i<D; i++) {
@@ -135,9 +139,36 @@ struct bucket_index {
 
     inline 
     CUDA_HOST_DEVICE
+    unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
+        unsigned int index = 0;
+        unsigned int multiplier = 1.0;
+        for (int i = D-1; i>=0; --i) {
+            if (i != D-1) {
+                multiplier *= m_size[i+1];
+            }
+            index += multiplier*vindex[i];
+        }
+        return index;
+    }
+
+    inline 
+    CUDA_HOST_DEVICE
     int_d& reassemble_index_vector(const int index) const {
         int_d vindex;
         int i = index;
+        for (int i = D-1; i>=0; --i) {
+            double div = i/m_size[i];
+            i = std::floor(div);
+            vindex[i] = (div-i)*m_size[i];
+        }
+        return vindex;
+    }
+
+    inline 
+    CUDA_HOST_DEVICE
+    unsigned_int_d& reassemble_index_vector(const unsigned int index) const {
+        unsigned_int_d vindex;
+        unsigned int i = index;
         for (int i = D-1; i>=0; --i) {
             double div = i/m_size[i];
             i = std::floor(div);
@@ -180,7 +211,7 @@ struct point_to_bucket_index {
 
     inline 
     CUDA_HOST_DEVICE
-    int_d find_bucket_index_vector(const double_d &r) const {
+    unsigned_int_d find_bucket_index_vector(const double_d &r) const {
         // find the raster indices of p's bucket
         //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
         ASSERT(((r-m_bounds.bmin) >= 0).all(),"point r less than min bound");

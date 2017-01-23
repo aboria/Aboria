@@ -4,7 +4,7 @@ macro(aboria_cxx_test target target_file)
     foreach(filename IN LISTS list_var)
         set(_test_files ${_test_files} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
     endforeach()
-    message(${_test_files})
+    message("\t${_test_files}")
     get_filename_component(CPP_FILE_NAME ${target_file} NAME)
     set(CPP_FULL_NAME "${CMAKE_CURRENT_BINARY_DIR}/${CPP_FILE_NAME}")
     add_custom_command(
@@ -71,7 +71,7 @@ set(MetafunctionsTest
     test_thrust
     ) 
 
-set(SpatialUtilsTest spatial_utils.h)
+set(SpatialUtilsTestFile spatial_utils.h)
 set(SpatialUtilsTest
     test_bucket_indicies
     )
@@ -149,6 +149,7 @@ set(DiffusionAroundSpheres
     )
 
 
+message("-- Adding test suites:")
 foreach(test_suite ${test_suites})
 
     aboria_cxx_test(${test_suite} ${test_suite}.cpp ${${test_suite}File})
