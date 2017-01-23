@@ -3,10 +3,10 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Class template zip_iterator</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.2">
-<link rel="up" href="../libaboria.html#header..home.mrobins.git.Aboria.src.Get_h" title="Header &lt;/home/mrobins/git/Aboria/src/Get.h&gt;">
-<link rel="prev" href="getter_t_idm45951549906352.html" title="Struct template getter_type&lt;tuple_ns::tuple&lt; FirstType *, OtherTypes... &gt;, mpl_vector_type&gt;">
+<link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Get_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Get.h&gt;">
+<link rel="prev" href="getter_type.html" title="Struct template getter_type">
 <link rel="next" href="zip_iterator/return_type.html" title="Struct template return_type">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
@@ -26,7 +26,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="getter_t_idm45951549906352.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.mrobins.git.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="getter_type.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.zip_iterator"></a><div class="titlepage"></div>
@@ -35,7 +35,7 @@ MathJax.Hub.Config({
 <p>Aboria::zip_iterator</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.mrobins.git.Aboria.src.Get_h" title="Header &lt;/home/mrobins/git/Aboria/src/Get.h&gt;">/home/mrobins/git/Aboria/src/Get.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Get_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Get.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Get.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> iterator_tuple_type<span class="special">,</span> <span class="keyword">typename</span> mpl_vector_type<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="special">{</span>
@@ -62,57 +62,57 @@ MathJax.Hub.Config({
   <span class="special">}</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="zip_iterator.html#Aboria.zip_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="zip_iterator.html#idm45951549825504-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idm45951549825216-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">iterator_tuple_type</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idm45951549823968-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">...</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="zip_iterator.html#idp47083167660480-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idp47083167660608-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">iterator_tuple_type</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="zip_iterator.html#idp47083167661696-bb"><span class="identifier">zip_iterator</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">...</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="zip_iterator.html#idm45951549828240-bb">public member functions</a></span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idm45951549827680-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idm45951549826528-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="zip_iterator.html#idp47083167658112-bb">public member functions</a></span>
+  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idp47083167658512-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a class="link" href="zip_iterator.html#idp47083167659504-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="zip_iterator.html#idm45951549821584-bb">private member functions</a></span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45951549821008-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45951549820160-bb"><span class="identifier">decrement</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="zip_iterator.html#idp47083167663920-bb">private member functions</a></span>
+  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp47083167664336-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp47083167665296-bb"><span class="identifier">decrement</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
   <span class="identifier">__aboria_hd_warning_disable__</span> <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">bool</span> 
-  <a class="link" href="zip_iterator.html#idm45951549819312-bb"><span class="identifier">equal</span></a><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">reference</span> <a class="link" href="zip_iterator.html#idm45951549817184-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="zip_iterator.html#idp47083167666256-bb"><span class="identifier">equal</span></a><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">reference</span> <a class="link" href="zip_iterator.html#idp47083167668224-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
   <span class="identifier">__aboria_hd_warning_disable__</span> <span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">difference_type</span> 
-  <a class="link" href="zip_iterator.html#idm45951549816048-bb"><span class="identifier">distance_to</span></a><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idm45951549813904-bb"><span class="identifier">advance</span></a><span class="special">(</span><span class="identifier">difference_type</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="zip_iterator.html#idp47083167669200-bb"><span class="identifier">distance_to</span></a><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a class="link" href="zip_iterator.html#idp47083167671184-bb"><span class="identifier">advance</span></a><span class="special">(</span><span class="identifier">difference_type</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45300865734912"></a><h2>Description</h2>
+<a name="idp46548965814560"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45300865734496"></a><h3>
+<a name="idp46548965814976"></a><h3>
 <a name="Aboria.zip_iteratorconstruct-copy-destruct"></a><code class="computeroutput">zip_iterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idm45951549825504-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idm45951549825216-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">iterator_tuple_type</span> iter<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idm45951549823968-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">T</span><span class="special">...</span> args<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp47083167660480-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">explicit</span> <a name="idp47083167660608-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">iterator_tuple_type</span> iter<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span><span class="special">...</span> T<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idp47083167661696-bb"></a><span class="identifier">zip_iterator</span><span class="special">(</span><span class="identifier">T</span><span class="special">...</span> args<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45300865715152"></a><h3>
-<a name="idm45951549828240-bb"></a><code class="computeroutput">zip_iterator</code> public member functions</h3>
+<a name="idp46548965834384"></a><h3>
+<a name="idp47083167658112-bb"></a><code class="computeroutput">zip_iterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idm45951549827680-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idm45951549826528-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">const</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idp47083167658512-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">iterator_tuple_type</span> <span class="special">&amp;</span> <a name="idp47083167659504-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45300865700288"></a><h3>
-<a name="idm45951549821584-bb"></a><code class="computeroutput">zip_iterator</code> private member functions</h3>
+<a name="idp46548965849376"></a><h3>
+<a name="idp47083167663920-bb"></a><code class="computeroutput">zip_iterator</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a name="idm45951549821008-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a name="idm45951549820160-bb"></a><span class="identifier">decrement</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a name="idp47083167664336-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a name="idp47083167665296-bb"></a><span class="identifier">decrement</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="identifier">__aboria_hd_warning_disable__</span> <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">bool</span> 
-<a name="idm45951549819312-bb"></a><span class="identifier">equal</span><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">reference</span> <a name="idm45951549817184-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<a name="idp47083167666256-bb"></a><span class="identifier">equal</span><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">reference</span> <a name="idp47083167668224-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="identifier">__aboria_hd_warning_disable__</span> <span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">difference_type</span> 
-<a name="idm45951549816048-bb"></a><span class="identifier">distance_to</span><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a name="idm45951549813904-bb"></a><span class="identifier">advance</span><span class="special">(</span><span class="identifier">difference_type</span> n<span class="special">)</span><span class="special">;</span></pre></li>
+<a name="idp47083167669200-bb"></a><span class="identifier">distance_to</span><span class="special">(</span><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">void</span> <a name="idp47083167671184-bb"></a><span class="identifier">advance</span><span class="special">(</span><span class="identifier">difference_type</span> n<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -123,7 +123,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="getter_t_idm45951549906352.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.mrobins.git.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="getter_type.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Get_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="zip_iterator/return_type.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

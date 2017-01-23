@@ -3,11 +3,11 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Class template DataVector</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.2">
-<link rel="up" href="../libaboria.html#header..home.mrobins.git.Aboria.src.DataVector_h" title="Header &lt;/home/mrobins/git/Aboria/src/DataVector.h&gt;">
-<link rel="prev" href="bucket_s_idm45951560655216.html" title="Struct template bucket_search_parallel_query">
-<link rel="next" href="abs_fun.html" title="Struct abs_fun">
+<link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.DataVector_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/DataVector.h&gt;">
+<link rel="prev" href="bucket_search_parallel.html" title="Class template bucket_search_parallel">
+<link rel="next" href="norm_fun.html" title="Struct norm_fun">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
@@ -26,7 +26,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="bucket_s_idm45951560655216.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.mrobins.git.Aboria.src.DataVector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="abs_fun.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="bucket_search_parallel.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.DataVector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="norm_fun.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.DataVector"></a><div class="titlepage"></div>
@@ -35,7 +35,7 @@ MathJax.Hub.Config({
 <p>Aboria::DataVector</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.mrobins.git.Aboria.src.DataVector_h" title="Header &lt;/home/mrobins/git/Aboria/src/DataVector.h&gt;">/home/mrobins/git/Aboria/src/DataVector.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.DataVector_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/DataVector.h&gt;">/home/travis/build/martinjrobins/Aboria/src/DataVector.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">typename</span> ParticlesType<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="DataVector.html" title="Class template DataVector">DataVector</a> <span class="special">{</span>
@@ -45,32 +45,32 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">T</span><span class="special">::</span><span class="identifier">value_type</span> <a name="Aboria.DataVector.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>     <span class="comment">// The value_type of the <a class="link" href="Variable.html" title="Struct template Variable">Variable</a>. </span>
 
   <span class="comment">// <a class="link" href="DataVector.html#Aboria.DataVectorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="DataVector.html#idm45951550053616-bb"><span class="identifier">DataVector</span></a><span class="special">(</span><span class="identifier">ParticlesType</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="DataVector.html#idp47083167514464-bb"><span class="identifier">DataVector</span></a><span class="special">(</span><span class="identifier">ParticlesType</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="DataVector.html#idm45951550062176-bb">public member functions</a></span>
-  <span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a class="link" href="DataVector.html#idm45951550061616-bb"><span class="identifier">get_particles</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a class="link" href="DataVector.html#idm45951550059904-bb"><span class="identifier">get_particles</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <a class="link" href="DataVector.html#idm45951550057920-bb"><span class="identifier">size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">value_type</span> <a class="link" href="DataVector.html#idm45951550056496-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="DataVector.html#idp47083167506592-bb">public member functions</a></span>
+  <span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a class="link" href="DataVector.html#idp47083167506992-bb"><span class="identifier">get_particles</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a class="link" href="DataVector.html#idp47083167508816-bb"><span class="identifier">get_particles</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <a class="link" href="DataVector.html#idp47083167510640-bb"><span class="identifier">size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">value_type</span> <a class="link" href="DataVector.html#idp47083167511904-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45300867532336"></a><h2>Description</h2>
+<a name="idp46548964552864"></a><h2>Description</h2>
 <p>A thin wrapper class around <a class="link" href="Particles.html" title="Class template Particles">Particles</a> that acts like a vector to the variable given by <code class="computeroutput">T</code> 
 </p>
 <div class="refsect2">
-<a name="idm45300867530096"></a><h3>
+<a name="idp46548964555104"></a><h3>
 <a name="Aboria.DataVectorconstruct-copy-destruct"></a><code class="computeroutput">DataVector</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><a name="idm45951550053616-bb"></a><span class="identifier">DataVector</span><span class="special">(</span><span class="identifier">ParticlesType</span> <span class="special">&amp;</span> particles<span class="special">)</span><span class="special">;</span></pre>pass in the particles continer for the data </li></ol></div>
+<pre class="literallayout"><a name="idp47083167514464-bb"></a><span class="identifier">DataVector</span><span class="special">(</span><span class="identifier">ParticlesType</span> <span class="special">&amp;</span> particles<span class="special">)</span><span class="special">;</span></pre>pass in the particles continer for the data </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45300867522688"></a><h3>
-<a name="idm45951550062176-bb"></a><code class="computeroutput">DataVector</code> public member functions</h3>
+<a name="idp46548964562512"></a><h3>
+<a name="idp47083167506592-bb"></a><code class="computeroutput">DataVector</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a name="idm45951550061616-bb"></a><span class="identifier">get_particles</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a name="idp47083167506992-bb"></a><span class="identifier">get_particles</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -85,7 +85,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a name="idm45951550059904-bb"></a><span class="identifier">get_particles</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">ParticlesType</span> <span class="special">&amp;</span> <a name="idp47083167508816-bb"></a><span class="identifier">get_particles</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -100,9 +100,9 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <a name="idm45951550057920-bb"></a><span class="identifier">size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the size of the vector </li>
+<pre class="literallayout"><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> <a name="idp47083167510640-bb"></a><span class="identifier">size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the size of the vector </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">value_type</span> <a name="idm45951550056496-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> i<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">value_type</span> <a name="idp47083167511904-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> i<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>index the vector using index <code class="computeroutput">i</code>. This returns the same as get&lt;T&gt;(particles[i]) </p>
 </li>
 </ol></div>
@@ -115,7 +115,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="bucket_s_idm45951560655216.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.mrobins.git.Aboria.src.DataVector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="abs_fun.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="bucket_search_parallel.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.DataVector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="norm_fun.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
