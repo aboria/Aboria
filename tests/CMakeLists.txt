@@ -23,7 +23,7 @@ endmacro(aboria_cxx_test)
 
 option(Aboria_RUN_TESTS "run main test suite with ctest" ON)
 if (Aboria_RUN_TESTS)
-    set(test_suites
+    set(all_test_suites
         MetafunctionsTest 
         NeighboursTest
         BDTest
@@ -39,6 +39,12 @@ if (Aboria_RUN_TESTS)
         OperatorsTest
         SpatialUtilsTest
         )
+    foreach(test_suite ${all_test_suites})
+        option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
+        if (Aboria_RUN_TEST_${test_suite})
+            set(test_suites ${test_suites} ${test_suite})
+        endif()
+    endforeach()
 endif()
 
 option(Aboria_RUN_BENCHMARKS "run benchmarks during testing" OFF)

@@ -84,6 +84,14 @@ public:
 		mem[2] = arg3;
 	}
 
+    CUDA_HOST_DEVICE
+	Vector(T arg1,T arg2,T arg3,T arg4) {
+		mem[0] = arg1;
+		mem[1] = arg2;
+		mem[2] = arg3;
+		mem[3] = arg4;
+	}
+
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector(const Vector<T2,N> &arg) {

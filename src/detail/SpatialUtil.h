@@ -153,7 +153,7 @@ struct bucket_index {
 
     inline 
     CUDA_HOST_DEVICE
-    int_d& reassemble_index_vector(const int index) const {
+    int_d reassemble_index_vector(const int index) const {
         int_d vindex;
         int i = index;
         for (int i = D-1; i>=0; --i) {
@@ -166,7 +166,7 @@ struct bucket_index {
 
     inline 
     CUDA_HOST_DEVICE
-    unsigned_int_d& reassemble_index_vector(const unsigned int index) const {
+    unsigned_int_d reassemble_index_vector(const unsigned int index) const {
         unsigned_int_d vindex;
         unsigned int i = index;
         for (int i = D-1; i>=0; --i) {

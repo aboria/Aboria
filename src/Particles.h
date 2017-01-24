@@ -164,7 +164,6 @@ public:
 
     typedef SearchMethod<traits_type> search_type;
     typedef typename search_type::query_type query_type;
-    typedef typename search_type::query_iterator query_iterator;
 
     /// a boost mpl vector type containing a vector of Variable 
     /// attached to the particles (includes position, id and 
@@ -407,10 +406,6 @@ public:
         search.set_domain(low,high,periodic,double_d(length_scale));
         enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
         searchable = true;
-    }
-
-    const iterator_range<query_iterator> get_neighbours(const double_d& position) const {
-        return search.get_query().get_neighbours(position);
     }
 
     const query_type& get_query() const {

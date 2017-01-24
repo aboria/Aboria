@@ -48,7 +48,7 @@ class SpatialUtilsTest : public CxxTest::TestSuite {
 public:
     void test_bucket_indicies(void) {
         typedef Vector<unsigned int,3> vect;
-        bucket_index<3> bi(vect(4,7,2));
+        detail::bucket_index<3> bi(vect(4,7,2));
         unsigned int index = bi.collapse_index_vector(vect(1,2,3));
         // index = 3 + 2*2 + 1*2*7 = 21
     	TS_ASSERT_EQUALS(index,21);
@@ -58,7 +58,7 @@ public:
     	TS_ASSERT_EQUALS(vindex[2],3);
 
         typedef Vector<unsigned int,4> vect2;
-        bucket_index<4> bi2(vect2(4,7,1,6));
+        detail::bucket_index<4> bi2(vect2(4,7,1,6));
         index = bi2.collapse_index_vector(vect2(1,2,3,4));
         // index = 4 + 3*6 + 2*6*1 + 1*6*1*7 = 76
     	TS_ASSERT_EQUALS(index,76);

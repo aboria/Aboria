@@ -63,7 +63,7 @@ public:
     	test.push_back(p);
 
     	int count = 0;
-    	for (auto tpl: test.get_neighbours(double3(diameter/2,diameter/2,0))) {
+    	for (auto tpl: box_search(test.get_query(),double3(diameter/2,diameter/2,0))) {
     		count++;
     	}
     	TS_ASSERT_EQUALS(count,1);
