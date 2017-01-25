@@ -509,7 +509,7 @@ struct bucket_search_serial_query {
                 LOG(4,"\tlooking in bucket "<<bucket<<" = "<<bucket_index);
 #endif
                 return iterator_range<particle_iterator>(
-                        particle_iterator(bucket_index,
+                        particle_iterator(m_buckets_begin[bucket_index],
                                 m_particles_begin,
                                 m_linked_list_begin,
                                 transpose),

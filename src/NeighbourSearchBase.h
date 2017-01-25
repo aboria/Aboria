@@ -408,7 +408,7 @@ public:
     CUDA_HOST_DEVICE
     bool increment() {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement:"); 
+        LOG(4,"\tincrement (linked_list_iterator):"); 
 #endif
         if (m_current_index != detail::get_empty_id()) {
             m_current_index = m_linked_list_begin[m_current_index];
@@ -423,7 +423,7 @@ public:
             return true;
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment: m_current_index = "<<m_current_index); 
+        LOG(4,"\tend increment (linked_list_iterator): m_current_index = "<<m_current_index); 
 #endif
     }
 

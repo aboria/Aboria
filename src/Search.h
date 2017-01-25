@@ -105,12 +105,25 @@ public:
 
     CUDA_HOST_DEVICE
     bool go_to_next_candidate() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tgo_to_next_candidate (box_search_iterator):"); 
+#endif
+
         ++m_current_p;
         if (m_current_p == m_buckets_to_search[m_bucket_index].end()) {
             --m_bucket_index;
+
+#ifndef __CUDA_ARCH__
+            LOG(4,"\tend of range, moving to range "<<m_bucket_index); 
+#endif
             if (m_bucket_index >= 0) {
+                ASSERT(m_buckets_to_search[m_bucket_index].begin() != m_buckets_to_search[m_bucket_index].end(),"error, empty range found");
                 m_current_p = m_buckets_to_search[m_bucket_index].begin();
             } else {
+
+#ifndef __CUDA_ARCH__
+                LOG(4,"\tfinished ranges"); 
+#endif
                 return false;
             }
         }
@@ -189,7 +202,7 @@ public:
     CUDA_HOST_DEVICE
     void increment() {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement:"); 
+        LOG(4,"\tincrement (box_search_iterator):"); 
 #endif
         bool found_good_candidate = false;
         while (!found_good_candidate && go_to_next_candidate()) {
@@ -199,7 +212,7 @@ public:
 #endif
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment: m_bucket_index = "<<m_bucket_index); 
+        LOG(4,"\tend increment (box_search_iterator): m_bucket_index = "<<m_bucket_index); 
 #endif
     }
 
@@ -218,7 +231,7 @@ public:
     iterator_range<Iterator> m_buckets_to_search[max_nbuckets];
     Iterator m_current_p;
     size_t m_nbuckets;
-    size_t m_bucket_index;
+    int m_bucket_index;
 
 };
 
@@ -236,7 +249,10 @@ box_search(const Query query,
             ,search_iterator()
             );
     for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        search_range.begin().add_range(query.get_bucket_particles(i));
+        iterator_range<typename Query::particle_iterator> particle_range = query.get_bucket_particles(i);
+        if (particle_range.begin()!=particle_range.end()) {
+            search_range.begin().add_range(particle_range);
+        }
     }
     return search_range;
 }
@@ -253,7 +269,10 @@ box_search(const Query query,
             ,search_iterator()
             );
     for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        search_range.begin().add_range(query.get_bucket_particles(i));
+        iterator_range<typename Query::particle_iterator> particle_range = query.get_bucket_particles(i);
+        if (particle_range.begin()!=particle_range.end()) {
+            search_range.begin().add_range(particle_range);
+        }
     }
     return search_range;
 }

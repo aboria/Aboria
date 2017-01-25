@@ -213,8 +213,8 @@ struct point_to_bucket_index {
     unsigned_int_d find_bucket_index_vector(const double_d &r) const {
         // find the raster indices of p's bucket
         //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
-        ASSERT(((r-m_bounds.bmin) >= 0).all(),"point r less than min bound");
-        ASSERT(((r-m_bounds.bmin) < m_bounds.bmax).all(),"point r greater than max bound");
+        ASSERT((r >= m_bounds.bmin).all(),"point r less than min bound");
+        ASSERT((r < m_bounds.bmax).all(),"point r greater than or equal to max bound");
         return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
     }
 
