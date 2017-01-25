@@ -202,12 +202,11 @@ struct point_to_bucket_index {
         return find_bucket_index(v);
     }
 
-    /*
     inline 
     CUDA_HOST_DEVICE
     unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
         return m_bucket_index.collapse_index_vector(vindex);
-    }*/
+    }
 
     inline 
     CUDA_HOST_DEVICE

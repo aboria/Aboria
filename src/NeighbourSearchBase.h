@@ -58,13 +58,25 @@ struct iterator_range {
     IteratorType m_begin;
     IteratorType m_end;
     CUDA_HOST_DEVICE
+    iterator_range()
+    {}
+    CUDA_HOST_DEVICE
     iterator_range(IteratorType&& begin, IteratorType&& end):
+        m_begin(begin),m_end(end) 
+    {}
+    CUDA_HOST_DEVICE
+    iterator_range(const IteratorType& begin, const IteratorType& end):
         m_begin(begin),m_end(end) 
     {}
     CUDA_HOST_DEVICE
     const IteratorType &begin() const { return m_begin; }
     CUDA_HOST_DEVICE
     const IteratorType &end() const { return m_end; }
+    CUDA_HOST_DEVICE
+    IteratorType &begin() { return m_begin; }
+    CUDA_HOST_DEVICE
+    IteratorType &end() { return m_end; }
+
 };
 
 template <typename IteratorType>
@@ -227,6 +239,7 @@ class ranges_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
+    typedef Traits traits_type;
     typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const p_reference reference;
@@ -278,12 +291,12 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator==(const ranges_iterator& rhs) {
+    inline bool operator==(const ranges_iterator& rhs) const {
         return equal(rhs);
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator!=(const ranges_iterator& rhs){
+    inline bool operator!=(const ranges_iterator& rhs) const {
         return !operator==(rhs);
     }
 
@@ -322,6 +335,7 @@ class linked_list_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
+    typedef Traits traits_type;
     typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const p_reference reference;
@@ -348,6 +362,8 @@ public:
         m_transpose(transpose) {
     }
 
+    CUDA_HOST_DEVICE
+    const double_d& get_transpose() { return m_transpose; }
 
     CUDA_HOST_DEVICE
     reference operator *() const {
@@ -378,11 +394,11 @@ public:
         return count;
     }
     CUDA_HOST_DEVICE
-    inline bool operator==(const linked_list_iterator& rhs) {
+    inline bool operator==(const linked_list_iterator& rhs) const {
         return equal(rhs);
     }
     CUDA_HOST_DEVICE
-    inline bool operator!=(const linked_list_iterator& rhs){
+    inline bool operator!=(const linked_list_iterator& rhs) const {
         return !operator==(rhs);
     }
 
@@ -419,7 +435,7 @@ public:
 
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return m_particles_begin[m_current_index]; }
+    { return *(m_particles_begin + m_current_index); }
 
 
     int m_current_index;
@@ -441,6 +457,7 @@ class lattice_iterator {
     int_d m_index;
     detail::bucket_index<Traits::dimension> m_bucket_index;
 public:
+    typedef Traits traits_type;
     typedef const int_d* pointer;
 	typedef std::random_access_iterator_tag iterator_category;
     typedef const int_d& reference;
@@ -515,12 +532,12 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator==(const lattice_iterator& rhs) {
+    inline bool operator==(const lattice_iterator& rhs) const {
         return equal(rhs);
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator!=(const lattice_iterator& rhs){
+    inline bool operator!=(const lattice_iterator& rhs) const {
         return !operator==(rhs);
     }
 
@@ -651,13 +668,13 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator==(const lattice_iterator_with_hole& rhs) {
+    inline bool operator==(const lattice_iterator_with_hole& rhs) const {
         return equal(rhs);
     }
 
 
     CUDA_HOST_DEVICE
-    inline bool operator!=(const lattice_iterator_with_hole& rhs){
+    inline bool operator!=(const lattice_iterator_with_hole& rhs) const {
         return !operator==(rhs);
     }
 

@@ -442,6 +442,7 @@ private:
 template <typename Traits>
 struct bucket_search_serial_query {
 
+    typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
@@ -451,6 +452,8 @@ struct bucket_search_serial_query {
     typedef typename Traits::position position;
     const static unsigned int dimension = Traits::dimension;
     typedef lattice_iterator<Traits> bucket_iterator;
+    typedef typename lattice_iterator<Traits>::reference bucket_reference;
+    typedef typename lattice_iterator<Traits>::value_type bucket_value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
 
     bool_d m_periodic;
@@ -474,14 +477,15 @@ struct bucket_search_serial_query {
     const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
 
     CUDA_HOST_DEVICE
-    iterator_range<particle_iterator> get_bucket_particles(const bucket_iterator &bucket) const {
+    iterator_range<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
         // handle end cases
+        unsigned_int_d my_bucket(bucket);
         double_d transpose(0);
         bool outside = false;
         for (int i=0; i<Traits::dimension; i++) {
             if (bucket[i] < 0) {
                 if (m_periodic[i]) {
-                    bucket[i] = m_end_bucket[i];
+                    my_bucket[i] = m_end_bucket[i];
                     transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
                 } else {
                     outside = true;
@@ -490,7 +494,7 @@ struct bucket_search_serial_query {
             }
             if (bucket[i] > m_end_bucket[i]) {
                 if (m_periodic[i]) {
-                    bucket[i] = 0;
+                    my_bucket[i] = 0;
                     transpose[i] = (m_bounds.bmax-m_bounds.bmin)[i];
                 } else {
                     outside = true;
@@ -499,10 +503,10 @@ struct bucket_search_serial_query {
             }
         }
         if (!outside) {
-                const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(*bucket);
+                const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(my_bucket);
 
 #ifndef __CUDA_ARCH__
-                LOG(4,"\tlooking in bucket "<<*bucket<<" = "<<bucket_index);
+                LOG(4,"\tlooking in bucket "<<bucket<<" = "<<bucket_index);
 #endif
                 return iterator_range<particle_iterator>(
                         particle_iterator(bucket_index,
@@ -519,21 +523,19 @@ struct bucket_search_serial_query {
     }
 
     CUDA_HOST_DEVICE
-    detail::bbox<dimension>& get_bucket_bbox(const bucket_iterator &bucket) const {
+    detail::bbox<dimension>& get_bucket_bbox(const bucket_reference &bucket) const {
         return detail::bbox<dimension>((*bucket)*m_bucket_side_length + m_bounds.bmin);
     }
 
     CUDA_HOST_DEVICE
-    bucket_iterator get_bucket(const double_d &position) const {
-        return bucket_iterator(int_d(0),m_end_bucket,
-            m_point_to_bucket_index.find_bucket_index_vector(position)
-           );
+    bucket_value_type get_bucket(const double_d &position) const {
+        return m_point_to_bucket_index.find_bucket_index_vector(position);
     }
 
     CUDA_HOST_DEVICE
-    iterator_range<bucket_iterator> get_near_buckets(const bucket_iterator &bucket) const {
-        const int_d start = *bucket+int_d(-1);
-        const int_d end = *bucket+int_d(1);
+    iterator_range<bucket_iterator> get_near_buckets(const bucket_reference &bucket) const {
+        const int_d start = bucket+int_d(-1);
+        const int_d end = bucket+int_d(1);
         return iterator_range<bucket_iterator>(
                 bucket_iterator(start,end,start)
                 ,++bucket_iterator(start,end,end)

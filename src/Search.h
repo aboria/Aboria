@@ -59,7 +59,7 @@ namespace Aboria {
 // assume that these iterators, and query functions, are only called from device code
 template <typename Iterator>
 class box_search_iterator {
-    typedef typename Iterator::Traits Traits;
+    typedef typename Iterator::traits_type Traits;
     typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
@@ -159,8 +159,8 @@ public:
 
     CUDA_HOST_DEVICE
     bool equal(box_search_iterator const& other) const {
-        return m_bucket_i == -1 ? 
-                    other.m_bucket_i == -1 
+        return m_bucket_index == -1 ? 
+                    other.m_bucket_index == -1 
                     : 
                     m_current_p == other.m_current_p;
     }
@@ -199,7 +199,7 @@ public:
 #endif
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment: m_node = "<<*m_node); 
+        LOG(4,"\tend increment: m_bucket_index = "<<m_bucket_index); 
 #endif
     }
 
@@ -218,41 +218,44 @@ public:
     iterator_range<Iterator> m_buckets_to_search[max_nbuckets];
     Iterator m_current_p;
     size_t m_nbuckets;
-    size_t m_bucket_i;
+    size_t m_bucket_index;
 
 };
 
 template<typename Query>
 iterator_range<box_search_iterator<typename Query::particle_iterator>> 
 box_search(const Query query, 
-           const Query::double_d box_centre, 
-           const Query::double_d box_sides) {
+           const typename Query::double_d box_centre, 
+           const typename Query::double_d box_sides) {
 
     ASSERT(box_sides <= query.get_min_bucket_size(),"box query with greater than neighbour search min box size not currently supported");
+    typedef box_search_iterator<typename Query::particle_iterator> search_iterator;
 
-    box_search_iterator<typename Query::particle_iterator> search_iterator(box_centre,box_sides);
-    for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        search_iterator.add_range(query.get_bucket_particles(i));
-    }
-    return iterator_range<box_search_iterator<typename Query::particle_iterator>>(
-            search_iterator,
-            box_search_iterator<typename Query::particle_iterator>()
+    iterator_range<search_iterator> search_range(
+            search_iterator(box_centre,box_sides)
+            ,search_iterator()
             );
+    for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
+        search_range.begin().add_range(query.get_bucket_particles(i));
+    }
+    return search_range;
 }
 
 template<typename Query>
 iterator_range<box_search_iterator<typename Query::particle_iterator>> 
 box_search(const Query query, 
-           const Query::double_d box_centre) {
+           const typename Query::double_d box_centre) {
 
-    box_search_iterator<typename Query::particle_iterator> search_iterator(box_centre,query.get_min_bucket_size());
-    for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        search_iterator.add_range(query.get_bucket_particles(i));
-    }
-    return iterator_range<box_search_iterator<typename Query::particle_iterator>>(
-            search_iterator,
-            box_search_iterator<typename Query::particle_iterator>()
+    typedef box_search_iterator<typename Query::particle_iterator> search_iterator;
+
+    iterator_range<search_iterator> search_range(
+            search_iterator(box_centre,query.get_min_bucket_size())
+            ,search_iterator()
             );
+    for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
+        search_range.begin().add_range(query.get_bucket_particles(i));
+    }
+    return search_range;
 }
 
 
