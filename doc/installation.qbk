@@ -1,0 +1,64 @@
+[section Installation]
+
+This software is tested on Ubuntu 14.04LTS with the GCC compiler (version 
+4.8.4), and Clang compiler (version 3.8.0). See our 
+[@https://travis-ci.org/martinjrobins/Aboria Travis CI page] for more details.
+
+You will need to install a C++ compiler with C++11 support, and the 
+[@https://cmake.org/ CMake] build software prior to using Aboria, which you can 
+do on a Debian-based OS using
+
+``
+sudo apt-get install build-essential cmake
+``
+
+The only required dependency is the [@http://www.boost.org Boost] library.  
+Optional dependencies are [@http://www.vtk.org/ The Visualization Toolkit] and 
+[@http://eigen.tuxfamily.org Eigen] (version >= 3.3~beta1), both of which add 
+extra functionality.  To install all these dependencies in a Debian-based OS you 
+can type
+
+``
+sudo apt-get install libboost-dev libvtk5-dev libeigen3-dev
+``
+
+To build and run Aboria's testing suite, navigate to Aboria's root directory and 
+type
+
+``
+cmake .
+make
+ctest
+``
+
+To use Aboria in your own software, simply add the `Aboria/src` directory to 
+your include path and include the `Aboria.h` header, e.g.
+
+``
+#include <Aboria.h>
+``
+
+If you wish to use [@http://www.vtk.org/ The Visualisation Toolkit] or
+[@http://eigen.tuxfamily.org Eigen] with Aboria then you will need to define the 
+`HAVE_VTK` and `HAVE_EIGEN` compiler definitions, and include the relevant 
+headers and link the relevant libraries. Please see the 
+[@https://github.com/martinjrobins/Aboria/blob/master/CMakeLists.txt 
+Aboria/CMakeLists.txt] and 
+[@https://github.com/martinjrobins/Aboria/blob/master/tests/CMakeLists.txt 
+Aboria/tests/CMakeLists.txt] files for an example of how to do this using 
+[@https://cmake.org/ CMake].
+
+[endsect]
+
+[section Continuous Integration]
+
+The [@https://github.com/martinjrobins/Aboria GitHub repository] is linked to a 
+[@https://travis-ci.org/martinjrobins/Aboria Travis CI] Continuous Integration 
+facility for automated testing on every commit. The Travis CI server uses Ubuntu 
+12.04LTS and GCC compiler 4.6.3.
+
+Testing coverage is provided by `gcov` and 
+[@https://coveralls.io/github/martinjrobins/Aboria Coveralls]. 
+
+[endsect]
+

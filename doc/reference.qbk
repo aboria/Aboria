@@ -1,0 +1,50 @@
+
+[section API Overview]
+
+Header: `<Aboria.h>`
+
+[h3 Container Core]
+
+* [classref Aboria::Particles]
+* [classref Aboria::Variable]
+* [macroref ABORIA_VARIABLE]
+
+[h5 Getting Variables]
+* [classref Aboria::getter_type]
+* [funcref Aboria::get]
+
+[h5 Internal Data Traits]
+* [classref Aboria::Traits<std::vector>]
+* [macroref UNPACK_TRAITS]
+
+[h5 Iterator]
+
+* [classref Aboria::zip_iterator]
+
+[h3 Symbolic Core]
+
+* [classref Aboria::Symbol Symbol]
+* [classref Aboria::Label Label]
+* [classref Aboria::Accumulate Accumulate]
+
+[h5 Functions]
+
+* [funcref Aboria::norm norm]
+* [funcref Aboria::dot dot]
+* [funcref Aboria::exp exp]
+* [funcref Aboria::pow pow]
+
+[h3 Operator Core]
+
+* [classref Aboria::MatrixReplacement]
+* [funcref Aboria::create_eigen_operator]
+* [funcref Aboria::create_block_eigen_operator]
+
+[h3 Utility]
+
+* [classref Aboria::Vector Vector]
+
+[endsect] [/ overview]
+
+[xinclude libaboria.xml]
+

@@ -1,0 +1,56 @@
+
+[section Examples]
+
+[section Molecular Dynamics (Linear Spring) (MD)]
+
+Simple Molecular Dynamics of N particles interacting via a linear spring 
+potential. 
+
+[import ../tests/md.h]
+[md]
+[endsect]
+
+[section Brownian Dynamics (BD)]
+
+Brownian dynamics of N point particles around a set of spheres. The point 
+particles reflect off the spheres as they diffuse.
+
+[import ../tests/bd.h]
+[bd]
+[endsect]
+
+[section Discrete Element Model (DEM)] 
+
+An Discrete Element Model example, simulating a polydisperse set of spherical 
+particles falling onto an surface.
+
+[import ../tests/dem.h]
+[dem]
+
+[endsect]
+
+[section Smoothed Particle Hydrodynamics (SPH)]
+
+An Smoothed Particle Hydrodynamics example, simulating a 2D water column over a 
+no-slip boundary. The *x* and *y* directions are periodic.
+
+[import ../tests/sph.h]
+[sph]
+
+[endsect]
+
+[section Radial Basis Function (RBF) Interpolation]
+
+[import ../tests/rbf_interpolation.h]
+[rbf_interpolation_global]
+
+[endsect]
+
+[section Kansa Method for PDEs]
+
+[import ../tests/rbf_pde.h]
+[rbf_pde]
+
+[endsect]
+
+[endsect]
