@@ -743,7 +743,9 @@ namespace Aboria {
                 typedef typename label_a_type::particles_type particles_a_type;
                 typedef typename particles_a_type::position position;
 
-                for (auto i: particlesb.get_neighbours(get<position>(ai))) {
+                //TODO: get query range and put it in box search
+
+                for (auto i: box_search(particlesb.get_query(),get<position>(ai))) {
                     auto new_labels = fusion::make_map<label_a_type,label_b_type>(
                                         ai,std::get<0>(i));
 

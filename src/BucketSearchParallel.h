@@ -286,7 +286,7 @@ struct bucket_search_parallel_query {
 
     bool_d m_periodic;
     double_d m_bucket_side_length; 
-    unsigned_int_d m_end_bucket;
+    int_d m_end_bucket;
     detail::bbox<dimension> m_bounds;
     detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 

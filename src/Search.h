@@ -76,12 +76,14 @@ public:
 
     CUDA_HOST_DEVICE
     box_search_iterator():
-        m_bucket_index(-1)
+        m_bucket_index(0),
+        n_buckets(0)
     {}
 
     CUDA_HOST_DEVICE
     box_search_iterator(const double_d &r, const double_d &box_side_length):
-        m_bucket_index(-1),
+        m_bucket_index(0),
+        n_buckets(0),
         m_r(r),
         m_box_side_length(box_side_length)
     {}
@@ -89,16 +91,19 @@ public:
 
     CUDA_HOST_DEVICE
     void add_range(const iterator_range<Iterator> &range) {
-        ++m_bucket_index;
-        m_buckets_to_search[m_bucket_index] = range;
-        if (m_bucket_index == 0) {
+        if (n_buckets == 0) {
             m_current_p = range.begin();
             if (!check_candidate()) {
                 increment();
             }
-        }
-        if (m_current_p == range.end()) {
-            --m_bucket_index;
+            if (m_current_p != range.end()) {
+                m_buckets_to_search[n_buckets] = range;
+                ++n_buckets;
+                m_bucket_index = 0;
+            }
+        } else {
+            m_buckets_to_search[n_buckets] = range;
+            ++n_buckets;
         }
     }
 
@@ -111,12 +116,12 @@ public:
 
         ++m_current_p;
         if (m_current_p == m_buckets_to_search[m_bucket_index].end()) {
-            --m_bucket_index;
+            ++m_bucket_index;
 
 #ifndef __CUDA_ARCH__
             LOG(4,"\tend of range, moving to range "<<m_bucket_index); 
 #endif
-            if (m_bucket_index >= 0) {
+            if (m_bucket_index < n_buckets) {
                 ASSERT(m_buckets_to_search[m_bucket_index].begin() != m_buckets_to_search[m_bucket_index].end(),"error, empty range found");
                 m_current_p = m_buckets_to_search[m_bucket_index].begin();
             } else {
@@ -172,8 +177,8 @@ public:
 
     CUDA_HOST_DEVICE
     bool equal(box_search_iterator const& other) const {
-        return m_bucket_index == -1 ? 
-                    other.m_bucket_index == -1 
+        return n_buckets == 0 ? 
+                    other.n_buckets == 0 
                     : 
                     m_current_p == other.m_current_p;
     }
@@ -184,10 +189,6 @@ public:
         const double_d& p = get<position>(*m_current_p) + m_current_p.get_transpose();
         m_dx = p - m_r;
 
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<p<<" trans = "<<m_current_p.get_transpose()<<". m_box_side_length = "<<m_box_side_length); 
-#endif
-
         bool outside = false;
         for (int i=0; i < Traits::dimension; i++) {
             if (std::abs(m_dx[i]) > m_box_side_length[i]) {
@@ -195,6 +196,11 @@ public:
                 break;
             } 
         }
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<p<<" trans = "<<m_current_p.get_transpose()<<". m_box_side_length = "<<m_box_side_length<<". outside = "<<outside); 
+#endif
+
+
         return !outside;
 
     }
@@ -231,7 +237,8 @@ public:
     iterator_range<Iterator> m_buckets_to_search[max_nbuckets];
     Iterator m_current_p;
     size_t m_nbuckets;
-    int m_bucket_index;
+    unsigned int m_bucket_index;
+    unsigned int n_buckets;
 
 };
 

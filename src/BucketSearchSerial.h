@@ -217,9 +217,11 @@ private:
                 }
             }
             LOG(4,"\tend buckets");
+            LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
                 LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
             }
+            LOG(4,"\tend linked list:");
         }
 #endif
 
@@ -458,7 +460,7 @@ struct bucket_search_serial_query {
 
     bool_d m_periodic;
     double_d m_bucket_side_length; 
-    unsigned_int_d m_end_bucket;
+    int_d m_end_bucket;
     detail::bbox<dimension> m_bounds;
     detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 
@@ -506,7 +508,7 @@ struct bucket_search_serial_query {
                 const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(my_bucket);
 
 #ifndef __CUDA_ARCH__
-                LOG(4,"\tlooking in bucket "<<bucket<<" = "<<bucket_index);
+                LOG(4,"\tget_bucket_particles: looking in bucket "<<bucket<<" = "<<bucket_index);
 #endif
                 return iterator_range<particle_iterator>(
                         particle_iterator(m_buckets_begin[bucket_index],

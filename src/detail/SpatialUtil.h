@@ -156,10 +156,10 @@ struct bucket_index {
     int_d reassemble_index_vector(const int index) const {
         int_d vindex;
         int i = index;
-        for (int i = D-1; i>=0; --i) {
-            double div = i/m_size[i];
+        for (int d = D-1; d>=0; --d) {
+            double div = (double)i / m_size[d];
+            vindex[d] = std::round((div-std::floor(div)) * m_size[d]);
             i = std::floor(div);
-            vindex[i] = (div-i)*m_size[i];
         }
         return vindex;
     }
@@ -169,10 +169,10 @@ struct bucket_index {
     unsigned_int_d reassemble_index_vector(const unsigned int index) const {
         unsigned_int_d vindex;
         unsigned int i = index;
-        for (int i = D-1; i>=0; --i) {
-            double div = i/m_size[i];
+        for (int d = D-1; d>=0; --d) {
+            double div = (double)i / m_size[d];
+            vindex[d] = std::round((div-std::floor(div)) * m_size[d]);
             i = std::floor(div);
-            vindex[i] = (div-i)*m_size[i];
         }
         return vindex;
     }

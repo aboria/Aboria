@@ -394,7 +394,7 @@ namespace Aboria {
                     //sparse a x b block
                     for (size_t i=0; i<na; ++i) {
                         typename particles_a_type::const_reference ai = a[i];
-                        for (auto pairj: b.get_neighbours(get<position>(ai))) {
+                        for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
                             const double_d & dx = tuple_ns::get<1>(pairj);
                             typename particles_b_type::const_reference bj = tuple_ns::get<0>(pairj);
                             const size_t j = &get<position>(bj) - get<position>(b).data();
@@ -585,7 +585,7 @@ namespace Aboria {
                 typename particles_a_type::const_reference ai = a[i];
                 double sum = 0;
                 //std::cout << "evaluating fucntion for particle at "<<get<position>(ai)<<std::endl;
-                for (auto pairj: b.get_neighbours(get<position>(ai))) {
+                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
                     const double_d & dx = tuple_ns::get<1>(pairj);
                     typename particles_b_type::const_reference bj = tuple_ns::get<0>(pairj);
                     //std::cout << "looking at particle with dx = "<<dx<<std::endl;
