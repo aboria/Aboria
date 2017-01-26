@@ -91,48 +91,23 @@ public:
 
     CUDA_HOST_DEVICE
     void add_range(const iterator_range<Iterator> &range) {
-        if (n_buckets == 0) {
+        m_buckets_to_search[n_buckets] = range;
+
+        if (is_invalid()) {
+
+            // increment of n_buckets needs to be after is_invalid()
+            ++n_buckets;
+
+            // make sure we have a good candidate ready to go
+            // if none in range then increment makes sure we 
+            // go back to being invalid
             m_current_p = range.begin();
             if (!check_candidate()) {
                 increment();
             }
-            if (m_current_p != range.end()) {
-                m_buckets_to_search[n_buckets] = range;
-                ++n_buckets;
-                m_bucket_index = 0;
-            }
         } else {
-            m_buckets_to_search[n_buckets] = range;
             ++n_buckets;
         }
-    }
-
-
-    CUDA_HOST_DEVICE
-    bool go_to_next_candidate() {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tgo_to_next_candidate (box_search_iterator):"); 
-#endif
-
-        ++m_current_p;
-        if (m_current_p == m_buckets_to_search[m_bucket_index].end()) {
-            ++m_bucket_index;
-
-#ifndef __CUDA_ARCH__
-            LOG(4,"\tend of range, moving to range "<<m_bucket_index); 
-#endif
-            if (m_bucket_index < n_buckets) {
-                ASSERT(m_buckets_to_search[m_bucket_index].begin() != m_buckets_to_search[m_bucket_index].end(),"error, empty range found");
-                m_current_p = m_buckets_to_search[m_bucket_index].begin();
-            } else {
-
-#ifndef __CUDA_ARCH__
-                LOG(4,"\tfinished ranges"); 
-#endif
-                return false;
-            }
-        }
-        return true;
     }
 
     CUDA_HOST_DEVICE
@@ -176,13 +151,45 @@ public:
     friend class boost::iterator_core_access;
 
     CUDA_HOST_DEVICE
+    bool is_invalid() const {
+        return n_buckets == m_bucket_index;
+    }
+
+    CUDA_HOST_DEVICE
     bool equal(box_search_iterator const& other) const {
-        return n_buckets == 0 ? 
-                    other.n_buckets == 0 
+        return is_invalid() ? 
+                    other.is_invalid() 
                     : 
                     m_current_p == other.m_current_p;
     }
 
+    CUDA_HOST_DEVICE
+    bool go_to_next_candidate() {
+        if (is_invalid()) return false;
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tgo_to_next_candidate (box_search_iterator):"); 
+#endif
+
+        ++m_current_p;
+        if (m_current_p == m_buckets_to_search[m_bucket_index].end()) {
+            ++m_bucket_index;
+
+#ifndef __CUDA_ARCH__
+            LOG(4,"\tend of range, moving to range "<<m_bucket_index); 
+#endif
+            if (m_bucket_index < n_buckets) {
+                ASSERT(m_buckets_to_search[m_bucket_index].begin() != m_buckets_to_search[m_bucket_index].end(),"error, empty range found");
+                m_current_p = m_buckets_to_search[m_bucket_index].begin();
+            } else {
+
+#ifndef __CUDA_ARCH__
+                LOG(4,"\tfinished ranges"); 
+#endif
+                return false;
+            }
+        }
+        return true;
+    }
 
     CUDA_HOST_DEVICE
     bool check_candidate() {
