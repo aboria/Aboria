@@ -99,13 +99,22 @@ namespace Aboria {
             typedef P particles_type;
             typedef I depth;
 
-            label(P& p):p(p) {}
-            P& get_particles() const { return p; }
+            label(P& p):
+                m_p(p),
+                m_buffers(new typename P::data_type()),
+                m_min(new typename P::value_type()),
+                m_max(new typename P::value_type())
+            {}
+            
+            P& get_particles() const { return m_p; }
+            typename P::data_type& get_buffers() const { return *m_buffers; }
+            typename P::value_type& get_min() const { return *m_min; }
+            typename P::value_type& get_max() const { return *m_max; }
 
-            P& p;
-            typename P::data_type *buffers;
-            typename P::value_type *min;
-            typename P::value_type *max;
+            P& m_p;
+            std::shared_ptr<typename P::data_type> m_buffers;
+            std::shared_ptr<typename P::value_type> m_min;
+            std::shared_ptr<typename P::value_type> m_max;
         };
 
 
@@ -113,10 +122,6 @@ namespace Aboria {
         struct symbolic {
             typedef T variable_type;
             typedef typename T::value_type value_type;
-
-            std::vector<value_type>& get_buffer(const void *address) { return map[address]; }
-
-            std::map<const void *,std::vector<value_type> > map;
         };
 
         /*
@@ -467,13 +472,36 @@ namespace Aboria {
 
         struct range_if_expr:
             proto::or_<
-                proto::less<norm_dx,SymbolicGrammar>
-                , proto::less_equal<norm_dx,SymbolicGrammar>
-                , proto::greater<SymbolicGrammar,norm_dx>
-                , proto::greater_equal<SymbolicGrammar,norm_dx>
-                , proto::logical_and<range_if_expr,SymbolicGrammar>
-                , proto::logical_and<SymbolicGrammar,range_if_expr>
-                , proto::nary_expr<_, proto::vararg<range_if_expr> >
+                proto::when<
+                    proto::less<norm_dx,SymbolicGrammar>
+                    ,SymbolicGrammar(proto::_right) 
+                    >
+                , proto::when<
+                    proto::less_equal<norm_dx,SymbolicGrammar>
+                    ,SymbolicGrammar(proto::_right) 
+                    >
+                , proto::when<
+                    proto::greater<SymbolicGrammar,norm_dx>
+                    ,SymbolicGrammar(proto::_left) 
+                    >
+                , proto::when<
+                    proto::greater_equal<SymbolicGrammar,norm_dx>
+                    ,SymbolicGrammar(proto::_left) 
+                    >
+                , proto::when<
+                    proto::logical_and<range_if_expr,SymbolicGrammar>
+                    ,range_if_expr(proto::_left) 
+                    >
+                , proto::when<
+                    proto::logical_and<SymbolicGrammar,range_if_expr>
+                    ,range_if_expr(proto::_right) 
+                    >
+            /*
+                , proto::when<
+                    proto::nary_expr<_, proto::vararg<range_if_expr> >
+                    ,range_if_expr(proto::_right) 
+                    >
+                    */
             >
         {};
 
@@ -1164,7 +1192,10 @@ namespace Aboria {
                 void copy_from_buffer() const {
                     typedef typename VariableType::value_type value_type;
                     ParticlesType& particles = mlabel.get_particles();
-                    std::vector<value_type>& buffer = msymbol.get_buffer(&particles);
+
+                    std::vector<value_type>& buffer = get<VariableType>(
+                                                        mlabel.get_buffers()
+                                                        );
 
                     const size_t n = particles.size();
                     #pragma omp parallel for
@@ -1215,7 +1246,7 @@ namespace Aboria {
                     std::vector<value_type>& buffer =
                         (NotAliased::value) ?
                             get<VariableType>(particles)
-                            : msymbol.get_buffer(&particles);
+                            : get<VariableType>(mlabel.get_buffers());
                     buffer.resize(particles.size());
 
 
@@ -1245,7 +1276,7 @@ namespace Aboria {
                     std::vector<value_type>& buffer =
                         (NotAliased::value) ?
                             get<VariableType>(particles)
-                            : msymbol.get_buffer(&particles);
+                            : get<VariableType>(mlabel.get_buffers());
                     buffer.resize(particles.size());
 
 

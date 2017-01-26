@@ -190,10 +190,7 @@ namespace Aboria {
                 : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
             {}
 
-            template <typename Particles>
-            void resize_buffer(const Particles &particles) {
-                proto::value(*this).get_buffer(&particles).resize(particles.size());
-            }
+            
     };
 
     /*
@@ -235,7 +232,10 @@ namespace Aboria {
                 : detail::LabelExpr<expr_type>( expr_type::make(data_type(p)))
             {}
 
-
+            template <typename Variable>
+            void resize_buffer(const size_t n) {
+                get<Variable>(proto::value(*this).get_buffers()).resize(n);
+            }
             //BOOST_PROTO_EXTENDS_USING_ASSIGN(Label)
     };
 

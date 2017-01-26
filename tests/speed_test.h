@@ -275,7 +275,7 @@ public:
         Label<1,nodes_type> b(nodes);
         auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
-        s.resize_buffer(nodes);
+        a.template resize_buffer<scalar>(nodes.size());
 
         auto t0 = Clock::now();
         s[a] += invh2*sum(b, norm(dx)<htol, if_else(id_[a]==id_[b],-6,1)*s[b]);
@@ -437,7 +437,7 @@ public:
         Label<1,nodes_type> b(nodes);
         auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
-        s.resize_buffer(nodes);
+        a.template resize_buffer<scalar>(nodes.size());
         s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b])*s[b]);
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
