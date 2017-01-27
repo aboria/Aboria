@@ -1,0 +1,26 @@
+[section Abstract]
+
+__aboria__ implements an expressive Domain Specific Language (DSL) in C++ for 
+specifying expressions over particles and their neighbours in multidimensional 
+space. The library is header-only and based on expression templates for 
+efficient and natural expression of mathematical expressions applied over the 
+particles.
+
+The particle data is contained in a C++ Standard Template Library (STL)
+compatible container. Each particle has a n-dimensional position and 
+user-defined data-package (for other variables such as velocity, density etc) 
+and is optionally embedded within a hypercube spatial domain (for neighbourhood
+searches) that can be periodic or not. Users can implement standard C++ and STL
+algorithms directly on the particle data, or use the expression template API to
+naturally form non-linear operators over the particle set.
+
+The motivation behind Aboria is to provide a useful library for implementing 
+particle-based numerical algorithms, for example Molecular Dynamics, Radial 
+Basis Functions or Smoothed Particle Hydrodynamics.
+
+Aboria is distributed under a BSD 3-Clause License, see LICENCE for more 
+details.
+
+[endsect]
+
+

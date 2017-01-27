@@ -10,6 +10,39 @@
 #include <cxxtest/TestSuite.h>
 
 //[dem
+/*`
+We wish to describe a set of particles in 3D cuboid, which is periodic in the 
+Cartesian $x$, and $y$ directions. There is a linear spring force
+$\mathbf{f}\_{ij}$ plus dissipation term between particles $i$ and $j$ with a 
+rest separation at $s_i + s_j$ and a cutoff at $s_i + s_j$. That is, if 
+$\mathbf{r}\_i$ is the position of particle $i$ and 
+$\mathbf{dx}\_{ij}=\mathbf{r}\_j-\mathbf{r}\_j$, then
+
+$$
+\mathbf{f}\_{ij} = \begin{cases}
+            \frac{s_i+s_j-|\mathbf{dx}\_{ij}|}{|\mathbf{dx}\_{ij}|}\mathbf{dx}\_{ij} 
+            + \gamma(\mathbf{v}\_j-\mathbf{v}\_i), & \text{for } 
+              |\mathbf{dx}\_{ij}|<s_i+s_j \\
+            0 & \text{otherwise}.
+            \end{cases}
+$$
+
+We wish to use a leap frog integrator to evolve positions $\mathbf{r}\_i$ using 
+velocities $\mathbf{v}\_i$ and accelerations $\mathbf{a}\_i = \frac{1}{m_i} \sum_j 
+\mathbf{f}\_{ij} - \mathbf{g}$. This gives the following update equations for 
+each timestep $n$
+
+\begin{align*}
+\mathbf{v}^{n+1}\_i &= \mathbf{v}^n_i + \frac{dt}{m_i} \sum_j \mathbf{f}^n_{ij} 
+\\\\
+\mathbf{r}^{n+1}_i &= \mathbf{r}^n_i + dt\, \mathbf{v}^{n+1}_i.
+\end{align*}
+
+[$images/dem/domain.svg [width 100%]  [align center]] 
+
+This figure above shows the simulation domain. As well as periodic in $x$, and $y$, we wish to add a soft surface at $z=0$ that also interacts with the particles using the same linear spring force. The domain is left open at $z=h$. We wish to initialise $N$ particles within this domain, and ensure that they are 
+non-interacting at $t=0$. 
+ */
 #include <random>
 
 #include "Aboria.h"

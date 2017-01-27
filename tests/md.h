@@ -10,6 +10,8 @@
 #include <cxxtest/TestSuite.h>
 
 //[md
+
+
 #include <random>
 
 #include "Aboria.h"
@@ -36,7 +38,11 @@ public:
          * "velocity", represented by a 2d double vector
          */
         ABORIA_VARIABLE(velocity,double2,"velocity")
+//<-
         typedef Particles<std::tuple<velocity>,2,std::vector,SearchMethod> container_type;
+//->
+//=        typedef Particles<std::tuple<velocity>,2> container_type;
+ 
         typedef typename container_type::position position;
         container_type particles;
 
@@ -51,7 +57,6 @@ public:
         const double diameter = 0.0022;
         const double k = 1.0e01;
         const double dens = 1160.0;
-        //const double mass = PI*std::pow(0.5*diameter,2)*dens;
         const double mass = (1.0/6.0)*PI*std::pow(0.5*diameter,3)*dens;
         const double reduced_mass = 0.5*mass;
         const double dt = (1.0/50.0)*PI/sqrt(k/reduced_mass);

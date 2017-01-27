@@ -29,15 +29,25 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
   
     set(QBK_SOURCES
         aboria.qbk
+        abstract.qbk
+        introduction.qbk
         installation.qbk
         neighbourhood.qbk
         container.qbk
-        introduction.qbk
         reference.qbk
         examples.qbk
         linear_algebra.qbk
         symbolic.qbk
         )
+    set(CPP_EXAMPLES
+        ../tests/md.h
+        ../tests/bd.h
+        ../tests/dem.h
+        ../tests/sph.h
+        ../tests/rbf_interpolation.h
+        ../tests/rbf_pde.h
+        )
+
 
     set (HTML_XSL_PRE "<?xml version='1.0'?>
 <xsl:stylesheet xmlns:xsl=\"http://www.w3.org/1999/XSL/Transform\" version=\"1.0\">
@@ -45,7 +55,13 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
 <xsl:template name=\"user.head.content\">
 <script type=\"text/x-mathjax-config\">
 MathJax.Hub.Config({
-  tex2jax: {inlineMath: [['$','$'], ['\\\\(','\\\\)']]}
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\\\(','\\\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: [\"AMSmath.js\", \"AMSsymbols.js\"] 
+    }
 });
 </script>
 <script type=\"text/javascript\" 
@@ -66,14 +82,15 @@ MathJax.Hub.Config({
     set (HTML_XSL_POST "</xsl:template>
 </xsl:stylesheet>")
 
-   file(WRITE html.xsl "${HTML_XSL_PRE}${HTML_XSL_POST}")
-   file(WRITE html-website.xsl "${HTML_XSL_PRE}${HTML_XSL_GOOGLE_ANALYTICS}${HTML_XSL_POST}")
+   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/html.xsl "${HTML_XSL_PRE}${HTML_XSL_POST}")
+   file(WRITE ${CMAKE_CURRENT_BINARY_DIR}/html-website.xsl "${HTML_XSL_PRE}${HTML_XSL_GOOGLE_ANALYTICS}${HTML_XSL_POST}")
 
     # PARAMETERS : http://docbook.sourceforge.net/release/xsl/current/doc/
   add_documentation(
   #  quickstart.cpp
     ${QBK_SOURCES}
-    libaboria.xml
+    ${CPP_EXAMPLES}
+    #libaboria.xml
   PARAMETERS
     #boost.root=./
     html.stylesheet=css/boostbook.css
@@ -82,7 +99,7 @@ MathJax.Hub.Config({
     boost.image.w=200
     boost.image.h=62
     boost.mathjax=1
-    chunk.section.depth=1
+    chunk.section.depth=2
     #<xsl:param>chunk.first.sections=1
     #toc.section.depth=3
     #toc.max.depth=2

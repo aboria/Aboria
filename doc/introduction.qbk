@@ -1,24 +1,112 @@
 [section Introduction]
 
-Aboria implements an expressive Domain Specific Language (DSL) in C++ for 
-specifying expressions over particles and their neighbours in multidimensional space. The 
-library is header-only and based on expression templates for efficient and 
-natural expression of mathematical expressions applied over the particles.
+__aboria__ is a C++ library that supports the implementation of particle-based 
+numerical methods. Here we define a particle-based method as consisting of three 
+key properties:
 
-The particle data is contained in a C++ Standard Template Library (STL)
-compatible container. Each particle has a n-dimensional position and 
-user-defined data-package (for other variables such as velocity, density etc) 
-and is optionally embedded within a hypercube spatial domain (for neighbourhood
-searches) that can be periodic or not. Users can implement standard C++ and STL
-algorithms directly on the particle data, or use the expression template API to
-naturally form non-linear operators over the particle set.
+# There exists a set of $N$ particles that have positions within an hypercube of 
+$n$ dimensions. The boundaries of the hypercube can optionally be periodic.
 
-The motivation behind Aboria is to provide a useful library for implementing 
-particle-based numerical algorithms, for example Molecular Dynamics, Radial 
-Basis Functions or Smoothed Particle Hydrodynamics.
+# The numerical method in question can be described in terms of non-linear 
+operators on the $N$ particle positions and/or variables defined at these 
+positions. 
 
-Aboria is distributed under a BSD 3-Clause License, see LICENCE for more 
-details.
+# These operators are defined solely by the particle positions and variables 
+(e.g. neighbourhood interactions), there are no pre-defined connections or edges 
+between the particles.
+
+
+__aboria__ attempts to provide a general purpose library that can be used to 
+support the implementation of particle-based numerical methods. It does this by 
+abstracting (in an efficient manner) many of the difficult algorithmic aspects 
+of particle-based methods, such as neighbourhood searches, while still allowing 
+the user complete control of the non-linear operators they wish to apply to the 
+particle set. The current version of __aboria__ implements the abstraction API 
+described herein, with optional shared memory parallelism. It currently does not 
+support distributed memory parallelism, GPUs or explicit SIMD vectorisation. 
+Nevertheless, work on the latter two topics is currently underway (see Section X 
+and X), and the benchmarks in Section 3 show that __aboria__ is generally 
+similar or better than hand-coded C++ when run on a standard desktop CPU-based 
+setup.
+
+[h1 Design]
+
+The diagram below shows the high-level design of __aboria__, which consists of 
+three separate and complimentary abstraction levels.
+
+[$images/aboria_design.svg]
+
+
+[h2 __aboria__ Level 1]
+
+This implements a particle container class which holds the particle data 
+(positions and other user-defined variables). This class is itself based on the 
+Standard Template Library (STL) vector class (Level 0 in the figure above
+), which serves as the lowest-level data container. The user can specify the 
+dimension of the particle's position, as well as the variables defined at each 
+particle (velocity, temperature etc.), and the Level 1 particle set container 
+will combine multiple Level 0 vectors to form a single data structure. 
+
+This Level 1 particle set container generally follows the STL specification, 
+with its own iterators and traits, with a few exceptions and additions, as 
+described in the (TODO: put ref here). It supports operations to add particles 
+(i.e. the STL `push_back` member function), remove particles (i.e. `erase`), and 
+can return a single particle given an index $i$ (i.e. `operator[]`). This index 
+operation returns a lightweight type containing references to the corresponding 
+index in the set of zipped Level 0 vectors. Individual variables can be obtained 
+from this lightweight type via `get` functions provided by __aboria__.
+
+[$images/particle_set.svg]
+
+__aboria__ Level 1 also includes multiple neighbour search classes, which can be 
+used for fast neighbour searches throughout a hypercube domain with periodic or 
+non-periodic boundaries. The particle set container interacts with a neighbour 
+searching classes to embed the particles within the domain ensuring that the two 
+data structures are kept in sync, while still allowing for updates to the 
+particles positions throughout the domain. The current version of the code has 
+two possible neighbour search classes:
+
+# A cell list data structure, which divides the domain into a square lattice of 
+buckets. Each bucket contains zero or more particles. Neighbours near a position 
+$r_i$ can be found by looking within the cell containing this position, and its 
+neighbours. Queries to this data structure are thread-safe and can be used in 
+parallel, but particle insertion is not.
+# Another cell list data structure, but this one supports parallel insertion and 
+queries.
+
+[h2 Aboria Level 2]
+
+This implements fast summation algorithms useful for particle-based methods, 
+using the particle set and neighbour search classes in Level 1. Currently this 
+includes:
+
+# a simple box search algorithm (e.g. for particle interactions that are zero 
+beyond a certain radius). 
+
+
+[h2 Aboria Level 3]
+
+The highest abstraction level in Aboria implements a Domain Specific Language 
+(DSL) for specifying non-linear operators on the set of particles, using the 
+[@http://www.boost.org/doc/libs/1_63_0/doc/html/proto.html Boost.Proto] library. 
+Users can use standard C++ operators (e.g. `*`, `+` or `/`), and/or a set of 
+supplied functions (e.g. `sqrt`, `pow` or `norm`), to express the operator they 
+wish to apply to the given particle set. 
+
+This operator is not applied immediately, but rather the symbolic form of the 
+operator is kept and analysed by __aboria__. Using the form of the operator 
+__aboria__ can detect when a Level 2 fast summation method is available, can 
+detect and compensate for aliasing, and when the particle positions are altered 
+(thus requiring an update of the neighbour searching data structure). As the 
+symbolic form of the operator is known at compile-time, it can be efficiently 
+inlined to all the low-level routines implemented in Level 1 and 2, ensuring 
+zero overhead costs associated with this level.
+
+In summary, while Levels 1 and 2 provide useful /functionality/ for 
+particle-based methods, the purpose of Level 3 is to tie together this 
+functionality and to provide a easy-to-use interface that ensures that the 
+capabilities of Levels 1 and 2 are used in the best possible way. 
+
 
 [endsect]
 
