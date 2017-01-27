@@ -1,0 +1,146 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Brownian Dynamics (BD)</title>
+<link rel="stylesheet" href="../../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../../index.html" title="Aboria 0.3">
+<link rel="up" href="../examples.html" title="Examples">
+<link rel="prev" href="../examples.html" title="Examples">
+<link rel="next" href="discrete_element_model_dem.html" title="Discrete Element Model (DEM)">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../examples.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../examples.html"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="discrete_element_model_dem.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.examples.brownian_dynamics_bd"></a><a class="link" href="brownian_dynamics_bd.html" title="Brownian Dynamics (BD)">Brownian Dynamics
+      (BD)</a>
+</h3></div></div></div>
+<p>
+        Brownian dynamics of N point particles around a set of spheres. The point
+        particles reflect off the spheres as they diffuse.
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">random</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
+<span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
+        <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">radius</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"radius"</span><span class="special">)</span>
+
+        <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">SearchMethod</span><span class="special">&gt;</span> <span class="identifier">spheres_type</span><span class="special">;</span>
+        <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">SearchMethod</span><span class="special">&gt;</span> <span class="identifier">points_type</span><span class="special">;</span>
+        <span class="keyword">typedef</span> <span class="identifier">position_d</span><span class="special">&lt;</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">position</span><span class="special">;</span>
+        <span class="identifier">spheres_type</span> <span class="identifier">spheres</span><span class="special">;</span>
+
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">L</span> <span class="special">=</span> <span class="number">10.0</span><span class="special">;</span>
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">D</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">dt</span> <span class="special">=</span> <span class="number">0.1</span><span class="special">;</span>
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">timesteps</span> <span class="special">=</span> <span class="number">1000</span><span class="special">;</span>
+
+        <span class="identifier">spheres</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">));</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">0</span><span class="special">])</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
+        <span class="identifier">spheres</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(</span><span class="number">5</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">));</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">1</span><span class="special">])</span> <span class="special">=</span> <span class="number">2.0</span><span class="special">;</span>
+        <span class="identifier">spheres</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,-</span><span class="number">5</span><span class="special">,</span><span class="number">0</span><span class="special">));</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">2</span><span class="special">])</span> <span class="special">=</span> <span class="number">1.5</span><span class="special">;</span>
+        <span class="identifier">spheres</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">5</span><span class="special">));</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">3</span><span class="special">])</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
+
+        <span class="identifier">points_type</span> <span class="identifier">points</span><span class="special">;</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(-</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">,</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">);</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="number">1000</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+            <span class="identifier">points</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">),</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">),</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">)));</span>
+        <span class="special">}</span>
+
+
+        <span class="identifier">points</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(-</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">,-</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">,-</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">),</span><span class="identifier">double3</span><span class="special">(</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">,</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">,</span><span class="identifier">L</span><span class="special">/</span><span class="number">5</span><span class="special">),</span><span class="number">4</span><span class="special">,</span><span class="identifier">bool3</span><span class="special">(</span><span class="keyword">true</span><span class="special">,</span><span class="keyword">true</span><span class="special">,</span><span class="keyword">true</span><span class="special">));</span>
+        <span class="identifier">spheres</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">double3</span><span class="special">(-</span><span class="identifier">L</span><span class="special">,-</span><span class="identifier">L</span><span class="special">,-</span><span class="identifier">L</span><span class="special">),</span><span class="identifier">double3</span><span class="special">(</span><span class="identifier">L</span><span class="special">,</span><span class="identifier">L</span><span class="special">,</span><span class="identifier">L</span><span class="special">),</span><span class="number">4</span><span class="special">,</span><span class="identifier">bool3</span><span class="special">(</span><span class="keyword">false</span><span class="special">,</span><span class="keyword">false</span><span class="special">,</span><span class="keyword">false</span><span class="special">));</span>
+
+        <span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;</span> <span class="identifier">p</span><span class="special">;</span>
+        <span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;</span> <span class="identifier">r</span><span class="special">;</span>
+        <span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;</span> <span class="identifier">alive_</span><span class="special">;</span>
+        <span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">spheres_type</span> <span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">spheres</span><span class="special">);</span>
+        <span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">spheres_type</span> <span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">spheres</span><span class="special">);</span>
+        <span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">points_type</span> <span class="special">&gt;</span> <span class="identifier">i</span><span class="special">(</span><span class="identifier">points</span><span class="special">);</span>
+        <span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">points_type</span> <span class="special">&gt;</span> <span class="identifier">j</span><span class="special">(</span><span class="identifier">points</span><span class="special">);</span>
+        <span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">i</span><span class="special">,</span><span class="identifier">b</span><span class="special">);</span>
+        <span class="identifier">Normal</span> <span class="identifier">N</span><span class="special">;</span>
+        <span class="identifier">VectorSymbolic</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">,</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">vector</span><span class="special">;</span>
+        <span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">bit_or</span><span class="special">&lt;</span><span class="keyword">bool</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">any</span><span class="special">;</span>
+        <span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="identifier">double3</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
+
+        <span class="keyword">int</span> <span class="identifier">count_before</span><span class="special">=</span><span class="number">0</span><span class="special">;</span>
+        <span class="keyword">for</span><span class="special">(</span><span class="keyword">auto</span> <span class="identifier">point</span><span class="special">:</span> <span class="identifier">points</span><span class="special">)</span> <span class="special">{</span>
+            <span class="keyword">if</span> <span class="special">((</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">point</span><span class="special">)-</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">0</span><span class="special">])).</span><span class="identifier">norm</span><span class="special">()</span> <span class="special">&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">0</span><span class="special">]))</span> <span class="special">{</span>
+                <span class="identifier">count_before</span><span class="special">++;</span>
+            <span class="special">}</span>
+        <span class="special">}</span>
+
+        <span class="comment">/*
+         * Kill any points within spheres
+         */</span>
+        <span class="identifier">alive_</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="special">!</span><span class="identifier">any</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)</span> <span class="special">&lt;</span> <span class="identifier">r</span><span class="special">[</span><span class="identifier">b</span><span class="special">],</span><span class="keyword">true</span><span class="special">);</span>
+
+
+        <span class="keyword">int</span> <span class="identifier">count_after</span><span class="special">=</span><span class="number">0</span><span class="special">;</span>
+        <span class="keyword">for</span><span class="special">(</span><span class="keyword">auto</span> <span class="identifier">point</span><span class="special">:</span> <span class="identifier">points</span><span class="special">)</span> <span class="special">{</span>
+            <span class="keyword">if</span> <span class="special">((</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">point</span><span class="special">)-</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">0</span><span class="special">])).</span><span class="identifier">norm</span><span class="special">()</span> <span class="special">&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">spheres</span><span class="special">[</span><span class="number">0</span><span class="special">]))</span> <span class="special">{</span>
+                <span class="identifier">count_after</span><span class="special">++;</span>
+            <span class="special">}</span>
+        <span class="special">}</span>
+
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span><span class="string">" found "</span><span class="special">&lt;&lt;</span><span class="identifier">count_before</span><span class="special">&lt;&lt;</span><span class="string">" before and "</span><span class="special">&lt;&lt;</span><span class="identifier">count_after</span><span class="special">&lt;&lt;</span><span class="string">" after"</span><span class="special">&lt;&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+
+        <span class="comment">/*
+         * Diffusion step for points and reflect off spheres
+         */</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">ts</span> <span class="special">=</span> <span class="number">1</span><span class="special">;</span> <span class="identifier">ts</span> <span class="special">&lt;</span> <span class="identifier">timesteps</span><span class="special">;</span> <span class="special">++</span><span class="identifier">ts</span><span class="special">)</span> <span class="special">{</span>
+            <span class="keyword">if</span> <span class="special">(</span><span class="identifier">ts</span><span class="special">%</span><span class="number">10</span><span class="special">==</span><span class="number">0</span><span class="special">)</span> <span class="special">{</span>
+
+<span class="preprocessor">#ifdef</span> <span class="identifier">HAVE_VTK</span>
+                <span class="identifier">vtkWriteGrid</span><span class="special">(</span><span class="string">"bd"</span><span class="special">,</span><span class="identifier">ts</span><span class="special">/</span><span class="number">10</span><span class="special">,</span><span class="identifier">points</span><span class="special">.</span><span class="identifier">get_grid</span><span class="special">(</span><span class="keyword">true</span><span class="special">));</span>
+<span class="preprocessor">#endif</span>
+                <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"."</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">flush</span><span class="special">;</span>
+            <span class="special">}</span>
+            <span class="identifier">p</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">sqrt</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">D</span><span class="special">*</span><span class="identifier">dt</span><span class="special">)*</span><span class="identifier">vector</span><span class="special">(</span><span class="identifier">N</span><span class="special">,</span><span class="identifier">N</span><span class="special">,</span><span class="identifier">N</span><span class="special">);</span>
+            <span class="identifier">p</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)</span> <span class="special">&lt;</span> <span class="identifier">r</span><span class="special">[</span><span class="identifier">b</span><span class="special">],</span>
+                        <span class="special">-</span><span class="number">2</span><span class="special">*(</span><span class="identifier">r</span><span class="special">[</span><span class="identifier">b</span><span class="special">]/</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)-</span><span class="number">1</span><span class="special">)*</span><span class="identifier">dx</span> <span class="special">);</span>
+
+        <span class="special">}</span>
+        <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="special">}</span>
+</pre>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../examples.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../examples.html"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="discrete_element_model_dem.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

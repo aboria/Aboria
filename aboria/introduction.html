@@ -1,0 +1,196 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Introduction</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.3">
+<link rel="up" href="../index.html" title="Aboria 0.3">
+<link rel="prev" href="../index.html" title="Aboria 0.3">
+<link rel="next" href="installation.html" title="Installation">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../index.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="installation.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.introduction"></a><a class="link" href="introduction.html" title="Introduction">Introduction</a>
+</h2></div></div></div>
+<p>
+      <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a> is a C++
+      library that supports the implementation of particle-based numerical methods.
+      Here we define a particle-based method as consisting of three key properties:
+    </p>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+          There exists a set of $N$ particles that have positions within an hypercube
+          of $n$ dimensions. The boundaries of the hypercube can optionally be periodic.
+        </li>
+<li class="listitem">
+          The numerical method in question can be described in terms of non-linear
+          operators on the $N$ particle positions and/or variables defined at these
+          positions.
+        </li>
+<li class="listitem">
+          These operators are defined solely by the particle positions and variables
+          (e.g. neighbourhood interactions), there are no pre-defined connections
+          or edges between the particles.
+        </li>
+</ol></div>
+<p>
+      <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a> attempts
+      to provide a general purpose library that can be used to support the implementation
+      of particle-based numerical methods. It does this by abstracting (in an efficient
+      manner) many of the difficult algorithmic aspects of particle-based methods,
+      such as neighbourhood searches, while still allowing the user complete control
+      of the non-linear operators they wish to apply to the particle set. The current
+      version of <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>
+      implements the abstraction API described herein, with optional shared memory
+      parallelism. It currently does not support distributed memory parallelism,
+      GPUs or explicit SIMD vectorisation. Nevertheless, work on the latter two topics
+      is currently underway (see Section X and X), and the benchmarks in Section
+      3 show that <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>
+      is generally similar or better than hand-coded C++ when run on a standard desktop
+      CPU-based setup.
+    </p>
+<h2>
+<a name="aboria.introduction.h0"></a>
+      <span class="phrase"><a name="aboria.introduction.design"></a></span><a class="link" href="introduction.html#aboria.introduction.design">Design</a>
+    </h2>
+<p>
+      The diagram below shows the high-level design of <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>,
+      which consists of three separate and complimentary abstraction levels.
+    </p>
+<p>
+      <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/aboria_design.svg" width="782" height="310"></object></span>
+    </p>
+<h3>
+<a name="aboria.introduction.h1"></a>
+      <span class="phrase"><a name="aboria.introduction.aboria_level_1"></a></span><a class="link" href="introduction.html#aboria.introduction.aboria_level_1">Aboria Level 1</a>
+    </h3>
+<p>
+      This implements a particle container class which holds the particle data (positions
+      and other user-defined variables). This class is itself based on the Standard
+      Template Library (STL) vector class (Level 0 in the figure above ), which serves
+      as the lowest-level data container. The user can specify the dimension of the
+      particle's position, as well as the variables defined at each particle (velocity,
+      temperature etc.), and the Level 1 particle set container will combine multiple
+      Level 0 vectors to form a single data structure.
+    </p>
+<p>
+      This Level 1 particle set container generally follows the STL specification,
+      with its own iterators and traits, with a few exceptions and additions, as
+      described in the (TODO: put ref here). It supports operations to add particles
+      (i.e. the STL <code class="computeroutput"><span class="identifier">push_back</span></code> member
+      function), remove particles (i.e. <code class="computeroutput"><span class="identifier">erase</span></code>),
+      and can return a single particle given an index $i$ (i.e. <code class="computeroutput"><span class="keyword">operator</span><span class="special">[]</span></code>). This index operation returns a lightweight
+      type containing references to the corresponding index in the set of zipped
+      Level 0 vectors. Individual variables can be obtained from this lightweight
+      type via <code class="computeroutput"><span class="identifier">get</span></code> functions provided
+      by <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>.
+    </p>
+<p>
+      <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/particle_set.svg" width="821" height="298"></object></span>
+    </p>
+<p>
+      <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a> Level 1
+      also includes multiple neighbour search classes, which can be used for fast
+      neighbour searches throughout a hypercube domain with periodic or non-periodic
+      boundaries. The particle set container interacts with a neighbour searching
+      classes to embed the particles within the domain ensuring that the two data
+      structures are kept in sync, while still allowing for updates to the particles
+      positions throughout the domain. The current version of the code has two possible
+      neighbour search classes:
+    </p>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+          A cell list data structure, which divides the domain into a square lattice
+          of buckets. Each bucket contains zero or more particles. Neighbours near
+          a position $r_i$ can be found by looking within the cell containing this
+          position, and its neighbours. Queries to this data structure are thread-safe
+          and can be used in parallel, but particle insertion is not.
+        </li>
+<li class="listitem">
+          Another cell list data structure, but this one supports parallel insertion
+          and queries.
+        </li>
+</ol></div>
+<h3>
+<a name="aboria.introduction.h2"></a>
+      <span class="phrase"><a name="aboria.introduction.aboria_level_2"></a></span><a class="link" href="introduction.html#aboria.introduction.aboria_level_2">Aboria
+      Level 2</a>
+    </h3>
+<p>
+      This implements fast summation algorithms useful for particle-based methods,
+      using the particle set and neighbour search classes in Level 1. Currently this
+      includes:
+    </p>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+          a simple box search algorithm (e.g. for particle interactions that are
+          zero beyond a certain radius).
+        </li></ol></div>
+<h3>
+<a name="aboria.introduction.h3"></a>
+      <span class="phrase"><a name="aboria.introduction.aboria_level_3"></a></span><a class="link" href="introduction.html#aboria.introduction.aboria_level_3">Aboria
+      Level 3</a>
+    </h3>
+<p>
+      The highest abstraction level in Aboria implements a Domain Specific Language
+      (DSL) for specifying non-linear operators on the set of particles, using the
+      <a href="http://www.boost.org/doc/libs/1_63_0/doc/html/proto.html" target="_top">Boost.Proto</a>
+      library. Users can use standard C++ operators (e.g. <code class="computeroutput"><span class="special">*</span></code>,
+      <code class="computeroutput"><span class="special">+</span></code> or <code class="computeroutput"><span class="special">/</span></code>),
+      and/or a set of supplied functions (e.g. <code class="computeroutput"><span class="identifier">sqrt</span></code>,
+      <code class="computeroutput"><span class="identifier">pow</span></code> or <code class="computeroutput"><span class="identifier">norm</span></code>),
+      to express the operator they wish to apply to the given particle set.
+    </p>
+<p>
+      This operator is not applied immediately, but rather the symbolic form of the
+      operator is kept and analysed by <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>.
+      Using the form of the operator <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>
+      can detect when a Level 2 fast summation method is available, can detect and
+      compensate for aliasing, and when the particle positions are altered (thus
+      requiring an update of the neighbour searching data structure). As the symbolic
+      form of the operator is known at compile-time, it can be efficiently inlined
+      to all the low-level routines implemented in Level 1 and 2, ensuring zero overhead
+      costs associated with this level.
+    </p>
+<p>
+      In summary, while Levels 1 and 2 provide useful <span class="emphasis"><em>functionality</em></span>
+      for particle-based methods, the purpose of Level 3 is to tie together this
+      functionality and to provide a easy-to-use interface that ensures that the
+      capabilities of Levels 1 and 2 are used in the best possible way.
+    </p>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../index.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="installation.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

@@ -1,14 +1,20 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
-<title>Aboria 0.2</title>
+<title>Aboria 0.3</title>
 <link rel="stylesheet" href="css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="index.html" title="Aboria 0.2">
-<link rel="next" href="aboria/installation.html" title="Installation">
+<link rel="home" href="index.html" title="Aboria 0.3">
+<link rel="next" href="aboria/introduction.html" title="Introduction">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
-  tex2jax: {inlineMath: [['$','$'], ['\\(','\\)']]}
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
 });
 </script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
   (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
@@ -23,51 +29,52 @@ MathJax.Hub.Config({
 <body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="images/aboria2.jpg"></td></tr></table>
 <hr>
-<div class="spirit-nav"><a accesskey="n" href="aboria/installation.html"><img src="images/next.png" alt="Next"></a></div>
+<div class="spirit-nav"><a accesskey="n" href="aboria/introduction.html"><img src="images/next.png" alt="Next"></a></div>
 <div class="article">
 <div class="titlepage">
 <div>
 <div><h2 class="title">
-<a name="aboria"></a>Aboria 0.2</h2></div>
+<a name="aboria"></a>Aboria 0.3</h2></div>
 <div><div class="authorgroup"><div class="author"><h3 class="author">
 <span class="firstname">Martin</span> <span class="surname">Robinson</span>
 </h3></div></div></div>
-<div><p class="copyright">Copyright &#169; 2015, 2016 Martin Robinson</p></div>
+<div><p class="copyright">Copyright &#169; 2015-2017 Martin Robinson</p></div>
 </div>
 <hr>
 </div>
 <div class="toc">
 <p><b>Table of Contents</b></p>
 <dl class="toc">
-<dt><span class="section"><a href="index.html#aboria.introduction">Introduction</a></span></dt>
+<dt><span class="section"><a href="index.html#aboria.abstract">Abstract</a></span></dt>
+<dt><span class="section"><a href="aboria/introduction.html">Introduction</a></span></dt>
 <dt><span class="section"><a href="aboria/installation.html">Installation</a></span></dt>
 <dt><span class="section"><a href="aboria/continuous_integration.html">Continuous Integration</a></span></dt>
 <dt><span class="section"><a href="aboria/particle_container.html">Particle Container</a></span></dt>
 <dd><dl>
 <dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.creating_new_particles">Creating
       new particles</a></span></dt>
-<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.multidimensional_data_types">Multidimensional
+<dt><span class="section"><a href="aboria/particle_container/multidimensional_data_types.html">Multidimensional
       Data Types</a></span></dt>
-<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.accessing_particle_variables">Accessing
+<dt><span class="section"><a href="aboria/particle_container/accessing_particle_variables.html">Accessing
       Particle Variables</a></span></dt>
-<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.looping_through_the_container">Looping
+<dt><span class="section"><a href="aboria/particle_container/looping_through_the_container.html">Looping
       through the container</a></span></dt>
-<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.internal_data_for_variables">Internal
+<dt><span class="section"><a href="aboria/particle_container/internal_data_for_variables.html">Internal
       Data for Variables</a></span></dt>
-<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.particle_s_value_type_versus_ref">Particle's
+<dt><span class="section"><a href="aboria/particle_container/particle_s_value_type_versus_ref.html">Particle's
       <code class="computeroutput"><span class="identifier">value_type</span></code> versus <code class="computeroutput"><span class="identifier">reference</span></code></a></span></dt>
-<dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.important_differences_from_stl_c">Important
+<dt><span class="section"><a href="aboria/particle_container/important_differences_from_stl_c.html">Important
       differences from STL containers</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/neighbourhood_searching.html">Neighbourhood Searching</a></span></dt>
 <dt><span class="section"><a href="aboria/symbolic_expressions.html">Symbolic Expressions</a></span></dt>
 <dd><dl>
 <dt><span class="section"><a href="aboria/symbolic_expressions.html#aboria.symbolic_expressions.setup">Setup</a></span></dt>
-<dt><span class="section"><a href="aboria/symbolic_expressions.html#aboria.symbolic_expressions.constant_expressions">Constant
+<dt><span class="section"><a href="aboria/symbolic_expressions/constant_expressions.html">Constant
       Expressions</a></span></dt>
-<dt><span class="section"><a href="aboria/symbolic_expressions.html#aboria.symbolic_expressions.univariate_expressions">Univariate
+<dt><span class="section"><a href="aboria/symbolic_expressions/univariate_expressions.html">Univariate
       Expressions</a></span></dt>
-<dt><span class="section"><a href="aboria/symbolic_expressions.html#aboria.symbolic_expressions.bivariate_expressions">Bivariate
+<dt><span class="section"><a href="aboria/symbolic_expressions/bivariate_expressions.html">Bivariate
       Expressions</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html">Matrix-free Linear
@@ -75,53 +82,54 @@ MathJax.Hub.Config({
 <dd><dl>
 <dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.creating_operators">Creating
       Operators</a></span></dt>
-<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.block_operators">Block
+<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_/block_operators.html">Block
       Operators</a></span></dt>
-<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.iterative_solvers">Iterative
+<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_/iterative_solvers.html">Iterative
       Solvers</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/examples.html">Examples</a></span></dt>
 <dd><dl>
 <dt><span class="section"><a href="aboria/examples.html#aboria.examples.molecular_dynamics_linear_spring">Molecular
       Dynamics (Linear Spring) (MD)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.brownian_dynamics_bd">Brownian Dynamics
+<dt><span class="section"><a href="aboria/examples/brownian_dynamics_bd.html">Brownian Dynamics
       (BD)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.discrete_element_model_dem">Discrete
+<dt><span class="section"><a href="aboria/examples/discrete_element_model_dem.html">Discrete
       Element Model (DEM)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.smoothed_particle_hydrodynamics_">Smoothed
+<dt><span class="section"><a href="aboria/examples/smoothed_particle_hydrodynamics_.html">Smoothed
       Particle Hydrodynamics (SPH)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.radial_basis_function_rbf_interp">Radial
+<dt><span class="section"><a href="aboria/examples/radial_basis_function_rbf_interp.html">Radial
       Basis Function (RBF) Interpolation</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.kansa_method_for_pdes">Kansa Method for
+<dt><span class="section"><a href="aboria/examples/kansa_method_for_pdes.html">Kansa Method for
       PDEs</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/api_overview.html">API Overview</a></span></dt>
 <dt><span class="section"><a href="libaboria.html">libaboria</a></span></dt>
 <dd><dl>
 <dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Assemble_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Assemble.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.DataVector_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/DataVector.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Functions.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Get_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Get.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Log_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Log.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Operators.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Particles_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Particles.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Traits_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Traits.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Variable_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Variable.h&gt;</a></span></dt>
-<dt><span class="section"><a href="libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Vector_h">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Vector.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/DataVector_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/DataVector.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Functions_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Functions.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Get_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Get.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Log_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Log.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Operators_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Operators.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Particles_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Particles.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Symbolic_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Traits_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Traits.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Variable_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Variable.h&gt;</a></span></dt>
+<dt><span class="section"><a href="header//home/travis/build/martinjrobins/Aboria/src/Vector_h.html">Header &lt;/home/travis/build/martinjrobins/Aboria/src/Vector.h&gt;</a></span></dt>
 </dl></dd>
 </dl>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
-<a name="aboria.introduction"></a><a class="link" href="index.html#aboria.introduction" title="Introduction">Introduction</a>
+<a name="aboria.abstract"></a><a class="link" href="index.html#aboria.abstract" title="Abstract">Abstract</a>
 </h2></div></div></div>
 <p>
-      Aboria implements an expressive Domain Specific Language (DSL) in C++ for specifying
-      expressions over particles and their neighbours in multidimensional space.
-      The library is header-only and based on expression templates for efficient
-      and natural expression of mathematical expressions applied over the particles.
+      <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a> implements
+      an expressive Domain Specific Language (DSL) in C++ for specifying expressions
+      over particles and their neighbours in multidimensional space. The library
+      is header-only and based on expression templates for efficient and natural
+      expression of mathematical expressions applied over the particles.
     </p>
 <p>
       The particle data is contained in a C++ Standard Template Library (STL) compatible
@@ -143,10 +151,10 @@ MathJax.Hub.Config({
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
-<td align="left"><p><small>Last revised: January 27, 2017 at 06:27:07 GMT</small></p></td>
+<td align="left"><p><small>Last revised: January 27, 2017 at 12:30:41 GMT</small></p></td>
 <td align="right"><div class="copyright-footer"></div></td>
 </tr></table>
 <hr>
-<div class="spirit-nav"><a accesskey="n" href="aboria/installation.html"><img src="images/next.png" alt="Next"></a></div>
+<div class="spirit-nav"><a accesskey="n" href="aboria/introduction.html"><img src="images/next.png" alt="Next"></a></div>
 </body>
 </html>
