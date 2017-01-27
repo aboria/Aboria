@@ -1,0 +1,191 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Benchmarks</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.3">
+<link rel="up" href="../index.html" title="Aboria 0.3">
+<link rel="prev" href="examples.html" title="Examples">
+<link rel="next" href="api_overview.html" title="API Overview">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="examples.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="api_overview.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.benchmarks"></a><a class="link" href="benchmarks.html" title="Benchmarks">Benchmarks</a>
+</h2></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="benchmarks.html#aboria.benchmarks.vector_addition">Vector Addition</a></span></dt>
+<dt><span class="section"><a href="benchmarks.html#aboria.benchmarks.daxpy">DAXPY</a></span></dt>
+<dt><span class="section"><a href="benchmarks.html#aboria.benchmarks.dense_non_linear_operator">Dense non-linear
+      operator</a></span></dt>
+<dt><span class="section"><a href="benchmarks.html#aboria.benchmarks.neighbour_search_non_linear_oper">Neighbour
+      search non-linear operator</a></span></dt>
+</dl></div>
+<p>
+      &lt;?dbhtml stop-chunking?&gt;
+    </p>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.benchmarks.vector_addition"></a><a class="link" href="benchmarks.html#aboria.benchmarks.vector_addition" title="Vector Addition">Vector Addition</a>
+</h3></div></div></div>
+<p>
+        Here we aim to compute a simple vector addition operation
+      </p>
+<p>
+        $$ a_i = b_i + c_i \text{ for } i = 0...N. $$
+      </p>
+<p>
+        A particle set containing the variables $a$, $b$ and $c$ can be defined in
+        <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a> like
+        so
+      </p>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">a_var</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"a"</span><span class="special">)</span>
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">b_var</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"b"</span><span class="special">)</span>
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">c_var</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"c"</span><span class="special">)</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">a_var</span><span class="special">,</span><span class="identifier">b_var</span><span class="special">,</span><span class="identifier">c_var</span><span class="special">&gt;,</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">nodes_type</span><span class="special">;</span>
+<span class="identifier">nodes_type</span> <span class="identifier">nodes</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+</pre>
+<p>
+        The vector addition operation can then be calculated using the Level 3 layer
+        like so
+      </p>
+<pre class="programlisting"><span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">a_var</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">;</span>
+<span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">b_var</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">;</span>
+<span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">c_var</span><span class="special">&gt;</span> <span class="identifier">c</span><span class="special">;</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">nodes_type</span><span class="special">&gt;</span> <span class="identifier">i</span><span class="special">(</span><span class="identifier">nodes</span><span class="special">);</span>
+<span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">b</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+</span> <span class="identifier">c</span><span class="special">[</span><span class="identifier">i</span><span class="special">];</span>
+</pre>
+<p>
+        We can measure the time taken by the last line in the code segment above
+        for varying $N$, and compare this with identical calculations implemented
+        using:
+      </p>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+            Aboria Level 1 (i.e. not using the symbolic layer, simply looping through
+            the particle set container).
+          </li>
+<li class="listitem">
+            C++ and the STL <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code> class.
+          </li>
+</ol></div>
+<p>
+        The resultant benchmarks are shown in Figure \ref{}, where it can be seen
+        that the three approaches are very similar in speed, confirming that [Aboria][]
+        can achieve zero-cost abstraction, at least in this simple case. More complicated
+        cases are explored below.
+      </p>
+<p>
+        <span class="inlinemediaobject"><img src="../images/benchmarks/vector_addition.pdf"></span>
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.benchmarks.daxpy"></a><a class="link" href="benchmarks.html#aboria.benchmarks.daxpy" title="DAXPY">DAXPY</a>
+</h3></div></div></div>
+<p>
+        This benchmark is for the BLAS DAXPY operation, given by
+      </p>
+<p>
+        $$ a_i = a_i + 0.1*b_i \text{ for } i = 0...N. $$
+      </p>
+<p>
+        This is implemented in <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>
+        using
+      </p>
+<pre class="programlisting"><span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="identifier">b</span><span class="special">[</span><span class="identifier">i</span><span class="special">]*</span><span class="number">0.001</span><span class="special">;</span>
+</pre>
+<p>
+        <span class="inlinemediaobject"><img src="../images/benchmarks/daxpy.pdf"></span>
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.benchmarks.dense_non_linear_operator"></a><a class="link" href="benchmarks.html#aboria.benchmarks.dense_non_linear_operator" title="Dense non-linear operator">Dense non-linear
+      operator</a>
+</h3></div></div></div>
+<p>
+        Here we move onto a dense, $N^2$ operation, given by the non-linear operator
+      </p>
+<p>
+        $$ a_i = a_i + \sum_j^N a_j \sqrt{\mathbf{dx}_{ij} \cdot \mathbf{dx}_{ij}
+        + b_j^2} \text{ for } i = 0...N. $$
+      </p>
+<p>
+        where $\mathbf{dx}_{ij}$ is the shortest vector from particle $i$ to $i$.
+        This is implemented in Level 3 <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>
+        like so
+      </p>
+<pre class="programlisting"><span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">nodes_type</span><span class="special">&gt;</span> <span class="identifier">j</span><span class="special">(</span><span class="identifier">nodes</span><span class="special">);</span>
+<span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">i</span><span class="special">,</span><span class="identifier">j</span><span class="special">);</span>
+<span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
+<span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">j</span><span class="special">,</span><span class="keyword">true</span><span class="special">,</span><span class="identifier">a</span><span class="special">[</span><span class="identifier">j</span><span class="special">]*</span><span class="identifier">sqrt</span><span class="special">(</span><span class="identifier">dot</span><span class="special">(</span><span class="identifier">dx</span><span class="special">,</span><span class="identifier">dx</span><span class="special">)+</span><span class="identifier">b</span><span class="special">[</span><span class="identifier">j</span><span class="special">]*</span><span class="identifier">b</span><span class="special">[</span><span class="identifier">j</span><span class="special">]));</span>
+<span class="comment">/*'
+The benchmarks are shown below.
+
+[$images/benchmarks/multiquadric.pdf]
+ */</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.benchmarks.neighbour_search_non_linear_oper"></a><a class="link" href="benchmarks.html#aboria.benchmarks.neighbour_search_non_linear_oper" title="Neighbour search non-linear operator">Neighbour
+      search non-linear operator</a>
+</h3></div></div></div>
+<p>
+        Finally we implement a non-linear operator involving a neighbour search,
+        common in particle-based methods. This is given by
+      </p>
+<p>
+        $$ a_i = \sum_j^N \begin{cases} \frac{r-|\mathbf{dx}_{ij}|}{|\mathbf{dx}_{ij}|}\mathbf{dx}_{ij}
+        , &amp; \text{for } |\mathbf{dx}_{ij}|&lt;r \ 0 &amp; \text{otherwise}, \end{cases}
+        \text{ for } i = 0...N. $$
+      </p>
+<p>
+        where $r$ is a given constant.
+      </p>
+<pre class="programlisting"><span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">j</span><span class="special">,</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="identifier">r</span><span class="special">,(</span><span class="identifier">r</span><span class="special">-</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">))/</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)*</span><span class="identifier">dx</span><span class="special">);</span>
+</pre>
+<p>
+        The benchmarks are shown below.
+      </p>
+<p>
+        <span class="inlinemediaobject"><img src="../images/benchmarks/linear_spring.pdf"></span>
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="examples.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="api_overview.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

@@ -6,8 +6,8 @@
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.3">
 <link rel="up" href="../index.html" title="Aboria 0.3">
-<link rel="prev" href="symbolic_expressions/bivariate_expressions.html" title="Bivariate Expressions">
-<link rel="next" href="matrix_free_linear_algebra_with_/block_operators.html" title="Block Operators">
+<link rel="prev" href="symbolic_expressions.html" title="Symbolic Expressions">
+<link rel="next" href="examples.html" title="Examples">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="symbolic_expressions/bivariate_expressions.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="matrix_free_linear_algebra_with_/block_operators.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="symbolic_expressions.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="examples.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
@@ -42,9 +42,9 @@ MathJax.Hub.Config({
 <div class="toc"><dl class="toc">
 <dt><span class="section"><a href="matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.creating_operators">Creating
       Operators</a></span></dt>
-<dt><span class="section"><a href="matrix_free_linear_algebra_with_/block_operators.html">Block
+<dt><span class="section"><a href="matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.block_operators">Block
       Operators</a></span></dt>
-<dt><span class="section"><a href="matrix_free_linear_algebra_with_/iterative_solvers.html">Iterative
+<dt><span class="section"><a href="matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.iterative_solvers">Iterative
       Solvers</a></span></dt>
 </dl></div>
 <p>
@@ -132,6 +132,76 @@ MathJax.Hub.Config({
 <span class="keyword">auto</span> <span class="identifier">C</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">one</span><span class="special">,</span> <span class="identifier">v</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
 </pre>
 </div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.matrix_free_linear_algebra_with_.block_operators"></a><a class="link" href="matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.block_operators" title="Block Operators">Block
+      Operators</a>
+</h3></div></div></div>
+<p>
+        It is common that you would like to compose operators in a tiled or block
+        format, and Aboria provides a functionality to do this using the <code class="computeroutput">Aboria::create_block_eigen_operator</code>.
+        This function is templated by two unsigned integers N and M representing
+        an NxM block operator, and takes NM arguments for the required number of
+        operators. For example,
+      </p>
+<pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">A</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">s1</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
+<span class="keyword">auto</span> <span class="identifier">B</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">one</span><span class="special">,</span> <span class="identifier">s2</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
+<span class="keyword">auto</span> <span class="identifier">C</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">one</span><span class="special">,</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">s2</span><span class="special">[</span><span class="identifier">b</span><span class="special">]);</span>
+<span class="keyword">auto</span> <span class="identifier">Zero</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">one</span><span class="special">,</span><span class="identifier">one</span><span class="special">,</span> <span class="number">0.</span><span class="special">);</span>
+
+<span class="keyword">auto</span> <span class="identifier">Full</span> <span class="special">=</span> <span class="identifier">create_block_eigen_operator</span><span class="special">&lt;</span><span class="number">2</span><span class="special">,</span><span class="number">2</span><span class="special">&gt;(</span><span class="identifier">A</span><span class="special">,</span><span class="identifier">B</span><span class="special">,</span><span class="identifier">C</span><span class="special">,</span><span class="identifier">Zero</span><span class="special">);</span>
+</pre>
+<p>
+        Note also the creation of a zero block in <code class="computeroutput"><span class="identifier">Full</span></code>,
+        which is handled efficiently by Aboria by simply skipping its evaluation
+        when applying the <code class="computeroutput"><span class="identifier">Full</span></code> operator.
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.matrix_free_linear_algebra_with_.iterative_solvers"></a><a class="link" href="matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.iterative_solvers" title="Iterative Solvers">Iterative
+      Solvers</a>
+</h3></div></div></div>
+<p>
+        The <code class="computeroutput">Aboria::MatrixReplacement</code>
+        class can multiply other Eigen vectors, and can be used in Eigen's iterative
+        solvers. Both <code class="computeroutput"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">IdentityPreconditioner</span></code> and <code class="computeroutput"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DiagonalPreconditioner</span></code> preconditioners
+        are supported. Below is an example of how to use Eigen's GMRES iterative
+        solver to solve the equation
+      </p>
+<p>
+        $$\phi = W \gamma$$
+      </p>
+<pre class="programlisting"><span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">ParticlesType</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">knots</span><span class="special">);</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">ParticlesType</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">knots</span><span class="special">);</span>
+<span class="identifier">One</span> <span class="identifier">one</span><span class="special">;</span>
+<span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">b</span><span class="special">);</span>
+<span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
+
+<span class="keyword">auto</span> <span class="identifier">G</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">b</span><span class="special">,</span>
+            <span class="identifier">exp</span><span class="special">(-</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+        <span class="special">);</span>
+<span class="keyword">auto</span> <span class="identifier">P</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">one</span><span class="special">,</span>
+                <span class="number">1.0</span>
+        <span class="special">);</span>
+<span class="keyword">auto</span> <span class="identifier">Pt</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">one</span><span class="special">,</span><span class="identifier">b</span><span class="special">,</span>
+                <span class="number">1.0</span>
+        <span class="special">);</span>
+<span class="keyword">auto</span> <span class="identifier">Zero</span> <span class="special">=</span> <span class="identifier">create_eigen_operator</span><span class="special">(</span><span class="identifier">one</span><span class="special">,</span><span class="identifier">one</span><span class="special">,</span> <span class="number">0.</span><span class="special">);</span>
+
+<span class="keyword">auto</span> <span class="identifier">W</span> <span class="special">=</span> <span class="identifier">create_block_eigen_operator</span><span class="special">&lt;</span><span class="number">2</span><span class="special">,</span><span class="number">2</span><span class="special">&gt;(</span><span class="identifier">G</span><span class="special">,</span> <span class="identifier">P</span><span class="special">,</span>
+                                          <span class="identifier">Pt</span><span class="special">,</span><span class="identifier">Zero</span><span class="special">);</span>
+
+<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">phi</span><span class="special">(</span><span class="identifier">knots</span><span class="special">.</span><span class="identifier">size</span><span class="special">()+</span><span class="number">1</span><span class="special">),</span> <span class="identifier">gamma</span><span class="special">(</span><span class="identifier">knots</span><span class="special">.</span><span class="identifier">size</span><span class="special">()+</span><span class="number">1</span><span class="special">);</span>
+
+<span class="comment">//setup phi values here</span>
+
+<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">GMRES</span><span class="special">&lt;</span><span class="keyword">decltype</span><span class="special">(</span><span class="identifier">W</span><span class="special">),</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Lower</span><span class="special">|</span><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Upper</span><span class="special">,</span>
+    <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DiagonalPreconditioner</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;&gt;</span> <span class="identifier">cg</span><span class="special">;</span>
+<span class="identifier">cg</span><span class="special">.</span><span class="identifier">compute</span><span class="special">(</span><span class="identifier">W</span><span class="special">);</span>
+<span class="identifier">gamma</span> <span class="special">=</span> <span class="identifier">cg</span><span class="special">.</span><span class="identifier">solve</span><span class="special">(</span><span class="identifier">phi</span><span class="special">);</span>
+</pre>
+</div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
@@ -139,7 +209,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="symbolic_expressions/bivariate_expressions.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="matrix_free_linear_algebra_with_/block_operators.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="symbolic_expressions.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="examples.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
