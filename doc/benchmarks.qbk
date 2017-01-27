@@ -1,0 +1,38 @@
+
+[section Benchmarks]
+
+
+<?dbhtml stop-chunking?>
+
+[import ../tests/speed_test.h]
+
+[section Vector Addition]
+
+[vector_addition_level2_setup]
+
+[vector_addition_level2_run]
+
+[endsect]
+
+[section DAXPY]
+
+[daxpy_run]
+
+[endsect]
+
+[section Dense non-linear operator]
+
+[multiquadric]
+
+[endsect]
+
+[section Neighbour search non-linear operator]
+
+[linear_spring]
+
+[endsect]
+
+
+[endsect]
+
+

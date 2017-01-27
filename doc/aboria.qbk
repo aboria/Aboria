@@ -17,4 +17,5 @@
 [include symbolic.qbk]
 [include linear_algebra.qbk]
 [include examples.qbk]
+[include benchmarks.qbk]
 [include reference.qbk]

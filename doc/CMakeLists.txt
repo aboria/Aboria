@@ -36,6 +36,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         container.qbk
         reference.qbk
         examples.qbk
+        benchmarks.qbk
         linear_algebra.qbk
         symbolic.qbk
         )
@@ -46,6 +47,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         ../tests/sph.h
         ../tests/rbf_interpolation.h
         ../tests/rbf_pde.h
+        ../tests/speed_test.h
         )
 
 
@@ -99,7 +101,7 @@ MathJax.Hub.Config({
     boost.image.w=200
     boost.image.h=62
     boost.mathjax=1
-    chunk.section.depth=2
+    chunk.section.depth=1
     #<xsl:param>chunk.first.sections=1
     #toc.section.depth=3
     #toc.max.depth=2

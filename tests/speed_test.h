@@ -92,28 +92,65 @@ public:
         return dt.count()/repeats;
     }
     
+    
     double vector_addition_aboria_level2(const size_t N, const size_t repeats) {
         std::cout << "vector_addition_aboria_level2: N = "<<N<<std::endl;
-        ABORIA_VARIABLE(a,double,"a")
-        ABORIA_VARIABLE(b,double,"b")
-        ABORIA_VARIABLE(c,double,"c")
-    	typedef Particles<std::tuple<a,b,c>,3> nodes_type;
+        //[vector_addition_level2_setup
+        /*`
+        Here we aim to compute a simple vector addition operation
+
+        $$
+        a_i = b_i + c_i \text{ for } i = 0...N.
+        $$
+
+        A particle set containing the variables $a$, $b$ and $c$ can be defined in 
+        __aboria__ like so
+
+        */
+        ABORIA_VARIABLE(a_var,double,"a")
+        ABORIA_VARIABLE(b_var,double,"b")
+        ABORIA_VARIABLE(c_var,double,"c")
+    	typedef Particles<std::tuple<a_var,b_var,c_var>,3> nodes_type;
        	nodes_type nodes(N);
+        //]
         for (int i=0; i<N; i++) {
-            get<a>(nodes)[i] = i;
-            get<b>(nodes)[i] = i*2;
+            get<a_var>(nodes)[i] = i;
+            get<b_var>(nodes)[i] = i*2;
         }
-        Symbol<a> A;
-        Symbol<b> B;
-        Symbol<c> C;
+        //[vector_addition_level2_run
+        /*`        
+        The vector addition operation can then be calculated using the Level 3 layer 
+        like so
+        */
+        Symbol<a_var> a;
+        Symbol<b_var> b;
+        Symbol<c_var> c;
         Label<0,nodes_type> i(nodes);
-        C[i] = A[i] + B[i];
+        a[i] = b[i] + c[i];
+        /*`
+        We can measure the time taken by the last line in the code segment above for 
+        varying $N$, and compare this with identical calculations implemented using:
+
+        # Aboria Level 1 (i.e. not using the symbolic layer, simply looping through the 
+           particle set container).
+
+        # C++ and the STL `std::vector` class.
+
+        The resultant benchmarks are shown in Figure \ref{}, where it can be seen that 
+        the three approaches are very similar in speed, confirming that [Aboria][] can 
+        achieve zero-cost abstraction, at least in this simple case. More complicated 
+        cases are explored below.
+
+        [$images/benchmarks/vector_addition.pdf]
+        */
+
+        //]
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("vector_addition_aboria_level2");
 #endif
         for (int r=0; r<repeats; ++r) {
-            C[i] = A[i] + B[i];
+            a[i] = b[i] + c[i];
         }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
@@ -170,21 +207,35 @@ public:
     
     double daxpy_aboria_level2(const size_t N, const size_t repeats) {
         std::cout << "daxpy_aboria_level2: N = "<<N<<std::endl;
-        ABORIA_VARIABLE(a,double,"a")
-        ABORIA_VARIABLE(b,double,"b")
-    	typedef Particles<std::tuple<a,b>,3> nodes_type;
+        ABORIA_VARIABLE(a_var,double,"a")
+        ABORIA_VARIABLE(b_var,double,"b")
+    	typedef Particles<std::tuple<a_var,b_var>,3> nodes_type;
        	nodes_type nodes(N);
         for (int i=0; i<N; i++) {
-            get<a>(nodes)[i] = i;
-            get<b>(nodes)[i] = i*2;
+            get<a_var>(nodes)[i] = i;
+            get<b_var>(nodes)[i] = i*2;
         }
-        Symbol<a> A;
-        Symbol<b> B;
+        Symbol<a_var> a;
+        Symbol<b_var> b;
         Label<0,nodes_type> i(nodes);
-        B[i] += A[i]*0.001;
+        //[daxpy_run
+        /*`
+        This benchmark is for the BLAS DAXPY operation, given by
+
+        $$
+        a_i = a_i + 0.1*b_i  \text{ for } i = 0...N.
+        $$
+
+        This is implemented in __aboria__ using 
+        */
+        a[i] += b[i]*0.001;
+        /*`
+        [$images/benchmarks/daxpy.pdf]
+        */
+        //]
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            B[i] += A[i]*0.001;
+            a[i] += b[i]*0.001;
         }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
@@ -417,10 +468,9 @@ public:
         //typedef Vector<double,Dim> double_d;
         typedef double double_d;
         std::cout << "multiquadric_aboria: N = "<<N<<std::endl;
-        ABORIA_VARIABLE(scalar,double_d,"scalar")
-        ABORIA_VARIABLE(kernel_constant,double_d,"kernel constant")
-
-    	typedef Particles<std::tuple<scalar,kernel_constant>,2> nodes_type;
+        ABORIA_VARIABLE(a_var,double_d,"a")
+        ABORIA_VARIABLE(b_var,double_d,"b")
+    	typedef Particles<std::tuple<a_var,b_var>,2> nodes_type;
         typedef position_d<2> position;
        	nodes_type nodes(N*N);
 
@@ -436,27 +486,45 @@ public:
             for (size_t j=0; j<N; ++j) {
                 const size_t index = i*N + j;
                 get<position>(nodes)[index] = double2(i*h,j*h);
-                get<scalar>(nodes)[index] = double_d(1.5);
-                get<kernel_constant>(nodes)[index] = double_d(0.1);
+                get<a_var>(nodes)[index] = double_d(1.5);
+                get<b_var>(nodes)[index] = double_d(2.5);
             }
         }
 
         nodes.init_neighbour_search(min,max,h,periodic);
 
-        Symbol<scalar> s;
-        Symbol<kernel_constant> c;
-        Label<0,nodes_type> a(nodes);
-        Label<1,nodes_type> b(nodes);
-        auto dx = create_dx(a,b);
+        Symbol<a_var> a;
+        Symbol<b_var> b;
+        Label<0,nodes_type> i(nodes);
+        i.template resize_buffer<a_var>(nodes.size());
+        //[multiquadric
+        /*`
+        Here we move onto a dense, $N^2$ operation, given by the non-linear operator
+
+        $$
+        a_i = a_i + \sum_j^N a_j \sqrt{\mathbf{dx}\_{ij} \cdot \mathbf{dx}\_{ij} + b_j^2}    
+        \text{ for } i = 0...N.
+        $$
+
+        where $\mathbf{dx}\_{ij}$ is the shortest vector from particle $i$ to $i$. This 
+        is implemented in Level 3 __aboria__ like so
+        */
+        Label<1,nodes_type> j(nodes);
+        auto dx = create_dx(i,j);
         Accumulate<std::plus<double> > sum;
-        a.template resize_buffer<scalar>(nodes.size());
-        s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b])*s[b]);
+        a[i] += sum(j,true,a[j]*sqrt(dot(dx,dx)+b[j]*b[j]));
+        /*'
+        The benchmarks are shown below. 
+
+        [$images/benchmarks/multiquadric.pdf]
+         */
+        //]
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("multiquadric_aboria");
 #endif
-        for (int i=0; i<repeats; ++i) {
-            s[a] += sum(b,true,sqrt(dot(dx,dx)+c[b]*c[b])*s[b]);
+        for (int ii=0; ii<repeats; ++ii) {
+            a[i] += sum(j,true,a[j]*sqrt(dot(dx,dx)+b[j]*b[j]));
         }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
@@ -592,8 +660,10 @@ public:
     double linear_spring_aboria(const size_t N, const double radius, const size_t repeats) {
         std::cout << "linear_spring_aboria: N = "<<N<<std::endl;
 
-        ABORIA_VARIABLE(results,double3,"results")
-    	typedef Particles<std::tuple<results>,3> nodes_type;
+        const double r = 2*radius;
+
+        ABORIA_VARIABLE(a_var,double3,"a")
+    	typedef Particles<std::tuple<a_var>,3> nodes_type;
         typedef position_d<3> position;
        	nodes_type nodes(N*N*N);
 
@@ -614,22 +684,46 @@ public:
             }
         }
 
-        nodes.init_neighbour_search(min,max,2*radius,periodic);
+        nodes.init_neighbour_search(min,max,r,periodic);
 
-        Symbol<position> r;
-        Symbol<results> dr;
-        Label<0,nodes_type> a(nodes);
-        Label<1,nodes_type> b(nodes);
-        auto dx = create_dx(a,b);
+        Symbol<position> p;
+        Symbol<a_var> a;
+        Label<0,nodes_type> i(nodes);
+        Label<1,nodes_type> j(nodes);
+        auto dx = create_dx(i,j);
         Accumulate<std::plus<double3> > sum;
 
-        dr[a] = sum(b,norm(dx)<2*radius,(2*radius-norm(dx))/norm(dx)*dx);
+        //[linear_spring
+        /*`
+        Finally we implement a non-linear operator involving a neighbour search, common 
+        in particle-based methods. This is given by
+
+        $$
+        a_i = \sum_j^N \begin{cases}
+                    \frac{r-|\mathbf{dx}\_{ij}|}{|\mathbf{dx}\_{ij}|}\mathbf{dx}\_{ij} , & 
+                    \text{for } 
+                      |\mathbf{dx}\_{ij}|<r \\
+                    0 & \text{otherwise},
+                    \end{cases}   \text{ for } i = 0...N.
+        $$
+
+        where $r$ is a given constant.
+
+        */
+        a[i] = sum(j,norm(dx)<r,(r-norm(dx))/norm(dx)*dx);
+        /*`
+        The benchmarks are shown below. 
+
+        [$images/benchmarks/linear_spring.pdf]
+         */
+        //]
+        
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("linear_spring_aboria");
 #endif
-        for (int i=0; i<repeats; ++i) {
-            dr[a] = sum(b,norm(dx)<2*radius,(2*radius-norm(dx))/norm(dx)*dx);
+        for (int ii=0; ii<repeats; ++ii) {
+            a[i] = sum(j,norm(dx)<r,(r-norm(dx))/norm(dx)*dx);
         }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();

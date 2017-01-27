@@ -24,7 +24,6 @@ macro(add_documentation INPUT)
 
   # copy to destination directory because quickbook screws up xinclude paths 
   # when the output is not in the source directory
-  message("copying ${INPUT_PATH} to ${QBK_FILE}")
   add_custom_command(OUTPUT ${QBK_FILE}
     COMMAND ${CMAKE_COMMAND} -E copy ${INPUT_PATH} ${QBK_FILE}
     DEPENDS ${INPUT_PATH})
@@ -34,7 +33,6 @@ macro(add_documentation INPUT)
   foreach(file ${DOCUMENTATION_DEFAULT_ARGS})
     set(srcfile ${CMAKE_CURRENT_SOURCE_DIR}/${file})
     set(binfile ${CMAKE_CURRENT_BINARY_DIR}/${file})
-    message("copying ${srcfile} to ${binfile}")
     if(EXISTS ${srcfile})
       add_custom_command(OUTPUT ${binfile}
         COMMAND ${CMAKE_COMMAND} -E copy ${srcfile} ${binfile}
