@@ -128,7 +128,7 @@ MathJax.Hub.Config({
                  * loop over all neighbouring particles within a square with
                  * side length "diameter" (see init_neighbour_search call above)
                  */</span>
-                <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">tpl</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_neighbours</span><span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)))</span> <span class="special">{</span>
+                <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">tpl</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)))</span> <span class="special">{</span>
 
                     <span class="comment">/*
                      * tpl variable is a tuple containing:
@@ -385,7 +385,7 @@ MathJax.Hub.Config({
                  * loop over all neighbouring particles within a square with
                  * side length "dem_diameter" (see init_neighbour_search call above)
                  */</span>
-                <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">tpl</span><span class="special">:</span> <span class="identifier">dem</span><span class="special">.</span><span class="identifier">get_neighbours</span><span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)))</span> <span class="special">{</span>
+                <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">tpl</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">dem</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)))</span> <span class="special">{</span>
                     <span class="comment">/*
                      * tpl variable is a tuple containing:
                      *  (0) -&gt; neighbouring particle value_type
