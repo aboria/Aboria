@@ -63,15 +63,15 @@ public:
     	test.push_back(p);
 
     	int count = 0;
-    	for (auto tpl: test.get_neighbours(double3(diameter/2,diameter/2,0))) {
+    	for (auto tpl: box_search(test.get_query(),double3(diameter/2,diameter/2,0))) {
     		count++;
     	}
     	TS_ASSERT_EQUALS(count,1);
 
-    	auto tpl = test.get_neighbours(double3(diameter/2,diameter/2,0));
+    	auto tpl = box_search(test.get_query(),double3(diameter/2,diameter/2,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
 
-    	tpl = test.get_neighbours(double3(2*diameter,0,0));
+    	tpl = box_search(test.get_query(),double3(2*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
@@ -94,21 +94,21 @@ public:
         get<position>(p) = double3(diameter/2,0,0);
     	test.push_back(p);
 
-    	auto tpl = test.get_neighbours(double3(1.1*diameter,0,0));
+    	auto tpl = box_search(test.get_query(),double3(1.1*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     	const typename Test_type::value_type &pfound = tuple_ns::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
-    	tpl = test.get_neighbours(double3(0.9*diameter,0,0));
+    	tpl = box_search(test.get_query(),double3(0.9*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = test.get_neighbours(double3(1.6*diameter,0,0));
+    	tpl = box_search(test.get_query(),double3(1.6*diameter,0,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
 
-    	tpl = test.get_neighbours(double3(0.25*diameter,0.99*diameter,0));
+    	tpl = box_search(test.get_query(),double3(0.25*diameter,0.99*diameter,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = test.get_neighbours(double3(0.25*diameter,1.01*diameter,0));
+    	tpl = box_search(test.get_query(),double3(0.25*diameter,1.01*diameter,0));
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
@@ -122,7 +122,7 @@ public:
 
         CUDA_HOST_DEVICE 
         void operator()(typename Search::reference i) {
-            auto tpl = search.get_neighbours(get<typename Search::position>(i));
+            auto tpl = box_search(search,get<typename Search::position>(i));
             TS_ASSERT_EQUALS(tpl.end()-tpl.begin(),n);
         }
     };

@@ -97,7 +97,7 @@ public:
                  * loop over all neighbouring particles within a square with
                  * side length "dem_diameter" (see init_neighbour_search call above)
                  */
-                for (auto tpl: dem.get_neighbours(get<position>(p))) {
+                for (auto tpl: box_search(dem.get_query(),get<position>(p))) {
                     /*
                      * tpl variable is a tuple containing:
                      *  (0) -> neighbouring particle value_type

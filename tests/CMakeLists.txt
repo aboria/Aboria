@@ -4,7 +4,7 @@ macro(aboria_cxx_test target target_file)
     foreach(filename IN LISTS list_var)
         set(_test_files ${_test_files} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
     endforeach()
-    message(${_test_files})
+    message("\t${_test_files}")
     get_filename_component(CPP_FILE_NAME ${target_file} NAME)
     set(CPP_FULL_NAME "${CMAKE_CURRENT_BINARY_DIR}/${CPP_FILE_NAME}")
     add_custom_command(
@@ -23,7 +23,7 @@ endmacro(aboria_cxx_test)
 
 option(Aboria_RUN_TESTS "run main test suite with ctest" ON)
 if (Aboria_RUN_TESTS)
-    set(test_suites
+    set(all_test_suites
         MetafunctionsTest 
         NeighboursTest
         BDTest
@@ -37,7 +37,14 @@ if (Aboria_RUN_TESTS)
         VariablesTest
         ConstructorsTest
         OperatorsTest
+        SpatialUtilsTest
         )
+    foreach(test_suite ${all_test_suites})
+        option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
+        if (Aboria_RUN_TEST_${test_suite})
+            set(test_suites ${test_suites} ${test_suite})
+        endif()
+    endforeach()
 endif()
 
 option(Aboria_RUN_BENCHMARKS "run benchmarks during testing" OFF)
@@ -69,6 +76,11 @@ set(MetafunctionsTest
     test_get_labels
     test_thrust
     ) 
+
+set(SpatialUtilsTestFile spatial_utils.h)
+set(SpatialUtilsTest
+    test_bucket_indicies
+    )
 
 set(SymbolicTestFile symbolic.h)
 set(SymbolicTest
@@ -143,6 +155,7 @@ set(DiffusionAroundSpheres
     )
 
 
+message("-- Adding test suites:")
 foreach(test_suite ${test_suites})
 
     aboria_cxx_test(${test_suite} ${test_suite}.cpp ${${test_suite}File})

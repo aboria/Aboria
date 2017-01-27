@@ -98,21 +98,19 @@ public:
 
 private:
 
-    void set_domain_impl(const params_type params) {
-        m_bucket_side_length = params.side_length; 
+    void set_domain_impl() {
         m_size = 
-            floor((this->m_bounds.bmax-this->m_bounds.bmin)/m_bucket_side_length)
+            floor((this->m_bounds.bmax-this->m_bounds.bmin)/this->m_bucket_side_length)
             .template cast<unsigned int>();
         for (int i=0; i<Traits::dimension; ++i) {
             if (m_size[i] == 0) {
                 m_size[i] = this->m_bounds.bmax[i]-this->m_bounds.bmin[i];
             }
         }
-        m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
+        this->m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
         m_point_to_bucket_index = 
-            detail::point_to_bucket_index<Traits::dimension>(m_size,m_bucket_side_length,this->m_bounds);
+            detail::point_to_bucket_index<Traits::dimension>(m_size,this->m_bucket_side_length,this->m_bounds);
  
-	    LOG(2,"\tbucket_side_length = "<<m_bucket_side_length);
 	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
 
         // setup bucket data structures
@@ -123,11 +121,11 @@ private:
         this->m_query.m_bucket_end = iterator_to_raw_pointer(m_bucket_end.begin());
         this->m_query.m_nbuckets = m_bucket_begin.size();
 
+        this->m_query.m_bucket_side_length = this->m_bucket_side_length;
         this->m_query.m_bounds.bmin = this->m_bounds.bmin;
         this->m_query.m_bounds.bmax = this->m_bounds.bmax;
         this->m_query.m_periodic = this->m_periodic;
-        this->m_query.m_size = m_size;
-        this->m_query.m_bucket_side_length = m_bucket_side_length;
+        this->m_query.m_end_bucket = m_size-1;
         this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
     }
 
@@ -260,7 +258,6 @@ private:
     vector_unsigned_int m_bucket_indices;
     bucket_search_parallel_query<Traits> m_query;
 
-    double_d m_bucket_side_length; 
     unsigned_int_d m_size;
     detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
 };
@@ -270,6 +267,7 @@ private:
 template <typename Traits>
 struct bucket_search_parallel_query {
 
+    typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
@@ -277,15 +275,20 @@ struct bucket_search_parallel_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     typedef typename Traits::reference reference;
     typedef typename Traits::position position;
+    const static unsigned int dimension = Traits::dimension;
+    typedef lattice_iterator<Traits> bucket_iterator;
+    typedef typename lattice_iterator<Traits>::reference bucket_reference;
+    typedef typename lattice_iterator<Traits>::value_type bucket_value_type;
+    typedef ranges_iterator<Traits> particle_iterator;
 
     raw_pointer m_particles_begin;
     raw_pointer m_particles_end;
 
     bool_d m_periodic;
     double_d m_bucket_side_length; 
-    unsigned_int_d m_size;
-    detail::bbox<Traits::dimension> m_bounds;
-    detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
+    int_d m_end_bucket;
+    detail::bbox<dimension> m_bounds;
+    detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 
 
     unsigned int *m_bucket_begin;
@@ -300,91 +303,86 @@ struct bucket_search_parallel_query {
         m_bucket_begin()
     {}
 
+    const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
+
+
     CUDA_HOST_DEVICE
-    iterator_range<ranges_iterator<Traits>> get_neighbours(const double_d& position) const {
-        return iterator_range<ranges_iterator<Traits>>(find_broadphase_neighbours(position,-1,false),
-                                              ranges_iterator<Traits>(m_particles_end));
+    iterator_range<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
+
+        int_d my_bucket(bucket);
+        particle_iterator end;
+        // handle end cases
+        double_d transpose(0);
+        bool outside = false;
+        for (int i=0; i<Traits::dimension; i++) {
+            if (bucket[i] < 0) {
+                if (m_periodic[i]) {
+                    my_bucket[i] = m_end_bucket[i];
+                    transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
+                } else {
+                    outside = true;
+                    break;
+                }
+            }
+            if (bucket[i] > m_end_bucket[i]) {
+                if (m_periodic[i]) {
+                    my_bucket[i] = 0;
+                    transpose[i] = (m_bounds.bmax-m_bounds.bmin)[i];
+                } else {
+                    outside = true;
+                    break;
+                }
+            }
+        }
+
+        if (!outside) {
+                const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(my_bucket);
+                const unsigned int range_start_index = m_bucket_begin[bucket_index]; 
+                const unsigned int range_end_index = m_bucket_end[bucket_index]; 
+
+#ifndef __CUDA_ARCH__
+                LOG(4,"\tlooking in bucket "<<bucket<<" = "<<bucket_index<<". found "<<range_end_index-range_start_index<<" particles");
+#endif
+                return iterator_range<particle_iterator>(
+                        particle_iterator(m_particles_begin + range_start_index,transpose),
+                        particle_iterator(m_particles_begin + range_end_index,
+                        transpose)
+                        );
+        } else {
+                return iterator_range<particle_iterator>(
+                        particle_iterator(m_particles_begin,transpose),
+                        particle_iterator(m_particles_begin,transpose)
+                        );
+        }
     }
 
     CUDA_HOST_DEVICE
-    ranges_iterator<Traits> find_broadphase_neighbours(
-            const double_d& r, 
-            const int my_index, 
-            const bool self) const {
-        
-        ASSERT((r >= m_bounds.bmin).all() && (r < m_bounds.bmax).all(), "Error, search position "<<r<<" is outside neighbourhood search bounds " << m_bounds);
-        const unsigned_int_d my_bucket = m_point_to_bucket_index.find_bucket_index_vector(r);
+    detail::bbox<dimension>& get_bucket_bbox(const bucket_reference &bucket) const {
+        return detail::bbox<dimension>(bucket*m_bucket_side_length + m_bounds.bmin);
+    }
 
-#ifndef __CUDA_ARCH__
-        LOG(3,"BucketSearch: find_broadphase_neighbours: around r = "<<r<<". my_index = "<<my_index<<" self = "<<self);
-        LOG(3,"\tbounds = "<<m_bounds);
-	    LOG(3,"\tperiodic = "<<m_periodic);
-	    LOG(3,"\tbucket_side_length = "<<m_bucket_side_length);
-	    LOG(3,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
-#endif
+    CUDA_HOST_DEVICE
+    bucket_value_type get_bucket(const double_d &position) const {
+        return m_point_to_bucket_index.find_bucket_index_vector(position);
+    }
 
-        ranges_iterator<Traits> search_iterator(m_particles_end,m_bucket_side_length,r);
-        int_d bucket_offset(-1);
-        constexpr unsigned int last_d = Traits::dimension-1;
-        bool still_going = true;
-        while (still_going) {
-            unsigned_int_d other_bucket = my_bucket + bucket_offset; 
+    CUDA_HOST_DEVICE
+    iterator_range<bucket_iterator> get_near_buckets(const bucket_reference &bucket) const {
+        const int_d start = bucket+int_d(-1);
+        const int_d end = bucket+int_d(1);
+        return iterator_range<bucket_iterator>(
+                bucket_iterator(start,end,start)
+                ,++bucket_iterator(start,end,end)
+                );
+    }
 
-            // handle end cases
-            double_d transpose(0);
-            bool outside = false;
-            for (int i=0; i<Traits::dimension; i++) {
-                if (other_bucket[i] >= detail::get_max<unsigned int>()) {
-                    if (m_periodic[i]) {
-                        other_bucket[i] = m_size[i]-1;
-                        transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
-                    } else {
-                        outside = true;
-                        break;
-                    }
-                }
-                if (other_bucket[i] == m_size[i]) {
-                    if (m_periodic[i]) {
-                        other_bucket[i] = 0;
-                        transpose[i] = (m_bounds.bmax-m_bounds.bmin)[i];
-                    } else {
-                        outside = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!outside) {
-
-                const unsigned int other_bucket_index = m_point_to_bucket_index.collapse_index_vector(other_bucket);
-                const unsigned int range_start_index = m_bucket_begin[other_bucket_index]; 
-                const unsigned int range_end_index = m_bucket_end[other_bucket_index]; 
-
-#ifndef __CUDA_ARCH__
-                LOG(4,"\tlooking in bucket "<<other_bucket<<" = "<<other_bucket_index<<". found "<<range_end_index-range_start_index<<" particles");
-#endif
-
-                if (range_end_index-range_start_index > 0) {
-
-                    //std::cout << "adding range for my_bucket = "<<my_bucket<<" other_bucket = "<<other_bucket<<" range_start_index = "<<range_start_index<<" range_end_index = "<<range_end_index<< " transpose = "<<transpose<<std::endl;
-                    search_iterator.add_range(
-                            m_particles_begin + range_start_index,
-                            m_particles_begin + range_end_index,
-                            transpose);
-                }
-
-            }
-
-            // go to next candidate bucket
-            for (int i=0; i<Traits::dimension; i++) {
-                bucket_offset[i]++;
-                if (bucket_offset[i] <= 1) break;
-                if (i == last_d) still_going = false;
-                bucket_offset[i] = -1;
-            }
-        }
-        
-        return search_iterator;
+   CUDA_HOST_DEVICE
+    bucket_iterator begin() const {
+        return bucket_iterator(int_d(0),m_end_bucket,int_d(0));
+    }
+    CUDA_HOST_DEVICE
+    bucket_iterator end() const {
+        return ++bucket_iterator(int_d(0),m_end_bucket,m_end_bucket);
     }
 
 

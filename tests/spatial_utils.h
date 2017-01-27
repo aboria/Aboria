@@ -34,31 +34,44 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#ifndef ABORIA_H_
-#define ABORIA_H_
+#ifndef SPATIAL_UTILS_H_
+#define SPATIAL_UTILS_H_
 
-#ifdef HAVE_OPENMP
-#include <omp.h>
-#endif
+#include <cxxtest/TestSuite.h>
 
-#include "CudaInclude.h"
-#include "Vector.h"
-//#include "Geometry.h"
-#include "Ptr.h"
-#include "Variable.h"
-#include "Traits.h"
-#include "Get.h"
-#include "Particles.h"
-#include "BucketSearchSerial.h"
-#include "BucketSearchParallel.h"
-#include "PrintTuple.h"
-#include "DataVector.h"
-#include "Symbolic.h"
-#include "Assemble.h"
-#include "Functions.h"
-#include "Operators.h"
-#include "Utils.h"
-#include "Search.h"
+#include "Aboria.h"
+
+using namespace Aboria;
 
 
-#endif /* ABORIA_H_ */
+class SpatialUtilsTest : public CxxTest::TestSuite {
+public:
+    void test_bucket_indicies(void) {
+        typedef Vector<unsigned int,3> vect;
+        detail::bucket_index<3> bi(vect(4,7,2));
+        unsigned int index = bi.collapse_index_vector(vect(1,2,1));
+        // index = 1 + 2*2 + 1*2*7 = 19 
+    	TS_ASSERT_EQUALS(index,19);
+        vect vindex = bi.reassemble_index_vector(index);
+    	TS_ASSERT_EQUALS(vindex[0],1);
+    	TS_ASSERT_EQUALS(vindex[1],2);
+    	TS_ASSERT_EQUALS(vindex[2],1);
+
+        typedef Vector<unsigned int,4> vect2;
+        detail::bucket_index<4> bi2(vect2(4,7,1,6));
+        index = bi2.collapse_index_vector(vect2(1,2,0,4));
+        // index = 4 + 0*6 + 2*6*1 + 1*6*1*7 = 58
+    	TS_ASSERT_EQUALS(index,58);
+        vect2 vindex2 = bi2.reassemble_index_vector(index);
+    	TS_ASSERT_EQUALS(vindex2[0],1);
+    	TS_ASSERT_EQUALS(vindex2[1],2);
+    	TS_ASSERT_EQUALS(vindex2[2],0);
+    	TS_ASSERT_EQUALS(vindex2[3],4);
+
+    }
+
+
+};
+
+
+#endif /* CONSTRUCTORS_H_ */

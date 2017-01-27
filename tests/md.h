@@ -93,7 +93,7 @@ public:
                  * loop over all neighbouring particles within a square with
                  * side length "diameter" (see init_neighbour_search call above)
                  */
-                for (auto tpl: particles.get_neighbours(get<position>(p))) {
+                for (auto tpl: box_search(particles.get_query(),get<position>(p))) {
 
                     /*
                      * tpl variable is a tuple containing:

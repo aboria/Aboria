@@ -52,18 +52,31 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 
+
 template <typename IteratorType>
 struct iterator_range {
     IteratorType m_begin;
     IteratorType m_end;
     CUDA_HOST_DEVICE
+    iterator_range()
+    {}
+    CUDA_HOST_DEVICE
     iterator_range(IteratorType&& begin, IteratorType&& end):
+        m_begin(begin),m_end(end) 
+    {}
+    CUDA_HOST_DEVICE
+    iterator_range(const IteratorType& begin, const IteratorType& end):
         m_begin(begin),m_end(end) 
     {}
     CUDA_HOST_DEVICE
     const IteratorType &begin() const { return m_begin; }
     CUDA_HOST_DEVICE
     const IteratorType &end() const { return m_end; }
+    CUDA_HOST_DEVICE
+    IteratorType &begin() { return m_begin; }
+    CUDA_HOST_DEVICE
+    IteratorType &end() { return m_end; }
+
 };
 
 template <typename IteratorType>
@@ -104,16 +117,18 @@ public:
     /// \param high the upper extent of the search domain
     /// \param _max_interaction_radius the side length of each bucket
     /// \param periodic a boolean vector indicating wether each dimension
-    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const Params& params, const bool not_in_constructor=true) {
+    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const double_d& min_bucket_side_length, const bool not_in_constructor=true) {
         LOG_CUDA(2,"neighbour_search_base: set_domain:");
         m_bounds.bmin = min_in;
         m_bounds.bmax = max_in;
         m_periodic = periodic_in;
+        m_bucket_side_length = min_bucket_side_length; 
         if (not_in_constructor) {
-            LOG(2,"\tbounds = "<<m_bounds);
-            LOG(2,"\tperiodic = "<<m_periodic);
-            cast().set_domain_impl(params);
+            cast().set_domain_impl();
         }
+        LOG(2,"\tbounds = "<<m_bounds);
+	    LOG(2,"\tbucket_side_length = "<<this->m_bucket_side_length);
+        LOG(2,"\tperiodic = "<<m_periodic);
     }
 
 
@@ -192,8 +207,8 @@ public:
             cast().delete_points_at_end_impl(dist);
         }
     }
- 
 
+    
     const query_type& get_query() const {
         return cast().get_query_impl();
     }
@@ -201,13 +216,16 @@ public:
     const double_d& get_min() const { return m_bounds.bmin; }
     const double_d& get_max() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
+    const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
 
 protected:
     iterator m_particles_begin;
     iterator m_particles_end;
     bool_d m_periodic;
     detail::bbox<Traits::dimension> m_bounds;
+    double_d m_bucket_side_length; 
 };
+
 
 
 // assume that these iterators, and query functions, are only called from device code
@@ -221,101 +239,25 @@ class ranges_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
-    typedef const tuple_ns::tuple<p_reference,const double_d&>* pointer;
+    typedef Traits traits_type;
+    typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const tuple_ns::tuple<p_reference,const double_d&> reference;
-    typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
+    typedef const p_reference reference;
+    typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    ranges_iterator(const p_pointer end):
-        m_end(end),
-        m_nbuckets(0),
-        m_node(end)
-    {}
+    ranges_iterator() {}
 
     CUDA_HOST_DEVICE
-    ranges_iterator(const p_pointer end, const double_d box_side_length, const double_d &r):
-        m_end(end),
-        m_box_side_length(box_side_length),
-        m_nbuckets(0),
-        m_r(r),
-        m_node(end)
-    {}
-
-    CUDA_HOST_DEVICE
-    void add_range(p_pointer begin, p_pointer end, const double_d &transpose) {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tranges_iterator::add_range. Adding "<<end-begin<<" particles with transpose = "<<transpose<<". Number of bucket ranges already here  = "<<m_nbuckets);
-#endif
-        m_begins[m_nbuckets] = begin;
-        m_ends[m_nbuckets] = end;
-        m_transpose[m_nbuckets] = transpose;
-        m_nbuckets++;
-
-        if (m_node == m_end) {
-            m_current_index = m_nbuckets-1;
-            m_node = m_begins[m_current_index];
-            if (!check_candidate()) {
-                increment(); 
-            }
-        }
+    ranges_iterator(p_pointer begin, const double_d &transpose):
+        m_current_p(begin),
+        m_transpose(transpose) {
     }
 
     CUDA_HOST_DEVICE
-    bool equal(ranges_iterator const& other) const {
-        return m_node == other.m_node;
-    }
-
-    CUDA_HOST_DEVICE
-    reference dereference() const { 
-        return reference(*m_node,m_dx); 
-    }
-
-    CUDA_HOST_DEVICE
-    bool go_to_next_candidate() {
-        m_node++;
-        if (m_node == m_ends[m_current_index]) {
-            m_current_index++;
-            //std::cout << "moving on to next index i = "<<m_current_index<<" with range "<<m_begins[m_current_index]-m_bucket_sort->m_particles_begin<<" to "<<m_ends[m_current_index]-m_bucket_sort->m_particles_begin<<std::endl;
-            if (m_current_index < m_nbuckets) {
-                m_node = m_begins[m_current_index];
-                //std::cout << "particle index = "<<m_node-m_bucket_sort->m_particles_begin<<std::endl;
-            } else {
-                m_node = m_end;
-                return false;
-            }
-        }
-        return true;
-    }
-
-    CUDA_HOST_DEVICE
-    bool check_candidate() {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<get<position>(*m_node)<<" trans = "<<m_transpose[m_current_index]<<" index = "<<m_current_index); 
-#endif
-        const double_d p = get<position>(*m_node) + m_transpose[m_current_index];
-        m_dx = p - m_r;
-
-        bool outside = false;
-        for (int i=0; i < Traits::dimension; ++i) {
-            if (std::abs(m_dx[i]) > m_box_side_length[i]) {
-                outside = true;
-                break;
-            } 
-        }
-
-        return !outside;
-    }
-
-    CUDA_HOST_DEVICE
-    void increment() {
-        bool found_good_candidate = false;
-        while (!found_good_candidate && go_to_next_candidate()) {
-            found_good_candidate = check_candidate();
-        }
-    }
-
+    const double_d& get_transpose() { return m_transpose; }
+    
     CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
@@ -349,33 +291,35 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator==(const ranges_iterator& rhs) {
+    inline bool operator==(const ranges_iterator& rhs) const {
         return equal(rhs);
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator!=(const ranges_iterator& rhs){
+    inline bool operator!=(const ranges_iterator& rhs) const {
         return !operator==(rhs);
     }
 
 private:
     friend class boost::iterator_core_access;
 
-    p_pointer m_end;
-    double_d m_box_side_length;
-    
-    double_d m_r;
-    double_d m_dx;
-    double_d m_search_side;
-    p_pointer m_node;
-    p_pointer m_node_end;
-    
-    const static unsigned int max_nbuckets = detail::ipow(3,Traits::dimension); 
-    unsigned int m_nbuckets; 
-    p_pointer m_begins[max_nbuckets];
-    p_pointer m_ends[max_nbuckets];
-    double_d m_transpose[max_nbuckets];
-    int m_current_index = -1;
+    CUDA_HOST_DEVICE
+    bool equal(ranges_iterator const& other) const {
+        return m_current_p == other.m_current_p;
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { 
+        return *m_current_p; 
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+        ++m_current_p;
+    }
+
+    p_pointer m_current_p;
+    double_d m_transpose;
 };
 
 /// A const iterator to a set of neighbouring points. This iterator implements
@@ -391,101 +335,35 @@ class linked_list_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
-    typedef const tuple_ns::tuple<p_reference,const double_d&>* pointer;
+    typedef Traits traits_type;
+    typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const tuple_ns::tuple<p_reference,const double_d&> reference;
-    typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
+    typedef const p_reference reference;
+    typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
     linked_list_iterator(): 
-        m_cell_empty(detail::get_empty_id()) {
-        m_node = &m_cell_empty;
-        //std::cout << "empty linked_list_iterator with m_node = "<<*m_node<<std::endl;
+        m_current_index(detail::get_empty_id()) {
     }
 
    
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
-    /// \param bucket_sort a pointer to the parent BucketSearch class
-    /// \param centre the neighbourhood query point
     CUDA_HOST_DEVICE
     linked_list_iterator(
-            const p_pointer begin,
-            const double_d box_side_length, 
+            const int index,
+            const p_pointer particles_begin,
             int* linked_list_begin,
-            int* buckets_begin,
-            const double_d& r):
-        m_begin(begin),
-        m_box_side_length(box_side_length),
+            const double_d &transpose):
+        m_current_index(index),
+        m_particles_begin(particles_begin),
         m_linked_list_begin(linked_list_begin),
-        m_buckets_begin(buckets_begin),
-        m_r(r),
-        m_bucket_i(0),
-        m_nbuckets(0),
-        m_cell_empty(detail::get_empty_id()) {
-
-        m_node = &m_cell_empty;
+        m_transpose(transpose) {
     }
 
     CUDA_HOST_DEVICE
-    linked_list_iterator(const linked_list_iterator& other):
-        m_node(other.m_node),
-        m_r(other.m_r),
-        m_dx(other.m_dx),
-        m_box_side_length(other.m_box_side_length),
-        m_nbuckets(other.m_nbuckets),
-        m_bucket_i(other.m_bucket_i),
-        m_cell_empty(other.m_cell_empty),
-        m_begin(other.m_begin),
-        m_buckets_begin(other.m_buckets_begin),
-        m_linked_list_begin(other.m_linked_list_begin) 
-    {
-        //std::cout <<"copy iterator!!"<<std::endl;
-        for (size_t i=0; i<max_nbuckets; ++i) {
-            m_transpose[i] = other.m_transpose[i];
-            m_buckets_to_search[i] = other.m_buckets_to_search[i];
-        }
-        if (m_node == &(other.m_cell_empty)) {
-            m_node = &m_cell_empty;
-        }
-    }
-
-    CUDA_HOST_DEVICE
-    void add_bucket(const unsigned int bucket_index, const double_d& transpose) {
-        m_buckets_to_search[m_nbuckets] = bucket_index;
-        m_transpose[m_nbuckets] = transpose;
-        ++m_nbuckets;
-
-        if (*m_node == detail::get_empty_id()) {
-            m_bucket_i = m_nbuckets-1;
-            m_node = m_buckets_begin + m_buckets_to_search[m_bucket_i];
-            if (!check_candidate()) {
-                increment();
-            }
-        }
-    }
-
-    CUDA_HOST_DEVICE
-    bool go_to_next_candidate() {
-        if (*m_node != detail::get_empty_id()) {
-            m_node = m_linked_list_begin + *m_node;
-#ifndef __CUDA_ARCH__
-            LOG(4,"\tgoing to new particle *mnode = "<<*m_node);
-#endif
-        }
-        while ((*m_node == detail::get_empty_id()) && (++m_bucket_i < m_nbuckets)) {
-            m_node = m_buckets_begin + m_buckets_to_search[m_bucket_i];
-#ifndef __CUDA_ARCH__
-            LOG(4,"\tgoing to new bucket m_bucket_i = "<<m_bucket_i<<" and m_node = "<<*m_node);
-#endif
-        }
-        if ((m_bucket_i == m_nbuckets) && (*m_node == detail::get_empty_id())) {
-            return false;
-        } else {
-            return true;
-        }
-    }
+    const double_d& get_transpose() { return m_transpose; }
 
     CUDA_HOST_DEVICE
     reference operator *() const {
@@ -516,11 +394,11 @@ public:
         return count;
     }
     CUDA_HOST_DEVICE
-    inline bool operator==(const linked_list_iterator& rhs) {
+    inline bool operator==(const linked_list_iterator& rhs) const {
         return equal(rhs);
     }
     CUDA_HOST_DEVICE
-    inline bool operator!=(const linked_list_iterator& rhs){
+    inline bool operator!=(const linked_list_iterator& rhs) const {
         return !operator==(rhs);
     }
 
@@ -528,72 +406,316 @@ public:
     friend class boost::iterator_core_access;
 
     CUDA_HOST_DEVICE
+    bool increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (linked_list_iterator):"); 
+#endif
+        if (m_current_index != detail::get_empty_id()) {
+            m_current_index = m_linked_list_begin[m_current_index];
+#ifndef __CUDA_ARCH__
+            LOG(4,"\tgoing to new particle m_current_index = "<<m_current_index);
+#endif
+        } 
+        
+        if (m_current_index == detail::get_empty_id()) {
+            return false;
+        } else {
+            return true;
+        }
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (linked_list_iterator): m_current_index = "<<m_current_index); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
     bool equal(linked_list_iterator const& other) const {
-        //std::cout <<" testing equal *m_node = "<<*m_node<<" other.m_node = "<<*(other.m_node)<<std::endl;
-        return *m_node == *(other.m_node);
-    }
-
-
-    CUDA_HOST_DEVICE
-    bool check_candidate() {
-        const double_d& p = get<position>(m_begin)[*m_node] + m_transpose[m_bucket_i];
-        m_dx = p - m_r;
-
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<p<<" trans = "<<m_transpose[m_bucket_i]<<" index = "<<m_bucket_i<<". m_box_side_length = "<<m_box_side_length); 
-#endif
-
-        bool outside = false;
-        for (int i=0; i < Traits::dimension; i++) {
-            if (std::abs(m_dx[i]) > m_box_side_length[i]) {
-                outside = true;
-                break;
-            } 
-        }
-        return !outside;
-
-    }
-
-    CUDA_HOST_DEVICE
-    void increment() {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement:"); 
-#endif
-        bool found_good_candidate = false;
-        while (!found_good_candidate && go_to_next_candidate()) {
-            found_good_candidate = check_candidate();
-#ifndef __CUDA_ARCH__
-            LOG(4,"\tfound_good_candidate = "<<found_good_candidate); 
-#endif
-        }
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment: m_node = "<<*m_node); 
-#endif
+        return m_current_index == other.m_current_index;
     }
 
 
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return reference(*(m_begin + *m_node),m_dx); }
+    { return *(m_particles_begin + m_current_index); }
 
 
-    int* m_node;
-    double_d m_r;
-    double_d m_dx;
-    double_d m_box_side_length;
-
-    const static unsigned int max_nbuckets = detail::ipow(3,Traits::dimension); 
-    double_d m_transpose[max_nbuckets];
-    unsigned int m_buckets_to_search[max_nbuckets];
-    size_t m_nbuckets;
-    size_t m_bucket_i;
-    int m_cell_empty;
-
-    p_pointer m_begin;
-    int* m_buckets_begin;
+    int m_current_index;
+    p_pointer m_particles_begin;
     int* m_linked_list_begin;
+    double_d m_transpose;
 
 };
+
+// assume that these iterators, and query functions, can be called from device code
+template <typename Traits>
+class lattice_iterator {
+    typedef typename Traits::position position;
+    typedef typename Traits::double_d double_d;
+    typedef typename Traits::int_d int_d;
+
+    int_d m_min;
+    int_d m_max;
+    int_d m_index;
+    detail::bucket_index<Traits::dimension> m_bucket_index;
+public:
+    typedef Traits traits_type;
+    typedef const int_d* pointer;
+	typedef std::random_access_iterator_tag iterator_category;
+    typedef const int_d& reference;
+    typedef const int_d value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    lattice_iterator(const int_d &min, 
+                     const int_d &max, 
+                     const int_d &start):
+        m_min(min),
+        m_max(max),
+        m_index(start),
+        m_bucket_index(max-min)
+    {}
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator ->() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator operator++(int) {
+        lattice_iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator operator+(const int n) {
+        lattice_iterator tmp(*this);
+        tmp.increment(n);
+        return tmp;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator& operator+=(const int n) {
+        increment(n);
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator& operator-=(const int n) {
+        increment(-n);
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator operator-(const int n) {
+        lattice_iterator tmp(*this);
+        tmp.increment(-n);
+        return tmp;
+    }
+
+    CUDA_HOST_DEVICE
+    size_t operator-(lattice_iterator start) const {
+        const int distance = m_bucket_index.collapse_index_vector(m_index-start.m_index);
+        ASSERT(distance > 0, "start iterator not before this iterator!");
+        return distance;
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator==(const lattice_iterator& rhs) const {
+        return equal(rhs);
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const lattice_iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+private:
+    friend class boost::iterator_core_access;
+
+    CUDA_HOST_DEVICE
+    bool equal(lattice_iterator const& other) const {
+        return (m_index == other.m_index).all();
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { 
+        return m_index; 
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+        for (int i=0; i<Traits::dimension; i++) {
+            ++m_index[i];
+            if (m_index[i] <= m_max[i]) break;
+            if (i != Traits::dimension-1) {
+                m_index[i] = m_min[i];
+            }
+        }
+    }
+
+    CUDA_HOST_DEVICE
+    void increment(const int n) {
+        int collapsed_index = m_bucket_index.collapse_index_vector(m_index);
+        m_index = m_bucket_index.reassemble_index_vector(collapsed_index += n);
+    }
+};
+
+template <typename Traits>
+class lattice_iterator_with_hole {
+    typedef typename Traits::position position;
+    typedef typename Traits::double_d double_d;
+    typedef typename Traits::int_d int_d;
+
+    int_d m_min;
+    int_d m_max;
+    int_d m_hole_min;
+    int_d m_hole_max;
+    int_d m_index;
+    detail::bucket_index<Traits::dimension> m_bucket_index;
+public:
+    typedef const int_d* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const int_d& reference;
+    typedef const int_d value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_with_hole(const int_d &min, 
+                     const int_d &max, 
+                     const int_d &hmin, 
+                     const int_d &hmax, 
+                     const int_d &start):
+        m_min(min),
+        m_max(max),
+        m_hole_min(hmin),
+        m_hole_max(hmax),
+        m_index(start),
+        m_bucket_index(max-min)
+    {}
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator ->() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_with_hole& operator++() {
+        increment();
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_with_hole operator++(int) {
+        lattice_iterator_with_hole tmp(*this);
+        operator++();
+        return tmp;
+    }
+
+    /*
+    CUDA_HOST_DEVICE
+    lattice_iterator_with_hole operator+(const int n) {
+        lattice_iterator_with_hole tmp(*this);
+        tmp.increment(n);
+        return tmp;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_with_hole& operator+=(const int n) {
+        increment(n);
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_with_hole& operator-=(const int n) {
+        increment(-n);
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_with_hole operator-(const int n) {
+        lattice_iterator_with_hole tmp(*this);
+        tmp.increment(-n);
+        return tmp;
+    }
+    */
+
+    CUDA_HOST_DEVICE
+    size_t operator-(lattice_iterator_with_hole start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator==(const lattice_iterator_with_hole& rhs) const {
+        return equal(rhs);
+    }
+
+
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const lattice_iterator_with_hole& rhs) const {
+        return !operator==(rhs);
+    }
+
+private:
+    friend class boost::iterator_core_access;
+
+    CUDA_HOST_DEVICE
+    bool equal(lattice_iterator_with_hole const& other) const {
+        return (m_index == other.m_index).all();
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { 
+        return m_index; 
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+        for (int i=0; i<Traits::dimension; i++) {
+            ++m_index[i];
+            if (m_index[i] == m_hole_min[i]) {
+                m_index[i] = m_hole_max[i]+1;
+            }
+            if (m_index[i] <= m_max[i]) break;
+            if (i != Traits::dimension-1) {
+                m_index[i] = m_min[i];
+            }
+        }
+    }
+
+    /*
+    CUDA_HOST_DEVICE
+    void increment(const int n) {
+        int collapsed_index = m_bucket_index.collapse_index_vector(m_index);
+        m_index = m_bucket_index.reassemble_index_vector(collapsed_index += n);
+    }
+    */
+};
+
+
+
 
 
 
