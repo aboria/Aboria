@@ -90,7 +90,7 @@ MathJax.Hub.Config({
   #  quickstart.cpp
     ${QBK_SOURCES}
     ${CPP_EXAMPLES}
-    #libaboria.xml
+    libaboria.xml
   PARAMETERS
     #boost.root=./
     html.stylesheet=css/boostbook.css
