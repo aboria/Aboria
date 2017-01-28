@@ -30,11 +30,13 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','m
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria (Level 1)')
         plt.semilogx(data[:,0],data[:,2]/1e6,label='Aboria (Level 2)')
         plt.semilogx(data[:,0],data[:,3]/1e6,label='Eigen')
+        plt.semilogx(data[:,0],data[:,4]/1e6,label='std::vector')
     elif filename in ['daxpy']:
         plt.title(r'$a_i = a_i + 0.1\, b_i $')
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria (Level 1)')
         plt.semilogx(data[:,0],data[:,2]/1e6,label='Aboria (Level 2)')
         plt.semilogx(data[:,0],data[:,3]/1e6,label='Eigen')
+        plt.semilogx(data[:,0],data[:,4]/1e6,label='std::vector')
     elif filename in ['multiquadric']:
         plt.title(r'$s_i = s_i+ \sum_j^N  s_j \sqrt{|\mathbf{dx}_{ij}|+c_j^2}$')
         filename_matlab = 'matlab_matrix_multiply_size'

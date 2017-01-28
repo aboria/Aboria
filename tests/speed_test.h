@@ -77,14 +77,33 @@ public:
             get<b>(nodes)[i] = i*2;
         }
         for (int i=0; i<N; i++) {
-            get<c>(nodes)[i] = get<a>(nodes)[i] + get<b>(nodes)[i];
-            //get<c>(nodes[i]) = get<a>(nodes[i]) + get<b>(nodes[i]);
+            get<a>(nodes)[i] = get<b>(nodes)[i] + get<c>(nodes)[i];
         }
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             for (int i=0; i<N; i++) {
-                get<c>(nodes)[i] = get<a>(nodes)[i] + get<b>(nodes)[i];
-                //get<c>(nodes[i]) = get<a>(nodes[i]) + get<b>(nodes[i]);
+                get<a>(nodes)[i] = get<b>(nodes)[i] + get<c>(nodes)[i];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count()/repeats;
+    }
+
+    double vector_addition_stdvector(const size_t N, const size_t repeats) {
+        std::cout << "vector_addition_stdvector: N = "<<N<<std::endl;
+        std::vector<double> a(N),b(N),c(N);
+        for (int i=0; i<N; i++) {
+            a[i] = i;
+            b[i] = i*2;
+        }
+        for (int i=0; i<N; i++) {
+            a[i] = b[i] + c[i];
+        }
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                a[i] = b[i] + c[i];
             }
         }
         auto t1 = Clock::now();
@@ -164,15 +183,15 @@ public:
         std::cout << "vector_addition_eigen: N = "<<N<<std::endl;
 #ifdef HAVE_EIGEN
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
-        vector_type A(N),B(N),C(N);
+        vector_type a(N),b(N),c(N);
         for (int i=0; i<N; i++) {
-            A[i] = i;
-            B[i] = 2*i;
+            a[i] = i;
+            b[i] = 2*i;
         }
-        C = A + B;
+        a = b + c;
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            C = A + B;
+            a = b + c;
         }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
@@ -181,6 +200,26 @@ public:
     }
 
     // Daxpy (b += a*0.001) 
+    double daxpy_stdvector(const size_t N, const size_t repeats) {
+        std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
+        std::vector<double> a(N),b(N);
+        for (int i=0; i<N; i++) {
+            a[i] = i;
+            b[i] = i*2;
+        }
+        for (int i=0; i<N; i++) {
+            a[i] += 0.1*b[i];
+        }
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                a[i] += 0.1*b[i];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count()/repeats;
+    }
     double daxpy_aboria_level1(const size_t N, const size_t repeats) {
         std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
         ABORIA_VARIABLE(a,double,"a")
@@ -192,12 +231,12 @@ public:
             get<b>(nodes)[i] = i*2;
         }
         for (int i=0; i<N; i++) {
-            get<b>(nodes)[i] += get<a>(nodes)[i]*0.001;
+            get<a>(nodes)[i] += 0.1*get<b>(nodes)[i];
         }
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             for (int i=0; i<N; i++) {
-                get<b>(nodes)[i] += get<a>(nodes)[i]*0.001;
+                get<a>(nodes)[i] += 0.1*get<b>(nodes)[i];
             }
         }
         auto t1 = Clock::now();
@@ -228,14 +267,14 @@ public:
 
         This is implemented in __aboria__ using 
         */
-        a[i] += b[i]*0.001;
+        a[i] += 0.1*b[i];
         /*`
         [$images/benchmarks/daxpy.pdf]
         */
         //]
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            a[i] += b[i]*0.001;
+            a[i] += 0.1*b[i];
         }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
@@ -246,15 +285,15 @@ public:
         std::cout << "daxpy_eigen: N = "<<N<<std::endl;
 #ifdef HAVE_EIGEN
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
-        vector_type A(N),B(N);
+        vector_type a(N),b(N);
         for (int i=0; i<N; i++) {
-            A[i] = i;
-            B[i] = 2*i;
+            a[i] = i;
+            b[i] = 2*i;
         }
-        B += A*0.001;
+        a += 0.1*b;
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            B += A*0.001;
+            a += 0.1*b;
         }
         auto t1 = Clock::now();
         std::chrono::duration<double> dt = t1 - t0;
@@ -946,7 +985,9 @@ public:
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
-             << std::setw(15) << "eigen" << std::endl;
+             << std::setw(15) << "eigen"
+             << std::setw(15) << "stdvector" << std::endl;
+
 #ifdef HAVE_OPENMP
             omp_set_num_threads(1);
 #endif
@@ -956,6 +997,7 @@ public:
                  << std::setw(15) << N/vector_addition_aboria_level1(N,repeats)
                  << std::setw(15) << N/vector_addition_aboria_level2(N,repeats)
                  << std::setw(15) << N/vector_addition_eigen(N,repeats)
+                 << std::setw(15) << N/vector_addition_stdvector(N,repeats)
                  << std::endl;
         }
         file.close();
@@ -968,7 +1010,8 @@ public:
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
-             << std::setw(15) << "eigen" << std::endl;
+             << std::setw(15) << "eigen"
+             << std::setw(15) << "stdvector" << std::endl;
 #ifdef HAVE_OPENMP
             omp_set_num_threads(1);
 #endif
@@ -978,6 +1021,7 @@ public:
                  << std::setw(15) << N/daxpy_aboria_level1(N,repeats)
                  << std::setw(15) << N/daxpy_aboria_level2(N,repeats)
                  << std::setw(15) << N/daxpy_eigen(N,repeats)
+                 << std::setw(15) << N/daxpy_stdvector(N,repeats)
                  << std::endl;
         }
         file.close();
