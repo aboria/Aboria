@@ -46,9 +46,6 @@ MathJax.Hub.Config({
 <dt><span class="section"><a href="benchmarks.html#aboria.benchmarks.neighbour_search_non_linear_oper">Neighbour
       search non-linear operator</a></span></dt>
 </dl></div>
-<p>
-      &lt;?dbhtml stop-chunking?&gt;
-    </p>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
 <a name="aboria.benchmarks.vector_addition"></a><a class="link" href="benchmarks.html#aboria.benchmarks.vector_addition" title="Vector Addition">Vector Addition</a>
@@ -81,22 +78,36 @@ MathJax.Hub.Config({
 <span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">b</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+</span> <span class="identifier">c</span><span class="special">[</span><span class="identifier">i</span><span class="special">];</span>
 </pre>
 <p>
-        We can measure the time taken by the last line in the code segment above
-        for varying $N$, and compare this with identical calculations implemented
-        using:
+        We compare this with Level 1 Aboria using the <code class="computeroutput"><span class="identifier">get</span></code>
+        functions and looping through the container
       </p>
-<div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem">
-            Aboria Level 1 (i.e. not using the symbolic layer, simply looping through
-            the particle set container).
-          </li>
-<li class="listitem">
-            C++ and the STL <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code> class.
-          </li>
-</ol></div>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">N</span><span class="special">;</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
+    <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a_var</span><span class="special">&gt;(</span><span class="identifier">nodes</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">b_var</span><span class="special">&gt;(</span><span class="identifier">nodes</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">c_var</span><span class="special">&gt;(</span><span class="identifier">nodes</span><span class="special">)[</span><span class="identifier">i</span><span class="special">];</span>
+<span class="special">}</span>
+</pre>
 <p>
-        The resultant benchmarks are shown in Figure \ref{}, where it can be seen
-        that the three approaches are very similar in speed, confirming that [Aboria][]
+        We also compare against a plain <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>
+        implementation like so
+      </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">N</span><span class="special">),</span><span class="identifier">b</span><span class="special">(</span><span class="identifier">N</span><span class="special">),</span><span class="identifier">c</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">N</span><span class="special">;</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
+    <span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">b</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+</span> <span class="identifier">c</span><span class="special">[</span><span class="identifier">i</span><span class="special">];</span>
+<span class="special">}</span>
+</pre>
+<p>
+        Finally we compare against an Eigen implementation:
+      </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Matrix</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">,</span><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Dynamic</span><span class="special">,</span><span class="number">1</span><span class="special">&gt;</span> <span class="identifier">vector_type</span><span class="special">;</span>
+<span class="identifier">vector_type</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">N</span><span class="special">),</span><span class="identifier">b</span><span class="special">(</span><span class="identifier">N</span><span class="special">),</span><span class="identifier">c</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+<span class="identifier">a</span> <span class="special">=</span> <span class="identifier">b</span> <span class="special">+</span> <span class="identifier">c</span><span class="special">;</span>
+</pre>
+<p>
+        We can measure the time taken by the last line in the code segment above
+        for varying $N$, and compare the four different implementations
+      </p>
+<p>
+        The resultant benchmarks are shown in the Figure below, where it can be seen
+        that the four approaches are very similar in speed, confirming that [Aboria][]
         can achieve zero-cost abstraction, at least in this simple case. More complicated
         cases are explored below.
       </p>
@@ -120,6 +131,31 @@ MathJax.Hub.Config({
       </p>
 <pre class="programlisting"><span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="number">0.1</span><span class="special">*</span><span class="identifier">b</span><span class="special">[</span><span class="identifier">i</span><span class="special">];</span>
 </pre>
+<p>
+        We compare against a Level 1 implementation like so
+      </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">N</span><span class="special">;</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
+    <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a_var</span><span class="special">&gt;(</span><span class="identifier">nodes</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="number">0.1</span><span class="special">*</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">b_var</span><span class="special">&gt;(</span><span class="identifier">nodes</span><span class="special">)[</span><span class="identifier">i</span><span class="special">];</span>
+<span class="special">}</span>
+</pre>
+<p>
+        and a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code> implementation like so
+      </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">N</span><span class="special">),</span><span class="identifier">b</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">N</span><span class="special">;</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
+    <span class="identifier">a</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="number">0.1</span><span class="special">*</span><span class="identifier">b</span><span class="special">[</span><span class="identifier">i</span><span class="special">];</span>
+<span class="special">}</span>
+</pre>
+<p>
+        and an Eigen implementation
+      </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Matrix</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">,</span><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Dynamic</span><span class="special">,</span><span class="number">1</span><span class="special">&gt;</span> <span class="identifier">vector_type</span><span class="special">;</span>
+<span class="identifier">vector_type</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">N</span><span class="special">),</span><span class="identifier">b</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+<span class="identifier">a</span> <span class="special">+=</span> <span class="number">0.1</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
+</pre>
+<p>
+        The comarison benchmarks for varying $N$ are shown below
+      </p>
 <p>
         <span class="inlinemediaobject"><img src="../images/benchmarks/daxpy.pdf"></span>
       </p>
