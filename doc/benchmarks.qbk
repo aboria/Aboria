@@ -2,15 +2,11 @@
 [section Benchmarks]
 
 
-<?dbhtml stop-chunking?>
-
 [import ../tests/speed_test.h]
 
 [section Vector Addition]
 
-[vector_addition_level2_setup]
-
-[vector_addition_level2_run]
+[vector_addition]
 
 [endsect]
 

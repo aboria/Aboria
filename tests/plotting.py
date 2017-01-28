@@ -10,7 +10,7 @@ rc('text', usetex=True)
 
 
 
-for filename in ['vector_addition','daxpy','finite_difference','multiquadric','multiquadric_scaling','linear_spring']:
+for filename in ['vector_addition','daxpy','finite_difference','multiquadric','linear_spring','multiquadric_scaling']:
 #for filename in ['linear_spring']:
     if filename in ['linear_spring']:
         files = glob.glob('tests/'+filename+'*.csv')
@@ -40,7 +40,7 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','m
     elif filename in ['multiquadric']:
         plt.title(r'$s_i = s_i+ \sum_j^N  s_j \sqrt{|\mathbf{dx}_{ij}|+c_j^2}$')
         filename_matlab = 'matlab_matrix_multiply_size'
-        data_matlab = np.loadtxt('tests/'+filename_matlab+'.csv',delimiter=',')
+        #data_matlab = np.loadtxt('tests/'+filename_matlab+'.csv',delimiter=',')
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria')
         #plt.semilogx(data[:,0],data[:,2]/1e6,label='aboria-eigen')
         #plt.semilogx(data[:,0],data[:,3]/1e6,label='eigen')

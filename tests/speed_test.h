@@ -65,56 +65,12 @@ class SpeedTest : public CxxTest::TestSuite {
 public:
     // BLAS Level 1
     // Dense Vector Addition (c = a + b)
-    double vector_addition_aboria_level1(const size_t N, const size_t repeats) {
-        std::cout << "vector_addition_aboria_level1: N = "<<N<<std::endl;
-        ABORIA_VARIABLE(a,double,"a")
-        ABORIA_VARIABLE(b,double,"b")
-        ABORIA_VARIABLE(c,double,"c")
-    	typedef Particles<std::tuple<a,b,c>,3> nodes_type;
-       	nodes_type nodes(N);
-        for (int i=0; i<N; i++) {
-            get<a>(nodes)[i] = i;
-            get<b>(nodes)[i] = i*2;
-        }
-        for (int i=0; i<N; i++) {
-            get<a>(nodes)[i] = get<b>(nodes)[i] + get<c>(nodes)[i];
-        }
-        auto t0 = Clock::now();
-        for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
-                get<a>(nodes)[i] = get<b>(nodes)[i] + get<c>(nodes)[i];
-            }
-        }
-        auto t1 = Clock::now();
-        std::chrono::duration<double> dt = t1 - t0;
-        return dt.count()/repeats;
-    }
-
-    double vector_addition_stdvector(const size_t N, const size_t repeats) {
-        std::cout << "vector_addition_stdvector: N = "<<N<<std::endl;
-        std::vector<double> a(N),b(N),c(N);
-        for (int i=0; i<N; i++) {
-            a[i] = i;
-            b[i] = i*2;
-        }
-        for (int i=0; i<N; i++) {
-            a[i] = b[i] + c[i];
-        }
-        auto t0 = Clock::now();
-        for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
-                a[i] = b[i] + c[i];
-            }
-        }
-        auto t1 = Clock::now();
-        std::chrono::duration<double> dt = t1 - t0;
-        return dt.count()/repeats;
-    }
+    
     
     
     double vector_addition_aboria_level2(const size_t N, const size_t repeats) {
         std::cout << "vector_addition_aboria_level2: N = "<<N<<std::endl;
-        //[vector_addition_level2_setup
+        //[vector_addition
         /*`
         Here we aim to compute a simple vector addition operation
 
@@ -131,12 +87,12 @@ public:
         ABORIA_VARIABLE(c_var,double,"c")
     	typedef Particles<std::tuple<a_var,b_var,c_var>,3> nodes_type;
        	nodes_type nodes(N);
-        //]
+        //<- 
         for (int i=0; i<N; i++) {
             get<a_var>(nodes)[i] = i;
             get<b_var>(nodes)[i] = i*2;
         }
-        //[vector_addition_level2_run
+        //->
         /*`        
         The vector addition operation can then be calculated using the Level 3 layer 
         like so
@@ -146,24 +102,7 @@ public:
         Symbol<c_var> c;
         Label<0,nodes_type> i(nodes);
         a[i] = b[i] + c[i];
-        /*`
-        We can measure the time taken by the last line in the code segment above for 
-        varying $N$, and compare this with identical calculations implemented using:
-
-        # Aboria Level 1 (i.e. not using the symbolic layer, simply looping through the 
-           particle set container).
-
-        # C++ and the STL `std::vector` class.
-
-        The resultant benchmarks are shown in Figure \ref{}, where it can be seen that 
-        the three approaches are very similar in speed, confirming that [Aboria][] can 
-        achieve zero-cost abstraction, at least in this simple case. More complicated 
-        cases are explored below.
-
-        [$images/benchmarks/vector_addition.pdf]
-        */
-
-        //]
+        //<- 
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("vector_addition_aboria_level2");
@@ -179,16 +118,93 @@ public:
         return dt.count()/repeats;
     }
 
+    double vector_addition_aboria_level1(const size_t N, const size_t repeats) {
+        std::cout << "vector_addition_aboria_level1: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(a_var,double,"a")
+        ABORIA_VARIABLE(b_var,double,"b")
+        ABORIA_VARIABLE(c_var,double,"c")
+    	typedef Particles<std::tuple<a_var,b_var,c_var>,3> nodes_type;
+       	nodes_type nodes(N);
+        for (int i=0; i<N; i++) {
+            get<a_var>(nodes)[i] = i;
+            get<b_var>(nodes)[i] = i*2;
+        }
+        //->
+        /*`
+        We compare this with Level 1 Aboria using the `get` functions and looping
+        through the container
+        */
+        for (int i=0; i<N; i++) {
+            get<a_var>(nodes)[i] = get<b_var>(nodes)[i] + get<c_var>(nodes)[i];
+        }
+        //<-
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                get<a_var>(nodes)[i] = get<b_var>(nodes)[i] + get<c_var>(nodes)[i];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count()/repeats;
+    }
+
+    double vector_addition_stdvector(const size_t N, const size_t repeats) {
+        std::cout << "vector_addition_stdvector: N = "<<N<<std::endl;
+        //->
+        /*`
+        We also compare against a plain `std::vector` implementation like so
+        */
+        std::vector<double> a(N),b(N),c(N);
+        //<-
+        for (int i=0; i<N; i++) {
+            a[i] = i;
+            b[i] = i*2;
+        }
+        //->
+        for (int i=0; i<N; i++) {
+            a[i] = b[i] + c[i];
+        }
+        //<-
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                a[i] = b[i] + c[i];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count()/repeats;
+    }
+
     double vector_addition_eigen(const size_t N, const size_t repeats) {
         std::cout << "vector_addition_eigen: N = "<<N<<std::endl;
 #ifdef HAVE_EIGEN
+        //->
+        /*`
+        Finally we compare against an Eigen implementation:
+        */
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
         vector_type a(N),b(N),c(N);
+        //<-
         for (int i=0; i<N; i++) {
             a[i] = i;
             b[i] = 2*i;
         }
+        //->
         a = b + c;
+        /*`
+        We can measure the time taken by the last line in the code segment above for 
+        varying $N$, and compare the four different implementations
+
+        The resultant benchmarks are shown in the Figure below, where it can be seen that 
+        the four approaches are very similar in speed, confirming that [Aboria][] can 
+        achieve zero-cost abstraction, at least in this simple case. More complicated 
+        cases are explored below.
+
+        [$images/benchmarks/vector_addition.pdf]
+        */
+        //]
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             a = b + c;
@@ -200,50 +216,6 @@ public:
     }
 
     // Daxpy (b += a*0.001) 
-    double daxpy_stdvector(const size_t N, const size_t repeats) {
-        std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
-        std::vector<double> a(N),b(N);
-        for (int i=0; i<N; i++) {
-            a[i] = i;
-            b[i] = i*2;
-        }
-        for (int i=0; i<N; i++) {
-            a[i] += 0.1*b[i];
-        }
-        auto t0 = Clock::now();
-        for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
-                a[i] += 0.1*b[i];
-            }
-        }
-        auto t1 = Clock::now();
-        std::chrono::duration<double> dt = t1 - t0;
-        return dt.count()/repeats;
-    }
-    double daxpy_aboria_level1(const size_t N, const size_t repeats) {
-        std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
-        ABORIA_VARIABLE(a,double,"a")
-        ABORIA_VARIABLE(b,double,"b")
-    	typedef Particles<std::tuple<a,b>,3> nodes_type;
-       	nodes_type nodes(N);
-        for (int i=0; i<N; i++) {
-            get<a>(nodes)[i] = i;
-            get<b>(nodes)[i] = i*2;
-        }
-        for (int i=0; i<N; i++) {
-            get<a>(nodes)[i] += 0.1*get<b>(nodes)[i];
-        }
-        auto t0 = Clock::now();
-        for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
-                get<a>(nodes)[i] += 0.1*get<b>(nodes)[i];
-            }
-        }
-        auto t1 = Clock::now();
-        std::chrono::duration<double> dt = t1 - t0;
-        return dt.count()/repeats;
-    }
-    
     double daxpy_aboria_level2(const size_t N, const size_t repeats) {
         std::cout << "daxpy_aboria_level2: N = "<<N<<std::endl;
         ABORIA_VARIABLE(a_var,double,"a")
@@ -268,10 +240,7 @@ public:
         This is implemented in __aboria__ using 
         */
         a[i] += 0.1*b[i];
-        /*`
-        [$images/benchmarks/daxpy.pdf]
-        */
-        //]
+        //<-
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             a[i] += 0.1*b[i];
@@ -281,16 +250,86 @@ public:
         return dt.count()/repeats;
     }
 
+    double daxpy_aboria_level1(const size_t N, const size_t repeats) {
+        std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
+        ABORIA_VARIABLE(a_var,double,"a")
+        ABORIA_VARIABLE(b_var,double,"b")
+    	typedef Particles<std::tuple<a,b>,3> nodes_type;
+       	nodes_type nodes(N);
+        for (int i=0; i<N; i++) {
+            get<a_var>(nodes)[i] = i;
+            get<b_var>(nodes)[i] = i*2;
+        }
+        //->
+        /*`
+        We compare against a Level 1 implementation like so 
+        */
+        for (int i=0; i<N; i++) {
+            get<a_var>(nodes)[i] += 0.1*get<b_var>(nodes)[i];
+        }
+        //<-
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                get<a_var>(nodes)[i] += 0.1*get<b_var>(nodes)[i];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count()/repeats;
+    }
+
+    double daxpy_stdvector(const size_t N, const size_t repeats) {
+        std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
+        //->
+        /*`
+        and a `std::vector` implementation like so
+        */
+        std::vector<double> a(N),b(N);
+        //<-
+        for (int i=0; i<N; i++) {
+            a[i] = i;
+            b[i] = i*2;
+        }
+        //->
+        for (int i=0; i<N; i++) {
+            a[i] += 0.1*b[i];
+        }
+        //<-
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            for (int i=0; i<N; i++) {
+                a[i] += 0.1*b[i];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        return dt.count()/repeats;
+    }
+    
+
     double daxpy_eigen(const size_t N, const size_t repeats) {
         std::cout << "daxpy_eigen: N = "<<N<<std::endl;
 #ifdef HAVE_EIGEN
+        //->
+        /*`
+        and an Eigen implementation
+        */
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
         vector_type a(N),b(N);
+        //<-
         for (int i=0; i<N; i++) {
             a[i] = i;
             b[i] = 2*i;
         }
+        //->
         a += 0.1*b;
+        /*`
+        The comarison benchmarks for varying $N$ are shown below
+
+        [$images/benchmarks/daxpy.pdf [format PDF]]
+        */
+        //]
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             a += 0.1*b;
