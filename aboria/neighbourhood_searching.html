@@ -49,7 +49,7 @@ MathJax.Hub.Config({
     </p>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46788868276112-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46694606416304-bb">Aboria::Particles::init_neighbour_search</a></code>
       function
     </p>
 <pre class="programlisting"><span class="identifier">double2</span> <span class="identifier">min</span><span class="special">(-</span><span class="number">1</span><span class="special">,-</span><span class="number">1</span><span class="special">);</span>
@@ -66,15 +66,15 @@ MathJax.Hub.Config({
     </p>
 <p>
       Once this is done you can begin using the neighbourhood search queries using
-      the <code class="computeroutput"><span class="identifier">get_neighbours</span></code> function.
-      This returns a lightweight container with <code class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> functions that return <code class="computeroutput"><span class="keyword">const</span></code>
+      the <code class="computeroutput"><span class="identifier">box_search</span></code> function. This
+      returns a lightweight container with <code class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> functions that return <code class="computeroutput"><span class="keyword">const</span></code>
       forward only iterators to the particles that satisfy the neighbour search.
       For example, the following counts all the particles within a square domain
       of side length <code class="computeroutput"><span class="identifier">diameter</span></code> of
       the point (0,0)
     </p>
 <pre class="programlisting"><span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
-<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_neighbours</span><span class="special">(</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
    <span class="identifier">count</span><span class="special">++;</span>
 <span class="special">}</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"There are "</span><span class="special">&lt;&lt;</span> <span class="identifier">count</span> <span class="special">&lt;&lt;</span> <span class="string">" particles.\n"</span><span class="special">;</span>
@@ -94,7 +94,7 @@ MathJax.Hub.Config({
 <p>
       For example,
     </p>
-<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_neighbours</span><span class="special">(</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
    <span class="keyword">const</span> <span class="identifier">MyParticle</span><span class="special">&amp;</span> <span class="identifier">b</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">0</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
    <span class="keyword">const</span> <span class="identifier">double2</span><span class="special">&amp;</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">1</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Found a particle with dx = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">dx</span> <span class="special">&lt;&lt;</span> <span class="string">" and id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">b</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>

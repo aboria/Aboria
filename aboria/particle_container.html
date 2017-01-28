@@ -218,7 +218,7 @@ MathJax.Hub.Config({
         for example a <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.iterator">Aboria::Particles::iterator</a></code>
         or <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_iterator">Aboria::Particles::const_iterator</a></code>,
         then you can obtain the corresponding iterator to the internal <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>
-        by using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp46788868172544.html" title="Function template get">Aboria::get</a></code> function.
+        by using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp46694606312736.html" title="Function template get">Aboria::get</a></code> function.
         For example,
       </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">size_t</span><span class="special">&gt;::</span><span class="identifier">iterator</span><span class="special">&amp;</span> <span class="identifier">ids</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">());</span>
@@ -286,7 +286,7 @@ MathJax.Hub.Config({
       </p>
 <p>
         2. Additional member functions are available to suit the specific purpose
-        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46788868231168-bb">Aboria::Particles::push_back</a></code>
+        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46694606371360-bb">Aboria::Particles::push_back</a></code>
         function can take a vector data-type for the particle position, and the
         <code class="computeroutput">Aboria::Particle::get_neighbours</code>
         function for neighbour searching.
@@ -295,7 +295,7 @@ MathJax.Hub.Config({
         3. When using the neighbourhood searching capabilities of the container,
         the order of the particles in the particle container might change due to
         internal sorting for neighbourhood searching efficiency. So do not assume
-        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46788868231168-bb">push_back</a></code>
+        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46694606371360-bb">push_back</a></code>
         member function can reorder the particles if neighbourhood searching is turned
         on.
       </p>
