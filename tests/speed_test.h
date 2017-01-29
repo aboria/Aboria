@@ -202,7 +202,7 @@ public:
         achieve zero-cost abstraction, at least in this simple case. More complicated 
         cases are explored below.
 
-        [$images/benchmarks/vector_addition.pdf]
+        [$images/benchmarks/vector_addition.svg]
         */
         //]
         auto t0 = Clock::now();
@@ -254,7 +254,7 @@ public:
         std::cout << "daxpy_aboria_level1: N = "<<N<<std::endl;
         ABORIA_VARIABLE(a_var,double,"a")
         ABORIA_VARIABLE(b_var,double,"b")
-    	typedef Particles<std::tuple<a,b>,3> nodes_type;
+    	typedef Particles<std::tuple<a_var,b_var>,3> nodes_type;
        	nodes_type nodes(N);
         for (int i=0; i<N; i++) {
             get<a_var>(nodes)[i] = i;
@@ -327,7 +327,7 @@ public:
         /*`
         The comarison benchmarks for varying $N$ are shown below
 
-        [$images/benchmarks/daxpy.pdf [format PDF]]
+        [$images/benchmarks/daxpy.svg]
         */
         //]
         auto t0 = Clock::now();
@@ -591,10 +591,10 @@ public:
         auto dx = create_dx(i,j);
         Accumulate<std::plus<double> > sum;
         a[i] += sum(j,true,a[j]*sqrt(dot(dx,dx)+b[j]*b[j]));
-        /*'
+        /*`
         The benchmarks are shown below. 
 
-        [$images/benchmarks/multiquadric.pdf]
+        [$images/benchmarks/multiquadric.svg]
          */
         //]
         auto t0 = Clock::now();
@@ -792,7 +792,7 @@ public:
         /*`
         The benchmarks are shown below. 
 
-        [$images/benchmarks/linear_spring.pdf]
+        [$images/benchmarks/linear_spring.svg]
          */
         //]
         
@@ -910,7 +910,7 @@ public:
             omp_set_num_threads(1);
 #endif
         std::ofstream file;
-        const size_t repeats = 3;
+        const size_t base_repeats = 50;
         for (double radius_div_h = 1.1; radius_div_h < 5; radius_div_h += 1) {
             char buffer[100];
             sprintf(buffer,"linear_spring%4.4f.csv",radius_div_h);
@@ -923,6 +923,7 @@ public:
             for (double i = 2; i < 30; i *= 1.05) {
                 const size_t N = i;
                 const size_t matrix_size = std::pow(N,3)*(4.0/3.0)*PI*std::pow(radius_div_h,3);
+                const size_t repeats = base_repeats/matrix_size + 1;
                 const double h = 1.0/N; 
                 const double radius = radius_div_h*h;
                 file << std::setw(15) << std::pow(N,3);
@@ -936,7 +937,7 @@ public:
 
     void test_multiquadric() {
         std::ofstream file;
-        const size_t repeats = 10;
+        const size_t base_repeats = 50;
         file.open("multiquadric.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria" 
@@ -944,6 +945,7 @@ public:
              << std::setw(15) << "eigen" << std::endl;
         for (double i = 2; i < 100; i *= 1.05) {
             const size_t N = i;
+            const size_t repeats = base_repeats/std::pow(N,2) + 1;
             file << std::setw(15) << std::pow(N,2);
 #ifdef HAVE_OPENMP
             omp_set_num_threads(1);
@@ -1019,7 +1021,7 @@ public:
 
     void test_vector_addition() {
         std::ofstream file;
-        const size_t repeats = 20;
+        const size_t base_repeats = 100;
         file.open("vector_addition.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
@@ -1032,6 +1034,7 @@ public:
 #endif
         for (int i = 10; i < 8e6; i*=1.2) {
             const size_t N = i;
+            const size_t repeats = base_repeats/N + 1;
             file << std::setw(15) << N
                  << std::setw(15) << N/vector_addition_aboria_level1(N,repeats)
                  << std::setw(15) << N/vector_addition_aboria_level2(N,repeats)
@@ -1045,7 +1048,7 @@ public:
     void test_daxpy() {
         std::ofstream file;
         file.open("daxpy.csv");
-        const size_t repeats = 20;
+        const size_t base_repeats = 100;
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
@@ -1056,6 +1059,7 @@ public:
 #endif
         for (int i = 10; i < 8e6; i*=1.2) {
             const size_t N = i;
+            const size_t repeats = base_repeats/N + 1;
             file << std::setw(15) << N
                  << std::setw(15) << N/daxpy_aboria_level1(N,repeats)
                  << std::setw(15) << N/daxpy_aboria_level2(N,repeats)

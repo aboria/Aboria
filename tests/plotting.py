@@ -76,7 +76,7 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
         leg = plt.legend(fancybox=True,loc='upper right')
     elif filename in ['linear_spring']:
         leg = plt.legend(handles=handles,fancybox=True,loc='upper left')
-    elif filename in ['daxpy']:
+    elif filename in ['daxpy','vector_addition']:
         leg = plt.legend(fancybox=True,loc='upper right')
     else:
         leg = plt.legend(fancybox=True,loc='upper left')
@@ -91,5 +91,6 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
         plt.ylabel(r'$N^2 / T_e$ ($\times 10^6$)')
     plt.tight_layout()
     plt.savefig(filename+'.pdf')
+    plt.savefig(filename+'.svg')
 
 
