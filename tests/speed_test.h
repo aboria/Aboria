@@ -473,72 +473,7 @@ public:
 #endif
     }
 
-    template <unsigned int Dim>
-    double multiquadric_vector(const size_t N, const size_t repeats) {
-        //typedef Vector<double,Dim> double_d;
-        typedef double double_d;
-        std::cout << "multiquadric_vector: N = "<<N<<std::endl;
-
-        std::vector<double_d> x(N*N);
-        std::vector<double_d> y(N*N);
-        std::vector<double_d> c(N*N);
-        std::vector<double_d> s(N*N);
-        std::vector<double_d> s_buffer(N*N);
-
-        const double h = 1.0/N; 
-        double2 min(-h/2);
-        double2 max(1+h/2);
-        double2 periodic(false);
-        const double htol = 1.01*h;
-        const double invh2 = 1.0/(h*h);
-        const double delta_t = 0.1;
-        
-        for (size_t i=0; i<N; ++i) {
-            for (size_t j=0; j<N; ++j) {
-                const size_t index = i*N + j;
-                x[index] = i*h;
-                y[index] = j*h;
-                c[index] = double_d(0.1);
-                s[index] = double_d(1.5);
-            }
-        }
-
-        
-        #pragma omp parallel for
-        for (int i = 0; i < N*N; ++i) {
-            s_buffer[i] = s[i];
-            for (int j = 0; j < N*N; ++j) {
-                const double dx_x = x[j]-x[i];
-                const double dx_y = y[j]-x[i];
-                s_buffer[i] += std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
-            }
-        }
-        #pragma omp parallel for
-        for (int i = 0; i < N*N; ++i) {
-            s[i] = s_buffer[i];
-        }
-        auto t0 = Clock::now();
-        for (int r=0; r<repeats; ++r) {
-            #pragma omp parallel for
-            for (int i = 0; i < N*N; ++i) {
-                s_buffer[i] = s[i];
-                for (int j = 0; j < N*N; ++j) {
-                    const double dx_x = x[j]-x[i];
-                    const double dx_y = y[j]-x[i];
-                    s_buffer[i] += std::sqrt(dx_x*dx_x+dx_y*dx_y+c[j]*c[j])*s[j];
-                }
-            }
-            #pragma omp parallel for
-            for (int i = 0; i < N*N; ++i) {
-                s[i] = s_buffer[i];
-            }
-        }
-        auto t1 = Clock::now();
-        std::chrono::duration<double> dt = t1 - t0;
-        std::cout << "time = "<<dt.count()/repeats<<std::endl;
-        return dt.count()/repeats;
-    }
-
+    
 
 
     template <unsigned int Dim>
@@ -591,12 +526,8 @@ public:
         auto dx = create_dx(i,j);
         Accumulate<std::plus<double> > sum;
         a[i] += sum(j,true,a[j]*sqrt(dot(dx,dx)+b[j]*b[j]));
-        /*`
-        The benchmarks are shown below. 
-
-        [$images/benchmarks/multiquadric.svg]
-         */
-        //]
+        //<-
+        
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("multiquadric_aboria");
@@ -612,6 +543,88 @@ public:
         std::cout << "time = "<<dt.count()/repeats<<std::endl;
         return dt.count()/repeats;
     }
+
+    template <unsigned int Dim>
+    double multiquadric_vector(const size_t inN, const size_t repeats) {
+        const size_t N = inN*inN;
+        //typedef Vector<double,Dim> double_d;
+        std::cout << "multiquadric_vector: N = "<<N<<std::endl;
+        //->
+        /*`
+        This is compared against a `std::vector` implementation. Note that
+        this operator involves aliasing, in that the update variable $a$ 
+        appears within the sum, so we need to accumulate the update to a 
+        temporary buffer before we assign to $a_i$.
+
+        The implementation is shown below (note the openMP parallel loops
+        are turned off for the plot below)
+        */
+
+        std::vector<double> x(N), y(N), b(N), a(N), a_buffer(N);
+
+        //<-
+        const double h = 1.0/N; 
+        double2 min(-h/2);
+        double2 max(1+h/2);
+        double2 periodic(false);
+        const double htol = 1.01*h;
+        const double invh2 = 1.0/(h*h);
+        const double delta_t = 0.1;
+        
+        for (size_t i=0; i<N; ++i) {
+            for (size_t j=0; j<N; ++j) {
+                const size_t index = i*N + j;
+                x[index] = i*h;
+                y[index] = j*h;
+                b[index] = double(0.1);
+                a[index] = double(1.5);
+            }
+        }
+
+        //->
+        #pragma omp parallel for
+        for (int i = 0; i < N; ++i) {
+            a_buffer[i] = a[i];
+            for (int j = 0; j < N; ++j) {
+                const double dx_x = x[j]-x[i];
+                const double dx_y = y[j]-x[i];
+                a_buffer[i] += a[j]*std::sqrt(dx_x*dx_x+dx_y*dx_y+b[j]*b[j]);
+            }
+        }
+        #pragma omp parallel for
+        for (int i = 0; i < N; ++i) {
+            a[i] = a_buffer[i];
+        }
+
+        /*`
+        The benchmarks are shown below. 
+
+        [$images/benchmarks/multiquadric.svg]
+         */
+        //]
+        auto t0 = Clock::now();
+        for (int r=0; r<repeats; ++r) {
+            #pragma omp parallel for
+            for (int i = 0; i < N; ++i) {
+                a_buffer[i] = a[i];
+                for (int j = 0; j < N; ++j) {
+                    const double dx_x = x[j]-x[i];
+                    const double dx_y = y[j]-x[i];
+                    a_buffer[i] += a[j]*std::sqrt(dx_x*dx_x+dx_y*dx_y+b[j]*b[j]);
+                }
+            }
+            #pragma omp parallel for
+            for (int i = 0; i < N; ++i) {
+                a[i] = a_buffer[i];
+            }
+        }
+        auto t1 = Clock::now();
+
+        std::chrono::duration<double> dt = t1 - t0;
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+        return dt.count()/repeats;
+    }
+
 
     template <unsigned int Dim>
     double multiquadric_aboria_eigen(const size_t N, const size_t repeats) {
