@@ -11,6 +11,7 @@ if [ $? -eq 0 ]; then
     git add css/\*.css
     git add images/\*.png
     git add images/\*.jpg
+    git add images/\*.svg
     git add HTML.manifest
     git commit -m "Updated documentation by TravisCI"
     git push
