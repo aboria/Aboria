@@ -38,7 +38,7 @@ MathJax.Hub.Config({
 <a name="Aboria.min"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Struct template min</span></h2>
-<p>Aboria::min &#8212; convenient functor to get a minumum value using the <a class="link" href="Accumulate.html" title="Struct template Accumulate">Accumulate</a> expression </p>
+<p>Aboria::min</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Symbolic.h</a>&gt;
@@ -48,15 +48,19 @@ MathJax.Hub.Config({
   <span class="comment">// types</span>
   <span class="keyword">typedef</span> <span class="identifier">T</span> <a name="Aboria.min.result_type"></a><span class="identifier">result_type</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="min.html#idp46973437425104-bb">public member functions</a></span>
-  <span class="identifier">T</span> <a class="link" href="min.html#idp46973437425504-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="min.html#idp47021788796336-bb">public member functions</a></span>
+  <span class="identifier">T</span> <a class="link" href="min.html#idp47021788796736-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47112201047616"></a><h2>Description</h2>
+<a name="idp47034552148624"></a><h2>Description</h2>
+<p>convenient functor to get a minumum value using the <a class="link" href="Accumulate.html" title="Struct template Accumulate">Accumulate</a> expression </p>
+<pre class="programlisting"><span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">max</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;&gt;</span> <span class="identifier">max</span><span class="special">;</span>
+</pre>
+<p> </p>
 <div class="refsect2">
-<a name="idp47112201048032"></a><h3>
-<a name="idp46973437425104-bb"></a><code class="computeroutput">min</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <a name="idp46973437425504-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> arg1<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> arg2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp47034552155360"></a><h3>
+<a name="idp47021788796336-bb"></a><code class="computeroutput">min</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <a name="idp47021788796736-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> arg1<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> arg2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>

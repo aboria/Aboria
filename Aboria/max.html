@@ -7,7 +7,7 @@
 <link rel="home" href="../index.html" title="Aboria 0.3">
 <link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">
 <link rel="prev" href="min.html" title="Struct template min">
-<link rel="next" href="GeometrySymbolic.html" title="Struct template GeometrySymbolic">
+<link rel="next" href="deep_copy.html" title="Function template deep_copy">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,13 +32,13 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="min.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="GeometrySymbolic.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="min.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="deep_copy.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.max"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Struct template max</span></h2>
-<p>Aboria::max &#8212; convenient functor to get a maximum value using the <a class="link" href="Accumulate.html" title="Struct template Accumulate">Accumulate</a> expression </p>
+<p>Aboria::max</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Symbolic.h</a>&gt;
@@ -48,15 +48,19 @@ MathJax.Hub.Config({
   <span class="comment">// types</span>
   <span class="keyword">typedef</span> <span class="identifier">T</span> <a name="Aboria.max.result_type"></a><span class="identifier">result_type</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="max.html#idp46973437430816-bb">public member functions</a></span>
-  <span class="identifier">T</span> <a class="link" href="max.html#idp46973437431216-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="max.html#idp47021788802640-bb">public member functions</a></span>
+  <span class="identifier">T</span> <a class="link" href="max.html#idp47021788803040-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47112201083904"></a><h2>Description</h2>
+<a name="idp47034552190288"></a><h2>Description</h2>
+<p>convenient functor to get a maximum value using the <a class="link" href="Accumulate.html" title="Struct template Accumulate">Accumulate</a> expression </p>
+<pre class="programlisting"><span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">min</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;&gt;</span> <span class="identifier">min</span><span class="special">;</span>
+</pre>
+<p> </p>
 <div class="refsect2">
-<a name="idp47112201084320"></a><h3>
-<a name="idp46973437430816-bb"></a><code class="computeroutput">max</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <a name="idp46973437431216-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> arg1<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> arg2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp47034552197024"></a><h3>
+<a name="idp47021788802640-bb"></a><code class="computeroutput">max</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="identifier">T</span> <a name="idp47021788803040-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> arg1<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T</span> arg2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>
@@ -66,7 +70,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="min.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="GeometrySymbolic.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="min.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="deep_copy.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

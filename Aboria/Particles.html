@@ -6,8 +6,8 @@
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.3">
 <link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Particles_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Particles.h&gt;">
-<link rel="prev" href="../LOG_CUDA.html" title="Macro LOG_CUDA">
-<link rel="next" href="Symbol.html" title="Struct template Symbol">
+<link rel="prev" href="lattice_iterator_with_hole.html" title="Class template lattice_iterator_with_hole">
+<link rel="next" href="Particles/read_into_tuple.html" title="Struct read_into_tuple">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../LOG_CUDA.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Particles_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Symbol.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="lattice_iterator_with_hole.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Particles_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Particles/read_into_tuple.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.Particles"></a><div class="titlepage"></div>
@@ -45,23 +45,23 @@ MathJax.Hub.Config({
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VAR <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="special">&gt;</span><span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> D <span class="special">=</span> <span class="number">3</span><span class="special">,</span> 
          <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span><span class="special">,</span> <span class="keyword">typename</span> <span class="special">&gt;</span> <span class="keyword">class</span> VECTOR <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span> 
-         <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="special">&gt;</span> <span class="keyword">class</span> SearchMethod <span class="special">=</span> <span class="identifier">bucket_search_serial</span><span class="special">,</span> 
+         <span class="keyword">template</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="special">&gt;</span> <span class="keyword">class</span> SearchMethod <span class="special">=</span> <a class="link" href="bucket_search_serial.html" title="Class template bucket_search_serial">bucket_search_serial</a><span class="special">,</span> 
          <span class="keyword">typename</span> TRAITS_USER <span class="special">=</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a><span class="special">&lt;</span><span class="identifier">VECTOR</span><span class="special">&gt;</span> <span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="Particles.html" title="Class template Particles">Particles</a> <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// <a class="link" href="Particles.html#Aboria.Particlestypes">types</a></span>
-  <span class="keyword">typedef</span> <a class="link" href="Particles.html" title="Class template Particles">Particles</a><span class="special">&lt;</span> <span class="identifier">VAR</span><span class="special">,</span> <span class="identifier">D</span><span class="special">,</span> <span class="identifier">VECTOR</span><span class="special">,</span> <span class="identifier">SearchMethod</span><span class="special">,</span> <span class="identifier">TRAITS_USER</span> <span class="special">&gt;</span> <a name="Aboria.Particles.particles_type"></a><span class="identifier">particles_type</span><span class="special">;</span> 
-  <span class="keyword">typedef</span> <a class="link" href="TraitsCommon.html" title="Struct template TraitsCommon">TraitsCommon</a><span class="special">&lt;</span> <span class="identifier">VAR</span><span class="special">,</span> <span class="identifier">D</span><span class="special">,</span> <span class="identifier">TRAITS_USER</span> <span class="special">&gt;</span>                    <a name="Aboria.Particles.traits_type"></a><span class="identifier">traits_type</span><span class="special">;</span>    
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">value_type</span>                                <a name="Aboria.Particles.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>       <span class="comment">// a tuple type containing a list of references to value_types for each <a class="link" href="Variable.html" title="Struct template Variable">Variable</a></span>
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">reference</span>                                 <a name="Aboria.Particles.reference"></a><span class="identifier">reference</span><span class="special">;</span>      
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">const_reference</span>                           <a name="Aboria.Particles.const_reference"></a><span class="identifier">const_reference</span><span class="special">;</span>
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">data_type</span>                                 <a name="Aboria.Particles.data_type"></a><span class="identifier">data_type</span><span class="special">;</span>        <span class="comment">// type used to hold data (tuple of vectors or similar) </span>
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">size_type</span>                                 <a name="Aboria.Particles.size_type"></a><span class="identifier">size_type</span><span class="special">;</span>        <span class="comment">// type used to hold and return size information </span>
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">size_type</span>                                 <a name="Aboria.Particles.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">iterator</span>                                  <a name="Aboria.Particles.iterator"></a><span class="identifier">iterator</span><span class="special">;</span>         <span class="comment">// non-const iterator type </span>
-  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">const_iterator</span>                            <a name="Aboria.Particles.const_iterator"></a><span class="identifier">const_iterator</span><span class="special">;</span>   <span class="comment">// const iterator type </span>
-  <span class="keyword">typedef</span> <span class="identifier">SearchMethod</span><span class="special">&lt;</span> <a class="link" href="Particles.html#Aboria.Particles.traits_type">traits_type</a> <span class="special">&gt;</span>                            <a name="Aboria.Particles.search_type"></a><span class="identifier">search_type</span><span class="special">;</span>    
-  <span class="keyword">typedef</span> <span class="identifier">search_type</span><span class="special">::</span><span class="identifier">query_type</span>                                <a name="Aboria.Particles.query_type"></a><span class="identifier">query_type</span><span class="special">;</span>     
+  <span class="keyword">typedef</span> <a class="link" href="Particles.html" title="Class template Particles">Particles</a><span class="special">&lt;</span> <span class="identifier">VAR</span><span class="special">,</span> <span class="identifier">D</span><span class="special">,</span> <span class="identifier">VECTOR</span><span class="special">,</span> <span class="identifier">SearchMethod</span><span class="special">,</span> <span class="identifier">TRAITS_USER</span> <span class="special">&gt;</span> <a name="Aboria.Particles.particles_type"></a><span class="identifier">particles_type</span><span class="special">;</span>   <span class="comment">// This type. </span>
+  <span class="keyword">typedef</span> <a class="link" href="TraitsCommon.html" title="Struct template TraitsCommon">TraitsCommon</a><span class="special">&lt;</span> <span class="identifier">VAR</span><span class="special">,</span> <span class="identifier">D</span><span class="special">,</span> <span class="identifier">TRAITS_USER</span> <span class="special">&gt;</span>                    <a class="link" href="Particles.html#Aboria.Particles.traits_type"><span class="identifier">traits_type</span></a><span class="special">;</span>    
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">value_type</span>                                <a class="link" href="Particles.html#Aboria.Particles.value_type"><span class="identifier">value_type</span></a><span class="special">;</span>     
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">reference</span>                                 <a class="link" href="Particles.html#Aboria.Particles.reference"><span class="identifier">reference</span></a><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">const_reference</span>                           <a class="link" href="Particles.html#Aboria.Particles.const_reference"><span class="identifier">const_reference</span></a><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">data_type</span>                                 <a class="link" href="Particles.html#Aboria.Particles.data_type"><span class="identifier">data_type</span></a><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">size_type</span>                                 <a class="link" href="Particles.html#Aboria.Particles.size_type"><span class="identifier">size_type</span></a><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">size_type</span>                                 <a class="link" href="Particles.html#Aboria.Particles.difference_type"><span class="identifier">difference_type</span></a><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">iterator</span>                                  <a class="link" href="Particles.html#Aboria.Particles.iterator"><span class="identifier">iterator</span></a><span class="special">;</span>       
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">const_iterator</span>                            <a class="link" href="Particles.html#Aboria.Particles.const_iterator"><span class="identifier">const_iterator</span></a><span class="special">;</span> 
+  <span class="keyword">typedef</span> <span class="identifier">SearchMethod</span><span class="special">&lt;</span> <span class="identifier">traits_type</span> <span class="special">&gt;</span>                            <a name="Aboria.Particles.search_type"></a><span class="identifier">search_type</span><span class="special">;</span>      <span class="comment">// the neighbourhood data structure that the particles will be embedded into </span>
+  <span class="keyword">typedef</span> <span class="identifier">search_type</span><span class="special">::</span><span class="identifier">query_type</span>                                <a name="Aboria.Particles.query_type"></a><span class="identifier">query_type</span><span class="special">;</span>       <span class="comment">// the query class that is associated with search_type </span>
   <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">mpl_type_vector</span>                           <a class="link" href="Particles.html#Aboria.Particles.mpl_type_vector"><span class="identifier">mpl_type_vector</span></a><span class="special">;</span>
   <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>                                            <a name="Aboria.Particles.elem_by_type"></a><span class="identifier">elem_by_type</span><span class="special">;</span>   
   <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>                                            <a name="Aboria.Particles.return_type"></a><span class="identifier">return_type</span><span class="special">;</span>    
@@ -69,50 +69,144 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">bool_d</span>                                    <a name="Aboria.Particles.bool_d"></a><span class="identifier">bool_d</span><span class="special">;</span>         
   <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">position</span>                                  <a name="Aboria.Particles.position"></a><span class="identifier">position</span><span class="special">;</span>       
 
+  <span class="comment">// member classes/structs/unions</span>
+
+  <span class="keyword">struct</span> <a class="link" href="Particles/read_into_tuple.html" title="Struct read_into_tuple">read_into_tuple</a> <span class="special">{</span>
+    <span class="comment">// types</span>
+    <span class="keyword">typedef</span> <span class="identifier">reference</span><span class="special">::</span><span class="identifier">tuple_type</span>                                                                             <a class="link" href="Particles/read_into_tuple.html#Aboria.Particles.read_into_tuple.tuple_type"><span class="identifier">tuple_type</span></a><span class="special">;</span>           
+    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span><span class="special">::</span><span class="identifier">value</span><span class="special">,</span> <span class="identifier">tuple_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a class="link" href="Particles/read_into_tuple.html#Aboria.Particles.read_into_tuple.non_ref_tuple_element"><span class="identifier">non_ref_tuple_element</span></a><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Particles/read_into_tuple.html#Aboria.Particles.read_into_tupleconstruct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="Particles/read_into_tuple.html#idp47021788584448-bb"><span class="identifier">read_into_tuple</span></a><span class="special">(</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Particles/read_into_tuple.html#idp47021788575968-bb">public member functions</a></span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_arithmetic</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/read_into_tuple.html#idp47021788576368-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <a class="link" href="is_vector.html" title="Struct template is_vector">is_vector</a><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/read_into_tuple.html#idp47021788578928-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">generator_type</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/read_into_tuple.html#idp47021788581888-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// public data members</span>
+    <span class="identifier">tuple_type</span> <span class="identifier">read_into</span><span class="special">;</span>
+    <span class="keyword">int</span> <span class="identifier">index</span><span class="special">;</span>
+    <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> <span class="identifier">datas</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+
+  <span class="keyword">struct</span> <a class="link" href="Particles/setup_datas_for_reading.html" title="Struct setup_datas_for_reading">setup_datas_for_reading</a> <span class="special">{</span>
+    <span class="comment">// <a class="link" href="Particles/setup_datas_for_reading.html#Aboria.Particles.setup_datas_for_readingconstruct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="Particles/setup_datas_for_reading.html#idp47021788592032-bb"><span class="identifier">setup_datas_for_reading</span></a><span class="special">(</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> 
+                            <span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Particles/setup_datas_for_reading.html#idp47021788589136-bb">public member functions</a></span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> <span class="keyword">void</span> <a class="link" href="Particles/setup_datas_for_reading.html#idp47021788589536-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// public data members</span>
+    <span class="identifier">size_t</span> <span class="identifier">n</span><span class="special">;</span>
+    <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> <span class="identifier">datas</span><span class="special">;</span>
+    <span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span> <span class="identifier">grid</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+
+  <span class="keyword">struct</span> <a class="link" href="Particles/setup_datas_for_writing.html" title="Struct setup_datas_for_writing">setup_datas_for_writing</a> <span class="special">{</span>
+    <span class="comment">// types</span>
+    <span class="keyword">typedef</span> <span class="identifier">reference</span><span class="special">::</span><span class="identifier">tuple_type</span>                                                                             <a class="link" href="Particles/setup_datas_for_writing.html#Aboria.Particles.setup_datas_for_writing.tuple_type"><span class="identifier">tuple_type</span></a><span class="special">;</span>           
+    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span><span class="special">::</span><span class="identifier">value</span><span class="special">,</span> <span class="identifier">tuple_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a class="link" href="Particles/setup_datas_for_writing.html#Aboria.Particles.setup_datas_for_writing.non_ref_tuple_element"><span class="identifier">non_ref_tuple_element</span></a><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Particles/setup_datas_for_writing.html#Aboria.Particles.setup_datas_for_writingconstruct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="Particles/setup_datas_for_writing.html#idp47021788604528-bb"><span class="identifier">setup_datas_for_writing</span></a><span class="special">(</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> 
+                            <span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Particles/setup_datas_for_writing.html#idp47021788598176-bb">public member functions</a></span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">mpl</span><span class="special">::</span><span class="identifier">not_</span><span class="special">&lt;</span> <a class="link" href="is_vector.html" title="Struct template is_vector">is_vector</a><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/setup_datas_for_writing.html#idp47021788598576-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <a class="link" href="is_vector.html" title="Struct template is_vector">is_vector</a><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/setup_datas_for_writing.html#idp47021788601568-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// public data members</span>
+    <span class="identifier">size_t</span> <span class="identifier">n</span><span class="special">;</span>
+    <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> <span class="identifier">datas</span><span class="special">;</span>
+    <span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span> <span class="identifier">grid</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+
+  <span class="keyword">struct</span> <a class="link" href="Particles/write_from_tuple.html" title="Struct write_from_tuple">write_from_tuple</a> <span class="special">{</span>
+    <span class="comment">// types</span>
+    <span class="keyword">typedef</span> <span class="identifier">reference</span><span class="special">::</span><span class="identifier">tuple_type</span>                                                                             <a class="link" href="Particles/write_from_tuple.html#Aboria.Particles.write_from_tuple.tuple_type"><span class="identifier">tuple_type</span></a><span class="special">;</span>           
+    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">remove_reference</span><span class="special">&lt;</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span><span class="special">::</span><span class="identifier">value</span><span class="special">,</span> <span class="identifier">tuple_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a class="link" href="Particles/write_from_tuple.html#Aboria.Particles.write_from_tuple.non_ref_tuple_element"><span class="identifier">non_ref_tuple_element</span></a><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Particles/write_from_tuple.html#Aboria.Particles.write_from_tupleconstruct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="Particles/write_from_tuple.html#idp47021788619840-bb"><span class="identifier">write_from_tuple</span></a><span class="special">(</span><span class="identifier">tuple_type</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span><span class="special">,</span> 
+                     <span class="keyword">const</span> <span class="identifier">uint32_t</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// <a class="link" href="Particles/write_from_tuple.html#idp47021788611360-bb">public member functions</a></span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_arithmetic</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/write_from_tuple.html#idp47021788611760-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <a class="link" href="is_vector.html" title="Struct template is_vector">is_vector</a><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/write_from_tuple.html#idp47021788614320-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> U<span class="special">&gt;</span> 
+      <span class="identifier">boost</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">is_same</span><span class="special">&lt;</span> <span class="identifier">non_ref_tuple_element</span><span class="special">&lt;</span> <span class="identifier">U</span> <span class="special">&gt;</span><span class="special">,</span> <span class="identifier">generator_type</span> <span class="special">&gt;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> 
+      <a class="link" href="Particles/write_from_tuple.html#idp47021788617280-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">U</span><span class="special">)</span><span class="special">;</span>
+
+    <span class="comment">// public data members</span>
+    <span class="identifier">tuple_type</span> <span class="identifier">write_from</span><span class="special">;</span>
+    <span class="keyword">int</span> <span class="identifier">index</span><span class="special">;</span>
+    <span class="identifier">uint32_t</span> <span class="identifier">seed</span><span class="special">;</span>
+    <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkFloatArray</span> <span class="special">&gt;</span> <span class="special">*</span> <span class="identifier">datas</span><span class="special">;</span>
+  <span class="special">}</span><span class="special">;</span>
+
   <span class="comment">// <a class="link" href="Particles.html#Aboria.Particlesconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="Particles.html#idp46973437364432-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Particles.html#idp46973437364896-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Particles.html#idp46973437365712-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html#Aboria.Particles.particles_type">particles_type</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Particles.html#idp46973437367312-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Particles.html#idp47021788734768-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Particles.html#idp47021788735232-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Particles.html#idp47021788736800-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">particles_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Particles.html#idp47021788737952-bb"><span class="identifier">Particles</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Particles.html#idp46973437287168-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437287568-bb"><span class="identifier">push_back</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437291104-bb"><span class="identifier">set_seed</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">uint32_t</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437292752-bb"><span class="identifier">push_back</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437295296-bb"><span class="identifier">push_back</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html#Aboria.Particles.particles_type">particles_type</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437298144-bb"><span class="identifier">pop_back</span></a><span class="special">(</span><span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="Particles.html#idp46973437300400-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">const_reference</span> <a class="link" href="Particles.html#idp46973437302816-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp46973437305232-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp46973437306512-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437307792-bb"><span class="identifier">clear</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp46973437309072-bb"><span class="identifier">erase</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp46973437312688-bb"><span class="identifier">erase</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp46973437317504-bb"><span class="identifier">insert</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437321024-bb"><span class="identifier">insert</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="Particles.html#idp47021788647936-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788648336-bb"><span class="identifier">push_back</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788651872-bb"><span class="identifier">set_seed</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">uint32_t</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788654480-bb"><span class="identifier">push_back</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788657024-bb"><span class="identifier">push_back</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">particles_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788659424-bb"><span class="identifier">pop_back</span></a><span class="special">(</span><span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="Particles.html#idp47021788661680-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">const_reference</span> <a class="link" href="Particles.html#idp47021788664096-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp47021788666512-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp47021788667792-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788669072-bb"><span class="identifier">clear</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp47021788670352-bb"><span class="identifier">erase</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp47021788673968-bb"><span class="identifier">erase</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">iterator</span> <a class="link" href="Particles.html#idp47021788678784-bb"><span class="identifier">insert</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788682304-bb"><span class="identifier">insert</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">size_type</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator<span class="special">&gt;</span> 
-    <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437325696-bb"><span class="identifier">insert</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="Particles.html#idp46973437331232-bb"><span class="identifier">size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437332512-bb"><span class="identifier">init_neighbour_search</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> 
+    <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788686976-bb"><span class="identifier">insert</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">,</span> <span class="identifier">InputIterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="Particles.html#idp47021788692512-bb"><span class="identifier">size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788693792-bb"><span class="identifier">init_neighbour_search</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> 
                              <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp46973437339824-bb"><span class="identifier">get_query</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437340784-bb"><span class="identifier">reset_neighbour_search</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">double_d</span> <a class="link" href="Particles.html#idp46973437344496-bb"><span class="identifier">correct_dx_for_periodicity</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">double</span> <a class="link" href="Particles.html#idp46973437346160-bb"><span class="identifier">get_lengthscale</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp46973437348720-bb"><span class="identifier">get_min</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp46973437351280-bb"><span class="identifier">get_max</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp46973437353840-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437356400-bb"><span class="identifier">update_positions</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437359504-bb"><span class="identifier">delete_particles</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">const</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp46973437362448-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp46973437363440-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp47021788701104-bb"><span class="identifier">get_query</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788702064-bb"><span class="identifier">reset_neighbour_search</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">double_d</span> <a class="link" href="Particles.html#idp47021788705776-bb"><span class="identifier">correct_dx_for_periodicity</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Particles.html#idp47021788707440-bb"><span class="identifier">get_lengthscale</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp47021788710000-bb"><span class="identifier">get_min</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp47021788712560-bb"><span class="identifier">get_max</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp47021788715120-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788717680-bb"><span class="identifier">update_positions</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788720784-bb"><span class="identifier">delete_particles</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp47021788723728-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a class="link" href="Particles.html#idp47021788724704-bb"><span class="identifier">get_tuple</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkUnstructuredGrid</span> <span class="special">&gt;</span> <a class="link" href="Particles.html#idp47021788725664-bb"><span class="identifier">get_grid</span></a><span class="special">(</span><span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788728736-bb"><span class="identifier">copy_to_vtk_grid</span></a><span class="special">(</span><span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788730704-bb"><span class="identifier">copy_from_vtk_grid</span></a><span class="special">(</span><span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Particles.html#idp46973437370192-bb">private member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="Particles.html#idp46973437370608-bb"><span class="identifier">enforce_domain</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">,</span> 
+  <span class="comment">// <a class="link" href="Particles.html#idp47021788740832-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="Particles.html#idp47021788741248-bb"><span class="identifier">enforce_domain</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">,</span> 
                       <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47112200250528"></a><h2>Description</h2>
+<a name="idp47034550744208"></a><h2>Description</h2>
 <p>Each particle has a 3D position and user-defined data-package (for other variables such as velocity, density etc) and is optionally embedded within a cuboidal spatial domain (for neighbourhood searches) that can be periodic or not. Each particle also has its own random number generator that is seeded via its own unique id.</p>
 <p>For example, the following creates a set of particles which each have (along with the standard variables such as position, id etc) a data package consisting of one double variable type named scalar.</p>
 <pre class="programlisting"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
@@ -127,68 +221,127 @@ MathJax.Hub.Config({
 <p>
 </p>
 <div class="refsect2">
-<a name="idp47112200268304"></a><h3>
+<a name="idp47034550761984"></a><h3>
 <a name="Aboria.Particlestypes"></a><code class="computeroutput">Particles</code> 
         public
        types</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <a class="link" href="TraitsCommon.html" title="Struct template TraitsCommon">TraitsCommon</a><span class="special">&lt;</span> <span class="identifier">VAR</span><span class="special">,</span> <span class="identifier">D</span><span class="special">,</span> <span class="identifier">TRAITS_USER</span> <span class="special">&gt;</span> <a name="Aboria.Particles.traits_type"></a><span class="identifier">traits_type</span><span class="special">;</span></p>
+<p>The traits type used to build up the Particle container. Contains Level 0 vector class and dimension information </p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">value_type</span> <a name="Aboria.Particles.value_type"></a><span class="identifier">value_type</span><span class="special">;</span></p>
+<p>a tuple type containing value_types for each <a class="link" href="Variable.html" title="Struct template Variable">Variable</a> </p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">reference</span> <a name="Aboria.Particles.reference"></a><span class="identifier">reference</span><span class="special">;</span></p>
+<p>a tuple type containing references to value_types for each <a class="link" href="Variable.html" title="Struct template Variable">Variable</a> </p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">const_reference</span> <a name="Aboria.Particles.const_reference"></a><span class="identifier">const_reference</span><span class="special">;</span></p>
+<p>a tuple type containing const_references to value_types for each <a class="link" href="Variable.html" title="Struct template Variable">Variable</a> </p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">data_type</span> <a name="Aboria.Particles.data_type"></a><span class="identifier">data_type</span><span class="special">;</span></p>
+<p>type used to hold data (a tuple of vectors) </p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">size_type</span> <a name="Aboria.Particles.size_type"></a><span class="identifier">size_type</span><span class="special">;</span></p>
+<p>type used to hold and return size information </p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">size_type</span> <a name="Aboria.Particles.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span></p>
+<p>type used to hold and return the difference of iterator, or distance between </p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">iterator</span> <a name="Aboria.Particles.iterator"></a><span class="identifier">iterator</span><span class="special">;</span></p>
+<p>non-const iterator type </p>
+<p><span class="bold"><strong>See Also:</strong></span></p>
+<p><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> </p>
+<p>
+</p>
+</li>
+<li class="listitem">
+<p>
+<span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">const_iterator</span> <a name="Aboria.Particles.const_iterator"></a><span class="identifier">const_iterator</span><span class="special">;</span></p>
+<p>const iterator type </p>
+<p><span class="bold"><strong>See Also:</strong></span></p>
+<p><a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> </p>
+<p>
+</p>
+</li>
+<li class="listitem">
 <p>
 <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">mpl_type_vector</span> <a name="Aboria.Particles.mpl_type_vector"></a><span class="identifier">mpl_type_vector</span><span class="special">;</span></p>
 <p>a boost mpl vector type containing a vector of <a class="link" href="Variable.html" title="Struct template Variable">Variable</a> attached to the particles (includes position, id and alive flag as well as all user-supplied variables) </p>
-</li></ol></div>
+</li>
+</ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47112200276240"></a><h3>
+<a name="idp47034550822784"></a><h3>
 <a name="Aboria.Particlesconstruct-copy-destruct"></a><code class="computeroutput">Particles</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><a name="idp46973437364432-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Contructs an empty container with no searching or id tracking enabled. </li>
-<li class="listitem"><pre class="literallayout"><a name="idp46973437364896-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> size<span class="special">)</span><span class="special">;</span></pre></li>
+<pre class="literallayout"><a name="idp47021788734768-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Contructs an empty container with no searching or id tracking enabled. </li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp46973437365712-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html#Aboria.Particles.particles_type">particles_type</a> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre>copy-constructor. performs deep copying of all particles </li>
+<pre class="literallayout"><a name="idp47021788735232-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> size<span class="special">)</span><span class="special">;</span></pre>Constructs a container with <code class="computeroutput">size</code> particles. </li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp46973437367312-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="identifier">iterator</span> first<span class="special">,</span> <span class="identifier">iterator</span> last<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp47021788736800-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">particles_type</span> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre>copy-constructor. performs deep copying of all particles </li>
+<li class="listitem">
+<pre class="literallayout"><a name="idp47021788737952-bb"></a><span class="identifier">Particles</span><span class="special">(</span><span class="identifier">iterator</span> first<span class="special">,</span> <span class="identifier">iterator</span> last<span class="special">)</span><span class="special">;</span></pre>
 <p>range-based copy-constructor. performs deep copying of all particles from <code class="computeroutput">first</code> to <code class="computeroutput">last</code> </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47112200300944"></a><h3>
-<a name="idp46973437287168-bb"></a><code class="computeroutput">Particles</code> public member functions</h3>
+<a name="idp47034550848256"></a><h3>
+<a name="idp47021788647936-bb"></a><code class="computeroutput">Particles</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437287568-bb"></a><span class="identifier">push_back</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> val<span class="special">,</span> <span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788648336-bb"></a><span class="identifier">push_back</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> val<span class="special">,</span> <span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
 <p>push the particle <code class="computeroutput">val</code> to the back of the container (if its within the searchable domain) </p>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437291104-bb"></a><span class="identifier">set_seed</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">uint32_t</span> value<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437292752-bb"></a><span class="identifier">push_back</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> pos<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788651872-bb"></a><span class="identifier">set_seed</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">uint32_t</span> value<span class="special">)</span><span class="special">;</span></pre>
+<p>set the base seed of the container. Note that the random number generator for each particle is set to <code class="computeroutput">value</code> plus the particle's id </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788654480-bb"></a><span class="identifier">push_back</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> pos<span class="special">)</span><span class="special">;</span></pre>
 <p>push a new particle with position <code class="computeroutput">position</code> to the back of the container </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437295296-bb"></a><span class="identifier">push_back</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Particles.html#Aboria.Particles.particles_type">particles_type</a> <span class="special">&amp;</span> particles<span class="special">)</span><span class="special">;</span></pre>push the particles in <code class="computeroutput">particles</code> to the back of the container </li>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788657024-bb"></a><span class="identifier">push_back</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">particles_type</span> <span class="special">&amp;</span> particles<span class="special">)</span><span class="special">;</span></pre>push the particles in <code class="computeroutput">particles</code> to the back of the container </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437298144-bb"></a><span class="identifier">pop_back</span><span class="special">(</span><span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>pop (delete) the particle at the end of the container </li>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788659424-bb"></a><span class="identifier">pop_back</span><span class="special">(</span><span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>pop (delete) the particle at the end of the container </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">reference</span> <a name="idp46973437300400-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> idx<span class="special">)</span><span class="special">;</span></pre>returns a reference to the particle at position <code class="computeroutput">idx</code>
+<pre class="literallayout"><span class="identifier">reference</span> <a name="idp47021788661680-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> idx<span class="special">)</span><span class="special">;</span></pre>returns a reference to the particle at position <code class="computeroutput">idx</code>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">const_reference</span> <a name="idp46973437302816-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> idx<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns a const_reference to the particle at position <code class="computeroutput">idx</code>
+<pre class="literallayout"><span class="identifier">const_reference</span> <a name="idp47021788664096-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">size_t</span> idx<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns a const_reference to the particle at position <code class="computeroutput">idx</code>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp46973437305232-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns an iterator to the beginning of the container </li>
+<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp47021788666512-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns an iterator to the beginning of the container </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp46973437306512-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns an iterator to the end of the container </li>
+<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp47021788667792-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns an iterator to the end of the container </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437307792-bb"></a><span class="identifier">clear</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>sets container to empty and deletes all particles </li>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788669072-bb"></a><span class="identifier">clear</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>sets container to empty and deletes all particles </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp46973437309072-bb"></a><span class="identifier">erase</span><span class="special">(</span><span class="identifier">iterator</span> i<span class="special">,</span> <span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp47021788670352-bb"></a><span class="identifier">erase</span><span class="special">(</span><span class="identifier">iterator</span> i<span class="special">,</span> <span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
 <p>erase the particle pointed to by the iterator <code class="computeroutput">i</code>. NOTE: This will potentially reorder the particles if neighbourhood searching is on, then this is updated </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp46973437312688-bb"></a><span class="identifier">erase</span><span class="special">(</span><span class="identifier">iterator</span> first<span class="special">,</span> <span class="identifier">iterator</span> last<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp47021788673968-bb"></a><span class="identifier">erase</span><span class="special">(</span><span class="identifier">iterator</span> first<span class="special">,</span> <span class="identifier">iterator</span> last<span class="special">)</span><span class="special">;</span></pre>
 <p>erase the particles between the iterators <code class="computeroutput">first</code> and <code class="computeroutput">last</code> </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>erase(iterator) </p>
@@ -196,19 +349,19 @@ MathJax.Hub.Config({
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp46973437317504-bb"></a><span class="identifier">insert</span><span class="special">(</span><span class="identifier">iterator</span> position<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> val<span class="special">)</span><span class="special">;</span></pre>insert a particle <code class="computeroutput">val</code> into the container at <code class="computeroutput">position</code>
+<pre class="literallayout"><span class="identifier">iterator</span> <a name="idp47021788678784-bb"></a><span class="identifier">insert</span><span class="special">(</span><span class="identifier">iterator</span> position<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> val<span class="special">)</span><span class="special">;</span></pre>insert a particle <code class="computeroutput">val</code> into the container at <code class="computeroutput">position</code>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437321024-bb"></a><span class="identifier">insert</span><span class="special">(</span><span class="identifier">iterator</span> position<span class="special">,</span> <span class="identifier">size_type</span> n<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> val<span class="special">)</span><span class="special">;</span></pre>insert a <code class="computeroutput">n</code> copies of the particle <code class="computeroutput">val</code> into the container at <code class="computeroutput">position</code>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788682304-bb"></a><span class="identifier">insert</span><span class="special">(</span><span class="identifier">iterator</span> position<span class="special">,</span> <span class="identifier">size_type</span> n<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> val<span class="special">)</span><span class="special">;</span></pre>insert a <code class="computeroutput">n</code> copies of the particle <code class="computeroutput">val</code> into the container at <code class="computeroutput">position</code>
 </li>
 <li class="listitem">
 <pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> InputIterator<span class="special">&gt;</span> 
-  <span class="keyword">void</span> <a name="idp46973437325696-bb"></a><span class="identifier">insert</span><span class="special">(</span><span class="identifier">iterator</span> position<span class="special">,</span> <span class="identifier">InputIterator</span> first<span class="special">,</span> <span class="identifier">InputIterator</span> last<span class="special">)</span><span class="special">;</span></pre>insert a range of particles pointed to by <code class="computeroutput">first</code> and <code class="computeroutput">last</code> at <code class="computeroutput">position</code>
+  <span class="keyword">void</span> <a name="idp47021788686976-bb"></a><span class="identifier">insert</span><span class="special">(</span><span class="identifier">iterator</span> position<span class="special">,</span> <span class="identifier">InputIterator</span> first<span class="special">,</span> <span class="identifier">InputIterator</span> last<span class="special">)</span><span class="special">;</span></pre>insert a range of particles pointed to by <code class="computeroutput">first</code> and <code class="computeroutput">last</code> at <code class="computeroutput">position</code>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp46973437331232-bb"></a><span class="identifier">size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return the total number of particles in the container </li>
+<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47021788692512-bb"></a><span class="identifier">size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return the total number of particles in the container </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437332512-bb"></a><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> low<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> high<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788693792-bb"></a><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> low<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> high<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">double</span> length_scale<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> periodic<span class="special">)</span><span class="special">;</span></pre>
 <p>initialise the neighbourhood searching for the particle container. The neighbourhood searching is performed over a cuboidal domain from <code class="computeroutput">low</code> to <code class="computeroutput">high</code>.</p>
@@ -248,18 +401,18 @@ MathJax.Hub.Config({
 </tr></tbody>
 </table></div>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a name="idp46973437339824-bb"></a><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a name="idp47021788701104-bb"></a><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437340784-bb"></a><span class="identifier">reset_neighbour_search</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> length_scale<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788702064-bb"></a><span class="identifier">reset_neighbour_search</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> length_scale<span class="special">)</span><span class="special">;</span></pre>
 <p>set the length scale of the neighbourhood search to be equal to <code class="computeroutput">length_scale</code> </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>init_neighbour_search() </p>
 <p>
 </p>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">double_d</span> <a name="idp46973437344496-bb"></a><span class="identifier">correct_dx_for_periodicity</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> uncorrected_dx<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">double_d</span> <a name="idp47021788705776-bb"></a><span class="identifier">correct_dx_for_periodicity</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> uncorrected_dx<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">double</span> <a name="idp46973437346160-bb"></a><span class="identifier">get_lengthscale</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp47021788707440-bb"></a><span class="identifier">get_lengthscale</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>return the length scale of the neighbourhood search </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>init_neighbour_search() </p>
@@ -267,7 +420,7 @@ MathJax.Hub.Config({
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp46973437348720-bb"></a><span class="identifier">get_min</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp47021788710000-bb"></a><span class="identifier">get_min</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>return the lower extent of the neighbourhood search </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>init_neighbour_search() </p>
@@ -275,7 +428,7 @@ MathJax.Hub.Config({
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp46973437351280-bb"></a><span class="identifier">get_max</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp47021788712560-bb"></a><span class="identifier">get_max</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>return the upper extent of the neighbourhood search </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>init_neighbour_search() </p>
@@ -283,7 +436,7 @@ MathJax.Hub.Config({
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp46973437353840-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp47021788715120-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>return the periodicty of the neighbourhood search </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>init_neighbour_search() </p>
@@ -291,7 +444,7 @@ MathJax.Hub.Config({
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437356400-bb"></a><span class="identifier">update_positions</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788717680-bb"></a><span class="identifier">update_positions</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
 <p>Update the neighbourhood search data. This function must be called after altering the particle positions (e.g. with <code class="computeroutput">set&lt;position&gt;(particle,new_position)</code>) in order for accurate neighbourhood searching </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>get_neighbours() </p>
@@ -299,7 +452,7 @@ MathJax.Hub.Config({
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437359504-bb"></a><span class="identifier">delete_particles</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788720784-bb"></a><span class="identifier">delete_particles</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span> update_neighbour_search <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
 <p>deletes all particles with alive==false from the container NOTE: this will reorder the particles in the container, invalidating any iterators 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -322,15 +475,30 @@ MathJax.Hub.Config({
 </tr></tbody>
 </table></div>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="keyword">const</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a name="idp46973437362448-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">CUDA_HOST_DEVICE</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a name="idp46973437363440-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a name="idp47021788723728-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">data_type</span><span class="special">::</span><span class="identifier">tuple_type</span> <span class="special">&amp;</span> <a name="idp47021788724704-bb"></a><span class="identifier">get_tuple</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">vtkSmartPointer</span><span class="special">&lt;</span> <span class="identifier">vtkUnstructuredGrid</span> <span class="special">&gt;</span> <a name="idp47021788725664-bb"></a><span class="identifier">get_grid</span><span class="special">(</span><span class="keyword">bool</span> refresh <span class="special">=</span> <span class="keyword">false</span><span class="special">)</span><span class="special">;</span></pre>
+<p>get a vtk unstructured grid version of the particle container This grid is cached internally. The first time this function is called the grid is created and updated with the particle data. If the particle data is updated subsequently you need to set <code class="computeroutput">refresh=true</code> for the grid to be updated </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788728736-bb"></a><span class="identifier">copy_to_vtk_grid</span><span class="special">(</span><span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span> grid<span class="special">)</span><span class="special">;</span></pre>copy the particle data to a VTK unstructured grid </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788730704-bb"></a><span class="identifier">copy_from_vtk_grid</span><span class="special">(</span><span class="identifier">vtkUnstructuredGrid</span> <span class="special">*</span> grid<span class="special">)</span><span class="special">;</span></pre>
+<p>update the particle data according to a supplied VTK unstructured grid it is assumed that <code class="computeroutput">grid</code> has been generated from copy_to_vtk_grid() or get_grid() </p>
+<p><span class="bold"><strong>See Also:</strong></span></p>
+<p>get_grid() </p>
+<p>copy_to_vtk_grid() </p>
+<p>
+</p>
+</li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47112200531952"></a><h3>
-<a name="idp46973437370192-bb"></a><code class="computeroutput">Particles</code> private member functions</h3>
+<a name="idp47034551102928"></a><h3>
+<a name="idp47021788740832-bb"></a><code class="computeroutput">Particles</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp46973437370608-bb"></a><span class="identifier">enforce_domain</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> low<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> high<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788741248-bb"></a><span class="identifier">enforce_domain</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> low<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> high<span class="special">,</span> 
                     <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> periodic<span class="special">,</span> 
                     <span class="keyword">const</span> <span class="keyword">bool</span> remove_deleted_particles <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
 <p>enforce a cuboidal domain. Any particles outside this domain for non-periodic dimensions will have alive set to false. For periodic dimensions the particle will be placed accordingly back within the domain 
@@ -378,7 +546,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../LOG_CUDA.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Particles_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Symbol.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="lattice_iterator_with_hole.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Particles_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Particles/read_into_tuple.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

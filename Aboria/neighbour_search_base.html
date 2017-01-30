@@ -1,0 +1,141 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template neighbour_search_base</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.3">
+<link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">
+<link rel="prev" href="iterator_range.html" title="Struct template iterator_range">
+<link rel="next" href="ranges_iterator.html" title="Class template ranges_iterator">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="iterator_range.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="ranges_iterator.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.neighbour_search_base"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template neighbour_search_base</span></h2>
+<p>Aboria::neighbour_search_base</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">,</span> <span class="keyword">typename</span> Traits<span class="special">,</span> <span class="keyword">typename</span> Params<span class="special">,</span> 
+         <span class="keyword">typename</span> ConstIterator<span class="special">,</span> <span class="keyword">typename</span> QueryType<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="neighbour_search_base.html" title="Class template neighbour_search_base">neighbour_search_base</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">ConstIterator</span>    <a name="Aboria.neighbour_search_base.query_iterator"></a><span class="identifier">query_iterator</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">QueryType</span>        <a name="Aboria.neighbour_search_base.query_type"></a><span class="identifier">query_type</span><span class="special">;</span>    
+  <span class="keyword">typedef</span> <span class="identifier">Params</span>           <a name="Aboria.neighbour_search_base.params_type"></a><span class="identifier">params_type</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">position</span> <a name="Aboria.neighbour_search_base.position"></a><span class="identifier">position</span><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a name="Aboria.neighbour_search_base.double_d"></a><span class="identifier">double_d</span><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">bool_d</span>   <a name="Aboria.neighbour_search_base.bool_d"></a><span class="identifier">bool_d</span><span class="special">;</span>        
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">iterator</span> <a name="Aboria.neighbour_search_base.iterator"></a><span class="identifier">iterator</span><span class="special">;</span>      
+
+  <span class="comment">// <a class="link" href="neighbour_search_base.html#Aboria.neighbour_search_baseconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="neighbour_search_base.html#idp47021788448640-bb"><span class="identifier">neighbour_search_base</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="neighbour_search_base.html#idp47021788422288-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">Derived</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp47021788422688-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">Derived</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp47021788423648-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp47021788424608-bb"><span class="identifier">set_domain</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">,</span> 
+                  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp47021788429760-bb"><span class="identifier">embed_points</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp47021788433808-bb"><span class="identifier">update_iterators</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp47021788436144-bb"><span class="identifier">add_points_at_end</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp47021788439168-bb"><span class="identifier">copy_points</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp47021788441504-bb"><span class="identifier">delete_points_at_end</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp47021788443840-bb"><span class="identifier">get_query</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp47021788444800-bb"><span class="identifier">get_min</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp47021788445760-bb"><span class="identifier">get_max</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp47021788446720-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp47021788447680-bb"><span class="identifier">get_min_bucket_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="neighbour_search_base.html#idp47021788448768-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp47021788449168-bb"><span class="identifier">unordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp47034549112480"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idp47034549112896"></a><h3>
+<a name="Aboria.neighbour_search_baseconstruct-copy-destruct"></a><code class="computeroutput">neighbour_search_base</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47021788448640-bb"></a><span class="identifier">neighbour_search_base</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp47034549118832"></a><h3>
+<a name="idp47021788422288-bb"></a><code class="computeroutput">neighbour_search_base</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">Derived</span> <span class="special">&amp;</span> <a name="idp47021788422688-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">Derived</span> <span class="special">&amp;</span> <a name="idp47021788423648-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788424608-bb"></a><span class="identifier">set_domain</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> min_in<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> max_in<span class="special">,</span> 
+                <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> periodic_in<span class="special">,</span> 
+                <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> min_bucket_side_length<span class="special">,</span> 
+                <span class="keyword">const</span> <span class="keyword">bool</span> not_in_constructor <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>
+<p>resets the domain extents, periodicity and bucket size 
+</p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788429760-bb"></a><span class="identifier">embed_points</span><span class="special">(</span><span class="identifier">iterator</span> begin<span class="special">,</span> <span class="identifier">iterator</span> end<span class="special">)</span><span class="special">;</span></pre>
+<p>embed a set of points into the buckets, assigning each 3D point into the bucket that contains that point. Any points already assigned to the buckets are removed. 
+</p>
+<p><span class="bold"><strong>See Also:</strong></span></p>
+<p>embed_points_incremental() </p>
+<p>
+</p>
+</li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788433808-bb"></a><span class="identifier">update_iterators</span><span class="special">(</span><span class="identifier">iterator</span> begin<span class="special">,</span> <span class="identifier">iterator</span> end<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788436144-bb"></a><span class="identifier">add_points_at_end</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span> start_adding<span class="special">,</span> 
+                       <span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span> end<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788439168-bb"></a><span class="identifier">copy_points</span><span class="special">(</span><span class="identifier">iterator</span> copy_from_iterator<span class="special">,</span> <span class="identifier">iterator</span> copy_to_iterator<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47021788441504-bb"></a><span class="identifier">delete_points_at_end</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">iterator</span> <span class="special">&amp;</span> end<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a name="idp47021788443840-bb"></a><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp47021788444800-bb"></a><span class="identifier">get_min</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp47021788445760-bb"></a><span class="identifier">get_max</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp47021788446720-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp47021788447680-bb"></a><span class="identifier">get_min_bucket_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp47034549224352"></a><h3>
+<a name="idp47021788448768-bb"></a><code class="computeroutput">neighbour_search_base</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp47021788449168-bb"></a><span class="identifier">unordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="iterator_range.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="ranges_iterator.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
