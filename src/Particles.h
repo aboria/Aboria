@@ -141,28 +141,56 @@ template<typename VAR=std::tuple<>, unsigned int D=3, template <typename,typenam
 class Particles {
 public:
 
+    ///
+    /// This type
     typedef Particles<VAR,D,VECTOR,SearchMethod,TRAITS_USER> particles_type;
 
+    ///
+    /// The traits type used to build up the Particle container.
+    /// Contains Level 0 vector class and dimension information
     typedef TraitsCommon<VAR,D,TRAITS_USER> traits_type;
 
-    /// a tuple type containing a list of references to value_types for each Variable
+    /// 
+    /// a tuple type containing value_types for each Variable
     typedef typename traits_type::value_type value_type;
 
+    /// 
+    /// a tuple type containing references to value_types for each Variable
     typedef typename traits_type::reference reference;
+
+    /// 
+    /// a tuple type containing const_references to value_types for each Variable
     typedef typename traits_type::const_reference const_reference;
 
    
-    /// type used to hold data (tuple of vectors or similar)
+    /// 
+    /// type used to hold data (a tuple of vectors)
     typedef typename traits_type::data_type data_type;
+
+    /// 
     /// type used to hold and return size information
     typedef typename traits_type::size_type size_type;
+
+    /// 
+    /// type used to hold and return the difference of iterator, or distance between
     typedef typename traits_type::size_type difference_type;
+
+    /// 
     /// non-const iterator type
+    /// \see zip_iterator
     typedef typename traits_type::iterator iterator;
+
+    /// 
     /// const iterator type
+    /// \see zip_iterator
     typedef typename traits_type::const_iterator const_iterator;
 
+    ///
+    /// the neighbourhood data structure that the particles will be embedded into
     typedef SearchMethod<traits_type> search_type;
+
+    ///
+    /// the query class that is associated with search_type
     typedef typename search_type::query_type query_type;
 
     /// a boost mpl vector type containing a vector of Variable 
@@ -174,9 +202,6 @@ public:
     using elem_by_type = detail::get_elem_by_type<T,mpl_type_vector>;
     template <typename T>
     using return_type = typename detail::getter_helper<typename data_type::tuple_type>::template return_type<elem_by_type<T>::index>;
-
-
-
 
     typedef typename traits_type::double_d double_d;
     typedef typename traits_type::bool_d bool_d;
@@ -190,6 +215,7 @@ public:
         seed(time(NULL))
     {}
 
+    /// Constructs a container with `size` particles
     Particles(const size_t size):
         next_id(0),
         searchable(false),
@@ -225,7 +251,6 @@ public:
         if (searchable) embed_points(begin(),end());
     }
 
-
     
     //
     // STL Container
@@ -255,6 +280,8 @@ public:
 
     }
 
+    /// set the base seed of the container. Note that the random number generator for
+    /// each particle is set to \p value plus the particle's id
     void set_seed(const uint32_t value) {
         seed = value;
         for (size_t i=0; i<size(); ++i) {

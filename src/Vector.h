@@ -55,15 +55,28 @@ struct is_vector: std::false_type {};
 template <typename T, unsigned int N>
 struct is_vector<Vector<T,N>>: std::true_type {};
 
+/// \brief An N-dimensional vector class
+///
+///  Normal C++ operators ('*','/','<' etc.) operate on this vector
+///  class in an element-wise fashion.
+///
+///  \param T the base type of each element of the vector
+///  \param N the dimension of the vector (i.e. how many elements)
+///
 template<typename T,unsigned int N>
 class Vector {
 public:
 	typedef T value_type;
 	const static int size = N;
 
+    /// Constructs an vector and allocates memory
     CUDA_HOST_DEVICE
 	Vector() {}
 
+    /// Constructs an vector with initial values.
+    ///
+    /// \param arg1 All the elements of the vector are set to
+    /// this value
     CUDA_HOST_DEVICE
 	Vector(T arg1) {
         for (unsigned int i=0; i<N; i++) {
@@ -71,12 +84,21 @@ public:
         }
 	}
 
+    /// Constructs an vector with initial values.
+    ///
+    /// \param arg1 The first element is set to this value
+    /// \param arg2 The second element is set to this value
     CUDA_HOST_DEVICE
 	Vector(T arg1,T arg2) {
 		mem[0] = arg1;
 		mem[1] = arg2;
 	}
 
+    /// Constructs an vector with initial values.
+    ///
+    /// \param arg1 The first element is set to this value
+    /// \param arg2 The second element is set to this value
+    /// \param arg3 The third element is set to this value
     CUDA_HOST_DEVICE
 	Vector(T arg1,T arg2,T arg3) {
 		mem[0] = arg1;
@@ -84,6 +106,12 @@ public:
 		mem[2] = arg3;
 	}
 
+    /// Constructs an vector with initial values.
+    ///
+    /// \param arg1 The first element is set to this value
+    /// \param arg2 The second element is set to this value
+    /// \param arg3 The third element is set to this value
+    /// \param arg4 The fourth element is set to this value
     CUDA_HOST_DEVICE
 	Vector(T arg1,T arg2,T arg3,T arg4) {
 		mem[0] = arg1;
@@ -92,6 +120,9 @@ public:
 		mem[3] = arg4;
 	}
 
+    /// Vector copy-constructor
+    ///
+    /// \param arg constructs a vector as a copy of this arguement
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector(const Vector<T2,N> &arg) {
@@ -100,6 +131,11 @@ public:
 		}
 	}
 
+    /// Vector assignment
+    ///
+    /// Assigns a vector with different type `T2` but same length `N` to this vector
+    ///
+    /// \param arg Assigns the first N values from arg to this vector.
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector<T,N> &operator =(Vector<T2,N> &arg) {
@@ -109,6 +145,11 @@ public:
 		return *this;
 	}
 
+    /// Other Vector assignment
+    ///
+    /// Assigns a vector-like object (arg) to this vector.
+    ///
+    /// \param arg Vector-like object (with index operator)
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector<T,N> &operator =(T2 *arg) {
@@ -118,17 +159,30 @@ public:
 		return *this;
 	}
 
-
+    /// const Index operator
+    ///
+    /// Returns a const reference to the `n`-th element of the vector
+    ///
+    /// \param n the element number to index
     CUDA_HOST_DEVICE
 	const T &operator[](unsigned int n) const {
 		return mem[n];
 	}
 
+    /// Index operator
+    ///
+    /// Returns a reference to the `n`-th element of the vector
+    ///
+    /// \param n the element number to index
     CUDA_HOST_DEVICE
 	T &operator[](unsigned int n) {
 		return mem[n];
 	}
 
+    /// inner product
+    ///
+    /// \return the inner product (dot product) of this vector
+    /// with `arg`
 	template<typename T2>
     CUDA_HOST_DEVICE
 	double inner_product(const Vector<T2,N> &arg) const {
@@ -139,6 +193,10 @@ public:
 		return ret;
 	}
 
+    /// change vector type
+    ///
+    /// \return A new vector with each element `static_cast` to
+    /// `T2`
     template <typename T2>
     CUDA_HOST_DEVICE
     Vector<T2,N> cast() {
@@ -149,28 +207,40 @@ public:
 		return ret;
 	}
 
-
+    /// inner product
+    ///
+    /// \return The inner product (dot product) of this vector
+    /// with `arg`
+    ///
+    /// \see inner_product
 	template<typename T2>
     CUDA_HOST_DEVICE
 	double dot(const Vector<T2,N> &arg) const {
 		return inner_product(arg);
 	}
 
+    /// squared norm
+    /// \return the squared 2-norm of the vector $\sum_i v_i^2$
     CUDA_HOST_DEVICE
 	double squaredNorm() const {
 		double ret = 0;
 		for (int i = 0; i < N; ++i) {
-			ret += std::pow(mem[i],2);
+			ret += mem[i]*mem[i];
 		}
 		return ret;
 	}
 
 		
+    /// 2-norm
+    /// \return the 2-norm of the vector $\sqrt{\sum_i v_i^2}$
     CUDA_HOST_DEVICE
 	double norm() const {
 		return std::sqrt(squaredNorm());
 	}
 
+    // element-wise `pow` function
+    // \return a new vector with each element taken to the power of `exponent`
+    // \param exponent the exponent
 	template<typename EXP_T>
     CUDA_HOST_DEVICE
 	Vector<T,N> pow(const EXP_T exponent) {
@@ -181,6 +251,8 @@ public:
 		return n;
 	}
 
+    /// normalise vector so that its length (2-norm) equals one.
+    /// \see norm
     CUDA_HOST_DEVICE
 	void normalize() {
 		double n = norm();
@@ -189,6 +261,9 @@ public:
 		}
 	} 
 		
+    /// collapse boolean vector using `&` operator
+    /// \return the accumulated `&` of all the vectors elements, 
+    ///         i.e. v_1 & v_2 & v3 & ...
     CUDA_HOST_DEVICE
 	bool all() const {
 		bool ret = true;
@@ -198,12 +273,9 @@ public:
 		return ret;
 	}
 
-    /*
-    operator bool() const { 
-        return all();
-    }
-    */
-
+    /// collapse boolean vector using `|` operator
+    /// \return the accumulated `|` of all the vectors elements, 
+    ///         i.e. v_1 | v_2 | v3 | ...
     CUDA_HOST_DEVICE
 	bool any() const {
 		bool ret = false;
@@ -213,6 +285,8 @@ public:
 		return ret;
 	}
 
+    /// find the minimum element of the vector
+    /// \return the minimum element of the vector
     CUDA_HOST_DEVICE
 	T minCoeff() const {
 		T min = mem[0];
@@ -224,6 +298,8 @@ public:
 		return min;
 	}
 
+    /// find the maximum element of the vector
+    /// \return the maximum element of the vector
     CUDA_HOST_DEVICE
 	T maxCoeff() const {
 		T max = mem[0];
@@ -235,6 +311,7 @@ public:
 		return max;
 	}
 
+    /// returns the product of every element in the vector
     CUDA_HOST_DEVICE
 	T prod() const {
 		T ret = 1;
@@ -244,6 +321,7 @@ public:
 		return ret;
 	}
 
+    /// returns the raw memory array containing the data for the vector
     CUDA_HOST_DEVICE
 	T *data() {
 		return mem;
@@ -252,6 +330,7 @@ private:
 	T mem[N];
 };
 
+/// returns arg.pow(exponent)
 template<typename T, unsigned int N, typename EXP_T>
 CUDA_HOST_DEVICE
 Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
@@ -281,7 +360,9 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
         return ret; \
     } \
 
+/// unary `-` operator for Vector class
 UNARY_OPERATOR(-)
+
 
 #define OPERATOR(the_op) \
     template<typename T1,typename T2,unsigned int N> \
@@ -341,9 +422,13 @@ UNARY_OPERATOR(-)
     } \
 
 
+/// binary `+` operator for Vector class
 OPERATOR(+)
+/// binary `-` operator for Vector class
 OPERATOR(-)
+/// binary `/` operator for Vector class
 OPERATOR(/)
+/// binary `*` operator for Vector class
 OPERATOR(*)
 
 /*
@@ -390,11 +475,17 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
         return ret; \
     } \
 
+/// binary `>` comparison operator for Vector class
 COMPARISON(>)
+/// binary `<` comparison operator for Vector class
 COMPARISON(<)
+/// binary `<=` comparison operator for Vector class
 COMPARISON(<=)
+/// binary `>=` comparison operator for Vector class
 COMPARISON(>=)
+/// binary `==` comparison operator for Vector class
 COMPARISON(==)
+/// binary `!=` comparison operator for Vector class
 COMPARISON(!=)
 
 #define COMPOUND_ASSIGN(the_op) \
@@ -433,9 +524,13 @@ COMPARISON(!=)
     } \
 
 
+/// compound assign `+=` comparison operator for Vector class
 COMPOUND_ASSIGN(+=)
+/// compound assign `-=` comparison operator for Vector class
 COMPOUND_ASSIGN(-=)
+/// compound assign `*=` comparison operator for Vector class
 COMPOUND_ASSIGN(*=)
+/// compound assign `/=` comparison operator for Vector class
 COMPOUND_ASSIGN(/=)
 
 #define UFUNC(the_op) \
@@ -449,10 +544,14 @@ COMPOUND_ASSIGN(/=)
 		return ret; \
 	} \
 
+/// element-wise `floor` rounding function for Vector class
 UFUNC(floor)
+/// element-wise `ceil` rounding function for Vector class
 UFUNC(ceil)
+/// element-wise `round` rounding function for Vector class
 UFUNC(round)
 
+/// return arg1.norm() 
 template<typename T, int I>
 CUDA_HOST_DEVICE 
 double norm(const Vector<T,I> &arg1) {
@@ -460,6 +559,7 @@ double norm(const Vector<T,I> &arg1) {
 }
 
 
+/// return arg1.squaredNorm() 
 template<typename T, int I>
 CUDA_HOST_DEVICE 
 double squaredNorm(const Vector<T,I> &arg1) {
@@ -468,12 +568,14 @@ double squaredNorm(const Vector<T,I> &arg1) {
 
 
 
+/// external dot product for vector class (probably conflicts with symbolic dot?)
 template<typename T1, typename T2, int I>
 CUDA_HOST_DEVICE 
 double dot(const Vector<T1,I> &arg1, const Vector<T2,I> &arg2) {
 	return arg1.inner_product(arg2);
 }
 
+/// cross-product function for 3D vectors
 template<typename T>
 CUDA_HOST_DEVICE 
 Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
@@ -486,18 +588,22 @@ Vector<T,3> cross(const Vector<T,3> &arg1,const Vector<T,3> &arg2) {
 
 /* for eigen
  */
+/// returns the input Vector x (for Eigen)
 template <typename T, unsigned int N>
 CUDA_HOST_DEVICE 
 inline const Vector<T,N>& conj(const Vector<T,N>& x)  { return x; }
 
+/// returns the input Vector x (for Eigen)
 template <typename T, unsigned int N>
 CUDA_HOST_DEVICE 
 inline const Vector<T,N>& real(const Vector<T,N>& x)  { return x; }
 
+/// returns imaginary component of Vector class (i.e. 0, for Eigen)
 template <typename T, unsigned int N>
 CUDA_HOST_DEVICE 
 inline const Vector<T,N> imag(const Vector<T,N>& x)  { return 0; }
 
+/// returns new Vector made from element-wise absolute value of input arg (for Eigen)
 template <typename T, unsigned int N>
 inline const Vector<T,N> abs(const Vector<T,N>& x)  { 
 	Vector<T,N> ret;
@@ -507,15 +613,17 @@ inline const Vector<T,N> abs(const Vector<T,N>& x)  {
     return ret; 
 }
 
+/// element-wise `e_i*e_i` function for Vector class
 template <typename T, unsigned int N>
 inline const Vector<T,N> abs2(const Vector<T,N>& x)  { 
 	Vector<T,N> ret;
     for (int i; i<N; ++i) {
-        ret[i] = std::pow(x[i],2);
+        ret[i] = x[i]*x[i];
     }
     return ret; 
 }
 
+/// stream output operator for Vector class
 template<typename T,unsigned int N>
 std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 	out << "(";
@@ -526,6 +634,7 @@ std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 	return out << ")";
 }
 
+/// stream input operator for Vector class
 template<typename T,unsigned int N>
 std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     out.get();
@@ -536,30 +645,31 @@ std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     return out;
 }
 
-typedef Vector<double,1> aboria_double1;
-typedef Vector<double,2> aboria_double2;
-typedef Vector<double,3> aboria_double3;
-typedef Vector<double,4> aboria_double4;
-typedef Vector<double,5> aboria_double5;
-typedef Vector<double,6> aboria_double6;
-typedef Vector<double,7> aboria_double7;
+typedef Vector<double,1> double1;
+typedef Vector<double,2> double2;
+typedef Vector<double,3> double3;
+typedef Vector<double,4> double4;
+typedef Vector<double,5> double5;
+typedef Vector<double,6> double6;
+typedef Vector<double,7> double7;
 
-typedef Vector<int,1> aboria_int1;
-typedef Vector<int,2> aboria_int2;
-typedef Vector<int,3> aboria_int3;
-typedef Vector<int,4> aboria_int4;
-typedef Vector<int,5> aboria_int5;
-typedef Vector<int,6> aboria_int6;
-typedef Vector<int,7> aboria_int7;
+typedef Vector<int,1> int1;
+typedef Vector<int,2> int2;
+typedef Vector<int,3> int3;
+typedef Vector<int,4> int4;
+typedef Vector<int,5> int5;
+typedef Vector<int,6> int6;
+typedef Vector<int,7> int7;
 
-typedef Vector<bool,1> aboria_bool1;
-typedef Vector<bool,2> aboria_bool2;
-typedef Vector<bool,3> aboria_bool3;
-typedef Vector<bool,4> aboria_bool4;
-typedef Vector<bool,5> aboria_bool5;
-typedef Vector<bool,6> aboria_bool6;
-typedef Vector<bool,7> aboria_bool7;
+typedef Vector<bool,1> bool1;
+typedef Vector<bool,2> bool2;
+typedef Vector<bool,3> bool3;
+typedef Vector<bool,4> bool4;
+typedef Vector<bool,5> bool5;
+typedef Vector<bool,6> bool6;
+typedef Vector<bool,7> bool7;
 
+/*
 #define double1 aboria_double1
 #define double2 aboria_double2
 #define double3 aboria_double3
@@ -583,6 +693,7 @@ typedef Vector<bool,7> aboria_bool7;
 #define bool5 aboria_bool5
 #define bool6 aboria_bool6
 #define bool7 aboria_bool7
+*/
 
 }
 #endif /* VECTOR_H_ */

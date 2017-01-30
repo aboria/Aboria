@@ -15,6 +15,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Variable.h
     ../src/DataVector.h
     ../src/BucketSearchParallel.h
+    ../src/BucketSearchSerial.h
+    ../src/NeighbourSearchBase.h
     ../src/Functions.h
     ../src/Log.h
     ../src/Symbolic.h
@@ -25,15 +27,24 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Vector.h
     )
 
-  add_reference(libaboria.xml ${ABORIA_HEADERS} BOOSTBOOK boost.doxygen.reftitle="libaboria")
+  add_reference(libaboria.xml ${ABORIA_HEADERS} 
+      DOXYGEN 
+      MACRO_EXPANSION=YES
+      EXPAND_ONLY_PREDEF=YES
+      TAB_SIZE=4
+      PREDEFINED="BOOST_COMPUTE_DOXYGEN_INVOKED\" \\ \"HAVE_EIGEN HAVE_THRUST\" \\ \"HAVE_VTK\" \\ \"CUDA_HOST_DEVICE="
+      EXPAND_AS_DEFINED=UFUNC 
+      EXPAND_AS_DEFINED="COMPOUND_ASSIGN\" \"COMPARISON\" \"OPERATOR\" \"UNARY_OPERATOR"
+      BOOSTBOOK 
+      boost.doxygen.reftitle="libaboria")
   
+
     set(QBK_SOURCES
         aboria.qbk
         abstract.qbk
         introduction.qbk
         installation.qbk
         neighbourhood.qbk
-        container.qbk
         reference.qbk
         examples.qbk
         benchmarks.qbk
@@ -41,6 +52,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         symbolic.qbk
         )
     set(CPP_EXAMPLES
+        ../tests/particle_container.h
         ../tests/md.h
         ../tests/bd.h
         ../tests/dem.h

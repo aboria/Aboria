@@ -12,7 +12,10 @@
 [include abstract.qbk]
 [include introduction.qbk]
 [include installation.qbk]
-[include container.qbk]
+
+[import ../tests/particle_container.h]
+[particle_container]
+
 [include neighbourhood.qbk]
 [include symbolic.qbk]
 [include linear_algebra.qbk]

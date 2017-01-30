@@ -45,8 +45,8 @@ namespace Aboria {
     using detail::SymbolicDomain;
     
 
-    
-
+    /// returns a symbolic expression with the terminals held by value, rather than
+    /// the normal held by reference. 
     template<typename Expr>
     typename detail::symbolic_helper<Expr>::deep_copy_type
     deep_copy(Expr const &expr) {
@@ -58,7 +58,6 @@ namespace Aboria {
     /// \params expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables
     /// \return the result of the expression
     //TODO: move univariate and bivariate down here to
-    //TODO: check its a constant expression...
     template <class Expr>
     typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
@@ -67,6 +66,11 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// evaluate a given expression that depends on a single label $i$, 
+    /// for a single input particle
+    /// \params expr the expression to evaluate
+    /// \params particle_a the particle to be substituted for the label $i$
+    /// \return the result of the expression after substituting in the particle values
     template<typename Expr>  
     typename boost::enable_if<detail::is_univariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
@@ -78,6 +82,10 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// evaluate a given expression that returns a constant value (scaler or vector)
+    /// \params expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables
+    /// \params particle_a dummy arguement, not used
+    /// \return the result of the expression
     template<typename Expr, typename AnyRef>  
     typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
@@ -87,6 +95,12 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// evaluate a given expression that depends on two labels $i$ and $j$
+    /// \params expr the expression to evaluate
+    /// \params dx the shortest vector from particle_a to particle_b
+    /// \params particle_a the particle to be substituted for the label $i$
+    /// \params particle_b the particle to be substituted for the label $j$
+    /// \return the result of the expression after substituting in the particle values
     template<typename Expr>  
     typename boost::enable_if<detail::is_bivariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
@@ -102,6 +116,13 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// evaluate a given expression that depends on a single label $i$, 
+    /// for a single input particle
+    /// \params expr the expression to evaluate
+    /// \params dx dummy arguement not used
+    /// \params particle_a the particle to be substituted for the label $i$
+    /// \params particle_b dummy particle, not used
+    /// \return the result of the expression after substituting in the particle values
     template<typename Expr, typename AnyRef>  
     typename boost::enable_if<detail::is_univariate<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
@@ -117,6 +138,12 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// evaluate a given expression that returns a constant value (scalar or vector)
+    /// \params expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables
+    /// \params dx dummy argument, not used
+    /// \params particle_a dummy argument, not used
+    /// \params particle_b dummy argument, not used
+    /// \return the result of the expression
     template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
     typename boost::enable_if<detail::is_const<Expr>,
     typename detail::symbolic_helper<Expr>::result>::type
@@ -128,6 +155,8 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// returns `true` if the expression always evaluates to less than or equal
+    /// to `std::numeric_limits<double>::epsilon()`
     template <class Expr>
     typename boost::enable_if<detail::is_const<Expr>,
     bool>::type
@@ -136,6 +165,7 @@ namespace Aboria {
         return std::abs(eval(expr))<=std::numeric_limits<double>::epsilon();
     }
 
+    /// returns `false` for non constant expressions (might be not zero)
     template <class Expr>
     typename boost::enable_if<mpl::not_<detail::is_const<Expr>>,
     bool>::type
@@ -143,6 +173,7 @@ namespace Aboria {
         return false;
     }
 
+    /// returns `true` if the expression always evaluates to `false`
     template <class IfExpr>
     typename boost::enable_if<detail::is_const<IfExpr>,
     bool>::type
@@ -150,6 +181,7 @@ namespace Aboria {
         return eval(expr)==false;
     }
 
+    /// returns `false` for non constant expressions (might be not `false`)
     template <class IfExpr>
     typename boost::enable_if<mpl::not_<detail::is_const<IfExpr>>,
     bool>::type
@@ -157,6 +189,7 @@ namespace Aboria {
         return false;
     }
 
+    /// returns `true` if the expression always evaluates to `true`
     template <class IfExpr>
     typename boost::enable_if<detail::is_const<IfExpr>,
     bool>::type
@@ -164,6 +197,7 @@ namespace Aboria {
         return eval(expr)==true;
     }
 
+    /// returns `false` for non constant expressions (might be not `true`)
     template <class IfExpr>
     typename boost::enable_if<mpl::not_<detail::is_const<IfExpr>>,
     bool>::type
@@ -207,8 +241,6 @@ namespace Aboria {
             {}
     };
     */
-
-
 
 
     /// define a label with a given depth \p I that referres to a particle 
@@ -263,6 +295,10 @@ namespace Aboria {
     };
 
     
+    /// helper function to create a Dx class that refers to the shortest distance
+    /// between two particles given by labels la and lb
+    /// \see Dx
+    /// \see Label
     template<typename L1, typename L2>
     Dx<L1,L2> create_dx(L1& la, L2& lb) {
         return Dx<L1,L2>(la,lb);
@@ -325,6 +361,9 @@ namespace Aboria {
     };
 
     /// convenient functor to get a minumum value using the Accumulate expression
+    /// \code
+    ///     Accumulate<max<double>> max;
+    /// \endcode
     template <typename T>
     struct min {
         typedef T result_type;
@@ -334,6 +373,9 @@ namespace Aboria {
     };
 
     /// convenient functor to get a maximum value using the Accumulate expression
+    /// \code
+    ///     Accumulate<min<double>> min;
+    /// \endcode
     template <typename T>
     struct max {
         typedef T result_type;
@@ -342,6 +384,7 @@ namespace Aboria {
         }
     };
 
+    /*
     /// a symbolic class that refers to a Geometry class. 
     template <typename T>
     struct GeometrySymbolic
@@ -368,6 +411,7 @@ namespace Aboria {
                 : detail::SymbolicExpr<expr_type>( expr_type::make(data_type()) )
             {}
     };
+    */
 
 
 }
