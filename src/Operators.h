@@ -109,6 +109,7 @@ namespace Aboria {
 
     namespace detail {
 
+    template<typename T1=void>
     int sum() {
         return 0;
     }

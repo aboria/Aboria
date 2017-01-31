@@ -299,6 +299,7 @@ int point_to_tag(const Vector<double,D> &p, bbox<D> box, int max_level) {
   return result;
 }
 
+template <typename T=void>
 void print_tag(int tag, int max_level)
 {
   for (int level = 1 ; level <= max_level ; ++level)
