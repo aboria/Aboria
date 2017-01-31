@@ -64,6 +64,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkUnsignedCharArray.h>
 #endif
 
+#include "detail/Particles.h"
+
 
 namespace Aboria {
 namespace detail {
@@ -604,7 +606,9 @@ public:
 
         constexpr size_t dn = mpl::size<mpl_type_vector>::type::value;
         vtkSmartPointer<vtkFloatArray> datas[dn];
-        mpl::for_each<mpl::range_c<int,1,dn> > (setup_datas_for_writing(n,datas,grid));
+        mpl::for_each<mpl::range_c<int,1,dn> > (
+                detail::setup_datas_for_writing<reference>(n,datas,grid)
+                );
         points->SetNumberOfPoints(n);
         cells->Reset();
         cell_types->Reset();
@@ -624,7 +628,14 @@ public:
             cells->InsertCellPoint(index);
             cell_types->InsertNextTuple1(1);
 
-            mpl::for_each<mpl::range_c<int,1,dn> > (write_from_tuple(i.get_tuple(),index,datas,seed + uint32_t(Aboria::get<id>(i))));
+            mpl::for_each<mpl::range_c<int,1,dn> > (
+                    detail::write_from_tuple<reference>(
+                        i.get_tuple(),
+                        index,
+                        datas,
+                        seed + uint32_t(Aboria::get<id>(i))
+                        )
+                    );
         }
     }
 
@@ -646,7 +657,9 @@ public:
 
             const vtkIdType n = points->GetNumberOfPoints();
 
-            mpl::for_each<mpl::range_c<int,1,dn> > (setup_datas_for_reading(n,datas,grid));
+            mpl::for_each<mpl::range_c<int,1,dn> > (
+                    detail::setup_datas_for_reading<reference>(n,datas,grid)
+                    );
 
             this->clear();
 
@@ -657,7 +670,9 @@ public:
                 for (int d=0; d<max_d; ++d) {
                     get<position>(particle)[d] = r[d];
                 }
-                mpl::for_each<mpl::range_c<int,1,dn> > (read_into_tuple(particle.get_tuple(),j,datas));
+                mpl::for_each<mpl::range_c<int,1,dn> > (
+                        detail::read_into_tuple<reference>(particle.get_tuple(),j,datas)
+                        );
                 this->push_back(particle);
             }
         }
@@ -698,135 +713,6 @@ private:
 
 
 #ifdef HAVE_VTK
-    struct write_from_tuple {
-        typedef typename reference::tuple_type tuple_type;
-        template <typename U>
-        using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
-
-        write_from_tuple(tuple_type write_from, int index, vtkSmartPointer<vtkFloatArray>* datas, const uint32_t &seed):
-            write_from(write_from),index(index),datas(datas),seed(seed){}
-
-        template< typename U > 
-        typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
-        operator()(U i) {
-            datas[i]->SetValue(index,std::get<U::value>(write_from));
-        }
-
-        template< typename U >
-        typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
-        operator()(U i) {
-            datas[i]->SetTuple(index,std::get<U::value>(write_from).data());
-        }
-
-        template< typename U >
-        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,generator_type> >::type
-        operator()(U i) {
-            //TODO: not sure what to write here, default to original seed
-            //seed + uint32_t(Aboria::get<id>(i)
-            datas[i]->SetValue(index,seed);
-        }
-
-        tuple_type write_from;
-        int index;
-        uint32_t seed;
-        vtkSmartPointer<vtkFloatArray>* datas;
-    };
-
-    struct read_into_tuple {
-        typedef typename reference::tuple_type tuple_type;
-        template <typename U>
-        using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
-
-        read_into_tuple(tuple_type &read_into, int index, vtkSmartPointer<vtkFloatArray>* datas):
-            read_into(read_into),index(index),datas(datas){}
-
-        template< typename U > 
-        typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
-        operator()(U i) {
-            typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
-            std::get<U::value>(read_into) = datas[i]->GetValue(index);
-        }
-
-        template< typename U >
-        typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
-        operator()(U i) {
-             datas[i]->GetTuple(index,std::get<U::value>(read_into).data());
-        }
-
-        template< typename U >
-        typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,generator_type> >::type
-        operator()(U i) {
-            //TODO: not sure what to read here, abandon it for now 
-            //datas[i]->SetValue(index,seed);
-        }
-
-        tuple_type read_into;
-        int index;
-        vtkSmartPointer<vtkFloatArray>* datas;
-    };
-    
-    struct setup_datas_for_writing {
-        typedef typename reference::tuple_type tuple_type;
-        template <typename U>
-        using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
-
-
-        setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
-            n(n),datas(datas),grid(grid){}
-
-        template< typename U > 
-        typename boost::enable_if<mpl::not_<is_vector<non_ref_tuple_element<U>>>>::type
-        operator()(U i) {
-            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
-            const char *name = variable_type().name;
-            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
-            if (!datas[i]) {
-                datas[i] = vtkSmartPointer<vtkFloatArray>::New();
-                datas[i]->SetName(name);
-                grid->GetPointData()->AddArray(datas[i]);
-            }
-            typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
-            datas[i]->SetNumberOfComponents(1);
-            datas[i]->SetNumberOfTuples(n);
-        }
-
-        template< typename U > 
-        typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
-        operator()(U i) {
-            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
-            const char *name = variable_type().name;
-            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
-            if (!datas[i]) {
-                datas[i] = vtkSmartPointer<vtkFloatArray>::New();
-                datas[i]->SetName(name);
-                grid->GetPointData()->AddArray(datas[i]);
-            }
-            typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
-            datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
-            datas[i]->SetNumberOfTuples(n);
-        }
-
-        size_t n;
-        vtkSmartPointer<vtkFloatArray>* datas;
-        vtkUnstructuredGrid *grid;
-    };
-
-    struct setup_datas_for_reading {
-        setup_datas_for_reading(size_t n,vtkSmartPointer<vtkFloatArray>* datas,vtkUnstructuredGrid *grid):
-            n(n),datas(datas),grid(grid){}
-        template< typename U > void operator()(U i) {
-            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
-            const char *name = variable_type().name;
-            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
-            CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
-            CHECK(datas[i]->GetNumberOfTuples()==n,"Data array "<<name<<" has size != id array. data size = "<<datas[i]->GetNumberOfTuples()<<". id size = "<<n);
-        }
-
-        size_t n;
-        vtkSmartPointer<vtkFloatArray>* datas;
-        vtkUnstructuredGrid *grid;
-    };
-
     vtkSmartPointer<vtkUnstructuredGrid> cache_grid;
 #endif
 };

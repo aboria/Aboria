@@ -28,6 +28,7 @@ namespace Aboria {
 
 template <typename TUPLE, typename mpl_vector_type> 
 struct getter_type{
+    typedef mpl_vector_type mpl_type_vector;
     typedef TUPLE tuple_type;
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;
@@ -113,6 +114,7 @@ struct getter_type{
 template <typename mpl_vector_type, typename FirstType, typename ... OtherTypes> 
 struct getter_type<tuple_ns::tuple<FirstType*, OtherTypes...>, mpl_vector_type>{
     typedef tuple_ns::tuple<FirstType*, OtherTypes...> tuple_type;
+    typedef mpl_vector_type mpl_type_vector;
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;
     template <typename T>
