@@ -571,9 +571,9 @@ public:
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
         
-        for (size_t i=0; i<N; ++i) {
-            for (size_t j=0; j<N; ++j) {
-                const size_t index = i*N + j;
+        for (size_t i=0; i<inN; ++i) {
+            for (size_t j=0; j<inN; ++j) {
+                const size_t index = i*inN + j;
                 x[index] = i*h;
                 y[index] = j*h;
                 b[index] = double(0.1);
