@@ -91,6 +91,7 @@ namespace Aboria {
 
 
 #ifdef HAVE_VTK
+template <typename T=void>
 void vtkWriteGrid(const char *name, int timestep, vtkSmartPointer<vtkUnstructuredGrid> grid) {
     vtkSmartPointer<vtkXMLUnstructuredGridWriter> writer =
         vtkSmartPointer<vtkXMLUnstructuredGridWriter>::New();
