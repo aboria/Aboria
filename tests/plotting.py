@@ -86,11 +86,9 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
     if filename in ['vector_addition', 'daxpy']:
         plt.ylabel(r'$N / T_e$ ($\times 10^6$)')
     elif filename in ['linear_spring']:
-        plt.ylabel(r'$N^3 / T_e$ ($\times 10^6$)')
+        plt.ylabel(r'$N^2 / T_e$ ($\times 10^6$)')
     else:
         plt.ylabel(r'$N^2 / T_e$ ($\times 10^6$)')
     plt.tight_layout()
     plt.savefig(filename+'.pdf')
     plt.savefig(filename+'.svg')
-
-
