@@ -55,6 +55,7 @@ namespace Aboria {
 
 template <typename IteratorType>
 struct iterator_range {
+    typedef IteratorType iterator;
     IteratorType m_begin;
     IteratorType m_end;
     CUDA_HOST_DEVICE

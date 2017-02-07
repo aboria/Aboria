@@ -51,7 +51,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 #ifdef HAVE_EIGEN
-    template <unsigned int NI, unsigned int NJ, typename Blocks> 
+    template <unsigned int NI, unsigned int NJ, typename Blocks>
     class MatrixReplacement;
 }
 
@@ -122,13 +122,13 @@ namespace Aboria {
     }
 
     // Inheriting EigenBase should not be needed in the future.
-    template <unsigned int NI, unsigned int NJ, typename Blocks> 
+    template <unsigned int NI, unsigned int NJ, typename Blocks>
     class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks>> {
 
             typedef typename tuple_ns::tuple_element<0,Blocks>::type first_block_type;
             typedef typename tuple_ns::tuple_element<2,first_block_type>::type first_expr_type;
         public:
-    
+
             // Expose some compile-time information to Eigen:
             typedef typename detail::symbolic_helper<first_expr_type>::result_base_type Scalar;
             typedef Scalar RealScalar;
@@ -154,8 +154,8 @@ namespace Aboria {
                 return detail::sum(tuple_ns::get<1>(tuple_ns::get<J>(m_blocks)).size()...);
             }
 
-            CUDA_HOST_DEVICE 
-            Index rows() const { 
+            CUDA_HOST_DEVICE
+            Index rows() const {
                 //std::cout << "rows = " << rows_impl(detail::make_index_sequence<NI>()) << std::endl;
                 //
 #ifdef __CUDA_ARCH__
@@ -166,8 +166,8 @@ namespace Aboria {
 #endif
             }
 
-            CUDA_HOST_DEVICE 
-            Index cols() const { 
+            CUDA_HOST_DEVICE
+            Index cols() const {
                 //std::cout << "cols = " << cols_impl(detail::make_index_sequence<NJ>())<< std::endl;
 #ifdef __CUDA_ARCH__
                 ERROR_CUDA("MatrixReplacement class unusable from device code");
@@ -177,8 +177,8 @@ namespace Aboria {
 #endif
             }
 
-            CUDA_HOST_DEVICE 
-            Index innerSize() const { 
+            CUDA_HOST_DEVICE
+            Index innerSize() const {
 #ifdef __CUDA_ARCH__
                 ERROR_CUDA("MatrixReplacement class unusable from device code");
                 return 0;
@@ -187,8 +187,8 @@ namespace Aboria {
 #endif
             }
 
-            CUDA_HOST_DEVICE 
-            Index outerSize() const { 
+            CUDA_HOST_DEVICE
+            Index outerSize() const {
 #ifdef __CUDA_ARCH__
                 ERROR_CUDA("MatrixReplacement class unusable from device code");
                 return 0;
@@ -198,22 +198,22 @@ namespace Aboria {
             }
 
             template <int I>
-            Index start_col() const { 
+            Index start_col() const {
                 return cols_impl(detail::make_index_sequence<I>());
             }
 
             template <int I>
-            Index size_col() const { 
+            Index size_col() const {
                 return tuple_ns::get<1>(tuple_ns::get<I>(m_blocks)).size();
             }
 
             template <int I>
-            Index start_row() const { 
+            Index start_row() const {
                 return rows_impl(detail::make_index_sequence<I>());
             }
 
             template <int I>
-            Index size_row() const { 
+            Index size_row() const {
                 return tuple_ns::get<0>(tuple_ns::get<I*NJ>(m_blocks)).size();
             }
 
@@ -222,11 +222,11 @@ namespace Aboria {
                 assert(a_rows==0 && a_cols==0 || a_rows==rows() && a_cols==cols());
             }
 
-            template < 
+            template <
               typename particles_a_type, typename particles_b_type,
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) const {
-                
+
                 ASSERT(i>=0, "i less than zero");
                 ASSERT(j>=0, "j less than zero");
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
@@ -245,9 +245,10 @@ namespace Aboria {
                     const particles_b_type& b = tuple_ns::get<1>(block);
                     ASSERT(i < a.size(),"i greater than a.size()");
                     ASSERT(j < b.size(),"j greater than b.size()");
+                    ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
                     typename particles_a_type::const_reference ai = a[i];
                     typename particles_b_type::const_reference bj = b[j];
-                    const double_d dx = a.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                    typename particles_a_type::double_d dx = get<position>(bj)-get<position>(ai);
 
                     if (eval(if_expr,dx,ai,bj)) {
                         return eval(expr,dx,ai,bj);
@@ -260,16 +261,16 @@ namespace Aboria {
 
 
 
-            template < 
+            template <
               typename particles_b_type,
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) const {
-             
+
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
                 //to the stored constants, and if I want this to be const
                 expr_type expr = tuple_ns::get<2>(block);
                 if_expr_type if_expr = tuple_ns::get<3>(block);
-                
+
                 if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
                     return 0;
                 } else {
@@ -279,7 +280,7 @@ namespace Aboria {
                     const particles_b_type& b = tuple_ns::get<1>(block);
                     typename particles_b_type::const_reference bj = b[j];
 
-                    
+
                     if (eval(if_expr,bj)) {
                         return eval(expr,bj);
                     } else {
@@ -289,16 +290,16 @@ namespace Aboria {
 
             }
 
-            template < 
+            template <
               typename particles_a_type,
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) const {
- 
+
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
                 //to the stored constants, and if I want this to be const
                 expr_type expr = tuple_ns::get<2>(block);
                 if_expr_type if_expr = tuple_ns::get<3>(block);
-                             
+
 
                 if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
                     return 0;
@@ -308,7 +309,7 @@ namespace Aboria {
 
                     const particles_a_type& a = tuple_ns::get<0>(block);
                     typename particles_a_type::const_reference ai = a[i];
-       
+
                     if (eval(if_expr,ai)) {
                         return eval(expr,ai);
                     } else {
@@ -318,14 +319,14 @@ namespace Aboria {
 
             }
 
-            template < 
+            template <
               typename expr_type, typename if_expr_type>
             Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) const {
                 //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
                 //to the stored constants, and if I want this to be const
                 expr_type expr = tuple_ns::get<2>(block);
                 if_expr_type if_expr = tuple_ns::get<3>(block);
-                 
+
                 if (eval(if_expr)) {
                     return eval(expr);
                 } else {
@@ -336,6 +337,7 @@ namespace Aboria {
 
             template<std::size_t... I>
             Scalar coeff_impl(const Index i, const Index j, detail::index_sequence<I...>) const {
+
                 return detail::sum(
                         ((i>=start_row<I/NJ>())&&(i<start_row<I/NJ+1>())
                          &&
@@ -359,7 +361,7 @@ namespace Aboria {
             template <typename particles_a_type, typename particles_b_type,
                       typename expr_type, typename if_expr_type>
             void assemble_block_impl(const size_t startI, const size_t startJ,
-                    std::vector<Eigen::Triplet<Scalar>>& triplets, 
+                    std::vector<Eigen::Triplet<Scalar>>& triplets,
                     const tuple_ns::tuple<
                             const particles_a_type&,
                             const particles_b_type&,
@@ -407,6 +409,62 @@ namespace Aboria {
                 }
             }
 
+            template <typename particles_a_type, typename particles_b_type,
+                      typename expr_type, typename if_expr_type, typename Derived>
+            void assemble_block_impl(
+                    const Eigen::MatrixBase<Derived> &matrix,
+                    const tuple_ns::tuple<
+                            const particles_a_type&,
+                            const particles_b_type&,
+                            expr_type,if_expr_type>& block) const {
+                typedef typename particles_b_type::double_d double_d;
+                typedef typename particles_b_type::position position;
+                const particles_a_type& a = tuple_ns::get<0>(block);
+                const particles_b_type& b = tuple_ns::get<1>(block);
+
+                expr_type expr = tuple_ns::get<2>(block);
+                if_expr_type if_expr = tuple_ns::get<3>(block);
+
+                const size_t na = a.size();
+                const size_t nb = b.size();
+
+                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
+                    //zero a x b block
+                    // hack from https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
+                    const_cast< Eigen::MatrixBase<Derived>& >(matrix).setZero();
+                    return;
+                }
+
+                if (is_trivially_true(if_expr)) {
+                    //dense a x b block
+                    ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+
+                    for (size_t i=0; i<na; ++i) {
+                        typename particles_a_type::const_reference ai = a[i];
+                        for (size_t j=0; j<na; ++j) {
+                            typename particles_b_type::const_reference bj = b[j];
+                            const double_d dx = get<position>(bj)-get<position>(ai);
+                            const_cast< Eigen::MatrixBase<Derived>& >(matrix)(i,j) = eval(expr,dx,ai,bj);
+                        }
+                    }
+                } else {
+                    //sparse a x b block
+                    for (size_t i=0; i<na; ++i) {
+                        typename particles_a_type::const_reference ai = a[i];
+                        for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
+                            const double_d & dx = tuple_ns::get<1>(pairj);
+                            typename particles_b_type::const_reference bj = tuple_ns::get<0>(pairj);
+                            const size_t j = &get<position>(bj) - get<position>(b).data();
+                            if (eval(if_expr,dx,ai,bj)) {
+                                const_cast< Eigen::MatrixBase<Derived>& >(matrix)(i,j) = eval(expr,dx,ai,bj);
+                            } else {
+                                const_cast< Eigen::MatrixBase<Derived>& >(matrix)(i,j) = 0;
+                            }
+                        }
+                    }
+                }
+            }
+
             template<std::size_t... I>
             void assemble_impl(std::vector<Eigen::Triplet<Scalar>>& triplets, detail::index_sequence<I...>) const {
                 int dummy[] = { 0, (
@@ -416,17 +474,25 @@ namespace Aboria {
                 static_cast<void>(dummy);
             }
 
+
+            template<typename Derived, std::size_t... I>
+            void assemble_impl(Eigen::DenseBase<Derived>& matrix, detail::index_sequence<I...>) const {
+                int dummy[] = { 0, (
+                        assemble_block_impl(
+                            matrix.block(start_row<I/NJ>(),start_col<I%NJ>()
+                            ,start_row<I/NJ+1>(),start_col<I%NJ+1>())
+                            ,tuple_ns::get<I>(m_blocks)),void(),0)... };
+                static_cast<void>(dummy);
+            }
+
+
             template<typename Derived>
             void assemble(Eigen::DenseBase<Derived>& matrix) const {
                 const size_t na = rows();
                 const size_t nb = cols();
                 matrix.resize(na,nb);
                 CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
-                for (size_t i=0; i<na; ++i) {
-                    for (size_t j=0; j<nb; ++j) {
-                        matrix(i,j) = coeff(i,j);
-                    }
-                }
+                assemble_impl(matrix,detail::make_index_sequence<NI*NJ>());
             }
 
             void assemble(Eigen::SparseMatrix<Scalar>& matrix) {
@@ -438,7 +504,7 @@ namespace Aboria {
                 typedef Eigen::Triplet<Scalar> triplet_type;
                 std::vector<triplet_type> tripletList;
                 // TODO: can we estimate this better?
-                tripletList.reserve(na*5); 
+                tripletList.reserve(na*5);
 
                 assemble_impl(tripletList,detail::make_index_sequence<NI*NJ>());
 
@@ -475,8 +541,8 @@ namespace Aboria {
                     return (m_row == other.m_row)&&(m_col == other.m_col);
                 }
 
-                Scalar dereference() const { 
-                    return m_mat.coeff(m_row,m_col); 
+                Scalar dereference() const {
+                    return m_mat.coeff(m_row,m_col);
                 }
 
                 void increment() {
@@ -525,7 +591,7 @@ namespace Aboria {
 
     };
 
-    template <typename Dest, typename Source, 
+    template <typename Dest, typename Source,
               typename particles_a_type, typename particles_b_type,
               typename expr_type, typename if_expr_type>
     void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const tuple_ns::tuple<const particles_a_type&,const particles_b_type&,expr_type,if_expr_type>& block) {
@@ -552,7 +618,7 @@ namespace Aboria {
         if (is_trivially_true(if_expr)) {
             //std::cout << "dense a x b block" <<std::endl;
             ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
-            
+
             const size_t parallel_size = 20;
             const size_t block_size = 20;
             if (na > parallel_size) {
@@ -678,7 +744,7 @@ namespace Aboria {
 
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
     void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs) {}
-     
+
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs, typename I, typename J, typename T1, typename ... T>
     void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const tuple_ns::tuple<I,J,T1>& block, const T&... other_blocks) {
         evalTo_block(y.segment(lhs.template start_row<I::value>(),lhs.template size_row<I::value>()),
@@ -703,7 +769,7 @@ struct generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>, Rhs, Sparse
 
     typedef typename Product<Aboria::MatrixReplacement<NI,NJ,Blocks>,Rhs>::Scalar Scalar;
     template<typename Dest>
-    CUDA_HOST_DEVICE 
+    CUDA_HOST_DEVICE
     static void scaleAndAddTo(Dest& y, const Aboria::MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const Scalar& alpha) {
         // This method should implement "y += alpha * lhs * rhs" inplace,
         // however, for iterative solvers, alpha is always equal to 1, so let's not bother about it.
@@ -718,20 +784,20 @@ struct generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>, Rhs, Sparse
 }
 }
 
-namespace Aboria {    
-    template <typename A, unsigned int A_depth, 
-              typename B, unsigned int B_depth, 
+namespace Aboria {
+    template <typename A, unsigned int A_depth,
+              typename B, unsigned int B_depth,
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
     MatrixReplacement<1,1,tuple_ns::tuple<tuple_ns::tuple<const A&,const B&,
         typename detail::symbolic_helper<Expr>::deep_copy_type,
         typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
-            const Label<A_depth,A>& a, 
-            const Label<B_depth,B>& b, 
-            const Expr& expr, 
-            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
+            const Label<A_depth,A>& a,
+            const Label<B_depth,B>& b,
+            const Expr& expr,
+            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true)))
     {
-        typedef tuple_ns::tuple<const A&, const B&, 
+        typedef tuple_ns::tuple<const A&, const B&,
             typename detail::symbolic_helper<Expr>::deep_copy_type,
             typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
         return MatrixReplacement<1,1,tuple_ns::tuple<block_type>>(
@@ -742,18 +808,18 @@ namespace Aboria {
                 ));
     }
 
-    template <typename B, unsigned int B_depth, 
+    template <typename B, unsigned int B_depth,
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
     MatrixReplacement<1,1,tuple_ns::tuple<tuple_ns::tuple<const SizeOne&,const B&,
         typename detail::symbolic_helper<Expr>::deep_copy_type,
         typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
-            const One& a, 
-            const Label<B_depth,B>& b, 
-            const Expr& expr, 
-            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
+            const One& a,
+            const Label<B_depth,B>& b,
+            const Expr& expr,
+            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true)))
     {
-        typedef tuple_ns::tuple<const SizeOne&, const B&, 
+        typedef tuple_ns::tuple<const SizeOne&, const B&,
             typename detail::symbolic_helper<Expr>::deep_copy_type,
             typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
         return MatrixReplacement<1,1,tuple_ns::tuple<block_type>>(
@@ -764,18 +830,18 @@ namespace Aboria {
                 ));
     }
 
-    template <typename A, unsigned int A_depth, 
+    template <typename A, unsigned int A_depth,
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
     MatrixReplacement<1,1,tuple_ns::tuple<tuple_ns::tuple<const A&,const SizeOne&,
         typename detail::symbolic_helper<Expr>::deep_copy_type,
         typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
-            const Label<A_depth,A>& a, 
-            const One& b, 
-            const Expr& expr, 
-            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
+            const Label<A_depth,A>& a,
+            const One& b,
+            const Expr& expr,
+            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true)))
     {
-        typedef tuple_ns::tuple<const A&, const SizeOne&, 
+        typedef tuple_ns::tuple<const A&, const SizeOne&,
             typename detail::symbolic_helper<Expr>::deep_copy_type,
             typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
         return MatrixReplacement<1,1,tuple_ns::tuple<block_type>>(
@@ -791,12 +857,12 @@ namespace Aboria {
         typename detail::symbolic_helper<Expr>::deep_copy_type,
         typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
     create_eigen_operator(
-            const One& a, 
-            const One& b, 
-            const Expr& expr, 
-            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true))) 
+            const One& a,
+            const One& b,
+            const Expr& expr,
+            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true)))
     {
-        typedef tuple_ns::tuple<const SizeOne&, const SizeOne&, 
+        typedef tuple_ns::tuple<const SizeOne&, const SizeOne&,
             typename detail::symbolic_helper<Expr>::deep_copy_type,
             typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
         return MatrixReplacement<1,1,tuple_ns::tuple<block_type>>(
@@ -808,12 +874,12 @@ namespace Aboria {
     }
     /*
     create_block_eigen_operator_impl(const Blocks&... blocks) {
-        typedef 
+        typedef
         return MatrixReplacement<NI,NJ,tuple_ns::tuple<Blocks...>>(
         */
-        
+
     template <unsigned int NI, unsigned int NJ, typename ... T>
-    MatrixReplacement<NI,NJ,tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...>> 
+    MatrixReplacement<NI,NJ,tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...>>
     create_block_eigen_operator(const MatrixReplacement<1,1,T>&... operators) {
         typedef tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...> tuple_type;
         return MatrixReplacement<NI,NJ,tuple_type>(tuple_type(tuple_ns::get<0>(operators.m_blocks)...));

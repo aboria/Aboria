@@ -159,7 +159,7 @@ public:
 
     	typedef Particles<std::tuple<scalar1,scalar2>> ParticlesType;
         typedef position_d<3> position;
-       	ParticlesType particles;
+       	ParticlesType particles,augment;
 
        	double diameter = 0.1;
         double3 min(-1);
@@ -179,6 +179,7 @@ public:
         get<scalar1>(p) = 3;
         get<scalar2>(p) = 0.3;
        	particles.push_back(p);
+        augment.push_back(p);
 
 
         const size_t n = 3;
@@ -189,8 +190,9 @@ public:
         Symbol<scalar2> s2;
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
+        Label<0,ParticlesType> i(augment);
+        Label<1,ParticlesType> j(augment);
         auto dx = create_dx(a,b);
-        One one;
 
         auto A = create_eigen_operator(a,b, s1[a]);
         Eigen::VectorXd v(n);
@@ -201,9 +203,9 @@ public:
         TS_ASSERT_EQUALS(ans[1],6); 
         TS_ASSERT_EQUALS(ans[2],9); 
 
-        auto B = create_eigen_operator(a,one, s2[a]);
-        auto C = create_eigen_operator(one,b, s2[b]);
-        auto Zero = create_eigen_operator(one,one, 0.);
+        auto B = create_eigen_operator(a,j, s2[a]);
+        auto C = create_eigen_operator(i,b, s2[b]);
+        auto Zero = create_eigen_operator(i,j, 0.);
 
         auto Full = create_block_eigen_operator<2,2>(A,B,
                                                      C,Zero);
