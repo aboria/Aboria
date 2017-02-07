@@ -54,7 +54,6 @@ if (Aboria_RUN_BENCHMARKS)
         add_definitions(-DHAVE_GROMACS)
         list(APPEND Aboria_LIBRARIES "${GROMACS_LIBRARIES}")
         include_directories(${GROMACS_INCLUDE_DIRS})
-        #note, for ubuntu had to modify /usr/share/gromacs/cmake/gromacs/libgromacs.cmake
     endif()
     set(test_suites ${test_suites} SpeedTest)
 endif()
