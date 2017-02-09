@@ -53,7 +53,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "BucketSearchParallel.h"
 #include "PrintTuple.h"
 #include "DataVector.h"
+
 #include "Symbolic.h"
+#include "detail/Evaluate.h"
+#include "detail/Expressions.h"
+
 #include "Assemble.h"
 #include "Functions.h"
 #include "Operators.h"

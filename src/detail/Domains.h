@@ -35,75 +35,33 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-#ifndef SYMBOLIC_DETAIL_H_
-#define SYMBOLIC_DETAIL_H_
+#ifndef DOMAINS_DETAIL_H_
+#define DOMAINS_DETAIL_H_
 
-
-#include <boost/mpl/bool.hpp>
-#include <boost/mpl/assert.hpp>
-#include "boost/mpl/and.hpp"
-#include <boost/mpl/greater.hpp>
-#include <boost/mpl/equal.hpp>
-#include <boost/fusion/include/cons.hpp>
-#include <boost/fusion/include/pair.hpp>
-//#include <boost/fusion/include/vector.hpp>
-#include <boost/fusion/include/remove_if.hpp>
-#include <boost/fusion/include/make_list.hpp>
-#include <boost/fusion/include/make_map.hpp>
-#include <boost/proto/core.hpp>
-#include <boost/proto/context.hpp>
-#include <boost/proto/traits.hpp>
-#include <boost/proto/transform.hpp>
-#include <boost/proto/debug.hpp>
-#include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/ice.hpp>
-#include <boost/type_traits/is_same.hpp>
-#include <boost/utility/result_of.hpp>
-//#include <type_traits>
-#include <tuple>
-#include <map>
-
-namespace mpl = boost::mpl;
-namespace fusion = boost::fusion;
-namespace proto = boost::proto;
-using proto::_;
-using proto::N;
-
+#include "detail/Symbolic.h"
 
 namespace Aboria {
-
-    template<unsigned int I, typename P>
-    struct Label; 
-
-    namespace detail {
-
-        template<typename Expr>
-        struct SymbolicExpr;
-
-        template<typename Expr>
-        struct LabelExpr;
-
-        template<typename Expr>
-        struct GeometryExpr;
-    }
-}
-
-#include "detail/Terminal.h"
-#include "detail/Grammars.h"
-#include "detail/Contexts.h"
-#include "detail/Domains.h"
-#include "detail/Expressions.h"
-#include "detail/Evaluate.h"
-
-#include "detail/SymbolicAssignment.h"
-#include "Vector.h"
-#include "Get.h"
-#include "Random.h"
+namespace detail {
 
 
-namespace Aboria {
+    ////////////////
+    /// Domains  ///
+    ////////////////
+
+
+
+    // Tell proto how to generate expressions in the SymbolicDomain
+    struct SymbolicDomain
+        : proto::domain<proto::generator<SymbolicExpr>, SymbolicGrammar > {};
+
+    // Declare that phoenix_domain is a sub-domain of spirit_domain
+    struct LabelDomain 
+        : proto::domain<proto::generator<LabelExpr>, LabelGrammar, SymbolicDomain> {};
+
+    struct GeometryDomain 
+        : proto::domain<proto::generator<GeometryExpr>, GeometryGrammar> {};
 
 
 }
-
-#endif /* SYMBOLIC_H_ */
+}
+#endif

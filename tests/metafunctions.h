@@ -60,28 +60,28 @@ public:
         Accumulate<std::plus<double> > sum;
         Accumulate<std::plus<double3> > sumv;
 
-        static_assert(decltype(s[a].alias_check(sum(b,true,s[b])))::value,
+        static_assert(decltype(detail::alias_check(s,a,sum(b,true,s[b])))::value,
                 "should be aliased");
 
-        static_assert(decltype(s[a].alias_check(sum(b,true,1 + s[b])))::value,
+        static_assert(decltype(detail::alias_check(s,a,sum(b,true,1 + s[b])))::value,
                 "should be aliased");
 
-        static_assert(decltype(r[a].alias_check(sumv(b,true,r[b])))::value,
+        static_assert(decltype(detail::alias_check(r,a,sumv(b,true,r[b])))::value,
                 "should be aliased");
 
-        static_assert(decltype(r[a].alias_check(sumv(b,true,double3(1,2,3) + dx)))::value,
+        static_assert(decltype(detail::alias_check(r,a,sumv(b,true,double3(1,2,3) + dx)))::value,
                 "should be aliased");
 
-        static_assert(!decltype(s[a].alias_check(sum(b,true,s[a])))::value,
+        static_assert(!decltype(detail::alias_check(s,a,sum(b,true,s[a])))::value,
                 "should not be aliased");
 
-        static_assert(!decltype(s[a].alias_check(sum(b,true,norm(dx))))::value,
+        static_assert(!decltype(detail::alias_check(s,a,sum(b,true,norm(dx))))::value,
                 "should not be aliased");
 
-        static_assert(!decltype(s[a].alias_check(s[a]))::value,
+        static_assert(!decltype(detail::alias_check(s,a,s[a]))::value,
                 "should not be aliased");
 
-        static_assert(!decltype(s[a].alias_check(s[a] + r[a][1]))::value,
+        static_assert(!decltype(detail::alias_check(s,a,s[a] + r[a][1]))::value,
                 "should not be aliased");
 
     }

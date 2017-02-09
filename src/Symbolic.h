@@ -88,7 +88,9 @@ namespace Aboria {
     /// \return the result of the expression
     template<typename Expr, typename AnyRef>  
     typename boost::enable_if<detail::is_const<Expr>,
-    typename detail::symbolic_helper<Expr>::result>::type
+    typename detail::symbolic_helper<Expr>::result_base_type const &>::type
+    // why do I need this?, should be
+    // typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr, 
             const AnyRef& particle_a) {
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
@@ -214,6 +216,8 @@ namespace Aboria {
 
             /// type of the (terminal) expression used to express Symbol
             typedef typename proto::terminal<detail::symbolic<T> >::type expr_type;
+            /// the underlying Variable type
+            typedef T variable_type;
             /// value_type of the underlying Variable type
             typedef typename T::value_type value_type;
             /// type of internal data class used to store Symbol information (e.g. buffering)

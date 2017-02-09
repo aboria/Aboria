@@ -102,7 +102,7 @@ public:
 #endif
                 std::cout << "." << std::flush;
             }
-            p[i] += std::sqrt(2*D*dt)*vector(N,N,N);
+            p[i] += std::sqrt(2*D*dt)*vector(N[i],N[i],N[i]);
             p[i] += sum(b, norm(dx) < r[b],
                         -2*(r[b]/norm(dx)-1)*dx );
 

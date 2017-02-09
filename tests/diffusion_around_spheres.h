@@ -121,7 +121,7 @@ public:
 		 * Diffusion step for points and "reflect" off spheres
 		 */
 		for (int i = 0; i < timesteps; ++i) {
-			p[a_p] += std::sqrt(2*D*dt)*vector(N,N,N);
+			p[a_p] += std::sqrt(2*D*dt)*vector(N[a_p],N[a_p],N[a_p]);
             p[a_p] += sum(b_s, norm(dx) < r[b_s],
                     -2*(r[b_s]/norm(dx)-1)*dx );
             /*
