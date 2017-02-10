@@ -179,6 +179,9 @@ public:
         get<scalar1>(p) = 3;
         get<scalar2>(p) = 0.3;
        	particles.push_back(p);
+        get<scalar1>(p) = 0;
+        get<scalar2>(p) = 0;
+        get<position>(p) = double3(-diameter*1.8,0,0);
         augment.push_back(p);
 
 
@@ -194,6 +197,9 @@ public:
         Label<1,ParticlesType> j(augment);
         auto dx = create_dx(a,b);
 
+        //      1  1  1
+        // A =  2  2  2
+        //      3  3  3
         auto A = create_eigen_operator(a,b, s1[a]);
         Eigen::VectorXd v(n);
         v << 1, 1, 1;
@@ -203,16 +209,29 @@ public:
         TS_ASSERT_EQUALS(ans[1],6); 
         TS_ASSERT_EQUALS(ans[2],9); 
 
+        // B = 0.1
+        //     0.2
+        //     0.3
         auto B = create_eigen_operator(a,j, s2[a]);
+        // C = 0.1 0.2 0.3
         auto C = create_eigen_operator(i,b, s2[b]);
         auto Zero = create_eigen_operator(i,j, 0.);
 
+        //         1   1   1   0.1
+        //         2   2   2   0.2
+        // Full =  3   3   3   0.3
+        //         0.1 0.2 0.3 0
         auto Full = create_block_eigen_operator<2,2>(A,B,
                                                      C,Zero);
 
         v.resize(n+1);
         v << 1, 1, 1, 1;
         ans.resize(n+1);
+
+        //         1   1   1   0.1   1   3.1
+        //         2   2   2   0.2   1   6.2
+        // ans  =  3   3   3   0.3 * 1 = 9.3
+        //         0.1 0.2 0.3 0     1   0.6
         ans = Full*v;
         TS_ASSERT_DELTA(ans[0],3.1,std::numeric_limits<double>::epsilon()); 
         TS_ASSERT_DELTA(ans[1],6.2,std::numeric_limits<double>::epsilon()); 
@@ -234,13 +253,11 @@ public:
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
 
-        /*
-         * TODO: need to get rid of ones stuff, so won't bother testing it here
-        Eigen::SparseMatrix<double> Full_sparse(n,n);
+        Eigen::SparseMatrix<double> Full_sparse(n+1,n+1);
         Full.assemble(Full_sparse);
-        TS_ASSERT_EQUALS(Full_sparse.nonZeros(),7);
+        TS_ASSERT_EQUALS(Full_sparse.nonZeros(),15);
         for (int k=0; k<Full_sparse.outerSize(); ++k) {
-            for (SparseMatrix<double>::InnerIterator it(Full_sparse,k); it; ++it) {
+            for (Eigen::SparseMatrix<double>::InnerIterator it(Full_sparse,k); it; ++it) {
                 TS_ASSERT_EQUALS(it.value(),Full.coeff(it.row(),it.col())); 
             }
         }
@@ -250,7 +267,6 @@ public:
         for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
-        */
 
 #endif // HAVE_EIGEN
     }

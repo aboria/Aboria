@@ -69,6 +69,7 @@ public:
     	typedef Particles<std::tuple<alpha,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
        	ParticlesType knots;
+       	ParticlesType augment;
        	ParticlesType test;
 
        	const double c = 0.5;
@@ -98,6 +99,9 @@ public:
         }
 
 
+        augment.push_back(p);
+
+
         Symbol<alpha> al;
         Symbol<interpolated> interp;
         Symbol<position> r;
@@ -105,7 +109,8 @@ public:
         Label<0,ParticlesType> a(knots);
         Label<1,ParticlesType> b(knots);
         Label<0,ParticlesType> k(test);
-        One one;
+        Label<0,ParticlesType> i(augment);
+        Label<1,ParticlesType> j(augment);
         auto dx = create_dx(a,b);
         auto dx2 = create_dx(k,b);
         Accumulate<std::plus<double> > sum;
@@ -119,15 +124,15 @@ public:
                     kernel 
                 );
  
-        auto P = create_eigen_operator(a,one,
+        auto P = create_eigen_operator(a,j,
                         1.0
                 );
 
-        auto Pt = create_eigen_operator(one,b,
+        auto Pt = create_eigen_operator(i,b,
                         1.0
                 );
 
-        auto Zero = create_eigen_operator(one,one, 0.);
+        auto Zero = create_eigen_operator(i,j, 0.);
 
         auto W = create_block_eigen_operator<2,2>(G, P,
                                                   Pt,Zero);

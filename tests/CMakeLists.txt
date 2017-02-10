@@ -94,6 +94,7 @@ set(VariablesTest
 set(OperatorsTestFile operators.h)
 set(OperatorsTest
     test_Eigen
+    test_Eigen_block
     )
 
 set(ConstructorsTestFile constructors.h)

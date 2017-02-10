@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OPERATORS_H_
 
 #include <type_traits>
+#include "detail/Evaluate.h"
 #include "Symbolic.h"
 
 #ifdef HAVE_EIGEN
@@ -259,8 +260,6 @@ namespace Aboria {
 
             }
 
-
-
             template <
               typename particles_b_type,
               typename expr_type, typename if_expr_type>
@@ -373,40 +372,8 @@ namespace Aboria {
 
                 expr_type expr = tuple_ns::get<2>(block);
                 if_expr_type if_expr = tuple_ns::get<3>(block);
-
-                const size_t na = a.size();
-                const size_t nb = b.size();
-
-                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-                    //zero a x b block
-                    return;
-                }
-
-                if (is_trivially_true(if_expr)) {
-                    //dense a x b block
-                    ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
-
-                    for (size_t i=0; i<na; ++i) {
-                        typename particles_a_type::const_reference ai = a[i];
-                        for (size_t j=0; j<na; ++j) {
-                            typename particles_b_type::const_reference bj = b[j];
-                            triplets.push_back(Eigen::Triplet<Scalar>(i+startI,j+startJ,eval(expr,get<position>(bj)-get<position>(ai),ai,bj)));
-                        }
-                    }
-                } else {
-                    //sparse a x b block
-                    for (size_t i=0; i<na; ++i) {
-                        typename particles_a_type::const_reference ai = a[i];
-                        for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
-                            const double_d & dx = tuple_ns::get<1>(pairj);
-                            typename particles_b_type::const_reference bj = tuple_ns::get<0>(pairj);
-                            const size_t j = &get<position>(bj) - get<position>(b).data();
-                            if (eval(if_expr,dx,ai,bj)) {
-                                triplets.push_back(Eigen::Triplet<Scalar>(i+startI,j+startJ,eval(expr,dx,ai,bj)));
-                            }
-                        }
-                    }
-                }
+                
+                Aboria::assemble(expr,if_expr,a,b,triplets,startI,startJ);
             }
 
             template <typename particles_a_type, typename particles_b_type,
@@ -425,44 +392,7 @@ namespace Aboria {
                 expr_type expr = tuple_ns::get<2>(block);
                 if_expr_type if_expr = tuple_ns::get<3>(block);
 
-                const size_t na = a.size();
-                const size_t nb = b.size();
-
-                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-                    //zero a x b block
-                    // hack from https://eigen.tuxfamily.org/dox/TopicFunctionTakingEigenTypes.html
-                    const_cast< Eigen::MatrixBase<Derived>& >(matrix).setZero();
-                    return;
-                }
-
-                if (is_trivially_true(if_expr)) {
-                    //dense a x b block
-                    ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
-
-                    for (size_t i=0; i<na; ++i) {
-                        typename particles_a_type::const_reference ai = a[i];
-                        for (size_t j=0; j<na; ++j) {
-                            typename particles_b_type::const_reference bj = b[j];
-                            const double_d dx = get<position>(bj)-get<position>(ai);
-                            const_cast< Eigen::MatrixBase<Derived>& >(matrix)(i,j) = eval(expr,dx,ai,bj);
-                        }
-                    }
-                } else {
-                    //sparse a x b block
-                    for (size_t i=0; i<na; ++i) {
-                        typename particles_a_type::const_reference ai = a[i];
-                        for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
-                            const double_d & dx = tuple_ns::get<1>(pairj);
-                            typename particles_b_type::const_reference bj = tuple_ns::get<0>(pairj);
-                            const size_t j = &get<position>(bj) - get<position>(b).data();
-                            if (eval(if_expr,dx,ai,bj)) {
-                                const_cast< Eigen::MatrixBase<Derived>& >(matrix)(i,j) = eval(expr,dx,ai,bj);
-                            } else {
-                                const_cast< Eigen::MatrixBase<Derived>& >(matrix)(i,j) = 0;
-                            }
-                        }
-                    }
-                }
+                Aboria::assemble(expr,if_expr,a,b,matrix);
             }
 
             template<std::size_t... I>
@@ -480,7 +410,8 @@ namespace Aboria {
                 int dummy[] = { 0, (
                         assemble_block_impl(
                             matrix.block(start_row<I/NJ>(),start_col<I%NJ>()
-                            ,start_row<I/NJ+1>(),start_col<I%NJ+1>())
+                            ,start_row<I/NJ+1>()-start_row<I/NJ>()
+                            ,start_col<I%NJ+1>()-start_col<I%NJ>())
                             ,tuple_ns::get<I>(m_blocks)),void(),0)... };
                 static_cast<void>(dummy);
             }
@@ -599,72 +530,10 @@ namespace Aboria {
         typedef typename particles_b_type::position position;
         const particles_a_type& a = tuple_ns::get<0>(block);
         const particles_b_type& b = tuple_ns::get<1>(block);
-
-        //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
-        //to the stored constants, and the eval product expression in eigen assumes that your matrix
-        //replacement is a constant
         expr_type expr = tuple_ns::get<2>(block);
         if_expr_type if_expr = tuple_ns::get<3>(block);
 
-        const size_t na = a.size();
-        const size_t nb = b.size();
-
-
-        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-            //std::cout << "zero a x b block" <<std::endl;
-            return;
-        }
-
-        if (is_trivially_true(if_expr)) {
-            //std::cout << "dense a x b block" <<std::endl;
-            ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
-
-            const size_t parallel_size = 20;
-            const size_t block_size = 20;
-            if (na > parallel_size) {
-                #pragma omp parallel for
-                for (size_t i=0; i<na; ++i) {
-                    typename particles_a_type::const_reference ai = a[i];
-                    double sum = 0;
-                    for (size_t j=0; j<na; ++j) {
-                        typename particles_b_type::const_reference bj = b[j];
-                        sum += eval(expr,get<position>(bj)-get<position>(ai),ai,bj)*rhs(j);
-                    }
-                    y(i) += sum;
-                }
-            } else {
-                for (size_t i=0; i<na; ++i) {
-                    typename particles_a_type::const_reference ai = a[i];
-                    double sum = 0;
-                    for (size_t j=0; j<na; ++j) {
-                        typename particles_b_type::const_reference bj = b[j];
-                        //std::cout << "a = "<<get<position>(ai)<<" b = "<<get<position>(bj)<<std::endl;
-                        //std::cout << "using dx = "<<dx<<" rhs(j) = "<<rhs(j)<<" eval = "<<eval(expr,dx,ai,bj)<<std::endl;
-                        sum += eval(expr,get<position>(bj)-get<position>(ai),ai,bj)*rhs(j);
-                    }
-                    y(i) += sum;
-                }
-            }
-        } else {
-            //std::cout << "sparse a x b block" <<std::endl;
-            #pragma omp parallel for
-            for (size_t i=0; i<na; ++i) {
-                typename particles_a_type::const_reference ai = a[i];
-                double sum = 0;
-                //std::cout << "evaluating fucntion for particle at "<<get<position>(ai)<<std::endl;
-                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
-                    const double_d & dx = tuple_ns::get<1>(pairj);
-                    typename particles_b_type::const_reference bj = tuple_ns::get<0>(pairj);
-                    //std::cout << "looking at particle with dx = "<<dx<<std::endl;
-                    const size_t j = &get<position>(bj) - get<position>(b).data();
-                    if (eval(if_expr,dx,ai,bj)) {
-                        //std::cout <<"if expression is true. eval = "<<eval(expr,dx,ai,bj)<<std::endl;
-                        sum += eval(expr,dx,ai,bj)*rhs(j);
-                    }
-                }
-                y(i) += sum;
-            }
-        }
+        evaluate(expr,if_expr,a,b,y,rhs);
     }
 
 

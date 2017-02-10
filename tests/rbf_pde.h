@@ -70,7 +70,7 @@ public:
 
     	typedef Particles<std::tuple<alpha,boundary,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
-       	ParticlesType knots;
+       	ParticlesType knots,augment;
 
        	const double c = 0.5;
         const int max_iter = 100;
@@ -93,6 +93,7 @@ public:
                 knots.push_back(p);
             }
         }
+        augment.push_back(p);
 
         Symbol<boundary> is_b;
         Symbol<position> r;
@@ -101,7 +102,8 @@ public:
         Symbol<interpolated> interp;
         Label<0,ParticlesType> a(knots);
         Label<1,ParticlesType> b(knots);
-        One one;
+        Label<0,ParticlesType> i(augment);
+        Label<1,ParticlesType> j(augment);
         auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
 
@@ -121,19 +123,19 @@ public:
                         laplace_kernel
                     )
                 );
-        auto P = create_eigen_operator(a,one,
+        auto P = create_eigen_operator(a,j,
                     if_else(is_b[a],
                         1.0,
                         0.0
                     )
                 );
-        auto Pt = create_eigen_operator(one,b,
+        auto Pt = create_eigen_operator(i,b,
                     if_else(is_b[b],
                         1.0,
                         0.0
                     )
                 );
-        auto Zero = create_eigen_operator(one,one, 0.);
+        auto Zero = create_eigen_operator(i,j, 0.);
 
         auto W = create_block_eigen_operator<2,2>(G, P,
                                                   Pt,Zero);

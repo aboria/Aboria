@@ -93,9 +93,6 @@ namespace Aboria {
 #include "detail/Contexts.h"
 #include "detail/Domains.h"
 #include "detail/Expressions.h"
-#include "detail/Evaluate.h"
-
-#include "detail/SymbolicAssignment.h"
 #include "Vector.h"
 #include "Get.h"
 #include "Random.h"

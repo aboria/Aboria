@@ -60,7 +60,8 @@ namespace Aboria {
     //TODO: move univariate and bivariate down here to
     template <class Expr>
     typename boost::enable_if<detail::is_const<Expr>,
-    typename detail::symbolic_helper<Expr>::result>::type
+    typename detail::symbolic_helper<Expr>::result_base_type const &>::type
+    //typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr) {
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
         return proto::eval(expr,ctx);
@@ -126,7 +127,14 @@ namespace Aboria {
     /// \params particle_b dummy particle, not used
     /// \return the result of the expression after substituting in the particle values
     template<typename Expr, typename AnyRef>  
-    typename boost::enable_if<detail::is_univariate<Expr>,
+    typename boost::enable_if<
+        mpl::and_<
+            detail::is_univariate<Expr>,
+            mpl::equal_to<
+                typename detail::symbolic_helper<Expr>::label_a_type::depth
+                ,mpl::int_<0>
+                >
+            >,
     typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr, 
             const typename detail::symbolic_helper<Expr>::double_d& dx,
@@ -140,6 +148,37 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// evaluate a given expression that depends on a single label $i$, 
+    /// for a single input particle
+    /// \params expr the expression to evaluate
+    /// \params dx dummy arguement not used
+    /// \params particle_a dummy particle, not used  
+    /// \params particle_b the particle to be substituted for the label $i$
+    /// \return the result of the expression after substituting in the particle values
+    template<typename Expr, typename AnyRef>  
+    typename boost::enable_if<
+        mpl::and_<
+            detail::is_univariate<Expr>,
+            mpl::equal_to<
+                typename detail::symbolic_helper<Expr>::label_a_type::depth
+                ,mpl::int_<1>
+                >
+            >,
+    typename detail::symbolic_helper<Expr>::result>::type
+    eval(Expr &expr, 
+            const typename detail::symbolic_helper<Expr>::double_d& dx,
+            const AnyRef& particle_a, 
+            const typename detail::symbolic_helper<Expr>::particle_a_reference& particle_b) { 
+
+        typedef typename detail::symbolic_helper<Expr>::univariate_context_type ctx_type;
+        typedef typename detail::symbolic_helper<Expr>::label_a_type label_type;
+
+        ctx_type const ctx(fusion::make_map<label_type>(particle_b));
+        return proto::eval(expr,ctx);
+    }
+
+
+
     /// evaluate a given expression that returns a constant value (scalar or vector)
     /// \params expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables
     /// \params dx dummy argument, not used
@@ -148,7 +187,9 @@ namespace Aboria {
     /// \return the result of the expression
     template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
     typename boost::enable_if<detail::is_const<Expr>,
-    typename detail::symbolic_helper<Expr>::result>::type
+    typename detail::symbolic_helper<Expr>::result_base_type const &>::type
+    // why do I need this?, should be
+    //typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr, 
             const AnyDx& dx,
             const AnyRef1& particle_a, 

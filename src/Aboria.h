@@ -41,9 +41,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omp.h>
 #endif
 
+//Level1
 #include "CudaInclude.h"
 #include "Vector.h"
-//#include "Geometry.h"
 #include "Ptr.h"
 #include "Variable.h"
 #include "Traits.h"
@@ -54,15 +54,19 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "PrintTuple.h"
 #include "DataVector.h"
 
-#include "Symbolic.h"
-#include "detail/Evaluate.h"
-#include "detail/Expressions.h"
+//Level2
+#include "Search.h"
 
-#include "Assemble.h"
+//Level3
+#include "Symbolic.h"
 #include "Functions.h"
+#include "Evaluate.h"
+//TODO: seems clumsy here
+#include "detail/SymbolicAssignment.h"
+
+//other
 #include "Operators.h"
 #include "Utils.h"
-#include "Search.h"
 
 
 #endif /* ABORIA_H_ */

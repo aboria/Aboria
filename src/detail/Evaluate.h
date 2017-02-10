@@ -126,57 +126,6 @@ check_valid_assign_expr(const ParticlesType& particles, ExprRHS const & expr) {
     static_assert(!detail::is_bivariate<ExprRHS>::value,"asignment expression must be constant or univariate");
 }
 
-template<typename VariableType, typename Functor, typename ExprRHS, typename LabelType>
-void evaluate(ExprRHS const & expr, LabelType &label) {
-    typedef typename VariableType::value_type value_type;
-    typedef typename LabelType::particles_type particles_type;
-    typedef typename particles_type::position position;
-
-    typedef typename proto::matches<ExprRHS, is_not_aliased<VariableType,LabelType>>  not_aliased;
-    typedef typename LabelType::particles_type particles_type;
-
-    particles_type& particles = label.get_particles();
-
-    // check expr is a univariate expression and that it refers to the same particles container
-    check_valid_assign_expr(particles,expr);
-
-    // if aliased then need to copy to a tempory buffer first 
-    std::vector<value_type>& buffer =
-        (not_aliased::value) ?
-        get<VariableType>(particles)
-        : get<VariableType>(label.get_buffers());
-    buffer.resize(particles.size());
-
-
-    const size_t n = particles.size();
-    Functor functor;
-    #pragma omp parallel for
-    for (size_t i=0; i<n; i++) {
-        /*
-        EvalCtx<fusion::map<fusion::pair<LabelType,typename particles_type::const_reference>>> const ctx(fusion::make_map<label_type>(particles[i]));
-        buffer[i] = functor(get<VariableType>(particles)[i],proto::eval(expr,ctx));
-        */
-        buffer[i] = functor(get<VariableType>(particles)[i],eval(expr,particles[i]));
-    }
-
-    //if aliased then copy back from the buffer
-    if (not_aliased::value == false) {
-        const size_t n = particles.size();
-        #pragma omp parallel for
-        for (size_t i=0; i<n; i++) {
-            get<VariableType>(particles[i]) = buffer[i];	
-        }
-    }
-
-    if (boost::is_same<VariableType,position>::value) {
-        particles.update_positions();
-    }
-
-    if (boost::is_same<VariableType,alive>::value) {
-        particles.delete_particles();
-    }
-
-}
 
 }
 }
