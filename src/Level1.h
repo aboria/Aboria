@@ -34,24 +34,26 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#ifndef ABORIA_H_
-#define ABORIA_H_
+#ifndef LEVEL1_H_
+#define LEVEL1_H_
+
+#ifdef HAVE_OPENMP
+#include <omp.h>
+#endif
 
 //Level1
-#include "Level1.h"
-
-//Level2
-#include "Search.h"
-
-//Level3
-#include "Symbolic.h"
-#include "Functions.h"
-#include "Evaluate.h"
-//TODO: seems clumsy here
-#include "detail/SymbolicAssignment.h"
-
-//other
-#include "Operators.h"
+#include "CudaInclude.h"
+#include "Vector.h"
+#include "Ptr.h"
+#include "Variable.h"
+#include "Traits.h"
+#include "Get.h"
+#include "Particles.h"
+#include "BucketSearchSerial.h"
+#include "BucketSearchParallel.h"
+#include "PrintTuple.h"
+#include "DataVector.h"
+#include "Utils.h"
 
 
 #endif /* ABORIA_H_ */

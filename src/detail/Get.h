@@ -11,7 +11,6 @@
 #include <tuple>
 #include <type_traits>
 
-#include "Utils.h"
 
 #if defined(__CUDACC__)
 namespace thrust {
