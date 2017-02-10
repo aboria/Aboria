@@ -93,7 +93,7 @@ namespace Aboria {
             template< typename ExprRHS > \
             const SymbolicExpr &operator the_op (ExprRHS const & expr) const { \
                 BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
-                evaluate<VariableType,functor>(proto::as_expr<SymbolicDomain>(expr),mlabel); \
+                evaluate_nonlinear<VariableType,functor>(proto::as_expr<SymbolicDomain>(expr),mlabel); \
                 return *this; \
             } \
 

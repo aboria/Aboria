@@ -48,7 +48,7 @@ namespace Aboria {
 /// given by label \p label and stores the result, using the functor
 /// \p Functor, in variable with type \p VariableType
 template<typename VariableType, typename Functor, typename ExprRHS, typename LabelType>
-void evaluate(ExprRHS const & expr, LabelType &label) {
+void evaluate_nonlinear(ExprRHS const & expr, LabelType &label) {
     typedef typename VariableType::value_type value_type;
     typedef typename LabelType::particles_type particles_type;
     typedef typename particles_type::position position;
@@ -106,7 +106,7 @@ template<typename Expr,
          typename VectorLHS,
          typename VectorRHS
          >
-void evaluate(Expr &expr, 
+void evaluate_linear(Expr &expr, 
               IfExpr &if_expr,
         const ParticlesTypeA &a, 
         const ParticlesTypeB &b, 

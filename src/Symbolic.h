@@ -60,7 +60,7 @@ namespace Aboria {
     //TODO: move univariate and bivariate down here to
     template <class Expr>
     typename boost::enable_if<detail::is_const<Expr>,
-    typename detail::symbolic_helper<Expr>::result_base_type const &>::type
+    typename detail::symbolic_helper<Expr>::result_base_type const>::type
     //typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr) {
         typename detail::symbolic_helper<Expr>::const_context_type const ctx;
@@ -89,7 +89,7 @@ namespace Aboria {
     /// \return the result of the expression
     template<typename Expr, typename AnyRef>  
     typename boost::enable_if<detail::is_const<Expr>,
-    typename detail::symbolic_helper<Expr>::result_base_type const &>::type
+    typename detail::symbolic_helper<Expr>::result_base_type const>::type
     // why do I need this?, should be
     // typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr, 
@@ -187,7 +187,7 @@ namespace Aboria {
     /// \return the result of the expression
     template<typename Expr, typename AnyDx, typename AnyRef1, typename AnyRef2>  
     typename boost::enable_if<detail::is_const<Expr>,
-    typename detail::symbolic_helper<Expr>::result_base_type const &>::type
+    typename detail::symbolic_helper<Expr>::result_base_type const>::type
     // why do I need this?, should be
     //typename detail::symbolic_helper<Expr>::result>::type
     eval(Expr &expr, 

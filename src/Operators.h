@@ -90,23 +90,7 @@ struct NumTraits<Aboria::Vector<T,N>> {
 
 namespace Aboria {
 
-    struct OneDummy {
-        struct vector_tag {
-            size_t size() { return 1; }
-        };
-        vector_tag get_particles() { return d; }
-
-        vector_tag d;
-    };
-
-    struct SizeOne {
-        size_t size() const { return 1; }
-    };
-
-    struct One {
-        const SizeOne& get_size_one() const { return one; }
-        SizeOne one;
-    };
+    
 
     namespace detail {
 
@@ -260,80 +244,7 @@ namespace Aboria {
 
             }
 
-            template <
-              typename particles_b_type,
-              typename expr_type, typename if_expr_type>
-            Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) const {
-
-                //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
-                //to the stored constants, and if I want this to be const
-                expr_type expr = tuple_ns::get<2>(block);
-                if_expr_type if_expr = tuple_ns::get<3>(block);
-
-                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-                    return 0;
-                } else {
-                    typedef typename particles_b_type::double_d double_d;
-                    typedef typename particles_b_type::position position;
-
-                    const particles_b_type& b = tuple_ns::get<1>(block);
-                    typename particles_b_type::const_reference bj = b[j];
-
-
-                    if (eval(if_expr,bj)) {
-                        return eval(expr,bj);
-                    } else {
-                        return 0;
-                    }
-                }
-
-            }
-
-            template <
-              typename particles_a_type,
-              typename expr_type, typename if_expr_type>
-            Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) const {
-
-                //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
-                //to the stored constants, and if I want this to be const
-                expr_type expr = tuple_ns::get<2>(block);
-                if_expr_type if_expr = tuple_ns::get<3>(block);
-
-
-                if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-                    return 0;
-                } else {
-                    typedef typename particles_a_type::double_d double_d;
-                    typedef typename particles_a_type::position position;
-
-                    const particles_a_type& a = tuple_ns::get<0>(block);
-                    typename particles_a_type::const_reference ai = a[i];
-
-                    if (eval(if_expr,ai)) {
-                        return eval(expr,ai);
-                    } else {
-                        return 0;
-                    }
-                }
-
-            }
-
-            template <
-              typename expr_type, typename if_expr_type>
-            Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) const {
-                //TODO: Have to copy the expressions (I think), since proto returns a non-const reference
-                //to the stored constants, and if I want this to be const
-                expr_type expr = tuple_ns::get<2>(block);
-                if_expr_type if_expr = tuple_ns::get<3>(block);
-
-                if (eval(if_expr)) {
-                    return eval(expr);
-                } else {
-                    return 0;
-                }
-
-            }
-
+            
             template<std::size_t... I>
             Scalar coeff_impl(const Index i, const Index j, detail::index_sequence<I...>) const {
 
@@ -533,82 +444,9 @@ namespace Aboria {
         expr_type expr = tuple_ns::get<2>(block);
         if_expr_type if_expr = tuple_ns::get<3>(block);
 
-        evaluate(expr,if_expr,a,b,y,rhs);
+        evaluate_linear(expr,if_expr,a,b,y,rhs);
     }
 
-
-    template <typename Dest, typename Source, typename particles_b_type,
-              typename expr_type, typename if_expr_type>
-    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const tuple_ns::tuple<const SizeOne&,const particles_b_type&,expr_type,if_expr_type>& block) {
-
-        typedef typename particles_b_type::double_d double_d;
-        typedef typename particles_b_type::position position;
-
-        const particles_b_type& b = tuple_ns::get<1>(block);
-        expr_type expr = tuple_ns::get<2>(block);
-        if_expr_type if_expr = tuple_ns::get<3>(block);
-
-        const size_t nb = b.size();
-
-        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-            //std::cout << "zero one x b block" <<std::endl;
-            return;
-        }
-
-        double sum = 0;
-        //std::cout << "dens one x b block" <<std::endl;
-        for (size_t j=0; j<nb; ++j) {
-            typename particles_b_type::const_reference bj = b[j];
-            if (eval(if_expr,bj)) {
-                sum += eval(expr,bj)*rhs(j);
-            }
-        }
-        y(0) += sum;
-    }
-
-    template <typename Dest, typename Source, typename particles_a_type,
-                             typename expr_type, typename if_expr_type>
-    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const tuple_ns::tuple<const particles_a_type&,const SizeOne&,expr_type,if_expr_type>& block) {
-
-        typedef typename particles_a_type::double_d double_d;
-        typedef typename particles_a_type::position position;
-
-        const particles_a_type& a = tuple_ns::get<0>(block);
-        expr_type expr = tuple_ns::get<2>(block);
-        if_expr_type if_expr = tuple_ns::get<3>(block);
-
-        const size_t na = a.size();
-
-        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-            //std::cout << "zero a x one block" <<std::endl;
-            return;
-        }
-
-        //std::cout << "dens a x one block" <<std::endl;
-        for (size_t i=0; i<na; ++i) {
-            typename particles_a_type::const_reference ai = a[i];
-            if (eval(if_expr,ai)) {
-                y(i) += eval(expr,ai)*rhs(0);
-            }
-        }
-    }
-
-    template <typename Dest, typename Source,
-                             typename expr_type, typename if_expr_type>
-    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const tuple_ns::tuple<const SizeOne&,const SizeOne&,expr_type,if_expr_type>& block) {
-
-        expr_type expr = tuple_ns::get<2>(block);
-        if_expr_type if_expr = tuple_ns::get<3>(block);
-
-        if (is_trivially_zero(expr) || is_trivially_false(if_expr)) {
-            //std::cout << "zero one x one block" <<std::endl;
-            return;
-        }
-
-        proto::display_expr(expr);
-        //std::cout << "dens one x one block" <<std::endl;
-        y(0) += eval(expr)*rhs(0);
-    }
 
 
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
@@ -676,76 +514,6 @@ namespace Aboria {
                         deep_copy(if_expr))
                 ));
     }
-
-    template <typename B, unsigned int B_depth,
-              typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
-    MatrixReplacement<1,1,tuple_ns::tuple<tuple_ns::tuple<const SizeOne&,const B&,
-        typename detail::symbolic_helper<Expr>::deep_copy_type,
-        typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
-    create_eigen_operator(
-            const One& a,
-            const Label<B_depth,B>& b,
-            const Expr& expr,
-            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true)))
-    {
-        typedef tuple_ns::tuple<const SizeOne&, const B&,
-            typename detail::symbolic_helper<Expr>::deep_copy_type,
-            typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
-        return MatrixReplacement<1,1,tuple_ns::tuple<block_type>>(
-                tuple_ns::make_tuple(
-                    block_type(a.get_size_one(),proto::value(b).get_particles(),
-                        deep_copy(expr),
-                        deep_copy(if_expr))
-                ));
-    }
-
-    template <typename A, unsigned int A_depth,
-              typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
-    MatrixReplacement<1,1,tuple_ns::tuple<tuple_ns::tuple<const A&,const SizeOne&,
-        typename detail::symbolic_helper<Expr>::deep_copy_type,
-        typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
-    create_eigen_operator(
-            const Label<A_depth,A>& a,
-            const One& b,
-            const Expr& expr,
-            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true)))
-    {
-        typedef tuple_ns::tuple<const A&, const SizeOne&,
-            typename detail::symbolic_helper<Expr>::deep_copy_type,
-            typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
-        return MatrixReplacement<1,1,tuple_ns::tuple<block_type>>(
-                tuple_ns::make_tuple(
-                    block_type(proto::value(a).get_particles(),b.get_size_one(),
-                        deep_copy(expr),
-                        deep_copy(if_expr))
-                ));
-    }
-
-    template <typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
-    MatrixReplacement<1,1,tuple_ns::tuple<tuple_ns::tuple<const SizeOne&,const SizeOne&,
-        typename detail::symbolic_helper<Expr>::deep_copy_type,
-        typename detail::symbolic_helper<IfExpr>::deep_copy_type>>>
-    create_eigen_operator(
-            const One& a,
-            const One& b,
-            const Expr& expr,
-            const IfExpr& if_expr = IfExpr(proto::terminal<bool>::type::make(true)))
-    {
-        typedef tuple_ns::tuple<const SizeOne&, const SizeOne&,
-            typename detail::symbolic_helper<Expr>::deep_copy_type,
-            typename detail::symbolic_helper<IfExpr>::deep_copy_type> block_type;
-        return MatrixReplacement<1,1,tuple_ns::tuple<block_type>>(
-                tuple_ns::make_tuple(
-                    block_type(a.get_size_one(),b.get_size_one(),
-                        deep_copy(expr),
-                        deep_copy(if_expr))
-                ));
-    }
-    /*
-    create_block_eigen_operator_impl(const Blocks&... blocks) {
-        typedef
-        return MatrixReplacement<NI,NJ,tuple_ns::tuple<Blocks...>>(
-        */
 
     template <unsigned int NI, unsigned int NJ, typename ... T>
     MatrixReplacement<NI,NJ,tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...>>

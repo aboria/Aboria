@@ -27,12 +27,22 @@ Header: `<Aboria.h>`
 * [classref Aboria::Label Label]
 * [classref Aboria::Accumulate Accumulate]
 
-[h5 Functions]
+[h3 Symbolic Utilities]
 
-* [funcref Aboria::norm norm]
-* [funcref Aboria::dot dot]
-* [funcref Aboria::exp exp]
-* [funcref Aboria::pow pow]
+* [funcref Aboria::evaluate_linear]
+* [funcref Aboria::evaluate_nonlinear]
+* [funcref Aboria::assemble assemble]
+
+[h5 Symbolic Functions]
+
+* [funcref Aboria::norm ]
+* [funcref Aboria::dot ]
+* [funcref Aboria::exp ]
+* [funcref Aboria::pow ]
+* [funcref Aboria::abs ]
+* [funcref Aboria::log ]
+* [funcref Aboria::erf ]
+* [funcref Aboria::sign ]
 
 [h3 Operator Core]
 

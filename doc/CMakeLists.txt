@@ -22,7 +22,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Symbolic.h
     ../src/Traits.h
     ../src/Get.h
-    ../src/Assemble.h
+    ../src/Evaluate.h
     ../src/Operators.h
     ../src/Vector.h
     )
@@ -34,7 +34,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
       TAB_SIZE=4
       PREDEFINED="BOOST_COMPUTE_DOXYGEN_INVOKED\" \\ \"HAVE_EIGEN HAVE_THRUST\" \\ \"HAVE_VTK\" \\ \"CUDA_HOST_DEVICE="
       EXPAND_AS_DEFINED=UFUNC 
-      EXPAND_AS_DEFINED="COMPOUND_ASSIGN\" \"COMPARISON\" \"OPERATOR\" \"UNARY_OPERATOR"
+      EXPAND_AS_DEFINED="COMPOUND_ASSIGN\" \"COMPARISON\" \"OPERATOR\" \"UNARY_OPERATOR\" \"ABORIA_UNARY_FUNCTION\" \"ABORIA_BINARY_FUNCTION"
       BOOSTBOOK 
       boost.doxygen.reftitle="libaboria")
   
