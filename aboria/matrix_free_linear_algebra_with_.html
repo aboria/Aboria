@@ -75,7 +75,7 @@ MathJax.Hub.Config({
 <p>
       To provide the concept and API of a matrix or linear operator, we will use
       the C++ library <a href="../eigen.tuxfamily.org" target="_top">Eigen</a>. Aboria provides
-      functionality to wrap bivariate expressions in <code class="computeroutput">Aboria::MatrixReplacement</code>,
+      functionality to wrap bivariate expressions in <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html" title="Class template MatrixReplacement">Aboria::MatrixReplacement</a></code>,
       so that Eigen can treat them as normal sparse matricies.
     </p>
 <div class="section">
@@ -84,7 +84,7 @@ MathJax.Hub.Config({
       Operators</a>
 </h3></div></div></div>
 <p>
-        You can use the <code class="computeroutput">Aboria::create_eigen_operator</code>
+        You can use the <code class="computeroutput"><a class="link" href="../Aboria/create_eigen_operator.html" title="Function template create_eigen_operator">Aboria::create_eigen_operator</a></code>
         function to create an Eigen operator. The function takes two labels as its
         first and second arguments corresponding to the rows and columns of the matrix,
         a bivariate expression as the third argument, and an optional bivariate boolean
@@ -114,7 +114,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
         You can also set the sparsity of the operator by providing a fourth parameter
-        to <code class="computeroutput">Aboria::create_eigen_operator</code>,
+        to <code class="computeroutput"><a class="link" href="../Aboria/create_eigen_operator.html" title="Function template create_eigen_operator">Aboria::create_eigen_operator</a></code>,
         a boolean expression that is <code class="computeroutput"><span class="keyword">false</span></code>
         when the operator should evaluate to zero. For example,
       </p>
@@ -125,7 +125,7 @@ MathJax.Hub.Config({
         Finally, you might also want to specify an operator that only depends on
         a single label, i.e. a vector rather than a matrix. This can be done by using
         the <code class="computeroutput">Aboria::One</code> symbol in conjunction
-        with the <code class="computeroutput">Aboria::create_eigen_operator</code>
+        with the <code class="computeroutput"><a class="link" href="../Aboria/create_eigen_operator.html" title="Function template create_eigen_operator">Aboria::create_eigen_operator</a></code>
         function.
       </p>
 <pre class="programlisting"><span class="identifier">One</span> <span class="identifier">one</span><span class="special">;</span>
@@ -139,7 +139,7 @@ MathJax.Hub.Config({
 </h3></div></div></div>
 <p>
         It is common that you would like to compose operators in a tiled or block
-        format, and Aboria provides a functionality to do this using the <code class="computeroutput">Aboria::create_block_eigen_operator</code>.
+        format, and Aboria provides a functionality to do this using the <code class="computeroutput"><a class="link" href="../Aboria/create_b_idp46168838650160.html" title="Function template create_block_eigen_operator">Aboria::create_block_eigen_operator</a></code>.
         This function is templated by two unsigned integers N and M representing
         an NxM block operator, and takes NM arguments for the required number of
         operators. For example,
@@ -163,7 +163,7 @@ MathJax.Hub.Config({
       Solvers</a>
 </h3></div></div></div>
 <p>
-        The <code class="computeroutput">Aboria::MatrixReplacement</code>
+        The <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html" title="Class template MatrixReplacement">Aboria::MatrixReplacement</a></code>
         class can multiply other Eigen vectors, and can be used in Eigen's iterative
         solvers. Both <code class="computeroutput"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">IdentityPreconditioner</span></code> and <code class="computeroutput"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DiagonalPreconditioner</span></code> preconditioners
         are supported. Below is an example of how to use Eigen's GMRES iterative

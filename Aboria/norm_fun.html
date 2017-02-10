@@ -6,7 +6,7 @@
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.3">
 <link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Functions.h&gt;">
-<link rel="prev" href="DataVector.html" title="Class template DataVector">
+<link rel="prev" href="evaluate_linear.html" title="Function template evaluate_linear">
 <link rel="next" href="dot_fun.html" title="Struct dot_fun">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="DataVector.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="dot_fun.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="evaluate_linear.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="dot_fun.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.norm_fun"></a><div class="titlepage"></div>
@@ -48,17 +48,17 @@ MathJax.Hub.Config({
   <span class="comment">// types</span>
   <span class="keyword">typedef</span> <span class="keyword">double</span> <a name="Aboria.norm_fun.result_type"></a><span class="identifier">result_type</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="norm_fun.html#idp47088899701680-bb">public member functions</a></span>
+  <span class="comment">// <a class="link" href="norm_fun.html#idp46168838100720-bb">public member functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> N<span class="special">&gt;</span> 
-    <span class="identifier">result_type</span> <a class="link" href="norm_fun.html#idp47088899702080-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="identifier">result_type</span> <a class="link" href="norm_fun.html#idp46168838101120-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46661932050192"></a><h2>Description</h2>
+<a name="idp46186943760864"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46661932050608"></a><h3>
-<a name="idp47088899701680-bb"></a><code class="computeroutput">norm_fun</code> public member functions</h3>
+<a name="idp46186943761280"></a><h3>
+<a name="idp46168838100720-bb"></a><code class="computeroutput">norm_fun</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> N<span class="special">&gt;</span> 
-  <span class="identifier">result_type</span> <a name="idp47088899702080-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> vector<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+  <span class="identifier">result_type</span> <a name="idp46168838101120-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> vector<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>
@@ -68,7 +68,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="DataVector.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="dot_fun.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="evaluate_linear.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="dot_fun.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
