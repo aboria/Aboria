@@ -248,7 +248,7 @@ void helper_compact(void) {
 
     	typedef Particles<std::tuple<alpha,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
-       	ParticlesType knots;
+       	ParticlesType knots,augment;
        	ParticlesType test;
 
         const double hfac = 2.0;
@@ -275,6 +275,7 @@ void helper_compact(void) {
                                        distribution(generator));
             test.push_back(p);
         }
+        augment.push_back(p);
 
 	    knots.init_neighbour_search(min,max,2*h,periodic);
 
@@ -284,8 +285,9 @@ void helper_compact(void) {
         Symbol<constant2> c2;
         Label<0,ParticlesType> a(knots);
         Label<1,ParticlesType> b(knots);
+        Label<0,ParticlesType> i(augment);
+        Label<1,ParticlesType> j(augment);
         Label<0,ParticlesType> k(test);
-        One one;
         auto dx = create_dx(a,b);
         auto dx2 = create_dx(k,b);
         Accumulate<std::plus<double> > sum;
@@ -298,13 +300,13 @@ void helper_compact(void) {
                     kernel,norm(dx)<2*h
                 );
  
-        auto P = create_eigen_operator(a,one,
+        auto P = create_eigen_operator(a,j,
                         1.0
                 );
-        auto Pt = create_eigen_operator(one,b,
+        auto Pt = create_eigen_operator(i,b,
                         1.0
                 );
-        auto Zero = create_eigen_operator(one,one, 0.);
+        auto Zero = create_eigen_operator(i,j, 0.);
 
         auto W = create_block_eigen_operator<2,2>(G, P,
                                                   Pt,Zero);
