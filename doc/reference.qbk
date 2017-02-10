@@ -27,7 +27,7 @@ Header: `<Aboria.h>`
 * [classref Aboria::Label Label]
 * [classref Aboria::Accumulate Accumulate]
 
-[h3 Symbolic Utilities]
+[h5 Symbolic Utilities]
 
 * [funcref Aboria::evaluate_linear]
 * [funcref Aboria::evaluate_nonlinear]

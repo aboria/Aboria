@@ -492,6 +492,8 @@ struct generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>, Rhs, Sparse
 }
 
 namespace Aboria {
+    /// creates a matrix-free linear operator for use with Eigen
+    ///
     template <typename A, unsigned int A_depth,
               typename B, unsigned int B_depth,
               typename Expr, typename IfExpr=detail::SymbolicExpr<typename proto::terminal<bool>::type>>
@@ -515,6 +517,8 @@ namespace Aboria {
                 ));
     }
 
+    /// creates a matrix-free linear block operator for use with Eigen
+    ///
     template <unsigned int NI, unsigned int NJ, typename ... T>
     MatrixReplacement<NI,NJ,tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...>>
     create_block_eigen_operator(const MatrixReplacement<1,1,T>&... operators) {
