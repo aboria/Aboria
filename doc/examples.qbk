@@ -3,7 +3,7 @@
 
 [section Molecular Dynamics (Linear Spring) (MD)]
 
-Simple Molecular Dynamics of N particles interacting via a linear spring 
+Simple Molecular Dynamics of $N$ particles interacting via a linear spring 
 potential. 
 
 [import ../tests/md.h]

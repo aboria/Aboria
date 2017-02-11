@@ -10,6 +10,37 @@
 #include <cxxtest/TestSuite.h>
 
 //[md
+/*`
+This example creates $N$ particles within a two-dimensional square domain,
+with periodic boundary conditions.
+
+There is a linear spring force
+$\mathbf{f}\_{ij}$ between particles $i$ and $j$ with a 
+rest separation of $r$ (constant for all particles), and a cutoff at $r$. That is, if 
+$\mathbf{r}\_i$ is the position of particle $i$ and 
+$\mathbf{dx}\_{ij}=\mathbf{r}\_j-\mathbf{r}\_j$, then
+
+$$
+\mathbf{f}\_{ij} = \begin{cases}
+            \frac{r-|\mathbf{dx}\_{ij}|}{|\mathbf{dx}\_{ij}|}\mathbf{dx}\_{ij}, & \text{for } 
+              |\mathbf{dx}\_{ij}|<r \\
+            0 & \text{otherwise}.
+            \end{cases}
+$$
+
+We wish to use a leap frog integrator to evolve positions $\mathbf{r}\_i$ using 
+velocities $\mathbf{v}\_i$ and accelerations $\mathbf{a}\_i = \sum_j 
+\mathbf{f}\_{ij}$. This gives the following update equations for 
+each timestep $n$
+
+\begin{align*}
+\mathbf{v}^{n+1}\_i &= \mathbf{v}^n_i + \frac{dt}{m_i} \sum_j \mathbf{f}^n_{ij} 
+\\\\
+\mathbf{r}^{n+1}_i &= \mathbf{r}^n_i + dt\, \mathbf{v}^{n+1}_i.
+\end{align*}
+
+We implement this in Aboria using the code given below. Firstly we create the particle set data structure and add particles, ensuring that we have an initial condition where all the spring forces are $\mathbf{f}\_{ij}=0$. Then we start the timestep loop, using our update equations given above. 
+*/
 
 
 #include <random>

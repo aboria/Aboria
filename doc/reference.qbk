@@ -3,56 +3,179 @@
 
 Header: `<Aboria.h>`
 
-[h3 Container Core]
-
-* [classref Aboria::Particles]
-* [classref Aboria::Variable]
-* [macroref ABORIA_VARIABLE]
-
-[h5 Getting Variables]
-* [classref Aboria::getter_type]
-* [funcref Aboria::get]
-
-[h5 Internal Data Traits]
-* [classref Aboria::Traits<std::vector>]
-* [macroref UNPACK_TRAITS]
-
-[h5 Iterator]
-
-* [classref Aboria::zip_iterator]
-
-[h3 Symbolic Core]
-
-* [classref Aboria::Symbol Symbol]
-* [classref Aboria::Label Label]
-* [classref Aboria::Accumulate Accumulate]
-
-[h5 Symbolic Utilities]
-
-* [funcref Aboria::evaluate_linear]
-* [funcref Aboria::evaluate_nonlinear]
-* [funcref Aboria::assemble assemble]
-
-[h5 Symbolic Functions]
-
-* [funcref Aboria::norm ]
-* [funcref Aboria::dot ]
-* [funcref Aboria::exp ]
-* [funcref Aboria::pow ]
-* [funcref Aboria::abs ]
-* [funcref Aboria::log ]
-* [funcref Aboria::erf ]
-* [funcref Aboria::sign ]
-
-[h3 Operator Core]
-
-* [classref Aboria::MatrixReplacement]
-* [funcref Aboria::create_eigen_operator]
-* [funcref Aboria::create_block_eigen_operator]
 
 [h3 Utility]
 
-* [classref Aboria::Vector Vector]
+* [classref Aboria::Vector Vector] - a $n$-dimensional vector of a given type
+
+[h3 Level 1 - Data structures]
+
+[table Creating a particle set 
+
+[[Class Name] [Description]]
+
+    [[[classref Aboria::Particles]]         
+    
+        [The main particle set container, implemented as a zipped set of 
+        vectors] ]
+    [[[classref Aboria::Variable]]     
+    
+        [Objects of this class are normally never created. Instead, this class 
+        is used as a "tag" type, and is used to name variables that are added to 
+        the particle set] ]
+    [[[macroref ABORIA_VARIABLE]]     
+    
+        [This is a pre-processor macro that creates a [classref 
+        Aboria::Variable] class, use this rather than using [classref 
+        Aboria::Variable] directly] ]
+]
+
+
+[table Getting particles and variables
+
+[[Class Name] [Description]]
+
+    [[[classref Aboria::getter_type]]         
+    
+        [This is used to refer to an individual particle in a [classref 
+        Aboria::Particles]. It implements a tuple of values or references, or 
+        pointers, that are or point to the variables of that particle. When you 
+        use the [memberref Aboria::Particles::operator\[\]] operator, you get a 
+        [classref Aboria::getter_type] that contains references to that 
+        particle's variables]]
+
+
+    [[[funcref Aboria::get]]     
+    
+        [This function is used to "get" a variable from a [classref 
+        Aboria::getter_type]. It it used in a similar fashion to the `std::get` 
+        function, but takes a [classref Aboria::Variable] type as the template 
+        argument instead of an `int` ]]
+
+
+    [[[classref Aboria::zip_iterator]]
+
+        [This class is an iterator for the [classref Aboria::Particles] class.  
+        It points to a single particle within the particle set. Dereferencing it 
+        gives you a [classref Aboria::getter_type] that contains references to 
+        the particle's variables]]
+]
+
+
+[table Internal Traits for Level 0 vector
+    [[[classref Aboria::Traits<std::vector>]]         
+    
+        [To use a STL compatible vector to construct a [classref 
+        Aboria::Particles], a specialisation of [classref Aboria::Traits] must 
+        exist]]
+]
+
+
+[h3 Level 3 - Symbolic particle-based DSL]
+
+[table Creating expression terminals
+[[Class Name] [Description]]
+
+    [[[classref Aboria::Symbol]]         
+    
+        [An object of this class is a symbolic reference to a particle's 
+        variable. It is similar to [classref Aboria::Variable], but unlike 
+        [classref Aboria::Variable], objects can be created with type [classref 
+        Aboria::Symbol], and then participate in symbolic expressions]]
+
+    [[[classref Aboria::Label]]         
+    
+        [An object of this class is a symbolic reference to a particle set, and 
+        can participate in symbolic expressions]]
+
+    [[[funcref Aboria::create_dx]]         
+    
+        [A function that creates a symbolic reference to the shortest difference 
+        between two particle's positions. It takes two [classref::Label]s as its 
+        arguments]]
+
+    [[[classref Aboria::Accumulate]]         
+    
+        [An object of this class is a symbolic reference to a accumulation (e.g.  
+        a summation) over a particle set]]
+
+]
+
+
+[table Doing things with expressions
+
+[[Class Name] [Description]]
+
+    [[[funcref Aboria::evaluate_linear]]         
+    
+        []]
+
+    [[[funcref Aboria::evaluate_nonlinear]]         
+    
+        []]
+
+    [[[funcref Aboria::assemble]]         
+
+    
+        []]
+]
+
+[table Symbolic functions
+
+[[Class Name] [Description]]
+
+    [[[funcref Aboria::norm]]         
+    
+        []]
+
+    [[[funcref Aboria::dot]]         
+    
+        []]
+
+    [[[funcref Aboria::exp]]         
+    
+        []]
+
+    [[[funcref Aboria::pow]]         
+    
+        []]
+
+    [[[funcref Aboria::abs]]         
+    
+        []]
+
+    [[[funcref Aboria::log]]         
+    
+        []]
+
+    [[[funcref Aboria::erf]]         
+    
+        []]
+
+    [[[funcref Aboria::sign]]         
+    
+        []]
+]
+
+[h3 Matrix-free Eigen Operators]
+
+[table Creating the linear operator 
+
+[[Class Name] [Description]]
+
+    [[[classref Aboria::MatrixReplacement]]
+    
+        []]
+
+    [[[funcref Aboria::create_eigen_operator]]         
+    
+        []]
+
+    [[[funcref Aboria::create_block_eigen_operator]]         
+
+    
+        []]
+]
 
 [endsect] [/ overview]
 
