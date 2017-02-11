@@ -12,9 +12,6 @@ potential.
 
 [section Brownian Dynamics (BD)]
 
-Brownian dynamics of N point particles around a set of spheres. The point 
-particles reflect off the spheres as they diffuse.
-
 [import ../tests/bd.h]
 [bd]
 [endsect]

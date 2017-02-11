@@ -10,6 +10,32 @@
 #include <cxxtest/TestSuite.h>
 
 //[bd
+/*`
+
+This example creates two particle sets, the first representing a set of point
+particles undergoing brownian motion, the second representing a set of spheres
+with a given radius, different for each sphere.
+
+The point particles diffuse around the three-dimensional, periodic domain, and
+reflect off the spheres whenever they encounter them.
+
+Let indicies $i$ and $j$ refer to a pair of point particles, and $a$ and $b$ 
+refer to a pair of spheres. Let $\mathbf{p}\_i$ be the position of particle $i$, 
+and let $\mathbf{dx}\_{ij}$ refer to the shortest difference between the 
+positions of particles $i$ and $j$. Let $r_b$ be the radius of sphere $b$. 
+Then the update equations used to evolve the system are given by
+
+$$
+\mathbf{p}\_i = \mathbf{p}\_i + \sqrt{2\\, D\\, dt}\\, \mathbf{N} 
+        + \sum_b \begin{cases}
+                    -2\left(\frac{r_b}{||\mathbf{dx}\_{ib}||} - 1\right) \mathbf{dx}\_{ib}, & \text{for } ||\mathbf{dx}\_{ib}||<r_b \\\
+                    0 & \text{otherwise}.
+                \end{cases} 
+$$
+
+where $D$ is the diffusion constant, $dt$ is the timestep and $\mathbf{N}$ 
+is a three-dimensional vector containing random samples from a normal distribution
+*/
 #include <random>
 #include "Aboria.h"
 using namespace Aboria;
@@ -27,8 +53,13 @@ public:
 //=int main() {
         ABORIA_VARIABLE(radius,double,"radius")
 
+//<-
         typedef Particles<std::tuple<radius>,3,std::vector,SearchMethod> spheres_type;
         typedef Particles<std::tuple<>,3,std::vector,SearchMethod> points_type;
+//->
+//=        typedef Particles<std::tuple<radius>,3,std::vector> spheres_type;
+//=        typedef Particles<std::tuple<>,3,std::vector> points_type;
+ 
         typedef position_d<3> position;
         spheres_type spheres;
 

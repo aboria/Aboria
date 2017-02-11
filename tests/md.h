@@ -23,10 +23,11 @@ $\mathbf{dx}\_{ij}=\mathbf{r}\_j-\mathbf{r}\_j$, then
 $$
 \mathbf{f}\_{ij} = \begin{cases}
             \frac{r-|\mathbf{dx}\_{ij}|}{|\mathbf{dx}\_{ij}|}\mathbf{dx}\_{ij}, & \text{for } 
-              |\mathbf{dx}\_{ij}|<r \\
+              |\mathbf{dx}\_{ij}|<r \\\\
             0 & \text{otherwise}.
             \end{cases}
 $$
+
 
 We wish to use a leap frog integrator to evolve positions $\mathbf{r}\_i$ using 
 velocities $\mathbf{v}\_i$ and accelerations $\mathbf{a}\_i = \sum_j 

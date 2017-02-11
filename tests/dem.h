@@ -22,7 +22,7 @@ $$
 \mathbf{f}\_{ij} = \begin{cases}
             \frac{s_i+s_j-|\mathbf{dx}\_{ij}|}{|\mathbf{dx}\_{ij}|}\mathbf{dx}\_{ij} 
             + \gamma(\mathbf{v}\_j-\mathbf{v}\_i), & \text{for } 
-              |\mathbf{dx}\_{ij}|<s_i+s_j \\
+              |\mathbf{dx}\_{ij}|<s_i+s_j \\\\
             0 & \text{otherwise}.
             \end{cases}
 $$
