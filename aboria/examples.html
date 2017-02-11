@@ -73,7 +73,7 @@ MathJax.Hub.Config({
       </p>
 <p>
         $$ \mathbf{f}_{ij} = \begin{cases} \frac{r-|\mathbf{dx}_{ij}|}{|\mathbf{dx}_{ij}|}\mathbf{dx}_{ij},
-        &amp; \text{for } |\mathbf{dx}_{ij}|&lt;r \ 0 &amp; \text{otherwise}. \end{cases}
+        &amp; \text{for } |\mathbf{dx}_{ij}|&lt;r \\ 0 &amp; \text{otherwise}. \end{cases}
         $$
       </p>
 <p>
@@ -241,8 +241,30 @@ MathJax.Hub.Config({
       (BD)</a>
 </h3></div></div></div>
 <p>
-        Brownian dynamics of N point particles around a set of spheres. The point
-        particles reflect off the spheres as they diffuse.
+        This example creates two particle sets, the first representing a set of point
+        particles undergoing brownian motion, the second representing a set of spheres
+        with a given radius, different for each sphere.
+      </p>
+<p>
+        The point particles diffuse around the three-dimensional, periodic domain,
+        and reflect off the spheres whenever they encounter them.
+      </p>
+<p>
+        Let indicies $i$ and $j$ refer to a pair of point particles, and $a$ and
+        $b$ refer to a pair of spheres. Let $\mathbf{p}_i$ be the position of particle
+        $i$, and let $\mathbf{dx}_{ij}$ refer to the shortest difference between
+        the positions of particles $i$ and $j$. Let $r_b$ be the radius of sphere
+        $b$. Then the update equations used to evolve the system are given by
+      </p>
+<p>
+        $$ \mathbf{p}_i = \mathbf{p}_i + \sqrt{2\, D\, dt}\, \mathbf{N} + \sum_b
+        \begin{cases} -2\left(\frac{r_b}{||\mathbf{dx}_{ib}||} - 1\right) \mathbf{dx}_{ib},
+        &amp; \text{for } ||\mathbf{dx}_{ib}||&lt;r_b \\ 0 &amp; \text{otherwise}.
+        \end{cases} $$
+      </p>
+<p>
+        where $D$ is the diffusion constant, $dt$ is the timestep and $\mathbf{N}$
+        is a three-dimensional vector containing random samples from a normal distribution
       </p>
 <pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">random</span><span class="special">&gt;</span>
 <span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
@@ -251,8 +273,9 @@ MathJax.Hub.Config({
 <span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
         <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">radius</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"radius"</span><span class="special">)</span>
 
-        <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">SearchMethod</span><span class="special">&gt;</span> <span class="identifier">spheres_type</span><span class="special">;</span>
-        <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">SearchMethod</span><span class="special">&gt;</span> <span class="identifier">points_type</span><span class="special">;</span>
+        <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&gt;</span> <span class="identifier">spheres_type</span><span class="special">;</span>
+        <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&gt;</span> <span class="identifier">points_type</span><span class="special">;</span>
+
         <span class="keyword">typedef</span> <span class="identifier">position_d</span><span class="special">&lt;</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">position</span><span class="special">;</span>
         <span class="identifier">spheres_type</span> <span class="identifier">spheres</span><span class="special">;</span>
 
@@ -355,7 +378,7 @@ MathJax.Hub.Config({
 <p>
         $$ \mathbf{f}_{ij} = \begin{cases} \frac{s_i+s_j-|\mathbf{dx}_{ij}|}{|\mathbf{dx}_{ij}|}\mathbf{dx}_{ij}
         + \gamma(\mathbf{v}_j-\mathbf{v}_i), &amp; \text{for } |\mathbf{dx}_{ij}|&lt;s_i+s_j
-        \ 0 &amp; \text{otherwise}. \end{cases} $$
+        \\ 0 &amp; \text{otherwise}. \end{cases} $$
       </p>
 <p>
         We wish to use a leap frog integrator to evolve positions $\mathbf{r}_i$
