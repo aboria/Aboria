@@ -145,16 +145,15 @@ void create_n_particles_with_rejection_sampling(const unsigned int n, PTYPE &par
 
 
 template<typename T>
-ptr<std::vector<double> > radial_distribution_function(const T& particles,
+void radial_distribution_function(const T& particles,
 							const double min, const double max,
-							const int n) {
+							const int n, std::vector<double>& out) {
 
     // assume 3d for now...
     typedef Vector<double,3> Vect3d;
     
-	auto out = ptr<std::vector<double> >(new std::vector<double>());
 
-	out->resize(n,0);
+	out.resize(n,0);
 	const double bsep = (max-min)/n;
 	const double old_size = particles->get_lengthscale();
 	particles->reset_neighbour_search(max);
@@ -166,7 +165,7 @@ ptr<std::vector<double> > radial_distribution_function(const T& particles,
 			if (i.get_id()==j.get_id()) continue;
 			const double r = dx.norm();
 			const int index = std::floor((r-min)/bsep);
-			if ((index>=0)&&(index<n)) (*out)[index] += 1.0;
+			if ((index>=0)&&(index<n)) out[index] += 1.0;
 		}
 	}
 
@@ -175,12 +174,10 @@ ptr<std::vector<double> > radial_distribution_function(const T& particles,
 
     const double PI = boost::math::constants::pi<double>();
 	for (int i = 0; i < n; ++i) {
-		(*out)[i] /= particles->size()*(4.0/3.0)*PI*(std::pow((i+1)*bsep+min,3)-std::pow(i*bsep+min,3))*rho;
+		out[i] /= particles->size()*(4.0/3.0)*PI*(std::pow((i+1)*bsep+min,3)-std::pow(i*bsep+min,3))*rho;
 	}
 
 	particles->reset_neighbour_search(old_size);
-
-	return out;
 }
 
 }

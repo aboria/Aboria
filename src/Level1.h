@@ -44,7 +44,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //Level1
 #include "CudaInclude.h"
 #include "Vector.h"
-#include "Ptr.h"
 #include "Variable.h"
 #include "Traits.h"
 #include "Get.h"
@@ -52,7 +51,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "BucketSearchSerial.h"
 #include "BucketSearchParallel.h"
 #include "PrintTuple.h"
-#include "DataVector.h"
 #include "Utils.h"
 
 
