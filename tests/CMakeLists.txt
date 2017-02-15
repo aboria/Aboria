@@ -38,6 +38,7 @@ if (Aboria_RUN_TESTS)
         ConstructorsTest
         OperatorsTest
         SpatialUtilsTest
+        ChebyshevTest
         )
     foreach(test_suite ${all_test_suites})
         option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
@@ -152,6 +153,11 @@ set(DiffusionAroundSpheresFile diffusion_around_spheres.h)
 set(DiffusionAroundSpheres 
     test_bucket_search_serial
     test_bucket_search_parallel
+    )
+
+set(ChebyshevTestFile chebyshev.h)
+set(ChebyshevTest
+    test_Rn_calculation
     )
 
 

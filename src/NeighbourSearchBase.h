@@ -92,7 +92,6 @@ public:
     typedef ConstIterator query_iterator;
     typedef QueryType query_type;
     typedef Params params_type;
-    typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::iterator iterator;
@@ -232,7 +231,6 @@ protected:
 // assume that these iterators, and query functions, are only called from device code
 template <typename Traits>
 class ranges_iterator {
-    typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::value_type p_value_type;
@@ -240,7 +238,6 @@ class ranges_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
-    typedef Traits traits_type;
     typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const p_reference reference;
@@ -328,7 +325,6 @@ private:
 // assume that these iterators, and query functions, are only called from device code
 template <typename Traits>
 class linked_list_iterator {
-    typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::value_type p_value_type;
@@ -336,7 +332,6 @@ class linked_list_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
-    typedef Traits traits_type;
     typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const p_reference reference;
@@ -447,18 +442,16 @@ public:
 };
 
 // assume that these iterators, and query functions, can be called from device code
-template <typename Traits>
+template <unsigned int D>
 class lattice_iterator {
-    typedef typename Traits::position position;
-    typedef typename Traits::double_d double_d;
-    typedef typename Traits::int_d int_d;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
 
     int_d m_min;
     int_d m_max;
     int_d m_index;
-    detail::bucket_index<Traits::dimension> m_bucket_index;
+    detail::bucket_index<D> m_bucket_index;
 public:
-    typedef Traits traits_type;
     typedef const int_d* pointer;
 	typedef std::random_access_iterator_tag iterator_category;
     typedef const int_d& reference;
@@ -557,10 +550,10 @@ private:
 
     CUDA_HOST_DEVICE
     void increment() {
-        for (int i=0; i<Traits::dimension; i++) {
+        for (int i=0; i<D; i++) {
             ++m_index[i];
             if (m_index[i] <= m_max[i]) break;
-            if (i != Traits::dimension-1) {
+            if (i != D-1) {
                 m_index[i] = m_min[i];
             }
         }
@@ -575,7 +568,6 @@ private:
 
 template <typename Traits>
 class lattice_iterator_with_hole {
-    typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::int_d int_d;
 

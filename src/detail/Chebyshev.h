@@ -38,6 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CHEBYSHEV_H_
 
 #include <boost/math/constants/constants.hpp>
+#include "Vector.h"
+#include "detail/SpatialUtil.h"
 
 namespace Aboria {
 namespace detail {
@@ -49,6 +51,7 @@ namespace detail {
 const double PI = boost::math::constants::pi<double>();
 const double PI_2 = boost::math::constants::pi<double>()/2;
 
+/*
 constexpr double tol = 0.001;
 
 constexpr double cube(const double x) { return x*x*x; }
@@ -76,14 +79,7 @@ double sinh(const double x) {
 }
 
 constexpr double cos (const double x) { return sin(PI_2 - x); }
-
-// chebychev polynomial of order k, evaluated at the i-th root of a chebychev
-// polynomial of order n
-template <typename T>
-constexpr T chebyshev_at_node(unsigned int i, unsigned int k, unsigned int n) {
-    return 
-}
-
+*/
 
 
 template <typename T>
@@ -95,50 +91,90 @@ T chebyshev_polynomial(const T &x, unsigned int n) {
     } else {
         T Tn_2 = 1.0;
         T Tn_1 = x;
-        T Tn;
-        for (int i=2; i<n; ++i) {
-            Tn = 2.0*x*Tn_1 - Tn_2;
+        for (int i=2; i<=n; ++i) {
+            T Tn = 2.0*x*Tn_1 - Tn_2;
             Tn_2 = Tn_1;
             Tn_1 = Tn;
         }
+        return Tn_1;
     }
+}
+
+template <unsigned int N>
+double chebyshev_Rn_slow(const Vector<double,N> &x, const Vector<int,N> &i, unsigned int n) {
+    double Rn = 1.0;
+    for (unsigned int d = 0; d < N; ++d) {
+        double Sn = 0;
+        for (unsigned int k = 1; k < n; ++k) {
+            const double root = cos((2.0*i[d]+1.0)*PI/(2.0*n));
+            Sn += chebyshev_polynomial(root,k)*chebyshev_polynomial(x[d],k);
+        }
+        Sn = (1.0 + 2.0*Sn)/n;
+        Rn *= Sn;
+    }
+    return Rn;
 }
 
 // evaluate 1/n + 2/n * sum_{k=1}^{n-1} T_k(y_i) T_k(x), where y_i is the i-th
 // root of the the chebyshev polynomial of order n
+// NOTE: valid range of i is 0..n-1
 template <typename T>
 T chebyshev_Sn(const T &x, unsigned int i, unsigned int n) {
     // Clenshaw algorithm: \alpha = 2x, \beta = -1, T0=1, T1=x
     //                     a_0 = 1/n, a_k = 2/n * cos(k*(2i-1)/(2n) * pi)
     T bk_1 = 0;
     T bk_2 = 0;
+    const double invn = 1.0/n;
     for (unsigned int k=n-1; k>=1; --k) {
-        T bk = cos(k*(2*i-1)*PI/2) + 2*x*bk_1 - bk_2; 
+        T bk = 2*invn*cos(k*(2.0*i+1.0)*PI_2*invn) + 2.0*x*bk_1 - bk_2; 
         bk_2 = bk_1;
         bk_1 = bk;
     }
     // one more step with 2*a_0, then s(x) = 0.5*(b0 - b2)
-    return (1.0/n + x*bk_1 - bk_2);
+    return (invn + x*bk_1 - bk_2);
 }
 
-template <typename T, unsigned int N>
-T chebyshev_Rn(const Vector<T,N> &x, const Vector<unsigned int i,N> &i, unsigned int n) {
-    T Rn = 1.0;
-    for (unsigned int d = 0; d < N; ++d) {
-        Rn *= chebyshev_Sn(x[d],i[d],n);
-    }
-}
-
-template <typename T, typename Traits>
+// struct to calculate Rn with N chebyshev nodes using spatial dimension D 
+template <unsigned int D>
 struct Chebyshev_Rn {
-    Vector Sn;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef std::vector<double_d> vector_double_d;
+    vector_double_d Sn;
     unsigned int n;
-    Chebyshev_Rn(Vector unsigned int n):n(n),Sn(n) {
-        for (int i=0; i<n; ++i) {
-            Sn[i] = chebyshev_Sn();
+    detail::bbox<D> box;
+    Chebyshev_Rn() {}
+    void calculate_Sn(const vector_double_d& positions, unsigned int with_n) {
+        n = with_n;
+        Sn.resize(positions.size()*n);
+        box.bmin = positions[0];
+        box.bmax = positions[0];
+        for (int i=1; i<positions.size(); ++i) {
+            for (int d=0; d<D; ++d) {
+                if (positions[i][d] < box.bmin[d]) box.bmin[d] = positions[i][d];
+                if (positions[i][d] > box.bmax[d]) box.bmax[d] = positions[i][d];
+            }
+        }
+        const double_d scale = double_d(1.0)/(box.bmax-box.bmin);
+        for (int i=0; i<positions.size(); ++i) {
+            for (int m=0; m<n; ++m) {
+                Sn[i*n + m] = chebyshev_Sn((2*positions[i]-box.bmin-box.bmax)*scale,m,n);
+            }
+        }
     }
-
-}
+    // NOTE: valid range of m is 0..n-1
+    double operator()(const int_d &m, size_t i) {
+        const unsigned int ii = i*n;
+        ASSERT(ii < Sn.size(),"requesting i greater than particles size");
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<n).all() ,"m should be less than n");
+        double ret = 1.0;
+        for (int d=0; d<D; ++d) {
+            ret *= Sn[ii+m[d]][d];
+        }
+        return ret;
+    }
+};
  
 
 
@@ -147,4 +183,4 @@ struct Chebyshev_Rn {
 }
 }
 
-
+#endif

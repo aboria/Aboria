@@ -276,9 +276,9 @@ struct bucket_search_parallel_query {
     typedef typename Traits::reference reference;
     typedef typename Traits::position position;
     const static unsigned int dimension = Traits::dimension;
-    typedef lattice_iterator<Traits> bucket_iterator;
-    typedef typename lattice_iterator<Traits>::reference bucket_reference;
-    typedef typename lattice_iterator<Traits>::value_type bucket_value_type;
+    typedef lattice_iterator<dimension> bucket_iterator;
+    typedef typename bucket_iterator::reference bucket_reference;
+    typedef typename bucket_iterator::value_type bucket_value_type;
     typedef ranges_iterator<Traits> particle_iterator;
 
     raw_pointer m_particles_begin;

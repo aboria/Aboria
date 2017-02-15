@@ -48,17 +48,62 @@ void non_linear_operator<variable_lhs>(particles_i, particle_j, kernel_functor)
 void non_linear_operator_solve<variable_lhs>(particles_i, particle_j, kernel_functor, gradient_kernel_functor) 
 */
 
-void execute_chebyshev_interpolation(vector_i, particles_i, vector_j, particles_j, kernel) {
-    // generate Chebyshev nodes
-   //First compute the weights at the Chebyshev nodes ym by anterpolation 
-  
+void chebyshev_interpolation(
+        input_iterator_begin, 
+        output_iterator_begin,  
+        source_positions,
+        target_positions,
+        kernel,
+        unsigned int n) {
+    typedef Eigen::Matrix<double,Eigen::dynamic,Eigen::dynamic> matrix_type;
+    typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+    typedef Eigen::Map<vector_type> map_type;
 
+    // fill source_Rn matrix
+    detail::Chebyshev_Rn<D> Rn_eval;
+    Rn.calculate_Sn(source_positions,n);
+    const int_d start = int_d(0);
+    const int_d end = int_d(n-1);
+    lattice_iterator<D> m(start,end,start);
+    const size_t ncheb = std::pow(n,D);
+    matrix_type source_Rn(ncheb,positions.size());
+    for (int i=0; i<positions.size(); ++i) {
+        for (int j=0; j<ncheb; ++j,++m) {
+            source_Rn(j,i) = Rn_eval(m,i);
+        }
+    }
 
-   //Next compute f ðxÞ at the Chebyshev nodes xl:
-   
+    // fill kernel matrix
+    matrix_type kernel_matrix(ncheb,ncheb);
+    for (int i=0; i<ncheb; ++i,++mi) {
+        double_d pi = ;
+        for (int j=0; j<ncheb; ++j,++m) {
+            // get position
+            double_d pj = ;
+            kernel_matrix(i,j) = kernel(pi,pj);
+        }
+    }
 
+    // fill target_Rn matrix
+    Rn.calculate_Sn(target_positions,n);
+    const int_d start = int_d(0);
+    const int_d end = int_d(n-1);
+    lattice_iterator<D> m(start,end,start);
+    const size_t ncheb = std::pow(n,D);
+    matrix_type target_Rn(positions.size(),ncheb);
+    for (int i=0; i<positions.size(); ++i) {
+        for (int j=0; j<ncheb; ++j,++m) {
+            target_Rn(i,j) = Rn_eval(m,i);
+        }
+    }
 
-   //Last compute f ðxÞ at the observation points xi by interpolation:
+    map_type source_values(&(*input_iterator_begin),source_size);
+    map_type target_values(&(*output_iterator_begin),target_size);
+
+    //First compute the weights at the Chebyshev nodes ym by anterpolation 
+    //Next compute f ðxÞ at the Chebyshev nodes xl:
+    //Last compute f ðxÞ at the observation points xi by interpolation:
+    target_values = target_Rn*kernel_matrix*source_Rn*source_values;
 }
 
 }
