@@ -155,7 +155,7 @@ struct Chebyshev_Rn {
     Chebyshev_Rn() {}
     void calculate_Sn(const double_d_iterator& positions, 
                       const unsigned int with_N,
-                      unsigned int with_n) {
+                      const unsigned int with_n) {
         n = with_n;
         N = with_N;
         Sn.resize(N*n);
@@ -177,15 +177,17 @@ struct Chebyshev_Rn {
 
     // NOTE: valid range of m is 0..n-1
     double_d get_position(const int_d &m) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<n).all() ,"m should be less than n");
         double_d pos;
         for (int d=0; d<D; ++d) {
             pos[d] = chebyshev_node(m[d],n);
         }
-        return pos;
+        return 0.5*(pos+1)*(box.bmax-box.bmin) + box.bmin;
     }
 
     // NOTE: valid range of m is 0..n-1
-    double operator()(const int_d &m, unsigned int i) {
+    double operator()(const int_d &m, const unsigned int i) {
         const unsigned int ii = i*n;
         ASSERT(ii < Sn.size(),"requesting i greater than particles size");
         ASSERT((m>=0).all() ,"m should be greater than or equal to 0");

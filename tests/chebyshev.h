@@ -41,6 +41,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <random>
 #include <time.h>
+#include <chrono>
+typedef std::chrono::system_clock Clock;
 #include "Level1.h"
 #include "Chebyshev.h"
 
@@ -86,12 +88,14 @@ public:
     void helper_chebyshev_interpolation(void) {
         const double tol = 1e-10;
         // randomly generate a bunch of positions over a range 
-        std::uniform_real_distribution<double> U(0,1);
+        const double pos_min = 0;
+        const double pos_max = 1;
+        std::uniform_real_distribution<double> U(pos_min,pos_max);
         generator_type generator(time(NULL));
         auto gen = std::bind(U, generator);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
-        const size_t N = 50;
+        const size_t N = 1000;
         std::vector<double_d> positions(N);
         for (int i=0; i<N; i++) {
             for (int d=0; d<D; ++d) {
@@ -99,17 +103,29 @@ public:
             }
         }
 
-        // randomly generate a source vector
+        // generate a source vector using a smooth cosine
+        auto source_fn = [&](const double_d &p) {
+            //return (p-double_d(0)).norm();
+            double ret=1.0;
+            const double scale = 2.0*detail::PI/(pos_max-pos_min); 
+            for (int i=0; i<D; i++) {
+                ret *= cos((p[i]-pos_min)*scale);
+            }
+            return ret;
+        };
         std::vector<double> source(N);
-        std::generate(source.begin(), source.end(), gen);
+        std::transform(std::begin(positions), std::end(positions), 
+                       std::begin(source), source_fn);
 
-        const double c = 1.0;
+        const double c = 0.1;
         auto kernel = [&c](const double_d &i, const double_d &j) {
             return std::sqrt((i-j).norm() + c); 
         };
 
         // perform the operation manually
         std::vector<double> target_manual(N,0.0);
+
+        auto t0 = Clock::now();
         for (int i=0; i<N; i++) {
             const double_d pi = positions[i];
             for (int j=0; j<N; j++) {
@@ -117,23 +133,40 @@ public:
                 target_manual[i] += kernel(pi,pj)*source[j];
             }
         }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> time_manual = t1 - t0;
+
+        const double scale = std::accumulate(
+                        std::begin(target_manual), std::end(target_manual),
+                        0.0,
+                        [](const double t1, const double t2) { return t1 + t2*t2; }
+                       );
+
 
         std::vector<double> target(N);
-        for (size_t n = 10; n < 20; ++n) {
+        const unsigned int maxn = std::pow(N/2,1.0/D);
+        for (unsigned int n = 1; n < maxn; ++n) {
             // perform the operation using chebyshev interpolation 
+            t0 = Clock::now();
             chebyshev_interpolation<D>(
                                 std::begin(source),std::end(source),
                                 std::begin(target),std::end(target),
                                 std::begin(positions),std::begin(positions),
                                 kernel,n);
-            const double L2 = std::sqrt(std::inner_product(
+            t1 = Clock::now();
+            std::chrono::duration<double> time = t1 - t0;
+            const double L2 = std::inner_product(
                         std::begin(target), std::end(target),
                         std::begin(target_manual),
                         0.0,
                         [](const double t1, const double t2) { return t1 + t2; },
                         [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
-                       ));
-            std::cout << "dimension = "<<D<<". n = "<<n<<". L2 error is "<<L2<<std::endl;
+                       );
+            
+            std::cout << "dimension = "<<D<<". n = "<<n<<". L2 error = "<<L2<<". L2 relative error is "<<std::sqrt(L2/scale)<<". time/time_manual = "<<time/time_manual<<std::endl;
+
+            //TODO: is there a better test than this, maybe shouldn't randomly do it?
+            if (D==2 && n >=18) TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),0.02);
         }
     }
  
@@ -160,18 +193,12 @@ public:
 
 
     void test_chebyshev_interpolation(void) {
-        /*
-        std::cout << "testing 1D..." << std::endl;
-        helper_chebyshev_interpolation<1>();
-        */
         std::cout << "testing 2D..." << std::endl;
         helper_chebyshev_interpolation<2>();
-        /*
         std::cout << "testing 3D..." << std::endl;
         helper_chebyshev_interpolation<3>();
         std::cout << "testing 4D..." << std::endl;
         helper_chebyshev_interpolation<4>();
-        */
     }
 
 

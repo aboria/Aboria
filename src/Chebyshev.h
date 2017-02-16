@@ -68,47 +68,52 @@ void chebyshev_interpolation(
     const int_d start = int_d(0);
     const int_d end = int_d(n-1);
 
+    map_type source_values(&(*input_iterator_begin),sourceN);
+    map_type target_values(&(*output_iterator_begin),targetN);
+
     // Calculate Sn's at source and target positions
     detail::Chebyshev_Rn<D> source_Rn,target_Rn;
     source_Rn.calculate_Sn(source_positions_begin,sourceN,n);
     target_Rn.calculate_Sn(target_positions_begin,targetN,n);
     
     // fill source_Rn matrix
-    lattice_iterator<D> mi(start,end,start);
     matrix_type source_Rn_matrix(ncheb,sourceN);
     for (int i=0; i<sourceN; ++i) {
+        lattice_iterator<D> mi(start,end,start);
         for (int j=0; j<ncheb; ++j,++mi) {
             source_Rn_matrix(j,i) = source_Rn(*mi,i);
         }
     }
 
-    // fill target_Rn matrix
-    lattice_iterator<D> mj(start,end,start);
-    matrix_type target_Rn_matrix(targetN,ncheb);
-    for (int i=0; i<targetN; ++i) {
-        for (int j=0; j<ncheb; ++j,++mj) {
-            target_Rn_matrix(i,j) = target_Rn(*mj,i);
-        }
-    }
+    //First compute the weights at the Chebyshev nodes ym by anterpolation 
+    vector_type W = source_Rn_matrix*source_values;
 
     // fill kernel matrix
     matrix_type kernel_matrix(ncheb,ncheb);
-    mi = mj = lattice_iterator<D>(start,end,start);
+    lattice_iterator<D> mi(start,end,start);
     for (int i=0; i<ncheb; ++i,++mi) {
         const double_d pi = source_Rn.get_position(*mi);
+        lattice_iterator<D> mj(start,end,start);
         for (int j=0; j<ncheb; ++j,++mj) {
             const double_d pj = target_Rn.get_position(*mj);
             kernel_matrix(i,j) = kernel(pi,pj);
         }
     }
 
-    map_type source_values(&(*input_iterator_begin),sourceN);
-    map_type target_values(&(*output_iterator_begin),targetN);
-
-    //First compute the weights at the Chebyshev nodes ym by anterpolation 
     //Next compute f ðxÞ at the Chebyshev nodes xl:
+    vector_type fcheb = kernel_matrix*W;
+
+    // fill target_Rn matrix
+    matrix_type target_Rn_matrix(targetN,ncheb);
+    for (int i=0; i<targetN; ++i) {
+        lattice_iterator<D> mj(start,end,start);
+        for (int j=0; j<ncheb; ++j,++mj) {
+            target_Rn_matrix(i,j) = target_Rn(*mj,i);
+        }
+    }
+
     //Last compute f ðxÞ at the observation points xi by interpolation:
-    target_values = target_Rn_matrix*kernel_matrix*source_Rn_matrix*source_values;
+    target_values = target_Rn_matrix*fcheb;
 }
 
 
