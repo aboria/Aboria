@@ -37,8 +37,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CHEBYSHEV_H_
 #define CHEBYSHEV_H_
 
+#ifdef HAVE_EIGEN
 #include "detail/Chebyshev.h"
 #include <Eigen/Core>
+#endif
 
 namespace Aboria {
 
@@ -56,6 +58,7 @@ void chebyshev_interpolation(
         PositionIterator target_positions_begin,
         Kernel kernel,
         unsigned int n) {
+#ifdef HAVE_EIGEN
     typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
     typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
     typedef Eigen::Map<vector_type> map_type;
@@ -114,6 +117,9 @@ void chebyshev_interpolation(
 
     //Last compute f ðxÞ at the observation points xi by interpolation:
     target_values = target_Rn_matrix*fcheb;
+#else
+    ERROR("chebyshev_interpolation requires the Eigen library");
+#endif
 }
 
 

@@ -50,6 +50,7 @@ using namespace Aboria;
 
 class ChebyshevTest : public CxxTest::TestSuite {
 public:
+#ifdef HAVE_EIGEN
     template <unsigned int D>
     void helper_Rn_calculation(void) {
         const double tol = 1e-10;
@@ -169,12 +170,13 @@ public:
             if (D==2 && n >=18) TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),0.02);
         }
     }
- 
+#endif 
 
         
 
 
     void test_chebyshev_polynomial_calculation(void) {
+#ifdef HAVE_EIGEN
         const double tol = 1e-10;
         // evaluate polynomial of order k at i-th root
         // of polynomial of order n
@@ -188,21 +190,24 @@ public:
                                     cos(k*(2.0*i+1.0)/(2.0*n)*detail::PI),tol);
             }
         }
-
+#endif
     }
 
 
     void test_chebyshev_interpolation(void) {
+#ifdef HAVE_EIGEN
         std::cout << "testing 2D..." << std::endl;
         helper_chebyshev_interpolation<2>();
         std::cout << "testing 3D..." << std::endl;
         helper_chebyshev_interpolation<3>();
         std::cout << "testing 4D..." << std::endl;
         helper_chebyshev_interpolation<4>();
+#endif
     }
 
 
     void test_Rn_calculation(void) {
+#ifdef HAVE_EIGEN
         std::cout << "testing 1D..." << std::endl;
         helper_Rn_calculation<1>();
         std::cout << "testing 2D..." << std::endl;
@@ -211,6 +216,7 @@ public:
         helper_Rn_calculation<3>();
         std::cout << "testing 4D..." << std::endl;
         helper_Rn_calculation<4>();
+#endif
     }
 };
 
