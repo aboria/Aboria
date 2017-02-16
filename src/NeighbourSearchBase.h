@@ -238,6 +238,7 @@ class ranges_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
+    typedef Traits traits_type;
     typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const p_reference reference;
@@ -332,6 +333,7 @@ class linked_list_iterator {
     typedef typename Traits::raw_pointer p_pointer;
 
 public:
+    typedef Traits traits_type;
     typedef const p_pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
     typedef const p_reference reference;

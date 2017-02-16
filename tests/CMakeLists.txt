@@ -50,7 +50,7 @@ endif()
 
 option(Aboria_RUN_BENCHMARKS "run benchmarks during testing" OFF)
 if (Aboria_RUN_BENCHMARKS)
-    find_package(GROMACS)
+    find_package(Gromacs)
     if (GROMACS_FOUND)
         add_definitions(-DHAVE_GROMACS)
         list(APPEND Aboria_LIBRARIES "${GROMACS_LIBRARIES}")

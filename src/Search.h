@@ -63,9 +63,9 @@ class box_search_iterator {
     typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
-    typedef typename Traits::value_type p_value_type;
-    typedef typename Traits::raw_reference p_reference;
-    typedef typename Traits::raw_pointer p_pointer;
+    typedef typename Iterator::value_type p_value_type;
+    typedef typename Iterator::reference p_reference;
+    typedef typename Iterator::pointer p_pointer;
 
 public:
     typedef const tuple_ns::tuple<p_reference,const double_d&>* pointer;
