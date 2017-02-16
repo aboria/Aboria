@@ -42,7 +42,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <random>
 #include <time.h>
 #include "Level1.h"
-#include "detail/Chebyshev.h"
+#include "Chebyshev.h"
 
 using namespace Aboria;
 
@@ -65,7 +65,7 @@ public:
         }
         detail::Chebyshev_Rn<D> Rn;
         for (int n=1; n<10; ++n) {
-            Rn.calculate_Sn(positions,n);
+            Rn.calculate_Sn(std::begin(positions),N,n);
             const int_d start = int_d(0);
             const int_d end = int_d(n-1);
             auto range = iterator_range<lattice_iterator<D>>(
@@ -81,6 +81,66 @@ public:
             }
         }
     }
+
+    template <unsigned int D>
+    void helper_chebyshev_interpolation(void) {
+        const double tol = 1e-10;
+        // randomly generate a bunch of positions over a range 
+        std::uniform_real_distribution<double> U(0,1);
+        generator_type generator(time(NULL));
+        auto gen = std::bind(U, generator);
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+        const size_t N = 50;
+        std::vector<double_d> positions(N);
+        for (int i=0; i<N; i++) {
+            for (int d=0; d<D; ++d) {
+                positions[i][d] = gen();
+            }
+        }
+
+        // randomly generate a source vector
+        std::vector<double> source(N);
+        std::generate(source.begin(), source.end(), gen);
+
+        const double c = 1.0;
+        auto kernel = [&c](const double_d &i, const double_d &j) {
+            return std::sqrt((i-j).norm() + c); 
+        };
+
+        // perform the operation manually
+        std::vector<double> target_manual(N,0.0);
+        for (int i=0; i<N; i++) {
+            const double_d pi = positions[i];
+            for (int j=0; j<N; j++) {
+                const double_d pj = positions[j];
+                target_manual[i] += kernel(pi,pj)*source[j];
+            }
+        }
+
+        std::vector<double> target(N);
+        for (size_t n = 10; n < 20; ++n) {
+            // perform the operation using chebyshev interpolation 
+            chebyshev_interpolation<D>(
+                                std::begin(source),std::end(source),
+                                std::begin(target),std::end(target),
+                                std::begin(positions),std::begin(positions),
+                                kernel,n);
+            const double L2 = std::sqrt(std::inner_product(
+                        std::begin(target), std::end(target),
+                        std::begin(target_manual),
+                        0.0,
+                        [](const double t1, const double t2) { return t1 + t2; },
+                        [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                       ));
+            std::cout << "dimension = "<<D<<". n = "<<n<<". L2 error is "<<L2<<std::endl;
+        }
+    }
+ 
+
+        
+
+
     void test_chebyshev_polynomial_calculation(void) {
         const double tol = 1e-10;
         // evaluate polynomial of order k at i-th root
@@ -97,6 +157,23 @@ public:
         }
 
     }
+
+
+    void test_chebyshev_interpolation(void) {
+        /*
+        std::cout << "testing 1D..." << std::endl;
+        helper_chebyshev_interpolation<1>();
+        */
+        std::cout << "testing 2D..." << std::endl;
+        helper_chebyshev_interpolation<2>();
+        /*
+        std::cout << "testing 3D..." << std::endl;
+        helper_chebyshev_interpolation<3>();
+        std::cout << "testing 4D..." << std::endl;
+        helper_chebyshev_interpolation<4>();
+        */
+    }
+
 
     void test_Rn_calculation(void) {
         std::cout << "testing 1D..." << std::endl;

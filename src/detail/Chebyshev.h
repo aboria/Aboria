@@ -34,8 +34,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#ifndef CHEBYSHEV_H_
-#define CHEBYSHEV_H_
+#ifndef CHEBYSHEV_DETAIL_H_
+#define CHEBYSHEV_DETAIL_H_
 
 #include <boost/math/constants/constants.hpp>
 #include "Vector.h"
@@ -100,13 +100,18 @@ T chebyshev_polynomial(const T &x, unsigned int n) {
     }
 }
 
+
+double chebyshev_node(const unsigned int i, const unsigned int n) {
+    return cos((2.0*i+1.0)*PI/(2.0*n));
+}
+
 template <unsigned int N>
 double chebyshev_Rn_slow(const Vector<double,N> &x, const Vector<int,N> &i, unsigned int n) {
     double Rn = 1.0;
     for (unsigned int d = 0; d < N; ++d) {
         double Sn = 0;
         for (unsigned int k = 1; k < n; ++k) {
-            const double root = cos((2.0*i[d]+1.0)*PI/(2.0*n));
+            const double root = chebyshev_node(i[d],n);
             Sn += chebyshev_polynomial(root,k)*chebyshev_polynomial(x[d],k);
         }
         Sn = (1.0 + 2.0*Sn)/n;
@@ -134,36 +139,53 @@ T chebyshev_Sn(const T &x, unsigned int i, unsigned int n) {
     return (invn + x*bk_1 - bk_2);
 }
 
+
+
 // struct to calculate Rn with N chebyshev nodes using spatial dimension D 
 template <unsigned int D>
 struct Chebyshev_Rn {
     typedef Vector<double,D> double_d;
     typedef Vector<int,D> int_d;
     typedef std::vector<double_d> vector_double_d;
+    typedef typename std::vector<double_d>::const_iterator double_d_iterator;
     vector_double_d Sn;
     unsigned int n;
+    unsigned int N;
     detail::bbox<D> box;
     Chebyshev_Rn() {}
-    void calculate_Sn(const vector_double_d& positions, unsigned int with_n) {
+    void calculate_Sn(const double_d_iterator& positions, 
+                      const unsigned int with_N,
+                      unsigned int with_n) {
         n = with_n;
-        Sn.resize(positions.size()*n);
+        N = with_N;
+        Sn.resize(N*n);
         box.bmin = positions[0];
         box.bmax = positions[0];
-        for (int i=1; i<positions.size(); ++i) {
+        for (int i=1; i<N; ++i) {
             for (int d=0; d<D; ++d) {
                 if (positions[i][d] < box.bmin[d]) box.bmin[d] = positions[i][d];
                 if (positions[i][d] > box.bmax[d]) box.bmax[d] = positions[i][d];
             }
         }
         const double_d scale = double_d(1.0)/(box.bmax-box.bmin);
-        for (int i=0; i<positions.size(); ++i) {
+        for (int i=0; i<N; ++i) {
             for (int m=0; m<n; ++m) {
                 Sn[i*n + m] = chebyshev_Sn((2*positions[i]-box.bmin-box.bmax)*scale,m,n);
             }
         }
     }
+
     // NOTE: valid range of m is 0..n-1
-    double operator()(const int_d &m, size_t i) {
+    double_d get_position(const int_d &m) {
+        double_d pos;
+        for (int d=0; d<D; ++d) {
+            pos[d] = chebyshev_node(m[d],n);
+        }
+        return pos;
+    }
+
+    // NOTE: valid range of m is 0..n-1
+    double operator()(const int_d &m, unsigned int i) {
         const unsigned int ii = i*n;
         ASSERT(ii < Sn.size(),"requesting i greater than particles size");
         ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
