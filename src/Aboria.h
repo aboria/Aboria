@@ -42,6 +42,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //Level2
 #include "Search.h"
+#include "Kernels.h"
+#include "Operators.h"
 
 //Level3
 #include "Symbolic.h"
@@ -50,8 +52,5 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //TODO: seems clumsy here
 #include "detail/SymbolicAssignment.h"
 
-
-//other (TODO: once expressions removed from operators this going in LEvel 2)
-#include "Operators.h"
 
 #endif /* ABORIA_H_ */

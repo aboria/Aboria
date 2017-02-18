@@ -37,7 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef KERNELS_H_
 #define KERNELS_H_
 
-#include <typetraits>
+#include <type_traits>
 
 namespace Aboria {
 
@@ -49,10 +49,12 @@ namespace Aboria {
         typedef typename RowParticles::const_reference const_row_reference;
         typedef typename ColParticles::const_reference const_col_reference;
     public:
-        typename std::result_of<F(const_position_reference, 
+        typedef typename std::result_of<F(const_position_reference, 
                                   const_row_reference, 
                                   const_col_reference)>::type Scalar;
-        KernelBase(const F& function) m_function(function) {};
+
+        KernelBase(const F& function): m_function(function) {};
+
         Scalar eval(const_position_reference dx, 
                     const_row_reference a, 
                     const_col_reference b) {
@@ -93,16 +95,17 @@ namespace Aboria {
     };
 
     template<typename RowParticles, typename ColParticles, typename F>
-    class KernelDense:public KernelBase {
-        typedef typename KernelBase::position position;
-        typedef typename KernelBase::double_d double_d;
-        typedef typename KernelBase::const_position_reference;
-        typedef typename KernelBase::const_reference const_row_reference;
-        typedef typename KernelBase::const_reference const_col_reference;
+    class KernelDense: public KernelBase<RowParticles,ColParticles,F> {
+        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_reference const_row_reference;
+        typedef typename base_type::const_reference const_col_reference;
     public:
-        typename KernelBase::Scalar Scalar;
+        typename base_type::Scalar Scalar;
 
-        KernelBase(const F& function) KernelBase(function) {};
+        KernelDense(const F& function): base_type(function) {};
 
         template<typename MatrixType>
         void assemble(

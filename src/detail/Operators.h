@@ -34,29 +34,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
 
-#ifndef OPERATORS_H_
-#define OPERATORS_H_
+#ifndef OPERATORS_DETAIL_H_
+#define OPERATORS_DETAIL_H_
 
 #include <type_traits>
-#include "detail/Evaluate.h"
-#include "Symbolic.h"
+#include <limits>
+#include "Vector.h"
 
-#ifdef HAVE_EIGEN
 #define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 #include <Eigen/Core>
 #include <Eigen/Sparse>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
 #include <unsupported/Eigen/IterativeSolvers>
-#endif
 
-namespace Aboria {
-namespace detail {
-#ifdef HAVE_EIGEN
-    template <unsigned int NI, unsigned int NJ, typename Blocks>
-    class MatrixReplacement;
-}
-}
+
 
 namespace Eigen {
     namespace internal {
@@ -93,7 +85,7 @@ struct NumTraits<Aboria::Vector<T,N>> {
 namespace Aboria {
 namespace detail {
 
-    template <typename MatrixReplacement, typename Scalar=MatrixReplacement::Scalar>
+    template <typename MatrixReplacement, typename Scalar=typename MatrixReplacement::Scalar>
     class InnerIterator {
         public:
         typedef const Scalar* pointer;
@@ -101,6 +93,7 @@ namespace detail {
         typedef const Scalar& reference;
         typedef const Scalar value_type;
         typedef std::ptrdiff_t difference_type;
+        typedef size_t Index;
 
         InnerIterator(const MatrixReplacement& mat, const Index row):
             m_mat(mat),m_row(row),m_col(0) {};
@@ -184,245 +177,12 @@ namespace detail {
     }
 
 
-    // Inheriting EigenBase should not be needed in the future.
-    template <unsigned int NI, unsigned int NJ, typename Blocks>
-    class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks>> {
+    
 
-            typedef typename tuple_ns::tuple_element<0,Blocks>::type first_block_type;
-            typedef typename tuple_ns::tuple_element<2,first_block_type>::type first_expr_type;
-            
-        public:
+    template <typename Dest, typename Source, typename Block>
+    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const Block& block) {
 
-            // Expose some compile-time information to Eigen:
-            typedef typename first_expr_type::Scalar Scalar;
-            typedef Scalar RealScalar;
-            typedef size_t Index;
-            typedef int StorageIndex;
-            enum {
-                ColsAtCompileTime = Eigen::Dynamic,
-                RowsAtCompileTime = Eigen::Dynamic,
-                MaxColsAtCompileTime = Eigen::Dynamic,
-                MaxRowsAtCompileTime = Eigen::Dynamic,
-                IsRowMajor = false
-            };
-            typedef InnerIterator<MatrixReplacement> InnerIterator;
-
-            MatrixReplacement(const Blocks& blocks):m_blocks(blocks) {};
-
-            CUDA_HOST_DEVICE
-            Index rows() const {
-                //std::cout << "rows = " << rows_impl(detail::make_index_sequence<NI>()) << std::endl;
-                //
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return rows_impl(detail::make_index_sequence<NI>());
-#endif
-            }
-
-            CUDA_HOST_DEVICE
-            Index cols() const {
-                //std::cout << "cols = " << cols_impl(detail::make_index_sequence<NJ>())<< std::endl;
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return cols_impl(detail::make_index_sequence<NJ>());
-#endif
-            }
-
-            CUDA_HOST_DEVICE
-            Index innerSize() const {
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return rows();
-#endif
-            }
-
-            CUDA_HOST_DEVICE
-            Index outerSize() const {
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return cols();
-#endif
-            }
-
-            void resize(Index a_rows, Index a_cols) {
-                // This method should not be needed in the future.
-                assert(a_rows==0 && a_cols==0 || a_rows==rows() && a_cols==cols());
-            }
-
-            Scalar coeff(const Index i, const Index j) const {
-                return coeff_impl(i,j,detail::make_index_sequence<NI*NJ>());
-            }
-
-            template<typename Rhs>
-            Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
-                return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
-            }
-
-            template<typename Derived>
-            void assemble(Eigen::DenseBase<Derived>& matrix) const {
-                const size_t na = rows();
-                const size_t nb = cols();
-                matrix.resize(na,nb);
-                CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
-                assemble_impl(matrix,detail::make_index_sequence<NI*NJ>());
-            }
-
-            void assemble(Eigen::SparseMatrix<Scalar>& matrix) {
-                const size_t na = rows();
-                const size_t nb = cols();
-                //matrix.resize(na,nb);
-                CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
-
-                typedef Eigen::Triplet<Scalar> triplet_type;
-                std::vector<triplet_type> tripletList;
-                // TODO: can we estimate this better?
-                tripletList.reserve(na*5);
-
-                assemble_impl(tripletList,detail::make_index_sequence<NI*NJ>());
-
-                matrix.setFromTriplets(tripletList.begin(),tripletList.end());
-            }
-
-            
-
-        private:
-            template<std::size_t... I>
-            Index rows_impl(detail::index_sequence<I...>) const {
-                return detail::sum(tuple_ns::get<0>(tuple_ns::get<I*NJ>(m_blocks)).size()...);
-            }
-
-            template<std::size_t... J>
-            Index cols_impl(detail::index_sequence<J...>) const {
-                return detail::sum(tuple_ns::get<1>(tuple_ns::get<J>(m_blocks)).size()...);
-            }
-
-            template <int I>
-            Index start_col() const {
-                return cols_impl(detail::make_index_sequence<I>());
-            }
-
-            template <int I>
-            Index size_col() const {
-                return tuple_ns::get<1>(tuple_ns::get<I>(m_blocks)).size();
-            }
-
-            template <int I>
-            Index start_row() const {
-                return rows_impl(detail::make_index_sequence<I>());
-            }
-
-            template <int I>
-            Index size_row() const {
-                return tuple_ns::get<0>(tuple_ns::get<I*NJ>(m_blocks)).size();
-            }
-
-            template <
-              typename particles_a_type, typename particles_b_type,
-              typename expr_type>
-            Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const particles_a_type&,const particles_b_type&,expr_type>& block) const {
-
-                ASSERT(i>=0, "i less than zero");
-                ASSERT(j>=0, "j less than zero");
-                const particles_a_type& a = tuple_ns::get<0>(block);
-                const particles_b_type& b = tuple_ns::get<1>(block);
-                const expr_type& expr = tuple_ns::get<2>(block);
-                ASSERT(i < a.size(),"i greater than a.size()");
-                ASSERT(j < b.size(),"j greater than b.size()");
-                typename particles_a_type::const_reference ai = a[i];
-                typename particles_b_type::const_reference bj = b[j];
-                typename particles_a_type::double_d dx = get<position>(bj)-get<position>(ai);
-                return expr.eval(dx,ai,bj);
-            }
-
-            template<std::size_t... I>
-            Scalar coeff_impl(const Index i, const Index j, detail::index_sequence<I...>) const {
-
-                return detail::sum(
-                        ((i>=start_row<I/NJ>())&&(i<start_row<I/NJ+1>())
-                         &&
-                         (j>=start_col<I%NJ>())&&(j<start_col<I%NJ+1>()))?
-                            (coeff_impl_block(i-start_row<I/NJ>(),
-                                              j-start_col<I%NJ>(),
-                                              tuple_ns::get<I>(m_blocks))):
-                            (0.0)...
-                        );
-            }
-
-            template <typename particles_a_type, typename particles_b_type,
-                      typename expr_type>
-            void assemble_block_impl(const size_t startI, const size_t startJ,
-                    std::vector<Eigen::Triplet<Scalar>>& triplets,
-                    const tuple_ns::tuple<
-                            const particles_a_type&,
-                            const particles_b_type&,
-                            expr_type>& block) const {
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-                const particles_a_type& a = tuple_ns::get<0>(block);
-                const particles_b_type& b = tuple_ns::get<1>(block);
-                const expr_type& expr = tuple_ns::get<2>(block);
-                
-                expr.assemble(a,b,triplets,startI,startJ);
-            }
-
-            template <typename particles_a_type, typename particles_b_type,
-                      typename expr_type, typename if_expr_type, typename Derived>
-            void assemble_block_impl(
-                    const Eigen::MatrixBase<Derived> &matrix,
-                    const tuple_ns::tuple<
-                            const particles_a_type&,
-                            const particles_b_type&,
-                            expr_type,if_expr_type>& block) const {
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-                const particles_a_type& a = tuple_ns::get<0>(block);
-                const particles_b_type& b = tuple_ns::get<1>(block);
-                expr_type expr = tuple_ns::get<2>(block);
-                expr.assemble(a,b,matrix);
-            }
-
-            template<std::size_t... I>
-            void assemble_impl(std::vector<Eigen::Triplet<Scalar>>& triplets, detail::index_sequence<I...>) const {
-                int dummy[] = { 0, (
-                        assemble_block_impl(
-                            start_row<I/NJ>(),start_col<I%NJ>(),
-                            triplets,tuple_ns::get<I>(m_blocks)),void(),0)... };
-                static_cast<void>(dummy);
-            }
-
-
-            template<typename Derived, std::size_t... I>
-            void assemble_impl(Eigen::DenseBase<Derived>& matrix, detail::index_sequence<I...>) const {
-                int dummy[] = { 0, (
-                        assemble_block_impl(
-                            matrix.block(start_row<I/NJ>(),start_col<I%NJ>()
-                            ,start_row<I/NJ+1>()-start_row<I/NJ>()
-                            ,start_col<I%NJ+1>()-start_col<I%NJ>())
-                            ,tuple_ns::get<I>(m_blocks)),void(),0)... };
-                static_cast<void>(dummy);
-            }
-
-            const Blocks m_blocks;
-
-    };
-
-    template <typename Dest, typename Source,
-              typename particles_a_type, typename particles_b_type,
-              typename expr_type>
-    void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const tuple_ns::tuple<const particles_a_type&,const particles_b_type&,expr_type>& block) {
-        const particles_a_type& a = tuple_ns::get<0>(block);
-        const particles_b_type& b = tuple_ns::get<1>(block);
-        const expr_type& expr = tuple_ns::get<2>(block);
-
-        expr.evaluate(a,b,y,rhs);
+        block.evaluate(a,b,y,rhs);
     }
 
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
@@ -440,7 +200,8 @@ namespace detail {
     void evalTo_impl(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, detail::index_sequence<I...>) {
         evalTo_unpack_blocks(y,lhs,rhs,tuple_ns::make_tuple(mpl::int_<I/NJ>(), mpl::int_<I%NJ>(), tuple_ns::get<I>(lhs.m_blocks))...);
     }
-}
+} // namespace detail
+} // namespace Aboria
 
 
 // Implementation of MatrixReplacement * Eigen::DenseVector though a specialization of internal::generic_product_impl:
@@ -467,38 +228,6 @@ struct generic_product_impl<Aboria::MatrixReplacement<NI,NJ,Blocks>, Rhs, Sparse
 }
 }
 
-namespace Aboria {
-    /// creates a matrix-free linear operator for use with Eigen
-    ///
-    template <typename A,
-              typename B,
-              typename Expr,
-              typename BlockType=tuple_ns::tuple<const A&,const B&,const Expr&>,
-              typename TupleType=tuple_ns::tuple<BlockType>
-    MatrixReplacement<1,1,TupleType>
-    create_operator(
-            const A& a,
-            const B& b,
-            const Expr& expr)
-    {
-        return MatrixReplacement<1,1,TupleType>(
-                tuple_ns::make_tuple(
-                    tuple_ns::make_tuple(a,b,expr)
-                ));
-    }
 
-    /// creates a matrix-free linear block operator for use with Eigen
-    ///
-    template <unsigned int NI, unsigned int NJ, typename ... T>
-    MatrixReplacement<NI,NJ,tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...>>
-    create_block_operator(const MatrixReplacement<1,1,T>&... operators) {
-        typedef tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...> tuple_type;
-        return MatrixReplacement<NI,NJ,tuple_type>(tuple_type(tuple_ns::get<0>(operators.m_blocks)...));
-    }
-
-
-#endif
-
-}
 
 #endif //OPERATORS_H_

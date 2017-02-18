@@ -78,13 +78,14 @@ public:
 
         particles.init_neighbour_search(min,max,diameter,periodic);
 
-        Symbol<scalar1> s1;
-        Symbol<scalar2> s2;
-        Label<0,ParticlesType> a(particles);
-        Label<1,ParticlesType> b(particles);
-        auto dx = create_dx(a,b);
+        auto A = create_operator(particles,particles,
+                KernelDense<ParticlesType,ParticlesType(
+                    [](const position::value_type &dx,
+                       ParticlesType::const_reference &a,
+                       ParticlesType::const_reference &b) {
+                    get<scalar1>(a) + get<scalar2>(b)
+                    }));
 
-        auto A = create_eigen_operator(a,b, s1[a] + s2[b]);
         Eigen::VectorXd v(3);
         v << 1, 2, 3;
         Eigen::VectorXd ans(3);
@@ -99,8 +100,13 @@ public:
         }
 
 
-        auto C = create_eigen_operator(a,b, s1[a] + s2[b], norm(dx) < diameter);
-        
+        /*
+        auto C = create_operator(particles,particles,
+                KernelSparse(diameter,
+                    [](ParticlesType::const_reference &a,
+                       ParticlesType::const_reference &b) {
+                    get<scalar1>(a) + get<scalar2>(b)
+                    }));
 
         v << 1, 2, 3;
         ans = C*v;
@@ -148,6 +154,7 @@ public:
         for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
+        */
 
 #endif // HAVE_EIGEN
     }
@@ -189,18 +196,18 @@ public:
 
         particles.init_neighbour_search(min,max,diameter,periodic);
 
-        Symbol<scalar1> s1;
-        Symbol<scalar2> s2;
-        Label<0,ParticlesType> a(particles);
-        Label<1,ParticlesType> b(particles);
-        Label<0,ParticlesType> i(augment);
-        Label<1,ParticlesType> j(augment);
-        auto dx = create_dx(a,b);
-
+        
         //      1  1  1
         // A =  2  2  2
         //      3  3  3
-        auto A = create_eigen_operator(a,b, s1[a]);
+        auto A = create_operator(particles,particles,
+                KernelDense(
+                    [](ParticlesType::const_reference &a,
+                       ParticlesType::const_reference &b) {
+                    get<scalar1>(a)
+                    }));
+
+
         Eigen::VectorXd v(n);
         v << 1, 1, 1;
         Eigen::VectorXd ans(n);
@@ -212,17 +219,34 @@ public:
         // B = 0.1
         //     0.2
         //     0.3
-        auto B = create_eigen_operator(a,j, s2[a]);
+        auto B = create_operator(particles,augment,
+                KernelDense(
+                    [](ParticlesType::const_reference &a,
+                       ParticlesType::const_reference &b) {
+                    get<scalar2>(a)
+                    }));
+
+
         // C = 0.1 0.2 0.3
-        auto C = create_eigen_operator(i,b, s2[b]);
-        auto Zero = create_eigen_operator(i,j, 0.);
+        auto C = create_operator(augment,particles,
+                KernelDense(
+                    [](ParticlesType::const_reference &a,
+                       ParticlesType::const_reference &b) {
+                    get<scalar2>(b)
+                    }));
+
+
+        auto Zero = create_operator(augment,augment,
+                KernelZero());
+
+
 
         //         1   1   1   0.1
         //         2   2   2   0.2
         // Full =  3   3   3   0.3
         //         0.1 0.2 0.3 0
-        auto Full = create_block_eigen_operator<2,2>(A,B,
-                                                     C,Zero);
+        auto Full = create_eigen_operator<2,2>(A,B,
+                                               C,Zero);
 
         v.resize(n+1);
         v << 1, 1, 1, 1;
