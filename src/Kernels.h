@@ -43,9 +43,10 @@ namespace Aboria {
 
     template<typename RowParticles, typename ColParticles, typename F>
     class KernelBase {
+    protected:
         typedef typename RowParticles::position position;
         typedef typename RowParticles::double_d double_d;
-        typedef const typename position::value_type& const_position_reference;
+        typedef typename position::value_type const & const_position_reference;
         typedef typename RowParticles::const_reference const_row_reference;
         typedef typename ColParticles::const_reference const_col_reference;
     public:
@@ -53,28 +54,49 @@ namespace Aboria {
                                   const_row_reference, 
                                   const_col_reference)>::type Scalar;
 
-        KernelBase(const F& function): m_function(function) {};
+        KernelBase(const RowParticles& row_particles,
+                   const ColParticles& col_particles,
+                   const F& function): 
+            m_function(function),
+            m_row_particles(row_particles), 
+            m_col_particles(col_particles)
+        {};
+
+
+        size_t size_row() const {
+            return m_row_particles.size();
+        }
+
+        size_t size_col() const {
+            return m_row_particles.size();
+        }
 
         Scalar eval(const_position_reference dx, 
                     const_row_reference a, 
-                    const_col_reference b) {
+                    const_col_reference b) const {
             return m_function(dx,a,b);
         }
 
+        Scalar coeff(const size_t i, const size_t j) const {
+            ASSERT(i>=0, "i less than zero");
+            ASSERT(j>=0, "j less than zero");
+            ASSERT(i < m_row_particles.size(),"i greater than a.size()");
+            ASSERT(j < m_col_particles.size(),"j greater than b.size()");
+            const_row_reference ai = m_row_particles[i];
+            const_col_reference bj = m_col_particles[i];
+            const_position_reference dx = get<position>(bj)-get<position>(ai);
+            return eval(dx,ai,bj);
+        }
+
         template<typename MatrixType>
-        void assemble(
-                const RowParticles &a, 
-                const ColParticles &b, 
-                const MatrixType &matrix) {
+        void assemble(const MatrixType &matrix) const {
                     MatrixType::MATRIX_ASSEMBLE_NOT_IMPLEMENTED; 
         }
 
         template<typename Triplet>
-        void assemble(const RowParticles &a,
-                      const ColParticles &b,
-                      std::vector<Triplet>& triplets,
+        void assemble(std::vector<Triplet>& triplets,
                       const size_t startI=0, const size_t startJ=0
-                      ) {
+                      ) const {
             Triplet::TRIPLET_ASSEMBLE_NOT_IMPLEMENTED; 
         }
 
@@ -82,15 +104,13 @@ namespace Aboria {
         /// and particle sets \p a and \p b on a vector rhs and
         /// accumulates the result in vector lhs
         template<typename VectorLHS,typename VectorRHS>
-        void evaluate(
-                const RowParticles &a, 
-                const ColParticles &b, 
-                VectorLHS &lhs, const VectorRHS &rhs) {
-
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
             VectorLHS::EVALUATE_NOT_IMPLEMENTED;
        }
 
-    private:
+    protected:
+        const RowParticles &m_row_particles;
+        const ColParticles &m_col_particles;
         F m_function;
     };
 
@@ -100,19 +120,23 @@ namespace Aboria {
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::const_position_reference const_position_reference;
-        typedef typename base_type::const_reference const_row_reference;
-        typedef typename base_type::const_reference const_col_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
     public:
         typename base_type::Scalar Scalar;
 
-        KernelDense(const F& function): base_type(function) {};
+        KernelDense(const RowParticles& row_particles,
+                    const ColParticles& col_particles,
+                    const F& function): base_type(row_particles,
+                                                  col_particles,
+                                                  function) 
+        {};
 
         template<typename MatrixType>
-        void assemble(
-                const RowParticles &a, 
-                const ColParticles &b, 
-                const MatrixType &matrix) {
+        void assemble(const MatrixType &matrix) const {
 
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
             const size_t na = a.size();
             const size_t nb = b.size();
 
@@ -130,11 +154,12 @@ namespace Aboria {
         }
 
         template<typename Triplet>
-        void assemble(const RowParticles &a,
-                      const ColParticles &b,
-                      std::vector<Triplet>& triplets,
+        void assemble(std::vector<Triplet>& triplets,
                       const size_t startI=0, const size_t startJ=0
-                      ) {
+                      ) const {
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -157,10 +182,10 @@ namespace Aboria {
         /// and particle sets \p a and \p b on a vector rhs and
         /// accumulates the result in vector lhs
         template<typename VectorLHS,typename VectorRHS>
-        void evaluate(
-                const RowParticles &a, 
-                const ColParticles &b, 
-                VectorLHS &lhs, const VectorRHS &rhs) {
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -196,6 +221,65 @@ namespace Aboria {
             }
        }
     };
+
+    namespace detail {
+        template <typename RowParticles, typename ColParticles,
+                 typename double_d=
+                     typename RowParticles::double_d,
+                 typename const_row_reference=
+                     typename RowParticles::const_reference,
+                 typename const_col_reference=
+                     typename ColParticles::const_reference>
+        struct zero_lambda {
+            double operator()(const double_d& dx,
+                            const_row_reference a,
+                            const_col_reference b) const {
+                                return 0.0;
+            }
+        };
+    }
+
+    template<typename RowParticles, typename ColParticles,
+        typename F=detail::zero_lambda<RowParticles,ColParticles>>
+    class KernelZero: public KernelBase<RowParticles,ColParticles,F> {
+
+        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+
+    public:
+        typename base_type::Scalar Scalar;
+
+        KernelZero(const RowParticles& row_particles,
+                    const ColParticles& col_particles): 
+            base_type(row_particles,
+                      col_particles,
+                      F()) 
+        {};
+
+        template<typename MatrixType>
+        void assemble(const MatrixType &matrix) const {
+            const_cast< MatrixType& >(matrix).setZero();
+        }
+        
+
+        template<typename Triplet>
+        void assemble(std::vector<Triplet>& triplets,
+                      const size_t startI=0, const size_t startJ=0
+                      ) const {
+        }
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template<typename VectorLHS,typename VectorRHS>
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+        }
+    };
+
 
 
 

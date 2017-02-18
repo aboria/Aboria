@@ -55,12 +55,10 @@ namespace Aboria {
     class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks>> {
 
             typedef typename tuple_ns::tuple_element<0,Blocks>::type first_block_type;
-            typedef typename first_block_type::position position;
-            
         public:
 
             // Expose some compile-time information to Eigen:
-            typedef typename first_expr_type::Scalar Scalar;
+            typedef typename first_block_type::Scalar Scalar;
             typedef Scalar RealScalar;
             typedef size_t Index;
             typedef int StorageIndex;
@@ -159,15 +157,14 @@ namespace Aboria {
 
             
 
-        private:
             template<std::size_t... I>
             Index rows_impl(detail::index_sequence<I...>) const {
-                return detail::sum(tuple_ns::get<0>(tuple_ns::get<I*NJ>(m_blocks)).size()...);
+                return detail::sum(tuple_ns::get<I*NJ>(m_blocks).size_row()...);
             }
 
             template<std::size_t... J>
             Index cols_impl(detail::index_sequence<J...>) const {
-                return detail::sum(tuple_ns::get<1>(tuple_ns::get<J>(m_blocks)).size()...);
+                return detail::sum(tuple_ns::get<J>(m_blocks).size_col()...);
             }
 
             template <int I>
@@ -177,7 +174,7 @@ namespace Aboria {
 
             template <int I>
             Index size_col() const {
-                return tuple_ns::get<1>(tuple_ns::get<I>(m_blocks)).size();
+                return tuple_ns::get<I>(m_blocks).size_col();
             }
 
             template <int I>
@@ -187,25 +184,12 @@ namespace Aboria {
 
             template <int I>
             Index size_row() const {
-                return tuple_ns::get<0>(tuple_ns::get<I*NJ>(m_blocks)).size();
+                return tuple_ns::get<I*NJ>(m_blocks).size_row();
             }
 
-            template <
-              typename particles_a_type, typename particles_b_type,
-              typename expr_type>
-            Scalar coeff_impl_block(const Index i, const Index j, const tuple_ns::tuple<const particles_a_type&,const particles_b_type&,expr_type>& block) const {
-
-                ASSERT(i>=0, "i less than zero");
-                ASSERT(j>=0, "j less than zero");
-                const particles_a_type& a = tuple_ns::get<0>(block);
-                const particles_b_type& b = tuple_ns::get<1>(block);
-                const expr_type& expr = tuple_ns::get<2>(block);
-                ASSERT(i < a.size(),"i greater than a.size()");
-                ASSERT(j < b.size(),"j greater than b.size()");
-                typename particles_a_type::const_reference ai = a[i];
-                typename particles_b_type::const_reference bj = b[j];
-                typename particles_a_type::double_d dx = get<position>(bj)-get<position>(ai);
-                return expr.eval(dx,ai,bj);
+            template <typename block_type>
+            Scalar coeff_impl_block(const Index i, const Index j, const block_type& block) const {
+                return block.coeff(i,j);
             }
 
             template<std::size_t... I>
@@ -222,37 +206,19 @@ namespace Aboria {
                         );
             }
 
-            template <typename particles_a_type, typename particles_b_type,
-                      typename expr_type>
+            template <typename Block>
             void assemble_block_impl(const size_t startI, const size_t startJ,
                     std::vector<Eigen::Triplet<Scalar>>& triplets,
-                    const tuple_ns::tuple<
-                            const particles_a_type&,
-                            const particles_b_type&,
-                            expr_type>& block) const {
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-                const particles_a_type& a = tuple_ns::get<0>(block);
-                const particles_b_type& b = tuple_ns::get<1>(block);
-                const expr_type& expr = tuple_ns::get<2>(block);
-                
-                expr.assemble(a,b,triplets,startI,startJ);
+                    const Block& block) const {
+
+                block.assemble(triplets,startI,startJ);
             }
 
-            template <typename particles_a_type, typename particles_b_type,
-                      typename expr_type, typename if_expr_type, typename Derived>
+            template <typename Block, typename Derived>
             void assemble_block_impl(
                     const Eigen::MatrixBase<Derived> &matrix,
-                    const tuple_ns::tuple<
-                            const particles_a_type&,
-                            const particles_b_type&,
-                            expr_type,if_expr_type>& block) const {
-                typedef typename particles_b_type::double_d double_d;
-                typedef typename particles_b_type::position position;
-                const particles_a_type& a = tuple_ns::get<0>(block);
-                const particles_b_type& b = tuple_ns::get<1>(block);
-                expr_type expr = tuple_ns::get<2>(block);
-                expr.assemble(a,b,matrix);
+                    const Block& block) const {
+                block.assemble(matrix);
             }
 
             template<std::size_t... I>
@@ -280,23 +246,38 @@ namespace Aboria {
 
     };
 
-/// creates a matrix-free linear operator for use with Eigen
+/// creates a dense matrix-free linear operator for use with Eigen
 ///
-template <typename A,
-          typename B,
-          typename Expr,
-          typename BlockType=tuple_ns::tuple<const A&,const B&,const Expr&>,
-          typename TupleType=tuple_ns::tuple<BlockType>>
-MatrixReplacement<1,1,TupleType>
-create_operator(
-        const A& a,
-        const B& b,
-        const Expr& expr) {
-    return MatrixReplacement<1,1,TupleType>(
-            tuple_ns::make_tuple(
-                tuple_ns::make_tuple(a,b,expr)
-            ));
-}
+template<typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelDense<RowParticles,ColParticles,F>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_dense_operator(const RowParticles& row_particles,
+                               const ColParticles& col_particles,
+                               const F& function) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles,function)
+                    )
+                );
+    }
+
+/// creates a zero matrix-free linear operator for use with Eigen
+///
+template<typename RowParticles, typename ColParticles,
+         typename Kernel=KernelZero<RowParticles,ColParticles>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_zero_operator(const RowParticles& row_particles,
+                               const ColParticles& col_particles) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles)
+                    )
+                );
+    }
+
+
 
 /// creates a matrix-free linear block operator for use with Eigen
 ///

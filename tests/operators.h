@@ -78,13 +78,12 @@ public:
 
         particles.init_neighbour_search(min,max,diameter,periodic);
 
-        auto A = create_operator(particles,particles,
-                KernelDense<ParticlesType,ParticlesType(
+        auto A = create_dense_operator(particles,particles,
                     [](const position::value_type &dx,
-                       ParticlesType::const_reference &a,
-                       ParticlesType::const_reference &b) {
-                    get<scalar1>(a) + get<scalar2>(b)
-                    }));
+                       ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                    return get<scalar1>(a) + get<scalar2>(b);
+                    });
 
         Eigen::VectorXd v(3);
         v << 1, 2, 3;
@@ -101,8 +100,8 @@ public:
 
 
         /*
-        auto C = create_operator(particles,particles,
-                KernelSparse(diameter,
+        auto C = create_sparse_operator(particles,particles,
+                    diameter,
                     [](ParticlesType::const_reference &a,
                        ParticlesType::const_reference &b) {
                     get<scalar1>(a) + get<scalar2>(b)
@@ -200,12 +199,12 @@ public:
         //      1  1  1
         // A =  2  2  2
         //      3  3  3
-        auto A = create_operator(particles,particles,
-                KernelDense(
-                    [](ParticlesType::const_reference &a,
-                       ParticlesType::const_reference &b) {
-                    get<scalar1>(a)
-                    }));
+        auto A = create_dense_operator(particles,particles,
+                    [](const position::value_type &dx,
+                       ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                    return get<scalar1>(a);
+                    });
 
 
         Eigen::VectorXd v(n);
@@ -219,25 +218,24 @@ public:
         // B = 0.1
         //     0.2
         //     0.3
-        auto B = create_operator(particles,augment,
-                KernelDense(
-                    [](ParticlesType::const_reference &a,
-                       ParticlesType::const_reference &b) {
-                    get<scalar2>(a)
-                    }));
+        auto B = create_dense_operator(particles,augment,
+                    [](const position::value_type &dx,
+                       ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                    return get<scalar2>(a);
+                    });
 
 
         // C = 0.1 0.2 0.3
-        auto C = create_operator(augment,particles,
-                KernelDense(
-                    [](ParticlesType::const_reference &a,
-                       ParticlesType::const_reference &b) {
-                    get<scalar2>(b)
-                    }));
+        auto C = create_dense_operator(augment,particles,
+                    [](const position::value_type &dx,
+                       ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                    return get<scalar2>(b);
+                    });
 
 
-        auto Zero = create_operator(augment,augment,
-                KernelZero());
+        auto Zero = create_zero_operator(augment,augment);
 
 
 
@@ -245,7 +243,7 @@ public:
         //         2   2   2   0.2
         // Full =  3   3   3   0.3
         //         0.1 0.2 0.3 0
-        auto Full = create_eigen_operator<2,2>(A,B,
+        auto Full = create_block_operator<2,2>(A,B,
                                                C,Zero);
 
         v.resize(n+1);

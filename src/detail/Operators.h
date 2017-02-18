@@ -181,8 +181,7 @@ namespace detail {
 
     template <typename Dest, typename Source, typename Block>
     void evalTo_block(Eigen::VectorBlock<Dest> y, const Eigen::VectorBlock<Source>& rhs, const Block& block) {
-
-        block.evaluate(a,b,y,rhs);
+        block.evaluate(y,rhs);
     }
 
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
