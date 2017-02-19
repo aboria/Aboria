@@ -70,6 +70,8 @@ public:
         typedef position_d<2> position;
         typedef typename ParticlesType::const_reference const_particle_reference;
         typedef typename position::value_type const & const_position_reference;
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
        	ParticlesType knots;
        	ParticlesType augment;
        	ParticlesType test;
@@ -122,7 +124,7 @@ public:
         auto W = create_block_operator<2,2>(G, P,
                                             Pt,Zero);
 
-        Eigen::VectorXd phi(knots.size()+1), gamma(knots.size()+1);
+        vector_type phi(N+1), gamma(N+1);
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
@@ -175,12 +177,11 @@ public:
 
 
         // wrap Aboria vectors as Eigen vectors
-        typedef Eigen::Map<Eigen::Matrix<double,N,1>> map_type; 
-        map_type alpha_wrap(get<alpha>(knots).data());
-        map_type interp_wrap(get<interpolated>(knots).data());
+        map_type alpha_wrap(get<alpha>(knots).data(),N);
+        map_type interp_wrap(get<interpolated>(knots).data(),N);
 
         alpha_wrap = gamma.segment<N>(0);
-        const double beta = gamma(knots.size());
+        vector_type beta = vector_type::Constant(N,gamma[N]);
         interp_wrap = G*alpha_wrap + beta;
 
         double rms_error = 0;
@@ -198,7 +199,7 @@ public:
         std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-8);
 
-        map_type interp_wrap_test(get<interpolated>(test).data());
+        map_type interp_wrap_test(get<interpolated>(test).data(),N);
         auto G_test = create_dense_operator(test,knots,kernel);
         interp_wrap_test = G_test*alpha_wrap + beta;
                 
@@ -237,6 +238,8 @@ void helper_compact(void) {
         typedef position_d<2> position;
         typedef typename ParticlesType::const_reference const_particle_reference;
         typedef typename position::value_type const & const_position_reference;
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
        	ParticlesType knots,augment;
        	ParticlesType test;
 
@@ -301,7 +304,7 @@ void helper_compact(void) {
         auto W = create_block_operator<2,2>(G, P,
                                             Pt,Zero);
 
-        Eigen::VectorXd phi(knots.size()+1), gamma(knots.size()+1);
+        vector_type phi(N+1), gamma(N+1);
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
@@ -352,12 +355,11 @@ void helper_compact(void) {
         TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
 
 
-        typedef Eigen::Map<Eigen::Matrix<double,N,1>> map_type; 
-        map_type alpha_wrap(get<alpha>(knots).data());
-        map_type interp_wrap(get<interpolated>(knots).data());
+        map_type alpha_wrap(get<alpha>(knots).data(),N);
+        map_type interp_wrap(get<interpolated>(knots).data(),N);
 
         alpha_wrap = gamma.segment<N>(0);
-        const double beta = gamma(knots.size());
+        vector_type beta = vector_type::Constant(N,gamma[N]);
         interp_wrap = G*alpha_wrap + beta;
 
         double rms_error = 0;
@@ -374,7 +376,7 @@ void helper_compact(void) {
         std::cout << "rms_error for compact support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
 
-        map_type interp_wrap_test(get<interpolated>(test).data());
+        map_type interp_wrap_test(get<interpolated>(test).data(),N);
         auto G_test = create_sparse_operator(test,knots,2*h,kernel);
         interp_wrap_test = G_test*alpha_wrap + beta;
                 

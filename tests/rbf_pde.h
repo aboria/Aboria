@@ -70,6 +70,10 @@ public:
 
     	typedef Particles<std::tuple<alpha,boundary,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
+        typedef typename ParticlesType::const_reference const_particle_reference;
+        typedef typename position::value_type const & const_position_reference;
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
        	ParticlesType knots,augment;
 
        	const double c = 0.5;
@@ -95,54 +99,62 @@ public:
         }
         augment.push_back(p);
 
-        Symbol<boundary> is_b;
-        Symbol<position> r;
-        Symbol<constant2> c2;
-        Symbol<alpha> al;
-        Symbol<interpolated> interp;
-        Label<0,ParticlesType> a(knots);
-        Label<1,ParticlesType> b(knots);
-        Label<0,ParticlesType> i(augment);
-        Label<1,ParticlesType> j(augment);
-        auto dx = create_dx(a,b);
-        Accumulate<std::plus<double> > sum;
+        
+        auto kernel = [](const_position_reference dx,
+                         const_particle_reference a,
+                         const_particle_reference b) {
+             return std::exp(-dx.squaredNorm()/get<constant2>(b));
+                        };
 
-        auto kernel = deep_copy(
-                exp(-pow(norm(dx),2)/c2[b])
-                //sqrt(pow(norm(dx),2) + c2[b])
-                );
+        auto laplace_kernel = [](const_position_reference dx,
+                         const_particle_reference a,
+                         const_particle_reference b) {
+             return 4.0*(dx.squaredNorm()-get<constant2>(b))*
+                        std::exp(-dx.squaredNorm()/get<constant2>(b))/
+                            (get<constant2>(b)*get<constant2>(b));
+                        };
 
-        auto laplace_kernel = deep_copy(
-                //(2*c2[b] + pow(norm(dx),2)) / pow(pow(norm(dx),2) + c2[b],1.5)
-                4*(pow(norm(dx),2) - c2[b]) * exp(-pow(norm(dx),2)/c2[b])/pow(c2[a],2)
-                );
+        auto G = create_dense_operator(knots,knots,
+                [kernel,laplace_kernel](const_position_reference dx,
+                         const_particle_reference a,
+                         const_particle_reference b) {
+                    if (get<boundary>(a)) {
+                        return kernel(dx,a,b);
+                    } else {
+                        return laplace_kernel(dx,a,b);
+                    }
+                    });
 
-        auto G = create_eigen_operator(a,b, 
-                    if_else(is_b[a],
-                        kernel,
-                        laplace_kernel
-                    )
-                );
-        auto P = create_eigen_operator(a,j,
-                    if_else(is_b[a],
-                        1.0,
-                        0.0
-                    )
-                );
-        auto Pt = create_eigen_operator(i,b,
-                    if_else(is_b[b],
-                        1.0,
-                        0.0
-                    )
-                );
-        auto Zero = create_eigen_operator(i,j, 0.);
+        auto P = create_dense_operator(knots,augment,
+                [](const_position_reference dx,
+                         const_particle_reference a,
+                         const_particle_reference b) {
+                    if (get<boundary>(a)) {
+                        return 1.0;
+                    } else {
+                        return 0.0;
+                    }
+                    });
 
-        auto W = create_block_eigen_operator<2,2>(G, P,
-                                                  Pt,Zero);
+        auto Pt = create_dense_operator(augment,knots,
+                [](const_position_reference dx,
+                         const_particle_reference a,
+                         const_particle_reference b) {
+                    if (get<boundary>(b)) {
+                        return 1.0;
+                    } else {
+                        return 0.0;
+                    }
+                    });
+
+        auto Zero = create_zero_operator(augment,augment);
+
+        auto W = create_block_operator<2,2>(G, P,
+                                            Pt,Zero);
 
 
-        Eigen::VectorXd phi(knots.size()+1), gamma;
-        for (int i=0; i<knots.size(); ++i) {
+        vector_type phi(N+1), gamma(N+1);
+        for (int i=0; i<N; ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             if (get<boundary>(knots[i])) {
@@ -151,10 +163,9 @@ public:
                 phi[i] = laplace_funct(x,y);
             }
         }
-        phi[knots.size()] = 0;
+        phi[N] = 0;
 
         std::cout << std::endl;
-       
 
         Eigen::GMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> gmres;
         gmres.set_restart(restart);
@@ -163,9 +174,8 @@ public:
         gamma = gmres.solve(phi);
         std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
-
         phi = W*gamma;
-        for (int i=0; i<knots.size(); ++i) {
+        for (int i=0; i<N; ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             if (get<boundary>(knots[i])) {
@@ -174,20 +184,21 @@ public:
                 TS_ASSERT_DELTA(phi[i],laplace_funct(x,y),2e-3); 
             }
         }
-        TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
+        TS_ASSERT_DELTA(phi[N],0,2e-3); 
 
 
-        // This could be more intuitive....
-        Eigen::Map<Eigen::Matrix<double,N,1>> alpha_wrap(get<alpha>(knots).data());
+        map_type alpha_wrap(get<alpha>(knots).data(),N);
+        map_type interp_wrap(get<interpolated>(knots).data(),N);
         alpha_wrap = gamma.segment<N>(0);
 
-        const double beta = gamma(knots.size());
+        vector_type beta = vector_type::Constant(N,gamma[N]);
 
-        interp[a] = sum(b,true,al[b]*kernel) + beta;
+        auto K = create_dense_operator(knots,knots,kernel);
+        interp_wrap = K*alpha_wrap + beta;
 
         double rms_error = 0;
         double scale = 0;
-        for (int i=0; i<knots.size(); ++i) {
+        for (int i=0; i<N; ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
