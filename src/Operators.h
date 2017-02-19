@@ -262,6 +262,25 @@ Operator create_dense_operator(const RowParticles& row_particles,
                 );
     }
 
+/// creates a sparse matrix-free linear operator for use with Eigen
+///
+template<typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelSparse<RowParticles,ColParticles,F>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_sparse_operator(const RowParticles& row_particles,
+                                const ColParticles& col_particles,
+                                const double search_radius,
+                                const F& function) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles,search_radius,function)
+                    )
+                );
+    }
+
+
+
 /// creates a zero matrix-free linear operator for use with Eigen
 ///
 template<typename RowParticles, typename ColParticles,

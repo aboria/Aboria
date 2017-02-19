@@ -68,7 +68,7 @@ namespace Aboria {
         }
 
         size_t size_col() const {
-            return m_row_particles.size();
+            return m_col_particles.size();
         }
 
         Scalar eval(const_position_reference dx, 
@@ -83,7 +83,7 @@ namespace Aboria {
             ASSERT(i < m_row_particles.size(),"i greater than a.size()");
             ASSERT(j < m_col_particles.size(),"j greater than b.size()");
             const_row_reference ai = m_row_particles[i];
-            const_col_reference bj = m_col_particles[i];
+            const_col_reference bj = m_col_particles[j];
             const_position_reference dx = get<position>(bj)-get<position>(ai);
             return eval(dx,ai,bj);
         }
@@ -222,6 +222,137 @@ namespace Aboria {
        }
     };
 
+    template<typename RowParticles, typename ColParticles, typename F>
+    class KernelSparse: public KernelBase<RowParticles,ColParticles,F> {
+        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+    public:
+        typedef typename base_type::Scalar Scalar;
+
+        KernelSparse(const RowParticles& row_particles,
+                    const ColParticles& col_particles,
+                    const double radius,
+                    const F& function): m_radius(radius),
+                                        m_radius2(radius*radius),
+                                        base_type(row_particles,
+                                                  col_particles,
+                                                  function) 
+        {};
+
+        void set_radius(const double radius) { m_radius = radius; m_radius2 = m_radius*m_radius; }
+        double get_radius() { return m_radius; }
+
+        Scalar eval(const_position_reference dx, 
+                    const_row_reference a, 
+                    const_col_reference b) const {
+            if (dx.squaredNorm() < m_radius2) {
+                return this->m_function(dx,a,b);
+            } else {
+                return 0.0;
+            }
+        }
+
+        Scalar coeff(const size_t i, const size_t j) const {
+            ASSERT(i>=0, "i less than zero");
+            ASSERT(j>=0, "j less than zero");
+            ASSERT(i < this->m_row_particles.size(),"i greater than a.size()");
+            ASSERT(j < this->m_col_particles.size(),"j greater than b.size()");
+            const_row_reference ai = this->m_row_particles[i];
+            const_col_reference bj = this->m_col_particles[j];
+            const_position_reference dx = get<position>(bj)-get<position>(ai);
+            return eval(dx,ai,bj);
+        }
+
+        template<typename MatrixType>
+        void assemble(const MatrixType &matrix) const {
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            CHECK((b.get_query().get_min_bucket_size() >= m_radius).all(), "neighbour search in column particles will not get all particles in search radius");
+            const size_t na = a.size();
+            const size_t nb = b.size();
+
+            //sparse a x b block
+            for (size_t i=0; i<na; ++i) {
+                const_row_reference ai = a[i];
+                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
+                    const_position_reference dx = tuple_ns::get<1>(pairj);
+                    const_col_reference bj = tuple_ns::get<0>(pairj);
+                    const size_t j = &get<position>(bj) - get<position>(b).data();
+                    const_cast< MatrixType& >(matrix)(i,j) = eval(dx,ai,bj);
+                }
+            }
+        }
+
+        template<typename Triplet>
+        void assemble(std::vector<Triplet>& triplets,
+                      const size_t startI=0, const size_t startJ=0
+                      ) const {
+
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            CHECK((b.get_query().get_min_bucket_size() >= m_radius).all(), "neighbour search in column particles will not get all particles in search radius");
+
+            const size_t na = a.size();
+            const size_t nb = b.size();
+
+            //sparse a x b block
+            //std::cout << "sparse a x b block" << std::endl;
+            for (size_t i=0; i<na; ++i) {
+                const_row_reference ai = a[i];
+                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
+                    const_position_reference dx = tuple_ns::get<1>(pairj);
+                    const_col_reference bj = tuple_ns::get<0>(pairj);
+                    const size_t j = &get<position>(bj) - get<position>(b).data();
+                    if (dx.squaredNorm() < m_radius2) {
+                        triplets.push_back(Triplet(i+startI,j+startJ,this->m_function(dx,ai,bj)));
+                    }
+                }
+            }
+        }
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template<typename VectorLHS,typename VectorRHS>
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            CHECK((b.get_query().get_min_bucket_size() >= m_radius).all(), "neighbour search in column particles will not get all particles in search radius");
+
+            const size_t na = a.size();
+            const size_t nb = b.size();
+
+            #pragma omp parallel for
+            for (size_t i=0; i<na; ++i) {
+                const_row_reference ai = a[i];
+                double sum = 0;
+                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
+                    const_position_reference dx = tuple_ns::get<1>(pairj);
+                    const_col_reference bj = tuple_ns::get<0>(pairj);
+                    const size_t j = &get<position>(bj) - get<position>(b).data();
+                    if (dx.squaredNorm() < m_radius2) {
+                        sum += this->m_function(dx,ai,bj)*rhs[j];
+                    }
+                }
+                lhs[i] += sum;
+            }
+       }
+    private:
+        double m_radius;
+        double m_radius2;
+
+    };
+
     namespace detail {
         template <typename RowParticles, typename ColParticles,
                  typename double_d=
@@ -237,7 +368,7 @@ namespace Aboria {
                                 return 0.0;
             }
         };
-    }
+            }
 
     template<typename RowParticles, typename ColParticles,
         typename F=detail::zero_lambda<RowParticles,ColParticles>>

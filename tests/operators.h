@@ -78,6 +78,9 @@ public:
 
         particles.init_neighbour_search(min,max,diameter,periodic);
 
+        //      3  3  3
+        // A =  3  3  3
+        //      3  3  3
         auto A = create_dense_operator(particles,particles,
                     [](const position::value_type &dx,
                        ParticlesType::const_reference a,
@@ -98,16 +101,23 @@ public:
             TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
         }
 
-
-        /*
+        //      3  3  0
+        // C =  3  3  3
+        //      0  3  3
         auto C = create_sparse_operator(particles,particles,
                     diameter,
-                    [](ParticlesType::const_reference &a,
-                       ParticlesType::const_reference &b) {
-                    get<scalar1>(a) + get<scalar2>(b)
-                    }));
+                    [](const position::value_type &dx,
+                       ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                        return get<scalar1>(a) + get<scalar2>(b);
+                    });
 
         v << 1, 2, 3;
+
+
+        // 3  3  0   1   9
+        // 3  3  3 * 2 = 18
+        // 0  3  3   3   15
         ans = C*v;
         
         for (int i=0; i<n; i++) {
@@ -129,7 +139,7 @@ public:
         C.assemble(C_copy);
         for (int i=0; i<n; i++) {
             for (int j=0; j<n; j++) {
-                TS_ASSERT_EQUALS(C_copy(i,j),C.coeff(i,j)); 
+                TS_ASSERT_DELTA(C_copy(i,j),C.coeff(i,j),std::numeric_limits<double>::epsilon()); 
             }
         }
 
@@ -153,7 +163,6 @@ public:
         for (int i=0; i<n; i++) {
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
-        */
 
 #endif // HAVE_EIGEN
     }
@@ -245,6 +254,7 @@ public:
         //         0.1 0.2 0.3 0
         auto Full = create_block_operator<2,2>(A,B,
                                                C,Zero);
+        std::cout << Full.rows() << " "<< Full.cols() << std::endl;
 
         v.resize(n+1);
         v << 1, 1, 1, 1;

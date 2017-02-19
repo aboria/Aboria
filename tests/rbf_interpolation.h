@@ -68,6 +68,8 @@ public:
 
     	typedef Particles<std::tuple<alpha,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
+        typedef typename ParticlesType::const_reference const_particle_reference;
+        typedef typename position::value_type const & const_position_reference;
        	ParticlesType knots;
        	ParticlesType augment;
        	ParticlesType test;
@@ -98,44 +100,27 @@ public:
             test.push_back(p);
         }
 
-
         augment.push_back(p);
 
+        auto kernel = [](const_position_reference dx,
+                         const_particle_reference a,
+                         const_particle_reference b) {
+                            return std::sqrt(dx.squaredNorm() + get<constant2>(b));
+                        };
 
-        Symbol<alpha> al;
-        Symbol<interpolated> interp;
-        Symbol<position> r;
-        Symbol<constant2> c2;
-        Label<0,ParticlesType> a(knots);
-        Label<1,ParticlesType> b(knots);
-        Label<0,ParticlesType> k(test);
-        Label<0,ParticlesType> i(augment);
-        Label<1,ParticlesType> j(augment);
-        auto dx = create_dx(a,b);
-        auto dx2 = create_dx(k,b);
-        Accumulate<std::plus<double> > sum;
+        auto one = [](const_position_reference dx,
+                      const_particle_reference a,
+                      const_particle_reference b) {
+                            return 1.0;
+                        };
 
-        auto kernel = deep_copy(
-                //exp(-pow(norm(dx),2)/c2[b])
-                sqrt(pow(norm(dx),2) + c2[b])
-                );
+        auto G = create_dense_operator(knots,knots,kernel);
+        auto P = create_dense_operator(knots,augment,one);
+        auto Pt = create_dense_operator(augment,knots,one);
+        auto Zero = create_zero_operator(augment,augment);
 
-        auto G = create_eigen_operator(a,b, 
-                    kernel 
-                );
- 
-        auto P = create_eigen_operator(a,j,
-                        1.0
-                );
-
-        auto Pt = create_eigen_operator(i,b,
-                        1.0
-                );
-
-        auto Zero = create_eigen_operator(i,j, 0.);
-
-        auto W = create_block_eigen_operator<2,2>(G, P,
-                                                  Pt,Zero);
+        auto W = create_block_operator<2,2>(G, P,
+                                            Pt,Zero);
 
         Eigen::VectorXd phi(knots.size()+1), gamma(knots.size()+1);
         for (int i=0; i<knots.size(); ++i) {
@@ -189,13 +174,14 @@ public:
         TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
 
 
-        // This could be more intuitive....
-        Eigen::Map<Eigen::Matrix<double,N,1>> alpha_wrap(get<alpha>(knots).data());
+        // wrap Aboria vectors as Eigen vectors
+        typedef Eigen::Map<Eigen::Matrix<double,N,1>> map_type; 
+        map_type alpha_wrap(get<alpha>(knots).data());
+        map_type interp_wrap(get<interpolated>(knots).data());
+
         alpha_wrap = gamma.segment<N>(0);
-
         const double beta = gamma(knots.size());
-
-        interp[a] = sum(b,true,al[b]*kernel) + beta;
+        interp_wrap = G*alpha_wrap + beta;
 
         double rms_error = 0;
         double scale = 0;
@@ -212,8 +198,9 @@ public:
         std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-8);
 
-        //interp[k] = sum(b,true,al[b]*exp(-pow(norm(dx2),2)/c2[b])) + beta;
-        interp[k] = sum(b,true,al[b]*sqrt(pow(norm(dx2),2) + c2[b])) + beta;
+        map_type interp_wrap_test(get<interpolated>(test).data());
+        auto G_test = create_dense_operator(test,knots,kernel);
+        interp_wrap_test = G_test*alpha_wrap + beta;
                 
         rms_error = 0;
         scale = 0;
@@ -248,6 +235,8 @@ void helper_compact(void) {
 
     	typedef Particles<std::tuple<alpha,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
+        typedef typename ParticlesType::const_reference const_particle_reference;
+        typedef typename position::value_type const & const_position_reference;
        	ParticlesType knots,augment;
        	ParticlesType test;
 
@@ -292,24 +281,25 @@ void helper_compact(void) {
         auto dx2 = create_dx(k,b);
         Accumulate<std::plus<double> > sum;
 
-        auto kernel = deep_copy(
-                    pow(2.0-norm(dx)/h,4)*(1.0+2.0*norm(dx)/h)
-                );
+        auto kernel = [h](const_position_reference dx,
+                         const_particle_reference a,
+                         const_particle_reference b) {
+                            return std::pow(2.0-dx.norm()/h,4)*(1.0+2.0*dx.norm()/h);
+                        };
 
-        auto G = create_eigen_operator(a,b, 
-                    kernel,norm(dx)<2*h
-                );
- 
-        auto P = create_eigen_operator(a,j,
-                        1.0
-                );
-        auto Pt = create_eigen_operator(i,b,
-                        1.0
-                );
-        auto Zero = create_eigen_operator(i,j, 0.);
+        auto one = [](const_position_reference dx,
+                      const_particle_reference a,
+                      const_particle_reference b) {
+                            return 1.0;
+                        };
 
-        auto W = create_block_eigen_operator<2,2>(G, P,
-                                                  Pt,Zero);
+        auto G = create_sparse_operator(knots,knots,2*h,kernel);
+        auto P = create_dense_operator(knots,augment,one);
+        auto Pt = create_dense_operator(augment,knots,one);
+        auto Zero = create_zero_operator(augment,augment);
+
+        auto W = create_block_operator<2,2>(G, P,
+                                            Pt,Zero);
 
         Eigen::VectorXd phi(knots.size()+1), gamma(knots.size()+1);
         for (int i=0; i<knots.size(); ++i) {
@@ -362,13 +352,13 @@ void helper_compact(void) {
         TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
 
 
-        // This could be more intuitive....
-        Eigen::Map<Eigen::Matrix<double,N,1>> alpha_wrap(get<alpha>(knots).data());
+        typedef Eigen::Map<Eigen::Matrix<double,N,1>> map_type; 
+        map_type alpha_wrap(get<alpha>(knots).data());
+        map_type interp_wrap(get<interpolated>(knots).data());
+
         alpha_wrap = gamma.segment<N>(0);
-
         const double beta = gamma(knots.size());
-
-        interp[a] = sum(b,norm(dx)<2*h,al[b]*kernel) + beta;
+        interp_wrap = G*alpha_wrap + beta;
 
         double rms_error = 0;
         double scale = 0;
@@ -384,7 +374,9 @@ void helper_compact(void) {
         std::cout << "rms_error for compact support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
 
-        interp[k] = sum(b,norm(dx2)<2*h,al[b]*pow(2.0-norm(dx2)/h,4)*(1.0+2.0*norm(dx2)/h)) + beta;
+        map_type interp_wrap_test(get<interpolated>(test).data());
+        auto G_test = create_sparse_operator(test,knots,2*h,kernel);
+        interp_wrap_test = G_test*alpha_wrap + beta;
                 
         rms_error = 0;
         scale = 0;

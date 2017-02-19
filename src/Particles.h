@@ -468,8 +468,8 @@ public:
 
     /// return the length scale of the neighbourhood search
     /// \see init_neighbour_search()
-    double get_lengthscale() const {
-        return search.get_bucket_side_length();
+    double_d get_lengthscale() const {
+        return search.get_min_bucket_size();
     }
 
     /// return the lower extent of the neighbourhood search
