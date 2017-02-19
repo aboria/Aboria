@@ -18,6 +18,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/BucketSearchSerial.h
     ../src/NeighbourSearchBase.h
     ../src/Operators.h
+    ../src/Kernels.h
     ../src/Functions.h
     ../src/Log.h
     ../src/Symbolic.h

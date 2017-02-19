@@ -222,6 +222,105 @@ namespace Aboria {
        }
     };
 
+#ifdef HAVE_EIGEN
+    template<typename RowParticles, typename ColParticles, typename F>
+    class KernelChebyshev: public KernelDense<RowParticles,ColParticles,F> {
+        typedef KernelDense<RowParticles,ColParticles,F> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+
+        typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        typedef Eigen::Map<vector_type> map_type;
+
+        detail::Chebyshev_Rn<RowParticles::dimension> col_Rn,row_Rn;
+    public:
+        typename base_type::Scalar Scalar;
+
+        KernelChebyshev(const RowParticles& row_particles,
+                        const ColParticles& col_particles,
+                        const F& function): base_type(row_particles,
+                                                  col_particles,
+                                                  function) {
+            update_row_positions();
+            update_col_positions();
+            update_kernel_matrix();
+        };
+
+        void update_row_positions() {
+            const size_t N = this->m_row_particles.size();
+            row_Rn.calculate_Sn(get<position>(this->m_row_particles).begin(),N,n);
+
+            // fill row_Rn matrix
+            matrix_type row_Rn_matrix(ncheb,sourceN);
+            for (int i=0; i<N; ++i) {
+                lattice_iterator<D> mi(start,end,start);
+                for (int j=0; j<ncheb; ++j,++mi) {
+                    row_Rn_matrix(j,i) = row_Rn(*mi,i);
+                }
+            }
+        }
+
+        void update_kernel_matrix() {
+            // fill kernel matrix
+            matrix_type kernel_matrix(ncheb,ncheb);
+            lattice_iterator<D> mi(start,end,start);
+            for (int i=0; i<ncheb; ++i,++mi) {
+                const double_d pi = col_Rn.get_position(*mi);
+                lattice_iterator<D> mj(start,end,start);
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    const double_d pj = row_Rn.get_position(*mj);
+                    kernel_matrix(i,j) = kernel(pi,pj);
+                }
+            }
+        }
+
+        void update_col_positions() {
+            const size_t N = this->m_col_particles.size();
+            col_Rn.calculate_Sn(get<position>(this->m_col_particles).begin(),N,n);
+
+            // fill row_Rn matrix
+            matrix_type col_Rn_matrix(ncheb,sourceN);
+            for (int i=0; i<N; ++i) {
+                lattice_iterator<D> mi(start,end,start);
+                for (int j=0; j<ncheb; ++j,++mi) {
+                    col_Rn_matrix(j,i) = col_Rn(*mi,i);
+                }
+            }
+        }
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template<typename VectorLHS,typename VectorRHS>
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            const size_t na = a.size();
+            const size_t nb = b.size();
+
+            ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+
+            //First compute the weights at the Chebyshev nodes ym 
+            //by anterpolation 
+            vector_type W = col_Rn_matrix*rhs_values;
+
+            //Next compute f ðxÞ at the Chebyshev nodes xl:
+            vector_type fcheb = kernel_matrix*W;
+
+            //Last compute f ðxÞ at the observation points xi by interpolation:
+            lhs = row_Rn_matrix*fcheb;
+
+
+       };
+#endif
+
+
     template<typename RowParticles, typename ColParticles, typename F>
     class KernelSparse: public KernelBase<RowParticles,ColParticles,F> {
         typedef KernelBase<RowParticles,ColParticles,F> base_type;
