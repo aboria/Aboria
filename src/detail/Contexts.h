@@ -236,15 +236,13 @@ namespace detail {
             result_type sum = accum.init;
             const particles_b_type& particlesb = label.get_particles(); 
 
-            //TODO: what is this type???
-            const auto& ai = fusion::front(ctx.m_labels).second;
-
             typedef typename particles_b_type::position position;
             typedef typename position::value_type double_d;
             typedef typename std::remove_reference<
                 typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
-
-
+            typedef typename label_a_type::particles_type particles_a_type;
+            
+            typename particles_a_type::const_reference ai = fusion::front(ctx.m_labels).second;
 
             ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
             const size_t nb = particlesb.size();
@@ -287,15 +285,15 @@ namespace detail {
             typedef typename label_b_type::particles_type particles_b_type;
             result_type sum = accum.init;
             const particles_b_type& particlesb = label.get_particles(); 
-            const auto& ai = fusion::front(ctx.m_labels).second;
 
             typedef typename std::remove_reference<
                 typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::position position;
 
-            //TODO: get query range and put it in box search
+            typename particles_a_type::const_reference ai = fusion::front(ctx.m_labels).second;
 
+            //TODO: get query range and put it in box search
             for (auto i: box_search(particlesb.get_query(),get<position>(ai))) {
                 auto new_labels = fusion::make_map<label_a_type,label_b_type>(
                                     ai,std::get<0>(i));
