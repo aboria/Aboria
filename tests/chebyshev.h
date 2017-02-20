@@ -97,10 +97,19 @@ public:
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         const size_t N = 1000;
-        std::vector<double_d> positions(N);
+
+        ABORIA_VARIABLE(source,double,"source");
+        ABORIA_VARIABLE(target_algorithm,double,"target algorithm");
+        ABORIA_VARIABLE(target_manual,double,"target manual");
+        ABORIA_VARIABLE(target_operator,double,"target operator");
+        typedef Particles<std::tuple<source,target_algorithm,target_manual,target_operator>,D> ParticlesType;
+        typedef typename ParticlesType::position position;
+        ParticlesType particles(N);
+
         for (int i=0; i<N; i++) {
             for (int d=0; d<D; ++d) {
-                positions[i][d] = gen();
+                get<position>(particles)[i][d] = gen();
+                get<source>(particles)[i] = gen();
             }
         }
 
@@ -114,60 +123,84 @@ public:
             }
             return ret;
         };
-        std::vector<double> source(N);
-        std::transform(std::begin(positions), std::end(positions), 
-                       std::begin(source), source_fn);
+        std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
+                       std::begin(get<source>(particles)), source_fn);
 
         const double c = 0.1;
-        auto kernel = [&c](const double_d &i, const double_d &j) {
-            return std::sqrt((i-j).norm() + c); 
+        auto kernel = [&c](const double_d &dx) {
+            return std::sqrt(dx.squaredNorm() + c); 
         };
 
+
         // perform the operation manually
-        std::vector<double> target_manual(N,0.0);
+        std::fill(std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
+                    0.0);
 
         auto t0 = Clock::now();
         for (int i=0; i<N; i++) {
-            const double_d pi = positions[i];
+            const double_d pi = get<position>(particles)[i];
             for (int j=0; j<N; j++) {
-                const double_d pj = positions[j];
-                target_manual[i] += kernel(pi,pj)*source[j];
+                const double_d pj = get<position>(particles)[j];
+                get<target_manual>(particles)[i] += kernel(pi-pj)*get<source>(particles)[j];
             }
         }
         auto t1 = Clock::now();
         std::chrono::duration<double> time_manual = t1 - t0;
 
         const double scale = std::accumulate(
-                        std::begin(target_manual), std::end(target_manual),
-                        0.0,
-                        [](const double t1, const double t2) { return t1 + t2*t2; }
-                       );
+            std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
+            0.0,
+            [](const double t1, const double t2) { return t1 + t2*t2; }
+        );
 
-
-        std::vector<double> target(N);
         const unsigned int maxn = std::pow(N/2,1.0/D);
         for (unsigned int n = 1; n < maxn; ++n) {
-            // perform the operation using chebyshev interpolation 
+            // perform the operation using chebyshev interpolation algorithm
             t0 = Clock::now();
             chebyshev_interpolation<D>(
-                                std::begin(source),std::end(source),
-                                std::begin(target),std::end(target),
-                                std::begin(positions),std::begin(positions),
-                                kernel,n);
+             std::begin(get<source>(particles)), std::end(get<source>(particles)),
+             std::begin(get<target_algorithm>(particles)), std::end(get<target_algorithm>(particles)),
+             std::begin(get<position>(particles)), std::begin(get<position>(particles)),
+             kernel,n);
             t1 = Clock::now();
-            std::chrono::duration<double> time = t1 - t0;
-            const double L2 = std::inner_product(
-                        std::begin(target), std::end(target),
-                        std::begin(target_manual),
+            std::chrono::duration<double> time_alg = t1 - t0;
+
+            const double L2_alg = std::inner_product(
+             std::begin(get<target_algorithm>(particles)), std::end(get<target_algorithm>(particles)),
+             std::begin(get<target_manual>(particles)), 
                         0.0,
                         [](const double t1, const double t2) { return t1 + t2; },
                         [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
                        );
-            
-            std::cout << "dimension = "<<D<<". n = "<<n<<". L2 error = "<<L2<<". L2 relative error is "<<std::sqrt(L2/scale)<<". time/time_manual = "<<time/time_manual<<std::endl;
+
+
+            std::cout << "dimension = "<<D<<". n = "<<n<<". L2_alg error = "<<L2_alg<<". L2_alg relative error is "<<std::sqrt(L2_alg/scale)<<". time_alg/time_manual = "<<time_alg/time_manual<<std::endl;
+
+
+            // perform the operation using chebyshev interpolation operator 
+            t0 = Clock::now();
+            auto C = create_chebyshev_operator(particles,particles,n,kernel);
+            typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type;
+            typedef Eigen::Map<vector_type> map_type;
+            map_type source_vect(get<source>(particles).data(),N);
+            map_type target_vect(get<target_operator>(particles).data(),N);
+            target_vect = C*source_vect;
+            t1 = Clock::now();
+            std::chrono::duration<double> time_op = t1 - t0;
+
+            const double L2_op= std::inner_product(
+             std::begin(get<target_operator>(particles)), std::end(get<target_operator>(particles)),
+             std::begin(get<target_manual>(particles)), 
+                        0.0,
+                        [](const double t1, const double t2) { return t1 + t2; },
+                        [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                       );
+
+            std::cout << "dimension = "<<D<<". n = "<<n<<". L2_op error = "<<L2_op<<". L2_op relative error is "<<std::sqrt(L2_op/scale)<<". time_op/time_manual = "<<time_op/time_manual<<std::endl;
 
             //TODO: is there a better test than this, maybe shouldn't randomly do it?
-            if (D==2 && n >=18) TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),0.02);
+            if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_alg/scale),0.001);
+            if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_op/scale),0.001);
         }
     }
 #endif 

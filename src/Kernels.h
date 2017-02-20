@@ -39,13 +39,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <type_traits>
 
+#ifdef HAVE_EIGEN
+#include "detail/Chebyshev.h"
+#include <Eigen/Core>
+#endif
+
+
+
 namespace Aboria {
 
     template<typename RowParticles, typename ColParticles, typename F>
     class KernelBase {
     protected:
         typedef typename RowParticles::position position;
-        typedef typename RowParticles::double_d double_d;
+        static const unsigned int dimension = RowParticles::dimension;
+        typedef Vector<double,dimension> double_d;
+        typedef Vector<int,dimension> int_d;
         typedef typename position::value_type const & const_position_reference;
         typedef typename RowParticles::const_reference const_row_reference;
         typedef typename ColParticles::const_reference const_col_reference;
@@ -116,14 +125,17 @@ namespace Aboria {
 
     template<typename RowParticles, typename ColParticles, typename F>
     class KernelDense: public KernelBase<RowParticles,ColParticles,F> {
+    protected:
         typedef KernelBase<RowParticles,ColParticles,F> base_type;
         typedef typename base_type::position position;
+        static const unsigned int dimension = base_type::dimension;
         typedef typename base_type::double_d double_d;
+        typedef typename base_type::int_d int_d;
         typedef typename base_type::const_position_reference const_position_reference;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
-        typename base_type::Scalar Scalar;
+        typedef typename base_type::Scalar Scalar;
 
         KernelDense(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -223,11 +235,32 @@ namespace Aboria {
     };
 
 #ifdef HAVE_EIGEN
-    template<typename RowParticles, typename ColParticles, typename F>
+    namespace detail {
+        template <typename RowParticles, typename ColParticles, typename F,
+                 typename double_d=
+                     typename RowParticles::double_d,
+                 typename const_row_reference=
+                     typename RowParticles::const_reference,
+                 typename const_col_reference=
+                     typename ColParticles::const_reference>
+        struct position_lambda {
+            F m_f;
+            position_lambda(const F f):m_f(f) {}
+            double operator()(const double_d& dx,
+                            const_row_reference a,
+                            const_col_reference b) {
+                                return m_f(dx);
+            }
+        };
+    }
+    
+    template<typename RowParticles, typename ColParticles, typename PositionF,
+        typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
     class KernelChebyshev: public KernelDense<RowParticles,ColParticles,F> {
         typedef KernelDense<RowParticles,ColParticles,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
+        typedef typename base_type::int_d int_d;
         typedef typename base_type::const_position_reference const_position_reference;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
@@ -236,58 +269,79 @@ namespace Aboria {
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
         typedef Eigen::Map<vector_type> map_type;
 
-        detail::Chebyshev_Rn<RowParticles::dimension> col_Rn,row_Rn;
+        static const unsigned int dimension = base_type::dimension;
+        detail::Chebyshev_Rn<dimension> col_Rn,row_Rn;
+        matrix_type m_col_Rn_matrix,m_row_Rn_matrix,m_kernel_matrix;
+        unsigned int m_n;
+        unsigned int m_ncheb;
+        const int_d m_start;
+        const int_d m_end;
+        PositionF m_position_function;
+
     public:
-        typename base_type::Scalar Scalar;
+        typedef typename base_type::Scalar Scalar;
 
         KernelChebyshev(const RowParticles& row_particles,
                         const ColParticles& col_particles,
-                        const F& function): base_type(row_particles,
+                        const unsigned int n,
+                        const PositionF& function): m_n(n),
+                                            m_ncheb(std::pow(n,dimension)),
+                                            m_start(0),
+                                            m_end(n-1),
+                                            m_position_function(function),
+                                            base_type(row_particles,
                                                   col_particles,
-                                                  function) {
+                                                  F(function)) {
+            set_n(n);
+        };
+
+        void set_n(const unsigned int n) { 
+            m_n = n; 
+            m_ncheb = std::pow(n,dimension); 
+
             update_row_positions();
             update_col_positions();
             update_kernel_matrix();
-        };
+        }
 
         void update_row_positions() {
             const size_t N = this->m_row_particles.size();
-            row_Rn.calculate_Sn(get<position>(this->m_row_particles).begin(),N,n);
+            row_Rn.calculate_Sn(get<position>(this->m_row_particles).begin(),N,m_n);
 
             // fill row_Rn matrix
-            matrix_type row_Rn_matrix(ncheb,sourceN);
+            m_row_Rn_matrix.resize(N,m_ncheb);
             for (int i=0; i<N; ++i) {
-                lattice_iterator<D> mi(start,end,start);
-                for (int j=0; j<ncheb; ++j,++mi) {
-                    row_Rn_matrix(j,i) = row_Rn(*mi,i);
+                lattice_iterator<dimension> mj(m_start,m_end,m_start);
+                for (int j=0; j<m_ncheb; ++j,++mj) {
+                    m_row_Rn_matrix(i,j) = row_Rn(*mj,i);
                 }
             }
         }
 
         void update_kernel_matrix() {
             // fill kernel matrix
-            matrix_type kernel_matrix(ncheb,ncheb);
-            lattice_iterator<D> mi(start,end,start);
-            for (int i=0; i<ncheb; ++i,++mi) {
+            m_kernel_matrix.resize(m_ncheb,m_ncheb);
+            lattice_iterator<dimension> mi(m_start,m_end,m_start);
+            for (int i=0; i<m_ncheb; ++i,++mi) {
                 const double_d pi = col_Rn.get_position(*mi);
-                lattice_iterator<D> mj(start,end,start);
-                for (int j=0; j<ncheb; ++j,++mj) {
+                lattice_iterator<dimension> mj(m_start,m_end,m_start);
+                for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
-                    kernel_matrix(i,j) = kernel(pi,pj);
+                    m_kernel_matrix(i,j) = m_position_function(pi-pj);
                 }
             }
         }
 
         void update_col_positions() {
             const size_t N = this->m_col_particles.size();
-            col_Rn.calculate_Sn(get<position>(this->m_col_particles).begin(),N,n);
+            col_Rn.calculate_Sn(get<position>(this->m_col_particles).begin(),N,m_n);
 
             // fill row_Rn matrix
-            matrix_type col_Rn_matrix(ncheb,sourceN);
+            m_col_Rn_matrix.resize(m_ncheb,N);
             for (int i=0; i<N; ++i) {
-                lattice_iterator<D> mi(start,end,start);
-                for (int j=0; j<ncheb; ++j,++mi) {
-                    col_Rn_matrix(j,i) = col_Rn(*mi,i);
+                lattice_iterator<dimension> mi(m_start,m_end,m_start);
+                for (int j=0; j<m_ncheb; ++j,++mi) {
+                    m_col_Rn_matrix(j,i) = col_Rn(*mi,i);
                 }
             }
         }
@@ -301,23 +355,21 @@ namespace Aboria {
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
 
-            const size_t na = a.size();
-            const size_t nb = b.size();
-
-            ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+            ASSERT(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
+            ASSERT(a.size() == lhs.rows(),"lhs vector has incompatible size");
+            ASSERT(b.size() == rhs.rows(),"rhs vector has incompatible size");
 
             //First compute the weights at the Chebyshev nodes ym 
             //by anterpolation 
-            vector_type W = col_Rn_matrix*rhs_values;
+            vector_type W = m_col_Rn_matrix*rhs;
 
             //Next compute f ðxÞ at the Chebyshev nodes xl:
-            vector_type fcheb = kernel_matrix*W;
+            vector_type fcheb = m_kernel_matrix*W;
 
             //Last compute f ðxÞ at the observation points xi by interpolation:
-            lhs = row_Rn_matrix*fcheb;
-
-
-       };
+            lhs = m_row_Rn_matrix*fcheb;
+        }
+    };
 #endif
 
 
@@ -467,7 +519,7 @@ namespace Aboria {
                                 return 0.0;
             }
         };
-            }
+    }
 
     template<typename RowParticles, typename ColParticles,
         typename F=detail::zero_lambda<RowParticles,ColParticles>>
@@ -481,7 +533,7 @@ namespace Aboria {
         typedef typename base_type::const_col_reference const_col_reference;
 
     public:
-        typename base_type::Scalar Scalar;
+        typedef typename base_type::Scalar Scalar;
 
         KernelZero(const RowParticles& row_particles,
                     const ColParticles& col_particles): 

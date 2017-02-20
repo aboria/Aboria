@@ -205,8 +205,20 @@ public:
     template <typename T>
     using return_type = typename detail::getter_helper<typename data_type::tuple_type>::template return_type<elem_by_type<T>::index>;
 
-    typedef typename traits_type::double_d double_d;
-    typedef typename traits_type::bool_d bool_d;
+    ///
+    /// the number of spatial dimensions 
+    static const unsigned int dimension = D;
+
+    ///
+    /// a type to store a vector of doubles with given dimension
+    typedef Vector<double,dimension> double_d;
+
+    ///
+    /// a type to store a vector of bool with given dimension
+    typedef Vector<bool,dimension> bool_d;
+
+    ///
+    /// the tag type for the default position variable
     typedef typename traits_type::position position;
 
 

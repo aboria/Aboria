@@ -262,6 +262,25 @@ Operator create_dense_operator(const RowParticles& row_particles,
                 );
     }
 
+/// creates a chebyshev matrix-free linear operator for use with Eigen
+///
+template<typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelChebyshev<RowParticles,ColParticles,F>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_chebyshev_operator(const RowParticles& row_particles,
+                               const ColParticles& col_particles,
+                               const unsigned int n,
+                               const F& function) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles,n,function)
+                    )
+                );
+    }
+
+
+
 /// creates a sparse matrix-free linear operator for use with Eigen
 ///
 template<typename RowParticles, typename ColParticles, typename F,
