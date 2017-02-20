@@ -926,7 +926,7 @@ public:
             omp_set_num_threads(1);
 #endif
         std::ofstream file;
-        const size_t base_repeats = 100;
+        const size_t base_repeats = 200;
         for (double radius_div_h = 1.1; radius_div_h < 5; radius_div_h += 1) {
             char buffer[100];
             sprintf(buffer,"linear_spring%4.4f.csv",radius_div_h);
@@ -953,7 +953,7 @@ public:
 
     void test_multiquadric() {
         std::ofstream file;
-        const size_t base_repeats = 100;
+        const size_t base_repeats = 200;
         file.open("multiquadric.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria" 
@@ -1037,7 +1037,7 @@ public:
 
     void test_vector_addition() {
         std::ofstream file;
-        const size_t base_repeats = 200;
+        const size_t base_repeats = 400;
         file.open("vector_addition.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
@@ -1064,7 +1064,7 @@ public:
     void test_daxpy() {
         std::ofstream file;
         file.open("daxpy.csv");
-        const size_t base_repeats = 200;
+        const size_t base_repeats = 400;
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
