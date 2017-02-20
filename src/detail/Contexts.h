@@ -243,10 +243,9 @@ namespace detail {
                                          fusion::pair<label_b_type,const_b_reference>> map_type;
             typedef fusion::list<const double_d &> list_type;
 
-            ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
-
             result_type sum = accum.init;
             const particles_b_type& particlesb = label.get_particles(); 
+            ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
             const_a_reference ai = fusion::front(ctx.m_labels).second;
             const size_t nb = particlesb.size();
             for (size_t i=0; i<nb; ++i) {
