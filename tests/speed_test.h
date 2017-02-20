@@ -454,7 +454,7 @@ public:
             }
         }
 
-        nodes.init_neighbour_search(min,max,h,periodic);
+        nodes.init_neighbour_search(min,max,htol,periodic);
 
         auto A = create_sparse_operator(nodes,nodes, 
                 htol,
