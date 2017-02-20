@@ -205,7 +205,7 @@ namespace detail {
                 const EvalCtx& ctx,mpl::int_<0>) { //note: using tag dispatching here cause I couldn't figure out how to do this via enable_if....
 
             result_type sum = accum.init;
-            for (auto i: label.get_particles()) {
+            for (const auto& i: label.get_particles()) {
                 auto new_labels = fusion::make_map<label_type>(i);
                 EvalCtx<decltype(new_labels),decltype(ctx.m_dx)> const new_ctx(new_labels,ctx.m_dx);
 
@@ -234,8 +234,10 @@ namespace detail {
             typedef typename label_b_type::particles_type particles_b_type;
 
             result_type sum = accum.init;
-            const particles_b_type& particlesb = label.get_particles(); //copies particles!!!!
-            auto ai = fusion::front(ctx.m_labels).second;
+            const particles_b_type& particlesb = label.get_particles(); 
+
+            //TODO: what is this type???
+            const auto& ai = fusion::front(ctx.m_labels).second;
 
             typedef typename particles_b_type::position position;
             typedef typename position::value_type double_d;
@@ -284,8 +286,8 @@ namespace detail {
 
             typedef typename label_b_type::particles_type particles_b_type;
             result_type sum = accum.init;
-            const particles_b_type& particlesb = label.get_particles(); //copies particles!!!!
-            auto ai = fusion::front(ctx.m_labels).second;
+            const particles_b_type& particlesb = label.get_particles(); 
+            const auto& ai = fusion::front(ctx.m_labels).second;
 
             typedef typename std::remove_reference<
                 typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;

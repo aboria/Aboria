@@ -29,7 +29,7 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
         plt.title(r'$a_i = b_i + c_i$')
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria (Level 1)')
         plt.semilogx(data[:,0],data[:,2]/1e6,label='Aboria (Level 2)')
-        plt.semilogx(data[:,0],data[:,3]/1e6,label='Eigen')
+        #plt.semilogx(data[:,0],data[:,3]/1e6,label='Eigen')
         plt.semilogx(data[:,0],data[:,4]/1e6,label='std::vector')
     elif filename in ['daxpy']:
         plt.title(r'$a_i = a_i + 0.1\, b_i $')
@@ -42,7 +42,7 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
         filename_matlab = 'matlab_matrix_multiply_size'
         #data_matlab = np.loadtxt('tests/'+filename_matlab+'.csv',delimiter=',')
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria')
-        #plt.semilogx(data[:,0],data[:,2]/1e6,label='aboria-eigen')
+        plt.semilogx(data[:,0],data[:,2]/1e6,label='aboria-eigen')
         #plt.semilogx(data[:,0],data[:,3]/1e6,label='eigen')
         plt.semilogx(data[:,0],data[:,4]/1e6,label='std::vector')
         #plt.semilogx(data_matlab[:,0],data_matlab[:,1]/1e6,label='matlab')
@@ -51,8 +51,8 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
         filename_matlab = 'matlab_matrix_multiply_scaling'
         data_matlab = np.loadtxt('tests/'+filename_matlab+'.csv',delimiter=',')
         plt.plot(data[:,0],data[:,1]/1e6,label='Aboria')
-        #plt.plot(data[:,0],data[:,2]/1e6,label='Aboria-Eigen')
-        #plt.plot(data[:,0],data[:,3]/1e6,label='Eigen')
+        plt.plot(data[:,0],data[:,2]/1e6,label='Aboria-Eigen')
+        plt.plot(data[:,0],data[:,3]/1e6,label='Eigen')
         plt.plot(data[:,0],data[:,4]/1e6,label='std::vector')
         plt.plot(data_matlab[:,0],data_matlab[:,1]/1e6,label='Matlab')
     elif filename in ['linear_spring']:
@@ -74,6 +74,8 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
 
     if filename in ['multiquadric_scaling']:
         leg = plt.legend(fancybox=True,loc='upper right')
+    if filename in ['multiquadric']:
+        leg = plt.legend(fancybox=True,loc='lower right')
     elif filename in ['linear_spring']:
         leg = plt.legend(handles=handles,fancybox=True,loc='upper left')
     elif filename in ['daxpy','vector_addition']:

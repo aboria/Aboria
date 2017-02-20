@@ -675,11 +675,15 @@ public:
         s += A*s;
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
+#ifdef HAVE_OPENMP
         if (omp_get_max_threads() > 1) {
             ProfilerStart("multiquadric_aboria_eigen_parallel");
         } else {
             ProfilerStart("multiquadric_aboria_eigen_serial");
         }
+#else
+        ProfilerStart("multiquadric_aboria_eigen_serial");
+#endif
 #endif
         for (int i=0; i<repeats; ++i) {
             s += A*s;
