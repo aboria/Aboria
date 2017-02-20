@@ -176,7 +176,7 @@ namespace detail {
 
             /*
             BOOST_MPL_ASSERT_MSG((fusion::result_of::has_key<labels_type,expr_label_a_type>::value),ASDFASDFASDF,(expr_dx,labels_type,expr_label_a_type));
-            BOOST_MPL_ASSERT_MSG((fusion::result_of::has_key<labels_type,expr_label_b_type>::value),ASDFASDFASDF,(expr_dx));
+            BOOST_MPL_ASSERT_MSG((fusion::result_of::has_key<labels_type,expr_label_b_type>::value),ASDFASDFASDF,(expr_label_b_type));
             */
 
             static_assert(fusion::result_of::has_key<labels_type,expr_label_a_type>::value,
@@ -198,7 +198,7 @@ namespace detail {
         typename boost::enable_if<
             mpl::not_<proto::matches<if_expr_type,range_if_expr>>
         ,result_type>::type
-        sum_impl(label_type label, 
+        sum_impl(const label_type& label, 
                 if_expr_type& if_expr, 
                 expr_type& expr, 
                 accumulate_type& accum,
@@ -225,7 +225,7 @@ namespace detail {
         typename boost::enable_if<
                 mpl::not_<proto::matches<if_expr_type,range_if_expr>>
         ,result_type>::type
-        sum_impl(label_b_type label, 
+        sum_impl(const label_b_type& label, 
                 if_expr_type& if_expr, 
                 expr_type& expr, 
                 accumulate_type& accum,
@@ -241,23 +241,30 @@ namespace detail {
             typedef typename std::remove_reference<
                 typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
             typedef typename label_a_type::particles_type particles_a_type;
+            typedef typename particles_a_type::const_reference const_a_reference;
+            typedef typename particles_b_type::const_reference const_b_reference;
             
-            typename particles_a_type::const_reference ai = fusion::front(ctx.m_labels).second;
+            const_a_reference ai = fusion::front(ctx.m_labels).second;
+
+            typedef typename fusion::map<fusion::pair<label_a_type,const_a_reference>,
+                                         fusion::pair<label_b_type,const_b_reference>> map_type;
+
 
             ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
             const size_t nb = particlesb.size();
             for (size_t i=0; i<nb; ++i) {
-                typename particles_b_type::const_reference bi = particlesb[i];
+                const_b_reference bi = particlesb[i];
 
+                /*
                 auto new_labels = fusion::make_map<label_a_type,label_b_type>(
-                                    ai,bi);
+                                    boost::cref(ai),boost::cref(bi));
+                                    */
 
-                const double_d dx = get<position>(bi)-get<position>(ai);
+                //const double_d dx = get<position>(bi)-get<position>(ai);
 
-
-                EvalCtx<decltype(new_labels),fusion::list<const double_d &>> const new_ctx(
-                        new_labels,
-                        fusion::make_list(boost::cref(dx)));
+                EvalCtx<map_type,fusion::list<const double_d &>> const new_ctx(
+                        map_type(ai,bi),
+                        fusion::make_list(get<position>(bi)-get<position>(ai)));
 
                 if (proto::eval(if_expr,new_ctx)) {
                     sum = accum.functor(sum,proto::eval(expr,new_ctx));
@@ -275,7 +282,7 @@ namespace detail {
         typename boost::enable_if<
                 proto::matches<if_expr_type,range_if_expr>
         ,result_type>::type
-        sum_impl(label_b_type label,
+        sum_impl(const label_b_type& label,
                 if_expr_type& if_expr, 
                 expr_type& expr, 
                 accumulate_type& accum,
@@ -290,17 +297,29 @@ namespace detail {
                 typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::position position;
+            typedef typename position::value_type double_d;
+            typedef typename particles_a_type::const_reference const_a_reference;
+            typedef typename particles_b_type::const_reference const_b_reference;
+            
+            const_a_reference ai = fusion::front(ctx.m_labels).second;
 
-            typename particles_a_type::const_reference ai = fusion::front(ctx.m_labels).second;
+            typedef typename fusion::map<fusion::pair<label_a_type,const_a_reference>,
+                                         fusion::pair<label_b_type,const_b_reference>> map_type;
+
+            typedef fusion::list<const double_d &> list_type;
 
             //TODO: get query range and put it in box search
             for (auto i: box_search(particlesb.get_query(),get<position>(ai))) {
-                auto new_labels = fusion::make_map<label_a_type,label_b_type>(
-                                    ai,std::get<0>(i));
+                //auto new_labels = fusion::make_map<label_a_type,label_b_type>(
+                //                    ai,std::get<0>(i));
 
-                auto new_dx = fusion::make_list(boost::cref(std::get<1>(i)));
+                //auto new_dx = fusion::make_list(boost::cref(std::get<1>(i)));
+                const_b_reference bi = std::get<0>(i);
+                const double_d& dx = std::get<1>(i);
 
-                EvalCtx<decltype(new_labels),decltype(new_dx)> const new_ctx(new_labels,new_dx);
+                EvalCtx<map_type,list_type> const new_ctx(
+                        map_type(ai,bi),list_type(dx)
+                        );
 
                 if (proto::eval(if_expr,new_ctx)) {
                     sum = accum.functor(sum,proto::eval(expr,new_ctx));
