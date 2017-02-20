@@ -232,10 +232,6 @@ namespace detail {
                 const EvalCtx& ctx, mpl::int_<1>) {
 
             typedef typename label_b_type::particles_type particles_b_type;
-
-            result_type sum = accum.init;
-            const particles_b_type& particlesb = label.get_particles(); 
-
             typedef typename particles_b_type::position position;
             typedef typename position::value_type double_d;
             typedef typename std::remove_reference<
@@ -243,22 +239,22 @@ namespace detail {
             typedef typename label_a_type::particles_type particles_a_type;
             typedef typename particles_a_type::const_reference const_a_reference;
             typedef typename particles_b_type::const_reference const_b_reference;
-            
-            const_a_reference ai = fusion::front(ctx.m_labels).second;
-
             typedef typename fusion::map<fusion::pair<label_a_type,const_a_reference>,
                                          fusion::pair<label_b_type,const_b_reference>> map_type;
             typedef fusion::list<const double_d &> list_type;
 
-
             ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
+
+            result_type sum = accum.init;
+            const particles_b_type& particlesb = label.get_particles(); 
+            const_a_reference ai = fusion::front(ctx.m_labels).second;
             const size_t nb = particlesb.size();
             for (size_t i=0; i<nb; ++i) {
                 const_b_reference bi = particlesb[i];
-                const double_d dx = get<position>(bi)-get<position>(ai);
 
                 EvalCtx<map_type,list_type> const new_ctx(
-                        map_type(ai,bi),list_type(dx)
+                        fusion::make_map<label_a_type,label_b_type>(ai,bi),
+                        fusion::make_list(get<position>(bi)-get<position>(ai))
                         );
 
                 if (proto::eval(if_expr,new_ctx)) {
@@ -309,7 +305,8 @@ namespace detail {
                 const double_d& dx = std::get<1>(i);
 
                 EvalCtx<map_type,list_type> const new_ctx(
-                        map_type(ai,bi),list_type(dx)
+                        fusion::make_map<label_a_type,label_b_type>(ai,bi),
+                        fusion::make_list(get<position>(bi)-get<position>(ai))
                         );
 
                 if (proto::eval(if_expr,new_ctx)) {
