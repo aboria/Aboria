@@ -306,7 +306,7 @@ namespace detail {
 
                 EvalCtx<map_type,list_type> const new_ctx(
                         fusion::make_map<label_a_type,label_b_type>(ai,bi),
-                        fusion::make_list(get<position>(bi)-get<position>(ai))
+                        fusion::make_list(dx)
                         );
 
                 if (proto::eval(if_expr,new_ctx)) {
