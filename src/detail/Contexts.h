@@ -248,23 +248,18 @@ namespace detail {
 
             typedef typename fusion::map<fusion::pair<label_a_type,const_a_reference>,
                                          fusion::pair<label_b_type,const_b_reference>> map_type;
+            typedef fusion::list<const double_d &> list_type;
 
 
             ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
             const size_t nb = particlesb.size();
             for (size_t i=0; i<nb; ++i) {
                 const_b_reference bi = particlesb[i];
+                const double_d dx = get<position>(bi)-get<position>(ai);
 
-                /*
-                auto new_labels = fusion::make_map<label_a_type,label_b_type>(
-                                    boost::cref(ai),boost::cref(bi));
-                                    */
-
-                //const double_d dx = get<position>(bi)-get<position>(ai);
-
-                EvalCtx<map_type,fusion::list<const double_d &>> const new_ctx(
-                        map_type(ai,bi),
-                        fusion::make_list(get<position>(bi)-get<position>(ai)));
+                EvalCtx<map_type,list_type> const new_ctx(
+                        map_type(ai,bi),list_type(dx)
+                        );
 
                 if (proto::eval(if_expr,new_ctx)) {
                     sum = accum.functor(sum,proto::eval(expr,new_ctx));
@@ -309,11 +304,7 @@ namespace detail {
             typedef fusion::list<const double_d &> list_type;
 
             //TODO: get query range and put it in box search
-            for (auto i: box_search(particlesb.get_query(),get<position>(ai))) {
-                //auto new_labels = fusion::make_map<label_a_type,label_b_type>(
-                //                    ai,std::get<0>(i));
-
-                //auto new_dx = fusion::make_list(boost::cref(std::get<1>(i)));
+            for (const auto& i: box_search(particlesb.get_query(),get<position>(ai))) {
                 const_b_reference bi = std::get<0>(i);
                 const double_d& dx = std::get<1>(i);
 
