@@ -456,14 +456,18 @@ public:
 
         nodes.init_neighbour_search(min,max,h,periodic);
 
-        Symbol<id> id_;
-        Label<0,nodes_type> a(nodes);
-        Label<1,nodes_type> b(nodes);
-        auto dx = create_dx(a,b);
-        Accumulate<std::plus<double> > sum;
-
-        auto A = create_eigen_operator(a,b, 
-                if_else(id_[a]==id_[b],6.0,-1.0), norm(dx)<htol );
+        auto A = create_sparse_operator(nodes,nodes, 
+                htol,
+                [](const double3 &dx,
+                    nodes_type::const_reference a,
+                    nodes_type::const_reference b) {
+                    if (get<id>(a)==get<id>(b)) {
+                        return 6.0;
+                    } else {
+                        return -1.0;
+                    }
+                }
+                );
 
         auto t0 = Clock::now();
         s += A*s;
@@ -659,14 +663,13 @@ public:
 
         nodes.init_neighbour_search(min,max,h,periodic);
 
-        Symbol<kernel_constant> c;
-        Label<0,nodes_type> a(nodes);
-        Label<1,nodes_type> b(nodes);
-        auto dx = create_dx(a,b);
-        Accumulate<std::plus<double> > sum;
-
-        auto A = create_eigen_operator(a,b, 
-                sqrt(dot(dx,dx)+c[b]*c[b])
+        auto A = create_dense_operator(nodes,nodes, 
+                [](const double2 &dx,
+                    typename nodes_type::const_reference a,
+                    typename nodes_type::const_reference b) {
+                    return std::sqrt(dx.squaredNorm()+
+                                get<kernel_constant>(b)*get<kernel_constant>(b));
+                }
                 );
 
         s += A*s;
