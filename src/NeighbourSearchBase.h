@@ -63,7 +63,7 @@ struct iterator_range {
     {}
     CUDA_HOST_DEVICE
     iterator_range(IteratorType&& begin, IteratorType&& end):
-        m_begin(begin),m_end(end) 
+        m_begin(std::move(begin)),m_end(std::move(end)) 
     {}
     CUDA_HOST_DEVICE
     iterator_range(const IteratorType& begin, const IteratorType& end):
@@ -249,7 +249,7 @@ public:
     ranges_iterator() {}
 
     CUDA_HOST_DEVICE
-    ranges_iterator(p_pointer begin, const double_d &transpose):
+    ranges_iterator(const p_pointer& begin, const double_d &transpose):
         m_current_p(begin),
         m_transpose(transpose) {
     }
@@ -351,14 +351,22 @@ public:
     CUDA_HOST_DEVICE
     linked_list_iterator(
             const int index,
-            const p_pointer particles_begin,
+            const p_pointer& particles_begin,
             int* linked_list_begin,
             const double_d &transpose):
         m_current_index(index),
         m_particles_begin(particles_begin),
         m_linked_list_begin(linked_list_begin),
-        m_transpose(transpose) {
-    }
+        m_transpose(transpose) 
+    {}
+
+    CUDA_HOST_DEVICE
+    linked_list_iterator(const linked_list_iterator& other):
+        m_current_index(other.m_current_index),
+        m_particles_begin(other.m_particles_begin),
+        m_linked_list_begin(other.m_linked_list_begin),
+        m_transpose(other.m_transpose) 
+    {}
 
     CUDA_HOST_DEVICE
     const double_d& get_transpose() { return m_transpose; }

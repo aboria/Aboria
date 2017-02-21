@@ -50,6 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Get.h"
 
 #include <iostream>
+#include <queue>
 #include "Log.h"
 
 namespace Aboria {
@@ -75,38 +76,30 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    box_search_iterator():
-        m_bucket_index(0),
-        n_buckets(0)
+    box_search_iterator()
     {}
 
     CUDA_HOST_DEVICE
     box_search_iterator(const double_d &r, const double_d &box_side_length):
-        m_bucket_index(0),
-        n_buckets(0),
         m_r(r),
         m_box_side_length(box_side_length)
-    {}
+    {
+    }
    
 
     CUDA_HOST_DEVICE
-    void add_range(const iterator_range<Iterator> &range) {
-        m_buckets_to_search[n_buckets] = range;
-
-        if (is_invalid()) {
-
-            // increment of n_buckets needs to be after is_invalid()
-            ++n_buckets;
-
-            // make sure we have a good candidate ready to go
-            // if none in range then increment makes sure we 
-            // go back to being invalid
-            m_current_p = range.begin();
-            if (!check_candidate()) {
-                increment();
+    void add_range(iterator_range<Iterator> &&range) {
+        if (range.begin()!=range.end()) {
+            m_buckets_to_search.push(std::move(range));
+            if (m_buckets_to_search.size()==1) {
+                // make sure we have a good candidate ready to go
+                // if none in range then increment makes sure we 
+                // go back to being invalid
+                m_current_p = range.begin();
+                if (!check_candidate()) {
+                    increment();
+                }
             }
-        } else {
-            ++n_buckets;
         }
     }
 
@@ -152,7 +145,7 @@ public:
 
     CUDA_HOST_DEVICE
     bool is_invalid() const {
-        return n_buckets == m_bucket_index;
+        return m_buckets_to_search.empty();
     }
 
     CUDA_HOST_DEVICE
@@ -171,15 +164,15 @@ public:
 #endif
 
         ++m_current_p;
-        if (m_current_p == m_buckets_to_search[m_bucket_index].end()) {
-            ++m_bucket_index;
+        if (m_current_p == m_buckets_to_search.front().end()) {
+            m_buckets_to_search.pop();
 
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tend of range, moving to range "<<m_bucket_index); 
+            LOG(4,"\tend of range, moving to next range "); 
 #endif
-            if (m_bucket_index < n_buckets) {
-                ASSERT(m_buckets_to_search[m_bucket_index].begin() != m_buckets_to_search[m_bucket_index].end(),"error, empty range found");
-                m_current_p = m_buckets_to_search[m_bucket_index].begin();
+            if (!m_buckets_to_search.empty()) {
+                ASSERT(m_buckets_to_search.front().begin() != m_buckets_to_search.front().end(),"error, empty range found");
+                m_current_p = m_buckets_to_search.front().begin();
             } else {
 
 #ifndef __CUDA_ARCH__
@@ -225,7 +218,7 @@ public:
 #endif
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (box_search_iterator): m_bucket_index = "<<m_bucket_index); 
+        LOG(4,"\tend increment (box_search_iterator)"); 
 #endif
     }
 
@@ -241,11 +234,8 @@ public:
 
 
     const static unsigned int max_nbuckets = detail::ipow(3,Traits::dimension); 
-    iterator_range<Iterator> m_buckets_to_search[max_nbuckets];
+    std::queue<iterator_range<Iterator>> m_buckets_to_search;
     Iterator m_current_p;
-    size_t m_nbuckets;
-    unsigned int m_bucket_index;
-    unsigned int n_buckets;
 
 };
 
@@ -263,10 +253,7 @@ box_search(const Query query,
             ,search_iterator()
             );
     for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        iterator_range<typename Query::particle_iterator> particle_range = query.get_bucket_particles(i);
-        if (particle_range.begin()!=particle_range.end()) {
-            search_range.begin().add_range(particle_range);
-        }
+        search_range.begin().add_range(query.get_bucket_particles(i));
     }
     return search_range;
 }
@@ -283,10 +270,7 @@ box_search(const Query query,
             ,search_iterator()
             );
     for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        iterator_range<typename Query::particle_iterator> particle_range = query.get_bucket_particles(i);
-        if (particle_range.begin()!=particle_range.end()) {
-            search_range.begin().add_range(particle_range);
-        }
+        search_range.begin().add_range(query.get_bucket_particles(i));
     }
     return search_range;
 }

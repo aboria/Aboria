@@ -755,13 +755,14 @@ public:
 #endif
     }
 
+    template <template <typename> class SearchMethod>
     double linear_spring_aboria(const size_t N, const double radius, const size_t repeats) {
         std::cout << "linear_spring_aboria: N = "<<N<<std::endl;
 
         const double r = 2*radius;
 
         ABORIA_VARIABLE(a_var,double3,"a")
-    	typedef Particles<std::tuple<a_var>,3> nodes_type;
+    	typedef Particles<std::tuple<a_var>,3,std::vector,SearchMethod> nodes_type;
         typedef position_d<3> position;
        	nodes_type nodes(N*N*N);
 
@@ -936,7 +937,8 @@ public:
             sprintf(buffer,"linear_spring%4.4f.csv",radius_div_h);
             file.open(buffer);
             file <<"#"<< std::setw(14) << "N" 
-                << std::setw(15) << "aboria" 
+                << std::setw(15) << "aboria_serial" 
+                << std::setw(15) << "aboria_parallel" 
                 << std::setw(15) << "gromacs" << std::endl;
 
 
@@ -947,7 +949,8 @@ public:
                 const double h = 1.0/N; 
                 const double radius = radius_div_h*h;
                 file << std::setw(15) << std::pow(N,3);
-                file << std::setw(15) << std::pow(N,6)/linear_spring_aboria(N,radius,repeats);
+                file << std::setw(15) << std::pow(N,6)/linear_spring_aboria<bucket_search_serial>(N,radius,repeats);
+                //file << std::setw(15) << std::pow(N,6)/linear_spring_aboria<bucket_search_parallel>(N,radius,repeats);
                 file << std::setw(15) << std::pow(N,6)/linear_spring_gromacs(N,radius,repeats);
                 file << std::endl;
             }

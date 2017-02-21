@@ -368,8 +368,24 @@ struct bucket_search_parallel_query {
 
     CUDA_HOST_DEVICE
     iterator_range<bucket_iterator> get_near_buckets(const bucket_reference &bucket) const {
-        const int_d start = bucket+int_d(-1);
-        const int_d end = bucket+int_d(1);
+        int_d start,end;
+        for (int i=0; i<Traits::dimension; i++) {
+            if (m_periodic[i]) {
+                start[i] = bucket[i]-1;
+                end[i] = bucket[i]+1;
+            } else {
+                if (bucket[i] > 0) {
+                    start[i] = bucket[i]-1;
+                } else {
+                    start[i] = bucket[i];
+                }
+                if (bucket[i] < m_end_bucket[i]) {
+                    end[i] = bucket[i]+1;
+                } else {
+                    end[i] = bucket[i];
+                }
+            }
+        }
         return iterator_range<bucket_iterator>(
                 bucket_iterator(start,end,start)
                 ,++bucket_iterator(start,end,end)

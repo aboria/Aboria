@@ -63,8 +63,9 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
         handles.append(solid_line)
         for data,radius in zip(datas,radius_div_h):
             handle, = plt.loglog(data[:,0],data[:,1]/1e6,label='radius = %2.1f'%radius)
+            plt.loglog(data[:,0],data[:,2]/1e6,color=handle.get_color(),linestyle='-.',label='radius = %2.1f'%radius)
             handles.append(handle)
-            plt.loglog(data[:,0],data[:,2]/1e6,color=handle.get_color(),linestyle='--',label='gromacs %f'%radius)
+            plt.loglog(data[:,0],data[:,3]/1e6,color=handle.get_color(),linestyle='--',label='gromacs %f'%radius)
         plt.ylim(10,1e4)
     else:
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria')
