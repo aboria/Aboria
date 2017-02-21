@@ -808,7 +808,7 @@ public:
         where $r$ is a given constant.
 
         */
-        a[i] = sum(j,norm(dx)<r,(r-norm(dx))/norm(dx)*dx);
+        a[i] = sum(j,dot(dx,dx)<r*r,(r-norm(dx))/norm(dx)*dx);
         /*`
         The benchmarks are shown below. 
 
@@ -821,7 +821,7 @@ public:
         ProfilerStart("linear_spring_aboria");
 #endif
         for (int ii=0; ii<repeats; ++ii) {
-            a[i] = sum(j,norm(dx)<r,(r-norm(dx))/norm(dx)*dx);
+            a[i] = sum(j,dot(dx,dx)<r*r,(r-norm(dx))/norm(dx)*dx);
         }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
@@ -930,7 +930,7 @@ public:
             omp_set_num_threads(1);
 #endif
         std::ofstream file;
-        const size_t base_repeats = 200;
+        const size_t base_repeats = 1e6;
         for (double radius_div_h = 1.1; radius_div_h < 5; radius_div_h += 1) {
             char buffer[100];
             sprintf(buffer,"linear_spring%4.4f.csv",radius_div_h);
@@ -957,7 +957,7 @@ public:
 
     void test_multiquadric() {
         std::ofstream file;
-        const size_t base_repeats = 200;
+        const size_t base_repeats = 5e6;
         file.open("multiquadric.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria" 
@@ -965,7 +965,7 @@ public:
              << std::setw(15) << "eigen" << std::endl;
         for (double i = 2; i < 100; i *= 1.05) {
             const size_t N = i;
-            const size_t repeats = base_repeats/std::pow(N,2) + 1;
+            const size_t repeats = base_repeats/std::pow(N,4) + 1;
             file << std::setw(15) << std::pow(N,2);
 #ifdef HAVE_OPENMP
             omp_set_num_threads(1);
@@ -1041,7 +1041,7 @@ public:
 
     void test_vector_addition() {
         std::ofstream file;
-        const size_t base_repeats = 400;
+        const size_t base_repeats = 1e7;
         file.open("vector_addition.csv");
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
@@ -1068,7 +1068,7 @@ public:
     void test_daxpy() {
         std::ofstream file;
         file.open("daxpy.csv");
-        const size_t base_repeats = 400;
+        const size_t base_repeats = 1e7;
         file <<"#"<< std::setw(14) << "N" 
              << std::setw(15) << "aboria_level1" 
              << std::setw(15) << "aboria_level2" 
