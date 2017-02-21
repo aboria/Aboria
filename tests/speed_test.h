@@ -791,6 +791,7 @@ public:
         Label<1,nodes_type> j(nodes);
         auto dx = create_dx(i,j);
         Accumulate<std::plus<double3> > sum;
+        Accumulate<std::plus<int> > sumi;
 
         //[linear_spring
         /*`
@@ -817,6 +818,8 @@ public:
          */
         //]
         
+        const int count = eval(sumi(i,true,sumi(j,norm(dx)<r,1)));
+        std::cout << "found "<<count<<" pairs"<<std::endl;
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("linear_spring_aboria");
@@ -881,7 +884,9 @@ public:
         }
         gmx::AnalysisNeighborhoodPairSearch pairSearch = nbsearch.startPairSearch(analysis_positions);
         gmx::AnalysisNeighborhoodPair pair;
+        int count = 0;
         while (pairSearch.findNextPair(&pair)) {
+            ++count;
             const double d2 = pair.distance2();
             ASSERT(d2<=4*radius*radius,"bad search? ");
             const int a = pair.refIndex();
@@ -894,6 +899,7 @@ public:
             results[a][2] += scale*dx[2]; 
         }
         
+        std::cout << "found "<<count<<" pairs"<<std::endl;
 
         auto t0 = Clock::now();
         for (int i=0; i<repeats; ++i) {

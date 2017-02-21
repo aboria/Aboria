@@ -352,7 +352,7 @@ public:
     linked_list_iterator(
             const int index,
             const p_pointer& particles_begin,
-            int* linked_list_begin,
+            int* const linked_list_begin,
             const double_d &transpose):
         m_current_index(index),
         m_particles_begin(particles_begin),
@@ -367,6 +367,17 @@ public:
         m_linked_list_begin(other.m_linked_list_begin),
         m_transpose(other.m_transpose) 
     {}
+
+    CUDA_HOST_DEVICE
+    void operator=(const linked_list_iterator& other) {
+        m_current_index = other.m_current_index;
+        if (tuple_ns::get<0>(m_particles_begin.get_tuple()) != 
+            tuple_ns::get<0>(other.m_particles_begin.get_tuple())) {
+            m_particles_begin = other.m_particles_begin;
+        }
+        m_linked_list_begin = other.m_linked_list_begin;
+        m_transpose = other.m_transpose; 
+    }
 
     CUDA_HOST_DEVICE
     const double_d& get_transpose() { return m_transpose; }
