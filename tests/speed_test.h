@@ -808,7 +808,7 @@ public:
         where $r$ is a given constant.
 
         */
-        a[i] = sum(j,dot(dx,dx)<r*r,(r-norm(dx))/norm(dx)*dx);
+        a[i] = sum(j,norm(dx)<r,(r-norm(dx))/norm(dx)*dx);
         /*`
         The benchmarks are shown below. 
 
@@ -821,7 +821,7 @@ public:
         ProfilerStart("linear_spring_aboria");
 #endif
         for (int ii=0; ii<repeats; ++ii) {
-            a[i] = sum(j,dot(dx,dx)<r*r,(r-norm(dx))/norm(dx)*dx);
+            a[i] = sum(j,norm(dx)<r,(r-norm(dx))/norm(dx)*dx);
         }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
