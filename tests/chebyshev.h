@@ -127,7 +127,7 @@ public:
                        std::begin(get<source>(particles)), source_fn);
 
         const double c = 0.1;
-        auto kernel = [&c](const double_d &dx) {
+        auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
             return std::sqrt(dx.squaredNorm() + c); 
         };
 
@@ -141,7 +141,7 @@ public:
             const double_d pi = get<position>(particles)[i];
             for (int j=0; j<N; j++) {
                 const double_d pj = get<position>(particles)[j];
-                get<target_manual>(particles)[i] += kernel(pi-pj)*get<source>(particles)[j];
+                get<target_manual>(particles)[i] += kernel(pi-pj,pi,pj)*get<source>(particles)[j];
             }
         }
         auto t1 = Clock::now();

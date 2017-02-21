@@ -85,12 +85,18 @@ namespace Aboria {
 
         template<typename Expr>
         struct GeometryExpr;
+
+        // forward declare here so we can use the nice eval functions defined in Symbolic.h....
+        template<typename labels_type=fusion::nil_, typename dx_type=fusion::nil_>
+        struct EvalCtx;
     }
 }
 
 #include "detail/Terminal.h"
 #include "detail/Grammars.h"
-#include "detail/Contexts.h"
+
+
+
 #include "detail/Domains.h"
 #include "detail/Expressions.h"
 #include "Vector.h"
@@ -98,9 +104,6 @@ namespace Aboria {
 #include "Random.h"
 
 
-namespace Aboria {
 
-
-}
 
 #endif /* SYMBOLIC_H_ */

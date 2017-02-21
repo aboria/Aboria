@@ -242,14 +242,16 @@ namespace Aboria {
                  typename const_row_reference=
                      typename RowParticles::const_reference,
                  typename const_col_reference=
-                     typename ColParticles::const_reference>
+                     typename ColParticles::const_reference,
+                 typename position=
+                     typename RowParticles::position>
         struct position_lambda {
             F m_f;
             position_lambda(const F f):m_f(f) {}
             double operator()(const double_d& dx,
                             const_row_reference a,
                             const_col_reference b) {
-                                return m_f(dx);
+                                return m_f(dx,get<position>(a),get<position>(b));
             }
         };
     }
@@ -327,7 +329,7 @@ namespace Aboria {
                 lattice_iterator<dimension> mj(m_start,m_end,m_start);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
-                    m_kernel_matrix(i,j) = m_position_function(pi-pj);
+                    m_kernel_matrix(i,j) = m_position_function(pi-pj,pj,pi);
                 }
             }
         }

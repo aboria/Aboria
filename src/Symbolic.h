@@ -38,7 +38,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define SYMBOLIC_H_
 
 #include "Vector.h"
+
 #include "detail/Symbolic.h"
+
 
 namespace Aboria {
 
@@ -461,6 +463,6 @@ namespace Aboria {
 
 }
 
-
+#include "detail/Contexts.h"
 
 #endif /* SYMBOLIC_H_ */

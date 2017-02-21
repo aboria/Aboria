@@ -50,7 +50,7 @@ namespace detail {
 
     // Here is an evaluation context that indexes into a lazy vector
     // expression, and combines the result.
-    template<typename labels_type=fusion::nil_, typename dx_type=fusion::nil_>
+    template<typename labels_type, typename dx_type>
     struct EvalCtx {
         typedef typename fusion::result_of::size<labels_type>::type size_type;
         typedef typename fusion::result_of::size<dx_type>::type dx_size_type;
@@ -243,21 +243,38 @@ namespace detail {
                                          fusion::pair<label_b_type,const_b_reference>> map_type;
             typedef fusion::list<const double_d &> list_type;
 
-            result_type sum = accum.init;
             const particles_b_type& particlesb = label.get_particles(); 
             ASSERT(!particlesb.get_periodic().any(),"periodic does not work with dense");
             const_a_reference ai = fusion::front(ctx.m_labels).second;
             const size_t nb = particlesb.size();
-            for (size_t i=0; i<nb; ++i) {
-                const_b_reference bi = particlesb[i];
 
-                EvalCtx<map_type,list_type> const new_ctx(
-                        fusion::make_map<label_a_type,label_b_type>(ai,bi),
-                        fusion::make_list(get<position>(bi)-get<position>(ai))
-                        );
+            result_type sum = accum.init;
+            if (is_trivially_false(if_expr)) {
+                return sum;
+            } 
+            if (is_trivially_true(if_expr)) {
+                for (size_t i=0; i<nb; ++i) {
+                    const_b_reference bi = particlesb[i];
 
-                if (proto::eval(if_expr,new_ctx)) {
+                    EvalCtx<map_type,list_type> const new_ctx(
+                            fusion::make_map<label_a_type,label_b_type>(ai,bi),
+                            fusion::make_list(get<position>(bi)-get<position>(ai))
+                            );
+
                     sum = accum.functor(sum,proto::eval(expr,new_ctx));
+                }
+            } else {
+                for (size_t i=0; i<nb; ++i) {
+                    const_b_reference bi = particlesb[i];
+
+                    EvalCtx<map_type,list_type> const new_ctx(
+                            fusion::make_map<label_a_type,label_b_type>(ai,bi),
+                            fusion::make_list(get<position>(bi)-get<position>(ai))
+                            );
+
+                    if (proto::eval(if_expr,new_ctx)) {
+                        sum = accum.functor(sum,proto::eval(expr,new_ctx));
+                    }
                 }
             }
             return sum;
@@ -280,7 +297,6 @@ namespace detail {
 
 
             typedef typename label_b_type::particles_type particles_b_type;
-            result_type sum = accum.init;
             const particles_b_type& particlesb = label.get_particles(); 
 
             typedef typename std::remove_reference<
@@ -298,6 +314,7 @@ namespace detail {
 
             typedef fusion::list<const double_d &> list_type;
 
+            result_type sum = accum.init;
             //TODO: get query range and put it in box search
             for (const auto& i: box_search(particlesb.get_query(),get<position>(ai))) {
                 const_b_reference bi = std::get<0>(i);

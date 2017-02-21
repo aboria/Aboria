@@ -99,7 +99,7 @@ void chebyshev_interpolation(
         lattice_iterator<D> mj(start,end,start);
         for (int j=0; j<ncheb; ++j,++mj) {
             const double_d pj = target_Rn.get_position(*mj);
-            kernel_matrix(i,j) = kernel(pi-pj);
+            kernel_matrix(i,j) = kernel(pi-pj,pj,pi);
         }
     }
 
