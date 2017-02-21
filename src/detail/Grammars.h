@@ -273,10 +273,16 @@ namespace detail {
 
 }
 struct norm_fun;
+struct dot_fun;
 namespace detail {
 
     struct norm_dx:
-        proto::function< proto::terminal<Aboria::norm_fun>, proto::terminal<dx<_,_>>> 
+        proto::or_<
+            proto::function< proto::terminal<Aboria::norm_fun>, proto::terminal<dx<_,_>>> 
+            ,proto::function< proto::terminal<Aboria::dot_fun>, 
+                proto::terminal<dx<_,_>>,proto::terminal<dx<_,_>>
+                    > 
+        >
     {};
 
     struct range_if_expr:

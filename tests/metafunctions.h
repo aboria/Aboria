@@ -100,6 +100,9 @@ public:
         static_assert(proto::matches<decltype(norm(dx)<3),detail::range_if_expr>::value,
                 "norm(dx)<3 does not match range_if_expr");
 
+        static_assert(proto::matches<decltype(dot(dx,dx)<3),detail::range_if_expr>::value,
+                "dot(dx,dx)<3 does not match range_if_expr");
+
         static_assert(proto::matches<decltype(id_[a] != id_[b] && norm(dx)<3),detail::range_if_expr>::value,
                 "id_[a] != id_b[] && norm(dx)<3 does not match range_if_expr");
 
@@ -112,8 +115,14 @@ public:
         static_assert(proto::matches<decltype(norm(dx)<=s[a]),detail::range_if_expr>::value,
                 "norm(dx)<=s[a] does not match range_if_expr");
 
+        static_assert(proto::matches<decltype(dot(dx,dx)<=s[a]),detail::range_if_expr>::value,
+                "dot(dx,dx)<=s[a] does not match range_if_expr");
+
        static_assert(proto::matches<decltype(s[a] > norm(dx)),detail::range_if_expr>::value,
                 "s[a] > norm(dx) does not match range_if_expr");
+
+       static_assert(proto::matches<decltype(s[a] > dot(dx,dx)),detail::range_if_expr>::value,
+                "s[a] > dot(dx,dx) does not match range_if_expr");
 
         static_assert(proto::matches<decltype(10 > norm(dx)),detail::range_if_expr>::value,
                 "10 > norm(dx) does not match range_if_expr");
