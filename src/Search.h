@@ -104,7 +104,7 @@ public:
         m_current_particle(m_particle_range.begin())
     {
         get_valid_candidate();
-        if (!check_candidate()) {
+        if (m_valid && !check_candidate()) {
             increment();
         }
         LOG(4,"\tconstructor (box_search_iterator): r = "<<m_r<<" m_current_bucket = "<<*m_current_bucket<<"m_current_particle position= "<<get<position>(*m_current_particle));
@@ -160,7 +160,7 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    bool get_valid_candidate() {
+    void get_valid_candidate() {
         while (m_current_particle == m_particle_range.end()) {
             ++m_current_bucket;
             if (m_current_bucket == m_bucket_range.end()) {
@@ -170,16 +170,15 @@ public:
             m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
             m_current_particle = m_particle_range.begin();
         }
-        return m_valid;
     }
 
     CUDA_HOST_DEVICE
-    bool go_to_next_candidate() {
+    void go_to_next_candidate() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tgo_to_next_candidate (box_search_iterator):"); 
 #endif
         ++m_current_particle;
-        return get_valid_candidate();
+        get_valid_candidate();
     }
 
     CUDA_HOST_DEVICE
@@ -207,11 +206,15 @@ public:
         LOG(4,"\tincrement (box_search_iterator):"); 
 #endif
         bool found_good_candidate = false;
-        while (!found_good_candidate && go_to_next_candidate()) {
-            found_good_candidate = check_candidate();
+        while (!found_good_candidate && m_valid) {
+            go_to_next_candidate();
+            if (m_valid) {
+                found_good_candidate = check_candidate();
+            }
 #ifndef __CUDA_ARCH__
             LOG(4,"\tfound_good_candidate = "<<found_good_candidate); 
 #endif
+            
         }
 #ifndef __CUDA_ARCH__
         LOG(4,"\tend increment (box_search_iterator): invalid = " << m_valid); 
