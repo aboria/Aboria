@@ -1,7 +1,7 @@
 [section Installation]
 
 This software is tested on Ubuntu 14.04LTS with the GCC compiler (version 
-4.8.4), and Clang compiler (version 3.8.0). See our 
+5.4.1), and Clang compiler (version 3.8.0). See our 
 [@https://travis-ci.org/martinjrobins/Aboria Travis CI page] for more details.
 
 You will need to install a C++ compiler with C++11 support, and the 

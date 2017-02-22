@@ -4,13 +4,16 @@
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/6aimud6e8tvxfwgm?svg=true)](https://ci.appveyor.com/project/martinjrobins/aboria)
 -->
 
-UPDATE (12/09/2016): The next release of Aboria (0.3) has been merged to the 
-`master` branch. This release:
-* creates a base neighbour search class that different neighbour search classes 
-  can derive from
-* re-adds the serial bucket search algorithm and sets it as the default.
-* reworks some of the backend to support Thrust CUDA as a vector class (This is 
-  still not fully working)
+UPDATE (22/02/2017): I have merged the chebyshev branch with the master, as this 
+provides a number of improvements to radial search performance. This branch also 
+changes the matrix-free Eigen operators significantly. These now take generic 
+C++ function objects, rather than symbolic expressions. I've also added a 
+matrix-free operator using Chebyshev interpolation to speed up its operation on 
+a vector (at a cost to accuracy). I hope to put out an initial paper on Aboria 
+soon, and so will just be fixing bugs on the master branch until then (when the 
+paper is out Aboria will move to version 0.4).
+
+-----------------------------
 
 Aboria implements an expressive Domain Specific Language (DSL) in C++ for 
 specifying expressions over particles and their neighbours in N dimensional 
