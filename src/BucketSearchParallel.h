@@ -307,7 +307,7 @@ struct bucket_search_parallel_query {
 
 
     CUDA_HOST_DEVICE
-    iterator_range<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
+    iterator_range_with_transpose<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
 
         int_d my_bucket(bucket);
         particle_iterator end;
@@ -343,15 +343,14 @@ struct bucket_search_parallel_query {
 #ifndef __CUDA_ARCH__
                 LOG(4,"\tlooking in bucket "<<bucket<<" = "<<bucket_index<<". found "<<range_end_index-range_start_index<<" particles");
 #endif
-                return iterator_range<particle_iterator>(
-                        particle_iterator(m_particles_begin + range_start_index,transpose),
-                        particle_iterator(m_particles_begin + range_end_index,
-                        transpose)
-                        );
+                return iterator_range_with_transpose<particle_iterator>(
+                        particle_iterator(m_particles_begin + range_start_index),
+                        particle_iterator(m_particles_begin + range_end_index),
+                        transpose);
         } else {
-                return iterator_range<particle_iterator>(
-                        particle_iterator(m_particles_begin,transpose),
-                        particle_iterator(m_particles_begin,transpose)
+                return iterator_range_with_transpose<particle_iterator>(
+                        particle_iterator(m_particles_begin),
+                        particle_iterator(m_particles_begin)
                         );
         }
     }

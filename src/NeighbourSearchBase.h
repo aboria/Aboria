@@ -54,7 +54,46 @@ namespace Aboria {
 
 
 template <typename IteratorType>
-struct iterator_range {
+struct iterator_range_with_transpose {
+    typedef IteratorType iterator;
+    typedef typename iterator::traits_type traits_type;
+    typedef typename traits_type::double_d double_d;
+    IteratorType m_begin;
+    IteratorType m_end;
+    CUDA_HOST_DEVICE
+    iterator_range_with_transpose()
+    {}
+    /*
+    CUDA_HOST_DEVICE
+    iterator_range_with_transpose(IteratorType&& begin, IteratorType&& end, const double_d& transpose):
+        m_begin(std::move(begin)),m_end(std::move(end)),m_transpose(transpose) 
+    {}
+    */
+    CUDA_HOST_DEVICE
+    iterator_range_with_transpose(const IteratorType& begin, const IteratorType& end, const double_d &transpose):
+        m_begin(begin),m_end(end),m_transpose(transpose) 
+    {}
+    CUDA_HOST_DEVICE
+    iterator_range_with_transpose(const IteratorType& begin, const IteratorType& end):
+        m_begin(begin),m_end(end),m_transpose(0) 
+    {}
+    CUDA_HOST_DEVICE
+    const IteratorType &begin() const { return m_begin; }
+    CUDA_HOST_DEVICE
+    const IteratorType &end() const { return m_end; }
+    CUDA_HOST_DEVICE
+    IteratorType &begin() { return m_begin; }
+    CUDA_HOST_DEVICE
+    IteratorType &end() { return m_end; }
+
+    CUDA_HOST_DEVICE
+    const double_d& get_transpose() { return m_transpose; }
+    double_d m_transpose;
+
+};
+
+template <typename IteratorType>
+struct iterator_range{
     typedef IteratorType iterator;
     IteratorType m_begin;
     IteratorType m_end;
@@ -67,7 +106,7 @@ struct iterator_range {
     {}
     CUDA_HOST_DEVICE
     iterator_range(const IteratorType& begin, const IteratorType& end):
-        m_begin(begin),m_end(end) 
+        m_begin(begin),m_end(end)
     {}
     CUDA_HOST_DEVICE
     const IteratorType &begin() const { return m_begin; }
@@ -77,7 +116,6 @@ struct iterator_range {
     IteratorType &begin() { return m_begin; }
     CUDA_HOST_DEVICE
     IteratorType &end() { return m_end; }
-
 };
 
 template <typename IteratorType>
@@ -249,14 +287,11 @@ public:
     ranges_iterator() {}
 
     CUDA_HOST_DEVICE
-    ranges_iterator(const p_pointer& begin, const double_d &transpose):
-        m_current_p(begin),
-        m_transpose(transpose) {
-    }
+    ranges_iterator(const p_pointer& begin):
+        m_current_p(begin)
+    {}
 
-    CUDA_HOST_DEVICE
-    const double_d& get_transpose() { return m_transpose; }
-    
+        
     CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
@@ -318,7 +353,6 @@ private:
     }
 
     p_pointer m_current_p;
-    double_d m_transpose;
 };
 
 /// A const iterator to a set of neighbouring points. This iterator implements
@@ -352,20 +386,17 @@ public:
     linked_list_iterator(
             const int index,
             const p_pointer& particles_begin,
-            int* const linked_list_begin,
-            const double_d &transpose):
+            int* const linked_list_begin):
         m_current_index(index),
         m_particles_begin(particles_begin),
-        m_linked_list_begin(linked_list_begin),
-        m_transpose(transpose) 
+        m_linked_list_begin(linked_list_begin)
     {}
 
     CUDA_HOST_DEVICE
     linked_list_iterator(const linked_list_iterator& other):
         m_current_index(other.m_current_index),
         m_particles_begin(other.m_particles_begin),
-        m_linked_list_begin(other.m_linked_list_begin),
-        m_transpose(other.m_transpose) 
+        m_linked_list_begin(other.m_linked_list_begin)
     {}
 
     CUDA_HOST_DEVICE
@@ -376,11 +407,7 @@ public:
             m_particles_begin = other.m_particles_begin;
         }
         m_linked_list_begin = other.m_linked_list_begin;
-        m_transpose = other.m_transpose; 
     }
-
-    CUDA_HOST_DEVICE
-    const double_d& get_transpose() { return m_transpose; }
 
     CUDA_HOST_DEVICE
     reference operator *() const {
@@ -458,7 +485,6 @@ public:
     int m_current_index;
     p_pointer m_particles_begin;
     int* m_linked_list_begin;
-    double_d m_transpose;
 
 };
 
@@ -478,6 +504,9 @@ public:
     typedef const int_d& reference;
     typedef const int_d value_type;
 	typedef std::ptrdiff_t difference_type;
+
+    lattice_iterator()
+    {}
 
     CUDA_HOST_DEVICE
     lattice_iterator(const int_d &min, 

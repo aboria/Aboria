@@ -479,7 +479,7 @@ struct bucket_search_serial_query {
     const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
 
     CUDA_HOST_DEVICE
-    iterator_range<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
+    iterator_range_with_transpose<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
         // handle end cases
         unsigned_int_d my_bucket(bucket);
         double_d transpose(0);
@@ -510,14 +510,14 @@ struct bucket_search_serial_query {
 #ifndef __CUDA_ARCH__
                 LOG(4,"\tget_bucket_particles: looking in bucket "<<bucket<<" = "<<bucket_index);
 #endif
-                return iterator_range<particle_iterator>(
+                return iterator_range_with_transpose<particle_iterator>(
                         particle_iterator(m_buckets_begin[bucket_index],
                                 m_particles_begin,
-                                m_linked_list_begin,
-                                transpose),
-                        particle_iterator());
+                                m_linked_list_begin),
+                        particle_iterator(),
+                        transpose);
         } else {
-                return iterator_range<particle_iterator>(
+                return iterator_range_with_transpose<particle_iterator>(
                         particle_iterator(),
                         particle_iterator());
         }
@@ -554,6 +554,10 @@ struct bucket_search_serial_query {
                 }
             }
         }
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_near_buckets: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
+#endif
+ 
         return iterator_range<bucket_iterator>(
                 bucket_iterator(start,end,start)
                 ,++bucket_iterator(start,end,end)

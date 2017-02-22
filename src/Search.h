@@ -58,15 +58,28 @@ namespace Aboria {
 /// A const iterator to a set of neighbouring points. This iterator implements
 /// a STL forward iterator type
 // assume that these iterators, and query functions, are only called from device code
-template <typename Iterator>
+template <typename Query>
 class box_search_iterator {
-    typedef typename Iterator::traits_type Traits;
+
+    typedef typename Query::particle_iterator particle_iterator;
+    typedef typename Query::bucket_iterator bucket_iterator;
+    typedef typename Query::traits_type Traits;
+
     typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
-    typedef typename Iterator::value_type p_value_type;
-    typedef typename Iterator::reference p_reference;
-    typedef typename Iterator::pointer p_pointer;
+    typedef typename particle_iterator::value_type p_value_type;
+    typedef typename particle_iterator::reference p_reference;
+    typedef typename particle_iterator::pointer p_pointer;
+
+    bool m_valid;
+    double_d m_r;
+    double_d m_dx;
+    const Query *m_query;
+    iterator_range<bucket_iterator> m_bucket_range;
+    bucket_iterator m_current_bucket;
+    iterator_range_with_transpose<particle_iterator> m_particle_range;
+    particle_iterator m_current_particle;
 
 public:
     typedef const tuple_ns::tuple<p_reference,const double_d&>* pointer;
@@ -76,33 +89,27 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    box_search_iterator()
+    box_search_iterator():
+        m_valid(false)
     {}
 
     CUDA_HOST_DEVICE
-    box_search_iterator(const double_d &r, const double_d &box_side_length):
+    box_search_iterator(const Query &query,const double_d &r):
+        m_valid(true),
         m_r(r),
-        m_box_side_length(box_side_length)
+        m_query(&query),
+        m_bucket_range(query.get_near_buckets(query.get_bucket(r))),
+        m_current_bucket(m_bucket_range.begin()),
+        m_particle_range(query.get_bucket_particles(*m_current_bucket)),
+        m_current_particle(m_particle_range.begin())
     {
-    }
-   
-
-    CUDA_HOST_DEVICE
-    void add_range(iterator_range<Iterator> &&range) {
-        if (range.begin()!=range.end()) {
-            m_buckets_to_search.push(std::move(range));
-            if (m_buckets_to_search.size()==1) {
-                // make sure we have a good candidate ready to go
-                // if none in range then increment makes sure we 
-                // go back to being invalid
-                m_current_p = range.begin();
-                if (!check_candidate()) {
-                    increment();
-                }
-            }
+        get_valid_candidate();
+        if (!check_candidate()) {
+            increment();
         }
+        LOG(4,"\tconstructor (box_search_iterator): r = "<<m_r<<" m_current_bucket = "<<*m_current_bucket<<"m_current_particle position= "<<get<position>(*m_current_particle));
     }
-
+    
     CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
@@ -143,66 +150,55 @@ public:
  private:
     friend class boost::iterator_core_access;
 
-    CUDA_HOST_DEVICE
-    bool is_invalid() const {
-        return m_buckets_to_search.empty();
-    }
 
     CUDA_HOST_DEVICE
     bool equal(box_search_iterator const& other) const {
-        return is_invalid() ? 
-                    other.is_invalid() 
+        return m_valid ? 
+                    m_current_particle == other.m_current_particle
                     : 
-                    m_current_p == other.m_current_p;
+                    !other.m_valid;
+    }
+
+    CUDA_HOST_DEVICE
+    bool get_valid_candidate() {
+        while (m_current_particle == m_particle_range.end()) {
+            ++m_current_bucket;
+            if (m_current_bucket == m_bucket_range.end()) {
+                m_valid = false;
+                break; 
+            }
+            m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
+            m_current_particle = m_particle_range.begin();
+        }
+        return m_valid;
     }
 
     CUDA_HOST_DEVICE
     bool go_to_next_candidate() {
-        if (is_invalid()) return false;
 #ifndef __CUDA_ARCH__
         LOG(4,"\tgo_to_next_candidate (box_search_iterator):"); 
 #endif
-
-        ++m_current_p;
-        if (m_current_p == m_buckets_to_search.front().end()) {
-            m_buckets_to_search.pop();
-
-#ifndef __CUDA_ARCH__
-            LOG(4,"\tend of range, moving to next range "); 
-#endif
-            if (!m_buckets_to_search.empty()) {
-                ASSERT(m_buckets_to_search.front().begin() != m_buckets_to_search.front().end(),"error, empty range found");
-                m_current_p = m_buckets_to_search.front().begin();
-            } else {
-
-#ifndef __CUDA_ARCH__
-                LOG(4,"\tfinished ranges"); 
-#endif
-                return false;
-            }
-        }
-        return true;
+        ++m_current_particle;
+        return get_valid_candidate();
     }
 
     CUDA_HOST_DEVICE
     bool check_candidate() {
-        const double_d& p = get<position>(*m_current_p) + m_current_p.get_transpose();
-        m_dx = p - m_r;
-
+        //const double_d& p = get<position>(*m_current_particle) + m_particle_range.get_transpose();
+        const double_d& p = get<position>(*m_current_particle); 
+        const double_d& transpose = m_particle_range.get_transpose();
         bool outside = false;
         for (int i=0; i < Traits::dimension; i++) {
-            if (std::abs(m_dx[i]) > m_box_side_length[i]) {
+            m_dx[i] = p[i] + transpose[i] - m_r[i];
+            if (std::abs(m_dx[i]) > m_query->get_min_bucket_size()[i]) {
                 outside = true;
                 break;
             } 
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<p<<" trans = "<<m_current_p.get_transpose()<<". m_box_side_length = "<<m_box_side_length<<". outside = "<<outside); 
+        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<get<position>(*m_current_particle)<<" trans = "<<m_particle_range.get_transpose()<<". outside = "<<outside); 
 #endif
-
-
         return !outside;
-
     }
 
     CUDA_HOST_DEVICE
@@ -218,61 +214,29 @@ public:
 #endif
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (box_search_iterator)"); 
+        LOG(4,"\tend increment (box_search_iterator): invalid = " << m_valid); 
 #endif
     }
 
 
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return reference(*m_current_p,m_dx); }
+    { return reference(*m_current_particle,m_dx); }
 
-
-    double_d m_r;
-    double_d m_dx;
-    double_d m_box_side_length;
-
-
-    const static unsigned int max_nbuckets = detail::ipow(3,Traits::dimension); 
-    std::queue<iterator_range<Iterator>> m_buckets_to_search;
-    Iterator m_current_p;
-
+    
 };
 
-template<typename Query>
-iterator_range<box_search_iterator<typename Query::particle_iterator>> 
-box_search(const Query query, 
-           const typename Query::double_d box_centre, 
-           const typename Query::double_d box_sides) {
 
-    ASSERT(box_sides <= query.get_min_bucket_size(),"box query with greater than neighbour search min box size not currently supported");
-    typedef box_search_iterator<typename Query::particle_iterator> search_iterator;
 
-    iterator_range<search_iterator> search_range(
-            search_iterator(box_centre,box_sides)
-            ,search_iterator()
+template<typename Query,
+         typename SearchIterator = box_search_iterator<Query>>
+iterator_range<SearchIterator> 
+box_search(const Query& query, 
+           const typename Query::double_d& box_centre) {
+    return iterator_range<SearchIterator>(
+                 SearchIterator(query,box_centre)
+                ,SearchIterator()
             );
-    for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        search_range.begin().add_range(query.get_bucket_particles(i));
-    }
-    return search_range;
-}
-
-template<typename Query>
-iterator_range<box_search_iterator<typename Query::particle_iterator>> 
-box_search(const Query query, 
-           const typename Query::double_d box_centre) {
-
-    typedef box_search_iterator<typename Query::particle_iterator> search_iterator;
-
-    iterator_range<search_iterator> search_range(
-            search_iterator(box_centre,query.get_min_bucket_size())
-            ,search_iterator()
-            );
-    for (const auto &i: query.get_near_buckets(query.get_bucket(box_centre))) {
-        search_range.begin().add_range(query.get_bucket_particles(i));
-    }
-    return search_range;
 }
 
 

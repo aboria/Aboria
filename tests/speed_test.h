@@ -759,7 +759,7 @@ public:
     double linear_spring_aboria(const size_t N, const double radius, const size_t repeats) {
         std::cout << "linear_spring_aboria: N = "<<N<<std::endl;
 
-        const double r = 2*radius;
+        const double r = radius;
 
         ABORIA_VARIABLE(a_var,double3,"a")
     	typedef Particles<std::tuple<a_var>,3,std::vector,SearchMethod> nodes_type;
@@ -840,6 +840,8 @@ public:
 #ifdef HAVE_GROMACS
         std::cout << "linear_spring_gromacs: N = "<<N<<std::endl;
 
+        const double r = radius;
+
     	typedef Particles<std::tuple<>,2> nodes_type;
         typedef position_d<2> position;
        	nodes_type nodes(N*N*N);
@@ -873,7 +875,7 @@ public:
         set_pbc(&pbc, epbcNONE, box);
         gmx::AnalysisNeighborhoodPositions analysis_positions(positions);
         gmx::AnalysisNeighborhood neighborhood;
-        neighborhood.setCutoff(2*radius);
+        neighborhood.setCutoff(r);
         //neighborhood.setMode(gmx::eSearchMode_Grid)
         gmx::AnalysisNeighborhoodSearch nbsearch = neighborhood.initSearch(&pbc,analysis_positions);
 
@@ -888,12 +890,12 @@ public:
         while (pairSearch.findNextPair(&pair)) {
             ++count;
             const double d2 = pair.distance2();
-            ASSERT(d2<=4*radius*radius,"bad search? ");
+            ASSERT(d2<=r*r,"bad search? ");
             const int a = pair.refIndex();
             const int b = pair.testIndex();
             const rvec& dx = pair.dx();
             const double norm_dx = std::sqrt(d2);
-            const double scale = (2*radius-norm_dx)/norm_dx;
+            const double scale = (r-norm_dx)/norm_dx;
             results[a][0] += scale*dx[0]; 
             results[a][1] += scale*dx[1]; 
             results[a][2] += scale*dx[2]; 
@@ -912,12 +914,12 @@ public:
             gmx::AnalysisNeighborhoodPair pair;
             while (pairSearch.findNextPair(&pair)) {
                 const double d2 = pair.distance2();
-                ASSERT(d2<=4*radius*radius,"bad search?");
+                ASSERT(d2<=r*r,"bad search?");
                 const int a = pair.refIndex();
                 const int b = pair.testIndex();
                 const rvec& dx = pair.dx();
                 const double norm_dx = std::sqrt(d2);
-                const double scale = (2*radius-norm_dx)/norm_dx;
+                const double scale = (r-norm_dx)/norm_dx;
                 results[a][0] += scale*dx[0]; 
                 results[a][1] += scale*dx[1]; 
                 results[a][2] += scale*dx[2]; 
@@ -937,7 +939,7 @@ public:
             omp_set_num_threads(1);
 #endif
         std::ofstream file;
-        const size_t base_repeats = 1e6;
+        const size_t base_repeats = 5e6;
         for (double radius_div_h = 1.1; radius_div_h < 5; radius_div_h += 1) {
             char buffer[100];
             sprintf(buffer,"linear_spring%4.4f.csv",radius_div_h);

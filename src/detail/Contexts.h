@@ -316,13 +316,14 @@ namespace detail {
 
             result_type sum = accum.init;
             //TODO: get query range and put it in box search
+            /*
             auto& query = particlesb.get_query();
             for (const auto &i: query.get_near_buckets(query.get_bucket(get<position>(ai)))) {
                 auto range = query.get_bucket_particles(i);
                 for (auto& it=range.begin();it!=range.end();++it) {
                     const_b_reference bi = *it;
                     const double_d dx = get<position>(bi)-get<position>(ai)
-                                            +it.get_transpose();
+                                            +range.get_transpose();
                     EvalCtx<map_type,list_type> const new_ctx(
                         fusion::make_map<label_a_type,label_b_type>(ai,bi),
                         fusion::make_list(dx)
@@ -334,6 +335,7 @@ namespace detail {
                     }
                 }
             }
+            */
 
             /*
         bool outside = false;
@@ -345,7 +347,6 @@ namespace detail {
         }
         */
 
-            /*
             for (const auto& i: box_search(particlesb.get_query(),get<position>(ai))) {
                 const_b_reference bi = std::get<0>(i);
                 const double_d& dx = std::get<1>(i);
@@ -360,7 +361,6 @@ namespace detail {
                     
                 }
             }
-            */
             return sum;
         }
 
