@@ -100,7 +100,7 @@ T chebyshev_polynomial(const T &x, unsigned int n) {
     }
 }
 
-
+template <typename T=void>
 double chebyshev_node(const unsigned int i, const unsigned int n) {
     return cos((2.0*i+1.0)*PI/(2.0*n));
 }
