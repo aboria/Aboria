@@ -49,6 +49,7 @@ class OperatorsTest : public CxxTest::TestSuite {
 public:
 
     void test_documentation(void) {
+#ifdef HAVE_EIGEN
 //[operators
 /*`
 [section Matrix-free Linear Algebra with Eigen]
@@ -304,7 +305,6 @@ where $e_i$ and $d_j$ are elements of vectors $\mathbf{e}$ and $\mathbf{d}$ of
 size $2N$.  Using matrix notation, and using $\mathbf{K}$ and $\mathbf{K}_s$ to
 represent the operators `K` and `K_s`, this is equivilent to 
 
-
 $$
 \mathbf{e} = \begin{pmatrix} 
   \mathbf{K}_s   & 0 \\\\\
@@ -370,6 +370,7 @@ normal matrix `K_eigen` that we assembled previously to solve the equation
 [endsect]
 */
 //]
+#endif // HAVE_EIGEN
     }
 
     void test_Eigen(void) {
