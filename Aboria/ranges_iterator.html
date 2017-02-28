@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.3">
-<link rel="up" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">
 <link rel="prev" href="neighbour_search_base.html" title="Class template neighbour_search_base">
 <link rel="next" href="linked_list_iterator.html" title="Class template linked_list_iterator">
 <script type="text/x-mathjax-config">
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="neighbour_search_base.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="linked_list_iterator.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="neighbour_search_base.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="linked_list_iterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.ranges_iterator"></a><div class="titlepage"></div>
@@ -41,7 +41,7 @@ MathJax.Hub.Config({
 <p>Aboria::ranges_iterator</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Traits<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">{</span>
@@ -55,57 +55,55 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>            <a name="Aboria.ranges_iterator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>  
 
   <span class="comment">// <a class="link" href="ranges_iterator.html#Aboria.ranges_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="ranges_iterator.html#idp46791061238304-bb"><span class="identifier">ranges_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="ranges_iterator.html#idp46791061238432-bb"><span class="identifier">ranges_iterator</span></a><span class="special">(</span><span class="identifier">p_pointer</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="ranges_iterator.html#idp47411711245136-bb"><span class="identifier">ranges_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="ranges_iterator.html#idp47411711245264-bb"><span class="identifier">ranges_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="ranges_iterator.html#idp46791061226032-bb">public member functions</a></span>
-  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="ranges_iterator.html#idp46791061226432-bb"><span class="identifier">get_transpose</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="ranges_iterator.html#idp46791061227392-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="ranges_iterator.html#idp46791061228352-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> <a class="link" href="ranges_iterator.html#idp46791061229312-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <a class="link" href="ranges_iterator.html#idp46791061230560-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="ranges_iterator.html#idp46791061232336-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="ranges_iterator.html#idp46791061234112-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="ranges_iterator.html#idp46791061236208-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="ranges_iterator.html#idp47411711233824-bb">public member functions</a></span>
+  <span class="identifier">reference</span> <a class="link" href="ranges_iterator.html#idp47411711234224-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="ranges_iterator.html#idp47411711235184-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> <a class="link" href="ranges_iterator.html#idp47411711236144-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <a class="link" href="ranges_iterator.html#idp47411711237392-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="ranges_iterator.html#idp47411711239168-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="ranges_iterator.html#idp47411711240944-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="ranges_iterator.html#idp47411711243040-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="ranges_iterator.html#idp46791061239936-bb">private member functions</a></span>
-  <span class="keyword">bool</span> <a class="link" href="ranges_iterator.html#idp46791061240352-bb"><span class="identifier">equal</span></a><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="ranges_iterator.html#idp46791061242288-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="ranges_iterator.html#idp46791061243248-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="ranges_iterator.html#idp47411711246080-bb">private member functions</a></span>
+  <span class="keyword">bool</span> <a class="link" href="ranges_iterator.html#idp47411711246496-bb"><span class="identifier">equal</span></a><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="ranges_iterator.html#idp47411711248432-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="ranges_iterator.html#idp47411711249392-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46943043002160"></a><h2>Description</h2>
+<a name="idp46805403284320"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46943043002576"></a><h3>
+<a name="idp46805403284736"></a><h3>
 <a name="Aboria.ranges_iteratorconstruct-copy-destruct"></a><code class="computeroutput">ranges_iterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idp46791061238304-bb"></a><span class="identifier">ranges_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a name="idp46791061238432-bb"></a><span class="identifier">ranges_iterator</span><span class="special">(</span><span class="identifier">p_pointer</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> transpose<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp47411711245136-bb"></a><span class="identifier">ranges_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp47411711245264-bb"></a><span class="identifier">ranges_iterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span> begin<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46943043015424"></a><h3>
-<a name="idp46791061226032-bb"></a><code class="computeroutput">ranges_iterator</code> public member functions</h3>
+<a name="idp46805403296336"></a><h3>
+<a name="idp47411711233824-bb"></a><code class="computeroutput">ranges_iterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp46791061226432-bb"></a><span class="identifier">get_transpose</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp46791061227392-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp46791061228352-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> <a name="idp46791061229312-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <a name="idp46791061230560-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp46791061232336-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46791061234112-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46791061236208-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47411711234224-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47411711235184-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> <a name="idp47411711236144-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <a name="idp47411711237392-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47411711239168-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47411711240944-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47411711243040-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46943043067376"></a><h3>
-<a name="idp46791061239936-bb"></a><code class="computeroutput">ranges_iterator</code> private member functions</h3>
+<a name="idp46805403342560"></a><h3>
+<a name="idp47411711246080-bb"></a><code class="computeroutput">ranges_iterator</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46791061240352-bb"></a><span class="identifier">equal</span><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp46791061242288-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46791061243248-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47411711246496-bb"></a><span class="identifier">equal</span><span class="special">(</span><a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47411711248432-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47411711249392-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -116,7 +114,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="neighbour_search_base.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../libaboria.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="linked_list_iterator.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="neighbour_search_base.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="linked_list_iterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

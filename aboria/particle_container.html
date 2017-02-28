@@ -81,7 +81,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
         If you wanted each particle to have a potential variable held as a <code class="computeroutput"><span class="keyword">double</span></code>, as well as a velocity variable held
-        as a <code class="computeroutput"><a class="link" href="../libaboria.html#Aboria.double3">Aboria::double3</a></code> vector
+        as a <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.double3">Aboria::double3</a></code> vector
         class, then you would write the following
       </p>
 <pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">potential</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"potential energy"</span><span class="special">)</span>
@@ -115,7 +115,7 @@ MathJax.Hub.Config({
 <p>
         Each <code class="computeroutput"><span class="identifier">value_type</span></code> is a tuple
         of values, of the types specified by each variable. You can retreive or set
-        these value using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp46791061144160.html" title="Function template get">Aboria::get</a></code>
+        these value using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp47411711025888.html" title="Function template get">Aboria::get</a></code>
         function, which is templated on the variable type. For example, say you wanted
         to set the <code class="computeroutput"><span class="identifier">scalar</span></code> variable
         for particle <code class="computeroutput"><span class="identifier">p</span></code>:
@@ -123,7 +123,7 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
 </pre>
 <p>
-        You can print the value back out, again using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp46791061144160.html" title="Function template get">Aboria::get</a></code>
+        You can print the value back out, again using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp47411711025888.html" title="Function template get">Aboria::get</a></code>
         function
       </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"the scalar variable equals "</span><span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
@@ -146,7 +146,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
         Once you are happy with your particle, you can add it to the container using
-        the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46791061550736-bb">Aboria::Particles::push_back</a></code>
+        the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47411711481072-bb">Aboria::Particles::push_back</a></code>
         member function
       </p>
 <pre class="programlisting"><span class="identifier">particles</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">p</span><span class="special">);</span>
@@ -169,8 +169,8 @@ MathJax.Hub.Config({
         There are a number of predefined <code class="computeroutput"><span class="keyword">double</span></code>,
         <code class="computeroutput"><span class="keyword">int</span></code>, and <code class="computeroutput"><span class="keyword">bool</span></code>
         vector types, up to dimension 7, and typedefed by the pattern &lt;type&gt;&lt;dim&gt;.
-        E.g. <code class="computeroutput"><a class="link" href="../libaboria.html#Aboria.double3">Aboria::double3</a></code>, <code class="computeroutput"><a class="link" href="../libaboria.html#Aboria.double6">Aboria::double6</a></code>, <code class="computeroutput"><a class="link" href="../libaboria.html#Aboria.int2">Aboria::int2</a></code>,
-        <code class="computeroutput"><a class="link" href="../libaboria.html#Aboria.bool5">Aboria::bool5</a></code>...
+        E.g. <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.double3">Aboria::double3</a></code>, <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.double6">Aboria::double6</a></code>, <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.int2">Aboria::int2</a></code>,
+        <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.bool5">Aboria::bool5</a></code>...
       </p>
 </div>
 <div class="section"><div class="titlepage"><div><div><h3 class="title">
@@ -228,7 +228,7 @@ MathJax.Hub.Config({
 <p>
         Each variable is held internally by a STL vector <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
         If you wish to directly access this vector, then you can use the normal
-        <code class="computeroutput"><a class="link" href="../Aboria/get_idp46791061144160.html" title="Function template get">Aboria::get</a></code> functions to get
+        <code class="computeroutput"><a class="link" href="../Aboria/get_idp47411711025888.html" title="Function template get">Aboria::get</a></code> functions to get
         it.
       </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">size_t</span><span class="special">&gt;&amp;</span> <span class="identifier">ids</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">);</span>
@@ -280,10 +280,10 @@ MathJax.Hub.Config({
 <p>
         The <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> data
         structure acts fairly typically like a normal STL random-access container,
-        with a few important differences. It has methods like <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46791061550736-bb">Aboria::Particles::push_back</a></code>,
-        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46791061571472-bb">Aboria::Particles::clear</a></code>,
-        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46791061594912-bb">Aboria::Particles::size</a></code>,
-        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46791061572752-bb">Aboria::Particles::erase</a></code>.
+        with a few important differences. It has methods like <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47411711481072-bb">Aboria::Particles::push_back</a></code>,
+        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47411711501808-bb">Aboria::Particles::clear</a></code>,
+        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47411711525248-bb">Aboria::Particles::size</a></code>,
+        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47411711503088-bb">Aboria::Particles::erase</a></code>.
         It provides subtypes like <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">Aboria::Particles::value_type</a></code>,
         <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.reference">Aboria::Particles::reference</a></code>,
         <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_reference">Aboria::Particles::const_reference</a></code>,
@@ -304,7 +304,7 @@ MathJax.Hub.Config({
       </p>
 <p>
         2. Additional member functions are available to suit the specific purpose
-        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46791061550736-bb">Aboria::Particles::push_back</a></code>
+        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47411711481072-bb">Aboria::Particles::push_back</a></code>
         function can take a vector data-type for the particle position, and the
         <code class="computeroutput">Aboria::Particle::get_query</code>
         function for neighbour searching.
@@ -313,7 +313,7 @@ MathJax.Hub.Config({
         3. When using the neighbourhood searching capabilities of the container,
         the order of the particles in the particle container might change due to
         internal sorting for neighbourhood searching efficiency. So do not assume
-        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46791061550736-bb">push_back</a></code>
+        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47411711481072-bb">push_back</a></code>
         member function can reorder the particles if neighbourhood searching is turned
         on.
       </p>
