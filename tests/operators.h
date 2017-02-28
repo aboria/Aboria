@@ -48,6 +48,330 @@ using namespace Aboria;
 class OperatorsTest : public CxxTest::TestSuite {
 public:
 
+    void test_documentation(void) {
+//[operators
+/*`
+[section Matrix-free Linear Algebra with Eigen]
+
+Given that Aboria can describe non-linear operators, this naturally covers
+linear operators (i.e. matricies) as well. Consider the summation operator
+given by the kernel function $K(x_i,x_j)$, over a set of $N$ particles
+
+$$
+a_i = \sum_j^N b_j K(x_i,x_j) \text{ for } i=1..N
+$$
+
+This is a common enough operator that can be used in many areas. If
+$K(x_i,x_j) = 1/(x_j-x_i)$, then the operator might be calculating the 
+force on a set of charged particles via a Coulomb force. If 
+$K(x_i,x_j) = \sqrt{(x_j-x_i)^2 + c^2}$, then the operator might be used to
+for function interpolation using the multiquadric function.
+
+One way to evaluate this operator is to use a matrix to store the values of 
+$K(x_i,x_j)$ for each particle pair, leading to a matrix $\mathbf{K}$ with 
+storage size $N^2$. Then the summation operator above is equivilent to the
+matrix-vector product
+
+$$
+\mathbf{a} = \mathbf{K} \mathbf{b}.
+$$
+
+However, $\mathbf{K}$ could be too large to fit in memory, or the values of
+$x_i$ and $x_j$ might  change too frequently for this to be useful. Or you may
+wish to take advantage of the fact that $K(x_i,x_j)$ is a continuous function
+and use method such as Chebyshev interpolation or Fast Multipole methods to
+calculate the operator efficiently. For any of these reasons you might want
+prefer matrix-free methods, and Aboria can help you do this.
+
+To provide the concept and API of a matrix or linear operator, we will use the
+C++ library [@eigen.tuxfamily.org Eigen]. Aboria provides functionality to wrap
+summation operators involving an arbitrary kernel $K()$ in [classref
+Aboria::MatrixReplacement], so that Eigen can treat them as normal matricies.
+
+[section Creating Dense Operators]
+
+The most general case involves a summation kernel function $K$ that is non-zero
+for every possible particle pair. This kernel function can depend on the
+particle positions and/or the variables assigned to each particle. For example,
+say we had a particle set with particle positions $\mathbf{x}_i$ for $i=1..N$,
+and a single variable $a_i$.  We wish to create a summation operator using the
+kernel function 
+
+$$
+K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) = \frac{a_i a_j}{||\mathbf{x}_j-\mathbf{x}_i||} 
+$$
+
+were $||.||$ refers to the 2-norm, or magnitude of a vector.
+
+First we need a particle set to apply the operator to. We will create a particle set 
+containing $N=100$ particles with a single additional variable $a$.
+*/
+
+        const size_t N = 100;
+        ABORIA_VARIABLE(a,double,"a");
+        typedef Particles<std::tuple<a>> particle_type;
+        particle_type particles(N);
+/*`
+For convenience, we will also define a few types that we will need to define our 
+kernel function. These will define a constant reference to the storage type used
+to store each particle positions, and a constant reference type to refer to each
+particle in the container
+*/
+        typedef particle_type::position::value_type const & const_position_reference;
+        typedef particle_type::const_reference const_particle_reference;
+
+/*`
+We then create a dense matrix-free summation operator using the 
+[funcref Aboria::create_dense_operator] function
+*/
+        auto K = create_dense_operator(particles,particles,
+                [](const_position_reference dx,
+                   const_particle_reference i,
+                   const_particle_reference j) {
+                return (get<a>(i) * get<a>(j)) / dx.norm();
+                });
+
+/*`
+Note that [funcref Aboria::create_dense_operator] takes three arguments. The
+first two are particle containers which give the two particle sets involved in
+the operator. The first container holds the particles indexed by $i$ in the
+kernel function, and the second holds the particles indexed by $j$. For a matrix
+representation, you might say that these refer to the rows and columns of the
+matrix. 
+
+The third argument to [funcref Aboria::create_dense_operator] can be a function
+object, or C++ lambda expression. Basically any valid C++ object that can be
+called with three arguments, the first being of type `const_position_reference`
+(i.e. a constant reference to the position type), the second of type
+`const_particle_reference` (i.e. a constant reference to a particle in the set
+indexed by $i$), and the third of type `const_particle_reference` (i.e. a
+constant reference to a particle in the set indexed by $j$). The first argument
+will contain the shortest vector between the particle pair given by $i,j$, and
+the second and third will be references to the particles $i$ and $j$. Note that
+in this case the particle sets indexed by $i$ and $j$ is the same particle set
+`particles`. However, in other cases you may want $i$ and $j$ to index different
+particle sets, in which case the types for argument 2 and 3 could be different.
+
+In the code above, we are using a lambda expression as our function object, and
+create one that returns the particular kernel function
+$K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$. 
+
+Once we have created the operator `K`, we can use it within Eigen as if it were
+a normal matrix.  For example, to apply `K` to a vector `b`, we could write the
+following
+
+*/
+        Eigen::VectorXd b(N);
+        Eigen::VectorXd c(N);
+
+        c = K*b;
+/*`
+This line of code calculates the following
+
+$$
+c_i = \sum_j^N b_j K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) \text{ for } i=1..N
+$$
+
+Note that rather then storing all the values of K that are needed for this
+summation, Aboria will instead evaluate these values as they are needed.
+Therefore the memory requirements are only $\mathcal{O}(N)$, rather than
+$\mathcal{O}(N^2)$ for a traditional matrix.
+
+[caution the matrix-free operator `K` cannot be used, for example, in
+multiplications or additions with other Eigen matricies. Thus far, it has only
+really been tested with matrix-vector multiplication and Eigen's iterative
+solvers]
+
+If we wish to perform the same operator, but using a traditional matrix, we can
+use `K`'s [memberref Aboria::MatrixReplacement::assemble] member function to
+fill in a normal Eigen matrix with the values of the kernel function
+$K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$
+
+*/
+        Eigen::MatrixXd K_eigen(N,N);
+        K.assemble(K_eigen);
+
+        c = K_eigen*b;
+/*`
+[endsect]
+[section Creating Sparse Operators]
+
+Is is common in particle-based methods that the kernel function $K$ be non-zero
+for particle pairs separated by less than a certain radius. In this case we have
+a summation operator like so
+
+$$
+c_i = \sum_j^N b_j K_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j)  \text{ for } i=1..N
+$$
+
+where $K_s$ is a truncated version of $K$ that is only non-zero for
+$||\mathbf{dx}\_{ij}||<r$, where $\mathbf{dx}\_{ij}$ is the shortest vector
+between particles $i$ and $j$.  Note that for non-periodic systems, this will be
+$\mathbf{dx}\_{ij}=\mathbf{x}_j-\mathbf{x}_i$.
+
+
+$$
+K_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) = 
+    \begin{cases}
+        K(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j), & \text{for } ||\mathbf{dx}\_{ij}||<r \\\\\
+        0 & \text{otherwise}.
+    \end{cases}
+$$
+
+Since the summation is only non-zero for $||\mathbf{dx}_{ij}||<r$, we wish to aim
+for better than $\mathcal{O}(N^2)$ time and combine the sum with a spatial
+search of radius $r$. Assuming the particle positions are uniformly distributed
+and that $r$ is much smaller than the domain size, this will result in
+$\mathcal{O}(1)$ particles within the search radius and the operator taking only
+$\mathcal{O}(N)$ time.
+
+Lets assume that we wish a similar kernel function as before 
+
+$$
+K(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) = \frac{a_i a_j}{||\mathbf{dx}\_{ij}||} 
+$$
+
+We can create the operator `K_s` in Aboria like so (setting $r=1$ in this case) 
+*/
+        const double r = 1.0;
+        auto K_s = create_sparse_operator(particles,particles,
+                r,
+                [](const_position_reference dx,
+                   const_particle_reference i,
+                   const_particle_reference j) {
+                return (get<a>(i) * get<a>(j)) / dx.norm();
+                });
+
+/*`
+
+When applied to a vector, this operator will use the neighbour search of the
+`particles` container to perform a neighbour search for all particle pairs where
+$||\mathbf{dx}\_{ij}||<r$.
+
+Before we can use this operator, we need to make sure that the neighbour search
+for `particles` is initialised. By default, the particle container was created
+using three spatial dimensions, so we need to set up a domain with a given
+periodicity, and a search radius greater than or equal to $r$. Here we will
+setup a domain from $(0,0,0)$ to $(1,1,1)$ which is periodic in all directions.
+
+*/
+
+        double3 min(0);
+        double3 max(1);
+        bool3 periodic(true);
+    	particles.init_neighbour_search(min,max,r,periodic);
+
+/*`
+
+Once this is done, we can then apply the operator to the vector `b` from 
+before
+
+*/
+
+        c = K_s*b;
+
+/*`
+
+Once again, we can write out `K_s` to a traditional matrix. This time, we will
+write out the values of `K_s` to a sparse matrix, so we can still obtain an
+efficient operator
+
+*/
+        Eigen::SparseMatrix<double> K_s_eigen(N,N);
+        K_s.assemble(K_s_eigen);
+
+        c = K_s_eigen*b;
+/*`
+[endsect]
+
+[section Block Operators]
+
+It is common that you would like to compose operators in a tiled or block 
+format, and Aboria provides a functionality to do this using the [funcref 
+Aboria::create_block_operator]. 
+
+Let us assume that we wish to compose the two operators `K` and `K_s` from
+before, and want to perform the following combined operator
+
+$$
+\begin{align}
+e_i &= \sum_j^N d_j K_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j)  \text{ for } i=1...N \\\\
+e_{i+N} &= \sum_j^N d_{j+N} K(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) \text{ for } i=1...N
+\end{align}
+$$
+
+where $e_i$ and $d_j$ are elements of vectors $\mathbf{e}$ and $\mathbf{d}$ of
+size $2N$.  Using matrix notation, and using $\mathbf{K}$ and $\mathbf{K}_s$ to
+represent the operators `K` and `K_s`, this is equivilent to 
+
+
+$$
+\mathbf{e} = \begin{pmatrix} 
+  \mathbf{K}_s   & 0 \\\\\
+  0 & \mathbf{K}
+\end{pmatrix} \mathbf{d}
+$$
+
+We first need operators representing the zero matricies in the upper right and
+lower left corners of the block operator. We create these in Aboria like so
+
+*/
+        auto Zero = create_zero_operator(particles,particles);
+/*`
+
+and then we can create the block operator `Full` like so
+*/
+        auto Full = create_block_operator<2,2>(
+                         K_s , Zero,
+                        Zero ,  K
+                );
+/*`
+Finally we can create vectors `e` and `d` and apply the block operator
+*/
+
+        Eigen::VectorXd e(2*N);
+        Eigen::VectorXd d(2*N);
+
+        e = Full*d;
+
+/*`
+[endsect]
+
+[section Iterative Solvers]
+
+The [classref Aboria::MatrixReplacement] class can multiply other Eigen vectors,
+and can be used in Eigen's iterative solvers. Both
+`Eigen::IdentityPreconditioner` and `Eigen::DiagonalPreconditioner`
+preconditioners are supported. Below is an example of how to use Eigen's GMRES
+iterative solver to solve the equation 
+
+$$\mathbf{c} = \mathbf{K} \mathbf{h}$$
+
+for input vector $\mathbf{h}$.
+
+We can simply pass the dense operator `K` to Eigen's GMRES iterative solver like so
+*/
+
+        Eigen::GMRES<decltype(K), 
+            Eigen::DiagonalPreconditioner<double>> gmres_matrix_free;
+        gmres_matrix_free.compute(K);
+        Eigen::VectorXd h = gmres_matrix_free.solve(c);
+/*`
+This will solve the equation in a matrix-free fashion. Alternativly, we can use the 
+normal matrix `K_eigen` that we assembled previously to solve the equation
+*/
+
+       Eigen::GMRES<decltype(K_eigen),
+            Eigen::DiagonalPreconditioner<double>> gmres_matrix;
+        gmres_matrix.compute(K_eigen);
+        h = gmres_matrix.solve(c);
+/*`
+[endsect]
+[endsect]
+*/
+//]
+    }
+
     void test_Eigen(void) {
 #ifdef HAVE_EIGEN
         ABORIA_VARIABLE(scalar1,double,"scalar1")

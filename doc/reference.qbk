@@ -3,7 +3,6 @@
 
 Header: `<Aboria.h>`
 
-
 [h3 Utility]
 
 * [classref Aboria::Vector Vector] - a $n$-dimensional vector of a given type
@@ -29,7 +28,6 @@ Header: `<Aboria.h>`
         Aboria::Variable] class, use this rather than using [classref 
         Aboria::Variable] directly] ]
 ]
-
 
 [table Getting particles and variables
 
@@ -70,6 +68,38 @@ Header: `<Aboria.h>`
         exist]]
 ]
 
+
+[h3 Level 2 - Algorithms and Matrix-free Linear Operators]
+
+[table Creating Linear Operators
+
+[[Class Name] [Description]]
+
+    [[[classref Aboria::MatrixReplacement]]
+    
+        []]
+
+    [[[funcref Aboria::create_dense_operator]]         
+    
+        []]
+
+    [[[funcref Aboria::create_sparse_operator]]         
+    
+        []]
+
+    [[[funcref Aboria::create_zero_operator]]         
+    
+        []]
+
+    [[[funcref Aboria::create_chebyshev_operator]]         
+    
+        []]
+
+
+    [[[funcref Aboria::create_block_operator]]         
+    
+        []]
+]
 
 [h3 Level 3 - Symbolic particle-based DSL]
 
@@ -156,28 +186,6 @@ Header: `<Aboria.h>`
     
         []]
 ]
-
-[h3 Matrix-free Eigen Operators]
-
-[table Creating the linear operator 
-
-[[Class Name] [Description]]
-
-    [[[classref Aboria::MatrixReplacement]]
-    
-        []]
-
-    [[[funcref Aboria::create_eigen_operator]]         
-    
-        []]
-
-    [[[funcref Aboria::create_block_eigen_operator]]         
-
-    
-        []]
-]
-
-[endsect] [/ overview]
 
 [xinclude libaboria.xml]
 

@@ -13,12 +13,18 @@
 [include introduction.qbk]
 [include installation.qbk]
 
+[/ import documentation from particle_container.h]
 [import ../tests/particle_container.h]
 [particle_container]
 
 [include neighbourhood.qbk]
+
+[/ import documentation from operators.h]
+[import ../tests/operators.h]
+[operators]
+
 [include symbolic.qbk]
-[include linear_algebra.qbk]
+
 [include examples.qbk]
 [include benchmarks.qbk]
 [include reference.qbk]

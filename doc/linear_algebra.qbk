@@ -1,5 +1,8 @@
 [section Matrix-free Linear Algebra with Eigen]
 
+[import ../tests/operators.h]
+
+operators
 Given that Aboria can describe bivariate expression, it is natural to recast 
 these bivariate expressions in terms of matricies. If the bivariate expression 
 depends on labels `a` and `b`, each referring to a set of N and M particles 

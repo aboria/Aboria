@@ -13,11 +13,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Aboria.h
     ../src/Particles.h
     ../src/Variable.h
-    ../src/DataVector.h
     ../src/BucketSearchParallel.h
     ../src/BucketSearchSerial.h
     ../src/NeighbourSearchBase.h
     ../src/Operators.h
+    ../src/Chebyshev.h
     ../src/Kernels.h
     ../src/Functions.h
     ../src/Log.h
@@ -54,6 +54,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         )
     set(CPP_EXAMPLES
         ../tests/particle_container.h
+        ../tests/operators.h
         ../tests/md.h
         ../tests/bd.h
         ../tests/dem.h

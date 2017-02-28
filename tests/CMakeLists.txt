@@ -96,6 +96,7 @@ set(OperatorsTestFile operators.h)
 set(OperatorsTest
     test_Eigen
     test_Eigen_block
+    test_documentation
     )
 
 set(ConstructorsTestFile constructors.h)
@@ -117,6 +118,7 @@ set(ParticleContainerTestFile particle_container.h)
 set(ParticleContainerTest 
     test_std_vector_bucket_search_serial
     test_std_vector_bucket_search_parallel
+    test_documentation
     )
 
 set(BDTestFile bd.h)
