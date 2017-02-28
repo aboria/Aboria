@@ -253,13 +253,13 @@ Before we can use this operator, we need to make sure that the neighbour search
 for `particles` is initialised. By default, the particle container was created
 using three spatial dimensions, so we need to set up a domain with a given
 periodicity, and a search radius greater than or equal to $r$. Here we will
-setup a domain from $(0,0,0)$ to $(1,1,1)$ which is periodic in all directions.
+setup a domain from $(0,0,0)$ to $(1,1,1)$ which is not periodic in all directions.
 
 */
 
         double3 min(0);
         double3 max(1);
-        bool3 periodic(true);
+        bool3 periodic(false);
     	particles.init_neighbour_search(min,max,r,periodic);
 
 /*`
