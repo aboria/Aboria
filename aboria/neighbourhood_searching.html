@@ -48,21 +48,39 @@ MathJax.Hub.Config({
       contains this point and the immediate cell neighbours.
     </p>
 <p>
-      Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47510313386848-bb">Aboria::Particles::init_neighbour_search</a></code>
-      function
+      To start with, we will create a particle set in three dimensions (the default)
+      containing a few randomly placed particles
     </p>
-<pre class="programlisting"><span class="identifier">double2</span> <span class="identifier">min</span><span class="special">(-</span><span class="number">1</span><span class="special">,-</span><span class="number">1</span><span class="special">);</span>
-<span class="identifier">double2</span> <span class="identifier">max</span><span class="special">(</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
-<span class="identifier">bool2</span> <span class="identifier">periodic</span><span class="special">(</span><span class="keyword">true</span><span class="special">,</span><span class="keyword">true</span><span class="special">);</span>
-<span class="keyword">double</span> <span class="identifier">diameter</span> <span class="special">=</span> <span class="number">0.1</span><span class="special">;</span>
-<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">min</span><span class="special">,</span><span class="identifier">max</span><span class="special">,</span><span class="identifier">diameter</span><span class="special">,</span><span class="identifier">periodic</span><span class="special">);</span>
+<pre class="programlisting"><span class="keyword">const</span> <span class="identifier">size_t</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;&gt;</span> <span class="identifier">particle_type</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">particle_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
+<span class="identifier">particle_type</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">default_random_engine</span> <span class="identifier">gen</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uniform</span><span class="special">(-</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+    <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double3</span><span class="special">(</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+<span class="special">}</span>
 </pre>
 <p>
-      Here <code class="computeroutput"><span class="identifier">diameter</span></code> is the lengthscale
+      Before you can use the neighbourhood searching, you need to initialise the
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46750197565328-bb">Aboria::Particles::init_neighbour_search</a></code>
+      function.
+    </p>
+<p>
+      In this case, we will initialise a domain from $(-1,-1,-1)$ to $(1,1,1)$, which
+      is periodic in all directions. We will set the search radius to 0.2.
+    </p>
+<pre class="programlisting"><span class="identifier">double3</span> <span class="identifier">min</span><span class="special">(-</span><span class="number">1</span><span class="special">);</span>
+<span class="identifier">double3</span> <span class="identifier">max</span><span class="special">(</span><span class="number">1</span><span class="special">);</span>
+<span class="identifier">bool3</span> <span class="identifier">periodic</span><span class="special">(</span><span class="keyword">true</span><span class="special">);</span>
+<span class="keyword">double</span> <span class="identifier">radius</span> <span class="special">=</span> <span class="number">0.2</span><span class="special">;</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">min</span><span class="special">,</span><span class="identifier">max</span><span class="special">,</span><span class="identifier">radius</span><span class="special">,</span><span class="identifier">periodic</span><span class="special">);</span>
+</pre>
+<p>
+      Here <code class="computeroutput"><span class="identifier">radius</span></code> is the lengthscale
       of the neighbourhood search. That is, any particles that are separated by more
-      than <code class="computeroutput"><span class="identifier">diameter</span></code> might not be
-      classified as neighbours.
+      than <code class="computeroutput"><span class="identifier">radius</span></code> might not be classified
+      as neighbours.
     </p>
 <p>
       Once this is done you can begin using the neighbourhood search queries using
@@ -70,34 +88,40 @@ MathJax.Hub.Config({
       returns a lightweight container with <code class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> functions that return <code class="computeroutput"><span class="keyword">const</span></code>
       forward only iterators to the particles that satisfy the neighbour search.
       For example, the following counts all the particles within a square domain
-      of side length <code class="computeroutput"><span class="identifier">diameter</span></code> of
-      the point (0,0)
+      of side length <code class="computeroutput"><span class="identifier">radius</span></code> of the
+      point $(0,0,0)$
     </p>
 <pre class="programlisting"><span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
-<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
-   <span class="identifier">count</span><span class="special">++;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+    <span class="identifier">count</span><span class="special">++;</span>
 <span class="special">}</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"There are "</span><span class="special">&lt;&lt;</span> <span class="identifier">count</span> <span class="special">&lt;&lt;</span> <span class="string">" particles.\n"</span><span class="special">;</span>
 </pre>
 <p>
       When dereferenced, the neighbourhood iterator returns a tuple of size 2 containing
     </p>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+          A constant reference to the found particle object, with type <code class="computeroutput"><span class="identifier">particle_type</span><span class="special">::</span><span class="identifier">const_reference</span></code>
+        </li>
+<li class="listitem">
+          A vector $\mathbf{dx}_{ij}$ pointing to the found point from the query
+          point. I.e. if $\mathbf{x}_i$ is the query point and $\mathbf{x}_j$ is
+          the found point, then $\mathbf{dx}_{ij} = \mathbf{x}_j - \mathbf{x}_i$.
+        </li>
+</ol></div>
 <p>
-      1. The found particle object 2. $dx$, a vector pointing to the query point
-      from the found point. I.e. if $x_a$ is the query point and $x_b$ is the found
-      point, then $dx = x_b - x_a$.
-    </p>
-<p>
-      The latter is useful for periodic domains, the returned vector $dx$ takes periodic
-      domains into account and returns the $dx$ with the smallest length.
+      The latter is useful for periodic domains, the returned vector $\mathbf{dx}_{ij}$
+      takes periodic domains into account and returns the $\mathbf{dx}_{ij}$ with
+      the smallest length.
     </p>
 <p>
       For example,
     </p>
-<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
-   <span class="keyword">const</span> <span class="identifier">MyParticle</span><span class="special">&amp;</span> <span class="identifier">b</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">0</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
-   <span class="keyword">const</span> <span class="identifier">double2</span><span class="special">&amp;</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">1</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
-   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Found a particle with dx = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">dx</span> <span class="special">&lt;&lt;</span> <span class="string">" and id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">b</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+    <span class="identifier">particle_type</span><span class="special">::</span><span class="identifier">const_reference</span> <span class="identifier">b</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">0</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">);</span>
+    <span class="keyword">const</span> <span class="identifier">double3</span><span class="special">&amp;</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">1</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">);</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Found a particle with dx = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">dx</span> <span class="special">&lt;&lt;</span> <span class="string">" and id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">b</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
 </div>
