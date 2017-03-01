@@ -47,207 +47,242 @@ namespace Aboria {
 #ifdef HAVE_EIGEN
 #include "detail/Operators.h"
 
-
 namespace Aboria {
 
-// Inheriting EigenBase should not be needed in the future.
-    template <unsigned int NI, unsigned int NJ, typename Blocks>
-    class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks>> {
-
-            typedef typename tuple_ns::tuple_element<0,Blocks>::type first_block_type;
-        public:
-
-            // Expose some compile-time information to Eigen:
-            typedef typename first_block_type::Scalar Scalar;
-            typedef Scalar RealScalar;
-            typedef size_t Index;
-            typedef int StorageIndex;
-            enum {
-                ColsAtCompileTime = Eigen::Dynamic,
-                RowsAtCompileTime = Eigen::Dynamic,
-                MaxColsAtCompileTime = Eigen::Dynamic,
-                MaxRowsAtCompileTime = Eigen::Dynamic,
-                IsRowMajor = false
-            };
-            typedef detail::InnerIterator<MatrixReplacement> InnerIterator;
-
-            MatrixReplacement(const Blocks& blocks):m_blocks(blocks) {};
-
-            CUDA_HOST_DEVICE
-            Index rows() const {
-                //std::cout << "rows = " << rows_impl(detail::make_index_sequence<NI>()) << std::endl;
-                //
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return rows_impl(detail::make_index_sequence<NI>());
-#endif
-            }
-
-            CUDA_HOST_DEVICE
-            Index cols() const {
-                //std::cout << "cols = " << cols_impl(detail::make_index_sequence<NJ>())<< std::endl;
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return cols_impl(detail::make_index_sequence<NJ>());
-#endif
-            }
-
-            CUDA_HOST_DEVICE
-            Index innerSize() const {
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return rows();
-#endif
-            }
-
-            CUDA_HOST_DEVICE
-            Index outerSize() const {
-#ifdef __CUDA_ARCH__
-                ERROR_CUDA("MatrixReplacement class unusable from device code");
-                return 0;
-#else
-                return cols();
-#endif
-            }
-
-            void resize(Index a_rows, Index a_cols) {
-                // This method should not be needed in the future.
-                assert(a_rows==0 && a_cols==0 || a_rows==rows() && a_cols==cols());
-            }
-
-            Scalar coeff(const Index i, const Index j) const {
-                return coeff_impl(i,j,detail::make_index_sequence<NI*NJ>());
-            }
-
-            template<typename Rhs>
-            Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
-                return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
-            }
-
-            template<typename Derived>
-            void assemble(Eigen::DenseBase<Derived>& matrix) const {
-                const size_t na = rows();
-                const size_t nb = cols();
-                matrix.resize(na,nb);
-                CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
-                assemble_impl(matrix,detail::make_index_sequence<NI*NJ>());
-            }
-
-            void assemble(Eigen::SparseMatrix<Scalar>& matrix) {
-                const size_t na = rows();
-                const size_t nb = cols();
-                //matrix.resize(na,nb);
-                CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
-
-                typedef Eigen::Triplet<Scalar> triplet_type;
-                std::vector<triplet_type> tripletList;
-                // TODO: can we estimate this better?
-                tripletList.reserve(na*5);
-
-                assemble_impl(tripletList,detail::make_index_sequence<NI*NJ>());
-
-                matrix.setFromTriplets(tripletList.begin(),tripletList.end());
-            }
-
-            
-
-            template<std::size_t... I>
-            Index rows_impl(detail::index_sequence<I...>) const {
-                return detail::sum(tuple_ns::get<I*NJ>(m_blocks).size_row()...);
-            }
-
-            template<std::size_t... J>
-            Index cols_impl(detail::index_sequence<J...>) const {
-                return detail::sum(tuple_ns::get<J>(m_blocks).size_col()...);
-            }
-
-            template <int I>
-            Index start_col() const {
-                return cols_impl(detail::make_index_sequence<I>());
-            }
-
-            template <int I>
-            Index size_col() const {
-                return tuple_ns::get<I>(m_blocks).size_col();
-            }
-
-            template <int I>
-            Index start_row() const {
-                return rows_impl(detail::make_index_sequence<I>());
-            }
-
-            template <int I>
-            Index size_row() const {
-                return tuple_ns::get<I*NJ>(m_blocks).size_row();
-            }
-
-            template <typename block_type>
-            Scalar coeff_impl_block(const Index i, const Index j, const block_type& block) const {
-                return block.coeff(i,j);
-            }
-
-            template<std::size_t... I>
-            Scalar coeff_impl(const Index i, const Index j, detail::index_sequence<I...>) const {
-
-                return detail::sum(
-                        ((i>=start_row<I/NJ>())&&(i<start_row<I/NJ+1>())
-                         &&
-                         (j>=start_col<I%NJ>())&&(j<start_col<I%NJ+1>()))?
-                            (coeff_impl_block(i-start_row<I/NJ>(),
-                                              j-start_col<I%NJ>(),
-                                              tuple_ns::get<I>(m_blocks))):
-                            (0.0)...
-                        );
-            }
-
-            template <typename Block>
-            void assemble_block_impl(const size_t startI, const size_t startJ,
-                    std::vector<Eigen::Triplet<Scalar>>& triplets,
-                    const Block& block) const {
-
-                block.assemble(triplets,startI,startJ);
-            }
-
-            template <typename Block, typename Derived>
-            void assemble_block_impl(
-                    const Eigen::MatrixBase<Derived> &matrix,
-                    const Block& block) const {
-                block.assemble(matrix);
-            }
-
-            template<std::size_t... I>
-            void assemble_impl(std::vector<Eigen::Triplet<Scalar>>& triplets, detail::index_sequence<I...>) const {
-                int dummy[] = { 0, (
-                        assemble_block_impl(
-                            start_row<I/NJ>(),start_col<I%NJ>(),
-                            triplets,tuple_ns::get<I>(m_blocks)),void(),0)... };
-                static_cast<void>(dummy);
-            }
-
-
-            template<typename Derived, std::size_t... I>
-            void assemble_impl(Eigen::DenseBase<Derived>& matrix, detail::index_sequence<I...>) const {
-                int dummy[] = { 0, (
-                        assemble_block_impl(
-                            matrix.block(start_row<I/NJ>(),start_col<I%NJ>()
-                            ,start_row<I/NJ+1>()-start_row<I/NJ>()
-                            ,start_col<I%NJ+1>()-start_col<I%NJ>())
-                            ,tuple_ns::get<I>(m_blocks)),void(),0)... };
-                static_cast<void>(dummy);
-            }
-
-            const Blocks m_blocks;
-
-    };
-
-/// creates a dense matrix-free linear operator for use with Eigen
+/// \brief A matrix-replacement class for use with Eigen
 ///
+/// This provides a class that acts like a sparse matrix within
+/// Eigen, at least for matrix-vector multiplication and the 
+/// iterative solvers (it has not been tested with anything else
+/// and will not work, for example, in matrix-matrix addition or 
+/// multiplication).
+///
+/// It is templated on a set of \p NI x \p NJ blocks, each containing a 
+/// kernel defined in Kernels.h . This kernel performs the actual
+/// operator
+///
+///  \tparam NI the number of kernel block rows in the operator
+///  \tparam NJ the number of kernel block columns in the operator
+///  \tparam Blocks a 3-tuple of (`particle_type_row`, `particle_type_col`,`kernel_type`),
+///         where `particle_type_row` is the type of the row particle set,
+///         `particle_type_col` is the type of the column particle set,
+///         and `kernel_type` is the type of kernel used by the block
+///
+///  \see Aboria::create_dense_operator() 
+///       create_sparse_operator()
+///       create_zero_operator()
+///       create_chebyshev_operator()
+template <unsigned int NI, unsigned int NJ, typename Blocks>
+class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks>> {
+
+        typedef typename tuple_ns::tuple_element<0,Blocks>::type first_block_type;
+    public:
+
+        // Expose some compile-time information to Eigen:
+        typedef typename first_block_type::Scalar Scalar;
+        typedef Scalar RealScalar;
+        typedef size_t Index;
+        typedef int StorageIndex;
+        enum {
+            ColsAtCompileTime = Eigen::Dynamic,
+            RowsAtCompileTime = Eigen::Dynamic,
+            MaxColsAtCompileTime = Eigen::Dynamic,
+            MaxRowsAtCompileTime = Eigen::Dynamic,
+            IsRowMajor = false
+        };
+        typedef detail::InnerIterator<MatrixReplacement> InnerIterator;
+
+        MatrixReplacement(const Blocks& blocks):m_blocks(blocks) {};
+
+        CUDA_HOST_DEVICE
+        Index rows() const {
+            //std::cout << "rows = " << rows_impl(detail::make_index_sequence<NI>()) << std::endl;
+            //
+#ifdef __CUDA_ARCH__
+            ERROR_CUDA("MatrixReplacement class unusable from device code");
+            return 0;
+#else
+            return rows_impl(detail::make_index_sequence<NI>());
+#endif
+        }
+
+        CUDA_HOST_DEVICE
+        Index cols() const {
+            //std::cout << "cols = " << cols_impl(detail::make_index_sequence<NJ>())<< std::endl;
+#ifdef __CUDA_ARCH__
+            ERROR_CUDA("MatrixReplacement class unusable from device code");
+            return 0;
+#else
+            return cols_impl(detail::make_index_sequence<NJ>());
+#endif
+        }
+
+        CUDA_HOST_DEVICE
+        Index innerSize() const {
+#ifdef __CUDA_ARCH__
+            ERROR_CUDA("MatrixReplacement class unusable from device code");
+            return 0;
+#else
+            return rows();
+#endif
+        }
+
+        CUDA_HOST_DEVICE
+        Index outerSize() const {
+#ifdef __CUDA_ARCH__
+            ERROR_CUDA("MatrixReplacement class unusable from device code");
+            return 0;
+#else
+            return cols();
+#endif
+        }
+
+        void resize(Index a_rows, Index a_cols) {
+            // This method should not be needed in the future.
+            assert(a_rows==0 && a_cols==0 || a_rows==rows() && a_cols==cols());
+        }
+
+        Scalar coeff(const Index i, const Index j) const {
+            return coeff_impl(i,j,detail::make_index_sequence<NI*NJ>());
+        }
+
+        template<typename Rhs>
+        Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct> operator*(const Eigen::MatrixBase<Rhs>& x) const {
+            return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
+        }
+
+        template<typename Derived>
+        void assemble(Eigen::DenseBase<Derived>& matrix) const {
+            const size_t na = rows();
+            const size_t nb = cols();
+            matrix.resize(na,nb);
+            CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
+            assemble_impl(matrix,detail::make_index_sequence<NI*NJ>());
+        }
+
+        void assemble(Eigen::SparseMatrix<Scalar>& matrix) {
+            const size_t na = rows();
+            const size_t nb = cols();
+            //matrix.resize(na,nb);
+            CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
+
+            typedef Eigen::Triplet<Scalar> triplet_type;
+            std::vector<triplet_type> tripletList;
+            // TODO: can we estimate this better?
+            tripletList.reserve(na*5);
+
+            assemble_impl(tripletList,detail::make_index_sequence<NI*NJ>());
+
+            matrix.setFromTriplets(tripletList.begin(),tripletList.end());
+        }
+
+        
+
+        template<std::size_t... I>
+        Index rows_impl(detail::index_sequence<I...>) const {
+            return detail::sum(tuple_ns::get<I*NJ>(m_blocks).size_row()...);
+        }
+
+        template<std::size_t... J>
+        Index cols_impl(detail::index_sequence<J...>) const {
+            return detail::sum(tuple_ns::get<J>(m_blocks).size_col()...);
+        }
+
+        template <int I>
+        Index start_col() const {
+            return cols_impl(detail::make_index_sequence<I>());
+        }
+
+        template <int I>
+        Index size_col() const {
+            return tuple_ns::get<I>(m_blocks).size_col();
+        }
+
+        template <int I>
+        Index start_row() const {
+            return rows_impl(detail::make_index_sequence<I>());
+        }
+
+        template <int I>
+        Index size_row() const {
+            return tuple_ns::get<I*NJ>(m_blocks).size_row();
+        }
+
+        template <typename block_type>
+        Scalar coeff_impl_block(const Index i, const Index j, const block_type& block) const {
+            return block.coeff(i,j);
+        }
+
+        template<std::size_t... I>
+        Scalar coeff_impl(const Index i, const Index j, detail::index_sequence<I...>) const {
+
+            return detail::sum(
+                    ((i>=start_row<I/NJ>())&&(i<start_row<I/NJ+1>())
+                     &&
+                     (j>=start_col<I%NJ>())&&(j<start_col<I%NJ+1>()))?
+                        (coeff_impl_block(i-start_row<I/NJ>(),
+                                          j-start_col<I%NJ>(),
+                                          tuple_ns::get<I>(m_blocks))):
+                        (0.0)...
+                    );
+        }
+
+        template <typename Block>
+        void assemble_block_impl(const size_t startI, const size_t startJ,
+                std::vector<Eigen::Triplet<Scalar>>& triplets,
+                const Block& block) const {
+
+            block.assemble(triplets,startI,startJ);
+        }
+
+        template <typename Block, typename Derived>
+        void assemble_block_impl(
+                const Eigen::MatrixBase<Derived> &matrix,
+                const Block& block) const {
+            block.assemble(matrix);
+        }
+
+        template<std::size_t... I>
+        void assemble_impl(std::vector<Eigen::Triplet<Scalar>>& triplets, detail::index_sequence<I...>) const {
+            int dummy[] = { 0, (
+                    assemble_block_impl(
+                        start_row<I/NJ>(),start_col<I%NJ>(),
+                        triplets,tuple_ns::get<I>(m_blocks)),void(),0)... };
+            static_cast<void>(dummy);
+        }
+
+
+        template<typename Derived, std::size_t... I>
+        void assemble_impl(Eigen::DenseBase<Derived>& matrix, detail::index_sequence<I...>) const {
+            int dummy[] = { 0, (
+                    assemble_block_impl(
+                        matrix.block(start_row<I/NJ>(),start_col<I%NJ>()
+                        ,start_row<I/NJ+1>()-start_row<I/NJ>()
+                        ,start_col<I%NJ+1>()-start_col<I%NJ>())
+                        ,tuple_ns::get<I>(m_blocks)),void(),0)... };
+            static_cast<void>(dummy);
+        }
+
+        const Blocks m_blocks;
+
+};
+
+/// \brief creates a dense matrix-free linear operator for use with Eigen
+///
+/// This function returns a MatrixReplacement object that acts like a 
+/// dense linear operator (i.e. matrix) in Eigen. 
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+/// \param function A function object that returns the value of the operator
+///                 for a given particle pair
+///
+///
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelDense<RowParticles,ColParticles,F>,
          typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
@@ -262,8 +297,24 @@ Operator create_dense_operator(const RowParticles& row_particles,
                 );
     }
 
-/// creates a chebyshev matrix-free linear operator for use with Eigen
+/// \brief creates a matrix-free linear operator using chebyshev interpolation
+///        for use with Eigen
 ///
+/// This function returns a MatrixReplacement object that acts like a 
+/// dense linear operator (i.e. matrix) in Eigen. It uses chebyshev
+/// interpolation to speed up its application to a vector. 
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+/// \param n The number of chebyshev nodes in each dimension to use
+/// \param function A function object that returns the value of the operator
+///                 for a given particle pair
+///
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelChebyshev<RowParticles,ColParticles,F>,
          typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
@@ -281,8 +332,27 @@ Operator create_chebyshev_operator(const RowParticles& row_particles,
 
 
 
-/// creates a sparse matrix-free linear operator for use with Eigen
+/// \brief creates a sparse matrix-free linear operator for use with Eigen
 ///
+/// This function returns a MatrixReplacement object that acts like a 
+/// sparse linear operator (i.e. matrix) in Eigen, in that only particle
+/// pairs (i.e. a row/column pair) with a separation less that a given value 
+/// are considered to be non-zero
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+/// \param search_radius It is assumed that \p function returns a zero value
+///                 for all particle pairs with a separation greater than
+///                 this value
+/// \param function A function object that returns the value of the operator
+///                 for a given particle pair
+///
+///
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelSparse<RowParticles,ColParticles,F>,
          typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
@@ -300,8 +370,19 @@ Operator create_sparse_operator(const RowParticles& row_particles,
 
 
 
-/// creates a zero matrix-free linear operator for use with Eigen
+/// \brief creates a zero matrix-free linear operator for use with Eigen
 ///
+/// This function returns a MatrixReplacement object that acts like a 
+/// $n \times m$ zero matrix. That is the application of this linear 
+/// operator to a vector will always return a zero vector.
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+///
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
 template<typename RowParticles, typename ColParticles,
          typename Kernel=KernelZero<RowParticles,ColParticles>,
          typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
