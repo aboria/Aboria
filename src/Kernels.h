@@ -209,7 +209,7 @@ namespace Aboria {
                 #pragma omp parallel for
                 for (size_t i=0; i<na; ++i) {
                     const_row_reference ai = a[i];
-                    double sum = 0;
+                    Scalar sum(0);
                     for (size_t j=0; j<nb; ++j) {
                         const_col_reference bj = b[j];
                         const_position_reference dx = 
@@ -221,7 +221,7 @@ namespace Aboria {
             } else {
                 for (size_t i=0; i<na; ++i) {
                     const_row_reference ai = a[i];
-                    double sum = 0;
+                    Scalar sum(0);
                     for (size_t j=0; j<nb; ++j) {
                         const_col_reference bj = b[j];
                         const_position_reference dx = 
@@ -488,7 +488,7 @@ namespace Aboria {
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                double sum = 0;
+                Scalar sum(0);
                 for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
                     const_position_reference dx = tuple_ns::get<1>(pairj);
                     const_col_reference bj = tuple_ns::get<0>(pairj);

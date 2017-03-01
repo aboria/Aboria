@@ -84,6 +84,12 @@ and use method such as Chebyshev interpolation or Fast Multipole methods to
 calculate the operator efficiently. For any of these reasons you might want
 prefer matrix-free methods, and Aboria can help you do this.
 
+[caution Currently Aboria only supports basic dense and sparse matrix-free
+operators based on local neighbourhood searches. A Chebyshev operator has been
+implemented, but this is still being tested, and the API is not stable, so is
+not documented. All going well, a Fast Multipole method (hopefully using a few
+different methods) will be implemented after this.]
+
 To provide the concept and API of a matrix or linear operator, we will use the
 C++ library [@eigen.tuxfamily.org Eigen]. Aboria provides functionality to wrap
 summation operators involving an arbitrary kernel $K()$ in [classref
@@ -99,7 +105,7 @@ and a single variable $a_i$.  We wish to create a summation operator using the
 kernel function 
 
 $$
-K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) = \frac{a_i a_j}{||\mathbf{x}_j-\mathbf{x}_i||} 
+K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) = \frac{a_i a_j}{||\mathbf{x}_j-\mathbf{x}_i|| + \epsilon} 
 $$
 
 were $||.||$ refers to the 2-norm, or magnitude of a vector.
@@ -109,9 +115,17 @@ containing $N=100$ particles with a single additional variable $a$.
 */
 
         const size_t N = 100;
+        const double epsilon = 0.1;
         ABORIA_VARIABLE(a,double,"a");
         typedef Particles<std::tuple<a>> particle_type;
+        typedef particle_type::position position;
         particle_type particles(N);
+        std::default_random_engine gen; 
+        std::uniform_real_distribution<double> uniform(0,1);
+        for (int i=0; i<N; ++i) {
+            get<position>(particles)[i] = double3(uniform(gen),uniform(gen),uniform(gen));
+            get<a>(particles)[i] = uniform(gen);
+        }
 /*`
 For convenience, we will also define a few types that we will need to define our 
 kernel function. These will define a constant reference to the storage type used
@@ -126,10 +140,10 @@ We then create a dense matrix-free summation operator using the
 [funcref Aboria::create_dense_operator] function
 */
         auto K = create_dense_operator(particles,particles,
-                [](const_position_reference dx,
+                [epsilon](const_position_reference dx,
                    const_particle_reference i,
                    const_particle_reference j) {
-                return (get<a>(i) * get<a>(j)) / dx.norm();
+                return (get<a>(i) * get<a>(j)) / (dx.norm() + epsilon);
                 });
 
 /*`
@@ -162,10 +176,8 @@ a normal matrix.  For example, to apply `K` to a vector `b`, we could write the
 following
 
 */
-        Eigen::VectorXd b(N);
-        Eigen::VectorXd c(N);
-
-        c = K*b;
+        Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(N,0,1.0);
+        Eigen::VectorXd c_1 = K*b;
 /*`
 This line of code calculates the following
 
@@ -192,7 +204,11 @@ $K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$
         Eigen::MatrixXd K_eigen(N,N);
         K.assemble(K_eigen);
 
-        c = K_eigen*b;
+        Eigen::VectorXd c_2 = K_eigen*b;
+
+//<-
+        TS_ASSERT(c_2.isApprox(c_1)); 
+//->
 /*`
 [endsect]
 [section Creating Sparse Operators]
@@ -229,18 +245,18 @@ $\mathcal{O}(N)$ time.
 Lets assume that we wish a similar kernel function as before 
 
 $$
-K(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) = \frac{a_i a_j}{||\mathbf{dx}\_{ij}||} 
+K(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) = \frac{a_i a_j}{||\mathbf{dx}\_{ij}|| + \epsilon} 
 $$
 
-We can create the operator `K_s` in Aboria like so (setting $r=1$ in this case) 
+We can create the operator `K_s` in Aboria like so (setting $r=0.1$ in this case) 
 */
-        const double r = 1.0;
+        const double r = 0.1;
         auto K_s = create_sparse_operator(particles,particles,
                 r,
-                [](const_position_reference dx,
+                [epsilon](const_position_reference dx,
                    const_particle_reference i,
                    const_particle_reference j) {
-                return (get<a>(i) * get<a>(j)) / dx.norm();
+                return (get<a>(i) * get<a>(j)) / (dx.norm() + epsilon);
                 });
 
 /*`
@@ -269,7 +285,7 @@ before
 
 */
 
-        c = K_s*b;
+        Eigen::VectorXd c_3 = K_s*b;
 
 /*`
 
@@ -281,7 +297,10 @@ efficient operator
         Eigen::SparseMatrix<double> K_s_eigen(N,N);
         K_s.assemble(K_s_eigen);
 
-        c = K_s_eigen*b;
+        Eigen::VectorXd c_4 = K_s_eigen*b;
+//<-
+        TS_ASSERT(c_4.isApprox(c_3)); 
+//->
 /*`
 [endsect]
 
@@ -329,13 +348,20 @@ and then we can create the block operator `Full` like so
 Finally we can create vectors `e` and `d` and apply the block operator
 */
 
-        Eigen::VectorXd e(2*N);
         Eigen::VectorXd d(2*N);
+        d.head(N) = Eigen::VectorXd::LinSpaced(N,0,1.0);
+        d.tail(N) = Eigen::VectorXd::LinSpaced(N,0,1.0);
 
-        e = Full*d;
+        Eigen::VectorXd e = Full*d;
+//<-
+        TS_ASSERT(e.head(N).isApprox(c_3)); 
+        TS_ASSERT(e.tail(N).isApprox(c_1)); 
+//->
 
 /*`
+
 [endsect]
+
 
 [section Iterative Solvers]
 
@@ -354,8 +380,10 @@ We can simply pass the dense operator `K` to Eigen's GMRES iterative solver like
 
         Eigen::GMRES<decltype(K), 
             Eigen::DiagonalPreconditioner<double>> gmres_matrix_free;
+        gmres_matrix_free.setMaxIterations(2*N);
+        gmres_matrix_free.set_restart(2*N+1);
         gmres_matrix_free.compute(K);
-        Eigen::VectorXd h = gmres_matrix_free.solve(c);
+        Eigen::VectorXd h_1 = gmres_matrix_free.solve(c_1);
 /*`
 This will solve the equation in a matrix-free fashion. Alternativly, we can use the 
 normal matrix `K_eigen` that we assembled previously to solve the equation
@@ -363,13 +391,96 @@ normal matrix `K_eigen` that we assembled previously to solve the equation
 
        Eigen::GMRES<decltype(K_eigen),
             Eigen::DiagonalPreconditioner<double>> gmres_matrix;
+        gmres_matrix.setMaxIterations(2*N);
+        gmres_matrix.set_restart(2*N+1);
         gmres_matrix.compute(K_eigen);
-        h = gmres_matrix.solve(c);
+        Eigen::VectorXd h_2 = gmres_matrix.solve(c_1);
+
+//<-
+        std::cout << "GMRES (matrix):    #iterations: " << gmres_matrix.iterations() << ", estimated error: " << gmres_matrix.error() << " actual error: "<<(K_eigen*h_2 - c_1).norm() / c_1.norm()<< std::endl;
+
+        std::cout << "GMRES (matrix-free):    #iterations: " << gmres_matrix_free.iterations() << ", estimated error: " << gmres_matrix_free.error() << " actual error: "<<(K*h_1 - c_1).norm() / c_1.norm()<<std::endl;
+
+        TS_ASSERT(h_1.isApprox(h_2,1e-11)); 
+        TS_ASSERT(h_1.isApprox(b,1e-11)); 
+//->
+
 /*`
 [endsect]
 [endsect]
 */
 //]
+
+/*
+ *
+ * TODO: Will keep this for now until I can get this working, but Eigen doesn't
+ * properly support this, so will have to think about it... probable make the
+ * interleaved operator a tensor??
+[section Interleaved Operators]
+
+Rather than combining multiple operators via blocking, we can also opt to 
+interleave the operators together. This can often be more efficient in 
+terms of memory bandwidth. Currently Aboria can interleave operators as
+long as they are of a similar type. For example, below will will show how
+to interleave two different sparse operators.
+
+We wish to calculate the following operator
+
+$$
+\begin{align}
+m_{2i-1} &= \sum_j^N n_{2j-1} K^1_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j)  \text{ for } i=1...N \\\\
+m_{2i} &= \sum_j^N n_{2j} K^2_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) \text{ for } i=1...N
+\end{align}
+$$
+
+where $K^1_s$ and $K^2_s$ are given by
+
+$$
+K^1_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) = 
+    \begin{cases}
+        \frac{a_i a_j}{||\mathbf{dx}\_{ij}||}, & \text{for } ||\mathbf{dx}\_{ij}||<r \\\\\
+        0 & \text{otherwise}.
+    \end{cases}
+$$
+$$
+K^2_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j) = 
+    \begin{cases}
+        \frac{a_i + a_j}{||\mathbf{dx}\_{ij}||}, & \text{for } ||\mathbf{dx}\_{ij}||<r \\\\\
+        0 & \text{otherwise}.
+    \end{cases}
+$$
+
+We can achieve this in Aboria by creating a sparse operator that returns a
+two-dimensional vector type [classref Aboria::double2], instead of a `double`
+
+        auto K_interleaved = create_sparse_operator(particles,particles,
+                r,
+                [](const_position_reference dx,
+                   const_particle_reference i,
+                   const_particle_reference j) {
+                return double2(
+                        (get<a>(i) * get<a>(j)) / dx.norm(),
+                        (get<a>(i) + get<a>(j)) / dx.norm()
+                        );
+                });
+Then we can create a new Eigen vector type using [classref Aboria::double2] as
+the `Scalar` type, and create two vectors of this type, `m` and `n`. 
+
+        typedef Eigen::Matrix<double2,Eigen::Dynamic,1> double2_vector_type;
+        double2_vector_type n = double2_vector_type::LinSpaced(N,double2(0),double2(1.0));
+
+Finally we can apply the interleaved operator to the vector `n`, and store
+the result in `m`.
+
+
+        double2_vector_type m = K_interleaved*n;
+
+        for (int i=0; i<N; ++i) {
+            TS_ASSERT_DELTA(m[i][0],c_3[i],std::numeric_limits<double>::epsilon()); 
+        }
+
+[endsect]
+*/
 #endif // HAVE_EIGEN
     }
 
