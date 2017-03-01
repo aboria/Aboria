@@ -45,16 +45,15 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         abstract.qbk
         introduction.qbk
         installation.qbk
-        neighbourhood.qbk
         reference.qbk
         examples.qbk
         benchmarks.qbk
-        linear_algebra.qbk
         symbolic.qbk
         )
     set(CPP_EXAMPLES
         ../tests/particle_container.h
         ../tests/operators.h
+        ../tests/neighbours.h
         ../tests/md.h
         ../tests/bd.h
         ../tests/dem.h

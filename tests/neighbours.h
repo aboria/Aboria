@@ -46,6 +46,102 @@ using namespace Aboria;
 class NeighboursTest : public CxxTest::TestSuite {
 public:
 
+    void test_documentation(void) {
+//[neighbour_search
+/*`
+[section Neighbourhood Searching]
+
+The [classref Aboria::Particles] container gives you neighbourhood searching 
+functionality, using a simple bucket-search approach. The domain is divided into 
+a regular grid of hypercubes with side length equal to a lengthscale that is 
+supplied by the user. Each particle in the container is assigned to the cell 
+that contains its position. Neighbourhood search queries at a given point return 
+all the particles within the cell that contains this point and the immediate 
+cell neighbours.
+
+To start with, we will create a particle set in three dimensions (the default) 
+containing a few randomly placed particles
+*/
+
+        const size_t N = 100;
+        typedef Particles<> particle_type;
+        typedef particle_type::position position;
+        particle_type particles(N);
+        std::default_random_engine gen; 
+        std::uniform_real_distribution<double> uniform(-1,1);
+        for (int i=0; i<N; ++i) {
+            get<position>(particles)[i] = double3(uniform(gen),uniform(gen),uniform(gen));
+        }
+
+/*`
+
+Before you can use the neighbourhood searching, you need to initialise the
+domain using the [memberref Aboria::Particles::init_neighbour_search] function.
+
+In this case, we will initialise a domain from $(-1,-1,-1)$ to $(1,1,1)$, which
+is periodic in all directions. We will set the search radius to 0.2.
+
+*/
+
+        double3 min(-1);
+        double3 max(1);
+        bool3 periodic(true);
+        double radius = 0.2;
+        particles.init_neighbour_search(min,max,radius,periodic);
+/*`
+
+Here `radius` is the lengthscale of the neighbourhood search. That is, any 
+particles that are separated by more than `radius` might not be classified as 
+neighbours.
+
+Once this is done you can begin using the neighbourhood search queries using the
+`box_search` function. This returns a lightweight container with `begin()` and
+`end()` functions that return `const` forward only iterators to the particles
+that satisfy the neighbour search. For example, the following counts all the
+particles within a square domain of side length `radius` of the point $(0,0,0)$
+
+*/
+
+        int count = 0;
+        for (const auto& i: box_search(particles.get_query(),double3(0))) {
+            count++;
+        }
+        std::cout << "There are "<< count << " particles.\n";
+
+/*`
+
+When dereferenced, the neighbourhood iterator returns a tuple of size 2 
+containing 
+
+# A constant reference to the found particle object, with type
+`particle_type::const_reference`
+
+# A vector $\mathbf{dx}\_{ij}$ pointing to the found point from the query 
+point. I.e. if $\mathbf{x}\_i$ is the query point and $\mathbf{x}\_j$ is the
+found point, then $\mathbf{dx}\_{ij} = \mathbf{x}\_j - \mathbf{x}\_i$.
+
+The latter is useful for periodic domains, the returned vector
+$\mathbf{dx}\_{ij}$ takes periodic domains into account and returns the
+$\mathbf{dx}\_{ij}$ with the smallest length. 
+
+For example, 
+
+*/
+
+        for (const auto& i: box_search(particles.get_query(),double3(0))) {
+            particle_type::const_reference b = std::get<0>(i);
+            const double3& dx = std::get<1>(i);
+            std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
+        }
+
+/*`
+[endsect]
+*/
+//]
+    }
+
+
+
     template<template <typename,typename> class Vector,template <typename> class SearchMethod>
     void helper_single_particle(void) {
         ABORIA_VARIABLE(scalar,double,"scalar")

@@ -112,6 +112,7 @@ set(NeighboursTestFile neighbours.h)
 set(NeighboursTest
     test_std_vector_bucket_search_serial
     test_std_vector_bucket_search_parallel
+    test_documentation
     )
 
 set(ParticleContainerTestFile particle_container.h)

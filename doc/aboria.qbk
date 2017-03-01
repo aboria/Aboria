@@ -17,7 +17,9 @@
 [import ../tests/particle_container.h]
 [particle_container]
 
-[include neighbourhood.qbk]
+[/ import documentation from neighbours.h]
+[import ../tests/neighbours.h]
+[neighbour_search]
 
 [/ import documentation from operators.h]
 [import ../tests/operators.h]
