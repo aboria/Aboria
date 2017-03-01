@@ -38,7 +38,7 @@ MathJax.Hub.Config({
 <a name="Aboria.create_zero_operator"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Function template create_zero_operator</span></h2>
-<p>Aboria::create_zero_operator</p>
+<p>Aboria::create_zero_operator &#8212; creates a zero matrix-free linear operator for use with Eigen </p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Operators.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Operators.h</a>&gt;
@@ -50,8 +50,57 @@ MathJax.Hub.Config({
   <span class="identifier">Operator</span> <span class="identifier">create_zero_operator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
                                 <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">)</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp45955639244224"></a><h2>Description</h2>
-<p>creates a zero matrix-free linear operator for use with Eigen </p>
+<a name="idp46406910250784"></a><h2>Description</h2>
+<p>This function returns a <code class="computeroutput"><a class="link" href="MatrixReplacement.html" title="Class template MatrixReplacement">MatrixReplacement</a></code> object that acts like a $n  m$ zero matrix. That is the application of this linear operator to a vector will always return a zero vector.</p>
+<p>
+
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">col_particles</code></span></p></td>
+<td><p>The columns of the linear operator index this first particle set</p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">row_particles</code></span></p></td>
+<td><p>The rows of the linear operator index this first particle set </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr>
+<tr>
+<td><p><span class="term">Template Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">ColParticles</code></span></p></td>
+<td><p>The type of the column particle set </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">RowParticles</code></span></p></td>
+<td><p>The type of the row particle set </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr>
+</tbody>
+</table></div>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>

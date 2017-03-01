@@ -38,7 +38,7 @@ MathJax.Hub.Config({
 <a name="Aboria.create_sparse_operator"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Function template create_sparse_operator</span></h2>
-<p>Aboria::create_sparse_operator</p>
+<p>Aboria::create_sparse_operator &#8212; creates a sparse matrix-free linear operator for use with Eigen </p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Operators.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Operators.h</a>&gt;
@@ -52,8 +52,69 @@ MathJax.Hub.Config({
                                   <span class="keyword">const</span> <span class="keyword">double</span> search_radius<span class="special">,</span> 
                                   <span class="keyword">const</span> <span class="identifier">F</span> <span class="special">&amp;</span> function<span class="special">)</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp45955639213792"></a><h2>Description</h2>
-<p>creates a sparse matrix-free linear operator for use with Eigen </p>
+<a name="idp46406910206048"></a><h2>Description</h2>
+<p>This function returns a <code class="computeroutput"><a class="link" href="MatrixReplacement.html" title="Class template MatrixReplacement">MatrixReplacement</a></code> object that acts like a sparse linear operator (i.e. matrix) in Eigen, in that only particle pairs (i.e. a row/column pair) with a separation less that a given value are considered to be non-zero</p>
+<p>
+
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">col_particles</code></span></p></td>
+<td><p>The columns of the linear operator index this first particle set </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">function</code></span></p></td>
+<td><p>A function object that returns the value of the operator for a given particle pair</p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">row_particles</code></span></p></td>
+<td><p>The rows of the linear operator index this first particle set </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">search_radius</code></span></p></td>
+<td><p>It is assumed that <code class="computeroutput">function</code> returns a zero value for all particle pairs with a separation greater than this value </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr>
+<tr>
+<td><p><span class="term">Template Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">ColParticles</code></span></p></td>
+<td><p>The type of the column particle set </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">F</code></span></p></td>
+<td><p>The type of the function object </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">RowParticles</code></span></p></td>
+<td><p>The type of the row particle set </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr>
+</tbody>
+</table></div>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
