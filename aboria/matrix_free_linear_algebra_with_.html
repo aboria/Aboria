@@ -81,6 +81,19 @@ MathJax.Hub.Config({
       calculate the operator efficiently. For any of these reasons you might want
       prefer matrix-free methods, and Aboria can help you do this.
     </p>
+<div class="caution"><table border="0" summary="Caution">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
+<th align="left">Caution</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        Currently Aboria only supports basic dense and sparse matrix-free operators
+        based on local neighbourhood searches. A Chebyshev operator has been implemented,
+        but this is still being tested, and the API is not stable, so is not documented.
+        All going well, a Fast Multipole method (hopefully using a few different
+        methods) will be implemented after this.
+      </p></td></tr>
+</table></div>
 <p>
       To provide the concept and API of a matrix or linear operator, we will use
       the C++ library <a href="../eigen.tuxfamily.org" target="_top">Eigen</a>. Aboria provides
@@ -102,8 +115,8 @@ MathJax.Hub.Config({
         the kernel function
       </p>
 <p>
-        $$ K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) = \frac{a_i a_j}{||\mathbf{x}_j-\mathbf{x}_i||}
-        $$
+        $$ K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) = \frac{a_i a_j}{||\mathbf{x}_j-\mathbf{x}_i||
+        + \epsilon} $$
       </p>
 <p>
         were $||.||$ refers to the 2-norm, or magnitude of a vector.
@@ -113,9 +126,17 @@ MathJax.Hub.Config({
         set containing $N=100$ particles with a single additional variable $a$.
       </p>
 <pre class="programlisting"><span class="keyword">const</span> <span class="identifier">size_t</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
+<span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">epsilon</span> <span class="special">=</span> <span class="number">0.1</span><span class="special">;</span>
 <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"a"</span><span class="special">);</span>
 <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;&gt;</span> <span class="identifier">particle_type</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">particle_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
 <span class="identifier">particle_type</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">default_random_engine</span> <span class="identifier">gen</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uniform</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span><span class="special">&lt;</span><span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+    <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double3</span><span class="special">(</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+    <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">);</span>
+<span class="special">}</span>
 </pre>
 <p>
         For convenience, we will also define a few types that we will need to define
@@ -131,10 +152,10 @@ MathJax.Hub.Config({
         function
       </p>
 <pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">K</span> <span class="special">=</span> <span class="identifier">create_dense_operator</span><span class="special">(</span><span class="identifier">particles</span><span class="special">,</span><span class="identifier">particles</span><span class="special">,</span>
-        <span class="special">[](</span><span class="identifier">const_position_reference</span> <span class="identifier">dx</span><span class="special">,</span>
+        <span class="special">[</span><span class="identifier">epsilon</span><span class="special">](</span><span class="identifier">const_position_reference</span> <span class="identifier">dx</span><span class="special">,</span>
            <span class="identifier">const_particle_reference</span> <span class="identifier">i</span><span class="special">,</span>
            <span class="identifier">const_particle_reference</span> <span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
-        <span class="keyword">return</span> <span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">j</span><span class="special">))</span> <span class="special">/</span> <span class="identifier">dx</span><span class="special">.</span><span class="identifier">norm</span><span class="special">();</span>
+        <span class="keyword">return</span> <span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">j</span><span class="special">))</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">dx</span><span class="special">.</span><span class="identifier">norm</span><span class="special">()</span> <span class="special">+</span> <span class="identifier">epsilon</span><span class="special">);</span>
         <span class="special">});</span>
 </pre>
 <p>
@@ -170,10 +191,8 @@ MathJax.Hub.Config({
         we can use it within Eigen as if it were a normal matrix. For example, to
         apply <code class="computeroutput"><span class="identifier">K</span></code> to a vector <code class="computeroutput"><span class="identifier">b</span></code>, we could write the following
       </p>
-<pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
-<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">c</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
-
-<span class="identifier">c</span> <span class="special">=</span> <span class="identifier">K</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
+<pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">b</span> <span class="special">=</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span><span class="special">::</span><span class="identifier">LinSpaced</span><span class="special">(</span><span class="identifier">N</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">1.0</span><span class="special">);</span>
+<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">c_1</span> <span class="special">=</span> <span class="identifier">K</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
 </pre>
 <p>
         This line of code calculates the following
@@ -202,14 +221,14 @@ MathJax.Hub.Config({
 </table></div>
 <p>
         If we wish to perform the same operator, but using a traditional matrix,
-        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp46820175717824-bb">Aboria::MatrixReplacement::assemble</a></code>
+        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp47510313224288-bb">Aboria::MatrixReplacement::assemble</a></code>
         member function to fill in a normal Eigen matrix with the values of the kernel
         function $K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$
       </p>
 <pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">MatrixXd</span> <span class="identifier">K_eigen</span><span class="special">(</span><span class="identifier">N</span><span class="special">,</span><span class="identifier">N</span><span class="special">);</span>
 <span class="identifier">K</span><span class="special">.</span><span class="identifier">assemble</span><span class="special">(</span><span class="identifier">K_eigen</span><span class="special">);</span>
 
-<span class="identifier">c</span> <span class="special">=</span> <span class="identifier">K_eigen</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
+<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">c_2</span> <span class="special">=</span> <span class="identifier">K_eigen</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
 </pre>
 </div>
 <div class="section">
@@ -248,20 +267,20 @@ MathJax.Hub.Config({
         Lets assume that we wish a similar kernel function as before
       </p>
 <p>
-        $$ K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) = \frac{a_i a_j}{||\mathbf{dx}_{ij}||}
-        $$
+        $$ K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j) = \frac{a_i a_j}{||\mathbf{dx}_{ij}||
+        + \epsilon} $$
       </p>
 <p>
         We can create the operator <code class="computeroutput"><span class="identifier">K_s</span></code>
-        in Aboria like so (setting $r=1$ in this case)
+        in Aboria like so (setting $r=0.1$ in this case)
       </p>
-<pre class="programlisting"><span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">r</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
+<pre class="programlisting"><span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">r</span> <span class="special">=</span> <span class="number">0.1</span><span class="special">;</span>
 <span class="keyword">auto</span> <span class="identifier">K_s</span> <span class="special">=</span> <span class="identifier">create_sparse_operator</span><span class="special">(</span><span class="identifier">particles</span><span class="special">,</span><span class="identifier">particles</span><span class="special">,</span>
         <span class="identifier">r</span><span class="special">,</span>
-        <span class="special">[](</span><span class="identifier">const_position_reference</span> <span class="identifier">dx</span><span class="special">,</span>
+        <span class="special">[</span><span class="identifier">epsilon</span><span class="special">](</span><span class="identifier">const_position_reference</span> <span class="identifier">dx</span><span class="special">,</span>
            <span class="identifier">const_particle_reference</span> <span class="identifier">i</span><span class="special">,</span>
            <span class="identifier">const_particle_reference</span> <span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
-        <span class="keyword">return</span> <span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">j</span><span class="special">))</span> <span class="special">/</span> <span class="identifier">dx</span><span class="special">.</span><span class="identifier">norm</span><span class="special">();</span>
+        <span class="keyword">return</span> <span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">a</span><span class="special">&gt;(</span><span class="identifier">j</span><span class="special">))</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">dx</span><span class="special">.</span><span class="identifier">norm</span><span class="special">()</span> <span class="special">+</span> <span class="identifier">epsilon</span><span class="special">);</span>
         <span class="special">});</span>
 </pre>
 <p>
@@ -285,7 +304,7 @@ MathJax.Hub.Config({
 <p>
         Once this is done, we can then apply the operator to the vector <code class="computeroutput"><span class="identifier">b</span></code> from before
       </p>
-<pre class="programlisting"><span class="identifier">c</span> <span class="special">=</span> <span class="identifier">K_s</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
+<pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">c_3</span> <span class="special">=</span> <span class="identifier">K_s</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
 </pre>
 <p>
         Once again, we can write out <code class="computeroutput"><span class="identifier">K_s</span></code>
@@ -295,7 +314,7 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">SparseMatrix</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">K_s_eigen</span><span class="special">(</span><span class="identifier">N</span><span class="special">,</span><span class="identifier">N</span><span class="special">);</span>
 <span class="identifier">K_s</span><span class="special">.</span><span class="identifier">assemble</span><span class="special">(</span><span class="identifier">K_s_eigen</span><span class="special">);</span>
 
-<span class="identifier">c</span> <span class="special">=</span> <span class="identifier">K_s_eigen</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
+<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">c_4</span> <span class="special">=</span> <span class="identifier">K_s_eigen</span><span class="special">*</span><span class="identifier">b</span><span class="special">;</span>
 </pre>
 </div>
 <div class="section">
@@ -349,10 +368,11 @@ MathJax.Hub.Config({
         and <code class="computeroutput"><span class="identifier">d</span></code> and apply the block
         operator
       </p>
-<pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">e</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">);</span>
-<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">d</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">);</span>
+<pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">d</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">);</span>
+<span class="identifier">d</span><span class="special">.</span><span class="identifier">head</span><span class="special">(</span><span class="identifier">N</span><span class="special">)</span> <span class="special">=</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span><span class="special">::</span><span class="identifier">LinSpaced</span><span class="special">(</span><span class="identifier">N</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">1.0</span><span class="special">);</span>
+<span class="identifier">d</span><span class="special">.</span><span class="identifier">tail</span><span class="special">(</span><span class="identifier">N</span><span class="special">)</span> <span class="special">=</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span><span class="special">::</span><span class="identifier">LinSpaced</span><span class="special">(</span><span class="identifier">N</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">1.0</span><span class="special">);</span>
 
-<span class="identifier">e</span> <span class="special">=</span> <span class="identifier">Full</span><span class="special">*</span><span class="identifier">d</span><span class="special">;</span>
+<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">e</span> <span class="special">=</span> <span class="identifier">Full</span><span class="special">*</span><span class="identifier">d</span><span class="special">;</span>
 </pre>
 </div>
 <div class="section">
@@ -379,8 +399,10 @@ MathJax.Hub.Config({
       </p>
 <pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">GMRES</span><span class="special">&lt;</span><span class="keyword">decltype</span><span class="special">(</span><span class="identifier">K</span><span class="special">),</span>
     <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DiagonalPreconditioner</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;&gt;</span> <span class="identifier">gmres_matrix_free</span><span class="special">;</span>
+<span class="identifier">gmres_matrix_free</span><span class="special">.</span><span class="identifier">setMaxIterations</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">);</span>
+<span class="identifier">gmres_matrix_free</span><span class="special">.</span><span class="identifier">set_restart</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">+</span><span class="number">1</span><span class="special">);</span>
 <span class="identifier">gmres_matrix_free</span><span class="special">.</span><span class="identifier">compute</span><span class="special">(</span><span class="identifier">K</span><span class="special">);</span>
-<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">h</span> <span class="special">=</span> <span class="identifier">gmres_matrix_free</span><span class="special">.</span><span class="identifier">solve</span><span class="special">(</span><span class="identifier">c</span><span class="special">);</span>
+<span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">h_1</span> <span class="special">=</span> <span class="identifier">gmres_matrix_free</span><span class="special">.</span><span class="identifier">solve</span><span class="special">(</span><span class="identifier">c_1</span><span class="special">);</span>
 </pre>
 <p>
         This will solve the equation in a matrix-free fashion. Alternativly, we can
@@ -389,8 +411,10 @@ MathJax.Hub.Config({
       </p>
 <pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">GMRES</span><span class="special">&lt;</span><span class="keyword">decltype</span><span class="special">(</span><span class="identifier">K_eigen</span><span class="special">),</span>
      <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DiagonalPreconditioner</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;&gt;</span> <span class="identifier">gmres_matrix</span><span class="special">;</span>
+ <span class="identifier">gmres_matrix</span><span class="special">.</span><span class="identifier">setMaxIterations</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">);</span>
+ <span class="identifier">gmres_matrix</span><span class="special">.</span><span class="identifier">set_restart</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">+</span><span class="number">1</span><span class="special">);</span>
  <span class="identifier">gmres_matrix</span><span class="special">.</span><span class="identifier">compute</span><span class="special">(</span><span class="identifier">K_eigen</span><span class="special">);</span>
- <span class="identifier">h</span> <span class="special">=</span> <span class="identifier">gmres_matrix</span><span class="special">.</span><span class="identifier">solve</span><span class="special">(</span><span class="identifier">c</span><span class="special">);</span>
+ <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">h_2</span> <span class="special">=</span> <span class="identifier">gmres_matrix</span><span class="special">.</span><span class="identifier">solve</span><span class="special">(</span><span class="identifier">c_1</span><span class="special">);</span>
 </pre>
 </div>
 </div>
