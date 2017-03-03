@@ -59,7 +59,7 @@ void evaluate_nonlinear(ExprRHS const & expr, LabelType &label) {
     particles_type& particles = label.get_particles();
 
     // check expr is a univariate expression and that it refers to the same particles container
-    check_valid_assign_expr(particles,expr);
+    check_valid_assign_expr(label,expr);
     
     // if aliased then need to copy to a tempory buffer first 
     std::vector<value_type>& buffer =

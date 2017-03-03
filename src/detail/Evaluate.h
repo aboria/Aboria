@@ -108,11 +108,22 @@ alias_check(SymbolType const &, LabelType const &, ExprRHS const &) {
     return mpl::false_();
 }
 
-template< typename ParticlesType, typename ExprRHS>
+template< typename LabelType, typename ExprRHS>
 typename boost::enable_if<detail::is_univariate<ExprRHS>,void >::type
-check_valid_assign_expr(const ParticlesType& particles, ExprRHS const & expr) {
-    const auto& particles_in_expr = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_())).get_particles();
-    CHECK(&particles_in_expr == &particles, "labels on LHS and RHS of assign expression do not refer to the same particles container");
+check_valid_assign_expr(const LabelType& label, ExprRHS const & expr) {
+    typedef typename LabelType::particles_type particles_type;
+    typedef typename detail::result_of::get_labels<ExprRHS>::type rhs_labels_type; 
+    typedef typename fusion::result_of::at_c<rhs_labels_type,0>::type rhs_label_type_ref; 
+    typedef typename std::remove_cv<
+        typename std::remove_reference<rhs_label_type_ref>::type>::type rhs_label_type;
+
+    const rhs_label_type& rhs_label = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_()));
+    static_assert(std::is_same<rhs_label_type,LabelType>::value,
+            "Labels on LHS and RHS of assign expression do not match");
+    particles_type& particles = label.get_particles();
+    const auto& particles_in_expr = rhs_label.get_particles();
+    CHECK(&particles_in_expr == &particles, 
+            "labels on LHS and RHS of assign expression do not refer to the same particles container");
 }
 
 template< typename ParticlesType, typename ExprRHS>
