@@ -159,6 +159,22 @@ namespace Aboria {
     ///
     ABORIA_UNARY_FUNCTION(norm, norm_fun, SymbolicDomain);
 
+    struct inf_norm_fun
+	{
+		typedef double result_type;
+
+        template<typename T,unsigned int N>
+		result_type operator()(const Vector<T,N>& vector) const
+		{
+			return vector.inf_norm();
+		}
+	};
+
+    /// a symbolic norm function for Vect3d
+    ///
+    ABORIA_UNARY_FUNCTION(inf_norm, inf_norm_fun, SymbolicDomain);
+
+
     struct dot_fun
 	{
 		typedef double result_type;

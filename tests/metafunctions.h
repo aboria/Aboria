@@ -100,6 +100,9 @@ public:
         static_assert(proto::matches<decltype(norm(dx)<3),detail::range_if_expr>::value,
                 "norm(dx)<3 does not match range_if_expr");
 
+        static_assert(proto::matches<decltype(inf_norm(dx)<3),detail::range_if_expr>::value,
+                "inf_norm(dx)<3 does not match range_if_expr");
+
         static_assert(proto::matches<decltype(dot(dx,dx)<3),detail::range_if_expr>::value,
                 "dot(dx,dx)<3 does not match range_if_expr");
 

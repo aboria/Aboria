@@ -216,6 +216,22 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[1],0.55);
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],0.55);
 
+        //
+        // test inf norm range sum
+        //
+        get<position>(particles)[0] = double3(0,0,0);
+        get<position>(particles)[1] = 0.99*double3(diameter,diameter,diameter);
+        particles.update_positions();
+
+        s[a] = sum(b, norm(dx) < diameter, 1);
+
+    	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
+    	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
+
+        s[a] = sum(b, inf_norm(dx) < diameter, 1);
+
+    	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
+    	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
     }
 
 

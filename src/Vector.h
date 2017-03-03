@@ -238,6 +238,18 @@ public:
 		return std::sqrt(squaredNorm());
 	}
 
+    /// inf-norm
+    /// \return the infinity norm of the vector $\max_i |v_i|$
+    CUDA_HOST_DEVICE
+	double inf_norm() const {
+        double ret = std::abs(mem[0]);
+        for (int i = 1; i < N; ++i) {
+            const double absi = std::abs(mem[i]);
+            if (absi > ret) ret = absi;
+		}
+		return ret;
+	}
+
     // element-wise `pow` function
     // \return a new vector with each element taken to the power of `exponent`
     // \param exponent the exponent
