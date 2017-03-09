@@ -700,7 +700,7 @@ private:
             if (m_index[i] <= m_max[i]) break;
             if (i != D-1) {
                 m_index[i] = m_min[i];
-            }
+            } 
         }
     }
 

@@ -306,10 +306,11 @@ For example,
     	test.init_neighbour_search(min,max,periodic,neighbour_n);
         if (D==2) {
             // Gauss circle problem (L2 in D=2)
-            int n_expect = 1;
+            int n_expect = 0;
             for (int i = 0; i < 100; ++i) {
                 n_expect += int(std::floor(std::pow(r,2)/(4*i+1))) - int(std::floor(std::pow(r,2)/(4*i+3)));
             }
+            n_expect = 1 + 4*n_expect;
             std::cout << "L2 norm test (r="<<r<<"): expecting "<<n_expect<<" points"<<std::endl;
             Aboria::detail::for_each(test.begin(),test.end(),
                     has_n_neighbours<typename Test_type::query_type,
