@@ -149,7 +149,6 @@ public:
 
 private:
     void set_domain_impl() {
-        m_max_particles_in_leaf = this->m_bucket_side_length[0];
         CHECK(!m_periodic.any(),"kd-tree does not work (yet) with periodic boundaries");
 
         this->m_query.m_buckets_begin = iterator_to_raw_pointer(m_buckets.begin());
@@ -173,7 +172,7 @@ private:
         } else {
             kd_tree = new kd_tree_type(dimension, 
                                         *this, 
-                                        nanoflann::KDTreeSingleIndexAdaptorParams(m_max_particles_in_leaf) 
+                                        nanoflann::KDTreeSingleIndexAdaptorParams(m_n_particles_in_leaf) 
                                         );
         }
 	    kd_tree->buildIndex();
@@ -200,7 +199,6 @@ private:
     }
 
 
-    size_t m_max_particles_in_leaf;
     kd_tree_type* m_kd_tree;
     nanoflann_adaptor_query<Traits> m_query;
 };

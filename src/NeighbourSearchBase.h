@@ -141,7 +141,7 @@ public:
         LOG_CUDA(2,"neighbour_search_base: constructor, setting default domain");
         const double min = std::numeric_limits<double>::min();
         const double max = std::numeric_limits<double>::max();
-        set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),double_d(max/3.0-min/3.0),false); 
+        set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),10,false); 
     };
 
     static constexpr bool unordered() {
@@ -153,17 +153,17 @@ public:
     /// \param high the upper extent of the search domain
     /// \param _max_interaction_radius the side length of each bucket
     /// \param periodic a boolean vector indicating wether each dimension
-    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const double_d& min_bucket_side_length, const bool not_in_constructor=true) {
+    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const unsigned int n_particles_in_leaf=10, const bool not_in_constructor=true) {
         LOG_CUDA(2,"neighbour_search_base: set_domain:");
         m_bounds.bmin = min_in;
         m_bounds.bmax = max_in;
         m_periodic = periodic_in;
-        m_bucket_side_length = min_bucket_side_length; 
+        m_n_particles_in_leaf = n_particles_in_leaf; 
         if (not_in_constructor) {
             cast().set_domain_impl();
         }
         LOG(2,"\tbounds = "<<m_bounds);
-	    LOG(2,"\tbucket_side_length = "<<this->m_bucket_side_length);
+	    LOG(2,"\tparticles_in_leaf = "<<m_n_particles_in_leaf);
         LOG(2,"\tperiodic = "<<m_periodic);
     }
 
@@ -252,14 +252,13 @@ public:
     const double_d& get_min() const { return m_bounds.bmin; }
     const double_d& get_max() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
-    const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
 
 protected:
     iterator m_particles_begin;
     iterator m_particles_end;
     bool_d m_periodic;
     detail::bbox<Traits::dimension> m_bounds;
-    double_d m_bucket_side_length; 
+    unsigned int m_n_particles_in_leaf; 
 };
 
 
@@ -489,6 +488,7 @@ public:
 
 template <typename Traits, typename Iterator>
 class index_vector_iterator {
+    typedef index_vector_iterator<Traits,Iterator> iterator;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::value_type p_value_type;
@@ -511,7 +511,7 @@ public:
             Iterator begin,
             const p_pointer& particles_begin):
         m_current_index(begin),
-        m_particles_begin(particles_begin),
+        m_particles_begin(particles_begin)
     {}
 
 
@@ -524,18 +524,18 @@ public:
         return dereference();
     }
     CUDA_HOST_DEVICE
-    linked_list_iterator& operator++() {
+    iterator& operator++() {
         increment();
         return *this;
     }
     CUDA_HOST_DEVICE
-    linked_list_iterator operator++(int) {
-        linked_list_iterator tmp(*this);
+    iterator operator++(int) {
+        iterator tmp(*this);
         operator++();
         return tmp;
     }
     CUDA_HOST_DEVICE
-    size_t operator-(linked_list_iterator start) const {
+    size_t operator-(iterator start) const {
         size_t count = 0;
         while (start != *this) {
             start++;
@@ -544,11 +544,11 @@ public:
         return count;
     }
     CUDA_HOST_DEVICE
-    inline bool operator==(const linked_list_iterator& rhs) const {
+    inline bool operator==(const iterator& rhs) const {
         return equal(rhs);
     }
     CUDA_HOST_DEVICE
-    inline bool operator!=(const linked_list_iterator& rhs) const {
+    inline bool operator!=(const iterator& rhs) const {
         return !operator==(rhs);
     }
 
@@ -562,19 +562,19 @@ public:
 #endif
         ++m_current_index;
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (linked_list_iterator): m_current_index = "<<m_current_index); 
+        LOG(4,"\tend increment (index_vector_iterator): m_current_index = "<<m_current_index); 
 #endif
     }
 
     CUDA_HOST_DEVICE
-    bool equal(linked_list_iterator const& other) const {
+    bool equal(iterator const& other) const {
         return m_current_index == other.m_current_index;
     }
 
 
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return *(m_particles_begin + m_current_index); }
+    { return *(m_particles_begin + *m_current_index); }
 
 
     Iterator m_current_index;

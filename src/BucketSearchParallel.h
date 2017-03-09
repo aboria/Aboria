@@ -84,47 +84,65 @@ class bucket_search_parallel:
     typedef typename Traits::iterator iterator;
     typedef bucket_search_parallel_params<Traits> params_type;
 
-    friend neighbour_search_base<bucket_search_parallel<Traits>,
+    typedef neighbour_search_base<bucket_search_parallel<Traits>,
                                  Traits,
                                  bucket_search_parallel_params<Traits>,
-                                 bucket_search_parallel_query<Traits>>;
+                                 bucket_search_parallel_query<Traits>> base_type;
+
+    friend base_type;
+
 
 public:
+    bucket_search_parallel():m_size_calculated_with_n(0),base_type() {}
     static constexpr bool cheap_copy_and_delete_at_end() {
         return false;
     }
 
 private:
 
+
     void set_domain_impl() {
-        m_size = 
-            floor((this->m_bounds.bmax-this->m_bounds.bmin)/this->m_bucket_side_length)
-            .template cast<unsigned int>();
-        for (int i=0; i<Traits::dimension; ++i) {
-            if (m_size[i] == 0) {
-                m_size[i] = this->m_bounds.bmax[i]-this->m_bounds.bmin[i];
+        const size_t n = this->m_particles_end - this->m_particles_begin;
+        if (n < 0.5*m_size_calculated_with_n || n > 2*m_size_calculated_with_n) {
+            LOG(2,"bucket_search_serial: recalculating bucket size");
+            m_size_calculated_with_n = n;
+            if (this->m_n_particles_in_leaf > n) {
+                m_size = unsigned_int_d(1);
+            } else {
+                const double total_volume = (this->m_bounds.bmax-this->m_bounds.bmin).prod();
+                const double box_volume = double(this->m_n_particles_in_leaf)/double(n)*total_volume;
+                const double box_side_length = std::pow(box_volume,1.0/Traits::dimension);
+                m_size = 
+                    floor((this->m_bounds.bmax-this->m_bounds.bmin)/box_side_length)
+                    .template cast<unsigned int>();
+                for (int i=0; i<Traits::dimension; ++i) {
+                    if (m_size[i] == 0) {
+                        m_size[i] = 1;
+                    }
+                }
             }
+            m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
+            m_point_to_bucket_index = 
+                detail::point_to_bucket_index<Traits::dimension>(m_size,m_bucket_side_length,this->m_bounds);
+
+            LOG(2,"\tbucket side length = "<<m_bucket_side_length);
+            LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
+
+            // setup bucket data structures
+            m_bucket_begin.resize(m_size.prod());
+            m_bucket_end.resize(m_size.prod());
+
+            this->m_query.m_bucket_begin = iterator_to_raw_pointer(m_bucket_begin.begin());
+            this->m_query.m_bucket_end = iterator_to_raw_pointer(m_bucket_end.begin());
+            this->m_query.m_nbuckets = m_bucket_begin.size();
+
+            this->m_query.m_bucket_side_length = m_bucket_side_length;
+            this->m_query.m_bounds.bmin = this->m_bounds.bmin;
+            this->m_query.m_bounds.bmax = this->m_bounds.bmax;
+            this->m_query.m_periodic = this->m_periodic;
+            this->m_query.m_end_bucket = m_size-1;
+            this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
         }
-        this->m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
-        m_point_to_bucket_index = 
-            detail::point_to_bucket_index<Traits::dimension>(m_size,this->m_bucket_side_length,this->m_bounds);
- 
-	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
-
-        // setup bucket data structures
-        m_bucket_begin.resize(m_size.prod());
-        m_bucket_end.resize(m_size.prod());
-
-        this->m_query.m_bucket_begin = iterator_to_raw_pointer(m_bucket_begin.begin());
-        this->m_query.m_bucket_end = iterator_to_raw_pointer(m_bucket_end.begin());
-        this->m_query.m_nbuckets = m_bucket_begin.size();
-
-        this->m_query.m_bucket_side_length = this->m_bucket_side_length;
-        this->m_query.m_bounds.bmin = this->m_bounds.bmin;
-        this->m_query.m_bounds.bmax = this->m_bounds.bmax;
-        this->m_query.m_periodic = this->m_periodic;
-        this->m_query.m_end_bucket = m_size-1;
-        this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
     }
 
     void update_iterator_impl() {
@@ -133,6 +151,7 @@ private:
     }
 
     void embed_points_impl() {
+        set_domain_impl();
         const size_t n = this->m_particles_end - this->m_particles_begin;
         m_bucket_indices.resize(n);
         if (n > 0) {
@@ -149,6 +168,7 @@ private:
 
 
     void add_points_at_end_impl(const size_t dist) {
+        set_domain_impl();
         auto start_adding = this->m_particles_end-dist;
         const size_t total = m_bucket_indices.size() + dist;
         auto positions_end = get<position>(this->m_particles_end);
@@ -173,6 +193,7 @@ private:
     }
 
     void delete_points_at_end_impl(const size_t dist) {
+        set_domain_impl();
         const size_t n = this->m_particles_end - this->m_particles_begin;
         ASSERT(m_bucket_indices.size()-n == dist,"m_bucket_indices size not consistent with dist argument");
         const size_t oldn = m_bucket_indices.size();
@@ -256,7 +277,9 @@ private:
     vector_unsigned_int m_bucket_indices;
     bucket_search_parallel_query<Traits> m_query;
 
+    double_d m_bucket_side_length;
     unsigned_int_d m_size;
+    size_t m_size_calculated_with_n;
     detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
 };
 
@@ -353,22 +376,26 @@ struct bucket_search_parallel_query {
     }
 
     CUDA_HOST_DEVICE
-    detail::bbox<dimension>& get_bucket_bbox(const bucket_reference &bucket) const {
-        return detail::bbox<dimension>(bucket*m_bucket_side_length + m_bounds.bmin);
+    detail::bbox<dimension> get_bucket_bbox(const bucket_reference &bucket) const {
+        return detail::bbox<dimension>(
+                bucket*m_bucket_side_length + m_bounds.bmin,
+                (bucket+1)*m_bucket_side_length + m_bounds.bmin
+                );
     }
 
     CUDA_HOST_DEVICE
     iterator_range<bucket_iterator> get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_radius = "<<);
+        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
  
+        ASSERT((position >= m_bounds.bmin).all(),"point position less than min bound");
+        ASSERT((position < m_bounds.bmax).all(),"point position greater than or equal to max bound");
         bucket_value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
+        ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
 
-        ASSERT((bucket>int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
-
-        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_radius);
-        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_radius);
+        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
+        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
         for (int i=0; i<Traits::dimension; i++) {
             if (!m_periodic[i]) {
                 if (start[i] < 0) {
@@ -382,8 +409,8 @@ struct bucket_search_parallel_query {
         LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
 #endif
         return iterator_range<bucket_iterator>(
-                bucket_iterator(start,end,start,max_radius)
-                ,++bucket_iterator(start,end,end,max_radius)
+                bucket_iterator(start,end,start)
+                ,++bucket_iterator(start,end,end)
                 );
     }
 
