@@ -126,6 +126,7 @@ class search_iterator {
     double_d m_dx;
     const Query *m_query;
     double m_max_distance;
+    double m_max_distance2;
     iterator_range<bucket_iterator> m_bucket_range;
     bucket_iterator m_current_bucket;
     iterator_range_with_transpose<particle_iterator> m_particle_range;
@@ -150,7 +151,8 @@ public:
         m_valid(true),
         m_r(r),
         m_query(&query),
-        m_max_distance(distance_helper<LNormNumber>::get_value_to_accumulate(max_distance)),
+        m_max_distance(max_distance),
+        m_max_distance2(distance_helper<LNormNumber>::get_value_to_accumulate(max_distance)),
         m_bucket_range(query.get_buckets_near_point(r,max_distance)),
         m_current_bucket(m_bucket_range.begin()),
         m_particle_range(query.get_bucket_particles(*m_current_bucket)),
@@ -217,14 +219,17 @@ public:
         for (; m_current_bucket != m_bucket_range.end(); ++m_current_bucket) {
             detail::bbox<dimension> bbox = m_query->get_bucket_bbox(*m_current_bucket);
             double accum = 0;
+            bool intersect = true;
             for (int i = 0; i < dimension; ++i) {
-                accum = distance_helper<LNormNumber>::
-                            accumulate_max_norm(accum, bbox.bmin[i]-m_r[i], bbox.bmax[i]-m_r[i]);
-                if (accum > m_max_distance) {
+                const double low = m_r[i]-m_max_distance;
+                const double high = m_r[i]+m_max_distance;
+                if ( (low < bbox.bmin[i] && high < bbox.bmin[i]) 
+                   ||(low > bbox.bmax[i] && high > bbox.bmax[i])) { 
+                    intersect = false;
                     break;
                 }
             }
-            if (accum <= m_max_distance) {
+            if (intersect) {
                 return true;
             }
         }
@@ -237,9 +242,15 @@ public:
         while (m_current_particle == m_particle_range.end()) {
             ++m_current_bucket;
             if (!get_valid_bucket()) {
+#ifndef __CUDA_ARCH__
+                LOG(4,"\tran out of buckets to search (search_iterator): m_current_bucket = "<<*m_current_bucket); 
+#endif
                 m_valid = false;
                 break; 
             }
+#ifndef __CUDA_ARCH__
+            LOG(4,"\tgo_to_next bucket (search_iterator): new bucket = "<<*m_current_bucket); 
+#endif
             m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
             m_current_particle = m_particle_range.begin();
         }
@@ -266,7 +277,7 @@ public:
         for (int i=0; i < Traits::dimension; i++) {
             m_dx[i] = p[i] + transpose[i] - m_r[i];
             accum = distance_helper<LNormNumber>::accumulate_norm(accum, m_dx[i]);
-            if (accum > m_max_distance) {
+            if (accum > m_max_distance2) {
                 outside = true;
                 break;
             } 
