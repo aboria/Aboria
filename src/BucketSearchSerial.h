@@ -92,45 +92,60 @@ class bucket_search_serial:
 
     typedef bucket_search_serial_params<Traits> params_type;
 
-    friend neighbour_search_base<bucket_search_serial<Traits>,
+    typedef neighbour_search_base<bucket_search_serial<Traits>,
                                  Traits,
                                  bucket_search_serial_params<Traits>,
-                                 bucket_search_serial_query<Traits>>;
+                                 bucket_search_serial_query<Traits>> base_type;
 
+    friend base_type;
 
 public:
+    bucket_search_serial():m_size_calculated_with_n(0),base_type() {}
     static constexpr bool cheap_copy_and_delete_at_end() {
         return true;
     }
 
 private:
     void set_domain_impl() {
-        m_size = 
-            floor((this->m_bounds.bmax-this->m_bounds.bmin)/this->m_bucket_side_length)
-            .template cast<unsigned int>();
-        for (int i=0; i<Traits::dimension; ++i) {
-            if (m_size[i] == 0) {
-                m_size[i] = this->m_bounds.bmax[i]-this->m_bounds.bmin[i];
+        const size_t n = this->m_particles_end - this->m_particles_begin;
+        if (n < 0.5*m_size_calculated_with_n || n > 2*m_size_calculated_with_n) {
+            m_size_calculated_with_n = n;
+            LOG(2,"bucket_search_serial: recalculating bucket size");
+            if (this->m_n_particles_in_leaf > n) {
+                m_size = unsigned_int_d(1);
+            } else {
+                const double total_volume = (this->m_bounds.bmax-this->m_bounds.bmin).prod();
+                const double box_volume = double(this->m_n_particles_in_leaf)/double(n)*total_volume;
+                const double box_side_length = std::pow(box_volume,1.0/Traits::dimension);
+                m_size = 
+                    floor((this->m_bounds.bmax-this->m_bounds.bmin)/box_side_length)
+                    .template cast<unsigned int>();
+                for (int i=0; i<Traits::dimension; ++i) {
+                    if (m_size[i] == 0) {
+                        m_size[i] = 1;
+                    }
+                }
             }
+            m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
+            m_point_to_bucket_index = 
+                detail::point_to_bucket_index<Traits::dimension>(m_size,m_bucket_side_length,this->m_bounds);
+
+            LOG(2,"\tbucket side length = "<<m_bucket_side_length);
+            LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
+
+            m_buckets.assign(m_size.prod(), detail::get_empty_id());
+            //TODO: should always be true?
+            m_use_dirty_cells = true;
+
+            this->m_query.m_buckets_begin = iterator_to_raw_pointer(m_buckets.begin());
+
+            this->m_query.m_bucket_side_length = this->m_bucket_side_length;
+            this->m_query.m_bounds.bmin = this->m_bounds.bmin;
+            this->m_query.m_bounds.bmax = this->m_bounds.bmax;
+            this->m_query.m_periodic = this->m_periodic;
+            this->m_query.m_end_bucket = m_size-1;
+            this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
         }
-        this->m_bucket_side_length = (this->m_bounds.bmax-this->m_bounds.bmin)/m_size;
-        m_point_to_bucket_index = 
-            detail::point_to_bucket_index<Traits::dimension>(m_size,this->m_bucket_side_length,this->m_bounds);
- 
-	    LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
-
-        m_buckets.assign(m_size.prod(), detail::get_empty_id());
-        //TODO: should always be true?
-        m_use_dirty_cells = true;
-
-        this->m_query.m_buckets_begin = iterator_to_raw_pointer(m_buckets.begin());
-
-        this->m_query.m_bucket_side_length = this->m_bucket_side_length;
-        this->m_query.m_bounds.bmin = this->m_bounds.bmin;
-        this->m_query.m_bounds.bmax = this->m_bounds.bmax;
-        this->m_query.m_periodic = this->m_periodic;
-        this->m_query.m_end_bucket = m_size-1;
-        this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
     }
 
     void check_data_structure() {
@@ -172,6 +187,7 @@ private:
 
 
     void embed_points_impl() {
+        set_domain_impl(); 
         const size_t n = this->m_particles_end - this->m_particles_begin;
 
         /*
@@ -231,6 +247,7 @@ private:
 
 
     void add_points_at_end_impl(const size_t dist) {
+        set_domain_impl(); 
         const size_t n = this->m_particles_end - this->m_particles_begin;
         const size_t start_adding = n-dist;
         ASSERT(m_linked_list.size() == start_adding, "m_linked_list not consistent with dist");
@@ -276,6 +293,7 @@ private:
     }
 
     void delete_points_at_end_impl(const size_t dist) {
+        set_domain_impl(); 
         const size_t n = this->m_particles_end - this->m_particles_begin;
         ASSERT(m_linked_list.size()-n == dist, "m_linked_list not consistent with dist");
         ASSERT(m_linked_list_reverse.size()-n == dist, "m_linked_list_reverse not consistent with dist");
@@ -433,7 +451,9 @@ private:
     bucket_search_serial_query<Traits> m_query;
     bool m_use_dirty_cells;
 
+    size_t m_size_calculated_with_n;
     unsigned_int_d m_size;
+    double_d m_bucket_side_length;
     detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
 
 };
@@ -523,22 +543,28 @@ struct bucket_search_serial_query {
     }
 
     CUDA_HOST_DEVICE
-    detail::bbox<dimension>& get_bucket_bbox(const bucket_reference &bucket) const {
-        return detail::bbox<dimension>((*bucket)*m_bucket_side_length + m_bounds.bmin);
+    detail::bbox<dimension> get_bucket_bbox(const bucket_reference &bucket) const {
+        return detail::bbox<dimension>(
+                bucket*m_bucket_side_length + m_bounds.bmin,
+                (bucket+1)*m_bucket_side_length + m_bounds.bmin
+                );
     }
 
     CUDA_HOST_DEVICE
     iterator_range<bucket_iterator> get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_radius = "<<);
+        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
  
+        ASSERT((position >= m_bounds.bmin).all(),"point position less than min bound");
+        ASSERT((position < m_bounds.bmax).all(),"point position greater than or equal to max bound");
         bucket_value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
+        ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
 
-        ASSERT((bucket>int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
+        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
+        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
 
-        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_radius);
-        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_radius);
+        // if not periodic truncate to edges of lattice
         for (int i=0; i<Traits::dimension; i++) {
             if (!m_periodic[i]) {
                 if (start[i] < 0) {
@@ -553,8 +579,8 @@ struct bucket_search_serial_query {
 #endif
  
         return iterator_range<bucket_iterator>(
-                bucket_iterator(start,end,start,max_radius)
-                ,++bucket_iterator(start,end,end,max_radius)
+                bucket_iterator(start,end,start)
+                ,++bucket_iterator(start,end,end)
                 );
     }
 

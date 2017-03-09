@@ -443,8 +443,9 @@ public:
     /// to each other than this length are considered neighbours
     /// \param periodic a boolean 3d vector indicating whether each dimension 
     /// is periodic (true) or not (false)
-    void init_neighbour_search(const double_d& low, const double_d& high, const double length_scale, const bool_d& periodic) {
-        search.set_domain(low,high,periodic,double_d(length_scale));
+    void init_neighbour_search(const double_d& low, const double_d& high, const bool_d& periodic,
+                                const unsigned int n_particles_in_leaf=10) {
+        search.set_domain(low,high,periodic,n_particles_in_leaf);
         enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
         searchable = true;
     }

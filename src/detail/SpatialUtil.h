@@ -198,31 +198,29 @@ struct point_to_bucket_index {
         m_bucket_index(size),m_bucket_side_length(bucket_side_length),m_bounds(bounds) {}
 
     CUDA_HOST_DEVICE
-    unsigned int operator()(const double_d& v) const {
+    int operator()(const double_d& v) const {
         return find_bucket_index(v);
     }
 
     inline 
     CUDA_HOST_DEVICE
-    unsigned int collapse_index_vector(const unsigned_int_d &vindex) const {
+    int collapse_index_vector(const int_d &vindex) const {
         return m_bucket_index.collapse_index_vector(vindex);
     }
 
     inline 
     CUDA_HOST_DEVICE
-    unsigned_int_d find_bucket_index_vector(const double_d &r) const {
+    int_d find_bucket_index_vector(const double_d &r) const {
         // find the raster indices of p's bucket
         //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
-        ASSERT((r >= m_bounds.bmin).all(),"point r less than min bound");
-        ASSERT((r < m_bounds.bmax).all(),"point r greater than or equal to max bound");
-        return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<unsigned int>();
+        return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<int>();
     }
 
     // hash a point in the unit square to the index of
     // the grid bucket that contains it
     inline 
     CUDA_HOST_DEVICE
-    unsigned int find_bucket_index(const double_d &r) const {
+    int find_bucket_index(const double_d &r) const {
         return m_bucket_index.collapse_index_vector(find_bucket_index_vector(r));
     }
  

@@ -79,31 +79,29 @@ Before you can use the neighbourhood searching, you need to initialise the
 domain using the [memberref Aboria::Particles::init_neighbour_search] function.
 
 In this case, we will initialise a domain from $(-1,-1,-1)$ to $(1,1,1)$, which
-is periodic in all directions. We will set the search radius to 0.2.
+is periodic in all directions.
 
 */
 
         double3 min(-1);
         double3 max(1);
         bool3 periodic(true);
-        double radius = 0.2;
-        particles.init_neighbour_search(min,max,radius,periodic);
+        particles.init_neighbour_search(min,max,periodic);
 /*`
 
-Here `radius` is the lengthscale of the neighbourhood search. That is, any 
-particles that are separated by more than `radius` might not be classified as 
-neighbours.
-
-Once this is done you can begin using the neighbourhood search queries using the
-`box_search` function. This returns a lightweight container with `begin()` and
+Once this is done you can begin using the neighbourhood search queries using the 
+[funcref Aboria::euclidean_search] function. This returns a lightweight container with `begin()` and
 `end()` functions that return `const` forward only iterators to the particles
 that satisfy the neighbour search. For example, the following counts all the
-particles within a square domain of side length `radius` of the point $(0,0,0)$
+particles within a distance `radius` of the point $(0,0,0)$. Note that
+[funcref Aboria::euclidean_search] uses the euclidean or L2-norm distance, but there
+are other functions for other distance norms.
 
 */
 
+        double radius = 0.2;
         int count = 0;
-        for (const auto& i: box_search(particles.get_query(),double3(0))) {
+        for (const auto& i: euclidean_search(particles.get_query(),double3(0),radius)) {
             count++;
         }
         std::cout << "There are "<< count << " particles.\n";
@@ -128,7 +126,7 @@ For example,
 
 */
 
-        for (const auto& i: box_search(particles.get_query(),double3(0))) {
+        for (const auto& i: euclidean_search(particles.get_query(),double3(0),radius)) {
             particle_type::const_reference b = std::get<0>(i);
             const double3& dx = std::get<1>(i);
             std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
@@ -151,23 +149,23 @@ For example,
     	double3 min(-1,-1,-1);
     	double3 max(1,1,1);
     	double3 periodic(true,true,true);
-    	double diameter = 0.1;
-    	test.init_neighbour_search(min,max,diameter,periodic);
+    	double radius = 0.1;
+    	test.init_neighbour_search(min,max,periodic);
     	typename Test_type::value_type p;
 
         get<position>(p) = double3(0,0,0);
     	test.push_back(p);
 
     	int count = 0;
-    	for (auto tpl: box_search(test.get_query(),double3(diameter/2,diameter/2,0))) {
+    	for (auto tpl: euclidean_search(test.get_query(),double3(radius/2,radius/2,0),radius)) {
     		count++;
     	}
     	TS_ASSERT_EQUALS(count,1);
 
-    	auto tpl = box_search(test.get_query(),double3(diameter/2,diameter/2,0));
+    	auto tpl = euclidean_search(test.get_query(),double3(radius/2,radius/2,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
 
-    	tpl = box_search(test.get_query(),double3(2*diameter,0,0));
+    	tpl = euclidean_search(test.get_query(),double3(2*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
@@ -180,46 +178,48 @@ For example,
     	double3 min(-1,-1,-1);
     	double3 max(1,1,1);
     	double3 periodic(true,true,true);
-    	double diameter = 0.1;
-    	test.init_neighbour_search(min,max,diameter,periodic);
+    	double radius = 0.1;
+    	test.init_neighbour_search(min,max,periodic);
     	typename Test_type::value_type p;
 
         get<position>(p) = double3(0,0,0);
     	test.push_back(p);
 
-        get<position>(p) = double3(diameter/2,0,0);
+        get<position>(p) = double3(radius/2,0,0);
     	test.push_back(p);
 
-    	auto tpl = box_search(test.get_query(),double3(1.1*diameter,0,0));
+    	auto tpl = euclidean_search(test.get_query(),double3(1.1*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     	const typename Test_type::value_type &pfound = tuple_ns::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
-    	tpl = box_search(test.get_query(),double3(0.9*diameter,0,0));
+    	tpl = euclidean_search(test.get_query(),double3(0.9*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = box_search(test.get_query(),double3(1.6*diameter,0,0));
+    	tpl = euclidean_search(test.get_query(),double3(1.6*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
 
-    	tpl = box_search(test.get_query(),double3(0.25*diameter,0.99*diameter,0));
+    	tpl = euclidean_search(test.get_query(),double3(0.25*radius,0.9*radius,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = box_search(test.get_query(),double3(0.25*diameter,1.01*diameter,0));
+    	tpl = euclidean_search(test.get_query(),double3(0.25*radius,0.99*radius,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
     template <typename Search, int LNormNumber>
     struct has_n_neighbours {
         unsigned int n;
+        double max_distance;
         Search search;
 
         CUDA_HOST_DEVICE 
-        has_n_neighbours(const Search& search, unsigned int n):search(search),n(n) {}
+        has_n_neighbours(const Search& search, const double max_distance, const unsigned int n):
+            search(search),n(n),max_distance(max_distance) {}
 
         CUDA_HOST_DEVICE 
         void operator()(typename Search::reference i) {
             auto tpl = distance_search<LNormNumber>(
-                            search,get<typename Search::position>(i));
+                            search,get<typename Search::position>(i),max_distance);
             TS_ASSERT_EQUALS(tpl.end()-tpl.begin(),n);
         }
     };
@@ -227,7 +227,7 @@ For example,
     template<unsigned int D, 
              template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
-    void helper_d(void) {
+    void helper_d(const int n, const double r, const int neighbour_n) {
         ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>,D,VectorType,SearchMethod> Test_type;
         typedef position_d<D> position;
@@ -235,15 +235,12 @@ For example,
         typedef Vector<bool,D> bool_d;
         typedef Vector<unsigned int,D> uint_d;
     	Test_type test;
-    	double_d min(-1);
-    	double_d max(1);
+    	double_d min(0);
+    	double_d max(n);
     	bool_d periodic(true);
     	typename Test_type::value_type p;
         uint_d index(0);
-        unsigned int n = 10;
-        double dx = 2.0/n;
-
-    	double diameter = dx*1.00001;
+        double dx = 1.0;
 
         bool finished = false;
         while (finished != true) {
@@ -265,50 +262,73 @@ For example,
             }
         }
 
-    	test.init_neighbour_search(min,max,diameter,periodic);
-#if defined(__aboria_use_thrust_algorithms__)
-        thrust::for_each(test.begin(),test.end(),
+    	test.init_neighbour_search(min,max,periodic,neighbour_n);
+        if (D==2) {
+            // Gauss circle problem (L2 in D=2)
+            int n_expect = 1;
+            for (int i = 0; i < 100; ++i) {
+                n_expect += int(std::floor(std::pow(r,2)/(4*i+1))) - int(std::floor(std::pow(r,2)/(4*i+3)));
+            }
+            std::cout << "L2 norm test (r="<<r<<"): expecting "<<n_expect<<" points"<<std::endl;
+            Aboria::detail::for_each(test.begin(),test.end(),
+                    has_n_neighbours<typename Test_type::query_type,
+                    2>(test.get_query(),r,n_expect));
+        }
+        // Box search (Linf)
+        int n_expect = std::pow(2*int(std::floor(r)) + 1,D);
+        std::cout << "Linf norm test (r="<<r<<", D="<<D<<"): expecting "<<n_expect<<" points"<<std::endl;
+        Aboria::detail::for_each(test.begin(),test.end(),
                 has_n_neighbours<typename Test_type::query_type,
-                                 2>(test.get_query(),std::pow(3,D)));
-#else
-        std::for_each(test.begin(),test.end(),
-                has_n_neighbours<typename Test_type::query_type>(test.get_query(),expect_n));
-#endif
+                                 -1>(test.get_query(),r,n_expect));
+
     }
 
     void test_std_vector_bucket_search_serial(void) {
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
-        helper_d<1,std::vector,bucket_search_serial>();
-        helper_d<2,std::vector,bucket_search_serial>();
-        helper_d<3,std::vector,bucket_search_serial>();
-        helper_d<4,std::vector,bucket_search_serial>();
+        helper_d<1,std::vector,bucket_search_serial>(100,1.5,10);
+        helper_d<2,std::vector,bucket_search_serial>(50,1.0001,10);
+        helper_d<2,std::vector,bucket_search_serial>(50,1.5,10);
+        helper_d<2,std::vector,bucket_search_serial>(20,2.1,10);
+        helper_d<3,std::vector,bucket_search_serial>(10,1.9,10);
+        helper_d<3,std::vector,bucket_search_serial>(10,1.0001,10);
+        helper_d<4,std::vector,bucket_search_serial>(10,1.0001,10);
     }
 
     void test_std_vector_bucket_search_parallel(void) {
         helper_single_particle<std::vector,bucket_search_parallel>();
         helper_two_particles<std::vector,bucket_search_parallel>();
-        helper_d<1,std::vector,bucket_search_parallel>();
-        helper_d<2,std::vector,bucket_search_parallel>();
-        helper_d<3,std::vector,bucket_search_parallel>();
-        helper_d<4,std::vector,bucket_search_parallel>();
+        helper_d<1,std::vector,bucket_search_parallel>(100,1.5,10);
+        helper_d<2,std::vector,bucket_search_parallel>(50,1.0001,10);
+        helper_d<2,std::vector,bucket_search_parallel>(50,1.5,10);
+        helper_d<2,std::vector,bucket_search_parallel>(20,2.1,10);
+        helper_d<3,std::vector,bucket_search_parallel>(10,1.9,10);
+        helper_d<3,std::vector,bucket_search_parallel>(10,1.0001,10);
+        helper_d<4,std::vector,bucket_search_parallel>(10,1.0001,10);
     }
 
     void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__CUDACC__)
-        helper_d<1,thrust::device_vector,bucket_search_serial>();
-        helper_d<2,thrust::device_vector,bucket_search_serial>();
-        helper_d<3,thrust::device_vector,bucket_search_serial>();
-        helper_d<4,thrust::device_vector,bucket_search_serial>();
+        helper_d<1,thrust::device_vector,bucket_search_serial>(100,1.5,10);
+        helper_d<2,thrust::device_vector,bucket_search_serial>(50,1.0001,10);
+        helper_d<2,thrust::device_vector,bucket_search_serial>(50,1.5,10);
+        helper_d<2,thrust::device_vector,bucket_search_serial>(20,2.1,10);
+        helper_d<3,thrust::device_vector,bucket_search_serial>(10,1.9,10);
+        helper_d<3,thrust::device_vector,bucket_search_serial>(10,1.0001,10);
+        helper_d<4,thrust::device_vector,bucket_search_serial>(10,1.0001,10);
+
 #endif
     }
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__CUDACC__)
-        helper_d<1,thrust::device_vector,bucket_search_parallel>();
-        helper_d<2,thrust::device_vector,bucket_search_parallel>();
-        helper_d<3,thrust::device_vector,bucket_search_parallel>();
-        helper_d<4,thrust::device_vector,bucket_search_parallel>();
+        helper_d<1,thrust::device_vector,bucket_search_parallel>(100,1.5,10);
+        helper_d<2,thrust::device_vector,bucket_search_parallel>(50,1.0001,10);
+        helper_d<2,thrust::device_vector,bucket_search_parallel>(50,1.5,10);
+        helper_d<2,thrust::device_vector,bucket_search_parallel>(20,2.1,10);
+        helper_d<3,thrust::device_vector,bucket_search_parallel>(10,1.9,10);
+        helper_d<3,thrust::device_vector,bucket_search_parallel>(10,1.0001,10);
+        helper_d<4,thrust::device_vector,bucket_search_parallel>(10,1.0001,10);
 #endif
     }
 
