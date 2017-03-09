@@ -82,7 +82,6 @@ class bucket_search_serial:
     public neighbour_search_base<bucket_search_serial<Traits>,
                                  Traits,
                                  bucket_search_serial_params<Traits>,
-                                 linked_list_iterator<Traits>,
                                  bucket_search_serial_query<Traits>> {
 
     typedef typename Traits::double_d double_d;
@@ -96,12 +95,11 @@ class bucket_search_serial:
     friend neighbour_search_base<bucket_search_serial<Traits>,
                                  Traits,
                                  bucket_search_serial_params<Traits>,
-                                 linked_list_iterator<Traits>,
                                  bucket_search_serial_query<Traits>>;
 
 
 public:
-    static constexpr bool unordered() {
+    static constexpr bool cheap_copy_and_delete_at_end() {
         return true;
     }
 
@@ -487,7 +485,7 @@ struct bucket_search_serial_query {
         for (int i=0; i<Traits::dimension; i++) {
             if (bucket[i] < 0) {
                 if (m_periodic[i]) {
-                    my_bucket[i] = m_end_bucket[i];
+                    my_bucket[i] = m_end_bucket[i] + bucket[i] + 1;
                     transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
                 } else {
                     outside = true;
@@ -496,7 +494,7 @@ struct bucket_search_serial_query {
             }
             if (bucket[i] > m_end_bucket[i]) {
                 if (m_periodic[i]) {
-                    my_bucket[i] = 0;
+                    my_bucket[i] = bucket[i] - m_end_bucket[i] - 1;
                     transpose[i] = (m_bounds.bmax-m_bounds.bmin)[i];
                 } else {
                     outside = true;
@@ -530,48 +528,49 @@ struct bucket_search_serial_query {
     }
 
     CUDA_HOST_DEVICE
-    bucket_value_type get_bucket(const double_d &position) const {
-        return m_point_to_bucket_index.find_bucket_index_vector(position);
-    }
+    iterator_range<bucket_iterator> get_buckets_near_point(const double_d &position, const double max_distance) const {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_radius = "<<);
+#endif
+ 
+        bucket_value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
 
-    CUDA_HOST_DEVICE
-    iterator_range<bucket_iterator> get_near_buckets(const bucket_reference &bucket) const {
-        int_d start,end;
+        ASSERT((bucket>int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
+
+        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_radius);
+        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_radius);
         for (int i=0; i<Traits::dimension; i++) {
-            if (m_periodic[i]) {
-                start[i] = bucket[i]-1;
-                end[i] = bucket[i]+1;
-            } else {
-                if (bucket[i] > 0) {
-                    start[i] = bucket[i]-1;
-                } else {
-                    start[i] = bucket[i];
-                }
-                if (bucket[i] < m_end_bucket[i]) {
-                    end[i] = bucket[i]+1;
-                } else {
+            if (!m_periodic[i]) {
+                if (start[i] < 0) {
+                    start[i] = 0;
+                } else if (end[i] >= m_end_bucket[i]) {
                     end[i] = bucket[i];
                 }
             }
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_near_buckets: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
+        LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
 #endif
  
         return iterator_range<bucket_iterator>(
-                bucket_iterator(start,end,start)
-                ,++bucket_iterator(start,end,end)
+                bucket_iterator(start,end,start,max_radius)
+                ,++bucket_iterator(start,end,end,max_radius)
                 );
     }
 
     CUDA_HOST_DEVICE
-    bucket_iterator begin() const {
-        return bucket_iterator(int_d(0),m_end_bucket,int_d(0));
+    bool get_children_buckets(const bucket_reference &bucket, std::array<bucket_value_type,2>& children) {
+        return false;
     }
+
     CUDA_HOST_DEVICE
-    bucket_iterator end() const {
-        return ++bucket_iterator(int_d(0),m_end_bucket,m_end_bucket);
+    iterator_range<bucket_iterator> get_root_buckets() const {
+        return iterator_range<bucket_iterator>(
+                bucket_iterator(int_d(0),m_end_bucket,int_d(0)),
+                ++bucket_iterator(int_d(0),m_end_bucket,m_end_bucket)
+                );
     }
+    
 
 };
 

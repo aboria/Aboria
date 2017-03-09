@@ -366,7 +366,7 @@ public:
     iterator erase (iterator i, bool update_neighbour_search = true) {
         if (i != end()-1) {
             *i = *(end()-1);
-            if (search.unordered() && searchable) {
+            if (search.cheap_copy_and_delete_at_end() && searchable) {
                 search.copy_points(end()-1,i);
             }
             traits_type::pop_back(data);
@@ -375,7 +375,7 @@ public:
             i = end();
         }
         if (searchable && update_neighbour_search) {
-            if (search.unordered()) {
+            if (search.cheap_copy_and_delete_at_end()) {
                 search.delete_points_at_end(begin(),end());
             } else {
                 search.embed_points(begin(),end());

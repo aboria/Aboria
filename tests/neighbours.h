@@ -249,7 +249,7 @@ For example,
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
-    template <typename Search>
+    template <typename Search, int LNormNumber>
     struct has_n_neighbours {
         unsigned int n;
         Search search;
@@ -259,7 +259,8 @@ For example,
 
         CUDA_HOST_DEVICE 
         void operator()(typename Search::reference i) {
-            auto tpl = box_search(search,get<typename Search::position>(i));
+            auto tpl = distance_search<LNormNumber>(
+                            search,get<typename Search::position>(i));
             TS_ASSERT_EQUALS(tpl.end()-tpl.begin(),n);
         }
     };
@@ -284,7 +285,6 @@ For example,
         double dx = 2.0/n;
 
     	double diameter = dx*1.00001;
-        unsigned int expect_n = std::pow(3,D);
 
         bool finished = false;
         while (finished != true) {
@@ -309,7 +309,8 @@ For example,
     	test.init_neighbour_search(min,max,diameter,periodic);
 #if defined(__aboria_use_thrust_algorithms__)
         thrust::for_each(test.begin(),test.end(),
-                has_n_neighbours<typename Test_type::query_type>(test.get_query(),expect_n));
+                has_n_neighbours<typename Test_type::query_type,
+                                 2>(test.get_query(),std::pow(3,D)));
 #else
         std::for_each(test.begin(),test.end(),
                 has_n_neighbours<typename Test_type::query_type>(test.get_query(),expect_n));
