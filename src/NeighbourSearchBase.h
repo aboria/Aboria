@@ -52,7 +52,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 
-
 template <typename IteratorType>
 struct iterator_range_with_transpose {
     typedef IteratorType iterator;
@@ -123,11 +122,10 @@ iterator_range<IteratorType> make_iterator_range(IteratorType&& begin, IteratorT
     return iterator_range<IteratorType>(begin,end);
 }
 
-template <typename Derived, typename Traits, typename Params, typename ConstIterator, typename QueryType>
+template <typename Derived, typename Traits, typename Params, typename QueryType>
 class neighbour_search_base {
 public:
 
-    typedef ConstIterator query_iterator;
     typedef QueryType query_type;
     typedef Params params_type;
     typedef typename Traits::double_d double_d;
@@ -487,6 +485,103 @@ public:
     int* m_linked_list_begin;
 
 };
+
+
+template <typename Traits, typename Iterator>
+class index_vector_iterator {
+    typedef typename Traits::double_d double_d;
+    typedef typename Traits::bool_d bool_d;
+    typedef typename Traits::value_type p_value_type;
+    typedef typename Traits::raw_reference p_reference;
+    typedef typename Traits::raw_pointer p_pointer;
+
+public:
+    typedef Traits traits_type;
+    typedef const p_pointer pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const p_reference reference;
+    typedef const p_reference value_type;
+	typedef std::ptrdiff_t difference_type;
+
+       
+    /// this constructor is used to start the iterator at the head of a bucket 
+    /// list
+    CUDA_HOST_DEVICE
+    index_vector_iterator(
+            Iterator begin,
+            const p_pointer& particles_begin):
+        m_current_index(begin),
+        m_particles_begin(particles_begin),
+    {}
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    linked_list_iterator& operator++() {
+        increment();
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    linked_list_iterator operator++(int) {
+        linked_list_iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    CUDA_HOST_DEVICE
+    size_t operator-(linked_list_iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator==(const linked_list_iterator& rhs) const {
+        return equal(rhs);
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const linked_list_iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+ private:
+    friend class boost::iterator_core_access;
+
+    CUDA_HOST_DEVICE
+    bool increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (index_vector_iterator):"); 
+#endif
+        ++m_current_index;
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (linked_list_iterator): m_current_index = "<<m_current_index); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(linked_list_iterator const& other) const {
+        return m_current_index == other.m_current_index;
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return *(m_particles_begin + m_current_index); }
+
+
+    Iterator m_current_index;
+    p_pointer m_particles_begin;
+};
+
+
 
 // assume that these iterators, and query functions, can be called from device code
 template <unsigned int D>

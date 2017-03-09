@@ -58,8 +58,8 @@ namespace Aboria {
 /// A const iterator to a set of neighbouring points. This iterator implements
 /// a STL forward iterator type
 // assume that these iterators, and query functions, are only called from device code
-template <typename Query>
-class box_search_iterator {
+template <typename Query, int L_NORM_NUMBER>
+class search_iterator {
 
     typedef typename Query::particle_iterator particle_iterator;
     typedef typename Query::bucket_iterator bucket_iterator;
@@ -76,6 +76,7 @@ class box_search_iterator {
     double_d m_r;
     double_d m_dx;
     const Query *m_query;
+    const double m_max_distance;
     iterator_range<bucket_iterator> m_bucket_range;
     bucket_iterator m_current_bucket;
     iterator_range_with_transpose<particle_iterator> m_particle_range;
@@ -89,16 +90,19 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    box_search_iterator():
+    search_iterator():
         m_valid(false)
     {}
 
     CUDA_HOST_DEVICE
-    box_search_iterator(const Query &query,const double_d &r):
+    search_iterator(const Query &query,
+                    const double_d &r,
+                    const double max_distance):
         m_valid(true),
         m_r(r),
         m_query(&query),
-        m_bucket_range(query.get_near_buckets(query.get_bucket(r))),
+        m_max_distance(max_distance),
+        m_bucket_range(query.get_buckets_near_point(r,max_distance)),
         m_current_bucket(m_bucket_range.begin()),
         m_particle_range(query.get_bucket_particles(*m_current_bucket)),
         m_current_particle(m_particle_range.begin())
@@ -107,7 +111,7 @@ public:
         if (m_valid && !check_candidate()) {
             increment();
         }
-        LOG(4,"\tconstructor (box_search_iterator): r = "<<m_r<<" m_current_bucket = "<<*m_current_bucket<<"m_current_particle position= "<<get<position>(*m_current_particle));
+        LOG(4,"\tconstructor (search_iterator): r = "<<m_r<<" m_current_bucket = "<<*m_current_bucket<<"m_current_particle position= "<<get<position>(*m_current_particle));
     }
     
     CUDA_HOST_DEVICE
@@ -119,18 +123,18 @@ public:
         return dereference();
     }
     CUDA_HOST_DEVICE
-    box_search_iterator& operator++() {
+    search_iterator& operator++() {
         increment();
         return *this;
     }
     CUDA_HOST_DEVICE
-    box_search_iterator operator++(int) {
-        box_search_iterator tmp(*this);
+    search_iterator operator++(int) {
+        search_iterator tmp(*this);
         operator++();
         return tmp;
     }
     CUDA_HOST_DEVICE
-    size_t operator-(box_search_iterator start) const {
+    size_t operator-(search_iterator start) const {
         size_t count = 0;
         while (start != *this) {
             start++;
@@ -139,11 +143,11 @@ public:
         return count;
     }
     CUDA_HOST_DEVICE
-    inline bool operator==(const box_search_iterator& rhs) {
+    inline bool operator==(const search_iterator& rhs) {
         return equal(rhs);
     }
     CUDA_HOST_DEVICE
-    inline bool operator!=(const box_search_iterator& rhs){
+    inline bool operator!=(const search_iterator& rhs){
         return !operator==(rhs);
     }
 
@@ -152,18 +156,37 @@ public:
 
 
     CUDA_HOST_DEVICE
-    bool equal(box_search_iterator const& other) const {
+    bool equal(search_iterator const& other) const {
         return m_valid ? 
                     m_current_particle == other.m_current_particle
                     : 
                     !other.m_valid;
     }
 
+
+    bool get_valid_bucket() {
+        for (;m_current_bucket != m_bucket_range.end(),++m_current_bucket) {
+            detail::bbox<dimension> bbox = query->get_bucket_bbox(m_current_bucket);
+            double accum = 0;
+            for (int i = 0; i < dimension; ++i) {
+                accum = accumulate_max_norm(accum, bbox.low[i]-m_r[i], bbox.high[i]-m_r[i]);
+                if (accum > m_max_distance) {
+                    break;
+                }
+            }
+            if (accum <= m_max_distance) {
+                return true;
+            }
+        }
+        // must have exhausted buckets
+        return false;
+    }
+
     CUDA_HOST_DEVICE
     void get_valid_candidate() {
         while (m_current_particle == m_particle_range.end()) {
             ++m_current_bucket;
-            if (m_current_bucket == m_bucket_range.end()) {
+            if (!get_valid_bucket()) {
                 m_valid = false;
                 break; 
             }
@@ -175,10 +198,53 @@ public:
     CUDA_HOST_DEVICE
     void go_to_next_candidate() {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tgo_to_next_candidate (box_search_iterator):"); 
+        LOG(4,"\tgo_to_next_candidate (search_iterator):"); 
 #endif
         ++m_current_particle;
         get_valid_candidate();
+    }
+
+    double accumulate_norm(const double accum, const double arg) {
+        switch (L_NORM_NUMBER) {
+            case -1:
+                const double value = std::abs(arg); 
+                if (value > accum) {
+                    accum = value;
+                }
+                break;
+            case 0:
+                const double value = arg != 0; 
+                accum += value;
+            case 1:
+                const double value = std::abs(arg); 
+                accum += value;
+                break;
+            default:
+                const double value = std::powi(arg,L_NORM_NUMBER); 
+                accum += value;
+        }
+    }
+
+    double accumulate_max_norm(const double accum, const double arg1, const double arg2) {
+        switch (L_NORM_NUMBER) {
+            case -1:
+                const double value = std::max(std::abs(arg1),std::abs(arg2)); 
+                if (value > accum) {
+                    accum = value;
+                }
+                break;
+            case 0:
+                const double value = (arg1 != 0) || (arg2 != 0); 
+                accum += value;
+            case 1:
+                const double value = std::max(std::abs(arg1),std::abs(arg2)); 
+                accum += value;
+                break;
+            default:
+                const double value = std::max(std::powi(arg1,L_NORM_NUMBER),
+                                              std::powi(arg2,L_NORM_NUMBER));
+                accum += value;
+        }
     }
 
     CUDA_HOST_DEVICE
@@ -186,10 +252,11 @@ public:
         //const double_d& p = get<position>(*m_current_particle) + m_particle_range.get_transpose();
         const double_d& p = get<position>(*m_current_particle); 
         const double_d& transpose = m_particle_range.get_transpose();
-        bool outside = false;
+        double accum = 0;
         for (int i=0; i < Traits::dimension; i++) {
             m_dx[i] = p[i] + transpose[i] - m_r[i];
-            if (std::abs(m_dx[i]) > m_query->get_min_bucket_size()[i]) {
+            accum = accumulate_norm(accum, m_dx[i]);
+            if (accum > m_max_distance) {
                 outside = true;
                 break;
             } 
@@ -203,7 +270,7 @@ public:
     CUDA_HOST_DEVICE
     void increment() {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (box_search_iterator):"); 
+        LOG(4,"\tincrement (search_iterator):"); 
 #endif
         bool found_good_candidate = false;
         while (!found_good_candidate && m_valid) {
@@ -217,7 +284,7 @@ public:
             
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (box_search_iterator): invalid = " << m_valid); 
+        LOG(4,"\tend increment (search_iterator): invalid = " << m_valid); 
 #endif
     }
 
@@ -232,12 +299,50 @@ public:
 
 
 template<typename Query,
-         typename SearchIterator = box_search_iterator<Query>>
+         typename SearchIterator = search_iterator<Query,-1>>
 iterator_range<SearchIterator> 
-box_search(const Query& query, 
-           const typename Query::double_d& box_centre) {
+chebyshev_search(const Query& query, 
+           const typename Query::double_d& centre,
+           const double max_distance) {
     return iterator_range<SearchIterator>(
-                 SearchIterator(query,box_centre)
+                 SearchIterator(query,box_centre,max_distance)
+                ,SearchIterator()
+            );
+}
+
+template<typename Query,
+         typename SearchIterator = search_iterator<Query,1>>
+iterator_range<SearchIterator> 
+manhatten_search(const Query& query, 
+           const typename Query::double_d& centre,
+           const double max_distance) {
+    return iterator_range<SearchIterator>(
+                 SearchIterator(query,box_centre,max_distance)
+                ,SearchIterator()
+            );
+}
+
+template<typename Query,
+         typename SearchIterator = search_iterator<Query,2>>
+iterator_range<SearchIterator> 
+euclidean_search(const Query& query, 
+           const typename Query::double_d& centre,
+           const double max_distance) {
+    return iterator_range<SearchIterator>(
+                 SearchIterator(query,box_centre,max_distance)
+                ,SearchIterator()
+            );
+}
+
+template<int LNormNumber,
+         typename Query,
+         typename SearchIterator = search_iterator<Query,L1NormNumber>>
+iterator_range<SearchIterator> 
+distance_search(const Query& query, 
+           const typename Query::double_d& centre,
+           const double max_distance) {
+    return iterator_range<SearchIterator>(
+                 SearchIterator(query,box_centre,max_distance)
                 ,SearchIterator()
             );
 }
