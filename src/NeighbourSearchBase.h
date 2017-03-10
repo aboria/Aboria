@@ -43,11 +43,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "detail/Algorithms.h"
 #include "detail/SpatialUtil.h"
+#include "detail/Distance.h"
 #include "Traits.h"
 #include "CudaInclude.h"
 #include "Vector.h"
 #include "Get.h"
 #include "Log.h"
+#include <stack>
 
 namespace Aboria {
 
@@ -585,39 +587,70 @@ public:
 
 template <unsigned int D, typename NodeTraits, unsigned int LNormNumber>
 class tree_query_iterator {
-    typedef tree_query_iterator<Traits,NodeTraits> iterator;
+    typedef tree_query_iterator<D,NodeTraits,LNormNumber> iterator;
     static const unsigned int dimension = D;
     typedef Vector<double,D> double_d;
     typedef Vector<int,D> int_d;
 
 public:
-    typedef const NodeTraits::pointer pointer;
+    typedef const typename NodeTraits::pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const NodeTraits::reference reference;
-    typedef const NodeTraits::value_type value_type;
+    typedef const typename NodeTraits::reference reference;
+    typedef const typename NodeTraits::value_type value_type;
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    tree_iterator():
+    tree_query_iterator():
         m_node(nullptr)
     {}
        
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
     CUDA_HOST_DEVICE
-    tree_iterator(pointer start_node,
+    tree_query_iterator(pointer start_node,
                   const double_d& query_point,
                   const double max_distance,
                   const unsigned int tree_levels=5):
+        m_query_point(query_point),
         m_max_distance2(
                 detail::distance_helper<LNormNumber>
                         ::get_value_to_accumulate(max_distance)),
-        m_node(start_node),
-        m_dists(0)
+        m_dists(0),
+        m_node(start_node)
     {
         m_stack.reserve(tree_levels);
         go_to_next_leaf();
     }
+
+
+    tree_query_iterator(const iterator& copy):
+        m_query_point(copy.m_query_point),
+        m_max_distance2(copy.m_max_distance2),
+        m_node(copy.m_node),
+        m_dists(copy.m_dists)
+    {
+        m_stack = copy.m_stack;
+        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+    }
+
+    iterator& operator=(const iterator& copy) {
+        m_query_point=copy.m_query_point;
+        m_max_distance2=copy.m_max_distance2;
+        m_node=copy.m_node;
+        m_dists=copy.m_dists;
+        m_stack = copy.m_stack;
+        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+    }
+
+    /*
+    iterator& operator=(iterator&& copy):
+        m_stack=std::move(copy.m_stack),
+        m_query_point(copy.m_query_point),
+        m_max_distance2(copy.m_max_distance2),
+        m_node(copy.m_node),
+        m_dists(copy.m_dists)
+    {}
+    */
 
 
     CUDA_HOST_DEVICE
@@ -661,23 +694,23 @@ public:
     friend class boost::iterator_core_access;
 
     void go_to_next_leaf() {
-        while(!NodeTraits::is_leaf_node(node)) {
+        while(!NodeTraits::is_leaf_node(*m_node)) {
             /* Which child branch should be taken first? */
-            const size_t idx = NodeTraits::get_dimension_index(m_node);
-            double val = query_point[idx];
-            double diff1 = val - NodeTraits::get_cut_low();
-            double diff2 = val - NodeTraits::get_cut_high();
+            const size_t idx = NodeTraits::get_dimension_index(*m_node);
+            double val = m_query_point[idx];
+            double diff1 = val - NodeTraits::get_cut_low(*m_node);
+            double diff2 = val - NodeTraits::get_cut_high(*m_node);
 
             pointer bestChild;
             pointer otherChild;
             double cut_dist;
             if ((diff1+diff2)<0) {
-                bestChild = NodeTraits::get_child1();
-                otherChild = NodeTraits::get_child2();
+                bestChild = NodeTraits::get_child1(m_node);
+                otherChild = NodeTraits::get_child2(m_node);
                 cut_dist = std::abs(diff2);
             } else {
-                bestChild = NodeTraits::get_child2();
-                otherChild = NodeTraits::get_child1();
+                bestChild = NodeTraits::get_child2(m_node);
+                otherChild = NodeTraits::get_child1(m_node);
                 cut_dist = std::abs(diff1);
             }
             
@@ -718,7 +751,7 @@ public:
         }
 
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (index_vector_iterator): m_current_index = "<<m_current_index); 
+        LOG(4,"\tend increment (tree_iterator): m_node = "<<m_node); 
 #endif
     }
 
@@ -733,13 +766,15 @@ public:
     { return *m_node; }
 
 
-    std::stack<pointer,double_d> m_stack;
+    std::stack<std::pair<pointer,double_d>> m_stack;
     double_d m_query_point;
     double m_max_distance2;
     pointer m_node;
+    double_d m_dists;
 };
 
 
+/*
 // assume that these iterators, and query functions, can be called from device code
 template <unsigned int D,unsigned int LNormNumber>
 class lattice_query_iterator {
@@ -814,33 +849,6 @@ public:
         return tmp;
     }
 
-    /*
-    CUDA_HOST_DEVICE
-    iterator operator+(const int n) {
-        iterator tmp(*this);
-        tmp.increment(n);
-        return tmp;
-    }
-
-    CUDA_HOST_DEVICE
-    iterator& operator+=(const int n) {
-        increment(n);
-        return *this;
-    }
-
-    CUDA_HOST_DEVICE
-    iterator& operator-=(const int n) {
-        increment(-n);
-        return *this;
-    }
-
-    CUDA_HOST_DEVICE
-    iterator operator-(const int n) {
-        iterator tmp(*this);
-        tmp.increment(-n);
-        return tmp;
-    }
-    */
 
     CUDA_HOST_DEVICE
     size_t operator-(iterator start) const {
@@ -913,7 +921,7 @@ private:
     }
 };
 
-
+*/
 
 
 // assume that these iterators, and query functions, can be called from device code
@@ -1044,6 +1052,8 @@ private:
     }
 };
 
+/*
+
 template <typename Traits>
 class lattice_iterator_with_hole {
     typedef typename Traits::double_d double_d;
@@ -1100,34 +1110,7 @@ public:
         return tmp;
     }
 
-    /*
-    CUDA_HOST_DEVICE
-    lattice_iterator_with_hole operator+(const int n) {
-        lattice_iterator_with_hole tmp(*this);
-        tmp.increment(n);
-        return tmp;
-    }
-
-    CUDA_HOST_DEVICE
-    lattice_iterator_with_hole& operator+=(const int n) {
-        increment(n);
-        return *this;
-    }
-
-    CUDA_HOST_DEVICE
-    lattice_iterator_with_hole& operator-=(const int n) {
-        increment(-n);
-        return *this;
-    }
-
-    CUDA_HOST_DEVICE
-    lattice_iterator_with_hole operator-(const int n) {
-        lattice_iterator_with_hole tmp(*this);
-        tmp.increment(-n);
-        return tmp;
-    }
-    */
-
+    
     CUDA_HOST_DEVICE
     size_t operator-(lattice_iterator_with_hole start) const {
         size_t count = 0;
@@ -1176,14 +1159,9 @@ private:
         }
     }
 
-    /*
-    CUDA_HOST_DEVICE
-    void increment(const int n) {
-        int collapsed_index = m_bucket_index.collapse_index_vector(m_index);
-        m_index = m_bucket_index.reassemble_index_vector(collapsed_index += n);
-    }
-    */
+   
 };
+*/
 
 
 
