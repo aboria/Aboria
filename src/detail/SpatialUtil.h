@@ -223,6 +223,12 @@ struct point_to_bucket_index {
     int find_bucket_index(const double_d &r) const {
         return m_bucket_index.collapse_index_vector(find_bucket_index_vector(r));
     }
+
+    inline 
+    CUDA_HOST_DEVICE
+    int find_max_bucket_point(const int_d &vindex) const {
+        return (vindex + 1)*m_bucket_side_length + m_bounds.bmin;
+    }
  
 };
 

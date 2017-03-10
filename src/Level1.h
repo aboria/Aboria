@@ -50,6 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Particles.h"
 #include "BucketSearchSerial.h"
 #include "BucketSearchParallel.h"
+#include "NanoFlannAdaptor.h"
 #include "PrintTuple.h"
 #include "Utils.h"
 

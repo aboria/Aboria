@@ -349,6 +349,18 @@ For example,
         helper_d<4,std::vector,bucket_search_parallel>(10,1.0001,10);
     }
 
+    void test_std_vector_nanoflann_adaptor(void) {
+        helper_single_particle<std::vector,nanoflann_adaptor>();
+        helper_two_particles<std::vector,nanoflann_adaptor>();
+        helper_d<1,std::vector,nanoflann_adaptor>(100,1.5,10);
+        helper_d<2,std::vector,nanoflann_adaptor>(50,1.0001,10);
+        helper_d<2,std::vector,nanoflann_adaptor>(50,1.5,10);
+        helper_d<2,std::vector,nanoflann_adaptor>(20,2.1,10);
+        helper_d<3,std::vector,nanoflann_adaptor>(10,1.9,10);
+        helper_d<3,std::vector,nanoflann_adaptor>(10,1.0001,10);
+        helper_d<4,std::vector,nanoflann_adaptor>(10,1.0001,10);
+    }
+
     void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__CUDACC__)
         helper_d<1,thrust::device_vector,bucket_search_serial>(100,1.5,10);

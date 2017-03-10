@@ -122,12 +122,11 @@ iterator_range<IteratorType> make_iterator_range(IteratorType&& begin, IteratorT
     return iterator_range<IteratorType>(begin,end);
 }
 
-template <typename Derived, typename Traits, typename Params, typename QueryType>
+template <typename Derived, typename Traits, typename QueryType>
 class neighbour_search_base {
 public:
 
     typedef QueryType query_type;
-    typedef Params params_type;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::iterator iterator;
@@ -503,6 +502,9 @@ public:
     typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
 
+    CUDA_HOST_DEVICE
+    index_vector_iterator() 
+    {}
        
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
@@ -580,6 +582,337 @@ public:
     Iterator m_current_index;
     p_pointer m_particles_begin;
 };
+
+template <unsigned int D, typename NodeTraits, unsigned int LNormNumber>
+class tree_query_iterator {
+    typedef tree_query_iterator<Traits,NodeTraits> iterator;
+    static const unsigned int dimension = D;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+
+public:
+    typedef const NodeTraits::pointer pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const NodeTraits::reference reference;
+    typedef const NodeTraits::value_type value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    tree_iterator():
+        m_node(nullptr)
+    {}
+       
+    /// this constructor is used to start the iterator at the head of a bucket 
+    /// list
+    CUDA_HOST_DEVICE
+    tree_iterator(pointer start_node,
+                  const double_d& query_point,
+                  const double max_distance,
+                  const unsigned int tree_levels=5):
+        m_max_distance2(
+                detail::distance_helper<LNormNumber>
+                        ::get_value_to_accumulate(max_distance)),
+        m_node(start_node),
+        m_dists(0)
+    {
+        m_stack.reserve(tree_levels);
+        go_to_next_leaf();
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    CUDA_HOST_DEVICE
+    size_t operator-(iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+ private:
+    friend class boost::iterator_core_access;
+
+    void go_to_next_leaf() {
+        while(!NodeTraits::is_leaf_node(node)) {
+            /* Which child branch should be taken first? */
+            const size_t idx = NodeTraits::get_dimension_index(m_node);
+            double val = query_point[idx];
+            double diff1 = val - NodeTraits::get_cut_low();
+            double diff2 = val - NodeTraits::get_cut_high();
+
+            pointer bestChild;
+            pointer otherChild;
+            double cut_dist;
+            if ((diff1+diff2)<0) {
+                bestChild = NodeTraits::get_child1();
+                otherChild = NodeTraits::get_child2();
+                cut_dist = std::abs(diff2);
+            } else {
+                bestChild = NodeTraits::get_child2();
+                otherChild = NodeTraits::get_child1();
+                cut_dist = std::abs(diff1);
+            }
+            
+            // if other child possible save it to stack for later
+            double save_dist = m_dists[idx];
+            m_dists[idx] = cut_dist;
+
+            // calculate norm of m_dists 
+            double accum = 0;
+            for (int i = 0; i < dimension; ++i) {
+                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
+            }
+            if (accum <= m_max_distance2) {
+                m_stack.push(std::make_pair(otherChild,m_dists));
+            }
+
+            // restore m_dists and move to bestChild
+            m_dists[idx] = save_dist;
+            m_node = bestChild;
+        }
+    }
+    
+    void pop_new_child_from_stack() {
+        std::tie(m_node,m_dists) = m_stack.top();
+        m_stack.pop();
+    }
+
+    CUDA_HOST_DEVICE
+    bool increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (tree_iterator):"); 
+#endif
+        if (m_stack.empty()) {
+            m_node = nullptr;
+        } else {
+            pop_new_child_from_stack();
+            go_to_next_leaf();
+        }
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (index_vector_iterator): m_current_index = "<<m_current_index); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        return m_node == other.m_node;
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return *m_node; }
+
+
+    std::stack<pointer,double_d> m_stack;
+    double_d m_query_point;
+    double m_max_distance2;
+    pointer m_node;
+};
+
+
+// assume that these iterators, and query functions, can be called from device code
+template <unsigned int D,unsigned int LNormNumber>
+class lattice_query_iterator {
+    typedef lattice_query_iterator<D,LNormNumber> iterator;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+
+    int_d m_min;
+    int_d m_max;
+    int_d m_index;
+    double_d m_index_point;
+    double_d m_query_point;
+    int_d m_query_index;
+    double m_max_distance2;
+    double_d m_box_size;
+    bool m_check_distance;
+public:
+    typedef const int_d* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const int_d& reference;
+    typedef const int_d value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    lattice_query_iterator(
+                     const int_d& min,
+                     const int_d& max,
+                     const int_d& start,
+                     const double_d& start_point,
+                     const double_d& query_point,
+                     const int_d& query_index,
+                     const double max_distance,
+                     const double_d& box_size):
+        m_min(min),
+        m_max(max),
+        m_index(start),
+        m_index_point(start_point),
+        m_query_point(query_point),
+        m_query_index(query_index),
+        m_max_distance2(
+                detail::distance_helper<LNormNumber>
+                        ::get_value_to_accumulate(max_distance)),
+        m_box_size(box_size),
+        m_check_distance(true)
+    {
+        if (distance_helper<LNormNumber>::norm(m_index_point)<m_max_distance2) {
+            increment();
+        } 
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator ->() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+
+    /*
+    CUDA_HOST_DEVICE
+    iterator operator+(const int n) {
+        iterator tmp(*this);
+        tmp.increment(n);
+        return tmp;
+    }
+
+    CUDA_HOST_DEVICE
+    iterator& operator+=(const int n) {
+        increment(n);
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    iterator& operator-=(const int n) {
+        increment(-n);
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    iterator operator-(const int n) {
+        iterator tmp(*this);
+        tmp.increment(-n);
+        return tmp;
+    }
+    */
+
+    CUDA_HOST_DEVICE
+    size_t operator-(iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+private:
+    friend class boost::iterator_core_access;
+
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        return (m_index == other.m_index).all();
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { 
+        return m_index; 
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+        if (m_check_distance) {
+            double distance;
+            do  {
+                for (int i=0; i<D; i++) {
+                    ++m_index[i];
+                    if (m_index[i] == m_query_index[i]) {
+                        m_check_distance = false;
+                    } else {
+                        m_index_dist[i] += m_box_size[i];
+                    }
+                    if (m_index[i] <= m_max[i]) break;
+                    if (i != D-1) {
+                        m_index[i] = m_min[i];
+                    } 
+                }
+                if (m_index[D-1] > m_max[D-1]) {
+                    distance = 0;
+                } else {
+                    distance = distance_helper<LNormNumber>::norm(m_index_dist);
+                }
+            } while (distance > m_max_distance2);
+        } else {
+            for (int i=0; i<D; i++) {
+                if (m_index[i] == m_query_index[i]) {
+                    m_check_distance = true;
+                }
+                ++m_index[i];
+                if (m_index[i] <= m_max[i]) break;
+                if (i != D-1) {
+                    m_index[i] = m_min[i];
+                } 
+            }
+        }
+    }
+};
+
 
 
 

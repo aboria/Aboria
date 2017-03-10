@@ -320,7 +320,7 @@ namespace nanoflann
 
 		const DataSource &data_source;
 
-		L1_Adaptor(const DataSource &_data_source) : data_source(_data_source) { }
+		L_inf_Adaptor(const DataSource &_data_source) : data_source(_data_source) { }
 
 		inline DistanceType operator()(const T* a, const size_t b_idx, size_t size, DistanceType worst_dist = -1) const
 		{
@@ -825,6 +825,10 @@ namespace nanoflann
 	template <typename Distance, class DatasetAdaptor,int DIM = -1, typename IndexType = size_t>
 	class KDTreeSingleIndexAdaptor
 	{
+        template <typename Traits>
+        friend class Aboria::nanoflann_adaptor;
+        template <typename Traits>
+        friend class Aboria::nanoflann_adaptor_query;
 	private:
 		/** Hidden copy constructor, to disallow copying indices (Not implemented) */
 		KDTreeSingleIndexAdaptor(const KDTreeSingleIndexAdaptor<Distance,DatasetAdaptor,DIM,IndexType>&);
@@ -931,6 +935,14 @@ namespace nanoflann
 
 		/** Standard destructor */
 		~KDTreeSingleIndexAdaptor() { }
+
+        const NodePtr get_root_node() {
+            return root_node;
+        }
+
+        const std::vector<IndexType>& get_vind() {
+            return vind;
+        }
 
 		/** Frees the previously-built index. Automatically called within buildIndex(). */
 		void freeIndex()
@@ -1422,39 +1434,6 @@ namespace nanoflann
 			}
 			dists[idx] = dst;
 		}
-
-	public:
-		/**  Stores the index in a binary file.
-		  *   IMPORTANT NOTE: The set of data points is NOT stored in the file, so when loading the index object it must be constructed associated to the same source of data points used while building it.
-		  * See the example: examples/saveload_example.cpp
-		  * \sa loadIndex  */
-		void saveIndex(FILE* stream)
-		{
-			save_value(stream, m_size);
-			save_value(stream, dim);
-			save_value(stream, root_bbox);
-			save_value(stream, m_leaf_max_size);
-			save_value(stream, vind);
-			save_tree(stream, root_node);
-		}
-
-		/**  Loads a previous index from a binary file.
-		  *   IMPORTANT NOTE: The set of data points is NOT stored in the file, so the index object must be constructed associated to the same source of data points used while building the index.
-		  * See the example: examples/saveload_example.cpp
-		  * \sa loadIndex  */
-		void loadIndex(FILE* stream)
-		{
-			load_value(stream, m_size);
-			load_value(stream, dim);
-			load_value(stream, root_bbox);
-			load_value(stream, m_leaf_max_size);
-			load_value(stream, vind);
-			load_tree(stream, root_node);
-		}
-
-	};   // class KDTree
-
-
 
 	public:
 		/**  Stores the index in a binary file.
