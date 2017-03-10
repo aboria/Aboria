@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "detail/Algorithms.h"
 #include "detail/SpatialUtil.h"
+#include "detail/Distance.h"
 #include "NeighbourSearchBase.h"
 #include "Traits.h"
 #include "CudaInclude.h"
@@ -55,53 +56,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Log.h"
 
 namespace Aboria {
-
-template <int LNormNumber>
-struct distance_helper {
-    static inline double get_value_to_accumulate(const double arg) {
-        switch (LNormNumber) {
-            case -1:
-                return std::abs(arg); 
-            case 0:
-                return arg != 0; 
-            case 1:
-                return std::abs(arg); 
-            case 2:
-                return std::pow(arg,LNormNumber);
-            case 3:
-                return std::abs(std::pow(arg,LNormNumber));
-            case 4:
-                return std::pow(arg,LNormNumber);
-            default:
-                return std::abs(std::pow(arg,LNormNumber));
-        }
-    }
-
-    static inline double do_accumulate(const double accum, const double value) {
-        switch (LNormNumber) {
-            case -1:
-                if (value > accum) {
-                    return value;
-                } else {
-                    return accum;
-                }
-            default:
-                return accum + value;
-        }
-    }
-
-    static inline double accumulate_norm(const double accum, const double arg) {
-        return do_accumulate(accum,get_value_to_accumulate(arg));
-    }
-    
-
-    static inline double accumulate_max_norm(const double accum, const double arg1, const double arg2) {
-        return do_accumulate(accum,std::max(get_value_to_accumulate(arg1),
-                                            get_value_to_accumulate(arg2)));
-    }
-};
-
- 
 
 /// A const iterator to a set of neighbouring points. This iterator implements
 /// a STL forward iterator type
@@ -215,6 +169,7 @@ public:
     }
 
 
+    /*
     bool get_valid_bucket() {
         for (; m_current_bucket != m_bucket_range.end(); ++m_current_bucket) {
             detail::bbox<dimension> bbox = m_query->get_bucket_bbox(*m_current_bucket);
@@ -236,12 +191,13 @@ public:
         // must have exhausted buckets
         return false;
     }
+    */
 
     CUDA_HOST_DEVICE
     void get_valid_candidate() {
         while (m_current_particle == m_particle_range.end()) {
             ++m_current_bucket;
-            if (!get_valid_bucket()) {
+            if (m_current_bucket == m_bucket_range.end()) {
 #ifndef __CUDA_ARCH__
                 LOG(4,"\tran out of buckets to search (search_iterator): m_current_bucket = "<<*m_current_bucket); 
 #endif
@@ -317,6 +273,18 @@ public:
     
 };
 
+
+/*
+template <typename bucket_iterator>
+iterator_range<bucket_iterator> 
+get_buckets_near_point(const double_d &position, const double max_distance, detail::cell_list_tag) {
+}
+
+template <typename bucket_iterator>
+iterator_range<bucket_iterator> 
+get_buckets_near_point(const double_d &position, const double max_distance, detail::kd_tree_tag) {
+}
+*/
 
 
 template<typename Query,

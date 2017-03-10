@@ -48,11 +48,52 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <iostream>
 #include <set>
 
-
 namespace Aboria {
 
 template <typename Traits>
+class nanoflann_adaptor; 
+
+template <typename Traits>
 class nanoflann_adaptor_query; 
+
+}
+
+#include "nanoflann/nanoflann.hpp"
+
+namespace Aboria {
+
+template< typename order_iterator, typename value_iterator >
+void reorder_destructive( order_iterator order_begin, order_iterator order_end, value_iterator v )  {
+    typedef typename std::iterator_traits< value_iterator >::value_type value_t;
+    typedef typename std::iterator_traits< order_iterator >::value_type index_t;
+    typedef typename std::iterator_traits< order_iterator >::difference_type diff_t;
+
+    diff_t remaining = order_end - 1 - order_begin;
+    for ( index_t s = index_t(); remaining > 0; ++ s ) {
+        index_t d = order_begin[s];
+        if ( d == (diff_t) -1 ) continue;
+        -- remaining;
+        value_t temp = v[s];
+        for ( index_t d2; d != s; d = d2 ) {
+            std::swap( temp, v[d] );
+            std::swap( order_begin[d], d2 = (diff_t) -1 );
+            -- remaining;
+        }
+        v[s] = temp;
+    }
+}
+
+namespace detail {
+
+template <typename Node>
+struct node_traits {
+};
+
+template <NanoFlannTreeType=>
+struct node_traits< {
+};
+
+}
 
 /// \brief Implements neighbourhood searching using a bucket search algorithm, dividing
 /// the domain into constant size "buckets".
@@ -71,7 +112,6 @@ template <typename Traits>
 class nanoflann_adaptor: 
     public neighbour_search_base<nanoflann_adaptor<Traits>,
                                  Traits,
-                                 nanoflann_adaptor_params<Traits>,
                                  nanoflann_adaptor_query<Traits>> {
 
     typedef typename Traits::double_d double_d;
@@ -79,16 +119,15 @@ class nanoflann_adaptor:
     typedef typename Traits::vector_int vector_int;
     typedef typename Traits::iterator iterator;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
+    static const unsigned int dimension = Traits::dimension;
 
     typedef neighbour_search_base<nanoflann_adaptor<Traits>,
                                  Traits,
-                                 nanoflann_adaptor_params<Traits>,
                                  nanoflann_adaptor_query<Traits>> base_type;
     friend base_type;
 
-    typdef nanoflann_adaptor<Traits>
     typedef nanoflann::KDTreeSingleIndexAdaptor<
-		L_inf_Adaptor<double, nanoflann_adaptor<Traits> > ,
+		nanoflann::L_inf_Adaptor<double, nanoflann_adaptor<Traits> > ,
 		nanoflann_adaptor<Traits>,
 		dimension 
 		> kd_tree_type;
@@ -112,7 +151,7 @@ public:
 
     // Must return the number of data points
 	inline size_t kdtree_get_point_count() const { 
-        return std::distance(m_particles_begin,m_particles_end);
+        return std::distance(this->m_particles_begin,this->m_particles_end);
     }
 
 	// Returns the distance between the vector "p1[0:size-1]" 
@@ -120,7 +159,7 @@ public:
 	inline double kdtree_distance(const double *p1, const size_t idx_p2,size_t /*size*/) const
 	{
         size_t ret = 0;
-        const double_d& p2 = *(get<position>(m_particles_begin)+idx_p2);
+        const double_d& p2 = *(get<position>(this->m_particles_begin)+idx_p2);
         for (int i = 0; i < dimension; ++i) {
            ret += (p1[i]-p2[i])*(p1[i]-p2[i]); 
         }
@@ -130,9 +169,9 @@ public:
 	// Returns the dim'th component of the idx'th point in the class:
 	// Since this is inlined and the "dim" argument is typically an immediate value, the
 	//  "if/else's" are actually solved at compile time.
-	inline T kdtree_get_pt(const size_t idx, int dim) const
+	inline double kdtree_get_pt(const size_t idx, int dim) const
 	{
-        const double_d& p = *(get<position>(m_particles_begin)+idx);
+        const double_d& p = *(get<position>(this->m_particles_begin)+idx);
         return p[dim];
 	}
 
@@ -142,22 +181,18 @@ public:
 	template <class BBOX>
 	bool kdtree_get_bbox(BBOX& bb) const { 
         for (int i = 0; i < dimension; ++i) {
-            bb[i].low = m_bounds.bmin[i];
+            bb[i].low = this->m_bounds.bmin[i];
         }
 	    return true;
     }
 
 private:
     void set_domain_impl() {
-        CHECK(!m_periodic.any(),"kd-tree does not work (yet) with periodic boundaries");
+        CHECK(!this->m_periodic.any(),"kd-tree does not work (yet) with periodic boundaries");
 
-        this->m_query.m_buckets_begin = iterator_to_raw_pointer(m_buckets.begin());
-        this->m_query.m_bucket_side_length = this->m_bucket_side_length;
         this->m_query.m_bounds.bmin = this->m_bounds.bmin;
         this->m_query.m_bounds.bmax = this->m_bounds.bmax;
         this->m_query.m_periodic = this->m_periodic;
-        this->m_query.m_end_bucket = m_size-1;
-        this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
     }
 
 
@@ -168,17 +203,20 @@ private:
 
     void embed_points_impl() {
         if (m_kd_tree != nullptr) {
-            delete kd_tree;
+            delete m_kd_tree;
         } else {
-            kd_tree = new kd_tree_type(dimension, 
-                                        *this, 
-                                        nanoflann::KDTreeSingleIndexAdaptorParams(m_n_particles_in_leaf) 
-                                        );
+            m_kd_tree = new kd_tree_type(
+                                dimension, 
+                                *this, 
+                                nanoflann::KDTreeSingleIndexAdaptorParams(
+                                    this->m_n_particles_in_leaf
+                                    ) 
+                            );
         }
-	    kd_tree->buildIndex();
+	    m_kd_tree->buildIndex();
 
+        this->m_query.m_kd_tree = m_kd_tree;
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
 
 
@@ -204,10 +242,19 @@ private:
 };
 
 
+
 // this is NOT going to work from device code because we are adapting
 // a host code only library
 template <typename Traits>
 struct nanoflann_adaptor_query {
+    const static unsigned int dimension = Traits::dimension;
+    typedef nanoflann::KDTreeSingleIndexAdaptor<
+		nanoflann::L_inf_Adaptor<double, nanoflann_adaptor<Traits> > ,
+		nanoflann_adaptor<Traits>,
+		dimension 
+		> kd_tree_type;
+
+    typedef typename node_traits<Node> node_traits_type;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
@@ -217,71 +264,46 @@ struct nanoflann_adaptor_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     typedef typename Traits::reference reference;
     typedef typename Traits::position position;
-    const static unsigned int dimension = Traits::dimension;
-    typedef std::vector<NodePtr> node_list_type;
-    typedef node_list_type::iterator bucket_iterator;
+    typedef typename tree_query_iterator<dimension,node_traits_type,-1>::iterator bucket_iterator;
     typedef typename bucket_iterator::reference bucket_reference;
     typedef typename bucket_iterator::value_type bucket_value_type;
-    typedef index_vector_iterator<Traits> particle_iterator;
+    typedef typename bucket_iterator::pointer pointer;
+    typedef ranges_iterator<Traits> particle_iterator;
 
     bool_d m_periodic;
     detail::bbox<dimension> m_bounds;
-
     raw_pointer m_particles_begin;
-    node_list_type m_query_nodes;
-    NodePtr m_root_node;
-    double m_max_distance;
-    double_d m_ref_point;
 
-    inline
-    nanoflann_adaptor_query():
-        m_periodic(),
-        m_particles_begin(),
-        m_buckets_begin()
-    {}
+    pointer m_root;
 
-    inline void addLeaf(const NodePtr node) {
-#ifndef NDEBUG
-        double dist = 0;
-        for (int i = 0; i < dimension; ++i) {
-            dist += std::min(
-                     distance.accum_dist(m_ref_point[i], node->bbox.low, dimension)
-                    ,distance.accum_dist(m_ref_point[i], node->bbox.high, dimension)
-                    );
-        }
-        ASSERT(dist < m_max_distance, "trying to add a leaf not within max distance, something wrong with kdtree");
-#endif
-        m_query_nodes.push_back(node);
-    }
-
-    inline DistanceType worstDist() const { return m_max_distance; }
-
-    iterator_range_with_transpose<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
+    iterator_range_with_transpose<particle_iterator> 
+    get_bucket_particles(const bucket_reference &bucket) const {
         ASSERT(!m_periodic.any(), "ERROR: kdtree doesnt work with periodic (yet)");
         double_d transpose(0); 
 
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_bucket_particles: looking in bucket "<<bucket);
 #endif        
+        
+        return iterator_range_with_transpose<particle_iterator>(
+                        particle_iterator(m_particles_begin + node_traits_type::begin(bucket),
+                        particle_iterator(m_particles_begin + node_traits_type::end(bucket),
+                        transpose);
     }
 
-    detail::bbox<dimension> get_bucket_bbox(const bucket_reference &bucket) const {
-        return detail::bbox<dimension>(bucket.bbox.low,bucket.bbox.high);
+    detail::bbox<dimension> 
+    get_bucket_bbox(const bucket_reference &bucket) const {
+        return detail::bbox<dimension>(bucket->bbox.low,bucket->bbox.high);
     }
 
-    iterator_range<bucket_iterator> get_buckets_near_point(const double_d &position, const double max_distance) const {
+    iterator_range<bucket_iterator> 
+    get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_radius = "<<);
+        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
- 
-        m_query_nodes.clear();
-
-        // this fills m_query_nodes
-        kd_tree.findNeighborLeafs(*this, position.data(), nanoflann::SearchParams());
-
         return iterator_range<bucket_iterator>(
-                m_query_nodes.begin(),
-                m_query_nodes.end()
+                tree_iterator(position,max_distance),
+                tree_iterator()
                 );
     }
 
@@ -295,12 +317,16 @@ struct nanoflann_adaptor_query {
         }
     }
 
+    /*
     iterator_range<bucket_iterator> get_root_buckets() const {
+        m_query_nodes.clear();
+        m_query_nodes.push_back(m_kd_tree.get_root_node());
         return iterator_range<bucket_iterator>(
-                m_root_node,
-                ++m_root_node,
+                m_query_nodes.begin(),
+                m_query_nodes.end()
                 );
     }
+    */
 
 };
 

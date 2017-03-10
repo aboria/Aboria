@@ -81,7 +81,6 @@ template <typename Traits>
 class bucket_search_serial: 
     public neighbour_search_base<bucket_search_serial<Traits>,
                                  Traits,
-                                 bucket_search_serial_params<Traits>,
                                  bucket_search_serial_query<Traits>> {
 
     typedef typename Traits::double_d double_d;
@@ -94,7 +93,6 @@ class bucket_search_serial:
 
     typedef neighbour_search_base<bucket_search_serial<Traits>,
                                  Traits,
-                                 bucket_search_serial_params<Traits>,
                                  bucket_search_serial_query<Traits>> base_type;
 
     friend base_type;

@@ -72,7 +72,6 @@ template <typename Traits>
 class bucket_search_parallel: 
     public neighbour_search_base<bucket_search_parallel<Traits>,
                                  Traits,
-                                 bucket_search_parallel_params<Traits>,
                                  bucket_search_parallel_query<Traits>> {
 
     typedef typename Traits::double_d double_d;
@@ -86,7 +85,6 @@ class bucket_search_parallel:
 
     typedef neighbour_search_base<bucket_search_parallel<Traits>,
                                  Traits,
-                                 bucket_search_parallel_params<Traits>,
                                  bucket_search_parallel_query<Traits>> base_type;
 
     friend base_type;
@@ -383,6 +381,8 @@ struct bucket_search_parallel_query {
                 );
     }
 
+
+    template <unsigned int LNormNumber>
     CUDA_HOST_DEVICE
     iterator_range<bucket_iterator> get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
