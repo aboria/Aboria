@@ -62,6 +62,8 @@ class nanoflann_adaptor_query;
 
 namespace Aboria {
 
+namespace detail {
+
 template< typename order_iterator, typename value_iterator >
 void reorder_destructive( order_iterator order_begin, order_iterator order_end, value_iterator v )  {
     typedef typename std::iterator_traits< value_iterator >::value_type value_t;
@@ -83,16 +85,14 @@ void reorder_destructive( order_iterator order_begin, order_iterator order_end, 
     }
 }
 
-namespace detail {
 
-template <typename Node>
-struct node_traits {
-};
-
-template <NanoFlannTreeType=>
-struct node_traits< {
-};
-
+template <typename Traits>
+using nanoflann_kd_tree_type = 
+        nanoflann::KDTreeSingleIndexAdaptor<
+            nanoflann::L_inf_Adaptor<double, nanoflann_adaptor<Traits> > ,
+            nanoflann_adaptor<Traits>,
+            Traits::dimension 
+        >;
 }
 
 /// \brief Implements neighbourhood searching using a bucket search algorithm, dividing
@@ -126,11 +126,7 @@ class nanoflann_adaptor:
                                  nanoflann_adaptor_query<Traits>> base_type;
     friend base_type;
 
-    typedef nanoflann::KDTreeSingleIndexAdaptor<
-		nanoflann::L_inf_Adaptor<double, nanoflann_adaptor<Traits> > ,
-		nanoflann_adaptor<Traits>,
-		dimension 
-		> kd_tree_type;
+    typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
 
 
 public:
@@ -215,7 +211,12 @@ private:
         }
 	    m_kd_tree->buildIndex();
 
-        this->m_query.m_kd_tree = m_kd_tree;
+        detail::reorder_destructive(
+                m_kd_tree->get_vind().begin(), 
+                m_kd_tree->get_vind().end(), 
+                this->m_particles_begin);
+
+        this->m_query.m_root = m_kd_tree->get_root();
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
     }
 
@@ -248,13 +249,10 @@ private:
 template <typename Traits>
 struct nanoflann_adaptor_query {
     const static unsigned int dimension = Traits::dimension;
-    typedef nanoflann::KDTreeSingleIndexAdaptor<
-		nanoflann::L_inf_Adaptor<double, nanoflann_adaptor<Traits> > ,
-		nanoflann_adaptor<Traits>,
-		dimension 
-		> kd_tree_type;
-
-    typedef typename node_traits<Node> node_traits_type;
+    typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
+    typedef typename kd_tree_type::Node value_type;
+    typedef value_type& reference;
+    typedef value_type* pointer;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
@@ -262,12 +260,7 @@ struct nanoflann_adaptor_query {
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
-    typedef typename Traits::reference reference;
-    typedef typename Traits::position position;
-    typedef typename tree_query_iterator<dimension,node_traits_type,-1>::iterator bucket_iterator;
-    typedef typename bucket_iterator::reference bucket_reference;
-    typedef typename bucket_iterator::value_type bucket_value_type;
-    typedef typename bucket_iterator::pointer pointer;
+    typedef tree_query_iterator<dimension,nanoflann_adaptor_query,-1> query_iterator;
     typedef ranges_iterator<Traits> particle_iterator;
 
     bool_d m_periodic;
@@ -276,8 +269,34 @@ struct nanoflann_adaptor_query {
 
     pointer m_root;
 
+    /*
+     * functions for tree_query_iterator
+     */
+    bool is_leaf_node(reference bucket) {
+        return (bucket->child1 == NULL) && (bucket->child2 == NULL);
+    }
+    size_t get_dimension_index(reference bucket) {
+        return bucket->node_type.sub.divfeat;
+    }
+    double get_cut_low(reference bucket) {
+        return bucket->node_type.sub.divlow;
+    }
+    double get_cut_high(reference bucket) {
+        return bucket->node_type.sub.divhigh;
+    }
+    pointer get_child1(pointer bucket) {
+	    return bucket->child1;
+    }
+    pointer get_child2(pointer bucket) {
+	    return bucket->child2;
+    }
+    /*
+     * end functions for tree_query_iterator
+     */
+           
+
     iterator_range_with_transpose<particle_iterator> 
-    get_bucket_particles(const bucket_reference &bucket) const {
+    get_bucket_particles(const reference bucket) const {
         ASSERT(!m_periodic.any(), "ERROR: kdtree doesnt work with periodic (yet)");
         double_d transpose(0); 
 
@@ -286,28 +305,29 @@ struct nanoflann_adaptor_query {
 #endif        
         
         return iterator_range_with_transpose<particle_iterator>(
-                        particle_iterator(m_particles_begin + node_traits_type::begin(bucket),
-                        particle_iterator(m_particles_begin + node_traits_type::end(bucket),
+                        particle_iterator(m_particles_begin + bucket.node_type.lr.left),
+                        particle_iterator(m_particles_begin + bucket.node_type.lr.right),
                         transpose);
     }
 
     detail::bbox<dimension> 
-    get_bucket_bbox(const bucket_reference &bucket) const {
+    get_bucket_bbox(const reference bucket) const {
         return detail::bbox<dimension>(bucket->bbox.low,bucket->bbox.high);
     }
 
-    iterator_range<bucket_iterator> 
+    iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
-        return iterator_range<bucket_iterator>(
-                tree_iterator(position,max_distance),
-                tree_iterator()
+        return iterator_range<query_iterator>(
+                query_iterator(position,max_distance),
+                query_iterator()
                 );
     }
 
-    bool get_children_buckets(const bucket_reference &bucket, std::array<bucket_value_type,2>& children) {
+    /*
+    bool get_children_buckets(const reference &bucket, std::array<value_type,2>& children) {
 		if ((bucket->child1 == NULL)&&(bucket->child2 == NULL)) {
             return false;
         } else {
@@ -317,11 +337,10 @@ struct nanoflann_adaptor_query {
         }
     }
 
-    /*
-    iterator_range<bucket_iterator> get_root_buckets() const {
+    iterator_range<query_iterator> get_root_buckets() const {
         m_query_nodes.clear();
         m_query_nodes.push_back(m_kd_tree.get_root_node());
-        return iterator_range<bucket_iterator>(
+        return iterator_range<query_iterator>(
                 m_query_nodes.begin(),
                 m_query_nodes.end()
                 );

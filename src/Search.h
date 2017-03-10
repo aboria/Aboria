@@ -64,7 +64,7 @@ template <typename Query, int LNormNumber>
 class search_iterator {
 
     typedef typename Query::particle_iterator particle_iterator;
-    typedef typename Query::bucket_iterator bucket_iterator;
+    typedef typename Query::query_iterator query_iterator;
     typedef typename Query::traits_type Traits;
     static const unsigned int dimension = Traits::dimension;
 
@@ -81,8 +81,8 @@ class search_iterator {
     const Query *m_query;
     double m_max_distance;
     double m_max_distance2;
-    iterator_range<bucket_iterator> m_bucket_range;
-    bucket_iterator m_current_bucket;
+    iterator_range<query_iterator> m_bucket_range;
+    query_iterator m_current_bucket;
     iterator_range_with_transpose<particle_iterator> m_particle_range;
     particle_iterator m_current_particle;
 
@@ -106,7 +106,7 @@ public:
         m_r(r),
         m_query(&query),
         m_max_distance(max_distance),
-        m_max_distance2(distance_helper<LNormNumber>::get_value_to_accumulate(max_distance)),
+        m_max_distance2(detail::distance_helper<LNormNumber>::get_value_to_accumulate(max_distance)),
         m_bucket_range(query.get_buckets_near_point(r,max_distance)),
         m_current_bucket(m_bucket_range.begin()),
         m_particle_range(query.get_bucket_particles(*m_current_bucket)),
@@ -232,7 +232,7 @@ public:
         bool outside = false;
         for (int i=0; i < Traits::dimension; i++) {
             m_dx[i] = p[i] + transpose[i] - m_r[i];
-            accum = distance_helper<LNormNumber>::accumulate_norm(accum, m_dx[i]);
+            accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum, m_dx[i]);
             if (accum > m_max_distance2) {
                 outside = true;
                 break;
@@ -275,13 +275,13 @@ public:
 
 
 /*
-template <typename bucket_iterator>
-iterator_range<bucket_iterator> 
+template <typename query_iterator>
+iterator_range<query_iterator> 
 get_buckets_near_point(const double_d &position, const double max_distance, detail::cell_list_tag) {
 }
 
-template <typename bucket_iterator>
-iterator_range<bucket_iterator> 
+template <typename query_iterator>
+iterator_range<query_iterator> 
 get_buckets_near_point(const double_d &position, const double max_distance, detail::kd_tree_tag) {
 }
 */
