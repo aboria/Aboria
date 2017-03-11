@@ -292,12 +292,10 @@ struct bucket_search_parallel_query {
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
-    typedef typename Traits::reference reference;
-    typedef typename Traits::position position;
     const static unsigned int dimension = Traits::dimension;
     typedef lattice_iterator<dimension> query_iterator;
-    typedef typename query_iterator::reference bucket_reference;
-    typedef typename query_iterator::value_type bucket_value_type;
+    typedef typename query_iterator::reference reference;
+    typedef typename query_iterator::value_type value_type;
     typedef ranges_iterator<Traits> particle_iterator;
 
     raw_pointer m_particles_begin;
@@ -325,7 +323,7 @@ struct bucket_search_parallel_query {
 
 
     CUDA_HOST_DEVICE
-    iterator_range_with_transpose<particle_iterator> get_bucket_particles(const bucket_reference &bucket) const {
+    iterator_range_with_transpose<particle_iterator> get_bucket_particles(const reference bucket) const {
 
         int_d my_bucket(bucket);
         particle_iterator end;
@@ -374,7 +372,7 @@ struct bucket_search_parallel_query {
     }
 
     CUDA_HOST_DEVICE
-    detail::bbox<dimension> get_bucket_bbox(const bucket_reference &bucket) const {
+    detail::bbox<dimension> get_bucket_bbox(const reference bucket) const {
         return detail::bbox<dimension>(
                 bucket*m_bucket_side_length + m_bounds.bmin,
                 (bucket+1)*m_bucket_side_length + m_bounds.bmin
@@ -382,16 +380,17 @@ struct bucket_search_parallel_query {
     }
 
 
-    template <unsigned int LNormNumber>
+    template <int LNormNumber=-1>
     CUDA_HOST_DEVICE
-    iterator_range<query_iterator> get_buckets_near_point(const double_d &position, const double max_distance) const {
+    iterator_range<query_iterator> 
+    get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
  
         ASSERT((position >= m_bounds.bmin).all(),"point position less than min bound");
         ASSERT((position < m_bounds.bmax).all(),"point position greater than or equal to max bound");
-        bucket_value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
+        value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
         ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
 
         int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
@@ -416,7 +415,7 @@ struct bucket_search_parallel_query {
 
     /*
     CUDA_HOST_DEVICE
-    bool get_children_buckets(const bucket_reference &bucket, std::array<bucket_value_type,2>& children) {
+    bool get_children_buckets(const bucket_reference &bucket, std::array<value_type,2>& children) {
         return false;
     }
 

@@ -585,18 +585,18 @@ public:
     p_pointer m_particles_begin;
 };
 
-template <unsigned int D, typename NodeTraits, unsigned int LNormNumber>
+template <unsigned int D, typename Query, int LNormNumber>
 class tree_query_iterator {
-    typedef tree_query_iterator<D,NodeTraits,LNormNumber> iterator;
+    typedef tree_query_iterator<D,Query,LNormNumber> iterator;
     static const unsigned int dimension = D;
     typedef Vector<double,D> double_d;
     typedef Vector<int,D> int_d;
 
 public:
-    typedef const typename NodeTraits::pointer pointer;
+    typedef const typename Query::pointer pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const typename NodeTraits::reference reference;
-    typedef const typename NodeTraits::value_type value_type;
+    typedef const typename Query::reference reference;
+    typedef const typename Query::value_type value_type;
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
@@ -610,15 +610,18 @@ public:
     tree_query_iterator(pointer start_node,
                   const double_d& query_point,
                   const double max_distance,
-                  const unsigned int tree_levels=5):
+                  const Query *query
+                  ):
+
         m_query_point(query_point),
         m_max_distance2(
                 detail::distance_helper<LNormNumber>
                         ::get_value_to_accumulate(max_distance)),
         m_dists(0),
+        m_query(query),
         m_node(start_node)
     {
-        m_stack.reserve(tree_levels);
+        m_stack.reserve(m_query->get_max_levels());
         go_to_next_leaf();
     }
 
@@ -634,11 +637,12 @@ public:
     }
 
     iterator& operator=(const iterator& copy) {
-        m_query_point=copy.m_query_point;
-        m_max_distance2=copy.m_max_distance2;
+        m_query_point = copy.m_query_point;
+        m_max_distance2 = copy.m_max_distance2;
         m_node=copy.m_node;
         m_dists=copy.m_dists;
         m_stack = copy.m_stack;
+        return *this;
         //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
     }
 
@@ -694,23 +698,23 @@ public:
     friend class boost::iterator_core_access;
 
     void go_to_next_leaf() {
-        while(!NodeTraits::is_leaf_node(*m_node)) {
+        while(!m_query->is_leaf_node(*m_node)) {
             /* Which child branch should be taken first? */
-            const size_t idx = NodeTraits::get_dimension_index(*m_node);
+            const size_t idx = m_query->get_dimension_index(*m_node);
             double val = m_query_point[idx];
-            double diff1 = val - NodeTraits::get_cut_low(*m_node);
-            double diff2 = val - NodeTraits::get_cut_high(*m_node);
+            double diff1 = val - m_query->get_cut_low(*m_node);
+            double diff2 = val - m_query->get_cut_high(*m_node);
 
             pointer bestChild;
             pointer otherChild;
             double cut_dist;
             if ((diff1+diff2)<0) {
-                bestChild = NodeTraits::get_child1(m_node);
-                otherChild = NodeTraits::get_child2(m_node);
+                bestChild = m_query->get_child1(m_node);
+                otherChild = m_query->get_child2(m_node);
                 cut_dist = std::abs(diff2);
             } else {
-                bestChild = NodeTraits::get_child2(m_node);
-                otherChild = NodeTraits::get_child1(m_node);
+                bestChild = m_query->get_child2(m_node);
+                otherChild = m_query->get_child1(m_node);
                 cut_dist = std::abs(diff1);
             }
             
@@ -769,8 +773,9 @@ public:
     std::stack<std::pair<pointer,double_d>> m_stack;
     double_d m_query_point;
     double m_max_distance2;
-    pointer m_node;
+    const value_type* m_node;
     double_d m_dists;
+    const Query *m_query;
 };
 
 

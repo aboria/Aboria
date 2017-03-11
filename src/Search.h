@@ -116,7 +116,7 @@ public:
         if (m_valid && !check_candidate()) {
             increment();
         }
-        LOG(4,"\tconstructor (search_iterator): r = "<<m_r<<" m_current_bucket = "<<*m_current_bucket<<"m_current_particle position= "<<get<position>(*m_current_particle));
+        LOG(4,"\tconstructor (search_iterator): r = "<<m_r<<"m_current_particle position= "<<get<position>(*m_current_particle));
     }
     
     CUDA_HOST_DEVICE
