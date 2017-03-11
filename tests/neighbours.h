@@ -247,20 +247,23 @@ For example,
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
-    template <typename Search, int LNormNumber>
+    template <typename Particles, int LNormNumber>
     struct has_n_neighbours {
+        typedef typename Particles::query_type query_type;
+        typedef typename Particles::position position;
+        typedef typename Particles::reference reference;
         unsigned int n;
         double max_distance;
-        Search search;
+        query_type query;
 
         CUDA_HOST_DEVICE 
-        has_n_neighbours(const Search& search, const double max_distance, const unsigned int n):
-            search(search),n(n),max_distance(max_distance) {}
+        has_n_neighbours(const query_type& query, 
+                const double max_distance, const unsigned int n):
+            query(query),n(n),max_distance(max_distance) {}
 
         CUDA_HOST_DEVICE 
-        void operator()(typename Search::reference i) {
-            auto tpl = distance_search<LNormNumber>(
-                            search,get<typename Search::position>(i),max_distance);
+        void operator()(reference i) {
+            auto tpl = distance_search<LNormNumber>(query,get<position>(i),max_distance);
             TS_ASSERT_EQUALS(tpl.end()-tpl.begin(),n);
         }
     };
@@ -313,15 +316,13 @@ For example,
             n_expect = 1 + 4*n_expect;
             std::cout << "L2 norm test (r="<<r<<"): expecting "<<n_expect<<" points"<<std::endl;
             Aboria::detail::for_each(test.begin(),test.end(),
-                    has_n_neighbours<typename Test_type::query_type,
-                    2>(test.get_query(),r,n_expect));
+                    has_n_neighbours<Test_type,2>(test.get_query(),r,n_expect));
         }
         // Box search (Linf)
         int n_expect = std::pow(2*int(std::floor(r)) + 1,D);
         std::cout << "Linf norm test (r="<<r<<", D="<<D<<"): expecting "<<n_expect<<" points"<<std::endl;
         Aboria::detail::for_each(test.begin(),test.end(),
-                has_n_neighbours<typename Test_type::query_type,
-                                 -1>(test.get_query(),r,n_expect));
+                has_n_neighbours<Test_type,-1>(test.get_query(),r,n_expect));
 
     }
 

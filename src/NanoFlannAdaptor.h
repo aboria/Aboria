@@ -272,6 +272,9 @@ struct nanoflann_adaptor_query {
     /*
      * functions for tree_query_iterator
      */
+    bool get_max_levels() {
+        return 5;
+    }
     bool is_leaf_node(reference bucket) {
         return (bucket->child1 == NULL) && (bucket->child2 == NULL);
     }
@@ -315,13 +318,14 @@ struct nanoflann_adaptor_query {
         return detail::bbox<dimension>(bucket->bbox.low,bucket->bbox.high);
     }
 
+    template <int LNormNumber=-1>
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(position,max_distance),
+                query_iterator(m_root,position,max_distance,this),
                 query_iterator()
                 );
     }
