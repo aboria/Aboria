@@ -593,10 +593,10 @@ class tree_query_iterator {
     typedef Vector<int,D> int_d;
 
 public:
-    typedef const typename Query::pointer pointer;
+    typedef typename Query::value_type const value_type;
+    typedef const value_type* pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const typename Query::reference reference;
-    typedef const typename Query::value_type value_type;
+    typedef const value_type& reference;
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
@@ -607,7 +607,7 @@ public:
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
     CUDA_HOST_DEVICE
-    tree_query_iterator(pointer start_node,
+    tree_query_iterator(const value_type* start_node,
                   const double_d& query_point,
                   const double max_distance,
                   const Query *query
@@ -621,7 +621,7 @@ public:
         m_query(query),
         m_node(start_node)
     {
-        m_stack.reserve(m_query->get_max_levels());
+        //m_stack.reserve(m_query->get_max_levels());
         go_to_next_leaf();
     }
 

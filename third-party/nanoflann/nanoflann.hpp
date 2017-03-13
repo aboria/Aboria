@@ -936,11 +936,11 @@ namespace nanoflann
 		/** Standard destructor */
 		~KDTreeSingleIndexAdaptor() { }
 
-        const NodePtr get_root_node() {
+        NodePtr get_root_node() {
             return root_node;
         }
 
-        const std::vector<IndexType>& get_vind() {
+        std::vector<IndexType>& get_vind() {
             return vind;
         }
 

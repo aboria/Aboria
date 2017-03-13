@@ -38,6 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NEIGHBOURS_H_
 
 #include <cxxtest/TestSuite.h>
+#include <chrono>
+typedef std::chrono::system_clock Clock;
 
 #include "Aboria.h"
 
@@ -285,64 +287,136 @@ For example,
 
     }
 
+    template<unsigned int D, 
+             template <typename,typename> class VectorType,
+             template <typename> class SearchMethod>
+    void helper_d_non_periodic(const int N, const double r, const int neighbour_n) {
+        ABORIA_VARIABLE(neighbours,int,"number of neighbours")
+    	typedef Particles<std::tuple<neighbours>,D,VectorType,SearchMethod> particles_type;
+        typedef position_d<D> position;
+        typedef Vector<double,D> double_d;
+        typedef Vector<bool,D> bool_d;
+        typedef Vector<unsigned int,D> uint_d;
+    	double_d min(-1);
+    	double_d max(1);
+    	bool_d periodic(false);
+        particles_type particles(N);
+        double r2 = r*r;
+
+
+        std::cout << "non_periodic random test (D="<<D<<" N="<<N<<" r="<<r<<"):" << std::endl;
+
+        unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+        std::default_random_engine gen(seed1); 
+        std::uniform_real_distribution<double> uniform(-1,1);
+        for (int i=0; i<N; ++i) {
+            for (int d = 0; d < D; ++d) {
+                get<position>(particles)[i][d] = uniform(gen);
+            }
+        }
+
+    	particles.init_neighbour_search(min,max,periodic,neighbour_n);
+
+        // Aboria search
+        
+        auto t0 = Clock::now();
+        Aboria::detail::for_each(particles.begin(),particles.end(),
+                [&](typename particles_type::reference i) {
+                    int count = 0;
+                    //std::cout << "position of i = "<<get<position>(i)<<std::endl;
+                    for (auto tpl: euclidean_search(particles.get_query(),get<position>(i),r)) {
+                        typename particles_type::const_reference j = std::get<0>(tpl);
+                        //std::cout << "position of j = "<<get<position>(j)<<std::endl;
+                        TS_ASSERT_LESS_THAN_EQUALS((get<position>(i)-get<position>(j)).squaredNorm(),r2);
+                        count++;
+                    }
+                    get<neighbours>(i) = count;
+                });
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt_aboria = t1 - t0;
+
+        // brute force search
+        t0 = Clock::now();
+        Aboria::detail::for_each(particles.begin(),particles.end(),
+                [&](typename particles_type::reference i) {
+                    int count = 0;
+                    for (typename particles_type::const_reference j: particles) {
+                        if ((get<position>(i)-get<position>(j)).squaredNorm() <= r2) {
+                            count++;
+                        }
+                    }
+                    TS_ASSERT_EQUALS(count,get<neighbours>(i));
+                    if (get<id>(i)==0) {
+                        std::cout << "\tfor id = 0 found "<<get<neighbours>(i)
+                                  <<" neighbours and expected "<<count
+                                  <<" neighbours"<<std::endl;
+                    }
+                });
+        t1 = Clock::now();
+        std::chrono::duration<double> dt_brute = t1 - t0;
+        std::cout << "\ttiming result: Aboria = "<<dt_aboria.count()
+                  <<" versus brute force = "<<dt_brute.count()<<std::endl;
+    }
+
+    
+
+    template<template <typename,typename> class VectorType,
+             template <typename> class SearchMethod>
+    void helper_d_test_list_periodic() {
+        helper_d<1,VectorType,SearchMethod>(100,1.5,10);
+        helper_d<2,VectorType,SearchMethod>(50,1.0001,10);
+        helper_d<2,VectorType,SearchMethod>(50,1.5,10);
+        helper_d<2,VectorType,SearchMethod>(20,2.1,10);
+        helper_d<3,VectorType,SearchMethod>(10,1.9,10);
+        helper_d<3,VectorType,SearchMethod>(10,1.0001,10);
+        helper_d<4,VectorType,SearchMethod>(10,1.0001,10);
+    }
+
+    template<template <typename,typename> class VectorType,
+             template <typename> class SearchMethod>
+    void helper_d_test_list_non_periodic() {
+        helper_d_non_periodic<1,VectorType,SearchMethod>(1000,0.1,10);
+        helper_d_non_periodic<1,VectorType,SearchMethod>(1000,0.1,100);
+        helper_d_non_periodic<2,VectorType,SearchMethod>(1000,0.1,10);
+        helper_d_non_periodic<2,VectorType,SearchMethod>(1000,0.5,10);
+        helper_d_non_periodic<2,VectorType,SearchMethod>(5000,0.2,1);
+        helper_d_non_periodic<3,VectorType,SearchMethod>(5000,0.2,100);
+        helper_d_non_periodic<3,VectorType,SearchMethod>(5000,0.2,10);
+        helper_d_non_periodic<3,VectorType,SearchMethod>(5000,0.2,1);
+        helper_d_non_periodic<4,VectorType,SearchMethod>(5000,0.2,10);
+    }
+
     void test_std_vector_bucket_search_serial(void) {
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
-        helper_d<1,std::vector,bucket_search_serial>(100,1.5,10);
-        helper_d<2,std::vector,bucket_search_serial>(50,1.0001,10);
-        helper_d<2,std::vector,bucket_search_serial>(50,1.5,10);
-        helper_d<2,std::vector,bucket_search_serial>(20,2.1,10);
-        helper_d<3,std::vector,bucket_search_serial>(10,1.9,10);
-        helper_d<3,std::vector,bucket_search_serial>(10,1.0001,10);
-        helper_d<4,std::vector,bucket_search_serial>(10,1.0001,10);
+       
+        helper_d_test_list_periodic<std::vector,bucket_search_serial>();
+        helper_d_test_list_non_periodic<std::vector,bucket_search_serial>();
     }
 
     void test_std_vector_bucket_search_parallel(void) {
         helper_single_particle<std::vector,bucket_search_parallel>();
         helper_two_particles<std::vector,bucket_search_parallel>();
-        helper_d<1,std::vector,bucket_search_parallel>(100,1.5,10);
-        helper_d<2,std::vector,bucket_search_parallel>(50,1.0001,10);
-        helper_d<2,std::vector,bucket_search_parallel>(50,1.5,10);
-        helper_d<2,std::vector,bucket_search_parallel>(20,2.1,10);
-        helper_d<3,std::vector,bucket_search_parallel>(10,1.9,10);
-        helper_d<3,std::vector,bucket_search_parallel>(10,1.0001,10);
-        helper_d<4,std::vector,bucket_search_parallel>(10,1.0001,10);
+
+        helper_d_test_list_periodic<std::vector,bucket_search_parallel>();
+        helper_d_test_list_non_periodic<std::vector,bucket_search_parallel>();
     }
 
     void test_std_vector_nanoflann_adaptor(void) {
-        helper_single_particle<std::vector,nanoflann_adaptor>();
-        helper_two_particles<std::vector,nanoflann_adaptor>();
-        helper_d<1,std::vector,nanoflann_adaptor>(100,1.5,10);
-        helper_d<2,std::vector,nanoflann_adaptor>(50,1.0001,10);
-        helper_d<2,std::vector,nanoflann_adaptor>(50,1.5,10);
-        helper_d<2,std::vector,nanoflann_adaptor>(20,2.1,10);
-        helper_d<3,std::vector,nanoflann_adaptor>(10,1.9,10);
-        helper_d<3,std::vector,nanoflann_adaptor>(10,1.0001,10);
-        helper_d<4,std::vector,nanoflann_adaptor>(10,1.0001,10);
+        helper_d_test_list_non_periodic<std::vector,bucket_search_parallel>();
     }
 
     void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__CUDACC__)
-        helper_d<1,thrust::device_vector,bucket_search_serial>(100,1.5,10);
-        helper_d<2,thrust::device_vector,bucket_search_serial>(50,1.0001,10);
-        helper_d<2,thrust::device_vector,bucket_search_serial>(50,1.5,10);
-        helper_d<2,thrust::device_vector,bucket_search_serial>(20,2.1,10);
-        helper_d<3,thrust::device_vector,bucket_search_serial>(10,1.9,10);
-        helper_d<3,thrust::device_vector,bucket_search_serial>(10,1.0001,10);
-        helper_d<4,thrust::device_vector,bucket_search_serial>(10,1.0001,10);
-
+        helper_d_test_list_non_periodic<thrust::device_vector,bucket_search_serial>();
+        helper_d_test_list_periodic<thrust::device_vector,bucket_search_serial>();
 #endif
     }
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__CUDACC__)
-        helper_d<1,thrust::device_vector,bucket_search_parallel>(100,1.5,10);
-        helper_d<2,thrust::device_vector,bucket_search_parallel>(50,1.0001,10);
-        helper_d<2,thrust::device_vector,bucket_search_parallel>(50,1.5,10);
-        helper_d<2,thrust::device_vector,bucket_search_parallel>(20,2.1,10);
-        helper_d<3,thrust::device_vector,bucket_search_parallel>(10,1.9,10);
-        helper_d<3,thrust::device_vector,bucket_search_parallel>(10,1.0001,10);
-        helper_d<4,thrust::device_vector,bucket_search_parallel>(10,1.0001,10);
+        helper_d_test_list_periodic<thrust::device_vector,bucket_search_parallel>();
+        helper_d_test_list_non_periodic<thrust::device_vector,bucket_search_parallel>();
 #endif
     }
 

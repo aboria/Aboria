@@ -29,6 +29,7 @@ template <typename TUPLE, typename mpl_vector_type>
 struct getter_type{
     typedef mpl_vector_type mpl_type_vector;
     typedef TUPLE tuple_type;
+    typedef typename detail::getter_helper<tuple_type>::tuple_reference tuple_reference;
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;
     template <typename T>
@@ -44,18 +45,20 @@ struct getter_type{
     getter_type(const getter_type& other):data(other.data) {}
     CUDA_HOST_DEVICE
     getter_type(getter_type&& other):data(std::move(other.data)) {}
+   
+    template <typename tuple_type2, typename = typename
+    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type<tuple_type2,mpl_vector_type>& other):
+        data(other.data) {}
 
     template <typename tuple_type2, typename = typename
     std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
     CUDA_HOST_DEVICE
-    getter_type(const getter_type<tuple_type2,mpl_vector_type>& other):data(other.data) {}
+    getter_type(getter_type<tuple_type2,mpl_vector_type>&& other):
+        data(std::move(other.data)) {}
 
-    template <typename tuple_type2, typename = typename
-    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
-    CUDA_HOST_DEVICE
-    getter_type(const getter_type<tuple_type2,mpl_vector_type>&& other):data(std::move(other.data)) {}
-
-
+    
     template <typename T1, typename T2, typename... T3>
     CUDA_HOST_DEVICE
     getter_type(T1&& arg1, T2&& arg2, T3&&... args):data(std::forward<T1>(arg1),std::forward<T2>(arg2),std::forward<T3>(args)...) {}
@@ -95,6 +98,13 @@ struct getter_type{
     CUDA_HOST_DEVICE
     void swap(getter_type &other) {
         data.swap(other.data);
+    }
+
+    template <typename tuple_type2,std::size_t... I>
+    CUDA_HOST_DEVICE
+    void swap_via_tie(tuple_type2 &tuple, detail::index_sequence<I...>) {
+        tuple_type tmp = tuple_ns::tie(tuple_ns::get<I>(tuple)...);
+        data.swap(tmp);
     }
 
     CUDA_HOST_DEVICE
@@ -257,12 +267,65 @@ struct getter_type<tuple_ns::tuple<FirstType*, OtherTypes...>, mpl_vector_type>{
     tuple_type data;
 };
 
+/*
+template <typename tuple_type, typename mpl_vector_type> 
+void
+swap(getter_type<tuple_type,mpl_vector_type> x,
+     getter_type<tuple_type,mpl_vector_type> y) {
+    x.swap(y);
+}
+*/
+
+template <typename tuple_type, typename tuple_type2, typename mpl_vector_type> 
+typename std::enable_if<
+    detail::getter_helper<tuple_type>::is_reference::value
+    && !detail::getter_helper<tuple_type2>::is_reference::value
+    >::type
+swap(getter_type<tuple_type,mpl_vector_type> x,
+     getter_type<tuple_type2,mpl_vector_type>& y) {
+    x.swap_via_tie(y.data,
+                detail::make_index_sequence<tuple_ns::tuple_size<tuple_type2>::value>());
+}
+
+template <typename tuple_type, typename tuple_type2, typename mpl_vector_type> 
+typename std::enable_if<
+    !detail::getter_helper<tuple_type>::is_reference::value
+    && detail::getter_helper<tuple_type2>::is_reference::value
+    >::type
+swap(getter_type<tuple_type,mpl_vector_type>& x,
+     getter_type<tuple_type2,mpl_vector_type> y) {
+    y.swap_via_tie(x.data,
+                detail::make_index_sequence<tuple_ns::tuple_size<tuple_type2>::value>());
+
+}
 
 template <typename tuple_type, typename mpl_vector_type> 
 void swap(getter_type<tuple_type,mpl_vector_type> x,
           getter_type<tuple_type,mpl_vector_type> y) {
-    x.swap(y);
+    y.swap(x);
 }
+
+/*
+template <typename tuple_type, typename tuple_type2, typename mpl_vector_type> 
+typename std::enable_if<
+    detail::getter_helper<tuple_type>::is_reference::value
+    && detail::getter_helper<tuple_type2>::is_reference::value
+    >::type
+swap(getter_type<tuple_type,mpl_vector_type> x,
+     getter_type<tuple_type2,mpl_vector_type> y) {
+    y.swap(x);
+}
+
+template <typename tuple_type, typename tuple_type2, typename mpl_vector_type> 
+typename std::enable_if<
+    !detail::getter_helper<tuple_type>::is_reference::value
+    && !detail::getter_helper<tuple_type2>::is_reference::value
+    >::type
+swap(getter_type<tuple_type,mpl_vector_type>& x,
+     getter_type<tuple_type2,mpl_vector_type>& y) {
+    y.swap(x);
+}
+*/
 
 
 

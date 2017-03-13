@@ -199,13 +199,13 @@ public:
             ++m_current_bucket;
             if (m_current_bucket == m_bucket_range.end()) {
 #ifndef __CUDA_ARCH__
-                LOG(4,"\tran out of buckets to search (search_iterator): m_current_bucket = "<<*m_current_bucket); 
+                LOG(4,"\tran out of buckets to search (search_iterator):"); 
 #endif
                 m_valid = false;
                 break; 
             }
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tgo_to_next bucket (search_iterator): new bucket = "<<*m_current_bucket); 
+            LOG(4,"\tgo_to_next bucket (search_iterator):"); 
 #endif
             m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
             m_current_particle = m_particle_range.begin();

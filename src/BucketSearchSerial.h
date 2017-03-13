@@ -569,8 +569,8 @@ struct bucket_search_serial_query {
             if (!m_periodic[i]) {
                 if (start[i] < 0) {
                     start[i] = 0;
-                } else if (end[i] >= m_end_bucket[i]) {
-                    end[i] = bucket[i];
+                } else if (end[i] > m_end_bucket[i]) {
+                    end[i] = m_end_bucket[i];
                 }
             }
         }
