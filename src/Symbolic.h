@@ -407,6 +407,41 @@ namespace Aboria {
 
     };
 
+    /// an accumulation expression, for example a sum or product, over neighbouring 
+    /// particles within a given radius
+    /// \param T a functor class that performs the accumulation, for example `std::plus<double>`  
+    template <typename T, int LNormNumber=2, 
+             typename Terminal=typename detail::accumulate_within_distance<T,mpl::int_<LNormNumber>>>
+    struct AccumulateWithinDistance
+        : detail::SymbolicExpr<typename proto::terminal<Terminal>::type> {
+
+            typedef Terminal data_type;
+            typedef typename proto::terminal<data_type>::type expr_type;
+
+            /// empty constructor, makes an instantiation of the functor class \p T
+            explicit AccumulateWithinDistance(const double max_distance)
+                : detail::SymbolicExpr<expr_type>( expr_type::make(data_type(max_distance)) )
+            {}
+
+            /// constructor that passes a single argument to the functor class \p T
+            template<typename T2>
+                explicit AccumulateWithinDistance(const double max_distance, const T2& arg)
+                : detail::SymbolicExpr<expr_type>( expr_type::make(data_type(max_distance,arg)) )
+            {}
+
+            /// a function used to set the initial value of the accumulation
+            /// \param the initial value. Must be the same type used by the 
+            /// accumulation functor \p T
+            void set_init(const typename data_type::init_type & arg) {
+                proto::value(*this).set_init(arg);
+            }
+
+            void set_max_distance(const double max_distance) {
+                proto::value(*this).set_max_distance(max_distance);
+            }
+
+    };
+
     /// convenient functor to get a minumum value using the Accumulate expression
     /// \code
     ///     Accumulate<max<double>> max;

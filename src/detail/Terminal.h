@@ -99,6 +99,27 @@ struct accumulate {
     init_type init;
 };
 
+template <typename T, typename LNormNumber>
+struct accumulate_within_distance {
+    typedef T functor_type;
+    typedef LNormNumber norm_number_type;
+    typedef typename T::result_type init_type;
+    accumulate_within_distance(const double max_distance, const T& functor=T()):
+        functor(functor),
+        max_distance(max_distance),
+        init(0) 
+    {};
+    void set_init(const init_type& arg) {
+        init = arg;
+    }
+    void set_max_distance(const double arg) {
+        init = arg;
+    }
+    T functor;
+    init_type init;
+    double max_distance;
+};
+
 template <typename T,unsigned int N>
 struct vector {
     typedef Vector<T,N> result_type;
