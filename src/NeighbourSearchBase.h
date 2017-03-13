@@ -619,10 +619,24 @@ public:
                         ::get_value_to_accumulate(max_distance)),
         m_dists(0),
         m_query(query),
-        m_node(start_node)
+        m_node(nullptr)
     {
         //m_stack.reserve(m_query->get_max_levels());
-        go_to_next_leaf();
+        double accum = 0;
+        for (int i = 0; i < dimension; ++i) {
+            const double val = m_query_point[i];
+            if (val < m_query->get_bounds_low()[i]) {
+                m_dists[i] = val - m_query->get_bounds_low()[i];
+            } else if (m_query_point[i] < m_query->get_bounds_low()[i]) {
+                m_dists[i] = val - m_query->get_bounds_high()[i];
+            }
+            accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
+        }
+        if (accum <= m_max_distance2) {
+            m_node = start_node;
+            go_to_next_leaf();
+        }
+        // else invalid
     }
 
 
@@ -702,20 +716,21 @@ public:
             /* Which child branch should be taken first? */
             const size_t idx = m_query->get_dimension_index(*m_node);
             double val = m_query_point[idx];
-            double diff1 = val - m_query->get_cut_low(*m_node);
-            double diff2 = val - m_query->get_cut_high(*m_node);
 
             pointer bestChild;
             pointer otherChild;
-            double cut_dist;
-            if ((diff1+diff2)<0) {
+            double cut_dist,bound_dist;
+            
+            if ((diff_cut_low+diff_cut_high)<0) {
                 bestChild = m_query->get_child1(m_node);
                 otherChild = m_query->get_child2(m_node);
-                cut_dist = std::abs(diff2);
+                cut_dist = val - m_query->get_cut_high(*m_node);
+                //bound_dist = val - m_query->get_bounds_high(*m_node);
             } else {
                 bestChild = m_query->get_child2(m_node);
                 otherChild = m_query->get_child1(m_node);
-                cut_dist = std::abs(diff1);
+                cut_dist = val - m_query->get_cut_low(*m_node);
+                //bound_dist = val - m_query->get_bounds_low(*m_node);
             }
             
             // if other child possible save it to stack for later

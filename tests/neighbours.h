@@ -290,7 +290,7 @@ For example,
     template<unsigned int D, 
              template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
-    void helper_d_non_periodic(const int N, const double r, const int neighbour_n) {
+    void helper_d_random(const int N, const double r, const int neighbour_n, const bool is_periodic) {
         ABORIA_VARIABLE(neighbours,int,"number of neighbours")
     	typedef Particles<std::tuple<neighbours>,D,VectorType,SearchMethod> particles_type;
         typedef position_d<D> position;
@@ -299,7 +299,7 @@ For example,
         typedef Vector<unsigned int,D> uint_d;
     	double_d min(-1);
     	double_d max(1);
-    	bool_d periodic(false);
+    	bool_d periodic(is_periodic);
         particles_type particles(N);
         double r2 = r*r;
 
@@ -362,7 +362,7 @@ For example,
 
     template<template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
-    void helper_d_test_list_periodic() {
+    void helper_d_test_list_regular() {
         helper_d<1,VectorType,SearchMethod>(100,1.5,10);
         helper_d<2,VectorType,SearchMethod>(50,1.0001,10);
         helper_d<2,VectorType,SearchMethod>(50,1.5,10);
@@ -374,49 +374,61 @@ For example,
 
     template<template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
-    void helper_d_test_list_non_periodic() {
-        helper_d_non_periodic<1,VectorType,SearchMethod>(1000,0.1,10);
-        helper_d_non_periodic<1,VectorType,SearchMethod>(1000,0.1,100);
-        helper_d_non_periodic<2,VectorType,SearchMethod>(1000,0.1,10);
-        helper_d_non_periodic<2,VectorType,SearchMethod>(1000,0.5,10);
-        helper_d_non_periodic<2,VectorType,SearchMethod>(5000,0.2,1);
-        helper_d_non_periodic<3,VectorType,SearchMethod>(5000,0.2,100);
-        helper_d_non_periodic<3,VectorType,SearchMethod>(5000,0.2,10);
-        helper_d_non_periodic<3,VectorType,SearchMethod>(5000,0.2,1);
-        helper_d_non_periodic<4,VectorType,SearchMethod>(5000,0.2,10);
+    void helper_d_test_list_random() {
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false);
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,true);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false);
+        helper_d_random<2,VectorType,SearchMethod>(5000,0.2,1,true);
+        helper_d_random<2,VectorType,SearchMethod>(5000,0.2,1,false);
+        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,100,true);
+        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,100,false);
+        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,10,true);
+        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,10,false);
+        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,1,true);
+        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,1,false);
+        helper_d_random<4,VectorType,SearchMethod>(5000,0.2,10,true);
+        helper_d_random<4,VectorType,SearchMethod>(5000,0.2,10,false);
     }
 
     void test_std_vector_bucket_search_serial(void) {
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
        
-        helper_d_test_list_periodic<std::vector,bucket_search_serial>();
-        helper_d_test_list_non_periodic<std::vector,bucket_search_serial>();
+        helper_d_test_list_regular<std::vector,bucket_search_serial>();
+        helper_d_test_list_random<std::vector,bucket_search_serial>();
     }
 
     void test_std_vector_bucket_search_parallel(void) {
         helper_single_particle<std::vector,bucket_search_parallel>();
         helper_two_particles<std::vector,bucket_search_parallel>();
 
-        helper_d_test_list_periodic<std::vector,bucket_search_parallel>();
-        helper_d_test_list_non_periodic<std::vector,bucket_search_parallel>();
+        helper_d_test_list_regular<std::vector,bucket_search_parallel>();
+        helper_d_test_list_random<std::vector,bucket_search_parallel>();
     }
 
     void test_std_vector_nanoflann_adaptor(void) {
-        helper_d_test_list_non_periodic<std::vector,bucket_search_parallel>();
+        helper_d_test_list_regular<std::vector,bucket_search_parallel>();
+        helper_d_test_list_random<std::vector,bucket_search_parallel>();
     }
 
     void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__CUDACC__)
-        helper_d_test_list_non_periodic<thrust::device_vector,bucket_search_serial>();
-        helper_d_test_list_periodic<thrust::device_vector,bucket_search_serial>();
+        helper_d_test_list_regular<thrust::device_vector,bucket_search_serial>();
+        helper_d_test_list_random<thrust::device_vector,bucket_search_serial>();
 #endif
     }
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__CUDACC__)
-        helper_d_test_list_periodic<thrust::device_vector,bucket_search_parallel>();
-        helper_d_test_list_non_periodic<thrust::device_vector,bucket_search_parallel>();
+        helper_d_test_list_regular<thrust::device_vector,bucket_search_parallel>();
+        helper_d_test_list_random<thrust::device_vector,bucket_search_parallel>();
 #endif
     }
 

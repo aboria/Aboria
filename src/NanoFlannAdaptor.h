@@ -268,6 +268,9 @@ struct nanoflann_adaptor_query {
 
     value_type* m_root;
 
+    const double_d& get_bounds_low() const { return m_bounds.bmin; }
+    const double_d& get_bounds_high() const { return m_bounds.bmax; }
+
     /*
      * functions for tree_query_iterator
      */
@@ -307,19 +310,15 @@ struct nanoflann_adaptor_query {
     }   
            
 
-    iterator_range_with_transpose<particle_iterator> 
+    iterator_range<particle_iterator> 
     get_bucket_particles(const value_type& bucket) const {
-        ASSERT(!m_periodic.any(), "ERROR: kdtree doesnt work with periodic (yet)");
-        double_d transpose(0); 
-
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_bucket_particles: looking in bucket blah");
 #endif        
         
-        return iterator_range_with_transpose<particle_iterator>(
+        return iterator_range<particle_iterator>(
                         particle_iterator(m_particles_begin + bucket.node_type.lr.left),
-                        particle_iterator(m_particles_begin + bucket.node_type.lr.right),
-                        transpose);
+                        particle_iterator(m_particles_begin + bucket.node_type.lr.right));
     }
 
     static
