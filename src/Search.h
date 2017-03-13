@@ -74,6 +74,7 @@ class search_iterator {
     typedef typename particle_iterator::value_type p_value_type;
     typedef typename particle_iterator::reference p_reference;
     typedef typename particle_iterator::pointer p_pointer;
+    typedef typename lattice_iterator<dimension> periodic_iterator_type;
 
     bool m_valid;
     double_d m_r;
@@ -81,9 +82,12 @@ class search_iterator {
     const Query *m_query;
     double m_max_distance;
     double m_max_distance2;
+    iterator_range<periodic_iterator_type> m_periodic;
+    periodic_iterator_type m_current_periodic;
+    double_d m_current_point;
     iterator_range<query_iterator> m_bucket_range;
     query_iterator m_current_bucket;
-    iterator_range_with_transpose<particle_iterator> m_particle_range;
+    iterator_range<particle_iterator> m_particle_range;
     particle_iterator m_current_particle;
 
 public:
@@ -92,6 +96,14 @@ public:
     typedef const tuple_ns::tuple<p_reference,const double_d&> reference;
     typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
+
+    static iterator_range<periodic_iterator_type> get_periodic_range(const bool_d is_periodic) {
+        int_d start = int_d(-1)*m_query->get_periodic();
+        int_d end = int_d(1)*m_query->get_periodic();
+        return iterator_range<periodic_iterator_type>(
+                periodic_iterator_type(start,end,start),
+                ++periodic_iterator_type(start,end,end));
+    }
 
     CUDA_HOST_DEVICE
     search_iterator():
@@ -107,14 +119,18 @@ public:
         m_query(&query),
         m_max_distance(max_distance),
         m_max_distance2(detail::distance_helper<LNormNumber>::get_value_to_accumulate(max_distance)),
-        m_bucket_range(query.get_buckets_near_point(r,max_distance)),
-        m_current_bucket(m_bucket_range.begin()),
-        m_particle_range(query.get_bucket_particles(*m_current_bucket)),
-        m_current_particle(m_particle_range.begin())
+        m_periodic(get_periodic_range(m_query->get_periodic())),
+        m_current_periodic(m_periodic.begin()),
+        m_current_point(r+(*m_current_periodic)*m_query->get_bounds());
+        m_bucket_range(query.get_buckets_near_point(m_current_point,max_distance)),
+        m_current_bucket(m_bucket_range.begin())
     {
-        get_valid_candidate();
-        if (m_valid && !check_candidate()) {
-            increment();
+        if (m_valid = get_valid_bucket()) {
+            if (m_valid = get_valid_candidate()) {
+                if (!check_candidate()) {
+                    increment();
+                }
+            }
         }
         LOG(4,"\tconstructor (search_iterator): r = "<<m_r<<"m_current_particle position= "<<get<position>(*m_current_particle));
     }
@@ -169,56 +185,48 @@ public:
     }
 
 
-    /*
-    bool get_valid_bucket() {
-        for (; m_current_bucket != m_bucket_range.end(); ++m_current_bucket) {
-            detail::bbox<dimension> bbox = m_query->get_bucket_bbox(*m_current_bucket);
-            double accum = 0;
-            bool intersect = true;
-            for (int i = 0; i < dimension; ++i) {
-                const double low = m_r[i]-m_max_distance;
-                const double high = m_r[i]+m_max_distance;
-                if ( (low < bbox.bmin[i] && high < bbox.bmin[i]) 
-                   ||(low > bbox.bmax[i] && high > bbox.bmax[i])) { 
-                    intersect = false;
-                    break;
-                }
-            }
-            if (intersect) {
-                return true;
-            }
-        }
-        // must have exhausted buckets
-        return false;
-    }
-    */
-
     CUDA_HOST_DEVICE
-    void get_valid_candidate() {
-        while (m_current_particle == m_particle_range.end()) {
-            ++m_current_bucket;
-            if (m_current_bucket == m_bucket_range.end()) {
+    bool get_valid_bucket() {
+        while (m_current_bucket == m_bucket_range.end()) {
+#ifndef __CUDA_ARCH__
+            LOG(4,"\tgo_to_next periodic (search_iterator):"); 
+#endif
+            ++m_current_periodic;
+            if (m_current_periodic == m_periodic.end()) {
 #ifndef __CUDA_ARCH__
                 LOG(4,"\tran out of buckets to search (search_iterator):"); 
 #endif
-                m_valid = false;
-                break; 
+                return false; 
             }
-#ifndef __CUDA_ARCH__
-            LOG(4,"\tgo_to_next bucket (search_iterator):"); 
-#endif
-            m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
-            m_current_particle = m_particle_range.begin();
+            m_current_point = m_r + (*m_current_periodic)*
+                                (m_query->get_bounds_high()-m_query->get_bounds_low());
+            m_bucket_range = m_query->get_buckets_near_point(m_current_point,max_distance);
+            m_current_bucket = m_bucket_range.begin();
         }
+        return true;
     }
 
     CUDA_HOST_DEVICE
-    void go_to_next_candidate() {
+    bool get_valid_candidate() {
+        while (m_current_particle == m_particle_range.end()) {
+#ifndef __CUDA_ARCH__
+            LOG(4,"\tgo_to_next bucket (search_iterator):"); 
+#endif
+            ++m_current_bucket;
+            if (!get_valid_bucket()) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    CUDA_HOST_DEVICE
+    bool go_to_next_candidate() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tgo_to_next_candidate (search_iterator):"); 
 #endif
         ++m_current_particle;
-        get_valid_candidate();
+        return get_valid_candidate();
     }
 
     
@@ -227,11 +235,11 @@ public:
     bool check_candidate() {
         //const double_d& p = get<position>(*m_current_particle) + m_particle_range.get_transpose();
         const double_d& p = get<position>(*m_current_particle); 
-        const double_d& transpose = m_particle_range.get_transpose();
+        //const double_d& transpose = m_particle_range.get_transpose();
         double accum = 0;
         bool outside = false;
         for (int i=0; i < Traits::dimension; i++) {
-            m_dx[i] = p[i] + transpose[i] - m_r[i];
+            m_dx[i] = p[i] - m_current_point[i];
             accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum, m_dx[i]);
             if (accum > m_max_distance2) {
                 outside = true;
@@ -239,7 +247,7 @@ public:
             } 
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tcheck_candidate: m_r = "<<m_r<<" other r = "<<get<position>(*m_current_particle)<<" trans = "<<m_particle_range.get_transpose()<<". outside = "<<outside); 
+        LOG(4,"\tcheck_candidate: m_r = "<<m_current_point<<" other r = "<<get<position>(*m_current_particle)<<". outside = "<<outside); 
 #endif
         return !outside;
     }
@@ -250,11 +258,8 @@ public:
         LOG(4,"\tincrement (search_iterator):"); 
 #endif
         bool found_good_candidate = false;
-        while (!found_good_candidate && m_valid) {
-            go_to_next_candidate();
-            if (m_valid) {
-                found_good_candidate = check_candidate();
-            }
+        while (!found_good_candidate && m_valid=go_to_next_candidate()) {
+            found_good_candidate = check_candidate();
 #ifndef __CUDA_ARCH__
             LOG(4,"\tfound_good_candidate = "<<found_good_candidate); 
 #endif

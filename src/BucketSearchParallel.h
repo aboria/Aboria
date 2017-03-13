@@ -319,56 +319,24 @@ struct bucket_search_parallel_query {
         m_bucket_begin()
     {}
 
-    const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
-
+    //const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
+    const double_d& get_bounds_low() const { return m_bounds.bmin; }
+    const double_d& get_bounds_high() const { return m_bounds.bmax; }
 
     CUDA_HOST_DEVICE
-    iterator_range_with_transpose<particle_iterator> get_bucket_particles(const reference bucket) const {
+    iterator_range<particle_iterator> get_bucket_particles(const reference bucket) const {
+        ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
 
-        int_d my_bucket(bucket);
-        particle_iterator end;
-        // handle end cases
-        double_d transpose(0);
-        bool outside = false;
-        for (int i=0; i<Traits::dimension; i++) {
-            if (bucket[i] < 0) {
-                if (m_periodic[i]) {
-                    my_bucket[i] = m_end_bucket[i] + bucket[i] + 1;
-                    transpose[i] = -(m_bounds.bmax-m_bounds.bmin)[i];
-                } else {
-                    outside = true;
-                    break;
-                }
-            }
-            if (bucket[i] > m_end_bucket[i]) {
-                if (m_periodic[i]) {
-                    my_bucket[i] = bucket[i] - m_end_bucket[i] - 1;
-                    transpose[i] = (m_bounds.bmax-m_bounds.bmin)[i];
-                } else {
-                    outside = true;
-                    break;
-                }
-            }
-        }
-
-        if (!outside) {
-                const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(my_bucket);
-                const unsigned int range_start_index = m_bucket_begin[bucket_index]; 
-                const unsigned int range_end_index = m_bucket_end[bucket_index]; 
+        const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(bucket);
+        const unsigned int range_start_index = m_bucket_begin[bucket_index]; 
+        const unsigned int range_end_index = m_bucket_end[bucket_index]; 
 
 #ifndef __CUDA_ARCH__
-                LOG(4,"\tlooking in bucket "<<bucket<<" = "<<bucket_index<<". found "<<range_end_index-range_start_index<<" particles");
+        LOG(4,"\tlooking in bucket "<<bucket<<" = "<<bucket_index<<". found "<<range_end_index-range_start_index<<" particles");
 #endif
-                return iterator_range_with_transpose<particle_iterator>(
-                        particle_iterator(m_particles_begin + range_start_index),
-                        particle_iterator(m_particles_begin + range_end_index),
-                        transpose);
-        } else {
-                return iterator_range_with_transpose<particle_iterator>(
-                        particle_iterator(m_particles_begin),
-                        particle_iterator(m_particles_begin)
-                        );
-        }
+        return iterator_range<particle_iterator>(
+                particle_iterator(m_particles_begin + range_start_index),
+                particle_iterator(m_particles_begin + range_end_index));
     }
 
     CUDA_HOST_DEVICE
@@ -388,29 +356,40 @@ struct bucket_search_parallel_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
  
-        ASSERT((position >= m_bounds.bmin).all(),"point position less than min bound");
-        ASSERT((position < m_bounds.bmax).all(),"point position greater than or equal to max bound");
         value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
         ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
-
         int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
         int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
+
+        bool no_buckets = false;
         for (int i=0; i<Traits::dimension; i++) {
-            if (!m_periodic[i]) {
-                if (start[i] < 0) {
-                    start[i] = 0;
-                } else if (end[i] > m_end_bucket[i]) {
-                    end[i] = m_end_bucket[i];
-                }
+            if (start[i] < 0) {
+                start[i] = 0;
+            } else if (start[i] > m_end_bucket[i]) {
+                no_buckets = true;
+                start[i] = m_end_bucket[i];
+            }
+            if (end[i] < 0) {
+                no_buckets = true;
+                end[i] = 0;
+            } else if (end[i] > m_end_bucket[i]) {
+                end[i] = m_end_bucket[i];
             }
         }
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
 #endif
-        return iterator_range<query_iterator>(
-                query_iterator(start,end,start)
-                ,++query_iterator(start,end,end)
-                );
+        if (no_buckets) {
+            return iterator_range<query_iterator>(
+                    query_iterator(end,end,end)
+                    ,query_iterator(end,end,end)
+                    );
+        } else {
+            return iterator_range<query_iterator>(
+                    query_iterator(start,end,start)
+                    ,++query_iterator(start,end,end)
+                    );
+        }
     }
 
     /*
