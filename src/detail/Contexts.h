@@ -191,15 +191,10 @@ namespace detail {
 
         template <typename result_type,
                  typename label_type,
-                 typename if_expr_type, 
                  typename expr_type,
                  typename accumulate_type>
-        static
-        typename boost::enable_if<
-            mpl::not_<proto::matches<if_expr_type,range_if_expr>>
-        ,result_type>::type
-        sum_impl(const label_type& label, 
-                if_expr_type& if_expr, 
+        static result_type
+        dense_sum_impl(const label_type& label, 
                 expr_type& expr, 
                 accumulate_type& accum,
                 const EvalCtx& ctx,mpl::int_<0>) { //note: using tag dispatching here cause I couldn't figure out how to do this via enable_if....
@@ -208,25 +203,17 @@ namespace detail {
             for (const auto& i: label.get_particles()) {
                 auto new_labels = fusion::make_map<label_type>(i);
                 EvalCtx<decltype(new_labels),decltype(ctx.m_dx)> const new_ctx(new_labels,ctx.m_dx);
-
-                if (proto::eval(if_expr,new_ctx)) {
-                    sum = accum.functor(sum,proto::eval(expr,new_ctx));
-                }
+                sum = accum.functor(sum,proto::eval(expr,new_ctx));
             }
             return sum;
         }
 
         template <typename result_type,
                  typename label_b_type,
-                 typename if_expr_type, 
                  typename expr_type,
                  typename accumulate_type>
-        static
-        typename boost::enable_if<
-                mpl::not_<proto::matches<if_expr_type,range_if_expr>>
-        ,result_type>::type
-        sum_impl(const label_b_type& label, 
-                if_expr_type& if_expr, 
+        static result_type
+        dense_sum_impl(const label_b_type& label, 
                 expr_type& expr, 
                 accumulate_type& accum,
                 const EvalCtx& ctx, mpl::int_<1>) {
@@ -249,10 +236,9 @@ namespace detail {
             const size_t nb = particlesb.size();
 
             result_type sum = accum.init;
-            if (is_trivially_false(if_expr)) {
+            if (is_trivially_zero(expr)) {
                 return sum;
-            } 
-            if (is_trivially_true(if_expr)) {
+            } else {
                 for (size_t i=0; i<nb; ++i) {
                     const_b_reference bi = particlesb[i];
 
@@ -263,34 +249,16 @@ namespace detail {
 
                     sum = accum.functor(sum,proto::eval(expr,new_ctx));
                 }
-            } else {
-                for (size_t i=0; i<nb; ++i) {
-                    const_b_reference bi = particlesb[i];
-
-                    EvalCtx<map_type,list_type> const new_ctx(
-                            fusion::make_map<label_a_type,label_b_type>(ai,bi),
-                            fusion::make_list(get<position>(bi)-get<position>(ai))
-                            );
-
-                    if (proto::eval(if_expr,new_ctx)) {
-                        sum = accum.functor(sum,proto::eval(expr,new_ctx));
-                    }
-                }
             }
             return sum;
         }
 
         template <typename result_type,
                  typename label_b_type,
-                 typename if_expr_type, 
                  typename expr_type,
                  typename accumulate_type,typename dummy=size_type>
-        static
-        typename boost::enable_if<
-                proto::matches<if_expr_type,range_if_expr>
-        ,result_type>::type
-        sum_impl(const label_b_type& label,
-                if_expr_type& if_expr, 
+        static result_type
+        sparse_sum_impl(const label_b_type& label,
                 expr_type& expr, 
                 accumulate_type& accum,
                 const EvalCtx& ctx, mpl::int_<1>) {
@@ -313,10 +281,12 @@ namespace detail {
                                          fusion::pair<label_b_type,const_b_reference>> map_type;
 
             typedef fusion::list<const double_d &> list_type;
+            const int LNormNumber = accumulate_type::norm_number_type::value;
 
             result_type sum = accum.init;
             //TODO: get query range and put it in box search
-            for (const auto& i: box_search(particlesb.get_query(),get<position>(ai))) {
+            for (const auto& i: distance_search<LNormNumber>(
+                                    particlesb.get_query(),get<position>(ai),accum.max_distance)) {
                 const_b_reference bi = std::get<0>(i);
                 const double_d& dx = std::get<1>(i);
 
@@ -325,10 +295,7 @@ namespace detail {
                         fusion::make_list(dx)
                         );
 
-                if (proto::eval(if_expr,new_ctx)) {
-                    sum = accum.functor(sum,proto::eval(expr,new_ctx));
-                    
-                }
+                sum = accum.functor(sum,proto::eval(expr,new_ctx));
             }
             return sum;
         }
@@ -345,9 +312,29 @@ namespace detail {
             typedef typename functor_type::result_type result_type;
 
             result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
-                return sum_impl<result_type>(proto::value(proto::child_c<1>(expr)),
+                return dense_sum_impl<result_type>(proto::value(proto::child_c<1>(expr)),
                         proto::child_c<2>(expr),
-                        proto::child_c<3>(expr),
+                        proto::value(proto::child_c<0>(expr)),ctx,size_type());
+            }
+        };
+
+
+        template<typename Expr>
+        struct eval<Expr, proto::tag::function,
+        typename boost::enable_if<
+            mpl::and_<
+                proto::matches<Expr,AccumulateWithinDistanceGrammar>,
+                mpl::equal<size_type,mpl::int_<1>>>
+            >::type> {
+
+            typedef typename proto::result_of::child_c<Expr,0>::type child0_type;
+            typedef typename proto::result_of::value<child0_type>::type functor_terminal_type;
+            typedef typename functor_terminal_type::functor_type functor_type;
+            typedef typename functor_type::result_type result_type;
+
+            result_type operator ()(Expr &expr, EvalCtx const &ctx) const {
+                return sparse_sum_impl<result_type>(proto::value(proto::child_c<1>(expr)),
+                        proto::child_c<2>(expr),
                         proto::value(proto::child_c<0>(expr)),ctx,size_type());
             }
         };

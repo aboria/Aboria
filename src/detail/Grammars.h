@@ -128,10 +128,13 @@ namespace detail {
     {}; 
 
 
-    //TODO: should make a "conditional" grammar to match 2nd arguement
     struct AccumulateGrammar
-        : proto::function< proto::terminal< accumulate<_> >, LabelGrammar, SymbolicGrammar, SymbolicGrammar>
+        : proto::function< proto::terminal< accumulate<_> >, LabelGrammar, SymbolicGrammar>
     {}; 
+
+    struct AccumulateWithinDistanceGrammar
+        : proto::function< proto::terminal< accumulate_within_distance<_,_> >, LabelGrammar, SymbolicGrammar>
+    {};
 
 
     struct remove_label: proto::callable {
@@ -260,10 +263,14 @@ namespace detail {
               , proto::_state
             >
             , proto::when<
-                proto::function< proto::terminal< accumulate<_> >, _, _, _>
+                proto::function< proto::terminal< accumulate<_> >, _,  _>
                 , remove_label(proto::_value(proto::_child1), 
-                                get_labels(proto::_child2,
-                                        get_labels(proto::_child3,proto::_state)))
+                                get_labels(proto::_child2,proto::_state))
+            >
+            , proto::when<
+                proto::function< proto::terminal< accumulate_within_distance<_,_> >, _,  _>
+                , remove_label(proto::_value(proto::_child1), 
+                                get_labels(proto::_child2,proto::_state))
             >
             , proto::otherwise< 
                 proto::fold<_, proto::_state, get_labels> 

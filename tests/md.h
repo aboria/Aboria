@@ -96,8 +96,9 @@ public:
 
         /*
          * initiate neighbour search on a periodic 2d domain of side length L
+         * set average number of particles per cell to 1
          */
-        particles.init_neighbour_search(double2(0,0),double2(L,L),diameter,bool2(true,true));
+        particles.init_neighbour_search(double2(0,0),double2(L,L),bool2(true,true),1);
 
         /*
          * create N particles, ensuring that they do not overlap, according 
@@ -127,23 +128,23 @@ public:
                 free_position = true;
 
                 /*
-                 * loop over all neighbouring particles within a square with
-                 * side length "diameter" (see init_neighbour_search call above)
+                 * loop over all neighbouring particles within a euclidean distance
+                 * of size "diameter"
                  */
-                for (auto tpl: box_search(particles.get_query(),get<position>(p))) {
+                for (auto tpl: euclidean_search(particles.get_query(),get<position>(p),diameter)) {
 
                     /*
                      * tpl variable is a tuple containing:
                      *  (0) -> neighbouring particle value_type
                      *  (1) -> relative position of neighbouring particle
                      *         from query point
+                     *  e.g.
+                     *
+                     *  const double2& dx = std::get<1>(tpl);
+                     *  const typename container_type::value_type& j = std::get<0>(tpl);
                      */
-                    const double2& dx = std::get<1>(tpl);
-                    const typename container_type::value_type& j = std::get<0>(tpl);
-                    if (dx.norm() < diameter) {
-                        free_position = false;
-                        break;
-                    }
+                    free_position = false;
+                    break;
                 }
             }
             particles.push_back(p);
@@ -167,7 +168,7 @@ public:
         /*
          * sum is a symbolic function that sums a sequence of 2d vectors
          */
-        Accumulate<std::plus<double2> > sum;
+        AccumulateWithinDistance<std::plus<double2> > sum(diameter);
         
         /*
          * perform MD timestepping
@@ -188,8 +189,9 @@ public:
                  */
                 v[a] += dt * ( 
                         // spring force between particles
-                        sum(b, id_[a]!=id_[b] && norm(dx)<diameter, 
-                              -k*(diameter/norm(dx)-1)*dx)
+                        sum(b, if_else(id_[a]!=id_[b],
+                                    -k*(diameter/norm(dx)-1)*dx
+                                    ,0.0))
                         /mass
                         );
                 p[a] += dt*v[a];
