@@ -275,8 +275,17 @@ struct getter_helper {};
 template <typename ... T>
 struct getter_helper<tuple_ns::tuple<T ...>> {
     typedef typename tuple_ns::tuple<T...> tuple_type; 
+    typedef typename tuple_ns::tuple<T& ...> tuple_reference; 
     template <unsigned int N>
     using return_type = tuple_ns::tuple_element<N,tuple_type>;
+    typedef typename tuple_ns::tuple_element<0,tuple_type>::type first_type; 
+    typedef typename std::is_reference<first_type> is_reference;
+
+    template<std::size_t... I>
+    static tuple_reference make_reference(tuple_type& tuple, detail::index_sequence<I...>) {
+        return tuple_ns::tie(tuple_ns::get<I>(tuple)...);
+    }
+
 };
 
 __aboria_hd_warning_disable__

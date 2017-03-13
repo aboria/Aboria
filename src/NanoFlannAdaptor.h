@@ -67,6 +67,7 @@ namespace detail {
 template< typename order_iterator, typename value_iterator >
 void reorder_destructive( order_iterator order_begin, order_iterator order_end, value_iterator v )  {
     typedef typename std::iterator_traits< value_iterator >::value_type value_t;
+    typedef typename std::iterator_traits< value_iterator >::reference reference;
     typedef typename std::iterator_traits< order_iterator >::value_type index_t;
     typedef typename std::iterator_traits< order_iterator >::difference_type diff_t;
 
@@ -75,10 +76,11 @@ void reorder_destructive( order_iterator order_begin, order_iterator order_end, 
         index_t d = order_begin[s];
         if ( d == (diff_t) -1 ) continue;
         -- remaining;
-        value_t temp = v[s];
+        value_t temp = static_cast<reference>(v[s]);
         for ( index_t d2; d != s; d = d2 ) {
-            std::swap( temp, v[d] );
-            std::swap( order_begin[d], d2 = (diff_t) -1 );
+            //Aboria::swap( temp, static_cast<reference>(v[d]) );
+            Aboria::swap( static_cast<reference>(v[d]), temp  );
+            std::swap( order_begin[d], d2 = (index_t) -1 );
             -- remaining;
         }
         v[s] = temp;
@@ -216,7 +218,7 @@ private:
                 m_kd_tree->get_vind().end(), 
                 this->m_particles_begin);
 
-        this->m_query.m_root = m_kd_tree->get_root();
+        this->m_query.m_root = m_kd_tree->get_root_node();
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
     }
 
@@ -243,7 +245,6 @@ private:
 };
 
 
-
 // this is NOT going to work from device code because we are adapting
 // a host code only library
 template <typename Traits>
@@ -251,8 +252,6 @@ struct nanoflann_adaptor_query {
     const static unsigned int dimension = Traits::dimension;
     typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
     typedef typename kd_tree_type::Node value_type;
-    typedef value_type& reference;
-    typedef value_type* pointer;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
@@ -267,44 +266,54 @@ struct nanoflann_adaptor_query {
     detail::bbox<dimension> m_bounds;
     raw_pointer m_particles_begin;
 
-    pointer m_root;
+    value_type* m_root;
 
     /*
      * functions for tree_query_iterator
      */
-    bool get_max_levels() {
+    static bool get_max_levels() {
         return 5;
     }
-    bool is_leaf_node(reference bucket) {
-        return (bucket->child1 == NULL) && (bucket->child2 == NULL);
+    static bool is_leaf_node(const value_type& bucket) {
+        return (bucket.child1 == NULL) && (bucket.child2 == NULL);
     }
-    size_t get_dimension_index(reference bucket) {
-        return bucket->node_type.sub.divfeat;
+    static size_t get_dimension_index(const value_type& bucket) {
+        return bucket.node_type.sub.divfeat;
     }
-    double get_cut_low(reference bucket) {
-        return bucket->node_type.sub.divlow;
+    static double get_cut_low(const value_type& bucket) {
+        return bucket.node_type.sub.divlow;
     }
-    double get_cut_high(reference bucket) {
-        return bucket->node_type.sub.divhigh;
+    static double get_cut_high(const value_type& bucket) {
+        return bucket.node_type.sub.divhigh;
     }
-    pointer get_child1(pointer bucket) {
+    static const value_type* get_child1(const value_type* bucket) {
 	    return bucket->child1;
     }
-    pointer get_child2(pointer bucket) {
+    static const value_type* get_child2(const value_type* bucket) {
 	    return bucket->child2;
     }
     /*
      * end functions for tree_query_iterator
      */
+
+    friend std::ostream& operator<<(std::ostream& os, const value_type& bucket) {
+        if (is_leaf_node(bucket)) {
+            os << "Leaf node";
+        } else {
+            os << "Node";
+        } 
+        os <<" with bounding box " << get_bucket_bbox(bucket) << std::endl;
+        return os;
+    }   
            
 
     iterator_range_with_transpose<particle_iterator> 
-    get_bucket_particles(const reference bucket) const {
+    get_bucket_particles(const value_type& bucket) const {
         ASSERT(!m_periodic.any(), "ERROR: kdtree doesnt work with periodic (yet)");
         double_d transpose(0); 
 
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_bucket_particles: looking in bucket "<<bucket);
+        LOG(4,"\tget_bucket_particles: looking in bucket blah");
 #endif        
         
         return iterator_range_with_transpose<particle_iterator>(
@@ -313,8 +322,9 @@ struct nanoflann_adaptor_query {
                         transpose);
     }
 
+    static
     detail::bbox<dimension> 
-    get_bucket_bbox(const reference bucket) const {
+    get_bucket_bbox(const value_type& bucket) {
         return detail::bbox<dimension>(bucket->bbox.low,bucket->bbox.high);
     }
 
@@ -331,7 +341,7 @@ struct nanoflann_adaptor_query {
     }
 
     /*
-    bool get_children_buckets(const reference &bucket, std::array<value_type,2>& children) {
+    bool get_children_buckets(const value_type &bucket, std::array<value_type,2>& children) {
 		if ((bucket->child1 == NULL)&&(bucket->child2 == NULL)) {
             return false;
         } else {
@@ -351,7 +361,15 @@ struct nanoflann_adaptor_query {
     }
     */
 
+
+    
+
 };
+
+
+
+
+
 
 }
 
