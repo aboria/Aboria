@@ -492,13 +492,14 @@ struct bucket_search_serial_query {
 
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
     const double_d& get_bounds_high() const { return m_bounds.bmax; }
+    const bool_d& get_periodic() const { return m_periodic; }
 
     CUDA_HOST_DEVICE
     iterator_range<particle_iterator> 
     get_bucket_particles(const reference bucket) const {
         ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
         
-        const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(my_bucket);
+        const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(bucket);
 
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_bucket_particles: looking in bucket "<<bucket<<" = "<<bucket_index);
@@ -527,7 +528,8 @@ struct bucket_search_serial_query {
 #endif
  
         value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
-        ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
+        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
+        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
 
         bool no_buckets = false;
         for (int i=0; i<Traits::dimension; i++) {
@@ -545,7 +547,7 @@ struct bucket_search_serial_query {
             }
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
+        LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end<<" no_buckets = "<<no_buckets);
 #endif
         if (no_buckets) {
             return iterator_range<query_iterator>(

@@ -82,8 +82,42 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define LOG(level, message) \
     if (level <= ABORIA_LOG_LEVEL) { \
-    	std::cout << message << std::endl; \
+        char color[] =  { 0x1b, '[', '3', '8', ';', '5', ';', '7', 'm', 0 }; \
+        char reset[] =  { 0x1b, '[', '0', 'm', 0 }; \
+        switch (level) { \
+            case 1:  \
+                color[7] = '4'; \
+                break; \
+            case 2: \
+                color[7] = '2'; \
+                break; \
+            case 3: \
+                color[7] = '1'; \
+        } \
+    	std::cout << color << message << reset << std::endl; \
     }
+
+        //char color[] =  { 0x1b, '[', '1', ';', '3', '7', 'm', 0 }; \
+        
+#define LOG_BOLD(level, message) \
+    if (level <= ABORIA_LOG_LEVEL) { \
+        char bold[] =  { 0x1b, '[', '1', 'm', 0 }; \
+        char color[] =  { 0x1b, '[', '3', '8', ';', '5', ';', '7', 'm', 0 }; \
+        char reset[] =  { 0x1b, '[', '0', 'm', 0 }; \
+        switch (level) { \
+            case 1:  \
+                color[5] = '4'; \
+                break; \
+            case 2: \
+                color[5] = '2'; \
+                break; \
+            case 3: \
+                color[5] = '1'; \
+        } \
+    	std::cout << bold << color << message << reset << std::endl; \
+    }
+
+
 
 #define LOG_CUDA(level,message) \
     if (level <= ABORIA_LOG_LEVEL) { \

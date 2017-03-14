@@ -233,7 +233,7 @@ For example,
 
     	auto tpl = euclidean_search(test.get_query(),double3(1.1*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
-    	const typename Test_type::value_type &pfound = tuple_ns::get<0>(*tpl.begin());
+    	typename Test_type::const_reference pfound = tuple_ns::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
     	tpl = euclidean_search(test.get_query(),double3(0.9*radius,0,0),radius);
@@ -337,6 +337,7 @@ For example,
         typedef position_d<D> position;
         typedef Vector<double,D> double_d;
         typedef Vector<bool,D> bool_d;
+        typedef Vector<int,D> int_d;
         typedef Vector<unsigned int,D> uint_d;
     	double_d min(-1);
     	double_d max(1);
@@ -345,7 +346,7 @@ For example,
         double r2 = r*r;
 
 
-        std::cout << "non_periodic random test (D="<<D<<" N="<<N<<" r="<<r<<"):" << std::endl;
+        std::cout << "random test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<"):" << std::endl;
 
         unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine gen(seed1); 
@@ -367,8 +368,9 @@ For example,
                     //std::cout << "position of i = "<<get<position>(i)<<std::endl;
                     for (auto tpl: euclidean_search(particles.get_query(),get<position>(i),r)) {
                         typename particles_type::const_reference j = std::get<0>(tpl);
+                        typename particles_type::double_d dx = std::get<1>(tpl);
                         //std::cout << "position of j = "<<get<position>(j)<<std::endl;
-                        TS_ASSERT_LESS_THAN_EQUALS((get<position>(i)-get<position>(j)).squaredNorm(),r2);
+                        TS_ASSERT_LESS_THAN_EQUALS(dx.squaredNorm(),r2);
                         count++;
                     }
                     get<neighbours>(i) = count;
@@ -382,8 +384,21 @@ For example,
                 [&](typename particles_type::reference i) {
                     int count = 0;
                     for (typename particles_type::const_reference j: particles) {
-                        if ((get<position>(i)-get<position>(j)).squaredNorm() <= r2) {
-                            count++;
+                        typename particles_type::double_d pi = get<position>(i);
+                        typename particles_type::double_d pj = get<position>(j);
+                        if (is_periodic) {
+                            lattice_iterator<D> periodic_it(int_d(-1),int_d(1),int_d(-1));
+                            lattice_iterator<D> periodic_end(int_d(-1),int_d(1),int_d(1));
+                            ++periodic_end;
+                            for (; periodic_it != periodic_end; ++periodic_it) {
+                                if ((pi+(*periodic_it)*(max-min)-pj).squaredNorm() <= r2) {
+                                    count++;
+                                }
+                            }
+                        } else {
+                            if ((pi-pj).squaredNorm() <= r2) {
+                                count++;
+                            }
                         }
                     }
                     TS_ASSERT_EQUALS(count,get<neighbours>(i));
@@ -455,8 +470,8 @@ For example,
     }
 
     void test_std_vector_nanoflann_adaptor(void) {
-        helper_d_test_list_regular<std::vector,bucket_search_parallel>();
-        helper_d_test_list_random<std::vector,bucket_search_parallel>();
+        helper_d_test_list_random<std::vector,nanoflann_adaptor>();
+        helper_d_test_list_regular<std::vector,nanoflann_adaptor>();
     }
 
     void test_thrust_vector_bucket_search_serial(void) {

@@ -45,17 +45,39 @@ struct getter_type{
     getter_type(const getter_type& other):data(other.data) {}
     CUDA_HOST_DEVICE
     getter_type(getter_type&& other):data(std::move(other.data)) {}
-   
-    template <typename tuple_type2, typename = typename
-    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
+
+    template <typename T=tuple_reference, typename = typename
+    std::enable_if<
+        !std::is_same<T,tuple_type>::value
+        >::type>
     CUDA_HOST_DEVICE
-    getter_type(const getter_type<tuple_type2,mpl_vector_type>& other):
+    getter_type(const getter_type<tuple_reference,mpl_vector_type>& other):
         data(other.data) {}
 
-    template <typename tuple_type2, typename = typename
-    std::enable_if<std::is_convertible<tuple_type2,tuple_type>::value>::type>
+    template <typename T=tuple_reference, typename = typename
+    std::enable_if<
+        !std::is_same<T,tuple_type>::value
+        >::type>
     CUDA_HOST_DEVICE
-    getter_type(getter_type<tuple_type2,mpl_vector_type>&& other):
+    getter_type(getter_type<tuple_reference,mpl_vector_type>&& other):
+        data(std::move(other.data)) {}
+
+    template <typename T, typename = typename
+    std::enable_if<
+        (!std::is_same<T,tuple_type>::value)
+        && (!std::is_same<T,tuple_reference>::value)
+        >::type>
+    CUDA_HOST_DEVICE
+    getter_type(const getter_type<T,mpl_vector_type>& other):
+        data(other.data) {}
+
+    template <typename T, typename = typename
+    std::enable_if<
+        (!std::is_same<T,tuple_type>::value)
+        && (!std::is_same<T,tuple_reference>::value)
+        >::type>
+    CUDA_HOST_DEVICE
+    getter_type(getter_type<T,mpl_vector_type>&& other):
         data(std::move(other.data)) {}
 
     
@@ -63,26 +85,73 @@ struct getter_type{
     CUDA_HOST_DEVICE
     getter_type(T1&& arg1, T2&& arg2, T3&&... args):data(std::forward<T1>(arg1),std::forward<T2>(arg2),std::forward<T3>(args)...) {}
 
+    template <typename T>
+    int throw_away(const T& in) {
+        return 0;
+    }
+
+    template<typename Tuple, std::size_t... I>
+    void copy_impl(const Tuple& other_data, detail::index_sequence<I...>) {
+        int dummy[] = { 0, throw_away(tuple_ns::get<I>(data) = tuple_ns::get<I>(other_data))... };
+        static_cast<void>(dummy);
+    }
+
     CUDA_HOST_DEVICE
     getter_type& operator=( const getter_type& other ) {
+        //copy_impl(other.data,detail::make_index_sequence<tuple_ns::tuple_size<tuple_type>::value>());
         data = other.data;
         return *this;
     }
     CUDA_HOST_DEVICE
     getter_type& operator=( getter_type&& other ) {
-        data = std::move(other.data);
-        return *this;
-    }
-    template <typename T1, typename T2> 
-    CUDA_HOST_DEVICE
-    getter_type& operator=( const getter_type<T1,T2>& other) {
+        //copy_impl(other.data,detail::make_index_sequence<tuple_ns::tuple_size<tuple_type>::value>());
         data = other.data;
         return *this;
     }
-    template <typename T1, typename T2> 
+
+    template <typename T=tuple_reference, typename = typename
+    std::enable_if<
+        !std::is_same<T,tuple_type>::value
+        >::type>
     CUDA_HOST_DEVICE
-    getter_type& operator=( getter_type<T1,T2>&& other) {
-        data = std::move(other.data);
+    getter_type& operator=( const getter_type<tuple_reference,mpl_vector_type>& other) {
+        //copy_impl(other.data,detail::make_index_sequence<tuple_ns::tuple_size<tuple_type>::value>());
+        data = other.data;
+        return *this;
+    }
+
+    template <typename T=tuple_reference, typename = typename
+    std::enable_if<
+        !std::is_same<T,tuple_type>::value
+        >::type>
+    CUDA_HOST_DEVICE
+    getter_type& operator=(getter_type<tuple_reference,mpl_vector_type>&& other) {
+        //copy_impl(other.data,detail::make_index_sequence<tuple_ns::tuple_size<tuple_type>::value>());
+        data = other.data;
+        return *this;
+    }
+
+    template <typename T, typename = typename
+    std::enable_if<
+        (!std::is_same<T,tuple_reference>::value)
+        && (!std::is_same<T,tuple_type>::value)
+        >::type>
+    CUDA_HOST_DEVICE
+    getter_type& operator=( const getter_type<T,mpl_vector_type>& other) {
+        //copy_impl(other.data,detail::make_index_sequence<tuple_ns::tuple_size<tuple_type>::value>());
+        data = other.data;
+        return *this;
+    }
+
+    template <typename T, typename = typename
+    std::enable_if<
+        (!std::is_same<T,tuple_reference>::value)
+        && (!std::is_same<T,tuple_type>::value)
+        >::type>
+    CUDA_HOST_DEVICE
+    getter_type& operator=( getter_type<T,mpl_vector_type>&& other) {
+        //copy_impl(other.data,detail::make_index_sequence<tuple_ns::tuple_size<tuple_type>::value>());
+        data = other.data;
         return *this;
     }
 

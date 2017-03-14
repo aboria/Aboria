@@ -64,6 +64,7 @@ namespace Aboria {
 
 namespace detail {
 
+// reorders v such that v_new[i] == v[order[i]]
 template< typename order_iterator, typename value_iterator >
 void reorder_destructive( order_iterator order_begin, order_iterator order_end, value_iterator v )  {
     typedef typename std::iterator_traits< value_iterator >::value_type value_t;
@@ -71,19 +72,24 @@ void reorder_destructive( order_iterator order_begin, order_iterator order_end, 
     typedef typename std::iterator_traits< order_iterator >::value_type index_t;
     typedef typename std::iterator_traits< order_iterator >::difference_type diff_t;
 
-    diff_t remaining = order_end - 1 - order_begin;
-    for ( index_t s = index_t(); remaining > 0; ++ s ) {
-        index_t d = order_begin[s];
-        if ( d == (diff_t) -1 ) continue;
-        -- remaining;
-        value_t temp = static_cast<reference>(v[s]);
-        for ( index_t d2; d != s; d = d2 ) {
-            //Aboria::swap( temp, static_cast<reference>(v[d]) );
-            Aboria::swap( static_cast<reference>(v[d]), temp  );
-            std::swap( order_begin[d], d2 = (index_t) -1 );
-            -- remaining;
+    diff_t size = order_end - order_begin;
+    
+    size_t i, j, k;
+    value_t temp;
+    for(i = 0; i < size; i++){
+        if(i != order_begin[i]){
+            temp = v[i];
+            k = i;
+            while(i != (j = order_begin[k])){
+                // every move places a value in it's final location
+                // NOTE: need the static cast or assignment has no effect (TODO: why?)
+                static_cast<reference>(v[k])  = v[j];
+                order_begin[k] = k;
+                k = j;
+            }
+            v[k] = temp;
+            order_begin[k] = k;
         }
-        v[s] = temp;
     }
 }
 
@@ -129,6 +135,7 @@ class nanoflann_adaptor:
     friend base_type;
 
     typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
+    typedef typename kd_tree_type::Node node_type;
 
 
 public:
@@ -186,8 +193,6 @@ public:
 
 private:
     void set_domain_impl() {
-        CHECK(!this->m_periodic.any(),"kd-tree does not work (yet) with periodic boundaries");
-
         this->m_query.m_bounds.bmin = this->m_bounds.bmin;
         this->m_query.m_bounds.bmax = this->m_bounds.bmax;
         this->m_query.m_periodic = this->m_periodic;
@@ -196,6 +201,56 @@ private:
 
     void update_iterator_impl() {
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+    }
+
+    void print_tree(const node_type* nodes) {
+#ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            std::vector<const node_type*> new_nodes;
+            new_nodes.push_back(nodes);
+            print_level(new_nodes);
+        }
+#endif
+    }
+
+    void print_level(std::vector<const node_type*> &nodes) {
+#ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            std::vector<const node_type*> new_nodes;
+            LOG(4,"printing level with "<<nodes.size()<<" nodes");
+            for (const node_type* ptr: nodes) {
+                if (this->m_query.is_leaf_node(*ptr)) {
+                    const int idx = this->m_query.get_dimension_index(*ptr);
+                    const double_d bbox_low = this->m_query.get_bucket_bounds_low(*ptr);
+                    const double_d bbox_high = this->m_query.get_bucket_bounds_high(*ptr);
+                    const int start_index = ptr->node_type.lr.left;
+                    const int end_index = ptr->node_type.lr.right;
+                    LOG(4,"\tleaf node with idx = "<<idx<<" box low =  "<<bbox_low<<" and high = "<<bbox_high<<" start index = "<<start_index<<" end index = "<<end_index);
+                    LOG(4,"\tparticles in bucket are:");
+                    for (int i = start_index; i < end_index; ++i) {
+                        const double_d p = get<position>(this->m_particles_begin)[i];
+                        LOG(4,"\t\tposition = "<<p);
+                    }
+                } else {
+                    const int idx = this->m_query.get_dimension_index(*ptr);
+                    const double_d bbox_low = this->m_query.get_bucket_bounds_low(*ptr);
+                    const double_d bbox_high = this->m_query.get_bucket_bounds_high(*ptr);
+                    const double cut_low = this->m_query.get_cut_low(*ptr);
+                    const double cut_high = this->m_query.get_cut_high(*ptr);
+                    LOG(4,"\tNOT leaf node with idx = "<<idx<<" cut_low= "<<cut_low<<" cut_high = "<<cut_high);
+                    const node_type* child1 = this->m_query.get_child1(ptr);
+                    const node_type* child2 = this->m_query.get_child2(ptr);
+                    new_nodes.push_back(child1);
+                    new_nodes.push_back(child2);
+                }
+            }
+            if (new_nodes.size() > 0) {
+                print_level(new_nodes);
+            } else {
+                LOG(4,"finished tree");
+            }
+        }
+#endif
     }
 
 
@@ -218,8 +273,11 @@ private:
                 m_kd_tree->get_vind().end(), 
                 this->m_particles_begin);
 
+
         this->m_query.m_root = m_kd_tree->get_root_node();
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+
+        print_tree(m_kd_tree->get_root_node());
     }
 
 
@@ -270,6 +328,7 @@ struct nanoflann_adaptor_query {
 
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
     const double_d& get_bounds_high() const { return m_bounds.bmax; }
+    const bool_d& get_periodic() const { return m_periodic; }
 
     /*
      * functions for tree_query_iterator
@@ -313,7 +372,7 @@ struct nanoflann_adaptor_query {
     iterator_range<particle_iterator> 
     get_bucket_particles(const value_type& bucket) const {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_bucket_particles: looking in bucket blah");
+        LOG(4,"\tget_bucket_particles: looking in bucket with bounding box low =  "<<get_bucket_bounds_low(bucket)<<" and high = "<<get_bucket_bounds_high(bucket)<<" idx = "<<get_dimension_index(bucket)<<" start index = "<<bucket.node_type.lr.left<<" end index = "<<bucket.node_type.lr.right);
 #endif        
         
         return iterator_range<particle_iterator>(
@@ -321,10 +380,22 @@ struct nanoflann_adaptor_query {
                         particle_iterator(m_particles_begin + bucket.node_type.lr.right));
     }
 
-    static
-    detail::bbox<dimension> 
-    get_bucket_bbox(const value_type& bucket) {
-        return detail::bbox<dimension>(bucket->bbox.low,bucket->bbox.high);
+    static double_d
+    get_bucket_bounds_low(const value_type& bucket) {
+        double_d low;
+        for (int i = 0; i < dimension; ++i) {
+            low[i] = bucket.bbox[i].low;
+        }
+        return low;
+    }
+
+    static double_d
+    get_bucket_bounds_high(const value_type& bucket) {
+        double_d high;
+        for (int i = 0; i < dimension; ++i) {
+            high[i] = bucket.bbox[i].high;
+        }
+        return high;
     }
 
     template <int LNormNumber=-1>

@@ -71,10 +71,11 @@ class search_iterator {
     typedef typename Traits::position position;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
+    typedef typename Traits::int_d int_d;
     typedef typename particle_iterator::value_type p_value_type;
     typedef typename particle_iterator::reference p_reference;
     typedef typename particle_iterator::pointer p_pointer;
-    typedef typename lattice_iterator<dimension> periodic_iterator_type;
+    typedef lattice_iterator<dimension> periodic_iterator_type;
 
     bool m_valid;
     double_d m_r;
@@ -98,8 +99,8 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     static iterator_range<periodic_iterator_type> get_periodic_range(const bool_d is_periodic) {
-        int_d start = int_d(-1)*m_query->get_periodic();
-        int_d end = int_d(1)*m_query->get_periodic();
+        int_d start = int_d(-1)*is_periodic;
+        int_d end = int_d(1)*is_periodic;
         return iterator_range<periodic_iterator_type>(
                 periodic_iterator_type(start,end,start),
                 ++periodic_iterator_type(start,end,end));
@@ -121,18 +122,25 @@ public:
         m_max_distance2(detail::distance_helper<LNormNumber>::get_value_to_accumulate(max_distance)),
         m_periodic(get_periodic_range(m_query->get_periodic())),
         m_current_periodic(m_periodic.begin()),
-        m_current_point(r+(*m_current_periodic)*m_query->get_bounds());
+        m_current_point(r+(*m_current_periodic)
+                            *(m_query->get_bounds_high()-m_query->get_bounds_low())),
         m_bucket_range(query.get_buckets_near_point(m_current_point,max_distance)),
         m_current_bucket(m_bucket_range.begin())
     {
         if (m_valid = get_valid_bucket()) {
+            m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
+            m_current_particle = m_particle_range.begin();
             if (m_valid = get_valid_candidate()) {
                 if (!check_candidate()) {
                     increment();
                 }
             }
         }
-        LOG(4,"\tconstructor (search_iterator): r = "<<m_r<<"m_current_particle position= "<<get<position>(*m_current_particle));
+        if (m_valid) {
+            LOG_BOLD(3,"\tconstructor (search_iterator with query pt = "<<m_r<<"): found good canditate at "<<get<position>(*m_current_particle));
+        } else {
+            LOG(3,"\tconstructor (search_iterator with query pt = "<<m_r<<"): didn't find good candidate");
+        }
     }
     
     CUDA_HOST_DEVICE
@@ -187,6 +195,9 @@ public:
 
     CUDA_HOST_DEVICE
     bool get_valid_bucket() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_valid_bucket:"); 
+#endif
         while (m_current_bucket == m_bucket_range.end()) {
 #ifndef __CUDA_ARCH__
             LOG(4,"\tgo_to_next periodic (search_iterator):"); 
@@ -200,7 +211,7 @@ public:
             }
             m_current_point = m_r + (*m_current_periodic)*
                                 (m_query->get_bounds_high()-m_query->get_bounds_low());
-            m_bucket_range = m_query->get_buckets_near_point(m_current_point,max_distance);
+            m_bucket_range = m_query->get_buckets_near_point(m_current_point,m_max_distance);
             m_current_bucket = m_bucket_range.begin();
         }
         return true;
@@ -216,6 +227,8 @@ public:
             if (!get_valid_bucket()) {
                 return false;
             }
+            m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
+            m_current_particle = m_particle_range.begin();
         }
         return true;
     }
@@ -255,18 +268,18 @@ public:
     CUDA_HOST_DEVICE
     void increment() {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (search_iterator):"); 
+        LOG(3,"\tincrement (search_iterator):"); 
 #endif
         bool found_good_candidate = false;
-        while (!found_good_candidate && m_valid=go_to_next_candidate()) {
+        while (!found_good_candidate && (m_valid=go_to_next_candidate())) {
             found_good_candidate = check_candidate();
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tfound_good_candidate = "<<found_good_candidate); 
+            LOG(3,"\tfound_good_candidate = "<<found_good_candidate); 
 #endif
             
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (search_iterator): invalid = " << m_valid); 
+        LOG(3,"\tend increment (search_iterator): valid = " << m_valid); 
 #endif
     }
 
