@@ -622,22 +622,26 @@ public:
         m_node(nullptr)
     {
         //m_stack.reserve(m_query->get_max_levels());
-        double accum = 0;
-        for (int i = 0; i < dimension; ++i) {
-            const double val = m_query_point[i];
-            if (val < m_query->get_bounds_low()[i]) {
-                m_dists[i] = val - m_query->get_bounds_low()[i];
-            } else if (m_query_point[i] > m_query->get_bounds_high()[i]) {
-                m_dists[i] = val - m_query->get_bounds_high()[i];
-            }
-            accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
-        }
-        if (accum <= m_max_distance2) {
-            LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
-            m_node = start_node;
-            go_to_next_leaf();
+        if (start_node == nullptr) {
+                LOG(4,"\ttree_query_iterator (constructor) empty tree, returning default iterator");
         } else {
-            LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
+            double accum = 0;
+            for (int i = 0; i < dimension; ++i) {
+                const double val = m_query_point[i];
+                if (val < m_query->get_bounds_low()[i]) {
+                    m_dists[i] = val - m_query->get_bounds_low()[i];
+                } else if (m_query_point[i] > m_query->get_bounds_high()[i]) {
+                    m_dists[i] = val - m_query->get_bounds_high()[i];
+                }
+                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
+            }
+            if (accum <= m_max_distance2) {
+                LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
+                m_node = start_node;
+                go_to_next_leaf();
+            } else {
+                LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
+            }
         }
     }
 
@@ -715,6 +719,8 @@ public:
 
     void go_to_next_leaf() {
         while(!m_query->is_leaf_node(*m_node)) {
+            ASSERT(m_query->get_child1(m_node) != NULL,"no child1");
+            ASSERT(m_query->get_child2(m_node) != NULL,"no child2");
             /* Which child branch should be taken first? */
             const size_t idx = m_query->get_dimension_index(*m_node);
             const double val = m_query_point[idx];

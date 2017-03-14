@@ -209,6 +209,10 @@ public:
         helper_md<bucket_search_serial>();
     }
 
+    void test_nanoflann_adaptor() {
+        helper_md<nanoflann_adaptor>();
+    }
+
 
 };
 

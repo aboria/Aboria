@@ -101,13 +101,13 @@ public:
 
         /*
          * initialise neighbour search with 3d cuboid domain,
-         * periodic in x and y, using a search radius of 
-         * "dem_diameter"
+         * periodic in x and y, set cell size so that there is
+         * an average of 2 particles within each cell
          */
         dem.init_neighbour_search(
                 double3(0,0,-dem_diameter),
                 double3(L/3,L/3,L+dem_diameter),
-                dem_diameter,bool3(true,true,false));
+                bool3(true,true,false),2);
 
         /*
          * create N random, non-overlaping particles with 
@@ -127,10 +127,9 @@ public:
                                     );
                 free_position = true;
                 /*
-                 * loop over all neighbouring particles within a square with
-                 * side length "dem_diameter" (see init_neighbour_search call above)
+                 * loop over all neighbouring particles within "dem_diameter" distance
                  */
-                for (auto tpl: box_search(dem.get_query(),get<position>(p))) {
+                for (auto tpl: euclidean_search(dem.get_query(),get<position>(p),dem_diameter)) {
                     /*
                      * tpl variable is a tuple containing:
                      *  (0) -> neighbouring particle value_type
@@ -167,9 +166,10 @@ public:
         auto dx = create_dx(a,b);
 
         /*
-         * sum is a symbolic function that sums a sequence of 2d vectors
+         * sum is a symbolic function that sums a sequence of 3d vectors
+         * over neighbouring particles within "dem_diameter"
          */
-        Accumulate<std::plus<double3> > sum;
+        AccumulateWithinDistance<std::plus<double3> > sum(dem_diameter);
 
         /*
          * vector creates a new double vector of dimension 3
@@ -191,8 +191,9 @@ public:
                 p[a] += v[a]*dt;
 
                 dvdt[a] = (// spring force between dem particles
-                        sum(b, id_[a]!=id_[b] && norm(dx)<r[a]+r[b], 
-                              -dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a]))
+                        sum(b, if_else(id_[a]!=id_[b] 
+                                ,-dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a])
+                                ,0))
                     
                         // spring force between particles and bottom wall
                         + if_else(r[a]-p[a][2] > 0, dem_k*(r[a]-p[a][2]), 0.0)*double3(0,0,1) 

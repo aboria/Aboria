@@ -142,12 +142,10 @@ public:
 
     nanoflann_adaptor():
         base_type(), 
-        m_kd_tree(nullptr) 
+        m_kd_tree(dimension,*this) 
     {}
 
-    ~nanoflann_adaptor() {
-        delete m_kd_tree;
-    }
+    //~nanoflann_adaptor() {}
 
 
     static constexpr bool cheap_copy_and_delete_at_end() {
@@ -187,12 +185,15 @@ public:
 	bool kdtree_get_bbox(BBOX& bb) const { 
         for (int i = 0; i < dimension; ++i) {
             bb[i].low = this->m_bounds.bmin[i];
+            bb[i].high = this->m_bounds.bmax[i];
         }
 	    return true;
     }
 
 private:
     void set_domain_impl() {
+        m_kd_tree.set_leaf_max_size(this->m_n_particles_in_leaf);
+
         this->m_query.m_bounds.bmin = this->m_bounds.bmin;
         this->m_query.m_bounds.bmax = this->m_bounds.bmax;
         this->m_query.m_periodic = this->m_periodic;
@@ -255,29 +256,18 @@ private:
 
 
     void embed_points_impl() {
-        if (m_kd_tree != nullptr) {
-            delete m_kd_tree;
-        } else {
-            m_kd_tree = new kd_tree_type(
-                                dimension, 
-                                *this, 
-                                nanoflann::KDTreeSingleIndexAdaptorParams(
-                                    this->m_n_particles_in_leaf
-                                    ) 
-                            );
-        }
-	    m_kd_tree->buildIndex();
+	    m_kd_tree.buildIndex();
 
         detail::reorder_destructive(
-                m_kd_tree->get_vind().begin(), 
-                m_kd_tree->get_vind().end(), 
+                m_kd_tree.get_vind().begin(), 
+                m_kd_tree.get_vind().end(), 
                 this->m_particles_begin);
 
 
-        this->m_query.m_root = m_kd_tree->get_root_node();
+        this->m_query.m_root = m_kd_tree.get_root_node();
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
 
-        print_tree(m_kd_tree->get_root_node());
+        print_tree(m_kd_tree.get_root_node());
     }
 
 
@@ -298,7 +288,7 @@ private:
     }
 
 
-    kd_tree_type* m_kd_tree;
+    kd_tree_type m_kd_tree;
     nanoflann_adaptor_query<Traits> m_query;
 };
 

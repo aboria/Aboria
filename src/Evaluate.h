@@ -96,6 +96,7 @@ void evaluate_nonlinear(ExprRHS const & expr, LabelType &label) {
 
 }
 
+/*
 /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
 /// and particle sets \p a and \p b on a vector rhs and
 /// accumulates the result in vector lhs
@@ -283,6 +284,7 @@ void assemble(Expr &expr,
         }
     }
 }
+*/
 
 
 }
