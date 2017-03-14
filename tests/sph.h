@@ -131,11 +131,12 @@ public:
         }
 
         std::cout << "starting...."<<std::endl;
-        sph.init_neighbour_search(low,high,2*hfac*psep,periodic);
+        sph.init_neighbour_search(low,high,periodic);
+
 
         auto dx = create_dx(a,b);
-        Accumulate<std::plus<double3> > sum_vect;
-        Accumulate<std::plus<double> > sum;
+        AccumulateWithinDistance<std::plus<double3> > sum_vect(2*hfac*psep);
+        AccumulateWithinDistance<std::plus<double> > sum(2*hfac*psep);
         Accumulate<Aboria::max<double> > max;
         max.set_init(0);
         Accumulate<Aboria::min<double> > min;
@@ -157,7 +158,10 @@ public:
                 /*
                  * Calculate omega
                  */
-                omega[a] = 1.0 - (mass/(rho[a]*NDIM))*sum(b,norm(dx)<2*h[a],pow(norm(dx),2)*F(norm(dx),h[a])+NDIM*W(norm(dx),h[a]));
+                omega[a] = 1.0 - (mass/(rho[a]*NDIM))
+                        *sum(b,if_else(norm(dx)<2*h[a]
+                                    ,pow(norm(dx),2)*F(norm(dx),h[a])+NDIM*W(norm(dx),h[a])
+                                    ,0));
 
                 /*
                  * 1/2 -> 1 step
@@ -166,15 +170,17 @@ public:
                 /* 
                  * calculate change in density and kernel radius
                  */
-                rho[a] += dt*(mass/omega[a]) * sum(b,norm(dx)<2*h[a],
-                        dot(v[b]-v[a],dx*F(norm(dx),h[a])));
+                rho[a] += dt*(mass/omega[a]) 
+                            * sum(b,if_else(norm(dx)<2*h[a]
+                                        ,dot(v[b]-v[a],dx*F(norm(dx),h[a]))
+                                        ,0));
                 h[a] = pow(mass/rho[a],1.0/NDIM);
                 
                 /* 
                  * reset neighbour search for new kernel radius
                  */
-                const double maxh = eval(max(a,true,h[a]));
-                const double minh = eval(min(a,true,h[a]));
+                const double maxh = eval(max(a,h[a]));
+                const double minh = eval(min(a,h[a]));
                 sph.reset_neighbour_search(2*maxh);
 
                 /* 
@@ -194,13 +200,15 @@ public:
                 /*
                  * acceleration on SPH calculation
                  */
-                dvdt[a] += mass*sum_vect(b,norm(dx)<2*h[a],
+                dvdt[a] += mass*sum_vect(b,if_else(norm(dx)<2*h[a]
                         
                         // pressure force 
-                        ((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
+                        ,((1.0/omega[a])*pdr2[a]*F(norm(dx),h[a]) + (1.0/omega[b])*pdr2[b]*F(norm(dx),h[b]))*dx 
 
                         // viscous force 
                         + (v[a]-v[b])*visc*(rho[a]+rho[b])/(rho[a]*rho[b])*F(norm(dx),h[a])
+
+                        ,0)
                         );
 
                 
@@ -229,6 +237,10 @@ public:
 
     void test_bucket_search_serial() {
         helper_sph<bucket_search_serial>();
+    }
+
+    void test_nanoflann_adaptor() {
+        helper_sph<nanoflann_adaptor>();
     }
 
 

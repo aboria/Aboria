@@ -155,12 +155,12 @@ public:
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
         auto dx = create_dx(a,b);
-        Accumulate<std::plus<double> > sum;
+        AccumulateWithinDistance<std::plus<double> > sum(diameter);
 
        	particles.push_back(double3(0,0,0));
        	particles.push_back(double3(diameter*2,0,0));
 
-       	s[a] = sum(b, norm(dx) < diameter, 1);
+       	s[a] = sum(b, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
@@ -185,7 +185,7 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[1],0.5);
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],0.5);
 
-       	s[a] = sum(b, norm(dx) < diameter, 1);
+       	s[a] = sum(b, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
@@ -204,9 +204,9 @@ public:
     	TS_ASSERT_EQUALS(get<position>(particles[1])[1],diameter/2.0);
     	TS_ASSERT_EQUALS(get<position>(particles[1])[2],diameter/2.0);
 
-        Accumulate<std::plus<double3> > sumVect;
+        AccumulateWithinDistance<std::plus<double3> > sumVect(diameter);
 
-    	p[a] = sumVect(b, norm(dx) < diameter, double3(0,0,0) + 0.5*(s[a]/2.0 + s[b]/10.0));
+    	p[a] = sumVect(b, double3(0,0,0) + 0.5*(s[a]/2.0 + s[b]/10.0));
 
     	TS_ASSERT_EQUALS(get<position>(particles[0])[0],0.05);
     	TS_ASSERT_EQUALS(get<position>(particles[0])[1],0.05);
@@ -219,16 +219,17 @@ public:
         //
         // test inf norm range sum
         //
+        AccumulateWithinDistance<std::plus<double>, -1> box_sum(diameter);
         get<position>(particles)[0] = double3(0,0,0);
         get<position>(particles)[1] = 0.99*double3(diameter,diameter,diameter);
         particles.update_positions();
 
-        s[a] = sum(b, norm(dx) < diameter, 1);
+        s[a] = sum(b, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),1);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),1);
 
-        s[a] = sum(b, inf_norm(dx) < diameter, 1);
+        s[a] = box_sum(b, 1);
 
     	TS_ASSERT_EQUALS(get<scalar>(particles[0]),2);
     	TS_ASSERT_EQUALS(get<scalar>(particles[1]),2);
@@ -259,18 +260,18 @@ public:
        	particles.push_back(double3(0,0,0));
        	particles.push_back(double3(2,0,0));
 
-        double result = eval(sum(a, p[a][0]<1, 1));
+        double result = eval(sum(a, if_else(p[a][0]<1, 1, 0)));
     	TS_ASSERT_EQUALS(result,1);
-       	result = eval(sum(a, true, 1));
+       	result = eval(sum(a, 1));
     	TS_ASSERT_EQUALS(result,2);
-       	result = eval(sum(a, true, p[a][0]));
+       	result = eval(sum(a, p[a][0]));
     	TS_ASSERT_EQUALS(result,2);
-        int result2 = eval(max(a, true, id_[a]));
+        int result2 = eval(max(a, id_[a]));
     	TS_ASSERT_EQUALS(result2,1);
-        result2 = eval(min(a, true, id_[a]));
+        result2 = eval(min(a, id_[a]));
     	TS_ASSERT_EQUALS(result2,0);
        	particles.push_back(double3(0,0,0));
-        result2 = eval(max(a, true, id_[a]));
+        result2 = eval(max(a, id_[a]));
     	TS_ASSERT_EQUALS(result2,2);
     }
 

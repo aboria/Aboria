@@ -399,16 +399,6 @@ namespace Aboria {
         void set_radius(const double radius) { m_radius = radius; m_radius2 = m_radius*m_radius; }
         double get_radius() { return m_radius; }
 
-        Scalar eval(const_position_reference dx, 
-                    const_row_reference a, 
-                    const_col_reference b) const {
-            if (dx.squaredNorm() < m_radius2) {
-                return this->m_function(dx,a,b);
-            } else {
-                return 0.0;
-            }
-        }
-
         Scalar coeff(const size_t i, const size_t j) const {
             ASSERT(i>=0, "i less than zero");
             ASSERT(j>=0, "j less than zero");
@@ -417,7 +407,11 @@ namespace Aboria {
             const_row_reference ai = this->m_row_particles[i];
             const_col_reference bj = this->m_col_particles[j];
             const_position_reference dx = get<position>(bj)-get<position>(ai);
-            return eval(dx,ai,bj);
+            if (dx.squaredNorm() < m_radius2) {
+                return this->m_function(dx,ai,bj);
+            } else {
+                return 0.0;
+            }
         }
 
         template<typename MatrixType>
@@ -433,11 +427,11 @@ namespace Aboria {
             //sparse a x b block
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
+                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),m_radius)) {
                     const_position_reference dx = tuple_ns::get<1>(pairj);
                     const_col_reference bj = tuple_ns::get<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    const_cast< MatrixType& >(matrix)(i,j) = eval(dx,ai,bj);
+                    const_cast< MatrixType& >(matrix)(i,j) = this->m_function(dx,ai,bj);
                 }
             }
         }
@@ -460,13 +454,11 @@ namespace Aboria {
             //std::cout << "sparse a x b block" << std::endl;
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
+                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),m_radius)) {
                     const_position_reference dx = tuple_ns::get<1>(pairj);
                     const_col_reference bj = tuple_ns::get<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    if (dx.squaredNorm() < m_radius2) {
-                        triplets.push_back(Triplet(i+startI,j+startJ,this->m_function(dx,ai,bj)));
-                    }
+                    triplets.push_back(Triplet(i+startI,j+startJ,this->m_function(dx,ai,bj)));
                 }
             }
         }
@@ -489,13 +481,11 @@ namespace Aboria {
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
                 Scalar sum(0);
-                for (auto pairj: box_search(b.get_query(),get<position>(ai))) {
+                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),m_radius)) {
                     const_position_reference dx = tuple_ns::get<1>(pairj);
                     const_col_reference bj = tuple_ns::get<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    if (dx.squaredNorm() < m_radius2) {
-                        sum += this->m_function(dx,ai,bj)*rhs[j];
-                    }
+                    sum += this->m_function(dx,ai,bj)*rhs[j];
                 }
                 lhs[i] += sum;
             }

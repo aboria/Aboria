@@ -127,18 +127,21 @@ set(BDTestFile bd.h)
 set(BDTest
     test_bucket_search_serial
     test_bucket_search_parallel
+    test_nanoflann_adaptor
     )
 
 set(SPHTestFile sph.h)
 set(SPHTest
     test_bucket_search_serial
     test_bucket_search_parallel
+    test_nanoflann_adaptor
     )
  
 set(MDTestFile md.h)
 set(MDTest
     test_bucket_search_serial
     test_bucket_search_parallel
+    test_nanoflann_adaptor
     )
  
 set(RbfInterpolationTestFile rbf_interpolation.h)
@@ -157,6 +160,7 @@ set(DiffusionAroundSpheresFile diffusion_around_spheres.h)
 set(DiffusionAroundSpheres 
     test_bucket_search_serial
     test_bucket_search_parallel
+    test_nanoflann_adaptor
     )
 
 set(ChebyshevTestFile chebyshev.h)

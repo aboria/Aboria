@@ -944,6 +944,9 @@ namespace nanoflann
             return vind;
         }
 
+        void set_leaf_max_size(const size_t size) { m_leaf_max_size = size; }
+        size_t get_leaf_max_size() { return m_leaf_max_size; }
+
 		/** Frees the previously-built index. Automatically called within buildIndex(). */
 		void freeIndex()
 		{
@@ -958,10 +961,12 @@ namespace nanoflann
 		void buildIndex()
 		{
 			init_vind();
+            assert(vind.size()==m_size);
 			freeIndex();
 			m_size_at_index_build = m_size;
 			if(m_size == 0) return;
 			computeBoundingBox(root_bbox);
+            assert(vind.size()==m_size);
 			root_node = divideTree(0, m_size, root_bbox );   // construct the tree
 		}
 
@@ -1169,10 +1174,14 @@ namespace nanoflann
 		 */
 		NodePtr divideTree(const IndexType left, const IndexType right, BoundingBox& bbox)
 		{
+            assert(vind.size()==m_size);
+
 			NodePtr node = pool.allocate<Node>(); // allocate memory
 
+            assert(vind.size()==m_size);
 			/* If too few exemplars remain, then make this a leaf node. */
 			if ( (right-left) <= static_cast<IndexType>(m_leaf_max_size) ) {
+                assert(vind.size()==m_size);
 				node->child1 = node->child2 = NULL;    /* Mark as leaf node. */
 				node->node_type.lr.left = left;
 				node->node_type.lr.right = right;

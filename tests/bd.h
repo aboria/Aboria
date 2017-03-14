@@ -84,8 +84,8 @@ public:
         }
 
 
-        points.init_neighbour_search(double3(-L/5,-L/5,-L/5),double3(L/5,L/5,L/5),4,bool3(true,true,true));
-        spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),4,bool3(false,false,false));
+        points.init_neighbour_search(double3(-L/5,-L/5,-L/5),double3(L/5,L/5,L/5),bool3(true,true,true));
+        spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(false,false,false),1);
 
         Symbol<position> p;
         Symbol<radius> r;
@@ -97,8 +97,8 @@ public:
         auto dx = create_dx(i,b);
         Normal N;
         VectorSymbolic<double,3> vector;      
-        Accumulate<std::bit_or<bool> > any;
-        Accumulate<std::plus<double3> > sum;
+        AccumulateWithinDistance<std::bit_or<bool> > any(4);
+        AccumulateWithinDistance<std::plus<double3> > sum(4);
 
         int count_before=0;
         for(auto point: points) {
@@ -110,7 +110,7 @@ public:
         /*
          * Kill any points within spheres
          */
-        alive_[i] = !any(b, norm(dx) < r[b],true);
+        alive_[i] = !any(b, if_else(norm(dx) < r[b],true,false));
 
 
         int count_after=0;
@@ -134,8 +134,9 @@ public:
                 std::cout << "." << std::flush;
             }
             p[i] += std::sqrt(2*D*dt)*vector(N[i],N[i],N[i]);
-            p[i] += sum(b, norm(dx) < r[b],
-                        -2*(r[b]/norm(dx)-1)*dx );
+            p[i] += sum(b, if_else(norm(dx) < r[b]
+                                ,-2*(r[b]/norm(dx)-1)*dx
+                                ,0));
 
         }
         std::cout << std::endl;
@@ -148,6 +149,10 @@ public:
 
     void test_bucket_search_serial() {
         helper_bd<bucket_search_serial>();
+    }
+
+    void test_nanoflann_adaptor() {
+        helper_bd<nanoflann_adaptor>();
     }
 
 };

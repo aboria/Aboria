@@ -77,7 +77,7 @@ public:
 		spheres.push_back(double3(0,0,5));
 		get<radius>(spheres[3]) = 1.0;
 
-    	spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),4,bool3(true,true,true));
+    	spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(true,true,true),1);
 
 		points_type points;
 		std::uniform_real_distribution<double> uni(-L,L);
@@ -85,7 +85,7 @@ public:
 			points.push_back(double3(uni(generator),uni(generator),uni(generator)));
 		}
 
-    	points.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),4,bool3(true,true,true));
+    	points.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(true,true,true));
 
         Symbol<position> p;
         Symbol<id> id_;
@@ -99,13 +99,13 @@ public:
 
 		Normal N;
 		VectorSymbolic<double,3> vector;		
-        Accumulate<std::bit_or<bool> > any;
-        Accumulate<std::plus<double3> > sum;
+        AccumulateWithinDistance<std::bit_or<bool> > any(4);
+        AccumulateWithinDistance<std::plus<double3> > sum(4);
 
 		/*
 		 * Kill any points within spheres
 		 */
-		alive_[a_p] = !any(b_s, norm(dx) <= r[b_s],true);
+		alive_[a_p] = !any(b_s, if_else(norm(dx) <= r[b_s],true,false));
 
 		/*
 		 * Check no points within spheres
@@ -122,8 +122,9 @@ public:
 		 */
 		for (int i = 0; i < timesteps; ++i) {
 			p[a_p] += std::sqrt(2*D*dt)*vector(N[a_p],N[a_p],N[a_p]);
-            p[a_p] += sum(b_s, norm(dx) < r[b_s],
-                    -2*(r[b_s]/norm(dx)-1)*dx );
+            p[a_p] += sum(b_s, if_else(norm(dx) < r[b_s]
+                                    ,-2*(r[b_s]/norm(dx)-1)*dx
+                                    ,0));
             /*
             const double3 pos = get<position>(points[0]);
             if (((pos - double3(0,0,0)).norm() < 1.0) || 
@@ -200,6 +201,9 @@ public:
         helper_diffusion_around_spheres<bucket_search_serial>();
     }
 
+    void test_nanoflann_adaptor() {
+        helper_diffusion_around_spheres<nanoflann_adaptor>();
+    }
 
 };
 
