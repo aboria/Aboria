@@ -936,7 +936,7 @@ namespace nanoflann
 		/** Standard destructor */
 		~KDTreeSingleIndexAdaptor() { }
 
-        NodePtr get_root_node() {
+        const NodePtr& get_root_node() {
             return root_node;
         }
 

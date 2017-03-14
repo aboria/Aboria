@@ -155,7 +155,7 @@ public:
     /// \param _max_interaction_radius the side length of each bucket
     /// \param periodic a boolean vector indicating wether each dimension
     void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const unsigned int n_particles_in_leaf=10, const bool not_in_constructor=true) {
-        LOG_CUDA(2,"neighbour_search_base: set_domain:");
+        LOG(2,"neighbour_search_base: set_domain:");
         m_bounds.bmin = min_in;
         m_bounds.bmax = max_in;
         m_periodic = periodic_in;
@@ -627,16 +627,18 @@ public:
             const double val = m_query_point[i];
             if (val < m_query->get_bounds_low()[i]) {
                 m_dists[i] = val - m_query->get_bounds_low()[i];
-            } else if (m_query_point[i] < m_query->get_bounds_low()[i]) {
+            } else if (m_query_point[i] > m_query->get_bounds_high()[i]) {
                 m_dists[i] = val - m_query->get_bounds_high()[i];
             }
             accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
         }
         if (accum <= m_max_distance2) {
+            LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
             m_node = start_node;
             go_to_next_leaf();
+        } else {
+            LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
         }
-        // else invalid
     }
 
 
@@ -715,21 +717,28 @@ public:
         while(!m_query->is_leaf_node(*m_node)) {
             /* Which child branch should be taken first? */
             const size_t idx = m_query->get_dimension_index(*m_node);
-            double val = m_query_point[idx];
+            const double val = m_query_point[idx];
+            const double diff_cut_high = val - m_query->get_cut_high(*m_node);
+            const double diff_cut_low = val - m_query->get_cut_low(*m_node);
 
             pointer bestChild;
             pointer otherChild;
             double cut_dist,bound_dist;
+
+
+            LOG(4,"\ttree_query_iterator (go_to_next_leaf) with query pt = "<<m_query_point<<"): idx = "<<idx<<" cut_high = "<<m_query->get_cut_high(*m_node)<<" cut_low = "<<m_query->get_cut_low(*m_node));
             
             if ((diff_cut_low+diff_cut_high)<0) {
+                LOG(4,"\ttree_query_iterator (go_to_next_leaf) low child is best");
                 bestChild = m_query->get_child1(m_node);
                 otherChild = m_query->get_child2(m_node);
-                cut_dist = val - m_query->get_cut_high(*m_node);
+                cut_dist = diff_cut_high;
                 //bound_dist = val - m_query->get_bounds_high(*m_node);
             } else {
+                LOG(4,"\ttree_query_iterator (go_to_next_leaf) high child is best");
                 bestChild = m_query->get_child2(m_node);
                 otherChild = m_query->get_child1(m_node);
-                cut_dist = val - m_query->get_cut_low(*m_node);
+                cut_dist = diff_cut_low;
                 //bound_dist = val - m_query->get_bounds_low(*m_node);
             }
             
@@ -743,6 +752,7 @@ public:
                 accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
             }
             if (accum <= m_max_distance2) {
+                LOG(4,"\ttree_query_iterator (go_to_next_leaf) push other child for later");
                 m_stack.push(std::make_pair(otherChild,m_dists));
             }
 
@@ -750,6 +760,7 @@ public:
             m_dists[idx] = save_dist;
             m_node = bestChild;
         }
+        LOG(4,"\ttree_query_iterator (go_to_next_leaf) found a leaf node");
     }
     
     void pop_new_child_from_stack() {
