@@ -400,16 +400,16 @@ For example,
         helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false);
-        helper_d_random<2,VectorType,SearchMethod>(5000,0.2,1,true);
-        helper_d_random<2,VectorType,SearchMethod>(5000,0.2,1,false);
-        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,100,true);
-        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,100,false);
-        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,10,true);
-        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,10,false);
-        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,1,true);
-        helper_d_random<3,VectorType,SearchMethod>(5000,0.2,1,false);
-        helper_d_random<4,VectorType,SearchMethod>(5000,0.2,10,true);
-        helper_d_random<4,VectorType,SearchMethod>(5000,0.2,10,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,true);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,true);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,true);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,true);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,false);
+        helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,true);
+        helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,false);
     }
 
     void test_std_vector_bucket_search_serial(void) {
