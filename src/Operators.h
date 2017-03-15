@@ -160,7 +160,8 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
             assemble_impl(matrix,detail::make_index_sequence<NI*NJ>());
         }
 
-        void assemble(Eigen::SparseMatrix<Scalar>& matrix) {
+        template <int _Options, typename _StorageIndex>
+        void assemble(Eigen::SparseMatrix<Scalar,_Options,_StorageIndex>& matrix) {
             const size_t na = rows();
             const size_t nb = cols();
             //matrix.resize(na,nb);
@@ -343,7 +344,9 @@ Operator create_chebyshev_operator(const RowParticles& row_particles,
 ///                      first particle set
 /// \param col_particles The columns of the linear operator index this 
 ///                      first particle set
-/// \param search_radius It is assumed that \p function returns a zero value
+/// \param radius_function A function object that takes a const_reference to
+///                 a particle and returns a double value. It is assumed that \p function 
+///                 returns a zero value
 ///                 for all particle pairs with a separation greater than
 ///                 this value
 /// \param function A function object that returns the value of the operator
@@ -353,17 +356,17 @@ Operator create_chebyshev_operator(const RowParticles& row_particles,
 /// \tparam RowParticles The type of the row particle set
 /// \tparam ColParticles The type of the column particle set
 /// \tparam F The type of the function object
-template<typename RowParticles, typename ColParticles, typename F,
-         typename Kernel=KernelSparse<RowParticles,ColParticles,F>,
+template<typename RowParticles, typename ColParticles, typename FRadius, typename F,
+         typename Kernel=KernelSparse<RowParticles,ColParticles,FRadius,F>,
          typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
                 >
 Operator create_sparse_operator(const RowParticles& row_particles,
                                 const ColParticles& col_particles,
-                                const double search_radius,
+                                const FRadius& radius_function,
                                 const F& function) {
         return Operator(
                 tuple_ns::make_tuple(
-                    Kernel(row_particles,col_particles,search_radius,function)
+                    Kernel(row_particles,col_particles,radius_function,function)
                     )
                 );
     }
