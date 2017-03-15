@@ -127,10 +127,10 @@ public:
         m_bucket_range(query.get_buckets_near_point(m_current_point,max_distance)),
         m_current_bucket(m_bucket_range.begin())
     {
-        if (m_valid = get_valid_bucket()) {
+        if ((m_valid = get_valid_bucket())) {
             m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
             m_current_particle = m_particle_range.begin();
-            if (m_valid = get_valid_candidate()) {
+            if ((m_valid = get_valid_candidate())) {
                 if (!check_candidate()) {
                     increment();
                 }

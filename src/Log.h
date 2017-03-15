@@ -93,6 +93,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 break; \
             case 3: \
                 color[7] = '1'; \
+            default: \
+                color[5] = '5'; \
         } \
     	std::cout << color << message << reset << std::endl; \
     }
@@ -113,6 +115,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                 break; \
             case 3: \
                 color[5] = '1'; \
+            default: \
+                color[5] = '5'; \
         } \
     	std::cout << bold << color << message << reset << std::endl; \
     }
