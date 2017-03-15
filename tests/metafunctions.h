@@ -60,22 +60,22 @@ public:
         Accumulate<std::plus<double> > sum;
         Accumulate<std::plus<double3> > sumv;
 
-        static_assert(decltype(detail::alias_check(s,a,sum(b,true,s[b])))::value,
+        static_assert(decltype(detail::alias_check(s,a,sum(b,s[b])))::value,
                 "should be aliased");
 
-        static_assert(decltype(detail::alias_check(s,a,sum(b,true,1 + s[b])))::value,
+        static_assert(decltype(detail::alias_check(s,a,sum(b,1 + s[b])))::value,
                 "should be aliased");
 
-        static_assert(decltype(detail::alias_check(r,a,sumv(b,true,r[b])))::value,
+        static_assert(decltype(detail::alias_check(r,a,sumv(b,r[b])))::value,
                 "should be aliased");
 
-        static_assert(decltype(detail::alias_check(r,a,sumv(b,true,double3(1,2,3) + dx)))::value,
+        static_assert(decltype(detail::alias_check(r,a,sumv(b,double3(1,2,3) + dx)))::value,
                 "should be aliased");
 
-        static_assert(!decltype(detail::alias_check(s,a,sum(b,true,s[a])))::value,
+        static_assert(!decltype(detail::alias_check(s,a,sum(b,s[a])))::value,
                 "should not be aliased");
 
-        static_assert(!decltype(detail::alias_check(s,a,sum(b,true,norm(dx))))::value,
+        static_assert(!decltype(detail::alias_check(s,a,sum(b,norm(dx))))::value,
                 "should not be aliased");
 
         static_assert(!decltype(detail::alias_check(s,a,s[a]))::value,
@@ -95,7 +95,6 @@ public:
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
         auto dx = create_dx(a,b);
-        Accumulate<std::plus<double> > sum;
 
         static_assert(proto::matches<decltype(norm(dx)<3),detail::range_if_expr>::value,
                 "norm(dx)<3 does not match range_if_expr");
@@ -160,7 +159,8 @@ public:
         Label<0,ParticlesType> a(particles);
         Label<1,ParticlesType> b(particles);
         auto dx = create_dx(a,b);
-        Accumulate<std::plus<double> > sum;
+        Accumulate<std::plus<double> > sum_dense;
+        AccumulateWithinDistance<std::plus<double> > sum_sparse(2);
 
         // test constant expressions behave as expected
         auto nil_vect = detail::get_labels()(proto::lit(1),fusion::nil_());
@@ -243,7 +243,7 @@ public:
                 "result of is_bivariate on expression dx is not true");
 
         // check sums 
-        auto vect_w_a_and_b3 = detail::get_labels()(sum(b,norm(dx)<2,s[a]+s[a]),fusion::nil_());
+        auto vect_w_a_and_b3 = detail::get_labels()(sum_sparse(b,s[a]+s[a]),fusion::nil_());
 #if not defined(__CUDACC__)
         BOOST_MPL_ASSERT_MSG(
                 (std::is_same<
@@ -253,15 +253,15 @@ public:
                 (decltype(vect_w_a_and_b3)));
 #endif
 
-        static_assert(detail::is_univariate<decltype(sum(b,norm(dx)<2,s[a]+s[a]))>::value,
-            "result of is_univariate on expression sum(b,norm(dx)<2,s[a]+s[a]) is not true");
+        static_assert(detail::is_univariate<decltype(sum_sparse(b,s[a]+s[a]))>::value,
+            "result of is_univariate on expression sum_sparse(b,s[a]+s[a]) is not true");
 
-        static_assert(detail::is_univariate<decltype(sum(b,norm(dx)<2,norm(dx)))>::value,
-            "result of is_univariate on expression sum(b,norm(dx)<2,norm(dx)) is not true");
+        static_assert(detail::is_univariate<decltype(sum_sparse(b,norm(dx)))>::value,
+            "result of is_univariate on expression sum_sparse(b,norm(dx)) is not true");
 
 
-        static_assert(detail::is_const<decltype(sum(b,s[b]==1,s[b]))>::value,
-            "result of is_const on expression sum(b,s[b]==1,s[b]) is not true");
+        static_assert(detail::is_const<decltype(sum_dense(b,if_else(s[b]==1,s[b],0)))>::value,
+            "result of is_const on expression sum_dense(b,if_else(s[b]==1,s[b],0)) is not true");
         
     }
 

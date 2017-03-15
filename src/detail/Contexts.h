@@ -223,8 +223,8 @@ namespace detail {
             typedef typename position::value_type double_d;
             typedef typename std::remove_reference<
                 typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
-            typedef typename label_a_type::particles_type particles_a_type;
-            typedef typename particles_a_type::const_reference const_a_reference;
+            typedef typename std::remove_reference<
+                typename fusion::result_of::at_c<labels_type,0>::type>::type::second_type const_a_reference;
             typedef typename particles_b_type::const_reference const_b_reference;
             typedef typename fusion::map<fusion::pair<label_a_type,const_a_reference>,
                                          fusion::pair<label_b_type,const_b_reference>> map_type;
@@ -269,10 +269,12 @@ namespace detail {
 
             typedef typename std::remove_reference<
                 typename fusion::result_of::at_c<labels_type,0>::type>::type::first_type label_a_type;
-            typedef typename label_a_type::particles_type particles_a_type;
-            typedef typename particles_a_type::position position;
+
+            typedef typename std::remove_reference<
+                typename fusion::result_of::at_c<labels_type,0>::type>::type::second_type const_a_reference;
+            
+            typedef typename particles_b_type::position position;
             typedef typename position::value_type double_d;
-            typedef typename particles_a_type::const_reference const_a_reference;
             typedef typename particles_b_type::const_reference const_b_reference;
             
             const_a_reference ai = fusion::front(ctx.m_labels).second;

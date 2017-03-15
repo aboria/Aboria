@@ -127,7 +127,12 @@ check_valid_assign_expr(const LabelType& label, ExprRHS const & expr) {
 }
 
 template< typename ParticlesType, typename ExprRHS>
-typename boost::enable_if<detail::is_const<ExprRHS>,void >::type
+typename boost::enable_if<
+    mpl::or_<
+        detail::is_const<ExprRHS>
+        ,detail::is_univariate_with_no_label<ExprRHS>
+        >
+        ,void >::type
 check_valid_assign_expr(const ParticlesType& particles, ExprRHS const & expr) {
 }
 

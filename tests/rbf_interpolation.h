@@ -317,7 +317,7 @@ void helper_compact(void) {
         }
         augment.push_back(p);
 
-	    knots.init_neighbour_search(min,max,2*h,periodic);
+	    knots.init_neighbour_search(min,max,periodic);
 
         Symbol<alpha> al;
         Symbol<interpolated> interp;

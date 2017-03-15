@@ -146,7 +146,7 @@ public:
         double3 max(1,1,1);
         double3 periodic(true,true,true);
        	double diameter = 0.1;
-        particles.init_neighbour_search(min,max,diameter,periodic);
+        particles.init_neighbour_search(min,max,periodic);
 
         Symbol<position> p;
         Symbol<id> id_;

@@ -289,7 +289,8 @@ public:
                  */
                 const double maxh = eval(max(a,h[a]));
                 const double minh = eval(min(a,h[a]));
-                sph.reset_neighbour_search(2*maxh);
+                sum_vect.set_max_distance(2*maxh);
+                sum.set_max_distance(2*maxh);
 
                 /* 
                  * advance velocity, position and calculate pdr2
