@@ -137,6 +137,41 @@ namespace detail {
     {};
 
 
+    /*
+    struct add_dummy_if_empty: proto::callable {
+        template<typename Sig>
+        struct result;
+
+        template<typename This>
+        struct result<This(const fusion::nil_&)>:
+            fusion::result_of::as_list<dummy_type> 
+        {};
+
+
+        template<typename This, typename T, typename = typename
+            std::enable_if<!std::is_same<T,fusion::nil_>::value>::type>
+        struct result<This(T)> {
+            typedef T type;
+        };
+
+        template<typename This>
+        typename result<add_dummy_if_empty(const fusion::nil_& state)>::type
+        operator()(const fusion::nil_& state) {
+            return fusion::make_list(dummy());
+            //return typename result<add_dummy_if_empty(const T&)>::type();
+        }
+
+        template<typename This, typename T, typename = typename
+            std::enable_if<!std::is_same<T,fusion::nil_>::value>::type>
+        typename result<add_dummy_if_empty(const T&)>::type
+        operator()(const T& state) {
+            return state;
+            return 
+        }
+    };
+    */
+
+
     struct remove_label: proto::callable {
         template<typename Sig>
         struct result;
@@ -270,7 +305,7 @@ namespace detail {
             , proto::when<
                 proto::function< proto::terminal< accumulate_within_distance<_,_> >, _,  _>
                 , remove_label(proto::_value(proto::_child1), 
-                                get_labels(proto::_child2,proto::_state))
+                                        get_labels(proto::_child2,proto::_state))
             >
             , proto::otherwise< 
                 proto::fold<_, proto::_state, get_labels> 
@@ -294,6 +329,34 @@ namespace detail {
         >
     {};
 
+    struct accumulate_within_distance_expr:
+        proto::or_<
+            proto::when<
+                proto::terminal< _ >
+                , mpl::bool_<false>()
+                >
+            , proto::when<
+                proto::function< proto::terminal< accumulate_within_distance<_,_> >, _,  _>
+                , mpl::bool_<true>()
+                >
+            , proto::when< proto::nary_expr<_, proto::vararg<_> >
+             , proto::fold<_, mpl::bool_<false>(), 
+                            mpl::or_<accumulate_within_distance_expr, proto::_state>() > >
+        
+        >
+    {};
+
+    namespace result_of {
+
+        template <typename Expr>
+        struct accumulate_within_distance_expr: 
+                boost::result_of<
+                    Aboria::detail::accumulate_within_distance_expr(Expr)
+                    >
+        {};
+
+    }
+        
 
     struct range_if_expr:
         proto::or_<
@@ -342,11 +405,14 @@ namespace detail {
 
     template<typename Expr>
     struct is_const: 
-        mpl::equal_to<
-            typename fusion::result_of::size<
-                typename result_of::get_labels<Expr>::type
-            >::type
-            , mpl::int_<0>
+        mpl::and_<
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename result_of::get_labels<Expr>::type
+                >::type
+                , mpl::int_<0>
+            >
+            , mpl::not_<typename result_of::accumulate_within_distance_expr<Expr>::type>
         >
     {};
 
@@ -357,6 +423,19 @@ namespace detail {
                 typename result_of::get_labels<Expr>::type
             >::type
             , mpl::int_<1>
+        >
+    {};
+
+    template<typename Expr>
+    struct is_univariate_with_no_label: 
+        mpl::and_<
+            mpl::equal_to<
+                typename fusion::result_of::size<
+                    typename result_of::get_labels<Expr>::type
+                >::type
+                , mpl::int_<0>
+            >
+            , typename result_of::accumulate_within_distance_expr<Expr>::type
         >
     {};
 

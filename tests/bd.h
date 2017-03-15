@@ -85,7 +85,7 @@ public:
 
 
         points.init_neighbour_search(double3(-L/5,-L/5,-L/5),double3(L/5,L/5,L/5),bool3(true,true,true));
-        spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(false,false,false),1);
+        spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(false,false,false));
 
         Symbol<position> p;
         Symbol<radius> r;

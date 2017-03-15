@@ -420,7 +420,6 @@ namespace Aboria {
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
 
-            CHECK((b.get_query().get_min_bucket_size() >= m_radius).all(), "neighbour search in column particles will not get all particles in search radius");
             const size_t na = a.size();
             const size_t nb = b.size();
 
@@ -444,8 +443,6 @@ namespace Aboria {
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
-
-            CHECK((b.get_query().get_min_bucket_size() >= m_radius).all(), "neighbour search in column particles will not get all particles in search radius");
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -471,8 +468,6 @@ namespace Aboria {
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
-
-            CHECK((b.get_query().get_min_bucket_size() >= m_radius).all(), "neighbour search in column particles will not get all particles in search radius");
 
             const size_t na = a.size();
             const size_t nb = b.size();

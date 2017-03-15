@@ -85,6 +85,22 @@ namespace Aboria {
         return proto::eval(expr,ctx);
     }
 
+    /// evaluate a given expression that depends on a single label $i$, 
+    /// for a single input particle
+    /// \params expr the expression to evaluate
+    /// \params particle_a the particle to be substituted for the label $i$
+    /// \return the result of the expression after substituting in the particle values
+    template<typename Expr, typename ParticleReference>  
+    typename boost::enable_if<detail::is_univariate_with_no_label<Expr>,
+    typename detail::symbolic_helper<Expr>::template result<ParticleReference> >::type
+    eval(Expr &expr, const ParticleReference& particle_a) {
+        typedef typename detail::symbolic_helper<Expr>
+                            ::template univariate_context_type<ParticleReference> ctx_type;
+        typedef typename detail::symbolic_helper<Expr>::label_a_type label_type;
+        ctx_type const ctx(fusion::make_map<label_type>(particle_a));
+        return proto::eval(expr,ctx);
+    }
+
     /// evaluate a given expression that returns a constant value (scaler or vector)
     /// \params expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables
     /// \params particle_a dummy arguement, not used

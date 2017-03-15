@@ -456,6 +456,9 @@ public:
 
     /// set the length scale of the neighbourhood search to be equal to \p length_scale
     /// \see init_neighbour_search()
+    ///  NOTE: this has been removed since you can now run neighbour searches
+    ///  with any radius
+    /*
     void reset_neighbour_search(const double length_scale) {
         search.set_domain(search.get_min(),
                                     search.get_max(),
@@ -464,6 +467,7 @@ public:
         search.embed_points(begin(),end());
         searchable = true;
     }
+    */
 
     double_d correct_dx_for_periodicity(const double_d& uncorrected_dx) const {
         double_d dx = uncorrected_dx;

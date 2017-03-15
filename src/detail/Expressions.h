@@ -108,6 +108,40 @@ namespace detail {
     };
 
     template<typename Expr>
+    struct symbolic_helper<Expr, typename boost::enable_if<is_univariate_with_no_label<
+                typename proto::result_of::as_expr<
+                                    Expr,detail::SymbolicDomain>::type
+                >>::type> {
+
+        typedef typename proto::result_of::as_expr<
+                        Expr,detail::SymbolicDomain>::type expr_type;
+
+        typedef typename std::remove_const<typename proto::result_of::deep_copy<expr_type>::type>::type deep_copy_type;
+
+
+        struct dummy_type {};
+
+        typedef dummy_type label_a_type;
+
+        template <typename ParticleReference>
+        using univariate_context_type = 
+                EvalCtx<fusion::map<fusion::pair<label_a_type,ParticleReference>>>;
+
+
+        template <typename ParticleReference>
+        using result = 
+                typename proto::result_of::eval<
+                    expr_type, univariate_context_type<ParticleReference> const
+                        >::type;
+
+        template <typename ParticleReference>
+        using result_base_type = typename std::remove_cv<typename std::remove_reference<
+                    result<ParticleReference>>::type>::type;
+        
+
+    };
+
+    template<typename Expr>
     struct symbolic_helper<Expr, typename boost::enable_if<is_bivariate<
                 typename proto::result_of::as_expr<
                                     Expr,detail::SymbolicDomain>::type
