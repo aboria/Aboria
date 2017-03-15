@@ -775,7 +775,7 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    bool increment() {
+    void increment() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tincrement (tree_iterator):"); 
 #endif
