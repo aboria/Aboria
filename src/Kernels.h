@@ -392,7 +392,7 @@ namespace Aboria {
 #endif
 
 
-    template<typename RowParticles, typename ColParticles, typename F>
+    template<typename RowParticles, typename ColParticles, typename FRadius, typename F>
     class KernelSparse: public KernelBase<RowParticles,ColParticles,F> {
         typedef KernelBase<RowParticles,ColParticles,F> base_type;
         typedef typename base_type::position position;
@@ -405,16 +405,12 @@ namespace Aboria {
 
         KernelSparse(const RowParticles& row_particles,
                     const ColParticles& col_particles,
-                    const double radius,
-                    const F& function): m_radius(radius),
-                                        m_radius2(radius*radius),
+                    const FRadius& radius_function,
+                    const F& function): m_radius_function(radius_function),
                                         base_type(row_particles,
                                                   col_particles,
                                                   function) 
         {};
-
-        void set_radius(const double radius) { m_radius = radius; m_radius2 = m_radius*m_radius; }
-        double get_radius() { return m_radius; }
 
         Scalar coeff(const size_t i, const size_t j) const {
             ASSERT(i>=0, "i less than zero");
@@ -424,7 +420,7 @@ namespace Aboria {
             const_row_reference ai = this->m_row_particles[i];
             const_col_reference bj = this->m_col_particles[j];
             const_position_reference dx = get<position>(bj)-get<position>(ai);
-            if (dx.squaredNorm() < m_radius2) {
+            if (dx.squaredNorm() < std::pow(m_radius_function(ai),2)) {
                 return this->m_function(dx,ai,bj);
             } else {
                 return 0.0;
@@ -443,7 +439,8 @@ namespace Aboria {
             //sparse a x b block
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),m_radius)) {
+                const double radius = m_radius_function(ai);
+                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
                     const_position_reference dx = tuple_ns::get<1>(pairj);
                     const_col_reference bj = tuple_ns::get<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
@@ -468,7 +465,8 @@ namespace Aboria {
             //std::cout << "sparse a x b block" << std::endl;
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),m_radius)) {
+                const double radius = m_radius_function(ai);
+                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
                     const_position_reference dx = tuple_ns::get<1>(pairj);
                     const_col_reference bj = tuple_ns::get<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
@@ -493,7 +491,8 @@ namespace Aboria {
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
                 Scalar sum(0);
-                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),m_radius)) {
+                const double radius = m_radius_function(ai);
+                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
                     const_position_reference dx = tuple_ns::get<1>(pairj);
                     const_col_reference bj = tuple_ns::get<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
@@ -503,9 +502,7 @@ namespace Aboria {
             }
        }
     private:
-        double m_radius;
-        double m_radius2;
-
+        FRadius m_radius_function;
     };
 
     namespace detail {

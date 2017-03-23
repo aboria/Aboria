@@ -435,7 +435,7 @@ namespace Aboria {
             typedef typename proto::terminal<data_type>::type expr_type;
 
             /// empty constructor, makes an instantiation of the functor class \p T
-            explicit AccumulateWithinDistance(const double max_distance)
+            explicit AccumulateWithinDistance(const double max_distance=1)
                 : detail::SymbolicExpr<expr_type>( expr_type::make(data_type(max_distance)) )
             {}
 
