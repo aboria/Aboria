@@ -99,6 +99,10 @@ public:
     	TS_ASSERT_EQUALS(test.size(),2);
     	test.erase(test.begin(),test.end());
     	TS_ASSERT_EQUALS(test.size(),0);
+
+
+    	typename Test_type::reference p_ref = test[0];
+    	typename Test_type::value_type p_value = test[0];
     }
 
     void test_documentation(void) {

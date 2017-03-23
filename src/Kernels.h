@@ -131,7 +131,8 @@ namespace Aboria {
         static const unsigned int dimension = base_type::dimension;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::int_d int_d;
-        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename position::value_type const & const_position_reference;
+        typedef typename position::value_type position_value_type;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
@@ -152,14 +153,18 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
-            ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+            const bool is_periodic = !a.get_periodic().any();
 
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference  bj = b[j];
-                    const_position_reference dx = 
-                        get<position>(bj)-get<position>(ai);
+                    position_value_type dx; 
+                    if (is_periodic) { 
+                        dx = get<position>(bj)-get<position>(ai);
+                    } else {
+                        dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                    }
                     const_cast< MatrixType& >(matrix)(i,j) = this->eval(dx,ai,bj);
                 }
             }
@@ -176,14 +181,18 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
-            ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+            const bool is_periodic = !a.get_periodic().any();
 
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    const_position_reference dx = 
-                        get<position>(bj)-get<position>(ai);
+                    position_value_type dx; 
+                    if (is_periodic) { 
+                        dx = get<position>(bj)-get<position>(ai);
+                    } else {
+                        dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                    }
                     triplets.push_back(Triplet(i+startI,j+startJ,
                                 this->eval(dx,ai,bj)));
                 }
@@ -202,7 +211,7 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
-            ASSERT(!a.get_periodic().any(),"periodic does not work with dense");
+            const bool is_periodic = !a.get_periodic().any();
 
             const size_t parallel_size = 20;
             if (na > parallel_size) {
@@ -212,8 +221,12 @@ namespace Aboria {
                     Scalar sum(0);
                     for (size_t j=0; j<nb; ++j) {
                         const_col_reference bj = b[j];
-                        const_position_reference dx = 
-                            get<position>(bj)-get<position>(ai);
+                        position_value_type dx; 
+                        if (is_periodic) { 
+                            dx = get<position>(bj)-get<position>(ai);
+                        } else {
+                            dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                        }
                         sum += this->eval(dx,ai,bj)*rhs(j);
                     }
                     lhs[i] += sum;
@@ -224,8 +237,12 @@ namespace Aboria {
                     Scalar sum(0);
                     for (size_t j=0; j<nb; ++j) {
                         const_col_reference bj = b[j];
-                        const_position_reference dx = 
-                            get<position>(bj)-get<position>(ai);
+                        position_value_type dx; 
+                        if (is_periodic) { 
+                            dx = get<position>(bj)-get<position>(ai);
+                        } else {
+                            dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                        }
                         sum += this->eval(dx,ai,bj)*rhs[j];
                     }
                     lhs[i] += sum;
