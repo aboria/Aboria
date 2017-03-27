@@ -410,16 +410,13 @@ struct nanoflann_adaptor_query {
             return true;
         }
     }
+    */
 
-    iterator_range<query_iterator> get_root_buckets() const {
+    iterator_range<value_type *> get_root_buckets() const {
         m_query_nodes.clear();
         m_query_nodes.push_back(m_kd_tree.get_root_node());
-        return iterator_range<query_iterator>(
-                m_query_nodes.begin(),
-                m_query_nodes.end()
-                );
+        return iterator_range<value_type *>(&m_root, &m_root+1);
     }
-    */
 
 
     
