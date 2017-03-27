@@ -188,6 +188,21 @@ struct Chebyshev_Rn {
         }
     }
 
+    void calculate_Sn_with_bbox(const double_d_iterator& positions, 
+                                detail::bbox<D>& input_box,
+                                const unsigned int with_N,
+                                const unsigned int with_n) {
+        n = with_n;
+        N = with_N;
+        Sn.resize(N*n);
+        const double_d scale = double_d(1.0)/(input_box.bmax-input_box.bmin);
+        for (int i=0; i<N; ++i) {
+            for (int m=0; m<n; ++m) {
+                Sn[i*n + m] = chebyshev_Sn((2*positions[i]-input_box.bmin-input_box.bmax)*scale,m,n);
+            }
+        }
+    }
+
     // NOTE: valid range of m is 0..n-1
     double_d get_position(const int_d &m) {
         ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
