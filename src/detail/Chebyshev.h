@@ -105,6 +105,19 @@ double chebyshev_node(const unsigned int i, const unsigned int n) {
     return cos((2.0*i+1.0)*PI/(2.0*n));
 }
 
+template <unsigned int D>
+Vector<double,D> chebyshev_node_nd(const Vector<int,D> &m, const unsigned int n) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<n).all() ,"m should be less than n");
+        Vector<double,D> pos;
+        for (int d=0; d<D; ++d) {
+            pos[d] = chebyshev_node(m[d],n);
+        }
+        return pos;
+    }
+
+
+
 template <unsigned int N>
 double chebyshev_Rn_slow(const Vector<double,N> &x, const Vector<int,N> &i, unsigned int n) {
     double Rn = 1.0;
@@ -200,8 +213,6 @@ struct Chebyshev_Rn {
     }
 };
  
-
-
  
     
 }

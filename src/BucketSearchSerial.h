@@ -468,6 +468,10 @@ struct bucket_search_serial_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     const static unsigned int dimension = Traits::dimension;
     typedef lattice_iterator<dimension> query_iterator;
+    typedef lattice_iterator<dimension> root_iterator;
+    typedef lattice_iterator<dimension> all_iterator;
+    typedef lattice_iterator_with_hole<dimension> well_separated_iterator;
+    typedef lattice_iterator<dimension> neighbouring_iterator;
     typedef typename query_iterator::reference reference;
     typedef typename query_iterator::value_type value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
@@ -567,15 +571,84 @@ struct bucket_search_serial_query {
     bool get_children_buckets(const bucket_reference &bucket, std::array<value_type,2>& children) {
         return false;
     }
+    */
 
     CUDA_HOST_DEVICE
-    iterator_range<query_iterator> get_root_buckets() const {
+    iterator_range<root_iterator> get_root_buckets() const {
         return iterator_range<query_iterator>(
-                query_iterator(int_d(0),m_end_bucket,int_d(0)),
-                ++query_iterator(int_d(0),m_end_bucket,m_end_bucket)
+                root_iterator(int_d(0),m_end_bucket,int_d(0)),
+                ++root_iterator(int_d(0),m_end_bucket,m_end_bucket)
                 );
     }
-    */
+
+    iterator_range<all_iterator> get_all_buckets() const {
+        return get_root_buckets();
+    }
+
+    size_t number_of_buckets() const {
+        m_end_bucket.prod();
+    }
+
+    CUDA_HOST_DEVICE
+    iterator_range<well_separated_iterator> get_well_separated_buckets(const reference bucket) const {
+        int_d start = bucket-int_d(1);
+        int_d end = bucket+int_d(1);
+
+        bool no_buckets = false;
+        for (int i=0; i<dimension; i++) {
+            if (start[i] <= 0 && end[i] >= m_end_bucket[i]) {
+                no_buckets = true;
+            }
+        }
+
+        if (no_buckets) {
+            return iterator_range<query_iterator>(
+                well_separated_iterator(int_d(0),m_end_bucket,int_d(0),m_end_bucket,m_end_bucket),
+                well_separated_iterator(int_d(0),m_end_bucket,int_d(0),m_end_bucket,m_end_bucket)
+                );
+        } else {
+            return iterator_range<query_iterator>(
+                well_separated_iterator(int_d(0),m_end_bucket,start,end,int_d(0)),
+                ++well_separated_iterator(int_d(0),m_end_bucket,start,end,m_end_bucket)
+                );
+        }
+    }
+
+    CUDA_HOST_DEVICE
+    iterator_range<neighbouring_iterator> get_neighbouring_buckets(const reference bucket) const {
+        
+        int_d start = bucket-int_d(1);
+        int_d end = bucket+int_d(1);
+
+        bool no_buckets = false;
+        for (int i=0; i<Traits::dimension; i++) {
+            if (start[i] < 0) {
+                start[i] = 0;
+            } else if (start[i] > m_end_bucket[i]) {
+                no_buckets = true;
+                start[i] = m_end_bucket[i];
+            }
+            if (end[i] < 0) {
+                no_buckets = true;
+                end[i] = 0;
+            } else if (end[i] > m_end_bucket[i]) {
+                end[i] = m_end_bucket[i];
+            }
+        }
+        if (no_buckets) {
+            return iterator_range<neighbouring_iterator>(
+                neighbouring_iterator(end,end,endend),
+                ++neighbouring_iterator(end,end,end)
+                );
+
+        } else {
+            return iterator_range<neighbouring_iterator>(
+                neighbouring_iterator(start,end,start),
+                ++neighbouring_iterator(start,end,end)
+                );
+        }
+    }
+
     
 
 };

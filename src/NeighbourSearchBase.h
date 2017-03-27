@@ -276,7 +276,7 @@ class ranges_iterator {
 public:
     typedef Traits traits_type;
     typedef const p_pointer pointer;
-	typedef std::forward_iterator_tag iterator_category;
+	typedef std::random_access_iterator_tag iterator_category;
     typedef const p_reference reference;
     typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
@@ -1089,19 +1089,18 @@ private:
     }
 };
 
-/*
 
-template <typename Traits>
+template <unsigned int D>
 class lattice_iterator_with_hole {
-    typedef typename Traits::double_d double_d;
-    typedef typename Traits::int_d int_d;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef lattice_iterator_with_hole<D> iterator;
 
     int_d m_min;
     int_d m_max;
     int_d m_hole_min;
     int_d m_hole_max;
     int_d m_index;
-    detail::bucket_index<Traits::dimension> m_bucket_index;
 public:
     typedef const int_d* pointer;
 	typedef std::forward_iterator_tag iterator_category;
@@ -1120,7 +1119,6 @@ public:
         m_hole_min(hmin),
         m_hole_max(hmax),
         m_index(start),
-        m_bucket_index(max-min)
     {}
 
 
@@ -1135,21 +1133,14 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    lattice_iterator_with_hole& operator++() {
+    iterator& operator++() {
         increment();
         return *this;
     }
 
-    CUDA_HOST_DEVICE
-    lattice_iterator_with_hole operator++(int) {
-        lattice_iterator_with_hole tmp(*this);
-        operator++();
-        return tmp;
-    }
-
     
     CUDA_HOST_DEVICE
-    size_t operator-(lattice_iterator_with_hole start) const {
+    size_t operator-(iterator start) const {
         size_t count = 0;
         while (start != *this) {
             start++;
@@ -1159,13 +1150,13 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator==(const lattice_iterator_with_hole& rhs) const {
+    inline bool operator==(const iterator& rhs) const {
         return equal(rhs);
     }
 
 
     CUDA_HOST_DEVICE
-    inline bool operator!=(const lattice_iterator_with_hole& rhs) const {
+    inline bool operator!=(const iterator& rhs) const {
         return !operator==(rhs);
     }
 
@@ -1173,7 +1164,7 @@ private:
     friend class boost::iterator_core_access;
 
     CUDA_HOST_DEVICE
-    bool equal(lattice_iterator_with_hole const& other) const {
+    bool equal(interator const& other) const {
         return (m_index == other.m_index).all();
     }
 
@@ -1184,21 +1175,36 @@ private:
 
     CUDA_HOST_DEVICE
     void increment() {
-        for (int i=0; i<Traits::dimension; i++) {
+        for (int i=0; i<D; i++) {
             ++m_index[i];
+            // check if this dimension is in the hole
             if (m_index[i] == m_hole_min[i]) {
-                m_index[i] = m_hole_max[i]+1;
+                ++m_in_hole;
+                // if all dimensions are in hole then skip
+                // over it
+                if (m_in_hole == D) {
+                    m_index[i] = m_hole_max[i]+1;
+                }
             }
+            // if this dimension exits hole reduce number
+            if (m_index[i] == m_hole_max[i]+1) {
+                --m_in_hole;
+            }
+            // if this dimension is out of the range then
+            // got back to min or hole_max+1 
             if (m_index[i] <= m_max[i]) break;
-            if (i != Traits::dimension-1) {
-                m_index[i] = m_min[i];
+            if (i != D-1) {
+                if (m_min[i] <= m_hole_min[i]) {
+                    m_index[i] = m_hole_max+1;
+                } else {
+                    m_index[i] = m_min[i];
+                }
             }
         }
     }
 
    
 };
-*/
 
 
 
