@@ -227,6 +227,47 @@ struct Chebyshev_Rn {
         return ret;
     }
 };
+
+template <unsigned int D, unsigned int N>
+struct ChebyshevRnSingle {
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef std::vector<double_d> vector_double_d;
+    typedef typename std::vector<double_d>::const_iterator double_d_iterator;
+    double_d m_Sn;
+    detail::bbox<D>& m_box;
+    ChebyshevRnSingle(const double_d& position, detail::bbox<D>& box):
+        m_box(box) {
+        const double_d scale = double_d(1.0)/(box.bmax-box.bmin);
+        for (int m=0; m<N; ++m) {
+            m_Sn[m] = chebyshev_Sn((2*position-box.bmin-box.bmax)*scale,m,N);
+        }
+
+    }
+    
+    // NOTE: valid range of m is 0..n-1
+    double_d get_position(const int_d &m) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<N).all() ,"m should be less than n");
+        double_d pos;
+        for (int d=0; d<D; ++d) {
+            pos[d] = chebyshev_node(m[d],N);
+        }
+        return 0.5*(pos+1)*(m_box.bmax-m_box.bmin) + m_box.bmin;
+    }
+
+    // NOTE: valid range of m is 0..n-1
+    double operator()(const int_d &m) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<n).all() ,"m should be less than n");
+        double ret = 1.0;
+        for (int d=0; d<D; ++d) {
+            ret *= m_Sn[m[d]][d];
+        }
+        return ret;
+    }
+};
+
  
  
     
