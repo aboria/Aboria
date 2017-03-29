@@ -74,7 +74,7 @@ namespace detail {
         void M2M(vector_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 InputIterator source_begin) {
+                 const vector_type& source) {
 
             int_d start(0);
             int_d end(N-1);
@@ -93,7 +93,7 @@ namespace detail {
             for (int i=0; i<ncheb; ++i,++mi) {
                 for (int j=0; j<ncheb; ++j) {
                     //TODO: calculate cheb funs in here with ChebSnSingle?
-                    accum[i] += cheb_rn(*mi,j)*source_begin[j];
+                    accum[i] += cheb_rn(*mi,j)*source[j];
                 }
             }
         }
@@ -149,10 +149,10 @@ namespace detail {
     };
 
 
-    template <typename VectorType, 
-              typename Traits, 
+    template <typename Traits, 
               typename SourceVectorType, 
               typename Expansions,
+                    typename VectorType=Expansions::vector_type,
                     typename SourceParticleIterator=Traits::raw_pointer, 
                     unsigned int D=Traits::dimension>
     void calculate_P2M(VectorType& sum, 
@@ -172,15 +172,15 @@ namespace detail {
 
     // assume serial processing of particles, this could be more efficient for ranges iterators
     template <typename Iterator, 
-              typename VectorType, 
               typename SourceVectorType, 
               typename Expansions,
-             typename Traits=Iterator::traits_type,
-             typename SourceParticleIterator=Traits::raw_pointer, 
-             unsigned int D=Traits::dimension>
-             typename = typename
+                 typename VectorType=Expansions::vector_type, 
+                 typename Traits=Iterator::traits_type,
+                 typename SourceParticleIterator=Traits::raw_pointer, 
+                 unsigned int D=Traits::dimension>
+                 typename = typename
         std::enable_if<!std::is_same<Iterator,ranges_iterator<traits_type>>>
-    void calculate_P2M(vector_type& sum, 
+    void calculate_P2M(VectorType& sum, 
                         detail::bbox<D>& my_box, 
                         iterator_range<Iterator>& range, 
                         const SourceVectorType& source_vector,
@@ -246,19 +246,25 @@ namespace detail {
 
 
 template <typename Expansions, typename NeighbourQuery, 
-          typename SourceVectorType, typename StorageVectorType>
+          typename SourceVectorType>
 struct calculate_P2M_and_M2M {
-    NeighbourQuery &m_search;
-    SourceVectorType &m_source_vector;
-    StorageVectorType &m_W;
-    typedef typename SourceNeighbourQuery::reference reference;
-    typedef typename SourceNeighbourQuery::particle_iterator particle_iterator;
+    typedef NeighbourQuery::traits_type traits_type;
+    typedef traits_type::raw_pointer SourceParticleIterator, 
     typedef Expansions::vector_type vector_type;
-    typedef SourceNeighbourQuery::traits_type traits_type;
+    typedef typename NeighbourQuery::reference reference;
+    typedef typename NeighbourQuery::particle_iterator particle_iterator;
+    typedef std::vector<vector_type> StorageVectorType;
+    typedef detail::bbox<dimension> box_type;
+
     static const unsigned int dimension = traits_type::dimension;
-    
-    calculate_S_expansion(SourceNeighbourQuery& search, 
-                          SourceVectorType& source_vector,
+
+    const NeighbourQuery &m_search;
+    const SourceVectorType &m_source_vector;
+    const SourceParticleIterator &m_source_particles_begin;
+    StorageVectorType &m_W;
+        
+    calculate_S_expansion(const SourceNeighbourQuery& search, 
+                          const SourceVectorType& source_vector,
                           StorageVectorType& W):
         m_search(search),
         m_source_vector(source_vector),
@@ -266,66 +272,77 @@ struct calculate_P2M_and_M2M {
     {}
 
     vector_type& operator()(const reference bucket) {
-        detail::bbox my_box(m_search.get_bucket_bounds_low(bucket),
+        box_type my_box(m_search.get_bucket_bounds_low(bucket),
                             m_search.get_bucket_bounds_high(bucket));
-        size_t my_index = m_search.get_index(bucket);
+        size_t my_index = m_search.get_bucket_index(bucket);
         vector_type& W = m_W[my_index];
 
         if (search.is_leaf_node(bucket) { // leaf node
-            calculate_P2M(W, my_box, search.get_bucket_particles(bucket));
+            calculate_P2M(W, my_box, 
+                          search.get_bucket_particles(bucket),
+                          m_source_vector,m_source_particles_begin);
         } else { // assume binary tree for now
             const reference child1 = search.get_child1(bucket);
             const reference child2 = search.get_child2(bucket);
-            detail::bbox child1_box(search.get_bucket_bounds_low(child1),
+            box_type child1_box(search.get_bucket_bounds_low(child1),
                                 search.get_bucket_bounds_high(child1));
-            detail::bbox child2_box(search.get_bucket_bounds_low(child2),
+            box_type child2_box(search.get_bucket_bounds_low(child2),
                                 search.get_bucket_bounds_high(child2));
 
             vector_type& child1_W = this->operator()(child1);
             vector_type& child2_W = this->operator()(child2);
-            Expansions::M2M(W.begin(),my_box,child1_box,child1_W.begin());
-            Expansions::M2M(W.begin(),my_box,child1_box,child2_W.begin());
+            Expansions::M2M(W,my_box,child1_box,child1_W);
+            Expansions::M2M(W,my_box,child1_box,child2_W);
         }
         return W;
     }
 };
 
 template <typename Expansions, typename NeighbourQuery, 
-          typename SourceVectorType, typename StorageVectorType>
+          typename SourceVectorType>
 struct calculate_L2L {
+typedef typename NeighbourQuery::reference reference;
+    typedef NeighbourQuery::traits_type traits_type;
+    typedef Expansions::vector_type vector_type;
+    typedef typename NeighbourQuery::reference reference;
+    typedef typename NeighbourQuery::particle_iterator particle_iterator;
+    typedef std::vector<vector_type> StorageVectorType;
+    static const unsigned int dimension = traits_type::dimension;
+    typedef detail::bbox<dimension> box_type;
+
     const NeighbourQuery &m_search;
     const SourceVectorType &m_source_vector;
     StorageVectorType &m_g;
-    typedef typename NeighbourQuery::reference reference;
-    typedef Expansions::vector_type vector_type;
-    typedef SourceNeighbourQuery::traits_type traits_type;
-    static const unsigned int dimension = traits_type::dimension;
-    
-    calculate_S_expansion(NeighbourQuery& search, 
-                          SourceVectorType& source_vector,
-                          StorageVectorType& g):
+
+    calculate_L2L(const NeighbourQuery& search, 
+                  const SourceVectorType& source_vector,
+                  StorageVectorType& g):
         m_search(search),
         m_source_vector(source_vector),
         m_g(g)
     {}
 
-    void calculate_L2L_dive(const vector_type& g_parent, detail::bbox<dimension>& bbox_parent, const reference bucket) {
-        detail::bbox box(m_search.get_bucket_bounds_low(bucket),
+    void calculate_L2L_dive(const vector_type& g_parent, 
+                            const box_type& box_parent, 
+                            const reference bucket) {
+        box_type box(m_search.get_bucket_bounds_low(bucket),
                         m_search.get_bucket_bounds_high(bucket));
-        size_t index = m_search.get_index(bucket);
+        size_t index = m_search.get_bucket_index(bucket);
         vector_type& g = m_g[index];
-        Expansions::L2L(g.begin(),box,bbox_parent,g_parent.begin());
-        if (search.is_leaf_node(bucket) { // leaf node
+        Expansions::L2L(g,box,box_parent,g_parent);
+        if (!search.is_leaf_node(bucket) { // leaf node
             calculate_L2L_dive(g,box,m_search.get_child1(bucket));
             calculate_L2L_dive(g,box,m_search.get_child2(bucket));
         }
     }
 
+    // only called for root nodes, uses the "calculate_L2L_dive" function
+    // to recurse down the tree
     vector_type& operator()(const reference bucket) {
-        if (search.is_leaf_node(bucket) { // leaf node
-            detail::bbox box(m_search.get_bucket_bounds_low(bucket),
+        if (!search.is_leaf_node(bucket) { // leaf node
+            box_type box(m_search.get_bucket_bounds_low(bucket),
                         m_search.get_bucket_bounds_high(bucket));
-            size_t my_index = m_search.get_index(bucket);
+            size_t my_index = m_search.get_bucket_index(bucket);
             const vector_type& g = m_g[my_index];
             calculate_L2L_dive(g,box,m_search.get_child1(bucket));
             calculate_L2L_dive(g,box,m_search.get_child2(bucket));
@@ -345,6 +362,8 @@ class FastMultipoleMethod {
     typedef iterator_range<NeighbourQuery::neighbouring_iterator> neighbouring_iterator_range;
     typedef m_query::particle_iterator particle_iterator;
     typedef particle_iterator::reference particle_reference;
+    static const unsigned int dimension = traits_type::dimension;
+    typedef detail::bbox<dimension> box_type;
     storage_type m_W;
     storage_type m_g;
     const NeighbourQuery *m_query;
@@ -378,17 +397,17 @@ public:
         // calculate M2L translations for source buckets (this should be the most work)
         std::for_each(all_buckets.begin(),all_buckets.end(),
                       [&](const reference target_bucket) {
-            detail::bbox<dimension> target_bbox(m_query->get_bucket_bounds_low(target_bucket),
+            box_type target_box(m_query->get_bucket_bounds_low(target_bucket),
                                           m_target->get_bucket_bounds_high(target_bucket));
-            size_t target_index = m_query->get_index(target_bucket); 
+            size_t target_index = m_query->get_bucket_index(target_bucket); 
             well_separated_iterator_range source_buckets 
                     = m_query->get_well_separated_buckets(target_bucket);
             std::for_each(source_buckets.begin(), source_buckets.end(), 
                     [&](const reference source_bucket) {
-                detail::bbox<dimension> source_bbox(m_query->get_bucket_bounds_low(source_bucket),
+                box_type source_box(m_query->get_bucket_bounds_low(source_bucket),
                                                   m_query->get_bucket_bounds_high(source_bucket));
-                size_t source_index = m_query->get_index(source_bucket); 
-                Expansions::M2L(m_sum.begin(),m_target_bbox,source_bbox,m_W[source_index].begin(),m_K)
+                size_t source_index = m_query->get_bucket_index(source_bucket); 
+                Expansions::M2L(m_sum.begin(),target_box,source_box,m_W[source_index].begin(),m_K)
             });
         });
 
@@ -409,9 +428,9 @@ public:
     // evaluate expansions for given point
     double evaluate_R_expansion(const double_d& p, const VectorType& source_vector) {
         const reference bucket = m_query->get_bucket(p);
-        const size_t index = m_query->get_index(bucket); 
-        detail::bbox<dimension> box(m_query->get_bucket_bounds_low(bucket),
-                                    m_query->get_bucket_bounds_high(bucket));
+        const size_t index = m_query->get_bucket_index(bucket); 
+        box_type box(m_query->get_bucket_bounds_low(bucket),
+                     m_query->get_bucket_bounds_high(bucket));
         neighbouring_iterator_range neighbouring_buckets = 
                         m_query->get_neighbouring_buckets(bucket);
 

@@ -266,6 +266,7 @@ private:
 
         this->m_query.m_root = m_kd_tree.get_root_node();
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+        this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
 
         print_tree(m_kd_tree.get_root_node());
     }
@@ -308,11 +309,21 @@ struct nanoflann_adaptor_query {
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     typedef tree_query_iterator<dimension,nanoflann_adaptor_query,-1> query_iterator;
+    typedef value_type* root_iterator;
+    typedef tree_depth_first_iterator<dimension,nanoflann_adaptor_query> all_iterator;
+    typedef tree_well_separated_iterator<dimension,nanoflann_adaptor_query> well_separated_iterator;
+    typedef tree_neighbouring_iterator<dimension,nanoflann_adaptor_query> neighbouring_iterator;
     typedef ranges_iterator<Traits> particle_iterator;
+    typedef typename query_iterator::reference reference;
+    typedef typename query_iterator::value_type value_type;
+    typedef linked_list_iterator<Traits> particle_iterator;
+
+
 
     bool_d m_periodic;
     detail::bbox<dimension> m_bounds;
     raw_pointer m_particles_begin;
+    size_t m_number_of_buckets;
 
     value_type* m_root;
 
@@ -388,6 +399,34 @@ struct nanoflann_adaptor_query {
         return high;
     }
 
+     CUDA_HOST_DEVICE
+    value_type& get_bucket(const double_d &position) const {
+        value_type* node = m_root;
+        while(!is_leaf_node(*node)) {
+            ASSERT(get_child1(m_node) != nullptr,"no child1");
+            ASSERT(get_child2(m_node) != nullptr,"no child2");
+            const size_t idx = get_dimension_index(*m_node);
+            const double diff_cut_high = position[idx] - get_cut_high(*m_node);
+            const double diff_cut_low = position[idx]- get_cut_low(*m_node);
+
+            if ((diff_cut_low+diff_cut_high)<0) {
+                node = get_child1(node);
+            } else {
+                node = get_child2(node);
+            }
+        }
+        return *node;
+    }
+
+    CUDA_HOST_DEVICE
+    size_t get_bucket_index(const value_type& bucket) const {
+        return bucket.index;
+    }
+
+    size_t number_of_buckets() const {
+        return m_number_of_buckets;
+    }
+
     template <int LNormNumber=-1>
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
@@ -400,23 +439,35 @@ struct nanoflann_adaptor_query {
                 );
     }
 
-    /*
-    bool get_children_buckets(const value_type &bucket, std::array<value_type,2>& children) {
-		if ((bucket->child1 == NULL)&&(bucket->child2 == NULL)) {
-            return false;
-        } else {
-            children[0] = bucket.child1;
-            children[1] = bucket.child2;
-            return true;
-        }
-    }
-    */
+    
 
-    iterator_range<value_type *> get_root_buckets() const {
-        m_query_nodes.clear();
-        m_query_nodes.push_back(m_kd_tree.get_root_node());
-        return iterator_range<value_type *>(&m_root, &m_root+1);
+    iterator_range<root_iterator> get_root_buckets() const {
+        return iterator_range<root_iterator>(&m_root, &m_root+1);
     }
+
+    iterator_range<all_iterator> get_all_buckets() const {
+        return iterator_range<all_iterator>(all_iterator(m_root),all_iterator());
+    }
+
+
+    CUDA_HOST_DEVICE
+    iterator_range<well_separated_iterator> get_well_separated_buckets(const reference bucket) const {
+        return iterator_range<well_separated_iterator>(
+                well_separated_iterator(m_root,bucket),
+                well_separated_iterator()
+                );
+    }
+
+    CUDA_HOST_DEVICE
+    iterator_range<neighbouring_iterator> get_neighbouring_buckets(const reference bucket) const {
+        return iterator_range<neighbouring_iterator>(
+                neighbouring_iterator(m_root,bucket),
+                neighbouring_iterator()
+                );
+
+       
+    }
+
 
 
     

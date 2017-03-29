@@ -853,6 +853,7 @@ namespace nanoflann
 		const KDTreeSingleIndexAdaptorParams index_params;
 
 		size_t m_size; //!< Number of current poins in the dataset
+        size_t m_number_of_nodes;
 		size_t m_size_at_index_build; //!< Number of points in the dataset when the index was built
 		int dim;  //!< Dimensionality of each data point
 
@@ -885,6 +886,7 @@ namespace nanoflann
 			} node_type;
             //INSERT
             BoundingBox bbox;
+            size_t index;
 			Node* child1, * child2;  //!< Child nodes (both=NULL mean its a leaf node)
 		};
 		typedef Node* NodePtr;
@@ -921,7 +923,7 @@ namespace nanoflann
 		 * @param params Basically, the maximum leaf node size
 		 */
 		KDTreeSingleIndexAdaptor(const int dimensionality, const DatasetAdaptor& inputData, const KDTreeSingleIndexAdaptorParams& params = KDTreeSingleIndexAdaptorParams() ) :
-			dataset(inputData), index_params(params), root_node(NULL), distance(inputData)
+			dataset(inputData), index_params(params), root_node(NULL), distance(inputData), m_number_of_nodes(0)
 		{
 			m_size = dataset.kdtree_get_point_count();
 			m_size_at_index_build = m_size;
@@ -952,6 +954,7 @@ namespace nanoflann
 		{
 			pool.free_all();
 			root_node=NULL;
+            m_number_of_nodes = 0;
 			m_size_at_index_build = 0;
 		}
 
@@ -971,7 +974,10 @@ namespace nanoflann
 		}
 
 		/** Returns number of points in dataset  */
-		size_t size() const { return m_size; }
+		size_t size_points() const { return m_size; }
+
+        /** Returns number of points in dataset  */
+		size_t size_nodes() const { return m_number_of_nodes; }
 
 		/** Returns the length of each point in the dataset */
 		size_t veclen() const {
@@ -1177,6 +1183,7 @@ namespace nanoflann
             assert(vind.size()==m_size);
 
 			NodePtr node = pool.allocate<Node>(); // allocate memory
+            node->index = m_number_of_nodes++;
 
             assert(vind.size()==m_size);
 			/* If too few exemplars remain, then make this a leaf node. */
