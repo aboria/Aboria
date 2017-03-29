@@ -52,12 +52,16 @@ public:
 [section Neighbourhood Searching]
 
 The [classref Aboria::Particles] container gives you neighbourhood searching 
-functionality, using a simple bucket-search approach. The domain is divided into 
+functionality, using a simple cell-list approach. The domain is divided into 
 a regular grid of hypercubes with side length equal to a lengthscale that is 
 supplied by the user. Each particle in the container is assigned to the cell 
 that contains its position. Neighbourhood search queries at a given point return 
 all the particles within the cell that contains this point and the immediate 
 cell neighbours.
+
+[caution v0.5 of Aboria will introduce a new and improved neighbourhood searching
+design, which also includes a k-d tree data structure for searching. The other "caution"
+messages below describe what will change]
 
 To start with, we will create a particle set in three dimensions (the default) 
 containing a few randomly placed particles
@@ -75,11 +79,43 @@ containing a few randomly placed particles
 
 /*`
 
+Here we use the default data structure for neighbourhood searching, which is a cell-list
+data structure that supports serial insertion of points, and parallel queries. You can
+explicitly choose this data structure like so:
+
+*/
+        
+        typedef Particles<std::tuple<>,3,std::vector,bucket_search_serial> particle_bs_serial type;
+
+/*`
+ 
+You will notice that we also need to specify the vector data structure that the particle
+container uses, which in this case is a `std::vector`.
+
+The alternative is a cell-list data structure that supports parallel insetion of 
+points, and parallel queries. This constantly re-orders the particles in the particle 
+container so that they are sorted into individual cells, so if particles are changing 
+cells often this can be slower. But theoretically (this hasn't been tested yet) this 
+should speed up neighbourhood search queries as the particles that are local in memory
+are also local in space. You can use this data structure like so:
+
+*/
+        
+        typedef Particles<std::tuple<>,3,std::vector,bucket_search_parallel> particle_bs_parallel type;
+
+/*`
+
+
 Before you can use the neighbourhood searching, you need to initialise the
 domain using the [memberref Aboria::Particles::init_neighbour_search] function.
 
 In this case, we will initialise a domain from $(-1,-1,-1)$ to $(1,1,1)$, which
 is periodic in all directions. We will set the search radius to 0.2.
+
+[caution This will change in v0.5 of Aboria, insead of setting a search radius
+you will specify a number of particles per unit cell of the neighbourhood search
+data structure (This also means you don't have to specify your maximum search
+radius here, which is annoying)]
 
 */
 
@@ -99,6 +135,11 @@ Once this is done you can begin using the neighbourhood search queries using the
 `end()` functions that return `const` forward only iterators to the particles
 that satisfy the neighbour search. For example, the following counts all the
 particles within a square domain of side length `radius` of the point $(0,0,0)$
+
+[caution This will change in v0.5 of Aboria, instead you will use a more generic
+distance search within a given maximum distance, from a given query point, 
+where the distance metric can be 
+L1 (manhatten distance) , L2 (euclidian distance) , ... , Linf (a box search region).] 
 
 */
 

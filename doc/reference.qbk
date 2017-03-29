@@ -77,28 +77,42 @@ Header: `<Aboria.h>`
 
     [[[classref Aboria::MatrixReplacement]]
     
-        []]
+        [This is a matrix replacement class that can be used within the 
+        [@https://eigen.tuxfamily.org/ Eigen]
+        linear algebra library. It follows the layout given in the Eigen
+        [@https://eigen.tuxfamily.org/dox/group__MatrixfreeSolverExample.html 
+        documentation for matrix-free operators]. Note that this "matrix"
+        can only be used in a matrix-vector multiply with a standard Eigen 
+        vector]]
 
     [[[funcref Aboria::create_dense_operator]]         
     
-        []]
+        [Creates an instance of [classref Aboria::MatrixReplacement] that 
+        implements a fully dense matrix. It takes a standard C++ function object 
+        or lambda expression]]
 
     [[[funcref Aboria::create_sparse_operator]]         
     
-        []]
+        [Creates an instance of [classref Aboria::MatrixReplacement] that 
+        implements a sparse matrix, where the elements are assumed zero for 
+        particle pairs that are separated by more than a given distance.]]
 
     [[[funcref Aboria::create_zero_operator]]         
     
-        []]
+        [Creates an instance of [classref Aboria::MatrixReplacement] that 
+        implements a zero matrix]]
 
     [[[funcref Aboria::create_chebyshev_operator]]         
     
-        []]
+        [Creates an instance of [classref Aboria::MatrixReplacement] that 
+        implements a dense matrix. When multiplied by a vector, the result
+        is approximated using Chebyshev interpolation]]
 
 
     [[[funcref Aboria::create_block_operator]]         
     
-        []]
+        [Takes one or more [classref Aboria::MatrixReplacement] instances and 
+        forms a $N \times M$ block operator]]
 ]
 
 [h3 Level 3 - Symbolic particle-based DSL]
@@ -121,8 +135,8 @@ Header: `<Aboria.h>`
     [[[funcref Aboria::create_dx]]         
     
         [A function that creates a symbolic reference to the shortest difference 
-        between two particle's positions. It takes two [classref::Label]s as its 
-        arguments]]
+        between two particle's positions. It takes two [classref::Label] objects 
+        as its arguments]]
 
     [[[classref Aboria::Accumulate]]         
     
@@ -132,60 +146,47 @@ Header: `<Aboria.h>`
 ]
 
 
-[table Doing things with expressions
-
-[[Class Name] [Description]]
-
-    [[[funcref Aboria::evaluate_linear]]         
-    
-        []]
-
-    [[[funcref Aboria::evaluate_nonlinear]]         
-    
-        []]
-
-    [[[funcref Aboria::assemble]]         
-
-    
-        []]
-]
-
 [table Symbolic functions
 
 [[Class Name] [Description]]
 
     [[[funcref Aboria::norm]]         
     
-        []]
+        [A lazy function that calculates the L2 norm of a vector ]]
+
+    [[[funcref Aboria::inf_norm]]         
+    
+        [A lazy function that calculates the Linf norm of a vector ]]
 
     [[[funcref Aboria::dot]]         
     
-        []]
+        [A lazy function that calculates the dot product of two vectors ]]
 
     [[[funcref Aboria::exp]]         
     
-        []]
+        [A lazy function that calculates the result of `std::exp` on a scalar]]
 
     [[[funcref Aboria::pow]]         
     
-        []]
+        [A lazy function that calculates the result of `std::pow` on a scalar]]
 
     [[[funcref Aboria::abs]]         
     
-        []]
+        [A lazy function that calculates the result of `std::abs` on a scalar]]
 
     [[[funcref Aboria::log]]         
     
-        []]
+        [A lazy function that calculates the result of `std::log` on a scalar]]
 
     [[[funcref Aboria::erf]]         
     
-        []]
+        [A lazy function that calculates the result of `std::erf` on a scalar]]
 
     [[[funcref Aboria::sign]]         
     
-        []]
+        [A lazy function that calculates the result of `std::sign` on a scalar]]
 ]
 
 [xinclude libaboria.xml]
 
+[endsect]

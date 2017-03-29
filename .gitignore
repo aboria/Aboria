@@ -30,4 +30,4 @@ doc/bin
 .ycm_extra_conf.*
 compile_commands.json
 python/*_generated.cpp
-
+build*
