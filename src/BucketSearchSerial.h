@@ -457,6 +457,7 @@ private:
 };
 
 // assume that query functions, are only called from device code
+// TODO: most of this code shared with bucket_search_parallel_query, need to combine them
 template <typename Traits>
 struct bucket_search_serial_query {
 
@@ -494,6 +495,22 @@ struct bucket_search_serial_query {
         m_buckets_begin()
     {}
 
+/*
+     * functions for tree_query_iterator
+     */
+    static bool is_leaf_node(const value_type& bucket) {
+        return true;
+    }
+    static const value_type* get_child1(const value_type* bucket) {
+	    return nullptr;
+    }
+    static const value_type* get_child2(const value_type* bucket) {
+	    return nullptr;
+    }
+    /*
+     * end functions for tree_query_iterator
+     */
+
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
     const double_d& get_bounds_high() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
@@ -521,6 +538,24 @@ struct bucket_search_serial_query {
                 bucket*m_bucket_side_length + m_bounds.bmin,
                 (bucket+1)*m_bucket_side_length + m_bounds.bmin
                 );
+    }
+
+    double_d get_bucket_bounds_low(const value_type& bucket) {
+        return bucket*m_bucket_side_length + m_bounds.bmin;
+    }
+
+    double_d get_bucket_bounds_high(const value_type& bucket) {
+        return (bucket+1)*m_bucket_side_length + m_bounds.bmin;
+    }
+
+    CUDA_HOST_DEVICE
+    value_type get_bucket(const double_d &position) const {
+        return m_point_to_bucket_index.find_bucket_index_vector(position);
+    }
+
+    CUDA_HOST_DEVICE
+    size_t get_bucket_index(const reference bucket) const {
+        return m_point_to_bucket_index.collapse_index_vector(bucket);
     }
 
     template <int LNormNumber=-1>
@@ -566,12 +601,6 @@ struct bucket_search_serial_query {
         }
     }
 
-    /*
-    CUDA_HOST_DEVICE
-    bool get_children_buckets(const bucket_reference &bucket, std::array<value_type,2>& children) {
-        return false;
-    }
-    */
 
     CUDA_HOST_DEVICE
     iterator_range<root_iterator> get_root_buckets() const {
