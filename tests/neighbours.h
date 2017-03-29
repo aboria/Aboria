@@ -85,7 +85,7 @@ explicitly choose this data structure like so:
 
 */
         
-        typedef Particles<std::tuple<>,3,std::vector,bucket_search_serial> particle_bs_serial type;
+        typedef Particles<std::tuple<>,3,std::vector,bucket_search_serial> particle_bs_serial_type;
 
 /*`
  
@@ -101,7 +101,7 @@ are also local in space. You can use this data structure like so:
 
 */
         
-        typedef Particles<std::tuple<>,3,std::vector,bucket_search_parallel> particle_bs_parallel type;
+        typedef Particles<std::tuple<>,3,std::vector,bucket_search_parallel> particle_bs_parallel_type;
 
 /*`
 
