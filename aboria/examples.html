@@ -568,6 +568,116 @@ MathJax.Hub.Config({
         An Smoothed Particle Hydrodynamics example, simulating a 2D water column
         over a no-slip boundary. The <span class="bold"><strong>x</strong></span> and <span class="bold"><strong>y</strong></span> directions are periodic.
       </p>
+<p>
+        Simulation of a water column in hydrostatic equilibrium. SPH discretises
+        the Navier-Stokes equations using radial interpolation kernels defined over
+        a given particle set. See the following paper for more details than can be
+        described here:
+      </p>
+<p>
+        <a href="http://onlinelibrary.wiley.com/doi/10.1002/fld.2677/abstract" target="_top">M.
+        Robinson, J. J. Monaghan, Direct numerical simulation of decaying two-dimensional
+        turbulence in a no-slip square box using smoothed par- ticle hydrodynamics,
+        International Journal for Numerical Methods in Fluids 70 (1) (2012) 37&#8211;55</a>
+      </p>
+<p>
+        SPH is based on the idea of kernel interpolation. A fluid variable $A(\mathbf{r})$
+        (such as velocity or density) is interpolated using a kernel $W$, which depends
+        on the smoothing length variable $h$.
+      </p>
+<p>
+        \begin{equation}\label{Eq:integralInterpolant} A(\mathbf{r}) = \int A(\mathbf{r'})W(\mathbf{r}-\mathbf{r'},h)d\mathbf{r'}.
+        \end{equation}
+      </p>
+<p>
+        where $m_b$ and $\rho_b$ are the mass and density of particle $b$.
+      </p>
+<p>
+        Here we have used the fifth-order Wendland kernel for $W$, which has the
+        form
+      </p>
+<p>
+        \begin{eqnarray} W(q) = \frac{\beta}{h^d} \begin{cases} (2-q)^4(1+2q) &amp;
+        \text{for } 0 \leq q \le 2, \ 0 &amp; \text{for } q &gt; 2. \end{cases} \end{eqnarray}
+      </p>
+<p>
+        where $q = ||\mathbf{r}-\mathbf{r'}||/h$.
+      </p>
+<p>
+        The rate of change of density, or continuity equation, is given by
+      </p>
+<p>
+        \begin{equation} \label{Eq:changeInDensity} \frac{D\rho_a}{Dt} = \sum_b m_b
+        \mathbf{v}_{ab} \cdot <br> abla_a W_{ab}, \end{equation}
+      </p>
+<p>
+        where $\mathbf{v}_{ab}=\mathbf{v}_a-\mathbf{v}_b$.
+      </p>
+<p>
+        The equation of state used is the standard quasi-compressible form
+      </p>
+<p>
+        \begin{equation} P = B \left ( \left ( \frac{\rho}{\rho_0} \right )^\gamma
+        - 1 \right ), \end{equation}
+      </p>
+<p>
+        where $\gamma = 7$ is a typical value and $\rho_0$ is a reference density
+        that is normally set to the density of the fluid.
+      </p>
+<p>
+        The SPH momentum equation is given as below. Viscosity is included by adding
+        a viscous term $\Pi$
+      </p>
+<p>
+        \begin{equation} \label{Eq:momentumWithVisc} \frac{D\mathbf{v_a}}{Dt} = -\sum_b
+        m_b \left ( \frac{P_b}{\rho_b^2} + \frac{P_b}{\rho_b^2} + \Pi_{ab} \right
+        ) <br> abla_a W_{ab}. \end{equation}
+      </p>
+<p>
+        The SPH literature contains many different forms for $\Pi$. We have used
+        the term
+      </p>
+<p>
+        \begin{equation}\label{Eq:monaghansViscousTerm} \Pi_{ab} = - \alpha \frac{v_{sig}
+        (\mathbf{v}_{ab} \cdot \mathbf{r}_{ab} )}{2 \overline{\rho}_{ab} |\mathbf{r}_{ab}|},
+        \end{equation}
+      </p>
+<p>
+        where $v_{sig} = 2(c_s + |\mathbf{v}<span class="underline">{ab} \cdot
+        \mathbf{r}</span>{ab}| / |\mathbf{r}_{ab}| )$ is a signal velocity that
+        represents the speed at which information propagates between the particles.
+      </p>
+<p>
+        The particle's position and velocity were integrated using the Leapfrog second
+        order method, which isalso reversible in time in the absence of viscosity.
+        To preserve the reversibility of the simulation, $d\rho/dt$ was calculated
+        using the particle's position and velocity at the end of the timestep, rather
+        than the middle as is commonly done. The full integration scheme is given
+        by
+      </p>
+<p>
+        \begin{align} \mathbf{r}^{\frac{1}{2}} &amp;= \mathbf{r}^{0} + \frac{\delta
+        t}{2} \mathbf{v}^{0}, \\ \mathbf{v}^{\frac{1}{2}} &amp;= \mathbf{v}^{0} +
+        \frac{\delta t}{2} F(\mathbf{r}^{-\frac{1}{2}},\mathbf{v}^{-\frac{1}{2}},\rho^{-\frac{1}{2}}),
+        \\ \rho^{\frac{1}{2}} &amp;= \rho^{0} + \frac{\delta t}{2} D(\mathbf{r}^0,\mathbf{v}^0),
+        \label{Eq:timestepDensity1} \\ \mathbf{v}^{1} &amp;= \mathbf{v}^{0} + \delta
+        t F(\mathbf{r}^{\frac{1}{2}},\mathbf{v}^{\frac{1}{2}},\rho^{\frac{1}{2}}),
+        \\ \mathbf{r}^{1} &amp;= \mathbf{r}^{\frac{1}{2}} + \frac{\delta t}{2} \mathbf{v}^{1},
+        \\ \rho^{1} &amp;= \rho^{\frac{1}{2}} + \frac{\delta t}{2} D(\mathbf{r}^1,\mathbf{v}^1),
+        \label{Eq:timestepDensity2} \end{align}
+      </p>
+<p>
+        where $\mathbf{r}^0$, $\mathbf{r}^{1/2}$ and $\mathbf{r}^1$ is $\mathbf{r}$
+        at the start, mid-point and end of the timestep respectively. The timestep
+        $\delta t$ is bounded by the standard Courant condition
+      </p>
+<p>
+        \begin{equation} \delta t_1 \le \min_a \left ( 0.8 \frac{h_a}{v_{sig}} \right
+        ), \end{equation}
+      </p>
+<p>
+        where the minimum is taken over all the particles.
+      </p>
 <pre class="programlisting"><span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
 <span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
 <span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">math</span><span class="special">/</span><span class="identifier">constants</span><span class="special">/</span><span class="identifier">constants</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
@@ -575,6 +685,12 @@ MathJax.Hub.Config({
 <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">PI</span> <span class="special">=</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">math</span><span class="special">::</span><span class="identifier">constants</span><span class="special">::</span><span class="identifier">pi</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;();</span>
 <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">WCON_WENDLAND</span> <span class="special">=</span> <span class="number">21.0</span><span class="special">/(</span><span class="number">256.0</span><span class="special">*</span><span class="identifier">PI</span><span class="special">);</span>
 <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="identifier">NDIM</span> <span class="special">=</span> <span class="number">3</span><span class="special">;</span>
+
+<span class="comment">/*
+ * Note that we are using standard C++ function objects to implement
+ * the kernel W and its gradient F. We can wrap these as lazy Aboria
+ * functions that can be used within the symbolic Level 3 API.
+ */</span>
 
 <span class="keyword">struct</span> <span class="identifier">F_fun</span> <span class="special">{</span>
     <span class="keyword">typedef</span> <span class="keyword">double</span> <span class="identifier">result_type</span><span class="special">;</span>
