@@ -4,8 +4,8 @@
 <title>Neighbourhood Searching</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.3">
-<link rel="up" href="../index.html" title="Aboria 0.3">
+<link rel="home" href="../index.html" title="Aboria 0.4">
+<link rel="up" href="../index.html" title="Aboria 0.4">
 <link rel="prev" href="particle_container.html" title="Particle Container">
 <link rel="next" href="matrix_free_linear_algebra_with_.html" title="Matrix-free Linear Algebra with Eigen">
 <script type="text/x-mathjax-config">
@@ -40,13 +40,24 @@ MathJax.Hub.Config({
 </h2></div></div></div>
 <p>
       The <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> container
-      gives you neighbourhood searching functionality, using a simple bucket-search
-      approach. The domain is divided into a regular grid of hypercubes with side
-      length equal to a lengthscale that is supplied by the user. Each particle in
-      the container is assigned to the cell that contains its position. Neighbourhood
-      search queries at a given point return all the particles within the cell that
-      contains this point and the immediate cell neighbours.
+      gives you neighbourhood searching functionality, using a simple cell-list approach.
+      The domain is divided into a regular grid of hypercubes with side length equal
+      to a lengthscale that is supplied by the user. Each particle in the container
+      is assigned to the cell that contains its position. Neighbourhood search queries
+      at a given point return all the particles within the cell that contains this
+      point and the immediate cell neighbours.
     </p>
+<div class="caution"><table border="0" summary="Caution">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
+<th align="left">Caution</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        v0.5 of Aboria will introduce a new and improved neighbourhood searching
+        design, which also includes a k-d tree data structure for searching. The
+        other "caution" messages below describe what will change
+      </p></td></tr>
+</table></div>
 <p>
       To start with, we will create a particle set in three dimensions (the default)
       containing a few randomly placed particles
@@ -62,14 +73,48 @@ MathJax.Hub.Config({
 <span class="special">}</span>
 </pre>
 <p>
+      Here we use the default data structure for neighbourhood searching, which is
+      a cell-list data structure that supports serial insertion of points, and parallel
+      queries. You can explicitly choose this data structure like so:
+    </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_serial</span><span class="special">&gt;</span> <span class="identifier">particle_bs_serial_type</span><span class="special">;</span>
+</pre>
+<p>
+      You will notice that we also need to specify the vector data structure that
+      the particle container uses, which in this case is a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
+    </p>
+<p>
+      The alternative is a cell-list data structure that supports parallel insetion
+      of points, and parallel queries. This constantly re-orders the particles in
+      the particle container so that they are sorted into individual cells, so if
+      particles are changing cells often this can be slower. But theoretically (this
+      hasn't been tested yet) this should speed up neighbourhood search queries as
+      the particles that are local in memory are also local in space. You can use
+      this data structure like so:
+    </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_parallel</span><span class="special">&gt;</span> <span class="identifier">particle_bs_parallel_type</span><span class="special">;</span>
+</pre>
+<p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47103530698928-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47042167302384-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
       In this case, we will initialise a domain from $(-1,-1,-1)$ to $(1,1,1)$, which
       is periodic in all directions. We will set the search radius to 0.2.
     </p>
+<div class="caution"><table border="0" summary="Caution">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
+<th align="left">Caution</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        This will change in v0.5 of Aboria, insead of setting a search radius you
+        will specify a number of particles per unit cell of the neighbourhood search
+        data structure (This also means you don't have to specify your maximum search
+        radius here, which is annoying)
+      </p></td></tr>
+</table></div>
 <pre class="programlisting"><span class="identifier">double3</span> <span class="identifier">min</span><span class="special">(-</span><span class="number">1</span><span class="special">);</span>
 <span class="identifier">double3</span> <span class="identifier">max</span><span class="special">(</span><span class="number">1</span><span class="special">);</span>
 <span class="identifier">bool3</span> <span class="identifier">periodic</span><span class="special">(</span><span class="keyword">true</span><span class="special">);</span>
@@ -91,6 +136,18 @@ MathJax.Hub.Config({
       of side length <code class="computeroutput"><span class="identifier">radius</span></code> of the
       point $(0,0,0)$
     </p>
+<div class="caution"><table border="0" summary="Caution">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
+<th align="left">Caution</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        This will change in v0.5 of Aboria, instead you will use a more generic distance
+        search within a given maximum distance, from a given query point, where the
+        distance metric can be L1 (manhatten distance) , L2 (euclidian distance)
+        , ... , Linf (a box search region).
+      </p></td></tr>
+</table></div>
 <pre class="programlisting"><span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
 <span class="keyword">for</span> <span class="special">(</span><span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
     <span class="identifier">count</span><span class="special">++;</span>

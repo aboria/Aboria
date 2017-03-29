@@ -4,9 +4,9 @@
 <title>Introduction</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.3">
-<link rel="up" href="../index.html" title="Aboria 0.3">
-<link rel="prev" href="../index.html" title="Aboria 0.3">
+<link rel="home" href="../index.html" title="Aboria 0.4">
+<link rel="up" href="../index.html" title="Aboria 0.4">
+<link rel="prev" href="../index.html" title="Aboria 0.4">
 <link rel="next" href="installation.html" title="Installation">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
@@ -68,12 +68,10 @@ MathJax.Hub.Config({
       of the non-linear operators they wish to apply to the particle set. The current
       version of <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>
       implements the abstraction API described herein, with optional shared memory
-      parallelism. It currently does not support distributed memory parallelism,
-      GPUs or explicit SIMD vectorisation. Nevertheless, work on the latter two topics
-      is currently underway (see Section X and X), and the benchmarks in Section
-      3 show that <a href="https://github.com/martinjrobins/Aboria" target="_top">Aboria</a>
-      is generally similar or better than hand-coded C++ when run on a standard desktop
-      CPU-based setup.
+      parallelism. The over-arching design philosophy of Aboria is based on "zero-cost
+      abstraction", that the data structures in Level 1 and the Level 3 API
+      should run as fast as hand-coded operators. The benchmarks in Section 3 demonstrate
+      that this has indeed been achieved.
     </p>
 <h2>
 <a name="aboria.introduction.h0"></a>
@@ -100,11 +98,10 @@ MathJax.Hub.Config({
       Level 0 vectors to form a single data structure.
     </p>
 <p>
-      This Level 1 particle set container generally follows the STL specification,
-      with its own iterators and traits, with a few exceptions and additions, as
-      described in the (TODO: put ref here). It supports operations to add particles
-      (i.e. the STL <code class="computeroutput"><span class="identifier">push_back</span></code> member
-      function), remove particles (i.e. <code class="computeroutput"><span class="identifier">erase</span></code>),
+      This Level 1 particle set container generally (but not fully) follows the STL
+      specification, with its own iterators and traits. It supports operations to
+      add particles (i.e. the STL <code class="computeroutput"><span class="identifier">push_back</span></code>
+      member function), remove particles (i.e. <code class="computeroutput"><span class="identifier">erase</span></code>),
       and can return a single particle given an index $i$ (i.e. <code class="computeroutput"><span class="keyword">operator</span><span class="special">[]</span></code>). This index operation returns a lightweight
       type containing references to the corresponding index in the set of zipped
       Level 0 vectors. Individual variables can be obtained from this lightweight
