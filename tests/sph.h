@@ -10,6 +10,100 @@
 #include <cxxtest/TestSuite.h>
 
 //[sph
+/*`
+
+Simulation of a water column in hydrostatic equilibrium. SPH discretises 
+the Navier-Stokes equations using radial interpolation kernels defined 
+over a given particle set. See the following paper for more details than 
+can be described here:
+
+[@ http://onlinelibrary.wiley.com/doi/10.1002/fld.2677/abstract 
+M. Robinson, J. J. Monaghan, Direct numerical simulation of decaying
+two-dimensional turbulence in a no-slip square box using smoothed par-
+ticle hydrodynamics, International Journal for Numerical Methods in
+Fluids 70 (1) (2012) 37–55]
+
+SPH is based on the idea of kernel interpolation. A fluid variable
+$A(\mathbf{r})$ (such as velocity or density) is interpolated using a kernel
+$W$, which depends on the smoothing length variable $h$.
+
+\begin{equation}\label{Eq:integralInterpolant}
+A(\mathbf{r}) = \int A(\mathbf{r'})W(\mathbf{r}-\mathbf{r'},h)d\mathbf{r'}.
+\end{equation}
+
+where $m_b$ and $\rho_b$ are the mass and density of particle $b$. 
+
+Here we have used the fifth-order Wendland kernel for $W$, which has the form
+
+\begin{eqnarray}
+W(q) = \frac{\beta}{h^d}
+\begin{cases}
+(2-q)^4(1+2q) & \text{for } 0 \leq q \le 2, \\
+0             & \text{for } q > 2.
+\end{cases}
+\end{eqnarray}
+
+where $q = ||\mathbf{r}-\mathbf{r'}||/h$.
+
+The rate of change of density, or continuity equation, is given by
+
+\begin{equation} \label{Eq:changeInDensity}
+\frac{D\rho_a}{Dt} = \sum_b m_b \mathbf{v}\_{ab} \cdot \nabla_a W_{ab},
+\end{equation}
+
+where $\mathbf{v}_{ab}=\mathbf{v}_a-\mathbf{v}_b$. 
+
+The equation of state used is the standard quasi-compressible form
+
+\begin{equation}
+P = B \left ( \left ( \frac{\rho}{\rho_0} \right )^\gamma - 1 \right ),
+\end{equation}
+
+where $\gamma = 7$ is a typical value and $\rho_0$ is a reference density that
+is normally set to the density of the fluid. 
+
+The SPH momentum equation is given as below. Viscosity is included by adding a viscous term $\Pi$
+
+\begin{equation} \label{Eq:momentumWithVisc}
+\frac{D\mathbf{v_a}}{Dt} = -\sum_b m_b \left ( \frac{P_b}{\rho_b^2} + \frac{P_b}{\rho_b^2} + \Pi_{ab} \right ) \nabla_a W_{ab}.
+\end{equation}
+
+The SPH literature contains many different forms for $\Pi$. We have used the term
+
+\begin{equation}\label{Eq:monaghansViscousTerm}
+\Pi_{ab} = - \alpha \frac{v_{sig} (\mathbf{v}\_{ab} \cdot \mathbf{r}\_{ab} )}{2 \overline{\rho}\_{ab} |\mathbf{r}\_{ab}|},
+\end{equation}
+
+where $v_{sig} = 2(c_s + |\mathbf{v}_{ab} \cdot \mathbf{r}_{ab}| /
+|\mathbf{r}_{ab}| )$ is a signal velocity that represents the speed at which
+information propagates between the particles.
+
+The particle's position and velocity were integrated using the
+Leapfrog second order method, which isalso reversible in time in the absence of viscosity. 
+To preserve the reversibility of the simulation, $d\rho/dt$ was
+calculated using the particle's position and velocity at the end of the
+timestep, rather than the middle as is commonly done. The full integration scheme is given by 
+
+\begin{align}
+\mathbf{r}^{\frac{1}{2}} &= \mathbf{r}^{0} + \frac{\delta t}{2} \mathbf{v}^{0}, \\\\
+\mathbf{v}^{\frac{1}{2}} &= \mathbf{v}^{0} + \frac{\delta t}{2} F(\mathbf{r}^{-\frac{1}{2}},\mathbf{v}^{-\frac{1}{2}},\rho^{-\frac{1}{2}}), \\\\
+\rho^{\frac{1}{2}} &= \rho^{0} + \frac{\delta t}{2} D(\mathbf{r}^0,\mathbf{v}^0), \label{Eq:timestepDensity1} \\\\
+\mathbf{v}^{1} &= \mathbf{v}^{0} + \delta t F(\mathbf{r}^{\frac{1}{2}},\mathbf{v}^{\frac{1}{2}},\rho^{\frac{1}{2}}), \\\\
+\mathbf{r}^{1} &= \mathbf{r}^{\frac{1}{2}} + \frac{\delta t}{2} \mathbf{v}^{1}, \\\\
+\rho^{1} &= \rho^{\frac{1}{2}} + \frac{\delta t}{2} D(\mathbf{r}^1,\mathbf{v}^1), \label{Eq:timestepDensity2}
+\end{align}
+
+where $\mathbf{r}^0$, $\mathbf{r}^{1/2}$ and $\mathbf{r}^1$ is $\mathbf{r}$ at
+the start, mid-point and end of the timestep respectively. The timestep $\delta
+t$ is bounded by the standard Courant condition
+
+\begin{equation}
+\delta t_1 \le \min_a \left ( 0.8 \frac{h_a}{v_{sig}} \right ),
+\end{equation}
+
+where the minimum is taken over all the particles. 
+ 
+ */
 #include "Aboria.h"
 using namespace Aboria;
 #include <boost/math/constants/constants.hpp>
@@ -17,6 +111,12 @@ using namespace Aboria;
 const double PI = boost::math::constants::pi<double>();
 const double WCON_WENDLAND = 21.0/(256.0*PI);
 const unsigned int NDIM = 3;
+
+/*
+ * Note that we are using standard C++ function objects to implement 
+ * the kernel W and its gradient F. We can wrap these as lazy Aboria 
+ * functions that can be used within the symbolic Level 3 API. 
+ */
 
 struct F_fun {
     typedef double result_type;
