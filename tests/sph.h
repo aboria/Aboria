@@ -14,7 +14,7 @@
 
 Simulation of a water column in hydrostatic equilibrium. SPH discretises 
 the Navier-Stokes equations using radial interpolation kernels defined 
-over a given particle set. See the following paper for more details than 
+over a given particle set. See the following papers for more details than 
 can be described here:
 
 [@ http://onlinelibrary.wiley.com/doi/10.1002/fld.2677/abstract 
@@ -22,6 +22,10 @@ M. Robinson, J. J. Monaghan, Direct numerical simulation of decaying
 two-dimensional turbulence in a no-slip square box using smoothed par-
 ticle hydrodynamics, International Journal for Numerical Methods in
 Fluids 70 (1) (2012) 37–55]
+
+[@http://www.sciencedirect.com/science/article/pii/S0301932213001882 M. Robinson, M. Ramaioli, S. Luding, Fluid-particle flow simulations us-
+ing two-way-coupled mesoscale SPH-DEM and validation, International
+Journal of Multiphase Flow 59 (2014) 121–134.]
 
 SPH is based on the idea of kernel interpolation. A fluid variable
 $A(\mathbf{r})$ (such as velocity or density) is interpolated using a kernel
@@ -48,10 +52,14 @@ where $q = ||\mathbf{r}-\mathbf{r'}||/h$.
 The rate of change of density, or continuity equation, is given by
 
 \begin{equation} \label{Eq:changeInDensity}
-\frac{D\rho_a}{Dt} = \sum_b m_b \mathbf{v}\_{ab} \cdot \nabla_a W_{ab},
+\frac{D\rho_a}{Dt} = \frac{1}{\Omega_a}\sum_b m_b \mathbf{v}\_{ab} \cdot \nabla_a W_{ab},
 \end{equation}
 
-where $\mathbf{v}_{ab}=\mathbf{v}_a-\mathbf{v}_b$. 
+where $\mathbf{v}_{ab}=\mathbf{v}_a-\mathbf{v}_b$. The correction term $\Omega_a$ due to variable $h$ is given by
+
+\begin{equation}
+\Omega_a = 1 - \frac{\partial h_a}{\partial \rho_a} \sum_b m_b \frac{\partial W_{ab}(h_a)}{\partial h_a}.
+\end{equation}
 
 The equation of state used is the standard quasi-compressible form
 
@@ -64,8 +72,8 @@ is normally set to the density of the fluid.
 
 The SPH momentum equation is given as below. Viscosity is included by adding a viscous term $\Pi$
 
-\begin{equation} \label{Eq:momentumWithVisc}
-\frac{D\mathbf{v_a}}{Dt} = -\sum_b m_b \left ( \frac{P_b}{\rho_b^2} + \frac{P_b}{\rho_b^2} + \Pi_{ab} \right ) \nabla_a W_{ab}.
+\begin{equation}\label{Eq:sphJustPressureForce}
+\frac{d\mathbf{v}_a}{dt} = -\sum_b m_b \left [ \left ( \frac{P_a}{\Omega_a \rho_a^2} + \Pi_{ab} \right ) \nabla_a W_{ab}(h_a) + \left ( \frac{P_b}{\Omega_b \rho_b^2} + \Pi_{ab} \right ) \nabla_a W_{ab}(h_b) \right ],
 \end{equation}
 
 The SPH literature contains many different forms for $\Pi$. We have used the term
@@ -74,7 +82,7 @@ The SPH literature contains many different forms for $\Pi$. We have used the ter
 \Pi_{ab} = - \alpha \frac{v_{sig} (\mathbf{v}\_{ab} \cdot \mathbf{r}\_{ab} )}{2 \overline{\rho}\_{ab} |\mathbf{r}\_{ab}|},
 \end{equation}
 
-where $v_{sig} = 2(c_s + |\mathbf{v}_{ab} \cdot \mathbf{r}_{ab}| /
+where $v_{sig} = 2(c_s + |\mathbf{v}\_{ab} \cdot \mathbf{r}\_{ab}| /
 |\mathbf{r}_{ab}| )$ is a signal velocity that represents the speed at which
 information propagates between the particles.
 
@@ -94,7 +102,7 @@ timestep, rather than the middle as is commonly done. The full integration schem
 \end{align}
 
 where $\mathbf{r}^0$, $\mathbf{r}^{1/2}$ and $\mathbf{r}^1$ is $\mathbf{r}$ at
-the start, mid-point and end of the timestep respectively. The timestep $\delta
+the start, mid-point and end of the timestep respectively. The functions $F$ and $D$ are respectivly the momentum and continuity equations given above. The timestep $\delta
 t$ is bounded by the standard Courant condition
 
 \begin{equation}
