@@ -571,14 +571,20 @@ MathJax.Hub.Config({
 <p>
         Simulation of a water column in hydrostatic equilibrium. SPH discretises
         the Navier-Stokes equations using radial interpolation kernels defined over
-        a given particle set. See the following paper for more details than can be
-        described here:
+        a given particle set. See the following papers for more details than can
+        be described here:
       </p>
 <p>
         <a href="http://onlinelibrary.wiley.com/doi/10.1002/fld.2677/abstract" target="_top">M.
         Robinson, J. J. Monaghan, Direct numerical simulation of decaying two-dimensional
         turbulence in a no-slip square box using smoothed par- ticle hydrodynamics,
         International Journal for Numerical Methods in Fluids 70 (1) (2012) 37&#8211;55</a>
+      </p>
+<p>
+        <a href="http://www.sciencedirect.com/science/article/pii/S0301932213001882" target="_top">M.
+        Robinson, M. Ramaioli, S. Luding, Fluid-particle flow simulations us- ing
+        two-way-coupled mesoscale SPH-DEM and validation, International Journal of
+        Multiphase Flow 59 (2014) 121&#8211;134.</a>
       </p>
 <p>
         SPH is based on the idea of kernel interpolation. A fluid variable $A(\mathbf{r})$
@@ -607,11 +613,16 @@ MathJax.Hub.Config({
         The rate of change of density, or continuity equation, is given by
       </p>
 <p>
-        \begin{equation} \label{Eq:changeInDensity} \frac{D\rho_a}{Dt} = \sum_b m_b
-        \mathbf{v}_{ab} \cdot <br> abla_a W_{ab}, \end{equation}
+        \begin{equation} \label{Eq:changeInDensity} \frac{D\rho_a}{Dt} = \frac{1}{\Omega_a}\sum_b
+        m_b \mathbf{v}_{ab} \cdot <br> abla_a W_{ab}, \end{equation}
       </p>
 <p>
-        where $\mathbf{v}_{ab}=\mathbf{v}_a-\mathbf{v}_b$.
+        where $\mathbf{v}_{ab}=\mathbf{v}_a-\mathbf{v}_b$. The correction term $\Omega_a$
+        due to variable $h$ is given by
+      </p>
+<p>
+        \begin{equation} \Omega_a = 1 - \frac{\partial h_a}{\partial \rho_a} \sum_b
+        m_b \frac{\partial W_{ab}(h_a)}{\partial h_a}. \end{equation}
       </p>
 <p>
         The equation of state used is the standard quasi-compressible form
@@ -629,9 +640,10 @@ MathJax.Hub.Config({
         a viscous term $\Pi$
       </p>
 <p>
-        \begin{equation} \label{Eq:momentumWithVisc} \frac{D\mathbf{v_a}}{Dt} = -\sum_b
-        m_b \left ( \frac{P_b}{\rho_b^2} + \frac{P_b}{\rho_b^2} + \Pi_{ab} \right
-        ) <br> abla_a W_{ab}. \end{equation}
+        \begin{equation}\label{Eq:sphJustPressureForce} \frac{d\mathbf{v}_a}{dt}
+        = -\sum_b m_b \left [ \left ( \frac{P_a}{\Omega_a \rho_a^2} + \Pi_{ab} \right
+        ) <br> abla_a W_{ab}(h_a) + \left ( \frac{P_b}{\Omega_b \rho_b^2} + \Pi_{ab}
+        \right ) <br> abla_a W_{ab}(h_b) \right ], \end{equation}
       </p>
 <p>
         The SPH literature contains many different forms for $\Pi$. We have used
@@ -643,9 +655,9 @@ MathJax.Hub.Config({
         \end{equation}
       </p>
 <p>
-        where $v_{sig} = 2(c_s + |\mathbf{v}<span class="underline">{ab} \cdot
-        \mathbf{r}</span>{ab}| / |\mathbf{r}_{ab}| )$ is a signal velocity that
-        represents the speed at which information propagates between the particles.
+        where $v_{sig} = 2(c_s + |\mathbf{v}_{ab} \cdot \mathbf{r}_{ab}| / |\mathbf{r}_{ab}|
+        )$ is a signal velocity that represents the speed at which information propagates
+        between the particles.
       </p>
 <p>
         The particle's position and velocity were integrated using the Leapfrog second
@@ -668,8 +680,9 @@ MathJax.Hub.Config({
       </p>
 <p>
         where $\mathbf{r}^0$, $\mathbf{r}^{1/2}$ and $\mathbf{r}^1$ is $\mathbf{r}$
-        at the start, mid-point and end of the timestep respectively. The timestep
-        $\delta t$ is bounded by the standard Courant condition
+        at the start, mid-point and end of the timestep respectively. The functions
+        $F$ and $D$ are respectivly the momentum and continuity equations given above.
+        The timestep $\delta t$ is bounded by the standard Courant condition
       </p>
 <p>
         \begin{equation} \delta t_1 \le \min_a \left ( 0.8 \frac{h_a}{v_{sig}} \right
@@ -894,6 +907,66 @@ MathJax.Hub.Config({
 <a name="aboria.examples.radial_basis_function_rbf_interp"></a><a class="link" href="examples.html#aboria.examples.radial_basis_function_rbf_interp" title="Radial Basis Function (RBF) Interpolation">Radial
       Basis Function (RBF) Interpolation</a>
 </h3></div></div></div>
+<p>
+        Here we interpolate a function $f(x,y)$ over the two-dimensional unit cube
+        from $(0,0)$ to $(1,1)$, using the multiquadric Radial Basis Function (RBF).
+      </p>
+<p>
+        The function to be interpolated is
+      </p>
+<p>
+        \begin{equation} f(x,y) = \exp(-9(x-\frac{1}{2})^2 - 9(y-\frac{1}{4})^2)
+        \end{equation}
+      </p>
+<p>
+        and the multiquadric RBF $K(r)$ is given by
+      </p>
+<p>
+        \begin{equation} K(r) = \sqrt{r^2 + c^2} \end{equation}
+      </p>
+<p>
+        We create a set of basis functions around a set of $N$ particles with positions
+        $\mathbf{x}_i$. In this case the radial coordinate around each point is $r
+        = ||\mathbf{x}_i - \mathbf{x}||$. The function $f$ is approximated using
+        the sum of these basis functions, with the addition of a constant factor
+        $\alpha$
+      </p>
+<p>
+        \begin{equation} f_i(\mathbf{x}) = \beta + \sum_j \alpha_j K(||\mathbf{x}_j-\mathbf{x}||)
+        \end{equation}
+      </p>
+<p>
+        We exactly interpolate the function at $\mathbf{x}_i$ (i.e. set $f_i(\mathbf{x}_i)=f(\mathbf{x}_i)$),
+        leading to
+      </p>
+<p>
+        \begin{equation} f(\mathbf{x}_i) = \beta + \sum_j \alpha_j K(||\mathbf{x}_j-\mathbf{x}_i||)
+        \end{equation}
+      </p>
+<p>
+        with the additional constraint
+      </p>
+<p>
+        \begin{equation} 0 = \sum_j \alpha_j \end{equation}
+      </p>
+<p>
+        which can be written as a linear algebra expression
+      </p>
+<p>
+        \begin{equation} \mathbf{\Phi} = \begin{bmatrix} \mathbf{G}&amp;\mathbf{P}
+        \\ \mathbf{P}^T &amp; \mathbf{0} \end{bmatrix} \begin{bmatrix} \mathbf{\alpha}
+        \\ \mathbf{\beta} \end{bmatrix} = \mathbf{H} \mathbf{\gamma} \end{equation}
+      </p>
+<p>
+        where $\mathbf{\Phi} = [f(\mathbf{x}_1),f(\mathbf{x}_2),...,f(\mathbf{x}_N),0]$,
+        $\mathbf{G}$ is an $N \times N$ matrix with elements $G_{ij} = K(||\mathbf{x}_j-\mathbf{x}_i||)$
+        and $\mathbf{P}$ is a $N \times 1$ vector of ones.
+      </p>
+<p>
+        The basis function coefficients $\mathbf{\gamma}$ are found by solving this
+        equation. To do this, we use the iterative solvers found in the Eigen package
+        and Aboria's ability to wrap C++ function objects as Eigen matricies.
+      </p>
 <pre class="programlisting"><span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
 <span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">random</span><span class="special">&gt;</span>
 
