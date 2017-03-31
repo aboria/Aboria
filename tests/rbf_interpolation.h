@@ -49,37 +49,39 @@ Here we interpolate a function $f(x,y)$ over the two-dimensional unit cube from 
 The function to be interpolated is
 
 \begin{equation}
-f(x,y) = \exp(-9(x-\frac{1}{2})^2 - 9(y-\frac{1}{4})^2) 
+f(x,y) = \exp(-9(x-\frac{1}{2})^2 - 9(y-\frac{1}{4})^2), 
 \end{equation}
 
 and the multiquadric RBF $K(r)$ is given by
 
 \begin{equation}
-K(r) = \sqrt{r^2 + c^2}
+K(r) = \sqrt{r^2 + c^2}.
 \end{equation}
 
-We create a set of basis functions around a set of $N$ particles with positions $\mathbf{x}_i$. In this case the radial coordinate around each point is $r = ||\mathbf{x}_i - \mathbf{x}||$. The function $f$ is approximated using the sum of these basis functions, with the addition of a constant factor $\alpha$
+We create a set of basis functions around a set of $N$ particles with positions $\mathbf{x}_i$. In this case the radial coordinate around each point is $r = ||\mathbf{x}_i - \mathbf{x}||$. The function $f$ is approximated using the sum of these basis functions, with the addition of a constant factor $\beta$
 
 \begin{equation}
-f_i(\mathbf{x}) = \beta + \sum_j \alpha_j K(||\mathbf{x}_j-\mathbf{x}||)
+\overline{f}(\mathbf{x}) = \beta + \sum_i \alpha_j K(||\mathbf{x}_i-\mathbf{x}||).
 \end{equation}
 
-We exactly interpolate the function at $\mathbf{x}_i$ (i.e. set $f_i(\mathbf{x}_i)=f(\mathbf{x}_i)$), leading to
+We exactly interpolate the function at $\mathbf{x}_i$ (i.e. set $\overline{f}(\mathbf{x}_i)=f(\mathbf{x}_i)$), leading to
 
 \begin{equation}
-f(\mathbf{x}_i) = \beta + \sum_j \alpha_j K(||\mathbf{x}_j-\mathbf{x}_i||)
+f(\mathbf{x}_i) = \beta + \sum_j \alpha_j K(||\mathbf{x}_j-\mathbf{x}_i||).
 \end{equation}
 
-with the additional constraint
+Note that the sum $j$ is over the same particle set.
+
+We also need one additional constraint to find $\beta$ 
 
 \begin{equation}
-0 = \sum_j \alpha_j 
+0 = \sum_j \alpha_j.
 \end{equation}
 
-which can be written as a linear algebra expression
+We rewrite the two previous equations as a linear algebra expression
 
 \begin{equation}
-\mathbf{\Phi} = \begin{bmatrix} \mathbf{G}&\mathbf{P} \\\\ \mathbf{P}^T & \mathbf{0} \end{bmatrix} \begin{bmatrix} \mathbf{\alpha} \\\\ \mathbf{\beta} \end{bmatrix} = \mathbf{H} \mathbf{\gamma} 
+\mathbf{\Phi} = \begin{bmatrix} \mathbf{G}&\mathbf{P} \\\\ \mathbf{P}^T & \mathbf{0} \end{bmatrix} \begin{bmatrix} \mathbf{\alpha} \\\\ \mathbf{\beta} \end{bmatrix} = \mathbf{W} \mathbf{\gamma},
 \end{equation}
 
 where $\mathbf{\Phi} = [f(\mathbf{x}_1),f(\mathbf{x}_2),...,f(\mathbf{x}_N),0]$, $\mathbf{G}$ is an $N \times N$ matrix with elements $G_{ij} = K(||\mathbf{x}_j-\mathbf{x}_i||)$ and $\mathbf{P}$ is a $N \times 1$ vector of ones.
