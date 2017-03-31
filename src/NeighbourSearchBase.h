@@ -810,7 +810,6 @@ public:
     const Query *m_query;
 };
 
-typedef tree_depth_first_iterator<dimension,nanoflann_adaptor_query> all_iterator;
 
 template <unsigned int D, typename Query>
 class tree_depth_first_iterator {
@@ -923,6 +922,231 @@ public:
 
 
     typedef tree_well_separated_iterator<dimension,nanoflann_adaptor_query> well_separated_iterator;
+
+
+template <unsigned int D, typename Query>
+class tree_well_separated_iterator {
+    typedef tree_query_iterator<D,Query,LNormNumber> iterator;
+    static const unsigned int dimension = D;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+
+public:
+    typedef typename Query::value_type const value_type;
+    typedef const value_type* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const value_type& reference;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    tree_query_iterator():
+        m_node(nullptr)
+    {}
+       
+    /// this constructor is used to start the iterator at the head of a bucket 
+    /// list
+    CUDA_HOST_DEVICE
+    tree_query_iterator(const value_type* start_node,
+                  const double theta,
+                  const Query *query
+                  ):
+
+        m_query(query),
+        m_theta(theta),
+        m_node(nullptr)
+    {
+        if (start_node == nullptr) {
+                LOG(4,"\ttree_well_separated_iterator (constructor) empty tree, returning default iterator");
+        } else {
+            double accum = 0;
+            for (int i = 0; i < dimension; ++i) {
+                const double val = m_query_point[i];
+                if (val < m_query->get_bounds_low()[i]) {
+                    m_dists[i] = val - m_query->get_bounds_low()[i];
+                } else if (m_query_point[i] > m_query->get_bounds_high()[i]) {
+                    m_dists[i] = val - m_query->get_bounds_high()[i];
+                }
+                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
+            }
+            if (accum <= m_max_distance2) {
+                LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
+                m_node = start_node;
+                go_to_next_leaf();
+            } else {
+                LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
+            }
+        }
+    }
+
+
+    tree_query_iterator(const iterator& copy):
+        m_query_point(copy.m_query_point),
+        m_max_distance2(copy.m_max_distance2),
+        m_node(copy.m_node),
+        m_dists(copy.m_dists)
+    {
+        m_stack = copy.m_stack;
+        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+    }
+
+    iterator& operator=(const iterator& copy) {
+        m_query_point = copy.m_query_point;
+        m_max_distance2 = copy.m_max_distance2;
+        m_node=copy.m_node;
+        m_dists=copy.m_dists;
+        m_stack = copy.m_stack;
+        return *this;
+        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+    }
+
+    /*
+    iterator& operator=(iterator&& copy):
+        m_stack=std::move(copy.m_stack),
+        m_query_point(copy.m_query_point),
+        m_max_distance2(copy.m_max_distance2),
+        m_node(copy.m_node),
+        m_dists(copy.m_dists)
+    {}
+    */
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    CUDA_HOST_DEVICE
+    size_t operator-(iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+ private:
+    friend class boost::iterator_core_access;
+
+    void go_to_next_node() {
+        while(!m_query->is_leaf_node(*m_node)) {
+            ASSERT(m_query->get_child1(m_node) != NULL,"no child1");
+            ASSERT(m_query->get_child2(m_node) != NULL,"no child2");
+            // if node well separated return, and children are ignored
+            //
+            // children are either: well separated or neighbours,
+            //
+            // dive into child1 and put child2 onto stack
+            const size_t idx = m_query->get_dimension_index(*m_node);
+            const double val = m_query_point[idx];
+            const double diff_cut_high = val - m_query->get_cut_high(*m_node);
+            const double diff_cut_low = val - m_query->get_cut_low(*m_node);
+
+            pointer bestChild;
+            pointer otherChild;
+            double cut_dist,bound_dist;
+
+
+            LOG(4,"\ttree_query_iterator (go_to_next_leaf) with query pt = "<<m_query_point<<"): idx = "<<idx<<" cut_high = "<<m_query->get_cut_high(*m_node)<<" cut_low = "<<m_query->get_cut_low(*m_node));
+            
+            if ((diff_cut_low+diff_cut_high)<0) {
+                LOG(4,"\ttree_query_iterator (go_to_next_leaf) low child is best");
+                bestChild = m_query->get_child1(m_node);
+                otherChild = m_query->get_child2(m_node);
+                cut_dist = diff_cut_high;
+                //bound_dist = val - m_query->get_bounds_high(*m_node);
+            } else {
+                LOG(4,"\ttree_query_iterator (go_to_next_leaf) high child is best");
+                bestChild = m_query->get_child2(m_node);
+                otherChild = m_query->get_child1(m_node);
+                cut_dist = diff_cut_low;
+                //bound_dist = val - m_query->get_bounds_low(*m_node);
+            }
+            
+            // if other child possible save it to stack for later
+            double save_dist = m_dists[idx];
+            m_dists[idx] = cut_dist;
+
+            // calculate norm of m_dists 
+            double accum = 0;
+            for (int i = 0; i < dimension; ++i) {
+                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
+            }
+            if (accum <= m_max_distance2) {
+                LOG(4,"\ttree_query_iterator (go_to_next_leaf) push other child for later");
+                m_stack.push(std::make_pair(otherChild,m_dists));
+            }
+
+            // restore m_dists and move to bestChild
+            m_dists[idx] = save_dist;
+            m_node = bestChild;
+        }
+        LOG(4,"\ttree_query_iterator (go_to_next_leaf) found a leaf node");
+    }
+    
+    void pop_new_child_from_stack() {
+        std::tie(m_node,m_dists) = m_stack.top();
+        m_stack.pop();
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (tree_iterator):"); 
+#endif
+        if (m_stack.empty()) {
+            m_node = nullptr;
+        } else {
+            pop_new_child_from_stack();
+            go_to_next_leaf();
+        }
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (tree_iterator): m_node = "<<m_node); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        return m_node == other.m_node;
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return *m_node; }
+
+
+    std::stack<std::pair<pointer,double_d>> m_stack;
+    double_d m_query_point;
+    double m_max_distance2;
+    const value_type* m_node;
+    double_d m_dists;
+    const Query *m_query;
+};
+
     typedef tree_neighbouring_iterator<dimension,nanoflann_adaptor_query> neighbouring_iterator;
 
 
