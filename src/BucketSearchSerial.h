@@ -471,8 +471,7 @@ struct bucket_search_serial_query {
     typedef lattice_iterator<dimension> query_iterator;
     typedef lattice_iterator<dimension> root_iterator;
     typedef lattice_iterator<dimension> all_iterator;
-    typedef lattice_iterator_with_hole<dimension> well_separated_iterator;
-    typedef lattice_iterator<dimension> neighbouring_iterator;
+    typedef lattice_iterator<dimension> theta_iterator;
     typedef typename query_iterator::reference reference;
     typedef typename query_iterator::value_type value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
@@ -619,35 +618,10 @@ struct bucket_search_serial_query {
     }
 
     CUDA_HOST_DEVICE
-    iterator_range<well_separated_iterator> get_well_separated_buckets(const reference bucket) const {
-        int_d start = bucket-int_d(1);
-        int_d end = bucket+int_d(1);
-
-        bool no_buckets = false;
-        for (int i=0; i<dimension; i++) {
-            if (start[i] <= 0 && end[i] >= m_end_bucket[i]) {
-                no_buckets = true;
-            }
-        }
-
-        if (no_buckets) {
-            return iterator_range<query_iterator>(
-                well_separated_iterator(int_d(0),m_end_bucket,int_d(0),m_end_bucket,m_end_bucket),
-                well_separated_iterator(int_d(0),m_end_bucket,int_d(0),m_end_bucket,m_end_bucket)
-                );
-        } else {
-            return iterator_range<query_iterator>(
-                well_separated_iterator(int_d(0),m_end_bucket,start,end,int_d(0)),
-                ++well_separated_iterator(int_d(0),m_end_bucket,start,end,m_end_bucket)
-                );
-        }
-    }
-
-    CUDA_HOST_DEVICE
-    iterator_range<neighbouring_iterator> get_neighbouring_buckets(const reference bucket) const {
+    iterator_range<theta_iterator> get_theta_buckets(const reference bucket) const {
         
-        int_d start = bucket-int_d(1);
-        int_d end = bucket+int_d(1);
+        int_d start = bucket-int_d(2);
+        int_d end = bucket+int_d(2);
 
         bool no_buckets = false;
         for (int i=0; i<Traits::dimension; i++) {
@@ -665,15 +639,15 @@ struct bucket_search_serial_query {
             }
         }
         if (no_buckets) {
-            return iterator_range<neighbouring_iterator>(
-                neighbouring_iterator(end,end,endend),
-                ++neighbouring_iterator(end,end,end)
+            return iterator_range<theta_iterator>(
+                theta_iterator(end,end,endend),
+                ++theta_iterator(end,end,end)
                 );
 
         } else {
-            return iterator_range<neighbouring_iterator>(
-                neighbouring_iterator(start,end,start),
-                ++neighbouring_iterator(start,end,end)
+            return iterator_range<theta_iterator>(
+                theta_iterator(start,end,start),
+                ++theta_iterator(start,end,end)
                 );
         }
     }
