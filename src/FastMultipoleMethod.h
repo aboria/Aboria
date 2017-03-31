@@ -400,15 +400,17 @@ public:
             box_type target_box(m_query->get_bucket_bounds_low(target_bucket),
                                           m_target->get_bucket_bounds_high(target_bucket));
             size_t target_index = m_query->get_bucket_index(target_bucket); 
-            well_separated_iterator_range source_buckets 
-                    = m_query->get_well_separated_buckets(target_bucket);
-            std::for_each(source_buckets.begin(), source_buckets.end(), 
-                    [&](const reference source_bucket) {
-                box_type source_box(m_query->get_bucket_bounds_low(source_bucket),
+            for (tuple_ns::tuple<reference,const bool&> tpl: m_query->get_theta_buckets(target_bucket)) {
+                reference source_bucket = get<0>(tpl);
+                if (get<1>(tpl)) {
+                    save for later;
+                } else {
+                    box_type source_box(m_query->get_bucket_bounds_low(source_bucket),
                                                   m_query->get_bucket_bounds_high(source_bucket));
-                size_t source_index = m_query->get_bucket_index(source_bucket); 
-                Expansions::M2L(m_sum.begin(),target_box,source_box,m_W[source_index].begin(),m_K)
-            });
+                    size_t source_index = m_query->get_bucket_index(source_bucket); 
+                    Expansions::M2L(m_g[target_index],target_box,source_box,m_W[source_index],m_K)
+                }
+            }
         });
 
 
