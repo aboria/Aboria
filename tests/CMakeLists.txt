@@ -166,7 +166,7 @@ set(DiffusionAroundSpheres
 set(ChebyshevTestFile chebyshev.h)
 set(ChebyshevTest
     test_Rn_calculation
-    test_chebyshev_interpolation
+    test_fast_methods_
     test_chebyshev_polynomial_calculation
     )
 

@@ -301,6 +301,7 @@ struct nanoflann_adaptor_query {
     const static unsigned int dimension = Traits::dimension;
     typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
     typedef typename kd_tree_type::Node value_type;
+    typedef value_type& reference;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
@@ -308,15 +309,10 @@ struct nanoflann_adaptor_query {
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
-    typedef tree_query_iterator<dimension,nanoflann_adaptor_query,-1> query_iterator;
+    typedef tree_query_iterator<nanoflann_adaptor_query,-1> query_iterator;
     typedef value_type* root_iterator;
-    typedef tree_depth_first_iterator<dimension,nanoflann_adaptor_query> all_iterator;
+    typedef tree_depth_first_iterator<nanoflann_adaptor_query> all_iterator;
     typedef ranges_iterator<Traits> particle_iterator;
-    typedef typename query_iterator::reference reference;
-    typedef typename query_iterator::value_type value_type;
-    typedef linked_list_iterator<Traits> particle_iterator;
-
-
 
     bool_d m_periodic;
     detail::bbox<dimension> m_bounds;
@@ -401,11 +397,11 @@ struct nanoflann_adaptor_query {
     value_type& get_bucket(const double_d &position) const {
         value_type* node = m_root;
         while(!is_leaf_node(*node)) {
-            ASSERT(get_child1(m_node) != nullptr,"no child1");
-            ASSERT(get_child2(m_node) != nullptr,"no child2");
-            const size_t idx = get_dimension_index(*m_node);
-            const double diff_cut_high = position[idx] - get_cut_high(*m_node);
-            const double diff_cut_low = position[idx]- get_cut_low(*m_node);
+            ASSERT(get_child1(node) != nullptr,"no child1");
+            ASSERT(get_child2(node) != nullptr,"no child2");
+            const size_t idx = get_dimension_index(*node);
+            const double diff_cut_high = position[idx] - get_cut_high(*node);
+            const double diff_cut_low = position[idx]- get_cut_low(*node);
 
             if ((diff_cut_low+diff_cut_high)<0) {
                 node = get_child1(node);
@@ -445,6 +441,10 @@ struct nanoflann_adaptor_query {
 
     iterator_range<all_iterator> get_all_buckets() const {
         return iterator_range<all_iterator>(all_iterator(m_root),all_iterator());
+    }
+
+    raw_pointer get_particles_begin() const {
+        return m_particles_begin;
     }
 
 
