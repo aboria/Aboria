@@ -93,10 +93,10 @@ struct calculate_P2M_and_M2M {
 };
 
 template <typename Expansions, typename NeighbourQuery, 
-          typename SourceVectorType, typename Function>
+          typename SourceVectorType, typename ConnectivityType, typename Function>
 struct calculate_M2L_and_L2L {
     typedef typename NeighbourQuery::reference reference;
-    typedef typename NeighbourQuery::value_type* pointer;
+    typedef typename NeighbourQuery::pointer pointer;
     typedef typename NeighbourQuery::traits_type traits_type;
     typedef typename Expansions::expansion_type expansion_type;
     typedef typename NeighbourQuery::particle_iterator particle_iterator;
@@ -109,13 +109,13 @@ struct calculate_M2L_and_L2L {
     StorageVectorType &m_g;
     StorageVectorType &m_W;
     Function &m_K;
-    std::vector<std::vector<pointer>>& m_connectivity;
+    ConnectivityType& m_connectivity;
 
     calculate_M2L_and_L2L(const NeighbourQuery& query, 
-                StorageVectorType &W,
+                  StorageVectorType &W,
                   StorageVectorType& g,
                   Function& K,
-                  std::vector<std::vector<pointer>>& connectivity):
+                  ConnectivityType& connectivity):
         m_query(query),
         m_W(W),
         m_g(g),
@@ -123,7 +123,7 @@ struct calculate_M2L_and_L2L {
         m_connectivity(connectivity)
     {}
 
-    void calculate_dive(const std::vector<pointer>& connected_buckets_parent,
+    void calculate_dive(const typename ConnectivityType::reference connected_buckets_parent,
                         const expansion_type& g_parent, 
                         const box_type& box_parent, 
                         const reference bucket) {
@@ -131,7 +131,7 @@ struct calculate_M2L_and_L2L {
                         m_query.get_bucket_bounds_high(bucket));
         size_t target_index = m_query.get_bucket_index(bucket);
         expansion_type& g = m_g[target_index];
-        std::vector<pointer>& connected_buckets = m_connectivity[target_index];
+        typename ConnectivityType::reference connected_buckets = m_connectivity[target_index];
         //connected_buckets.reserve(connected_buckets_parent.size());
 
         // expansion from parent
@@ -162,19 +162,20 @@ struct calculate_M2L_and_L2L {
     // to recurse down the tree
     void operator()(const reference bucket) {
         // do a single-level FMM on the root nodes (no heirarchy above this)
-        // TODO: can I use a fft to speed this up:
+        // TODO: can I use a fft to speed this up?:
         // "A Matrix Version of the Fast Multipole Method"
         size_t target_index = m_query.get_bucket_index(bucket);
         box_type target_box(m_query.get_bucket_bounds_low(bucket),
                         m_query.get_bucket_bounds_high(bucket));
         detail::theta_condition<dimension> theta(target_box.bmin,target_box.bmax);
         root_iterator_range root_buckets = m_query.get_root_buckets();
-        std::vector<pointer>& connected_buckets = m_connectivity[target_index];
+        typename ConnectivityType::reference connected_buckets = m_connectivity[target_index];
         for (const reference source_bucket: root_buckets) {
             box_type source_box(m_query.get_bucket_bounds_low(source_bucket),
                                 m_query.get_bucket_bounds_high(source_bucket));
             size_t source_index = m_query.get_bucket_index(source_bucket);
             if (theta.check(source_box.bmin,source_box.bmax)) {
+                std::cout << "buckets "<<target_index<<" and "<<source_index<<std::endl;
                 connected_buckets.push_back(&source_bucket);
             } else {
                 Expansions::M2L(m_g[target_index],target_box,source_box,m_W[source_index],m_K);
@@ -196,10 +197,12 @@ template <typename Expansions, typename Function, typename NeighbourQuery>
 class FastMultipoleMethod {
     typedef typename NeighbourQuery::traits_type traits_type;
     typedef typename NeighbourQuery::reference reference;
-    typedef typename NeighbourQuery::value_type* pointer;
+    typedef typename NeighbourQuery::pointer pointer;
     typedef typename Expansions::expansion_type expansion_type;
     typedef typename traits_type::template vector_type<expansion_type>::type storage_type;
-    typedef typename traits_type::template vector_type<pointer>::type bucket_pointer_vector_type;
+    typedef typename traits_type::template vector_type<
+        typename std::remove_const<pointer>::type
+        >::type bucket_pointer_vector_type;
     typedef typename traits_type::template vector_type<bucket_pointer_vector_type>::type connectivity_type;
     typedef iterator_range<typename NeighbourQuery::root_iterator> root_iterator_range;
     typedef typename NeighbourQuery::particle_iterator particle_iterator;
@@ -222,8 +225,10 @@ public:
     void calculate_expansions(const VectorType& source_vector) {
         root_iterator_range root_buckets = m_query->get_root_buckets();
 
-        m_W.resize(m_query->number_of_buckets());
-        m_g.resize(m_query->number_of_buckets());
+        const size_t n = m_query->number_of_buckets();
+        m_W.resize(n);
+        m_g.resize(n);
+        m_connectivity.resize(n);
 
         // upward sweep of tree
         // calculate P2M and M2M expansions for source buckets (recursive up
@@ -243,7 +248,8 @@ public:
         std::for_each(root_buckets.begin(),
                       root_buckets.end(),
                       calculate_M2L_and_L2L<Expansions,NeighbourQuery,
-                                            VectorType,Function>(
+                                            VectorType,connectivity_type
+                                            ,Function>(
                                                 *m_query,
                                                 m_W,
                                                 m_g,
@@ -262,7 +268,7 @@ public:
                      m_query->get_bucket_bounds_high(bucket));
 
         double sum = Expansions::L2P(p,box,m_g[index]);
-        for (pointer source_pointer: m_connectivity[index]) { 
+        for (const pointer& source_pointer: m_connectivity[index]) { 
             sum += detail::calculate_K_direct(p
                     ,m_query->get_bucket_particles(*source_pointer)
                     ,m_K,source_vector,m_query->get_particles_begin());
