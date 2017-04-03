@@ -471,7 +471,6 @@ struct bucket_search_serial_query {
     typedef lattice_iterator<dimension> query_iterator;
     typedef lattice_iterator<dimension> root_iterator;
     typedef lattice_iterator<dimension> all_iterator;
-    typedef lattice_iterator<dimension> theta_iterator;
     typedef typename query_iterator::reference reference;
     typedef typename query_iterator::value_type value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
@@ -617,6 +616,7 @@ struct bucket_search_serial_query {
         m_end_bucket.prod();
     }
 
+    /*
     CUDA_HOST_DEVICE
     iterator_range<theta_iterator> get_theta_buckets(const reference bucket) const {
         
@@ -651,6 +651,7 @@ struct bucket_search_serial_query {
                 );
         }
     }
+    */
 
     
 

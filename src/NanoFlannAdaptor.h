@@ -311,7 +311,6 @@ struct nanoflann_adaptor_query {
     typedef tree_query_iterator<dimension,nanoflann_adaptor_query,-1> query_iterator;
     typedef value_type* root_iterator;
     typedef tree_depth_first_iterator<dimension,nanoflann_adaptor_query> all_iterator;
-    typedef tree_theta_iterator<dimension,nanoflann_adaptor_query> theta_iterator;
     typedef ranges_iterator<Traits> particle_iterator;
     typedef typename query_iterator::reference reference;
     typedef typename query_iterator::value_type value_type;
@@ -449,6 +448,7 @@ struct nanoflann_adaptor_query {
     }
 
 
+    /*
     CUDA_HOST_DEVICE
     iterator_range<theta_iterator> get_theta_buckets(const reference bucket) const {
         return iterator_range<theta_iterator>(
@@ -456,6 +456,7 @@ struct nanoflann_adaptor_query {
                 theta_iterator()
                 );
     }
+    */
 
 };
 

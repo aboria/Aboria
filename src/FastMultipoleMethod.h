@@ -45,6 +45,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Get.h"
 
 #include <iostream>
+#include <unordered_map>
 #include "Log.h"
 
 namespace Aboria {
@@ -241,6 +242,32 @@ namespace detail {
         }
         return sum;
     }
+
+    template <unsigned int D>
+    struct theta_condition {
+        typedef Vector<double,D> double_d;
+        const double_d& m_low;
+        const double_d& m_high;
+        const double m_r2;
+        const double m_r;
+        static const double m_theta = 0.5;
+        constexpr double m_theta2 = m_theta*m_theta;
+        theta_condition(const double_d& low, const double_d& high):
+            m_low(low),m_high(high),
+            m_r2(0.25*(high-low).squaredNorm()),
+            m_r(std::sqrt(m_r2))
+        {}
+
+        bool theta_condition(const double_d& low, const double_d& high) {
+        double d = 0.5*(high + low - m_low - m_high).norm(); 
+        double other_r2 = 0.25*(high-low).squaredNorm();
+        if (other_r2 < m_r2) {
+            const double other_r = std::sqrt(other_r2);
+            return m_r2 > m_theta2*std::pow(d-other_r,2);
+        } else {
+            return other_r2 < m_theta2*std::pow(d-m_r,2);
+        }
+    }
 }
             
 
@@ -300,8 +327,9 @@ struct calculate_P2M_and_M2M {
 
 template <typename Expansions, typename NeighbourQuery, 
           typename SourceVectorType>
-struct calculate_L2L {
-typedef typename NeighbourQuery::reference reference;
+struct calculate_M2L_and_L2L {
+    typedef typename NeighbourQuery::reference reference;
+    typedef typename NeighbourQuery::pointer pointer;
     typedef NeighbourQuery::traits_type traits_type;
     typedef Expansions::vector_type vector_type;
     typedef typename NeighbourQuery::reference reference;
@@ -311,41 +339,81 @@ typedef typename NeighbourQuery::reference reference;
     typedef detail::bbox<dimension> box_type;
 
     const NeighbourQuery &m_search;
-    const SourceVectorType &m_source_vector;
     StorageVectorType &m_g;
+    StorageVectorType &m_W;
+    std::vector<std::vector<pointer>>& m_connectivity;
 
-    calculate_L2L(const NeighbourQuery& search, 
-                  const SourceVectorType& source_vector,
-                  StorageVectorType& g):
+    calculate_M2L_and_L2L(const NeighbourQuery& search, 
+                StorageVectorType &W,
+                  StorageVectorType& g,
+                  std::vector<std::vector<pointer>>& connectivity):
         m_search(search),
-        m_source_vector(source_vector),
-        m_g(g)
+        m_W(W),
+        m_g(g),
+        m_connectivity(connectivity)
     {}
 
-    void calculate_L2L_dive(const vector_type& g_parent, 
+    void calculate_dive(std::vector<pointer>& connected_buckets_parent,
+                            const vector_type& g_parent, 
                             const box_type& box_parent, 
                             const reference bucket) {
-        box_type box(m_search.get_bucket_bounds_low(bucket),
+        box_type target_box(m_search.get_bucket_bounds_low(bucket),
                         m_search.get_bucket_bounds_high(bucket));
-        size_t index = m_search.get_bucket_index(bucket);
+        size_t target_index = m_search.get_bucket_index(bucket);
         vector_type& g = m_g[index];
+        std::vector<pointer>& connected_buckets = m_connectivity[target_index];
+        //connected_buckets.reserve(connected_buckets_parent.size());
+
+        // expansion from parent
         Expansions::L2L(g,box,box_parent,g_parent);
+
+        detail::theta_condition<dimension> theta(target_box.bmin,target_box.bmax);
+        // expansions from weakly connected buckets on this level
+        // and store strongly connected buckets to connectivity list
+        for (const pointer source_pointer: connected_buckets_parent) {
+            const reference source_bucket = *source_pointer;
+            box_type source_box(m_query->get_bucket_bounds_low(source_bucket),
+                                m_query->get_bucket_bounds_high(source_bucket));
+            size_t source_index = m_search.get_bucket_index(other_bucket);
+            if (theta(source_box.bmin,source_box.bmax)) {
+                connected_buckets.push_back(&source_bucket);
+            } else {
+                Expansions::M2L(g,target_box,source_box,m_W[source_index],m_K)
+            }
+        }
+
         if (!search.is_leaf_node(bucket) { // leaf node
-            calculate_L2L_dive(g,box,m_search.get_child1(bucket));
-            calculate_L2L_dive(g,box,m_search.get_child2(bucket));
+            calculate_dive(g,box,m_search.get_child1(bucket));
+            calculate_dive(g,box,m_search.get_child2(bucket));
         }
     }
 
     // only called for root nodes, uses the "calculate_L2L_dive" function
     // to recurse down the tree
-    vector_type& operator()(const reference bucket) {
-        if (!search.is_leaf_node(bucket) { // leaf node
-            box_type box(m_search.get_bucket_bounds_low(bucket),
+    void operator()(const reference bucket) {
+        // do a single-level FMM on the root nodes (no heirarchy above this)
+        size_t target_index = m_search.get_bucket_index(bucket);
+        box_type target_box(m_search.get_bucket_bounds_low(bucket),
                         m_search.get_bucket_bounds_high(bucket));
-            size_t my_index = m_search.get_bucket_index(bucket);
-            const vector_type& g = m_g[my_index];
-            calculate_L2L_dive(g,box,m_search.get_child1(bucket));
-            calculate_L2L_dive(g,box,m_search.get_child2(bucket));
+        detail::theta_condition<dimension> theta(target_box.bmin,target_box.bmax);
+        root_iterator_range_type root_buckets = m_query->get_root_buckets();
+        std::vector<pointer>& connected_buckets = m_connectivity[target_index];
+        for (const reference source_bucket: root_buckets) {
+            box_type source_box(m_query->get_bucket_bounds_low(source_bucket),
+                                m_query->get_bucket_bounds_high(source_bucket));
+            size_t source_index = m_search.get_bucket_index(other_bucket);
+            if (theta(source_box.bmin,source_box.bmax)) {
+                connected_buckets.push_back(&source_bucket);
+            } else {
+                Expansions::M2L(m_g[target_index],target_box,source_box,m_W[source_index],m_K)
+            }
+        }
+
+        // now dive into the tree and do a proper FMM
+        if (!search.is_leaf_node(bucket) { 
+            vector_type& g = m_g[target_index];
+            calculate_dive(connected_buckets,g,box,m_search.get_child1(bucket));
+            calculate_dive(connected_buckets,g,box,m_search.get_child2(bucket));
         }
     }
 
@@ -355,10 +423,12 @@ typedef typename NeighbourQuery::reference reference;
 template <typename Expansions, typename Function, typename NeighbourQuery>
 class FastMultipoleMethod {
     typedef NeighbourQuery::traits_type traits_type;
+    typedef NeighbourQuery::reference reference;
+    typedef NeighbourQuery::pointer pointer;
     typedef Expansions::vector_type vector_type;
     typedef traits_type::template vector_type<vector_type> storage_type;
+    typedef traits_type::template vector_type<traits_type::template vector_type<pointer>> connectivity_type;
     typedef iterator_range<NeighbourQuery::root_iterator> root_iterator_range;
-    typedef iterator_range<NeighbourQuery::all_iterator> all_iterator_range;
     typedef iterator_range<NeighbourQuery::neighbouring_iterator> neighbouring_iterator_range;
     typedef m_query::particle_iterator particle_iterator;
     typedef particle_iterator::reference particle_reference;
@@ -366,6 +436,7 @@ class FastMultipoleMethod {
     typedef detail::bbox<dimension> box_type;
     storage_type m_W;
     storage_type m_g;
+    connectivity_type m_connectivity; 
     const NeighbourQuery *m_query;
     const Function m_K;
 
@@ -378,11 +449,11 @@ public:
     template <typename VectorType>
     calculate_expansions(const VectorType& source_vector) {
         root_iterator_range_type root_buckets = m_query->get_root_buckets();
-        all_iterator_range_type all_buckets = m_query->get_all_buckets();
 
         m_W.resize(m_query->number_of_buckets());
         m_g.resize(m_query->number_of_buckets());
 
+        // upward sweep of tree
         // calculate P2M and M2M expansions for source buckets (recursive up
         // the tree so use function object)
         std::for_each(root_buckets.begin(),
@@ -394,35 +465,17 @@ public:
                                                 m_W));
 
 
-        // calculate M2L translations for source buckets (this should be the most work)
-        std::for_each(all_buckets.begin(),all_buckets.end(),
-                      [&](const reference target_bucket) {
-            box_type target_box(m_query->get_bucket_bounds_low(target_bucket),
-                                          m_target->get_bucket_bounds_high(target_bucket));
-            size_t target_index = m_query->get_bucket_index(target_bucket); 
-            for (tuple_ns::tuple<reference,const bool&> tpl: m_query->get_theta_buckets(target_bucket)) {
-                reference source_bucket = get<0>(tpl);
-                if (get<1>(tpl)) {
-                    save for later;
-                } else {
-                    box_type source_box(m_query->get_bucket_bounds_low(source_bucket),
-                                                  m_query->get_bucket_bounds_high(source_bucket));
-                    size_t source_index = m_query->get_bucket_index(source_bucket); 
-                    Expansions::M2L(m_g[target_index],target_box,source_box,m_W[source_index],m_K)
-                }
-            }
-        });
-
-
+        // downward sweep of tree
         // calculate L2L translations for source buckets (recursive 
         // down the tree so use function object)
         std::for_each(root_buckets.begin(),
                       root_buckets.end(),
-                      calculate_L2L<Expansions,NeighbourQuery,
+                      calculate_M2L_and_L2L<Expansions,NeighbourQuery,
                                             VectorType,storage_type>(
                                                 *m_query,
-                                                source_vector,
-                                                m_W));
+                                                m_W,
+                                                m_g,
+                                                m_connectivity));
 
     }
 
@@ -433,14 +486,13 @@ public:
         const size_t index = m_query->get_bucket_index(bucket); 
         box_type box(m_query->get_bucket_bounds_low(bucket),
                      m_query->get_bucket_bounds_high(bucket));
-        neighbouring_iterator_range neighbouring_buckets = 
-                        m_query->get_neighbouring_buckets(bucket);
 
         double sum = Expansions::L2P(p,box,m_g[index].begin());
-        std::for_each(neighbouring_buckets.begin(),neighbouring_buckets.end(),
-                      [&](const reference bucket) {
-                sum += detail::calculate_K_direct(m_query->get_bucket_particles(bucket),m_K,source_vector);
-            });
+        for (pointer source_pointer: m_connectivity[index]) { 
+            sum += detail::calculate_K_direct(
+                    m_query->get_bucket_particles(*source_pointer)
+                    ,m_K,source_vector);
+        }
         return sum;
     }
 };
