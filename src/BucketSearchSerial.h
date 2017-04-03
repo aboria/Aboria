@@ -472,6 +472,7 @@ struct bucket_search_serial_query {
     typedef lattice_iterator<dimension> root_iterator;
     typedef lattice_iterator<dimension> all_iterator;
     typedef typename query_iterator::reference reference;
+    typedef typename query_iterator::pointer pointer;
     typedef typename query_iterator::value_type value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
 
@@ -499,10 +500,10 @@ struct bucket_search_serial_query {
     static bool is_leaf_node(const value_type& bucket) {
         return true;
     }
-    static const value_type* get_child1(const value_type* bucket) {
+    static const pointer get_child1(const pointer& bucket) {
 	    return nullptr;
     }
-    static const value_type* get_child2(const value_type* bucket) {
+    static const pointer get_child2(const pointer& bucket) {
 	    return nullptr;
     }
     /*
@@ -538,11 +539,11 @@ struct bucket_search_serial_query {
                 );
     }
 
-    double_d get_bucket_bounds_low(const value_type& bucket) const {
+    double_d get_bucket_bounds_low(const reference bucket) const {
         return bucket*m_bucket_side_length + m_bounds.bmin;
     }
 
-    double_d get_bucket_bounds_high(const value_type& bucket) const {
+    double_d get_bucket_bounds_high(const reference bucket) const {
         return (bucket+1)*m_bucket_side_length + m_bounds.bmin;
     }
 
@@ -613,7 +614,7 @@ struct bucket_search_serial_query {
     }
 
     size_t number_of_buckets() const {
-        m_end_bucket.prod();
+        return (m_end_bucket+1).prod();
     }
 
     raw_pointer get_particles_begin() const {

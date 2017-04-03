@@ -302,6 +302,7 @@ struct nanoflann_adaptor_query {
     typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
     typedef typename kd_tree_type::Node value_type;
     typedef value_type& reference;
+    typedef value_type* pointer;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;

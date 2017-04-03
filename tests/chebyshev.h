@@ -122,6 +122,9 @@ public:
 
     template <unsigned int D>
     void helper_fast_methods(size_t N) {
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+        typedef Vector<bool,D> bool_d;
         const double tol = 1e-10;
         // randomly generate a bunch of positions over a range 
         const double pos_min = 0;
@@ -142,6 +145,7 @@ public:
                 get<source>(particles)[i] = gen();
             }
         }
+        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false));
 
         // generate a source vector using a smooth cosine
         auto source_fn = [&](const double_d &p) {

@@ -256,7 +256,7 @@ namespace detail {
                 const double other_r = std::sqrt(other_r2);
                 return m_r2 > m_theta2*std::pow(d-other_r,2);
             } else {
-                return other_r2 < m_theta2*std::pow(d-m_r,2);
+                return other_r2 > m_theta2*std::pow(d-m_r,2);
             }
         }
     };

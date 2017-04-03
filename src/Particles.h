@@ -455,6 +455,7 @@ public:
     }
 
     const query_type& get_query() const {
+        ASSERT(searchable,"init_neighbour_search not called on this particle set");
         return search.get_query();
     }
 
