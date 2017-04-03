@@ -1012,7 +1012,7 @@ namespace nanoflann
 		bool findNeighbors(RESULTSET& result, const ElementType* vec, const SearchParams& searchParams) const
 		{
 			assert(vec);
-            if (size() == 0)
+            if (size_nodes() == 0)
                 return false;
 			if (!root_node)
                 throw std::runtime_error("[nanoflann] findNeighbors() called before building the index.");
@@ -1041,7 +1041,7 @@ namespace nanoflann
 		bool findNeighborLeafs(RESULTSET& result, const ElementType* vec, const SearchParams& searchParams) const
 		{
 			assert(vec);
-            if (size() == 0)
+            if (size_nodes() == 0)
                 return false;
 			if (!root_node)
                 throw std::runtime_error("[nanoflann] findNeighbors() called before building the index.");

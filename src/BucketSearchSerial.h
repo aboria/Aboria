@@ -538,11 +538,11 @@ struct bucket_search_serial_query {
                 );
     }
 
-    double_d get_bucket_bounds_low(const value_type& bucket) {
+    double_d get_bucket_bounds_low(const value_type& bucket) const {
         return bucket*m_bucket_side_length + m_bounds.bmin;
     }
 
-    double_d get_bucket_bounds_high(const value_type& bucket) {
+    double_d get_bucket_bounds_high(const value_type& bucket) const {
         return (bucket+1)*m_bucket_side_length + m_bounds.bmin;
     }
 
@@ -614,6 +614,10 @@ struct bucket_search_serial_query {
 
     size_t number_of_buckets() const {
         m_end_bucket.prod();
+    }
+
+    raw_pointer get_particles_begin() const {
+        return m_particles_begin;
     }
 
     /*

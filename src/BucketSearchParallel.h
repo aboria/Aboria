@@ -392,6 +392,10 @@ struct bucket_search_parallel_query {
         }
     }
 
+    raw_pointer get_particles_begin() const {
+        return m_particles_begin;
+    }
+
     /*
     CUDA_HOST_DEVICE
     bool get_children_buckets(const bucket_reference &bucket, std::array<value_type,2>& children) {

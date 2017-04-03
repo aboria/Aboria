@@ -37,8 +37,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CHEBYSHEV_H_
 #define CHEBYSHEV_H_
 
-#ifdef HAVE_EIGEN
 #include "detail/Chebyshev.h"
+
+#ifdef HAVE_EIGEN
 #include <Eigen/Core>
 #endif
 

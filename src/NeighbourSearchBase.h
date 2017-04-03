@@ -608,7 +608,7 @@ public:
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
     CUDA_HOST_DEVICE
-    tree_query_iterator(const value_type* start_node,
+    tree_depth_first_iterator(const value_type* start_node,
                         const Query *query
                   ):
         m_query(query),
@@ -776,7 +776,7 @@ public:
         //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
     }
 
-    iterator& operator=(const tree_depth_first_iterator& copy) {
+    iterator& operator=(const tree_depth_first_iterator<Query>& copy) {
         m_node=copy.m_node;
 #ifndef NDEBUG
         const double_d low = copy.m_query->get_bounds_low(*m_node);
@@ -1420,6 +1420,7 @@ class lattice_iterator_with_hole {
     int_d m_hole_min;
     int_d m_hole_max;
     int_d m_index;
+    int m_in_hole;
 public:
     typedef const int_d* pointer;
 	typedef std::forward_iterator_tag iterator_category;
@@ -1438,7 +1439,14 @@ public:
         m_hole_min(hmin),
         m_hole_max(hmax),
         m_index(start),
-    {}
+        m_in_hole(0)
+    {
+        for (int i=0; i<D; i++) {
+            if (m_index[i] >= m_hole_min[i] && m_index[i] < m_hole_max[i]) {
+                ++m_in_hole;
+            }
+        }
+    }
 
 
     CUDA_HOST_DEVICE
@@ -1483,7 +1491,7 @@ private:
     friend class boost::iterator_core_access;
 
     CUDA_HOST_DEVICE
-    bool equal(interator const& other) const {
+    bool equal(iterator const& other) const {
         return (m_index == other.m_index).all();
     }
 
@@ -1508,6 +1516,7 @@ private:
             // if this dimension exits hole reduce number
             if (m_index[i] == m_hole_max[i]+1) {
                 --m_in_hole;
+                ASSERT(m_in_hole > 0,"this shouldn't happen!");
             }
             // if this dimension is out of the range then
             // got back to min or hole_max+1 
