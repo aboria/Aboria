@@ -933,6 +933,7 @@ public:
 };
 
 
+/*
 template <typename Query>
 class tree_theta_iterator {
     typedef tree_theta_iterator<Query> iterator;
@@ -1126,6 +1127,7 @@ public:
     const value_type* m_node;
     const Query *m_query;
 };
+*/
 
 
 /*
