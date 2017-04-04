@@ -141,14 +141,23 @@ struct calculate_M2L_and_L2L {
         // expansions from weakly connected buckets on this level
         // and store strongly connected buckets to connectivity list
         for (const pointer source_pointer: connected_buckets_parent) {
-            const reference source_bucket = *source_pointer;
-            box_type source_box(m_query.get_bucket_bounds_low(source_bucket),
-                                m_query.get_bucket_bounds_high(source_bucket));
-            size_t source_index = m_query.get_bucket_index(source_bucket);
-            if (theta.check(source_box.bmin,source_box.bmax)) {
-                connected_buckets.push_back(&source_bucket);
+            reference child1 = *m_query.get_child1(source_pointer);
+            reference child2 = *m_query.get_child2(source_pointer);
+            box_type child1_box(m_query.get_bucket_bounds_low(child1),
+                                m_query.get_bucket_bounds_high(child1));
+            box_type child2_box(m_query.get_bucket_bounds_low(child2),
+                                m_query.get_bucket_bounds_high(child2));
+            bool child1_theta = theta.check(child1_box.bmin,child1_box.bmax);
+            bool child2_theta = theta.check(child2_box.bmin,child2_box.bmax);
+            if (child1_theta) {
+                connected_buckets.push_back(&child1);
+            }
+            if (child2_theta) {
+                connected_buckets.push_back(&child2);
+            }
             } else {
-                Expansions::M2L(g,target_box,source_box,m_W[source_index],m_K);
+                size_t child1_index = m_query.get_bucket_index(child1);
+                Expansions::M2L(g,target_box,child1_box,m_W[child1_index],m_K);
             }
         }
 
@@ -175,7 +184,6 @@ struct calculate_M2L_and_L2L {
                                 m_query.get_bucket_bounds_high(source_bucket));
             size_t source_index = m_query.get_bucket_index(source_bucket);
             if (theta.check(source_box.bmin,source_box.bmax)) {
-                std::cout << "buckets "<<target_index<<" and "<<source_index<<std::endl;
                 connected_buckets.push_back(&source_bucket);
             } else {
                 Expansions::M2L(m_g[target_index],target_box,source_box,m_W[source_index],m_K);

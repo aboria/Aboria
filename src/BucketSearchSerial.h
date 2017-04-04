@@ -500,11 +500,15 @@ struct bucket_search_serial_query {
     static bool is_leaf_node(const value_type& bucket) {
         return true;
     }
+
+    // dodgy hack cause nullptr cannot be converted to pointer
     static const pointer get_child1(const pointer& bucket) {
-	    return nullptr;
+        CHECK(false,"this should not be called")
+	    return pointer(-1);
     }
     static const pointer get_child2(const pointer& bucket) {
-	    return nullptr;
+        CHECK(false,"this should not be called")
+	    return pointer(-1);
     }
     /*
      * end functions for tree_query_iterator
