@@ -65,28 +65,35 @@ struct calculate_P2M_and_M2M {
         m_W(W)
     {}
 
-    expansion_type& operator()(const reference bucket) {
+    expansion_type& operator()(reference bucket) {
         box_type my_box(m_query.get_bucket_bounds_low(bucket),
                             m_query.get_bucket_bounds_high(bucket));
         size_t my_index = m_query.get_bucket_index(bucket);
         expansion_type& W = m_W[my_index];
+#ifndef NDEBUG
+        for (int i = 0; i < W.size(); ++i) {
+            ASSERT(std::abs(W[i]) < std::numeric_limits<double>::epsilon(),"W not zeroed");
+        }
+#endif
 
         if (m_query.is_leaf_node(bucket)) { // leaf node
             detail::calculate_P2M<Expansions>(W, my_box, 
                           m_query.get_bucket_particles(bucket),
                           m_source_vector,m_query.get_particles_begin());
-        } else { // assume binary tree for now
-            const reference child1 = *m_query.get_child1(&bucket);
-            const reference child2 = *m_query.get_child2(&bucket);
+        } else { 
+            //TODO: generalise this to n children
+            reference child1 = *m_query.get_child1(&bucket);
+            reference child2 = *m_query.get_child2(&bucket);
+            expansion_type& child1_W = this->operator()(child1);
+            expansion_type& child2_W = this->operator()(child2);
+
             box_type child1_box(m_query.get_bucket_bounds_low(child1),
                                 m_query.get_bucket_bounds_high(child1));
             box_type child2_box(m_query.get_bucket_bounds_low(child2),
                                 m_query.get_bucket_bounds_high(child2));
 
-            expansion_type& child1_W = this->operator()(child1);
-            expansion_type& child2_W = this->operator()(child2);
             Expansions::M2M(W,my_box,child1_box,child1_W);
-            Expansions::M2M(W,my_box,child1_box,child2_W);
+            Expansions::M2M(W,my_box,child2_box,child2_W);
         }
         return W;
     }
@@ -107,12 +114,12 @@ struct calculate_M2L_and_L2L {
 
     const NeighbourQuery &m_query;
     StorageVectorType &m_g;
-    StorageVectorType &m_W;
+    const StorageVectorType &m_W;
     Function &m_K;
     ConnectivityType& m_connectivity;
 
     calculate_M2L_and_L2L(const NeighbourQuery& query, 
-                  StorageVectorType &W,
+                  const StorageVectorType& W,
                   StorageVectorType& g,
                   Function& K,
                   ConnectivityType& connectivity):
@@ -126,12 +133,18 @@ struct calculate_M2L_and_L2L {
     void calculate_dive(const typename ConnectivityType::reference connected_buckets_parent,
                         const expansion_type& g_parent, 
                         const box_type& box_parent, 
-                        const reference bucket) {
+                        reference bucket) {
         box_type target_box(m_query.get_bucket_bounds_low(bucket),
                         m_query.get_bucket_bounds_high(bucket));
         size_t target_index = m_query.get_bucket_index(bucket);
         expansion_type& g = m_g[target_index];
+#ifndef NDEBUG
+        for (int i = 0; i < g.size(); ++i) {
+            ASSERT(std::abs(g[i]) < std::numeric_limits<double>::epsilon(),"g not zeroed");
+        }
+#endif
         typename ConnectivityType::reference connected_buckets = m_connectivity[target_index];
+        ASSERT(connected_buckets.size() == 0,"con bucket not empty");
         //connected_buckets.reserve(connected_buckets_parent.size());
 
         // expansion from parent
@@ -151,11 +164,12 @@ struct calculate_M2L_and_L2L {
                         m_query.get_bucket_bounds_high(child1));
                 box_type child2_box(m_query.get_bucket_bounds_low(child2),
                         m_query.get_bucket_bounds_high(child2));
-                bool child1_theta = theta.check(child1_box.bmin,child1_box.bmax);
-                bool child2_theta = theta.check(child2_box.bmin,child2_box.bmax);
+                const bool child1_theta = theta.check(child1_box.bmin,child1_box.bmax);
+                const bool child2_theta = theta.check(child2_box.bmin,child2_box.bmax);
                 if (child1_theta) {
                     connected_buckets.push_back(&child1);
                 } else {
+                    //std::cout << "bucket from "<<child1_box.bmin<<" to "<<child1_box.bmax<<"is not connected to target box from "<<target_box.bmin<<" to "<<target_box.bmax<<std::endl;
                     size_t child1_index = m_query.get_bucket_index(child1);
                     Expansions::M2L(g,target_box,child1_box,m_W[child1_index],m_K);
                 }
@@ -175,30 +189,30 @@ struct calculate_M2L_and_L2L {
 
     // only called for root nodes, uses the "calculate_L2L_dive" function
     // to recurse down the tree
-    void operator()(const reference bucket) {
+    void operator()(reference bucket) {
         // do a single-level FMM on the root nodes (no heirarchy above this)
-        // TODO: can I use a fft to speed this up?:
+        // TODO: can I use a fft to speed this up, since it is on a regular grid?:
         // "A Matrix Version of the Fast Multipole Method"
         size_t target_index = m_query.get_bucket_index(bucket);
         box_type target_box(m_query.get_bucket_bounds_low(bucket),
                         m_query.get_bucket_bounds_high(bucket));
         detail::theta_condition<dimension> theta(target_box.bmin,target_box.bmax);
+        expansion_type& g = m_g[target_index];
         root_iterator_range root_buckets = m_query.get_root_buckets();
         typename ConnectivityType::reference connected_buckets = m_connectivity[target_index];
-        for (const reference source_bucket: root_buckets) {
+        for (reference source_bucket: root_buckets) {
             box_type source_box(m_query.get_bucket_bounds_low(source_bucket),
                                 m_query.get_bucket_bounds_high(source_bucket));
             size_t source_index = m_query.get_bucket_index(source_bucket);
             if (theta.check(source_box.bmin,source_box.bmax)) {
                 connected_buckets.push_back(&source_bucket);
             } else {
-                Expansions::M2L(m_g[target_index],target_box,source_box,m_W[source_index],m_K);
+                Expansions::M2L(g,target_box,source_box,m_W[source_index],m_K);
             }
         }
 
         // now dive into the tree and do a proper FMM
         if (!m_query.is_leaf_node(bucket)) { 
-            expansion_type& g = m_g[target_index];
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child1(&bucket));
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child2(&bucket));
         }
@@ -281,6 +295,12 @@ public:
         box_type box(m_query->get_bucket_bounds_low(bucket),
                      m_query->get_bucket_bounds_high(bucket));
 
+        std::cout <<"(";
+        for (int i = 0; i < m_g[index].size(); ++i) {
+            std::cout <<m_g[index][i]<< ",";
+        }
+        std::cout <<")";
+            
         double sum = Expansions::L2P(p,box,m_g[index]);
         for (pointer& source_pointer: m_connectivity[index]) { 
             if (m_query->is_leaf_node(*source_pointer)) {
