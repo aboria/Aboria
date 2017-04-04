@@ -1290,28 +1290,20 @@ class lattice_iterator {
     // want to get a pointer object to the
     // reference (which are both of the
     // same type)
-    struct proxy_int_d_pointer; 
     struct proxy_int_d: public int_d {
         CUDA_HOST_DEVICE
         proxy_int_d(const int_d& arg):
             int_d(arg) 
         {}
 
-        proxy_int_d_pointer& operator&() {
+        proxy_int_d& operator&() {
             return *this;
         }
         
-        const proxy_int_d_pointer& operator&() const {
+        const proxy_int_d& operator&() const {
             return *this;
         }
-    };
 
-    struct proxy_int_d_pointer: public int_d {
-        CUDA_HOST_DEVICE
-        proxy_int_d_pointer(const int_d& arg):
-            int_d(arg) 
-        {}
-        
         const proxy_int_d& operator*() const {
             return *this;
         }
@@ -1329,12 +1321,14 @@ class lattice_iterator {
         }
     };
 
+   
+
     int_d m_min;
     int_d m_max;
     proxy_int_d m_index;
     detail::bucket_index<D> m_bucket_index;
 public:
-    typedef const proxy_int_d_pointer pointer;
+    typedef const proxy_int_d pointer;
 	typedef std::random_access_iterator_tag iterator_category;
     typedef const proxy_int_d& reference;
     typedef const proxy_int_d value_type;
