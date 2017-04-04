@@ -294,7 +294,10 @@ struct bucket_search_parallel_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     const static unsigned int dimension = Traits::dimension;
     typedef lattice_iterator<dimension> query_iterator;
+    typedef lattice_iterator<dimension> root_iterator;
+    typedef lattice_iterator<dimension> all_iterator;
     typedef typename query_iterator::reference reference;
+    typedef typename query_iterator::pointer pointer;
     typedef typename query_iterator::value_type value_type;
     typedef ranges_iterator<Traits> particle_iterator;
 
@@ -318,6 +321,23 @@ struct bucket_search_parallel_query {
         m_particles_begin(),
         m_bucket_begin()
     {}
+
+    /*
+     * functions for trees
+     */
+    static bool is_leaf_node(const value_type& bucket) {
+        return true;
+    }
+
+    // dodgy hack cause nullptr cannot be converted to pointer
+    static const pointer get_child1(const pointer& bucket) {
+        CHECK(false,"this should not be called")
+	    return pointer(-1);
+    }
+    static const pointer get_child2(const pointer& bucket) {
+        CHECK(false,"this should not be called")
+	    return pointer(-1);
+    }
 
     //const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
@@ -346,6 +366,24 @@ struct bucket_search_parallel_query {
                 bucket*m_bucket_side_length + m_bounds.bmin,
                 (bucket+1)*m_bucket_side_length + m_bounds.bmin
                 );
+    }
+
+    double_d get_bucket_bounds_low(const reference bucket) const {
+        return bucket*m_bucket_side_length + m_bounds.bmin;
+    }
+
+    double_d get_bucket_bounds_high(const reference bucket) const {
+        return (bucket+1)*m_bucket_side_length + m_bounds.bmin;
+    }
+
+    CUDA_HOST_DEVICE
+    value_type get_bucket(const double_d &position) const {
+        return m_point_to_bucket_index.find_bucket_index_vector(position);
+    }
+
+    CUDA_HOST_DEVICE
+    size_t get_bucket_index(const reference bucket) const {
+        return m_point_to_bucket_index.collapse_index_vector(bucket);
     }
 
 
@@ -392,9 +430,29 @@ struct bucket_search_parallel_query {
         }
     }
 
+    CUDA_HOST_DEVICE
+    iterator_range<root_iterator> get_root_buckets() const {
+        return iterator_range<query_iterator>(
+                root_iterator(int_d(0),m_end_bucket,int_d(0)),
+                ++root_iterator(int_d(0),m_end_bucket,m_end_bucket)
+                );
+    }
+
+    iterator_range<all_iterator> get_subtree(reference bucket) const {
+        return iterator_range<all_iterator>(
+                all_iterator(bucket,bucket,bucket),
+                ++all_iterator(bucket,bucket,bucket));
+    }
+
+
+    size_t number_of_buckets() const {
+        return (m_end_bucket+1).prod();
+    }
+
     raw_pointer get_particles_begin() const {
         return m_particles_begin;
     }
+
 
     /*
     CUDA_HOST_DEVICE

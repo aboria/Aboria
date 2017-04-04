@@ -140,27 +140,33 @@ struct calculate_M2L_and_L2L {
         detail::theta_condition<dimension> theta(target_box.bmin,target_box.bmax);
         // expansions from weakly connected buckets on this level
         // and store strongly connected buckets to connectivity list
-        for (const pointer source_pointer: connected_buckets_parent) {
-            reference child1 = *m_query.get_child1(source_pointer);
-            reference child2 = *m_query.get_child2(source_pointer);
-            box_type child1_box(m_query.get_bucket_bounds_low(child1),
-                                m_query.get_bucket_bounds_high(child1));
-            box_type child2_box(m_query.get_bucket_bounds_low(child2),
-                                m_query.get_bucket_bounds_high(child2));
-            bool child1_theta = theta.check(child1_box.bmin,child1_box.bmax);
-            bool child2_theta = theta.check(child2_box.bmin,child2_box.bmax);
-            if (child1_theta) {
-                connected_buckets.push_back(&child1);
-            }
-            if (child2_theta) {
-                connected_buckets.push_back(&child2);
-            }
+        for (pointer source_pointer: connected_buckets_parent) {
+            if (m_query.is_leaf_node(*source_pointer)) {
+                connected_buckets.push_back(source_pointer);
             } else {
-                size_t child1_index = m_query.get_bucket_index(child1);
-                Expansions::M2L(g,target_box,child1_box,m_W[child1_index],m_K);
+                //TODO: generalise this to n children
+                reference child1 = *m_query.get_child1(source_pointer);
+                reference child2 = *m_query.get_child2(source_pointer);
+                box_type child1_box(m_query.get_bucket_bounds_low(child1),
+                        m_query.get_bucket_bounds_high(child1));
+                box_type child2_box(m_query.get_bucket_bounds_low(child2),
+                        m_query.get_bucket_bounds_high(child2));
+                bool child1_theta = theta.check(child1_box.bmin,child1_box.bmax);
+                bool child2_theta = theta.check(child2_box.bmin,child2_box.bmax);
+                if (child1_theta) {
+                    connected_buckets.push_back(&child1);
+                } else {
+                    size_t child1_index = m_query.get_bucket_index(child1);
+                    Expansions::M2L(g,target_box,child1_box,m_W[child1_index],m_K);
+                }
+                if (child2_theta) {
+                    connected_buckets.push_back(&child2);
+                } else {
+                    size_t child2_index = m_query.get_bucket_index(child2);
+                    Expansions::M2L(g,target_box,child2_box,m_W[child2_index],m_K);
+                }
             }
         }
-
         if (!m_query.is_leaf_node(bucket)) { // leaf node
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child1(&bucket));
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child2(&bucket));
@@ -270,16 +276,26 @@ public:
     // evaluate expansions for given point
     template <typename VectorType>
     double evaluate_expansion(const Vector<double,dimension>& p, const VectorType& source_vector) {
-        const reference bucket = m_query->get_bucket(p);
+        reference bucket = m_query->get_bucket(p);
         const size_t index = m_query->get_bucket_index(bucket); 
         box_type box(m_query->get_bucket_bounds_low(bucket),
                      m_query->get_bucket_bounds_high(bucket));
 
         double sum = Expansions::L2P(p,box,m_g[index]);
-        for (const pointer& source_pointer: m_connectivity[index]) { 
-            sum += detail::calculate_K_direct(p
+        for (pointer& source_pointer: m_connectivity[index]) { 
+            if (m_query->is_leaf_node(*source_pointer)) {
+                sum += detail::calculate_K_direct(p
                     ,m_query->get_bucket_particles(*source_pointer)
                     ,m_K,source_vector,m_query->get_particles_begin());
+            } else {
+                for (reference subtree_reference: m_query->get_subtree(*source_pointer)) {
+                    if (m_query->is_leaf_node(*source_pointer)) {
+                        sum += detail::calculate_K_direct(p
+                                ,m_query->get_bucket_particles(subtree_reference)
+                                ,m_K,source_vector,m_query->get_particles_begin());
+                    }
+                }
+            }
         }
         return sum;
     }

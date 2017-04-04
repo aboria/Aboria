@@ -494,8 +494,8 @@ struct bucket_search_serial_query {
         m_buckets_begin()
     {}
 
-/*
-     * functions for tree_query_iterator
+    /*
+     * functions for trees
      */
     static bool is_leaf_node(const value_type& bucket) {
         return true;
@@ -510,9 +510,6 @@ struct bucket_search_serial_query {
         CHECK(false,"this should not be called")
 	    return pointer(-1);
     }
-    /*
-     * end functions for tree_query_iterator
-     */
 
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
     const double_d& get_bounds_high() const { return m_bounds.bmax; }
@@ -613,8 +610,10 @@ struct bucket_search_serial_query {
                 );
     }
 
-    iterator_range<all_iterator> get_all_buckets() const {
-        return get_root_buckets();
+    iterator_range<all_iterator> get_subtree(reference bucket) const {
+        return iterator_range<all_iterator>(
+                all_iterator(bucket,bucket,bucket),
+                ++all_iterator(bucket,bucket,bucket));
     }
 
     size_t number_of_buckets() const {
