@@ -301,8 +301,8 @@ struct nanoflann_adaptor_query {
     const static unsigned int dimension = Traits::dimension;
     typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
     typedef typename kd_tree_type::Node value_type;
-    typedef value_type& reference;
-    typedef value_type* pointer;
+    typedef const value_type& reference;
+    typedef const value_type* pointer;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
@@ -332,29 +332,29 @@ struct nanoflann_adaptor_query {
     static bool get_max_levels() {
         return 5;
     }
-    static bool is_leaf_node(const value_type& bucket) {
+    static bool is_leaf_node(reference bucket) {
         return (bucket.child1 == NULL) && (bucket.child2 == NULL);
     }
-    static size_t get_dimension_index(const value_type& bucket) {
+    static size_t get_dimension_index(reference bucket) {
         return bucket.node_type.sub.divfeat;
     }
-    static double get_cut_low(const value_type& bucket) {
+    static double get_cut_low(reference bucket) {
         return bucket.node_type.sub.divlow;
     }
-    static double get_cut_high(const value_type& bucket) {
+    static double get_cut_high(reference bucket) {
         return bucket.node_type.sub.divhigh;
     }
-    static const value_type* get_child1(const value_type* bucket) {
+    static pointer get_child1(pointer bucket) {
 	    return bucket->child1;
     }
-    static const value_type* get_child2(const value_type* bucket) {
+    static pointer get_child2(pointer bucket) {
 	    return bucket->child2;
     }
     /*
      * end functions for tree_query_iterator
      */
 
-    friend std::ostream& operator<<(std::ostream& os, const value_type& bucket) {
+    friend std::ostream& operator<<(std::ostream& os, reference bucket) {
         if (is_leaf_node(bucket)) {
             os << "Leaf node";
         } else {
@@ -366,7 +366,7 @@ struct nanoflann_adaptor_query {
            
 
     iterator_range<particle_iterator> 
-    get_bucket_particles(const value_type& bucket) const {
+    get_bucket_particles(reference bucket) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_bucket_particles: looking in bucket with bounding box low =  "<<get_bucket_bounds_low(bucket)<<" and high = "<<get_bucket_bounds_high(bucket)<<" idx = "<<get_dimension_index(bucket)<<" start index = "<<bucket.node_type.lr.left<<" end index = "<<bucket.node_type.lr.right);
 #endif        
@@ -377,7 +377,7 @@ struct nanoflann_adaptor_query {
     }
 
     static double_d
-    get_bucket_bounds_low(const value_type& bucket) {
+    get_bucket_bounds_low(reference bucket) {
         double_d low;
         for (int i = 0; i < dimension; ++i) {
             low[i] = bucket.bbox[i].low;
@@ -386,7 +386,7 @@ struct nanoflann_adaptor_query {
     }
 
     static double_d
-    get_bucket_bounds_high(const value_type& bucket) {
+    get_bucket_bounds_high(reference bucket) {
         double_d high;
         for (int i = 0; i < dimension; ++i) {
             high[i] = bucket.bbox[i].high;
@@ -395,8 +395,8 @@ struct nanoflann_adaptor_query {
     }
 
      CUDA_HOST_DEVICE
-    value_type& get_bucket(const double_d &position) const {
-        value_type* node = m_root;
+    reference get_bucket(const double_d &position) const {
+        pointer node = m_root;
         while(!is_leaf_node(*node)) {
             ASSERT(get_child1(node) != nullptr,"no child1");
             ASSERT(get_child2(node) != nullptr,"no child2");
@@ -414,7 +414,7 @@ struct nanoflann_adaptor_query {
     }
 
     CUDA_HOST_DEVICE
-    size_t get_bucket_index(const value_type& bucket) const {
+    size_t get_bucket_index(reference bucket) const {
         return bucket.index;
     }
 
@@ -437,11 +437,11 @@ struct nanoflann_adaptor_query {
     
 
     iterator_range<root_iterator> get_root_buckets() const {
-        return iterator_range<root_iterator>(&m_root, &m_root+1);
+        return iterator_range<root_iterator>(m_root, m_root+1);
     }
 
-    iterator_range<all_iterator> get_all_buckets() const {
-        return iterator_range<all_iterator>(all_iterator(m_root),all_iterator());
+    iterator_range<all_iterator> get_subtree(reference bucket) const {
+        return iterator_range<all_iterator>(all_iterator(&bucket,this),all_iterator());
     }
 
     raw_pointer get_particles_begin() const {

@@ -120,7 +120,7 @@ public:
 #endif
     }
 
-    template <unsigned int D>
+    template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>
     void helper_fast_methods(size_t N) {
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
@@ -135,7 +135,7 @@ public:
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
 
-        typedef Particles<std::tuple<source,target_cheb,target_manual,target_fmm>,D> ParticlesType;
+        typedef Particles<std::tuple<source,target_cheb,target_manual,target_fmm>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
         ParticlesType particles(N);
 
@@ -181,35 +181,18 @@ public:
         auto t1 = Clock::now();
         std::chrono::duration<double> time_manual = t1 - t0;
 
+        std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<std::endl;
+
         const double scale = std::accumulate(
             std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
             0.0,
             [](const double t1, const double t2) { return t1 + t2*t2; }
         );
 
-        if (D<4) {
-            helper_fast_methods_calculate<1>(particles,kernel,scale);
-            helper_fast_methods_calculate<2>(particles,kernel,scale);
-            helper_fast_methods_calculate<3>(particles,kernel,scale);
-            helper_fast_methods_calculate<4>(particles,kernel,scale);
-            helper_fast_methods_calculate<5>(particles,kernel,scale);
-            helper_fast_methods_calculate<6>(particles,kernel,scale);
-            helper_fast_methods_calculate<7>(particles,kernel,scale);
-            helper_fast_methods_calculate<8>(particles,kernel,scale);
-            helper_fast_methods_calculate<9>(particles,kernel,scale);
-            helper_fast_methods_calculate<10>(particles,kernel,scale);
-            helper_fast_methods_calculate<11>(particles,kernel,scale);
-            helper_fast_methods_calculate<12>(particles,kernel,scale);
-            helper_fast_methods_calculate<13>(particles,kernel,scale);
-            helper_fast_methods_calculate<14>(particles,kernel,scale);
-        } else {
-            helper_fast_methods_calculate<1>(particles,kernel,scale);
-            helper_fast_methods_calculate<2>(particles,kernel,scale);
-            helper_fast_methods_calculate<3>(particles,kernel,scale);
-            helper_fast_methods_calculate<4>(particles,kernel,scale);
-            helper_fast_methods_calculate<5>(particles,kernel,scale);
-            helper_fast_methods_calculate<6>(particles,kernel,scale);
-        }
+        helper_fast_methods_calculate<1>(particles,kernel,scale);
+        helper_fast_methods_calculate<2>(particles,kernel,scale);
+        helper_fast_methods_calculate<3>(particles,kernel,scale);
+        helper_fast_methods_calculate<4>(particles,kernel,scale);
     }
 
     
@@ -267,16 +250,40 @@ public:
     }
 
 
-    void test_fast_methods(void) {
+    void test_fast_methods_bucket_search_serial(void) {
         const size_t N = 1000;
-        std::cout << "testing 1D..." << std::endl;
-        helper_fast_methods<1>(N);
-        std::cout << "testing 2D..." << std::endl;
-        helper_fast_methods<2>(N);
-        std::cout << "testing 3D..." << std::endl;
-        helper_fast_methods<3>(N);
-        std::cout << "testing 4D..." << std::endl;
-        helper_fast_methods<4>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
+        helper_fast_methods<2,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
+        helper_fast_methods<3,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 4D..." << std::endl;
+        helper_fast_methods<4,std::vector,bucket_search_serial>(N);
+    }
+
+    void test_fast_methods_bucket_search_parallel(void) {
+        const size_t N = 1000;
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 2D..." << std::endl;
+        helper_fast_methods<2,std::vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
+        helper_fast_methods<3,std::vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 4D..." << std::endl;
+        helper_fast_methods<4,std::vector,bucket_search_parallel>(N);
+    }
+
+    void test_fast_methods_kd_tree(void) {
+        const size_t N = 1000;
+        std::cout << "KD_TREE: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 2D..." << std::endl;
+        helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 3D..." << std::endl;
+        helper_fast_methods<3,std::vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 4D..." << std::endl;
+        helper_fast_methods<4,std::vector,nanoflann_adaptor>(N);
     }
 
 

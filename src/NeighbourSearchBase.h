@@ -315,11 +315,8 @@ public:
 
     CUDA_HOST_DEVICE
     size_t operator-(ranges_iterator start) const {
-        size_t count = 0;
-        while (start != *this) {
-            ++start; ++count;
-        }
-        return count;
+        return tuple_ns::get<0>(m_current_p.get_tuple()) 
+                - tuple_ns::get<0>(start.m_current_p.get_tuple());
     }
 
     CUDA_HOST_DEVICE
@@ -608,7 +605,7 @@ public:
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
     CUDA_HOST_DEVICE
-    tree_depth_first_iterator(const value_type* start_node,
+    tree_depth_first_iterator(pointer start_node,
                         const Query *query
                   ):
         m_query(query),
@@ -668,8 +665,8 @@ public:
                 m_stack.pop();
             }
         } else {
-            pointer child1 = m_query->get_child1(*m_node);
-            pointer child2 = m_query->get_child2(*m_node);
+            pointer child1 = m_query->get_child1(m_node);
+            pointer child2 = m_query->get_child2(m_node);
             m_stack.push(child2);
             m_node = child1;
         }
