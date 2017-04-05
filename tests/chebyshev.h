@@ -155,7 +155,7 @@ public:
             for (int i=0; i<D; i++) {
                 ret *= cos((p[i]-pos_min)*scale);
             }
-            return ret;
+            return ret/N;
         };
         std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                        std::begin(get<source>(particles)), source_fn);
@@ -181,13 +181,14 @@ public:
         auto t1 = Clock::now();
         std::chrono::duration<double> time_manual = t1 - t0;
 
-        std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<std::endl;
 
         const double scale = std::accumulate(
             std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
             0.0,
             [](const double t1, const double t2) { return t1 + t2*t2; }
         );
+
+        std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<scale<<std::endl;
 
         helper_fast_methods_calculate<1>(particles,kernel,scale);
         helper_fast_methods_calculate<2>(particles,kernel,scale);
@@ -228,10 +229,96 @@ public:
                 }
             }
         }
+        const double_d scale = double_d(1.0)/(Rn.box.bmax-Rn.box.bmin);
+        for (int i = 0; i < positions.size(); ++i) {
+            const unsigned int n = 4;
+            const double_d &x =  (2*positions[i]-Rn.box.bmin-Rn.box.bmax)*scale;
+            detail::ChebyshevRnSingle<D,n> cheb_rn(positions[i],Rn.box);
+            const int_d start = int_d(0);
+            const int_d end = int_d(n-1);
+            auto range = iterator_range<lattice_iterator<D>>(
+                lattice_iterator<D>(start,end,start)
+                ,++lattice_iterator<D>(start,end,end)
+                );
+
+            for (const int_d& m: range) {
+                TS_ASSERT_DELTA(cheb_rn(m),detail::chebyshev_Rn_slow(x,m,n),tol);
+            }
+        }
     }
 
-    
+    template <typename Expansions>
+    void helper_fmm_operators() {
+        const unsigned int D = Expansions::dimension;
+        typedef Vector<double,D> double_d;
+        typedef typename Expansions::expansion_type expansion_type;
 
+        // unit box
+        detail::bbox<D> parent(double_d(0.0),double_d(1.0));
+        detail::bbox<D> leaf1(double_d(0.0),double_d(1.0));
+        leaf1.bmax[0] = 0.4;
+        detail::bbox<D> leaf2(double_d(0.0),double_d(1.0));
+        leaf2.bmin[0] = 0.6;
+        std::cout << "parent = "<<parent<<" leaf1 = "<<leaf1<<" leaf2 = "<<leaf2<<std::endl;
+
+        // create 4 particles, 2 leaf boxes, 1 parent box
+        const size_t n = 4;
+        double_d particles_in_leaf1[n];
+        double_d particles_in_leaf2[n];
+        double source_leaf1[n];
+        double source_leaf2[n];
+
+        for (int i = 0; i < n; ++i) {
+            particles_in_leaf1[i] = double_d(0.1*i);
+            particles_in_leaf2[i] = double_d(0.1*i + 0.6);
+            source_leaf1[i] = 1;
+            source_leaf2[i] = 1;
+        }
+
+        // check P2M, and L2P
+        expansion_type expansion_leaf1 = {};
+        for (int i = 0; i < expansion_leaf1.size(); ++i) {
+            TS_ASSERT_DELTA(expansion_leaf1[i],0.0,std::numeric_limits<double>::epsilon());
+        }
+
+        for (int i = 0; i < n; ++i) {
+            Expansions::P2M(expansion_leaf1,leaf1,particles_in_leaf1[i],source_leaf1[i]);
+        }
+        for (int i = 0; i < n; ++i) {
+            const double check = Expansions::L2P(particles_in_leaf1[i],leaf1,expansion_leaf1);
+            TS_ASSERT_DELTA(check,source_leaf1[i],1e-4);
+        }
+
+        expansion_type expansion_leaf2 = {};
+        for (int i = 0; i < n; ++i) {
+            Expansions::P2M(expansion_leaf2,leaf2,particles_in_leaf2[i],source_leaf2[i]);
+        }
+        for (int i = 0; i < n; ++i) {
+            const double check = Expansions::L2P(particles_in_leaf2[i],leaf2,expansion_leaf2);
+            TS_ASSERT_DELTA(check,source_leaf2[i],1e-4);
+        }
+        
+        // check M2M and L2L
+        expansion_type expansion_parent = {};
+        Expansions::M2M(expansion_parent,parent,leaf1,expansion_leaf1);
+        Expansions::M2M(expansion_parent,parent,leaf2,expansion_leaf2);
+
+        expansion_type reexpansion_leaf1 = {};
+        Expansions::L2L(reexpansion_leaf1,leaf1,parent,expansion_parent);
+        expansion_type reexpansion_leaf2 = {};
+        Expansions::L2L(reexpansion_leaf2,leaf2,parent,expansion_parent);
+
+        for (int i = 0; i < reexpansion_leaf1.size(); ++i) {
+            TS_ASSERT_DELTA(reexpansion_leaf1[i],expansion_leaf1[i],1e-4);
+            TS_ASSERT_DELTA(reexpansion_leaf2[i],expansion_leaf2[i],1e-4);
+        }
+
+        //TODO: how to test M2L?
+    }
+        
+    void test_fmm_operators() {
+        helper_fmm_operators<detail::BlackBoxExpansions<2,20>>();
+    }
 
     void test_chebyshev_polynomial_calculation(void) {
         const double tol = 1e-10;
@@ -275,7 +362,7 @@ public:
     }
 
     void test_fast_methods_kd_tree(void) {
-        const size_t N = 1000;
+        const size_t N = 10000;
         std::cout << "KD_TREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 2D..." << std::endl;
