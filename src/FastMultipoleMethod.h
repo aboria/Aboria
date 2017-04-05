@@ -111,6 +111,7 @@ struct calculate_M2L_and_L2L {
     static const unsigned int dimension = traits_type::dimension;
     typedef detail::bbox<dimension> box_type;
     typedef iterator_range<typename NeighbourQuery::root_iterator> root_iterator_range;
+    typedef std::queue<typename std::remove_const<pointer>::type> queue_type;
 
     const NeighbourQuery &m_query;
     StorageVectorType &m_g;
@@ -154,6 +155,37 @@ struct calculate_M2L_and_L2L {
         // expansions from weakly connected buckets on this level
         // and store strongly connected buckets to connectivity list
         for (pointer source_pointer: connected_buckets_parent) {
+            queue_type children;
+            children.push(source_pointer);
+            for (int i = 0; i < dimension; ++i) {
+                const size_t n = children.size();
+                for (int i = 0; i < n; ++i) {
+                    pointer child = children.front();
+                    if (m_query.is_leaf_node(*child)) {
+                        connected_buckets.push_back(child);
+                    } else {
+                        children.push(m_query.get_child1(child));
+                        children.push(m_query.get_child2(child));
+                    }
+                    children.pop();
+                }
+            }
+            const size_t n = children.size();
+            for (int i = 0; i < n; ++i) {
+                reference child = *children.front();
+                box_type child_box(m_query.get_bucket_bounds_low(child),
+                        m_query.get_bucket_bounds_high(child));
+                const bool child_theta = theta.check(child_box.bmin,child_box.bmax);
+                if (child_theta) {
+                    connected_buckets.push_back(&child);
+                } else {
+                    //std::cout << "bucket from "<<child1_box.bmin<<" to "<<child1_box.bmax<<"is not connected to target box from "<<target_box.bmin<<" to "<<target_box.bmax<<std::endl;
+                    size_t child_index = m_query.get_bucket_index(child);
+                    Expansions::M2L(g,target_box,child_box,m_W[child_index],m_K);
+                }
+                children.pop();
+            }
+            /*
             if (m_query.is_leaf_node(*source_pointer)) {
                 connected_buckets.push_back(source_pointer);
             } else {
@@ -180,10 +212,34 @@ struct calculate_M2L_and_L2L {
                     Expansions::M2L(g,target_box,child2_box,m_W[child2_index],m_K);
                 }
             }
+            */
         }
         if (!m_query.is_leaf_node(bucket)) { // leaf node
+            queue_type children;
+            children.push(&bucket);
+            for (int i = 0; i < dimension; ++i) {
+                const size_t n = children.size();
+                for (int i = 0; i < n; ++i) {
+                    pointer child = children.front();
+                    if (m_query.is_leaf_node(*child)) {
+                        children.push(child);
+                    } else {
+                        children.push(m_query.get_child1(child));
+                        children.push(m_query.get_child2(child));
+                    }
+                    children.pop();
+                }
+            }
+            const size_t n = children.size();
+            for (int i = 0; i < n; ++i) {
+                calculate_dive(connected_buckets,g,target_box,*children.front());
+                children.pop();
+            }
+             
+            /*
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child1(&bucket));
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child2(&bucket));
+            */
         }
     }
 
@@ -295,11 +351,13 @@ public:
         box_type box(m_query->get_bucket_bounds_low(bucket),
                      m_query->get_bucket_bounds_high(bucket));
 
+        /*
         std::cout <<"(";
         for (int i = 0; i < m_g[index].size(); ++i) {
             std::cout <<m_g[index][i]<< ",";
         }
         std::cout <<")";
+        */
             
         double sum = Expansions::L2P(p,box,m_g[index]);
         for (pointer& source_pointer: m_connectivity[index]) { 

@@ -1319,7 +1319,6 @@ class lattice_iterator {
     };
 
    
-
     int_d m_min;
     int_d m_max;
     proxy_int_d m_index;

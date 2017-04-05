@@ -1194,6 +1194,7 @@ namespace nanoflann
 				node->node_type.lr.right = right;
 
 				// compute bounding-box of leaf points
+                /*
 				for (int i=0; i<(DIM>0 ? DIM : dim); ++i) {
 					bbox[i].low = dataset_get(vind[left],i);
 					bbox[i].high = dataset_get(vind[left],i);
@@ -1204,6 +1205,7 @@ namespace nanoflann
 						if (bbox[i].high<dataset_get(vind[k],i)) bbox[i].high=dataset_get(vind[k],i);
 					}
 				}
+                */
 			}
 			else {
 				IndexType idx;
