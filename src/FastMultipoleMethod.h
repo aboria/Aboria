@@ -56,13 +56,16 @@ struct calculate_P2M_and_M2M {
     const NeighbourQuery &m_query;
     const SourceVectorType &m_source_vector;
     StorageVectorType &m_W;
+    Expansions &m_expansions;
         
     calculate_P2M_and_M2M(const NeighbourQuery& query, 
+                          Expansions& expansions,
                           const SourceVectorType& source_vector,
                           StorageVectorType& W):
         m_query(query),
         m_source_vector(source_vector),
-        m_W(W)
+        m_W(W),
+        m_expansions(expansions)
     {}
 
     expansion_type& operator()(reference bucket) {
@@ -77,9 +80,9 @@ struct calculate_P2M_and_M2M {
 #endif
 
         if (m_query.is_leaf_node(bucket)) { // leaf node
-            detail::calculate_P2M<Expansions>(W, my_box, 
+            detail::calculate_P2M(W, my_box, 
                           m_query.get_bucket_particles(bucket),
-                          m_source_vector,m_query.get_particles_begin());
+                          m_source_vector,m_query.get_particles_begin(),m_expansions);
         } else { 
             //TODO: generalise this to n children
             reference child1 = *m_query.get_child1(&bucket);
@@ -92,8 +95,8 @@ struct calculate_P2M_and_M2M {
             box_type child2_box(m_query.get_bucket_bounds_low(child2),
                                 m_query.get_bucket_bounds_high(child2));
 
-            Expansions::M2M(W,my_box,child1_box,child1_W);
-            Expansions::M2M(W,my_box,child2_box,child2_W);
+            m_expansions.M2M(W,my_box,child1_box,child1_W);
+            m_expansions.M2M(W,my_box,child2_box,child2_W);
         }
         return W;
     }
@@ -116,18 +119,18 @@ struct calculate_M2L_and_L2L {
     const NeighbourQuery &m_query;
     StorageVectorType &m_g;
     const StorageVectorType &m_W;
-    Function &m_K;
+    Expansions &m_expansions;
     ConnectivityType& m_connectivity;
 
     calculate_M2L_and_L2L(const NeighbourQuery& query, 
+                  Expansions& expansions,
                   const StorageVectorType& W,
                   StorageVectorType& g,
-                  Function& K,
                   ConnectivityType& connectivity):
         m_query(query),
         m_W(W),
         m_g(g),
-        m_K(K),
+        m_expansions(expansions),
         m_connectivity(connectivity)
     {}
 
@@ -149,7 +152,7 @@ struct calculate_M2L_and_L2L {
         //connected_buckets.reserve(connected_buckets_parent.size());
 
         // expansion from parent
-        Expansions::L2L(g,target_box,box_parent,g_parent);
+        m_expansions.L2L(g,target_box,box_parent,g_parent);
 
         detail::theta_condition<dimension> theta(target_box.bmin,target_box.bmax);
         // expansions from weakly connected buckets on this level
@@ -162,7 +165,7 @@ struct calculate_M2L_and_L2L {
                 for (int i = 0; i < n; ++i) {
                     pointer child = children.front();
                     if (m_query.is_leaf_node(*child)) {
-                        connected_buckets.push_back(child);
+                        children.push(child);
                     } else {
                         children.push(m_query.get_child1(child));
                         children.push(m_query.get_child2(child));
@@ -181,7 +184,7 @@ struct calculate_M2L_and_L2L {
                 } else {
                     //std::cout << "bucket from "<<child1_box.bmin<<" to "<<child1_box.bmax<<"is not connected to target box from "<<target_box.bmin<<" to "<<target_box.bmax<<std::endl;
                     size_t child_index = m_query.get_bucket_index(child);
-                    Expansions::M2L(g,target_box,child_box,m_W[child_index],m_K);
+                    m_expansions.M2L(g,target_box,child_box,m_W[child_index]);
                 }
                 children.pop();
             }
@@ -263,7 +266,7 @@ struct calculate_M2L_and_L2L {
             if (theta.check(source_box.bmin,source_box.bmax)) {
                 connected_buckets.push_back(&source_bucket);
             } else {
-                Expansions::M2L(g,target_box,source_box,m_W[source_index],m_K);
+                m_expansions.M2L(g,target_box,source_box,m_W[source_index]);
             }
         }
 
@@ -297,12 +300,12 @@ class FastMultipoleMethod {
     storage_type m_g;
     connectivity_type m_connectivity; 
     const NeighbourQuery *m_query;
-    Function m_K;
+    Expansions m_expansions;
 
 public:
 
-    FastMultipoleMethod(const NeighbourQuery &query, const Function& K):
-        m_query(&query),m_K(K)
+    FastMultipoleMethod(const NeighbourQuery &query, const Expansions& expansions):
+        m_query(&query),m_expansions(expansions)
     {}
 
     template <typename VectorType>
@@ -322,8 +325,10 @@ public:
                       calculate_P2M_and_M2M<Expansions,NeighbourQuery,
                                             VectorType>(
                                                 *m_query,
+                                                m_expansions,
                                                 source_vector,
-                                                m_W));
+                                                m_W
+                                                ));
 
 
         // downward sweep of tree
@@ -335,9 +340,9 @@ public:
                                             VectorType,connectivity_type
                                             ,Function>(
                                                 *m_query,
+                                                m_expansions,
                                                 m_W,
                                                 m_g,
-                                                m_K,
                                                 m_connectivity));
 
     }
@@ -364,13 +369,13 @@ public:
             if (m_query->is_leaf_node(*source_pointer)) {
                 sum += detail::calculate_K_direct(p
                     ,m_query->get_bucket_particles(*source_pointer)
-                    ,m_K,source_vector,m_query->get_particles_begin());
+                    ,m_expansions,source_vector,m_query->get_particles_begin());
             } else {
                 for (reference subtree_reference: m_query->get_subtree(*source_pointer)) {
                     if (m_query->is_leaf_node(*source_pointer)) {
                         sum += detail::calculate_K_direct(p
                                 ,m_query->get_bucket_particles(subtree_reference)
-                                ,m_K,source_vector,m_query->get_particles_begin());
+                                ,m_expansions,source_vector,m_query->get_particles_begin());
                     }
                 }
             }
