@@ -167,7 +167,9 @@ struct Chebyshev_Rn {
     unsigned int N;
     detail::bbox<D> box;
     Chebyshev_Rn() {}
-    void calculate_Sn(const double_d_iterator& positions, 
+
+    template <typename PositionIterator>
+    void calculate_Sn(const PositionIterator& positions, 
                       const unsigned int with_N,
                       const unsigned int with_n) {
         n = with_n;
@@ -189,13 +191,15 @@ struct Chebyshev_Rn {
         }
     }
 
-    void calculate_Sn_with_bbox(const double_d_iterator& positions, 
+    template <typename PositionIterator>
+    void calculate_Sn_with_bbox(const PositionIterator& positions, 
                                 detail::bbox<D>& input_box,
                                 const unsigned int with_N,
                                 const unsigned int with_n) {
         n = with_n;
         N = with_N;
         Sn.resize(N*n);
+        box = input_box;
         const double_d scale = double_d(1.0)/(input_box.bmax-input_box.bmin);
         for (int i=0; i<N; ++i) {
             for (int m=0; m<n; ++m) {
