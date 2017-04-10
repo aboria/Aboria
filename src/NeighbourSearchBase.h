@@ -1288,7 +1288,10 @@ class lattice_iterator {
     // reference (which are both of the
     // same type)
     struct proxy_int_d: public int_d {
-        CUDA_HOST_DEVICE
+        proxy_int_d():
+            int_d() 
+        {}
+
         proxy_int_d(const int_d& arg):
             int_d(arg) 
         {}

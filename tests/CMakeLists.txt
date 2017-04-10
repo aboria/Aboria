@@ -31,6 +31,7 @@ if (Aboria_RUN_TESTS)
         MDTest
         RbfInterpolationTest
         RbfPdeTest
+        RbfStokesTest
         DiffusionAroundSpheres
         ParticleContainerTest
         SymbolicTest
@@ -152,6 +153,12 @@ set(RbfInterpolationTest
     
 set(RbfPdeTestFile rbf_pde.h)
 set(RbfPdeTest 
+    test_bucket_search_serial
+    test_bucket_search_parallel
+    )
+
+set(RbfStokesTestFile rbf_stokes.h)
+set(RbfStokesTest 
     test_bucket_search_serial
     test_bucket_search_parallel
     )
