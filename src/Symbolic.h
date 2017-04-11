@@ -466,6 +466,7 @@ namespace Aboria {
     struct min {
         typedef T result_type;
         T operator()(const T arg1, const T arg2) const {
+            //std::cout << "finding min of "<<arg1<<" and "<<arg2<<std::endl;
             return std::min(arg1,arg2);
         }
     };

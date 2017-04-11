@@ -267,7 +267,7 @@ namespace Aboria {
             position_lambda(const F f):m_f(f) {}
             double operator()(const double_d& dx,
                             const_row_reference a,
-                            const_col_reference b) {
+                            const_col_reference b) const {
                                 return m_f(dx,get<position>(a),get<position>(b));
             }
         };
@@ -295,6 +295,8 @@ namespace Aboria {
         unsigned int m_ncheb;
         const int_d m_start;
         const int_d m_end;
+        mutable vector_type m_W;
+        mutable vector_type m_fcheb;
         PositionF m_position_function;
 
     public:
@@ -317,6 +319,8 @@ namespace Aboria {
         void set_n(const unsigned int n) { 
             m_n = n; 
             m_ncheb = std::pow(n,dimension); 
+            m_W.resize(m_ncheb);
+            m_fcheb.resize(m_ncheb);
 
             update_row_positions();
             update_col_positions();
@@ -374,19 +378,19 @@ namespace Aboria {
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
 
-            ASSERT(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
+            CHECK(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
             ASSERT(a.size() == lhs.rows(),"lhs vector has incompatible size");
             ASSERT(b.size() == rhs.rows(),"rhs vector has incompatible size");
 
             //First compute the weights at the Chebyshev nodes ym 
             //by anterpolation 
-            vector_type W = m_col_Rn_matrix*rhs;
+            m_W = m_col_Rn_matrix*rhs;
 
             //Next compute f ðxÞ at the Chebyshev nodes xl:
-            vector_type fcheb = m_kernel_matrix*W;
+            m_fcheb = m_kernel_matrix*m_W;
 
             //Last compute f ðxÞ at the observation points xi by interpolation:
-            lhs = m_row_Rn_matrix*fcheb;
+            lhs = m_row_Rn_matrix*m_fcheb;
         }
     };
 #endif
