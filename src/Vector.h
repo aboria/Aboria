@@ -377,6 +377,26 @@ UNARY_OPERATOR(-)
 
 
 #define OPERATOR(the_op) \
+    template<typename T1,typename T2,unsigned int N,typename = typename std::enable_if<std::is_arithmetic<T1>::value>::type> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> \
+    operator the_op(const T1 &arg1, const Vector<T2,N> &arg2) { \
+        Vector<double,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1 the_op arg2[i]; \
+        } \
+        return ret; \
+    } \
+    template<typename T1,typename T2,unsigned int N,typename = typename std::enable_if<std::is_arithmetic<T2>::value>::type> \
+    CUDA_HOST_DEVICE \
+    Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
+        Vector<double,N> ret; \
+        for (int i = 0; i < N; ++i) { \
+            ret[i] = arg1[i] the_op arg2; \
+        } \
+        return ret; \
+    } \
+    \
     template<typename T1,typename T2,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
@@ -386,25 +406,7 @@ UNARY_OPERATOR(-)
         } \
         return ret; \
     } \
-    template<typename T1,typename T2,unsigned int N> \
-    CUDA_HOST_DEVICE \
-    Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
-        Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
-            ret[i] = arg1[i] the_op arg2; \
-        } \
-        return ret; \
-    } \
-    template<typename T1,typename T2,unsigned int N> \
-    CUDA_HOST_DEVICE \
-    Vector<double,N> operator the_op(const T1 &arg1, const Vector<T2,N> &arg2) { \
-        Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
-            ret[i] = arg1 the_op arg2[i]; \
-        } \
-        return ret; \
-    } \
-    \
+        \
     template<int,int,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<int,N> operator the_op(const Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
@@ -468,7 +470,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
         } \
         return ret; \
     } \
-    template<typename T1,typename T2,unsigned int N> \
+    template<typename T1,typename T2,unsigned int N,typename = typename std::enable_if<std::is_arithmetic<T2>::value>::type> \
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
         Vector<bool,N> ret; \
@@ -477,6 +479,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
         } \
         return ret; \
     } \
+    /*
     template<typename T1,typename T2,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const T1 &arg1, const T2 &arg2) { \
@@ -486,6 +489,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
         } \
         return ret; \
     } \
+    */
 
 /// binary `>` comparison operator for Vector class
 COMPARISON(>)

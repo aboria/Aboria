@@ -44,13 +44,159 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 typedef std::chrono::system_clock Clock;
 #include "Level1.h"
+#include "Kernels.h"
 #include "Chebyshev.h"
+#include "FastMultipoleMethod.h"
 
 using namespace Aboria;
 
 class ChebyshevTest : public CxxTest::TestSuite {
+    ABORIA_VARIABLE(source,double,"source");
+    ABORIA_VARIABLE(target_cheb,double,"target chebyshev");
+    ABORIA_VARIABLE(target_manual,double,"target manual");
+    ABORIA_VARIABLE(target_fmm,double,"target fmm");
+
 public:
+    template <unsigned int N, typename ParticlesType, typename KernelFunction>
+    void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const double scale) {
+        typedef typename ParticlesType::position position;
+        typedef typename ParticlesType::reference reference;
+        const unsigned int dimension = ParticlesType::dimension;
+
+        typedef detail::BlackBoxExpansions<dimension,N,KernelFunction> expansion_type;
+        typedef typename ParticlesType::query_type query_type;
+        typedef FastMultipoleMethod<expansion_type,KernelFunction,query_type> fmm_type;
+
+        fmm_type fmm(particles.get_query(),expansion_type(kernel));
+
+        auto t0 = Clock::now();
+        fmm.calculate_expansions(get<source>(particles));
+        auto t1 = Clock::now();
+        std::chrono::duration<double> time_fmm_setup = t1 - t0;
+        t0 = Clock::now();
+        for (reference p: particles) {
+            get<target_fmm>(p) = fmm.evaluate_expansion(get<position>(p),get<source>(particles));
+        }
+        t1 = Clock::now();
+        std::chrono::duration<double> time_fmm_eval = t1 - t0;
+
+        const double L2_fmm = std::inner_product(
+                std::begin(get<target_fmm>(particles)), std::end(get<target_fmm>(particles)),
+                std::begin(get<target_manual>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_fmm error = "<<L2_fmm<<". L2_fmm relative error is "<<std::sqrt(L2_fmm/scale)<<". time_fmm_setup = "<<time_fmm_setup.count()<<". time_fmm_eval = "<<time_fmm_eval.count()<<std::endl;
 #ifdef HAVE_EIGEN
+        // perform the operation using chebyshev interpolation operator 
+        t0 = Clock::now();
+        auto C = create_chebyshev_operator(particles,particles,N,kernel);
+        t1 = Clock::now();
+        std::chrono::duration<double> time_cheb_setup = t1 - t0;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type;
+        typedef Eigen::Map<vector_type> map_type;
+        map_type source_vect(get<source>(particles).data(),N);
+        map_type target_vect(get<target_operator>(particles).data(),N);
+        t0 = Clock::now();
+        target_vect = C*source_vect;
+        t1 = Clock::now();
+        std::chrono::duration<double> time_cheb_eval = t1 - t0;
+
+        const double L2_cheb = std::inner_product(
+                std::begin(get<target_cheb>(particles)), std::end(get<target_cheb>(particles)),
+                std::begin(get<target_manual>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_cheb error = "<< L2_cheb <<". L2_cheb relative error is "<<std::sqrt(L2_cheb/scale)<<". time_cheb_setup  = "<<time_op_setup.count()<<". time_cheb_eval = "<<time_cheb_eval.count()<<std::endl;
+
+        //TODO: is there a better test than this, maybe shouldn't randomly do it?
+        if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_alg/scale),0.001);
+        if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_op/scale),0.001);
+#endif
+    }
+
+    template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>
+    void helper_fast_methods(size_t N) {
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+        typedef Vector<bool,D> bool_d;
+        const double tol = 1e-10;
+        // randomly generate a bunch of positions over a range 
+        const double pos_min = 0;
+        const double pos_max = 1;
+        std::uniform_real_distribution<double> U(pos_min,pos_max);
+        generator_type generator(time(NULL));
+        auto gen = std::bind(U, generator);
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+
+        typedef Particles<std::tuple<source,target_cheb,target_manual,target_fmm>,D,StorageVector,SearchMethod> ParticlesType;
+        typedef typename ParticlesType::position position;
+        ParticlesType particles(N);
+
+        for (int i=0; i<N; i++) {
+            for (int d=0; d<D; ++d) {
+                get<position>(particles)[i][d] = gen();
+                get<source>(particles)[i] = gen();
+            }
+        }
+        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false));
+
+        // generate a source vector using a smooth cosine
+        auto source_fn = [&](const double_d &p) {
+            //return (p-double_d(0)).norm();
+            double ret=1.0;
+            const double scale = 2.0*detail::PI/(pos_max-pos_min); 
+            for (int i=0; i<D; i++) {
+                ret *= cos((p[i]-pos_min)*scale);
+            }
+            return ret/N;
+        };
+        std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
+                       std::begin(get<source>(particles)), source_fn);
+
+        const double c = 0.1;
+        auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
+            return std::sqrt(dx.squaredNorm() + c); 
+        };
+
+
+        // perform the operation manually
+        std::fill(std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
+                    0.0);
+
+        auto t0 = Clock::now();
+        for (int i=0; i<N; i++) {
+            const double_d pi = get<position>(particles)[i];
+            for (int j=0; j<N; j++) {
+                const double_d pj = get<position>(particles)[j];
+                get<target_manual>(particles)[i] += kernel(pi-pj,pi,pj)*get<source>(particles)[j];
+            }
+        }
+        auto t1 = Clock::now();
+        std::chrono::duration<double> time_manual = t1 - t0;
+
+
+        const double scale = std::accumulate(
+            std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
+            0.0,
+            [](const double t1, const double t2) { return t1 + t2*t2; }
+        );
+
+        std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<scale<<std::endl;
+
+        helper_fast_methods_calculate<1>(particles,kernel,scale);
+        helper_fast_methods_calculate<2>(particles,kernel,scale);
+        helper_fast_methods_calculate<3>(particles,kernel,scale);
+        helper_fast_methods_calculate<4>(particles,kernel,scale);
+    }
+
+    
     template <unsigned int D>
     void helper_Rn_calculation(void) {
         const double tol = 1e-10;
@@ -83,141 +229,159 @@ public:
                 }
             }
         }
+        const double_d scale = double_d(1.0)/(Rn.box.bmax-Rn.box.bmin);
+        for (int i = 0; i < positions.size(); ++i) {
+            const unsigned int n = 4;
+            const double_d &x =  (2*positions[i]-Rn.box.bmin-Rn.box.bmax)*scale;
+            detail::ChebyshevRnSingle<D,n> cheb_rn(positions[i],Rn.box);
+            const int_d start = int_d(0);
+            const int_d end = int_d(n-1);
+            auto range = iterator_range<lattice_iterator<D>>(
+                lattice_iterator<D>(start,end,start)
+                ,++lattice_iterator<D>(start,end,end)
+                );
+
+            for (const int_d& m: range) {
+                TS_ASSERT_DELTA(cheb_rn(m),detail::chebyshev_Rn_slow(x,m,n),tol);
+            }
+        }
     }
 
-    template <unsigned int D>
-    void helper_chebyshev_interpolation(void) {
-        const double tol = 1e-10;
-        // randomly generate a bunch of positions over a range 
-        const double pos_min = 0;
-        const double pos_max = 1;
-        std::uniform_real_distribution<double> U(pos_min,pos_max);
-        generator_type generator(time(NULL));
-        auto gen = std::bind(U, generator);
+    template <typename Expansions>
+    void helper_fmm_operators(Expansions& expansions) {
+        const unsigned int D = Expansions::dimension;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
-        const size_t N = 1000;
+        typedef typename Expansions::expansion_type expansion_type;
 
-        ABORIA_VARIABLE(source,double,"source");
-        ABORIA_VARIABLE(target_algorithm,double,"target algorithm");
-        ABORIA_VARIABLE(target_manual,double,"target manual");
-        ABORIA_VARIABLE(target_operator,double,"target operator");
-        typedef Particles<std::tuple<source,target_algorithm,target_manual,target_operator>,D> ParticlesType;
-        typedef typename ParticlesType::position position;
-        ParticlesType particles(N);
+        // unit box
+        detail::bbox<D> parent(double_d(0.0),double_d(1.0));
+        detail::bbox<D> leaf1(double_d(0.0),double_d(1.0));
+        leaf1.bmax[0] = 0.5;
+        detail::bbox<D> leaf2(double_d(0.0),double_d(1.0));
+        leaf2.bmin[0] = 0.5;
+        std::cout << "parent = "<<parent<<" leaf1 = "<<leaf1<<" leaf2 = "<<leaf2<<std::endl;
 
-        for (int i=0; i<N; i++) {
-            for (int d=0; d<D; ++d) {
-                get<position>(particles)[i][d] = gen();
-                get<source>(particles)[i] = gen();
-            }
-        }
+        // create n particles, 2 leaf boxes, 1 parent box
+        std::uniform_real_distribution<double> U(0,1);
+        generator_type generator(time(NULL));
+        const size_t n = 10;
+        double_d particles_in_leaf1[n];
+        double_d particles_in_leaf2[n];
+        double source_leaf1[n];
+        double field_just_self_leaf1[n];
+        double field_all_leaf1[n];
+        double source_leaf2[n];
+        double field_just_self_leaf2[n];
+        double field_all_leaf2[n];
 
-        // generate a source vector using a smooth cosine
-        auto source_fn = [&](const double_d &p) {
-            //return (p-double_d(0)).norm();
-            double ret=1.0;
-            const double scale = 2.0*detail::PI/(pos_max-pos_min); 
-            for (int i=0; i<D; i++) {
-                ret *= cos((p[i]-pos_min)*scale);
-            }
-            return ret;
-        };
-        std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
-                       std::begin(get<source>(particles)), source_fn);
-
-        const double c = 0.1;
-        auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
-            return std::sqrt(dx.squaredNorm() + c); 
+        auto f = [](const double_d& p) {
+            return p[0];
         };
 
+        for (int i = 0; i < n; ++i) {
+            particles_in_leaf1[i][0] = 0.5*U(generator);
+            particles_in_leaf2[i][0] = 0.5*U(generator)+0.5;
+            for (int j = 1; j < D; ++j) {
+                particles_in_leaf1[i][j] = U(generator);
+                particles_in_leaf2[i][j] = U(generator);
+            }
+            source_leaf1[i] = f(particles_in_leaf1[i]);
+            source_leaf2[i] = f(particles_in_leaf2[i]);
+        }
 
-        // perform the operation manually
-        std::fill(std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
-                    0.0);
-
-        auto t0 = Clock::now();
-        for (int i=0; i<N; i++) {
-            const double_d pi = get<position>(particles)[i];
-            for (int j=0; j<N; j++) {
-                const double_d pj = get<position>(particles)[j];
-                get<target_manual>(particles)[i] += kernel(pi-pj,pi,pj)*get<source>(particles)[j];
+        for (int i = 0; i < n; ++i) {
+            field_just_self_leaf1[i] = 0;
+            field_just_self_leaf2[i] = 0;
+            for (int j = 0; j < n; ++j) {
+                field_just_self_leaf1[i] += source_leaf1[j]
+                    *expansions.m_K(particles_in_leaf1[j]-particles_in_leaf1[i],
+                                    particles_in_leaf1[i],particles_in_leaf1[j]);
+                field_just_self_leaf2[i] += source_leaf2[j]
+                    *expansions.m_K(particles_in_leaf2[j]-particles_in_leaf2[i],
+                                    particles_in_leaf2[i],particles_in_leaf2[j]);
+            }
+            field_all_leaf1[i] = field_just_self_leaf1[i];
+            field_all_leaf2[i] = field_just_self_leaf2[i];
+            for (int j = 0; j < n; ++j) {
+                field_all_leaf1[i] += source_leaf2[j]
+                    *expansions.m_K(particles_in_leaf2[j]-particles_in_leaf1[i],
+                                    particles_in_leaf1[i],particles_in_leaf2[j]);
+                field_all_leaf2[i] += source_leaf1[j]
+                    *expansions.m_K(particles_in_leaf1[j]-particles_in_leaf2[i],
+                                    particles_in_leaf2[i],particles_in_leaf1[j]);
             }
         }
-        auto t1 = Clock::now();
-        std::chrono::duration<double> time_manual = t1 - t0;
 
-        const double scale = std::accumulate(
-            std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
-            0.0,
-            [](const double t1, const double t2) { return t1 + t2*t2; }
-        );
+        // check P2M, and L2P
+        expansion_type expansionM_leaf1 = {0};
 
-        const unsigned int maxn = std::pow(N/2,1.0/D);
-        for (unsigned int n = 1; n < maxn; ++n) {
-            // perform the operation using chebyshev interpolation algorithm
-            t0 = Clock::now();
-            chebyshev_interpolation<D>(
-             std::begin(get<source>(particles)), std::end(get<source>(particles)),
-             std::begin(get<target_algorithm>(particles)), std::end(get<target_algorithm>(particles)),
-             std::begin(get<position>(particles)), std::begin(get<position>(particles)),
-             kernel,n);
-            t1 = Clock::now();
-            std::chrono::duration<double> time_alg = t1 - t0;
-
-            const double L2_alg = std::inner_product(
-             std::begin(get<target_algorithm>(particles)), std::end(get<target_algorithm>(particles)),
-             std::begin(get<target_manual>(particles)), 
-                        0.0,
-                        [](const double t1, const double t2) { return t1 + t2; },
-                        [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
-                       );
-
-
-            std::cout << "dimension = "<<D<<". n = "<<n<<". L2_alg error = "<<L2_alg<<". L2_alg relative error is "<<std::sqrt(L2_alg/scale)<<". time_alg/time_manual = "<<time_alg/time_manual<<std::endl;
-
-
-            // perform the operation using chebyshev interpolation operator 
-            t0 = Clock::now();
-            auto C = create_chebyshev_operator(particles,particles,n,kernel);
-            t1 = Clock::now();
-            std::chrono::duration<double> time_op_setup = t1 - t0;
-            typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type;
-            typedef Eigen::Map<vector_type> map_type;
-            map_type source_vect(get<source>(particles).data(),N);
-            map_type target_vect(get<target_operator>(particles).data(),N);
-            t0 = Clock::now();
-            target_vect = C*source_vect;
-            t1 = Clock::now();
-            std::chrono::duration<double> time_op_mult = t1 - t0;
-
-            const double L2_op= std::inner_product(
-             std::begin(get<target_operator>(particles)), std::end(get<target_operator>(particles)),
-             std::begin(get<target_manual>(particles)), 
-                        0.0,
-                        [](const double t1, const double t2) { return t1 + t2; },
-                        [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
-                       );
-
-            std::cout << "dimension = "<<D<<". n = "<<n<<". L2_op error = "<<L2_op<<". L2_op relative error is "<<std::sqrt(L2_op/scale)<<". time_op/time_manual = "<<(time_op_setup+time_op_mult)/time_manual<<std::endl;
-            /*
-            std::cout << "time_op_setup = "<<time_op_setup/(time_op_setup+time_op_mult)
-                      << "time_op_mult = "<<time_op_mult/(time_op_setup+time_op_mult)
-                      << std::endl;
-             */
-
-            //TODO: is there a better test than this, maybe shouldn't randomly do it?
-            if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_alg/scale),0.001);
-            if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_op/scale),0.001);
+        for (int i = 0; i < n; ++i) {
+            expansions.P2M(expansionM_leaf1,leaf1,particles_in_leaf1[i],source_leaf1[i]);
         }
-    }
-#endif 
 
+        expansion_type expansionL_leaf1 = {0};
+        expansions.M2L(expansionL_leaf1,leaf1,leaf1,expansionM_leaf1);
+
+        double L2 = 0;
+        double scale = 0;
+        for (int i = 0; i < n; ++i) {
+            const double check = expansions.L2P(particles_in_leaf1[i],leaf1,expansionL_leaf1);
+            L2 += std::pow(check-field_just_self_leaf1[i],2);
+            scale += std::pow(field_just_self_leaf1[i],2);
+            TS_ASSERT_LESS_THAN(std::abs(check-field_just_self_leaf1[i]),1e-4);
+        }
+
+        TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
+
+        expansion_type expansionM_leaf2 = {};
+        for (int i = 0; i < n; ++i) {
+            expansions.P2M(expansionM_leaf2,leaf2,particles_in_leaf2[i],source_leaf2[i]);
+        }
+
+        expansion_type expansionL_leaf2 = {};
+        expansions.M2L(expansionL_leaf2,leaf2,leaf2,expansionM_leaf2);
+
+        L2 = 0;
+        for (int i = 0; i < n; ++i) {
+            const double check = expansions.L2P(particles_in_leaf2[i],leaf2,expansionL_leaf2);
+            L2 += std::pow(check-field_just_self_leaf2[i],2);
+            scale += std::pow(field_just_self_leaf2[i],2);
+        }
+        TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
         
+        // check M2M and L2L
+        expansion_type expansionM_parent = {};
+        expansions.M2M(expansionM_parent,parent,leaf1,expansionM_leaf1);
+        expansions.M2M(expansionM_parent,parent,leaf2,expansionM_leaf2);
+        expansion_type expansionL_parent = {};
+        expansions.M2L(expansionL_parent,parent,parent,expansionM_parent);
 
+        expansion_type reexpansionL_leaf1 = {};
+        expansions.L2L(reexpansionL_leaf1,leaf1,parent,expansionL_parent);
+
+        L2 = 0;
+        scale = 0;
+        for (int i = 0; i < n; ++i) {
+            const double check = expansions.L2P(particles_in_leaf1[i],leaf1,reexpansionL_leaf1);
+            L2 += std::pow(check-field_all_leaf1[i],2);
+            scale += std::pow(field_all_leaf1[i],2);
+        }
+        TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
+
+    }
+        
+    void test_fmm_operators() {
+        const unsigned int D = 2;
+        typedef Vector<double,D> double_d;
+        auto kernel = [](const double_d &dx, const double_d &pa, const double_d &pb) {
+            return std::sqrt(dx.squaredNorm() + 0.1); 
+        };
+        detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);
+        helper_fmm_operators(expansions);
+    }
 
     void test_chebyshev_polynomial_calculation(void) {
-#ifdef HAVE_EIGEN
         const double tol = 1e-10;
         // evaluate polynomial of order k at i-th root
         // of polynomial of order n
@@ -231,24 +395,47 @@ public:
                                     cos(k*(2.0*i+1.0)/(2.0*n)*detail::PI),tol);
             }
         }
-#endif
     }
 
 
-    void test_chebyshev_interpolation(void) {
-#ifdef HAVE_EIGEN
-        std::cout << "testing 2D..." << std::endl;
-        helper_chebyshev_interpolation<2>();
-        std::cout << "testing 3D..." << std::endl;
-        helper_chebyshev_interpolation<3>();
-        std::cout << "testing 4D..." << std::endl;
-        helper_chebyshev_interpolation<4>();
-#endif
+    void test_fast_methods_bucket_search_serial(void) {
+        const size_t N = 1000;
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
+        helper_fast_methods<2,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
+        helper_fast_methods<3,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 4D..." << std::endl;
+        helper_fast_methods<4,std::vector,bucket_search_serial>(N);
+    }
+
+    void test_fast_methods_bucket_search_parallel(void) {
+        const size_t N = 1000;
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 2D..." << std::endl;
+        helper_fast_methods<2,std::vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
+        helper_fast_methods<3,std::vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 4D..." << std::endl;
+        helper_fast_methods<4,std::vector,bucket_search_parallel>(N);
+    }
+
+    void test_fast_methods_kd_tree(void) {
+        const size_t N = 10000;
+        std::cout << "KD_TREE: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 2D..." << std::endl;
+        helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 3D..." << std::endl;
+        helper_fast_methods<3,std::vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 4D..." << std::endl;
+        helper_fast_methods<4,std::vector,nanoflann_adaptor>(N);
     }
 
 
     void test_Rn_calculation(void) {
-#ifdef HAVE_EIGEN
         std::cout << "testing 1D..." << std::endl;
         helper_Rn_calculation<1>();
         std::cout << "testing 2D..." << std::endl;
@@ -257,7 +444,6 @@ public:
         helper_Rn_calculation<3>();
         std::cout << "testing 4D..." << std::endl;
         helper_Rn_calculation<4>();
-#endif
     }
 };
 

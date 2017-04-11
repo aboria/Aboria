@@ -457,6 +457,7 @@ private:
 };
 
 // assume that query functions, are only called from device code
+// TODO: most of this code shared with bucket_search_parallel_query, need to combine them
 template <typename Traits>
 struct bucket_search_serial_query {
 
@@ -468,7 +469,10 @@ struct bucket_search_serial_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     const static unsigned int dimension = Traits::dimension;
     typedef lattice_iterator<dimension> query_iterator;
+    typedef lattice_iterator<dimension> root_iterator;
+    typedef lattice_iterator<dimension> all_iterator;
     typedef typename query_iterator::reference reference;
+    typedef typename query_iterator::pointer pointer;
     typedef typename query_iterator::value_type value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
 
@@ -489,6 +493,23 @@ struct bucket_search_serial_query {
         m_particles_begin(),
         m_buckets_begin()
     {}
+
+    /*
+     * functions for trees
+     */
+    static bool is_leaf_node(const value_type& bucket) {
+        return true;
+    }
+
+    // dodgy hack cause nullptr cannot be converted to pointer
+    static const pointer get_child1(const pointer& bucket) {
+        CHECK(false,"this should not be called")
+	    return pointer(-1);
+    }
+    static const pointer get_child2(const pointer& bucket) {
+        CHECK(false,"this should not be called")
+	    return pointer(-1);
+    }
 
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
     const double_d& get_bounds_high() const { return m_bounds.bmax; }
@@ -517,6 +538,24 @@ struct bucket_search_serial_query {
                 bucket*m_bucket_side_length + m_bounds.bmin,
                 (bucket+1)*m_bucket_side_length + m_bounds.bmin
                 );
+    }
+
+    double_d get_bucket_bounds_low(const reference bucket) const {
+        return bucket*m_bucket_side_length + m_bounds.bmin;
+    }
+
+    double_d get_bucket_bounds_high(const reference bucket) const {
+        return (bucket+1)*m_bucket_side_length + m_bounds.bmin;
+    }
+
+    CUDA_HOST_DEVICE
+    value_type get_bucket(const double_d &position) const {
+        return m_point_to_bucket_index.find_bucket_index_vector(position);
+    }
+
+    CUDA_HOST_DEVICE
+    size_t get_bucket_index(const reference bucket) const {
+        return m_point_to_bucket_index.collapse_index_vector(bucket);
     }
 
     template <int LNormNumber=-1>
@@ -562,20 +601,66 @@ struct bucket_search_serial_query {
         }
     }
 
-    /*
-    CUDA_HOST_DEVICE
-    bool get_children_buckets(const bucket_reference &bucket, std::array<value_type,2>& children) {
-        return false;
-    }
 
     CUDA_HOST_DEVICE
-    iterator_range<query_iterator> get_root_buckets() const {
+    iterator_range<root_iterator> get_root_buckets() const {
         return iterator_range<query_iterator>(
-                query_iterator(int_d(0),m_end_bucket,int_d(0)),
-                ++query_iterator(int_d(0),m_end_bucket,m_end_bucket)
+                root_iterator(int_d(0),m_end_bucket,int_d(0)),
+                ++root_iterator(int_d(0),m_end_bucket,m_end_bucket)
                 );
     }
+
+    iterator_range<all_iterator> get_subtree(reference bucket) const {
+        return iterator_range<all_iterator>(
+                all_iterator(bucket,bucket,bucket),
+                ++all_iterator(bucket,bucket,bucket));
+    }
+
+    size_t number_of_buckets() const {
+        return (m_end_bucket+1).prod();
+    }
+
+    raw_pointer get_particles_begin() const {
+        return m_particles_begin;
+    }
+
+    /*
+    CUDA_HOST_DEVICE
+    iterator_range<theta_iterator> get_theta_buckets(const reference bucket) const {
+        
+        int_d start = bucket-int_d(2);
+        int_d end = bucket+int_d(2);
+
+        bool no_buckets = false;
+        for (int i=0; i<Traits::dimension; i++) {
+            if (start[i] < 0) {
+                start[i] = 0;
+            } else if (start[i] > m_end_bucket[i]) {
+                no_buckets = true;
+                start[i] = m_end_bucket[i];
+            }
+            if (end[i] < 0) {
+                no_buckets = true;
+                end[i] = 0;
+            } else if (end[i] > m_end_bucket[i]) {
+                end[i] = m_end_bucket[i];
+            }
+        }
+        if (no_buckets) {
+            return iterator_range<theta_iterator>(
+                theta_iterator(end,end,endend),
+                ++theta_iterator(end,end,end)
+                );
+
+        } else {
+            return iterator_range<theta_iterator>(
+                theta_iterator(start,end,start),
+                ++theta_iterator(start,end,end)
+                );
+        }
+    }
     */
+
     
 
 };

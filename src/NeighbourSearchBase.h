@@ -276,7 +276,7 @@ class ranges_iterator {
 public:
     typedef Traits traits_type;
     typedef const p_pointer pointer;
-	typedef std::forward_iterator_tag iterator_category;
+	typedef std::random_access_iterator_tag iterator_category;
     typedef const p_reference reference;
     typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
@@ -315,11 +315,8 @@ public:
 
     CUDA_HOST_DEVICE
     size_t operator-(ranges_iterator start) const {
-        size_t count = 0;
-        while (start != *this) {
-            ++start; ++count;
-        }
-        return count;
+        return tuple_ns::get<0>(m_current_p.get_tuple()) 
+                - tuple_ns::get<0>(start.m_current_p.get_tuple());
     }
 
     CUDA_HOST_DEVICE
@@ -585,12 +582,122 @@ public:
     p_pointer m_particles_begin;
 };
 
-template <unsigned int D, typename Query, int LNormNumber>
+
+template <typename Query>
+class tree_depth_first_iterator {
+    typedef tree_depth_first_iterator<Query> iterator;
+    static const unsigned int dimension = Query::dimension;
+    typedef Vector<double,dimension> double_d;
+    typedef Vector<int,dimension> int_d;
+
+public:
+    typedef typename Query::value_type const value_type;
+    typedef const value_type* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const value_type& reference;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    tree_depth_first_iterator():
+        m_node(nullptr)
+    {}
+       
+    /// this constructor is used to start the iterator at the head of a bucket 
+    /// list
+    CUDA_HOST_DEVICE
+    tree_depth_first_iterator(pointer start_node,
+                        const Query *query
+                  ):
+        m_query(query),
+        m_node(start_node)
+    {}
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    CUDA_HOST_DEVICE
+    size_t operator-(iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+ private:
+    friend class boost::iterator_core_access;
+
+    CUDA_HOST_DEVICE
+    void increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (tree_depth_first_iterator):"); 
+#endif
+        if (m_query->is_leaf_node(*m_node)) {
+            if (m_stack.empty()) {
+                m_node = nullptr;
+            } else {
+                m_node = m_stack.top();
+                m_stack.pop();
+            }
+        } else {
+            pointer child1 = m_query->get_child1(m_node);
+            pointer child2 = m_query->get_child2(m_node);
+            m_stack.push(child2);
+            m_node = child1;
+        }
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (tree_depth_first_iterator): m_node = "<<m_node); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        return m_node == other.m_node;
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return *m_node; }
+
+
+    std::stack<pointer> m_stack;
+    const value_type* m_node;
+    const Query *m_query;
+};
+
+template <typename Query, int LNormNumber>
 class tree_query_iterator {
-    typedef tree_query_iterator<D,Query,LNormNumber> iterator;
-    static const unsigned int dimension = D;
-    typedef Vector<double,D> double_d;
-    typedef Vector<int,D> int_d;
+    typedef tree_query_iterator<Query,LNormNumber> iterator;
+    static const unsigned int dimension = Query::dimension;
+    typedef Vector<double,dimension> double_d;
+    typedef Vector<int,dimension> int_d;
 
 public:
     typedef typename Query::value_type const value_type;
@@ -665,6 +772,18 @@ public:
         return *this;
         //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
     }
+
+    iterator& operator=(const tree_depth_first_iterator<Query>& copy) {
+        m_node=copy.m_node;
+#ifndef NDEBUG
+        const double_d low = copy.m_query->get_bounds_low(*m_node);
+        const double_d high = copy.m_query->get_bounds_high(*m_node);
+        ASSERT((low <= m_query_point).all() && (high > m_query_point).all(),"query point not in depth_first_iterator")
+#endif
+        std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+        return *this;
+    }
+
 
     /*
     iterator& operator=(iterator&& copy):
@@ -809,6 +928,203 @@ public:
     double_d m_dists;
     const Query *m_query;
 };
+
+
+/*
+template <typename Query>
+class tree_theta_iterator {
+    typedef tree_theta_iterator<Query> iterator;
+    static const unsigned int dimension = Query::dimension;
+    typedef Vector<double,dimension> double_d;
+    typedef Vector<int,dimension> int_d;
+    typedef Query::reference node_reference;
+    typedef Query::pointer node_pointer;
+    typedef Query::value_type node_value_type;
+
+public:
+    typedef const node_pointer pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const node_reference reference;
+    typedef const node_value_type value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    tree_theta_iterator():
+        m_node(nullptr)
+    {}
+
+    tree_theta_iterator(const node_pointer node,
+                        const Query *query,
+                        const std::stack<const node_pointer>& stack):
+        m_node(node),
+        m_query(query),
+        m_stack(stack),
+        m_centre(0.5*(m_query->get_bounds_low(m_node) 
+                      + m_query->get_bounds_high(m_node))),
+        m_r2((m_query->get_bounds_high(m_node) - m_centre).squaredNorm()),
+        m_r(std::sqrt(m_r2))
+        m_theta2(std::pow(0.5,2))
+    {}
+       
+    tree_theta_iterator(const tree_depth_first_iterator<Query> copy):
+        tree_theta_iterator(copy.m_node,copy.m_query,copy.m_stack)
+    {}
+
+
+    tree_theta_iterator(const iterator& copy):
+        m_query_point(copy.m_query_point),
+        m_max_distance2(copy.m_max_distance2),
+        m_node(copy.m_node),
+        m_dists(copy.m_dists)
+        m_stack(copy.m_stack)
+    {}
+
+    iterator& operator=(const iterator& copy) {
+        m_query_point = copy.m_query_point;
+        m_max_distance2 = copy.m_max_distance2;
+        m_node=copy.m_node;
+        m_dists=copy.m_dists;
+        m_stack = copy.m_stack;
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    CUDA_HOST_DEVICE
+    size_t operator-(iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+ private:
+
+    bool theta_condition(const node_reference& node) {
+        double_d other_size = m_query->get_bounds_low(node)-m_query->get_bounds_low(node);
+        double d = 0.5*(other_high + other_low - m_low - m_high).norm(); 
+        double other_r2 = 0.25*(other_high-other_low).squaredNorm();
+        if (other_r2 < m_r2) {
+            const double other_r = std::sqrt(other_r2);
+            return m_r2 > m_theta2*std::pow(d-other_r,2);
+        } else {
+            return other_r2 < m_theta2*std::pow(d-m_r,2);
+        }
+    }
+
+    void go_to_next_node() {
+        m_theta_condition = true;
+        while(!m_query->is_leaf_node(*m_node) && m_theta_condition) {
+            ASSERT(m_query->get_child1(m_node) != NULL,"no child1");
+            ASSERT(m_query->get_child2(m_node) != NULL,"no child2");
+            node_pointer child1 = m_query->get_child1(m_node);
+            node_pointer child2 = m_query->get_child1(m_node);
+            if (theta_condition(child1)) {
+                m_stack.push(child2);
+                m_node = child1;
+            } else if (theta_condition(child2)) {
+                m_node = child2;
+            } else {
+                pop_new_child_from_stack();
+            }
+
+            bool child1_theta = theta_condition(child1);
+            bool child2_theta = theta_condition(child2);
+            if (child1_theta && child2_theta) {
+                m_node = child1;
+                //keep going
+            } else if (child1_theta) {
+                m_stack.push(child1);
+                m_node = child2;
+                m_theta_condition = false;
+                //return
+            } else if (child2_theta) {
+                m_stack.push(child2);
+                m_node = child1;
+                m_theta_condition = false;
+                //return
+            } else {
+                CHECK(false,"should not get here!");
+            }
+
+        }
+        LOG(4,"\ttree_interaction_iterator (go_to_next_leaf) found a candidate node. m_theta_condition = "<<m_theta_condition);
+    }
+    
+    // returns true if the new node satisfies the theta condition 
+    void pop_new_child_from_stack() {
+        m_node = m_stack.top();
+        m_stack.pop();
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (tree_interaction_iterator):"); 
+#endif
+        if (m_stack.empty()) {
+            m_node = nullptr;
+        } else {
+            do {
+                pop_new_child_from_stack();
+            } while (!theta_condition(m_node));
+            go_to_next_leaf();
+        }
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (tree_interaction_iterator): m_node = "<<m_node); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        return m_node == other.m_node;
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return reference(*m_node,m_theta); }
+
+
+    std::stack<pointer> m_stack;
+    double_d m_low;
+    double_d m_high;
+    double m_r2;
+    double m_r;
+    bool m_theta_condition;
+    double m_theta2;
+    const value_type* m_node;
+    const Query *m_query;
+};
+*/
 
 
 /*
@@ -967,15 +1283,54 @@ class lattice_iterator {
     typedef Vector<double,D> double_d;
     typedef Vector<int,D> int_d;
 
+    // make a proxy int_d in case you ever
+    // want to get a pointer object to the
+    // reference (which are both of the
+    // same type)
+    struct proxy_int_d: public int_d {
+        proxy_int_d():
+            int_d() 
+        {}
+
+        proxy_int_d(const int_d& arg):
+            int_d(arg) 
+        {}
+
+        proxy_int_d& operator&() {
+            return *this;
+        }
+        
+        const proxy_int_d& operator&() const {
+            return *this;
+        }
+
+        const proxy_int_d& operator*() const {
+            return *this;
+        }
+
+        proxy_int_d& operator*() {
+            return *this;
+        }
+
+        const proxy_int_d* operator->() const {
+            return this;
+        }
+
+       proxy_int_d* operator->() {
+            return this;
+        }
+    };
+
+   
     int_d m_min;
     int_d m_max;
-    int_d m_index;
+    proxy_int_d m_index;
     detail::bucket_index<D> m_bucket_index;
 public:
-    typedef const int_d* pointer;
+    typedef const proxy_int_d pointer;
 	typedef std::random_access_iterator_tag iterator_category;
-    typedef const int_d& reference;
-    typedef const int_d value_type;
+    typedef const proxy_int_d& reference;
+    typedef const proxy_int_d value_type;
 	typedef std::ptrdiff_t difference_type;
 
     lattice_iterator()
@@ -1089,19 +1444,19 @@ private:
     }
 };
 
-/*
 
-template <typename Traits>
+template <unsigned int D>
 class lattice_iterator_with_hole {
-    typedef typename Traits::double_d double_d;
-    typedef typename Traits::int_d int_d;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef lattice_iterator_with_hole<D> iterator;
 
     int_d m_min;
     int_d m_max;
     int_d m_hole_min;
     int_d m_hole_max;
     int_d m_index;
-    detail::bucket_index<Traits::dimension> m_bucket_index;
+    int m_in_hole;
 public:
     typedef const int_d* pointer;
 	typedef std::forward_iterator_tag iterator_category;
@@ -1120,8 +1475,14 @@ public:
         m_hole_min(hmin),
         m_hole_max(hmax),
         m_index(start),
-        m_bucket_index(max-min)
-    {}
+        m_in_hole(0)
+    {
+        for (int i=0; i<D; i++) {
+            if (m_index[i] >= m_hole_min[i] && m_index[i] < m_hole_max[i]) {
+                ++m_in_hole;
+            }
+        }
+    }
 
 
     CUDA_HOST_DEVICE
@@ -1135,21 +1496,14 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    lattice_iterator_with_hole& operator++() {
+    iterator& operator++() {
         increment();
         return *this;
     }
 
-    CUDA_HOST_DEVICE
-    lattice_iterator_with_hole operator++(int) {
-        lattice_iterator_with_hole tmp(*this);
-        operator++();
-        return tmp;
-    }
-
     
     CUDA_HOST_DEVICE
-    size_t operator-(lattice_iterator_with_hole start) const {
+    size_t operator-(iterator start) const {
         size_t count = 0;
         while (start != *this) {
             start++;
@@ -1159,13 +1513,13 @@ public:
     }
 
     CUDA_HOST_DEVICE
-    inline bool operator==(const lattice_iterator_with_hole& rhs) const {
+    inline bool operator==(const iterator& rhs) const {
         return equal(rhs);
     }
 
 
     CUDA_HOST_DEVICE
-    inline bool operator!=(const lattice_iterator_with_hole& rhs) const {
+    inline bool operator!=(const iterator& rhs) const {
         return !operator==(rhs);
     }
 
@@ -1173,7 +1527,7 @@ private:
     friend class boost::iterator_core_access;
 
     CUDA_HOST_DEVICE
-    bool equal(lattice_iterator_with_hole const& other) const {
+    bool equal(iterator const& other) const {
         return (m_index == other.m_index).all();
     }
 
@@ -1184,21 +1538,37 @@ private:
 
     CUDA_HOST_DEVICE
     void increment() {
-        for (int i=0; i<Traits::dimension; i++) {
+        for (int i=0; i<D; i++) {
             ++m_index[i];
+            // check if this dimension is in the hole
             if (m_index[i] == m_hole_min[i]) {
-                m_index[i] = m_hole_max[i]+1;
+                ++m_in_hole;
+                // if all dimensions are in hole then skip
+                // over it
+                if (m_in_hole == D) {
+                    m_index[i] = m_hole_max[i]+1;
+                }
             }
+            // if this dimension exits hole reduce number
+            if (m_index[i] == m_hole_max[i]+1) {
+                --m_in_hole;
+                ASSERT(m_in_hole > 0,"this shouldn't happen!");
+            }
+            // if this dimension is out of the range then
+            // got back to min or hole_max+1 
             if (m_index[i] <= m_max[i]) break;
-            if (i != Traits::dimension-1) {
-                m_index[i] = m_min[i];
+            if (i != D-1) {
+                if (m_min[i] <= m_hole_min[i]) {
+                    m_index[i] = m_hole_max+1;
+                } else {
+                    m_index[i] = m_min[i];
+                }
             }
         }
     }
 
    
 };
-*/
 
 
 

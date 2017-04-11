@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/math/constants/constants.hpp>
 #include "Vector.h"
 #include "detail/SpatialUtil.h"
+#include <math.h>
 
 namespace Aboria {
 namespace detail {
@@ -105,6 +106,19 @@ double chebyshev_node(const unsigned int i, const unsigned int n) {
     return cos((2.0*i+1.0)*PI/(2.0*n));
 }
 
+template <unsigned int D>
+Vector<double,D> chebyshev_node_nd(const Vector<int,D> &m, const unsigned int n) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<n).all() ,"m should be less than n");
+        Vector<double,D> pos;
+        for (int d=0; d<D; ++d) {
+            pos[d] = chebyshev_node(m[d],n);
+        }
+        return pos;
+    }
+
+
+
 template <unsigned int N>
 double chebyshev_Rn_slow(const Vector<double,N> &x, const Vector<int,N> &i, unsigned int n) {
     double Rn = 1.0;
@@ -126,7 +140,7 @@ double chebyshev_Rn_slow(const Vector<double,N> &x, const Vector<int,N> &i, unsi
 template <typename T>
 T chebyshev_Sn(const T &x, unsigned int i, unsigned int n) {
     // Clenshaw algorithm: \alpha = 2x, \beta = -1, T0=1, T1=x
-    //                     a_0 = 1/n, a_k = 2/n * cos(k*(2i-1)/(2n) * pi)
+    //                     a_0 = 1/n, a_k = 2/n * cos(k*(2(i+1)-1)/(2n) * pi)
     T bk_1 = 0;
     T bk_2 = 0;
     const double invn = 1.0/n;
@@ -153,7 +167,9 @@ struct Chebyshev_Rn {
     unsigned int N;
     detail::bbox<D> box;
     Chebyshev_Rn() {}
-    void calculate_Sn(const double_d_iterator& positions, 
+
+    template <typename PositionIterator>
+    void calculate_Sn(const PositionIterator& positions, 
                       const unsigned int with_N,
                       const unsigned int with_n) {
         n = with_n;
@@ -185,6 +201,23 @@ struct Chebyshev_Rn {
         }
     }
 
+    template <typename PositionIterator>
+    void calculate_Sn_with_bbox(const PositionIterator& positions, 
+                                detail::bbox<D>& input_box,
+                                const unsigned int with_N,
+                                const unsigned int with_n) {
+        n = with_n;
+        N = with_N;
+        Sn.resize(N*n);
+        box = input_box;
+        const double_d scale = double_d(1.0)/(input_box.bmax-input_box.bmin);
+        for (int i=0; i<N; ++i) {
+            for (int m=0; m<n; ++m) {
+                Sn[i*n + m] = chebyshev_Sn((2*positions[i]-input_box.bmin-input_box.bmax)*scale,m,n);
+            }
+        }
+    }
+
     // NOTE: valid range of m is 0..n-1
     double_d get_position(const int_d &m) {
         ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
@@ -209,9 +242,53 @@ struct Chebyshev_Rn {
         return ret;
     }
 };
+
+template <unsigned int D, unsigned int N>
+struct ChebyshevRnSingle {
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef std::array<double_d,N> vector_double_d;
+    vector_double_d m_Sn;
+    const detail::bbox<D>& m_box;
+    ChebyshevRnSingle(const double_d& position, const detail::bbox<D>& box):
+        m_box(box) {
+        const double_d shift_position = (2*position-box.bmin-box.bmax)/(box.bmax-box.bmin);
+#ifndef NDEBUG
+        for (int i = 0; i < D; ++i) {
+            ASSERT(!std::isnan(shift_position[i])," is nan!!!");
+        }
+#endif
+        for (int m=0; m<N; ++m) {
+            m_Sn[m] = chebyshev_Sn(shift_position,m,N);
+        }
+
+    }
+    
+    // NOTE: valid range of m is 0..n-1
+    double_d get_position(const int_d &m) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<N).all() ,"m should be less than n");
+        double_d pos;
+        for (int d=0; d<D; ++d) {
+            pos[d] = chebyshev_node(m[d],N);
+        }
+        return 0.5*(pos+1)*(m_box.bmax-m_box.bmin) + m_box.bmin;
+    }
+
+    // NOTE: valid range of m is 0..n-1
+    double operator()(const int_d &m) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<N).all() ,"m should be less than n");
+        double ret = 1.0;
+        for (int d=0; d<D; ++d) {
+            ret *= m_Sn[m[d]][d];
+        }
+        ASSERT(!std::isnan(ret)," is nan!!!");
+        return ret;
+    }
+};
+
  
-
-
  
     
 }
