@@ -167,7 +167,17 @@ struct Chebyshev_Rn {
                 if (positions[i][d] > box.bmax[d]) box.bmax[d] = positions[i][d];
             }
         }
-        const double_d scale = double_d(1.0)/(box.bmax-box.bmin);
+
+        double_d box_size = box.bmax-box.bmin;
+        for (int d=0; d<D; ++d) {
+            if (box_size[d] <= 10*std::numeric_limits<double>::epsilon()) {
+                box_size[d] = 0.1*box_size.norm();
+                box.bmin[d] = box.bmin[d] - 0.5*box_size[d]; 
+                box.bmax[d] = box.bmax[d] + 0.5*box_size[d]; 
+            }
+        }
+        
+        const double_d scale = double_d(1.0)/box_size;
         for (int i=0; i<N; ++i) {
             for (int m=0; m<n; ++m) {
                 Sn[i*n + m] = chebyshev_Sn((2*positions[i]-box.bmin-box.bmax)*scale,m,n);
