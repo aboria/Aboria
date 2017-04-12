@@ -802,7 +802,7 @@ public:
         a_i = \sum_j^N \begin{cases}
                     \frac{r-|\mathbf{dx}\_{ij}|}{|\mathbf{dx}\_{ij}|}\mathbf{dx}\_{ij} , & 
                     \text{for } 
-                      |\mathbf{dx}\_{ij}|<r \\
+                      |\mathbf{dx}\_{ij}|<r \\\\
                     0 & \text{otherwise},
                     \end{cases}   \text{ for } i = 0...N.
         $$
