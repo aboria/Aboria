@@ -59,16 +59,22 @@ public:
             return double2(20*x[0]*std::pow(x[1],3),5*std::pow(x[0],4)-5*std::pow(x[1],4));
         };
 
-        auto p_sol= [](const double2& x) { 
+        auto p_sol = [](const double2& x) { 
             return 60*std::pow(x[0],2)*x[1] - 20*std::pow(x[1],3);
         };
 
+        auto grad_p_sol = [](const double2& x) { 
+            return double2(120*x[0]*x[1] , 60*std::pow(x[0],2) - 60*std::pow(x[1],2));
+        };
+
+
         ABORIA_VARIABLE(velocity_u,double,"velocity u")
         ABORIA_VARIABLE(velocity_v,double,"velocity v")
-        ABORIA_VARIABLE(pressure,double,"pressure p")
+        ABORIA_VARIABLE(pressure_x,double,"pressure gradient x")
+        ABORIA_VARIABLE(pressure_y,double,"pressure gradient y")
         ABORIA_VARIABLE(boundary,uint8_t,"is boundary knot")
 
-    	typedef Particles<std::tuple<velocity_u,velocity_v,pressure,boundary>,2,std::vector,SearchMethod> particles_type;
+    	typedef Particles<std::tuple<velocity_u,velocity_v,pressure_x,pressure_y,boundary>,2,std::vector,SearchMethod> particles_type;
         typedef typename particles_type::position position;
         typedef typename particles_type::const_reference const_reference;
         typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
@@ -181,7 +187,7 @@ public:
                         if (get<boundary>(j)) {
                             return mu*laplace_yy(dx);
                         } else {
-                            return -mu*mu*laplace2_yy(dx) - kernel_xx(dx);
+                            return -mu*mu*laplace2_yy(dx) - 1e6*kernel_xx(dx);
                         }
                     }
                });
@@ -200,7 +206,7 @@ public:
                         if (get<boundary>(j)) {
                             return -mu*laplace_xy(dx);
                         } else {
-                            return mu*mu*laplace2_xy(dx) - kernel_xy(dx);
+                            return mu*mu*laplace2_xy(dx) - 1e6*kernel_xy(dx);
                         }
                     }
                });
@@ -219,7 +225,7 @@ public:
                         if (get<boundary>(j)) {
                             return mu*laplace_xx(dx);
                         } else {
-                            return -mu*mu*laplace2_xx(dx) - kernel_yy(dx);
+                            return -mu*mu*laplace2_xx(dx) - 1e6*kernel_yy(dx);
                         }
                     }
                });
@@ -304,7 +310,7 @@ public:
                     if (get<boundary>(j)) {
                         return 0.0;
                     } else {
-                        return -kernel_x(dx);
+                        return -1e6*kernel_xx(dx);
                     }
                });
 
@@ -315,39 +321,48 @@ public:
                     if (get<boundary>(j)) {
                         return 0.0;
                     } else {
-                        return -kernel_y(dx);
+                        return -1e6*kernel_xy(dx);
+                    }
+               });
+
+        auto B42 = create_sparse_operator(knots,knots,search_radius,
+                [&](const double2& dx,
+                    const_reference i,
+                    const_reference j) {
+                    if (get<boundary>(j)) {
+                        return 0.0;
+                    } else {
+                        return -1e6*kernel_yy(dx);
                     }
                });
 
         map_type u(get<velocity_u>(knots).data(),N);
         map_type v(get<velocity_v>(knots).data(),N);
-        map_type pr(get<pressure>(knots).data(),N);
+        map_type prx(get<pressure_x>(knots).data(),N);
+        map_type pry(get<pressure_y>(knots).data(),N);
 
         u = B11*alpha.head(N) + B12*alpha.tail(N);
         v = B12*alpha.head(N) + B22*alpha.tail(N);
-        pr = B31*alpha.head(N) + B32*alpha.tail(N);
+        prx = B31*alpha.head(N) + B32*alpha.tail(N);
+        pry = B32*alpha.head(N) + B42*alpha.tail(N);
 
-        double3 L2(0);
-        double3 scale(0);
+        double2 L2(0);
+        double2 scale(0);
         for (int i=0; i<N; ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double2& velocity_solution = u_sol(get<position>(knots[i]));
-            const double pressure_solution = p_sol(get<position>(knots[i]));
-            L2[0] += std::pow(u[i]-velocity_solution[0],2);
-            L2[1] += std::pow(v[i]-velocity_solution[1],2);
-            L2[2] += std::pow(pr[i]-pressure_solution,2);
-            scale[0] += std::pow(velocity_solution[0],2);
-            scale[1] += std::pow(velocity_solution[1],2);
-            scale[2] += std::pow(pressure_solution,2);
+            const double2& pressure_solution = grad_p_sol(get<position>(knots[i]));
+            L2[0] += (double2(u[i],v[i])-velocity_solution).squaredNorm();
+            L2[1] += (double2(prx[i],pry[i])*invh*invh-pressure_solution).squaredNorm();
+            scale[0] += velocity_solution.squaredNorm();
+            scale[1] += pressure_solution.squaredNorm();
         }
-        TS_ASSERT_DELTA(std::sqrt(L2[0]/scale[0]),0,2e-3); 
-        TS_ASSERT_DELTA(std::sqrt(L2[1]/scale[1]),0,3e-3); 
-        // pressure only determined up to a constant so dont check this
-        std::cout << "rms errors (u,v,p) = ("
+        TS_ASSERT_DELTA(std::sqrt(L2[0]/scale[0]),0,1e-5); 
+        TS_ASSERT_DELTA(std::sqrt(L2[1]/scale[1]),0,1e-3); 
+        std::cout << "rms errors (u,p) = ("
                   <<std::sqrt(L2[0]/scale[0])<<","
-                  <<std::sqrt(L2[1]/scale[1])<<","
-                  <<std::sqrt(L2[2]/scale[2])<<")"<<std::endl;
+                  <<std::sqrt(L2[1]/scale[1])<<")"<<std::endl;
 
 #ifdef HAVE_VTK
         vtkWriteGrid("rbf_stokes",0,knots.get_grid(true));
