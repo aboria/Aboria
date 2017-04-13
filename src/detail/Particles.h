@@ -62,7 +62,8 @@ struct write_from_tuple {
     template< typename U >
     typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
     operator()(U i) {
-        datas[i]->SetTuple(index,std::get<U::value>(write_from).data());
+        Vector<float,non_ref_tuple_element<U>::size> tmp = std::get<U::value>(write_from);
+        datas[i]->SetTuple(index,tmp.data());
     }
 
     template< typename U >
