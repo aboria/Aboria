@@ -358,7 +358,8 @@ Operator create_chebyshev_operator(const RowParticles& row_particles,
 /// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename FRadius, typename F,
          typename Kernel=KernelSparse<RowParticles,ColParticles,FRadius,F>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>,
+         typename = typename std::enable_if<!std::is_arithmetic<FRadius>::value>::type
                 >
 Operator create_sparse_operator(const RowParticles& row_particles,
                                 const ColParticles& col_particles,
@@ -371,6 +372,42 @@ Operator create_sparse_operator(const RowParticles& row_particles,
                 );
     }
 
+/// \brief creates a sparse matrix-free linear operator for use with Eigen
+///
+/// This function returns a MatrixReplacement object that acts like a 
+/// sparse linear operator (i.e. matrix) in Eigen, in that only particle
+/// pairs (i.e. a row/column pair) with a separation less that a given value 
+/// are considered to be non-zero
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+/// \param radius   It is assumed that \p function 
+///                 returns a zero value
+///                 for all particle pairs with a separation greater than
+///                 this value
+/// \param function A function object that returns the value of the operator
+///                 for a given particle pair
+///
+///
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
+template<typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelSparseConst<RowParticles,ColParticles,F>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_sparse_operator(const RowParticles& row_particles,
+                                const ColParticles& col_particles,
+                                const double radius,
+                                const F& function) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles,radius,function)
+                    )
+                );
+    }
 
 
 /// \brief creates a zero matrix-free linear operator for use with Eigen

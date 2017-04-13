@@ -161,9 +161,9 @@ namespace Aboria {
                     const_col_reference  bj = b[j];
                     position_value_type dx; 
                     if (is_periodic) { 
-                        dx = get<position>(bj)-get<position>(ai);
+                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
                     } else {
-                        dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                        dx = get<position>(bj)-get<position>(ai);
                     }
                     const_cast< MatrixType& >(matrix)(i,j) = this->eval(dx,ai,bj);
                 }
@@ -189,9 +189,9 @@ namespace Aboria {
                     const_col_reference bj = b[j];
                     position_value_type dx; 
                     if (is_periodic) { 
-                        dx = get<position>(bj)-get<position>(ai);
+                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
                     } else {
-                        dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                        dx = get<position>(bj)-get<position>(ai);
                     }
                     triplets.push_back(Triplet(i+startI,j+startJ,
                                 this->eval(dx,ai,bj)));
@@ -223,9 +223,9 @@ namespace Aboria {
                         const_col_reference bj = b[j];
                         position_value_type dx; 
                         if (is_periodic) { 
-                            dx = get<position>(bj)-get<position>(ai);
+                            dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
                         } else {
-                            dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                            dx = get<position>(bj)-get<position>(ai);
                         }
                         sum += this->eval(dx,ai,bj)*rhs(j);
                     }
@@ -239,9 +239,9 @@ namespace Aboria {
                         const_col_reference bj = b[j];
                         position_value_type dx; 
                         if (is_periodic) { 
-                            dx = get<position>(bj)-get<position>(ai);
+                            dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
                         } else {
-                            dx = correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                            dx = get<position>(bj)-get<position>(ai);
                         }
                         sum += this->eval(dx,ai,bj)*rhs[j];
                     }
@@ -267,7 +267,7 @@ namespace Aboria {
             position_lambda(const F f):m_f(f) {}
             double operator()(const double_d& dx,
                             const_row_reference a,
-                            const_col_reference b) {
+                            const_col_reference b) const {
                                 return m_f(dx,get<position>(a),get<position>(b));
             }
         };
@@ -295,6 +295,8 @@ namespace Aboria {
         unsigned int m_ncheb;
         const int_d m_start;
         const int_d m_end;
+        mutable vector_type m_W;
+        mutable vector_type m_fcheb;
         PositionF m_position_function;
 
     public:
@@ -317,6 +319,8 @@ namespace Aboria {
         void set_n(const unsigned int n) { 
             m_n = n; 
             m_ncheb = std::pow(n,dimension); 
+            m_W.resize(m_ncheb);
+            m_fcheb.resize(m_ncheb);
 
             update_row_positions();
             update_col_positions();
@@ -374,19 +378,19 @@ namespace Aboria {
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
 
-            ASSERT(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
+            CHECK(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
             ASSERT(a.size() == lhs.rows(),"lhs vector has incompatible size");
             ASSERT(b.size() == rhs.rows(),"rhs vector has incompatible size");
 
             //First compute the weights at the Chebyshev nodes ym 
             //by anterpolation 
-            vector_type W = m_col_Rn_matrix*rhs;
+            m_W = m_col_Rn_matrix*rhs;
 
             //Next compute f ðxÞ at the Chebyshev nodes xl:
-            vector_type fcheb = m_kernel_matrix*W;
+            m_fcheb = m_kernel_matrix*m_W;
 
             //Last compute f ðxÞ at the observation points xi by interpolation:
-            lhs = m_row_Rn_matrix*fcheb;
+            lhs = m_row_Rn_matrix*m_fcheb;
         }
     };
 #endif
@@ -394,6 +398,7 @@ namespace Aboria {
 
     template<typename RowParticles, typename ColParticles, typename FRadius, typename F>
     class KernelSparse: public KernelBase<RowParticles,ColParticles,F> {
+    protected:
         typedef KernelBase<RowParticles,ColParticles,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
@@ -503,6 +508,42 @@ namespace Aboria {
        }
     private:
         FRadius m_radius_function;
+    };
+
+    namespace detail {
+        template <typename RowParticles,
+                 typename const_row_reference=
+                     typename RowParticles::const_reference>
+        struct constant_radius {
+            const double m_radius;
+            constant_radius(const double radius):m_radius(radius)
+            {}
+            double operator()(const_row_reference a) const {
+                return m_radius; 
+            }
+        };
+    }
+
+    template<typename RowParticles, typename ColParticles, typename F,
+        typename RadiusFunction=detail::constant_radius<RowParticles>>
+    class KernelSparseConst: public KernelSparse<RowParticles,ColParticles,RadiusFunction,F> {
+        typedef KernelSparse<RowParticles,ColParticles,RadiusFunction,F> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+    public:
+        typedef typename base_type::Scalar Scalar;
+
+        KernelSparseConst(const RowParticles& row_particles,
+                    const ColParticles& col_particles,
+                    const double radius,
+                    const F& function): base_type(row_particles,
+                                                  col_particles,
+                                                  RadiusFunction(radius),
+                                                  function) 
+        {}
     };
 
     namespace detail {

@@ -50,6 +50,56 @@ namespace Aboria {
 namespace detail {
 
     template <unsigned int D, unsigned int N> 
+    struct MultiquadricExpansions {
+        typedef detail::bbox<D> box_type;
+        static const size_t ncheb = std::pow(N,D); 
+        typedef std::array<double,ncheb> expansion_type;
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+        static const unsigned int dimension = D;
+        const double m_c2;
+
+        MultiquadricExpansions(const double c):m_c2(c*c) 
+        {}
+
+        static void P2M(expansion_type& accum, 
+                 const box_type& box, 
+                 const double_d& position,
+                 const double& source ) {
+
+        }
+
+        static void M2M(expansion_type& accum, 
+                 const box_type& target_box, 
+                 const box_type& source_box, 
+                 const expansion_type& source) {
+
+        }
+
+        void M2L(expansion_type& accum, 
+                 const box_type& target_box, 
+                 const box_type& source_box, 
+                 const expansion_type& source) {
+
+          
+        }
+
+        static void L2L(expansion_type& accum, 
+                 const box_type& target_box, 
+                 const box_type& source_box, 
+                 const expansion_type& source) {
+         
+        }
+
+        static double L2P(const double_d& p,
+                   const box_type& box, 
+                   const expansion_type& source) {
+                }
+
+    };
+
+
+    template <unsigned int D, unsigned int N, typename Function> 
     struct BlackBoxExpansions {
         typedef detail::bbox<D> box_type;
         static const size_t ncheb = std::pow(N,D); 
@@ -57,7 +107,11 @@ namespace detail {
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         static const unsigned int dimension = D;
+        static const unsigned int number_of_nodes_in_each_direction = N;
+        Function m_K;
 
+        BlackBoxExpansions(const Function &K):m_K(K) 
+        {}
 
         static void P2M(expansion_type& accum, 
                  const box_type& box, 
@@ -67,6 +121,7 @@ namespace detail {
             detail::ChebyshevRnSingle<D,N> cheb_rn(position,box);
             lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
             for (int j=0; j<ncheb; ++j,++mj) {
+                //std::cout << "accumulating P2M from "<<position<<" to node "<<*mj<<" with Rn = "<<cheb_rn(*mj)<<std::endl;
                 accum[j] += cheb_rn(*mj)*source;
             }
         }
@@ -85,18 +140,34 @@ namespace detail {
 
                 lattice_iterator<D> mi(int_d(0),int_d(N-1),int_d(0));
                 for (int i=0; i<ncheb; ++i,++mi) {
+                    /*
+                    int_d check1(0);
+                    int_d check2(0);
+                    check1[0] = 2;
+                    check2[0] = 3;
+                    if ((*mi == check1).all() && (*mj == check2).all()) {
+                        std::cout << "accumulating M2M from node "<<*mj<<" "<<pj<<" to node "<<*mi<<" with Rn = "<<cheb_rn(*mi)<<std::endl;
+                    }
+                    */
+                    /*
+                    const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+                    const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                        + target_box.bmin;
+                    const double_d &pj_target_unit =  (2*pj-target_box.bmin-target_box.bmax)/(target_box.bmax-target_box.bmin);
+                    */
+
+                    //std::cout << "accumulating M2M from source node"<<*mj<<" located at "<<pj<<" to node "<<*mi<<" located at "<<pi<<" with Rn = "<<cheb_rn(*mi)<<". note: slow rn = "<<chebyshev_Rn_slow(pj_target_unit, *mi, N)<<std::endl;
+ 
                     accum[i] += cheb_rn(*mi)*source[j];
                 }
             }
         }
 
 
-        template <typename Function>
-        static void M2L(expansion_type& accum, 
+        void M2L(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 const expansion_type& source,
-                 Function& K) {
+                 const expansion_type& source) {
 
             lattice_iterator<dimension> mi(int_d(0),int_d(N-1),int_d(0));
             for (int i=0; i<ncheb; ++i,++mi) {
@@ -109,7 +180,7 @@ namespace detail {
                     const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
-                    accum[i] += K(pj-pi,pi,pj)*source[j];
+                    accum[i] += m_K(pj-pi,pi,pj)*source[j];
                 }
             }
 
@@ -120,7 +191,28 @@ namespace detail {
                  const box_type& target_box, 
                  const box_type& source_box, 
                  const expansion_type& source) {
-            M2M(accum,target_box,source_box,source);
+            //M2M(accum,target_box,source_box,source);
+            lattice_iterator<dimension> mi(int_d(0),int_d(N-1),int_d(0));
+            for (int i=0; i<ncheb; ++i,++mi) {
+                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                    + target_box.bmin;
+                detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
+
+                lattice_iterator<D> mj(int_d(0),int_d(N-1),int_d(0));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    /*
+                    int_d check1(0);
+                    int_d check2(0);
+                    check1[0] = 2;
+                    check2[0] = 3;
+                    if ((*mi == check2).all() && (*mj == check1).all()) {
+                        std::cout << "accumulating L2L from node "<<*mj<<" to node "<<*mi<<" "<<pi<<" with Rn = "<<cheb_rn(*mj)<<std::endl;
+                    }
+                    */
+                    accum[i] += cheb_rn(*mj)*source[j];
+                }
+            }
         }
 
         static double L2P(const double_d& p,
@@ -130,6 +222,7 @@ namespace detail {
             lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
             double sum = 0;
             for (int j=0; j<ncheb; ++j,++mj) {
+                //std::cout << "cheb node "<<*mj<<" p = "<<cheb_rn.get_position(*mj)<<" source = "<<source[j]<<std::endl;
                 sum += cheb_rn(*mj)*source[j];
             }
             return sum;
@@ -148,14 +241,15 @@ namespace detail {
                         const detail::bbox<D>& box, 
                         const iterator_range<ranges_iterator<Traits>>& range, 
                         const SourceVectorType& source_vector,
-                        const SourceParticleIterator& source_particles_begin) {
+                        const SourceParticleIterator& source_particles_begin,
+                        const Expansions& expansions) {
         typedef typename Traits::position position;
         const size_t N = std::distance(range.begin(),range.end());
         const Vector<double,D>* pbegin = &get<position>(*range.begin());
         const size_t index = pbegin - &get<position>(source_particles_begin)[0];
         for (int i = 0; i < N; ++i) {
             const Vector<double,D>& pi = pbegin[i]; 
-            Expansions::P2M(sum,box,pi,source_vector[index+i]);  
+            expansions.P2M(sum,box,pi,source_vector[index+i]);  
         }
     }
 
@@ -173,27 +267,28 @@ namespace detail {
                         const detail::bbox<D>& box, 
                         const iterator_range<Iterator>& range, 
                         const SourceVectorType& source_vector,
-                        const SourceParticleIterator& source_particles_begin) {
+                        const SourceParticleIterator& source_particles_begin,
+                        const Expansions &expansions) {
 
         typedef typename Traits::position position;
         typedef typename Iterator::reference reference;
         for (reference i: range) {
             const Vector<double,D>& pi = get<position>(i); 
             const size_t index = &pi- &get<position>(source_particles_begin)[0];
-            Expansions::P2M(sum,box,pi,source_vector[index]);  
+            expansions.P2M(sum,box,pi,source_vector[index]);  
         }
 
     }
 
 
     template <typename Traits, 
-              typename Function, 
+              typename Expansions, 
               typename SourceVectorType,
                     typename SourceParticleIterator=typename Traits::raw_pointer, 
                     unsigned int D=Traits::dimension>
     double calculate_K_direct(const Vector<double,D>& p,
                             const iterator_range<ranges_iterator<Traits>>& range, 
-                            const Function& m_K,
+                            Expansions& expansions,
                             const SourceVectorType& source_vector,
                             const SourceParticleIterator& source_particles_begin) {
         typedef typename Traits::position position;
@@ -204,13 +299,13 @@ namespace detail {
         double sum = 0;
         for (int i = 0; i < N; ++i) {
             const Vector<double,D>& pi = pbegin[i]; 
-            sum += m_K(pi-p,p,pi)*source_vector[index+i];
+            sum += expansions.m_K(pi-p,p,pi)*source_vector[index+i];
         }
         return sum;
     }
 
     template <typename Iterator, 
-              typename Function, 
+              typename Expansions, 
               typename SourceVectorType,
                     typename Traits=typename Iterator::traits_type,
                     typename SourceParticleIterator=typename Traits::raw_pointer, 
@@ -219,7 +314,7 @@ namespace detail {
         std::enable_if<!std::is_same<Iterator,ranges_iterator<Traits>>::value>>
     double calculate_K_direct(const Vector<double,D>& p,
                             const iterator_range<Iterator>& range, 
-                            const Function& m_K,
+                            Expansions& expansions,
                             const SourceVectorType& source_vector,
                             const SourceParticleIterator& source_particles_begin) {
         typedef typename Traits::position position;
@@ -229,7 +324,7 @@ namespace detail {
         for (reference i: range) {
             const Vector<double,D>& pi = get<position>(i); 
             const size_t index = &pi- &get<position>(source_particles_begin)[0];
-            sum += m_K(pi-p,p,pi)*source_vector[index];
+            sum += expansions.m_K(pi-p,p,pi)*source_vector[index];
         }
         return sum;
     }

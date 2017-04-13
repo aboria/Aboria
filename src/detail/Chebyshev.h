@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/math/constants/constants.hpp>
 #include "Vector.h"
 #include "detail/SpatialUtil.h"
+#include <math.h>
 
 namespace Aboria {
 namespace detail {
@@ -139,7 +140,7 @@ double chebyshev_Rn_slow(const Vector<double,N> &x, const Vector<int,N> &i, unsi
 template <typename T>
 T chebyshev_Sn(const T &x, unsigned int i, unsigned int n) {
     // Clenshaw algorithm: \alpha = 2x, \beta = -1, T0=1, T1=x
-    //                     a_0 = 1/n, a_k = 2/n * cos(k*(2i-1)/(2n) * pi)
+    //                     a_0 = 1/n, a_k = 2/n * cos(k*(2(i+1)-1)/(2n) * pi)
     T bk_1 = 0;
     T bk_2 = 0;
     const double invn = 1.0/n;
@@ -166,7 +167,9 @@ struct Chebyshev_Rn {
     unsigned int N;
     detail::bbox<D> box;
     Chebyshev_Rn() {}
-    void calculate_Sn(const double_d_iterator& positions, 
+
+    template <typename PositionIterator>
+    void calculate_Sn(const PositionIterator& positions, 
                       const unsigned int with_N,
                       const unsigned int with_n) {
         n = with_n;
@@ -180,7 +183,17 @@ struct Chebyshev_Rn {
                 if (positions[i][d] > box.bmax[d]) box.bmax[d] = positions[i][d];
             }
         }
-        const double_d scale = double_d(1.0)/(box.bmax-box.bmin);
+
+        double_d box_size = box.bmax-box.bmin;
+        for (int d=0; d<D; ++d) {
+            if (box_size[d] <= 10*std::numeric_limits<double>::epsilon()) {
+                box_size[d] = 0.1*box_size.norm();
+                box.bmin[d] = box.bmin[d] - 0.5*box_size[d]; 
+                box.bmax[d] = box.bmax[d] + 0.5*box_size[d]; 
+            }
+        }
+        
+        const double_d scale = double_d(1.0)/box_size;
         for (int i=0; i<N; ++i) {
             for (int m=0; m<n; ++m) {
                 Sn[i*n + m] = chebyshev_Sn((2*positions[i]-box.bmin-box.bmax)*scale,m,n);
@@ -188,13 +201,15 @@ struct Chebyshev_Rn {
         }
     }
 
-    void calculate_Sn_with_bbox(const double_d_iterator& positions, 
+    template <typename PositionIterator>
+    void calculate_Sn_with_bbox(const PositionIterator& positions, 
                                 detail::bbox<D>& input_box,
                                 const unsigned int with_N,
                                 const unsigned int with_n) {
         n = with_n;
         N = with_N;
         Sn.resize(N*n);
+        box = input_box;
         const double_d scale = double_d(1.0)/(input_box.bmax-input_box.bmin);
         for (int i=0; i<N; ++i) {
             for (int m=0; m<n; ++m) {
@@ -237,9 +252,14 @@ struct ChebyshevRnSingle {
     const detail::bbox<D>& m_box;
     ChebyshevRnSingle(const double_d& position, const detail::bbox<D>& box):
         m_box(box) {
-        const double_d scale = double_d(1.0)/(box.bmax-box.bmin);
+        const double_d shift_position = (2*position-box.bmin-box.bmax)/(box.bmax-box.bmin);
+#ifndef NDEBUG
+        for (int i = 0; i < D; ++i) {
+            ASSERT(!std::isnan(shift_position[i])," is nan!!!");
+        }
+#endif
         for (int m=0; m<N; ++m) {
-            m_Sn[m] = chebyshev_Sn((2*position-box.bmin-box.bmax)*scale,m,N);
+            m_Sn[m] = chebyshev_Sn(shift_position,m,N);
         }
 
     }
@@ -263,6 +283,7 @@ struct ChebyshevRnSingle {
         for (int d=0; d<D; ++d) {
             ret *= m_Sn[m[d]][d];
         }
+        ASSERT(!std::isnan(ret)," is nan!!!");
         return ret;
     }
 };
