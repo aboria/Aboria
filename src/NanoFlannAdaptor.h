@@ -434,6 +434,14 @@ struct nanoflann_adaptor_query {
                 );
     }
 
+    iterator_range<within_iterator> 
+    get_buckets_within(const double_d& low, const double_d& high) const {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_buckets_within: low = "<<low<<" high = "<<high);
+#endif
+        return ;
+    }
+
     
 
     iterator_range<root_iterator> get_root_buckets() const {

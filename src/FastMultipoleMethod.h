@@ -158,6 +158,7 @@ struct calculate_M2L_and_L2L {
         // expansions from weakly connected buckets on this level
         // and store strongly connected buckets to connectivity list
         for (pointer source_pointer: connected_buckets_parent) {
+            /*
             queue_type children;
             children.push(source_pointer);
             for (int i = 0; i < dimension; ++i) {
@@ -188,7 +189,7 @@ struct calculate_M2L_and_L2L {
                 }
                 children.pop();
             }
-            /*
+            */
             if (m_query.is_leaf_node(*source_pointer)) {
                 connected_buckets.push_back(source_pointer);
             } else {
@@ -206,18 +207,18 @@ struct calculate_M2L_and_L2L {
                 } else {
                     //std::cout << "bucket from "<<child1_box.bmin<<" to "<<child1_box.bmax<<"is not connected to target box from "<<target_box.bmin<<" to "<<target_box.bmax<<std::endl;
                     size_t child1_index = m_query.get_bucket_index(child1);
-                    Expansions::M2L(g,target_box,child1_box,m_W[child1_index],m_K);
+                    m_expansions.M2L(g,target_box,child1_box,m_W[child1_index]);
                 }
                 if (child2_theta) {
                     connected_buckets.push_back(&child2);
                 } else {
                     size_t child2_index = m_query.get_bucket_index(child2);
-                    Expansions::M2L(g,target_box,child2_box,m_W[child2_index],m_K);
+                    m_expansions.M2L(g,target_box,child2_box,m_W[child2_index]);
                 }
             }
-            */
         }
         if (!m_query.is_leaf_node(bucket)) { // leaf node
+            /*
             queue_type children;
             children.push(&bucket);
             for (int i = 0; i < dimension; ++i) {
@@ -238,11 +239,10 @@ struct calculate_M2L_and_L2L {
                 calculate_dive(connected_buckets,g,target_box,*children.front());
                 children.pop();
             }
+            */
              
-            /*
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child1(&bucket));
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child2(&bucket));
-            */
         }
     }
 
@@ -274,6 +274,28 @@ struct calculate_M2L_and_L2L {
         if (!m_query.is_leaf_node(bucket)) { 
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child1(&bucket));
             calculate_dive(connected_buckets,g,target_box,*m_query.get_child2(&bucket));
+            /*
+            queue_type children;
+            children.push(&bucket);
+            for (int i = 0; i < dimension; ++i) {
+                const size_t n = children.size();
+                for (int i = 0; i < n; ++i) {
+                    pointer child = children.front();
+                    if (m_query.is_leaf_node(*child)) {
+                        children.push(child);
+                    } else {
+                        children.push(m_query.get_child1(child));
+                        children.push(m_query.get_child2(child));
+                    }
+                    children.pop();
+                }
+            }
+            const size_t n = children.size();
+            for (int i = 0; i < n; ++i) {
+                calculate_dive(connected_buckets,g,target_box,*children.front());
+                children.pop();
+            }
+            */
         }
     }
 

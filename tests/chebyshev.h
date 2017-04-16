@@ -159,7 +159,7 @@ public:
         std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                        std::begin(get<source>(particles)), source_fn);
 
-        const double c = 0.1;
+        const double c = 0.01;
         auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
             return std::sqrt(dx.squaredNorm() + c); 
         };
@@ -397,7 +397,6 @@ public:
         }
     }
 
-
     void test_fast_methods_bucket_search_serial(void) {
         const size_t N = 1000;
         std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
@@ -406,8 +405,6 @@ public:
         helper_fast_methods<2,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_serial>(N);
-        std::cout << "BUCKET_SEARCH_SERIAL: testing 4D..." << std::endl;
-        helper_fast_methods<4,std::vector,bucket_search_serial>(N);
     }
 
     void test_fast_methods_bucket_search_parallel(void) {
@@ -418,8 +415,6 @@ public:
         helper_fast_methods<2,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_parallel>(N);
-        std::cout << "BUCKET_SEARCH_PARALLEL: testing 4D..." << std::endl;
-        helper_fast_methods<4,std::vector,bucket_search_parallel>(N);
     }
 
     void test_fast_methods_kd_tree(void) {
@@ -430,8 +425,6 @@ public:
         helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,nanoflann_adaptor>(N);
-        std::cout << "KD_TREE: testing 4D..." << std::endl;
-        helper_fast_methods<4,std::vector,nanoflann_adaptor>(N);
     }
 
 
