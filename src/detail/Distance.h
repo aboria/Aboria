@@ -64,6 +64,42 @@ struct distance_helper {
         }
     }
 
+    template <unsigned int D,typename VectorType=Vector<double,D>>
+    static inline VectorType get_value_to_accumulate(const VectorType& arg) {
+        VectorType ret;
+        switch (LNormNumber) {
+            case -1:
+                for (int i = 0; i < D; ++i) {
+                    ret[i] = std::abs(arg[i]);
+                }
+            case 0:
+                for (int i = 0; i < D; ++i) {
+                    ret[i] = arg[i] != 0; 
+                }
+            case 1:
+                for (int i = 0; i < D; ++i) {
+                    ret[i] = std::abs(arg[i]); 
+                }
+            case 2:
+                for (int i = 0; i < D; ++i) {
+                    ret[i] = std::pow(arg[i],LNormNumber);
+                }
+            case 3:
+                for (int i = 0; i < D; ++i) {
+                    ret[i] = std::abs(std::pow(arg[i],LNormNumber));
+                }
+            case 4:
+                for (int i = 0; i < D; ++i) {
+                    ret[i] = std::pow(arg[i],LNormNumber);
+                }
+            default:
+                for (int i = 0; i < D; ++i) {
+                    ret[i] = std::abs(std::pow(arg[i],LNormNumber));
+                }
+        }
+        return ret;
+    }
+
     static inline double do_accumulate(const double accum, const double value) {
         switch (LNormNumber) {
             case -1:

@@ -50,6 +50,17 @@ class RASMPreconditioner
 {
     typedef _Scalar Scalar;
     typedef Matrix<Scalar,Dynamic,1> Vector;
+    typedef typename traits_type::template vector_type<
+        typename std::remove_const<pointer>::type
+        >::type bucket_pointer_vector_type;
+    typedef typename traits_type::template vector_type<bucket_pointer_vector_type>::type connectivity_type;
+    typedef typename traits_type::template vector_type<size_t>::type connectivity_type;
+    typedef typename traits_type::template vector_type<size_t>::type particles_type;
+    connectivity_type m_row_buffer;
+    connectivity_type m_row_buckets;
+    connectivity_type m_col_buffer;
+    connectivity_type m_col_buckets;
+
 
   public:
     typedef typename Vector::StorageIndex StorageIndex;
@@ -71,10 +82,16 @@ class RASMPreconditioner
 
     void store_domain_indicies(double_d low, double_d high) {
         const size_t domain_index = m_number_of_domains++;
+        m_row_buffer.resize(m_number_of_domains);
+        m_row_indicies.resize(m_number_of_domains);
+        m_row_particles.push_back(a_particles);
+        m_col_buffer.resize(m_number_of_domains);
+        m_col_indicies.resize(m_number_of_domains);
+        m_col_particles.push_back(b_particles);
 
-        const query_range a_range = a_query.get_buckets_within(
-                                        low-double_d(m_buffer),
-                                        high+double_d(m_buffer));
+        const query_range a_range = a_query.get_buckets_near_point(
+                                        0.5*(high-low)+low,
+                                        0.5*(high-low)+m_buffer);
         
         for(reference_a a_bucket: a_range) {
             auto a_particles = a_query.get_bucket_particles(a_bucket);
@@ -89,9 +106,9 @@ class RASMPreconditioner
             }
         }
 
-        const query_range b_range = b_query.get_buckets_within(
-                                        low-double_d(m_buffer),
-                                        high+double_d(m_buffer));
+        const query_range b_range = b_query.get_buckets_near_point(
+                                        0.5*(high-low)+low,
+                                        0.5*(high-low)+m_buffer);
 
         for(reference_b b_bucket: b_range) {
             auto b_particles = b_query.get_bucket_particles(b_bucket);
@@ -182,16 +199,108 @@ class RASMPreconditioner
     template<typename MatType>
     RASMPreconditioner& analyzePattern(const MatType& )
     {
-      return *this;
+        analyze_impl(detail::make_index_sequence<NI>());
+        return *this;
+    }
+
+    void factorize_domain(double_d low, double_d high) {
+        const size_t domain_index = m_number_of_domains++;
+        m_domain_indicies.push_back(connectivity_type::value_type());
+        m_domain_buffer.push_back(connectivity_type::value_type());
+        m_domain_mask.push_back(connectivity_type::value_type());
+        connectivity_type::reference buffer = m_domain_buffer[domain_index];
+        connectivity_type::reference indicies = m_domain_indicies[domain_index];
+        connectivity_type::reference mask = m_domain_mask[domain_index];
+            
+        const query_range a_range = a_query.get_buckets_near_point(
+                                        0.5*(high-low)+low,
+                                        0.5*(high-low)+m_buffer);
+        
+        for(reference_a a_bucket: a_range) {
+            auto a_particles = a_query.get_bucket_particles(a_bucket);
+            for (particle_a_reference a_particle: a_particles) {
+                const size_t index = ;
+                if ((get<position>(a_particle) < low).any()
+                        || (get<position>(a_particle) > high).any()) {
+                    buffer.push_back(index);
+                } else {
+                    mask.push_back(indicies.size()+buffer.size());
+                    indicies.push_back(index);
+                }
+            }
+        }
+
+        matrix_type domain_matrix(indicies.size()+buffer.size());
+
+
+
+        
+    }
+
+    template <typename query_type_a>
+    size_t analyze_dive(reference_a bucket) {
+        size_t count;
+        if (a_query.is_leaf_node(bucket)) {
+            auto particles = a_query.get_bucket_particles(bucket);
+            count = std::distance(particles.begin(),particles.end());
+            
+        } else {
+            count = factorize_dive(a_query.get_child1(&bucket))
+                    + factorize_dive(a_query.get_child2(&bucket));
+        }
+        if (count < goal) {
+            return count;
+        } else {
+            store_domain_indicies(
+                    a_query.get_bounds_low(bucket),
+                    a_query.get_bounds_high(bucket));
+        }
     }
 
 
-    
+
+    // for a regular grid, assume particles are evenly distributed
+    template <typename block_type>
+    void factorize_impl_block(const Index i, const block_type& block) const {
+        particle_type_a a;
+        query_type_a a_query;
+        typedef query_type_a::reference reference_a;
+
+        const double_d& low = a_query.get_bounds_low();
+        const double_d& high = a_query.get_bounds_high();
+        const size_t N = a.size();
+        const double total_volume = (high-low).prod();
+        const double box_volume = double(m_goal_n)/double(N)*total_volume;
+        const double box_side_length = std::pow(box_volume,1.0/dimension);
+        const unsigned_int_d size = 
+                    floor((high-low)/box_side_length)
+                    .template cast<unsigned int>();
+        for (int i=0; i<dimension; ++i) {
+            if (size[i] == 0) {
+                size[i] = 1;
+            }
+        }
+        side_length = (high-low)/size;
+        iterator_range<lattice_iterator<dimension>> range(
+                lattice_iterator<dimension>(int_d(0),size,int_d(0)),
+                ++lattice_iterator<dimension>(int_d(0),size,size));
+        for (lattice_iterator<dimension>::reference box: range) {
+            factorize_domain(box*side_length,(box+1)*side_length);
+        }
+    }
+
+    template<std::size_t... I>
+    void factorize_impl(detail::index_sequence<I...>) const {
+        factorize_impl_block(start_row<I>,tuple_ns::get<I*NJ+I>(m_blocks));
+    }
     
     template<typename MatType>
     RASMPreconditioner& factorize(const MatType& mat)
     {
 
+        for (int i = 0; i < m_number_of_domains; ++i) {
+            
+        }
         factorize_impl(detail::make_index_sequence<NI>());
         // loop over leaf buckets and factorize relevent sub-matricies
         // of mat
@@ -220,10 +329,38 @@ class RASMPreconditioner
     template<typename Rhs, typename Dest>
     void _solve_impl(const Rhs& b, Dest& x) const
     {
-        // loop over leaf buckets and invert relevent sub-matricies in
+        // loop over domains and invert relevent sub-matricies in
         // mat
-      x = m_invdiag.array() * b.array() ;
+        Vector domain_x;
+        Vector domain_b;
+        for (int i = 0; i < m_number_of_domains; ++i) {
+            connectivity_type::reference buffer = m_domain_buffer[i];
+            connectivity_type::reference indicies = m_domain_indicies[i];
+            connectivity_type::reference mask = m_domain_mask[i];
+            
+            const size_t nb = indicies.size()+buffer.size();
+            domain_x.resize(nb);
+            domain_b.resize(nb);
+
+            // copy x values from big vector
+            size_t sub_index = 0;
+            for (int j = 0; j < indicies.size(); ++i) {
+                domain_x[sub_index++] = x[indicies[j]];
+            }
+            for (int j = 0; j < buffer.size(); ++i) {
+                domain_x[sub_index++] = x[buffer[j]];
+            }
+
+            // invert submatrix and mask off the buffer indicies
+            domain_b = m_domain_factorized_matrix[i].solve(domain_x);
+
+            // copy b values to big vector
+            for (int j = 0; j < indicies.size(); ++i) {
+                b[indicies[j]] = domain_b[mask[j]];
+            }
+        }
     }
+    
 
     template<typename Rhs> inline const Solve<RASMPreconditioner, Rhs>
     solve(const MatrixBase<Rhs>& b) const

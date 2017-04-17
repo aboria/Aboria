@@ -429,6 +429,18 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
+                query_iterator(m_root,position,double_d(max_distance),this),
+                query_iterator()
+                );
+    }
+
+    template <int LNormNumber=-1>
+    iterator_range<query_iterator> 
+    get_buckets_near_point(const double_d &position, const double_d &max_distance) const {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
+#endif
+        return iterator_range<query_iterator>(
                 query_iterator(m_root,position,max_distance,this),
                 query_iterator()
                 );
