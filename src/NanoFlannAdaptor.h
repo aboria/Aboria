@@ -335,6 +335,9 @@ struct nanoflann_adaptor_query {
     static bool is_leaf_node(reference bucket) {
         return (bucket.child1 == NULL) && (bucket.child2 == NULL);
     }
+    static bool is_tree() {
+        return true;
+    }
     static size_t get_dimension_index(reference bucket) {
         return bucket.node_type.sub.divfeat;
     }

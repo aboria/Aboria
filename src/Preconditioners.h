@@ -45,22 +45,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 
-template <typename _Scalar>
+template <template <typename,typename> class Vector=std::vector>
 class RASMPreconditioner
 {
-    typedef _Scalar Scalar;
+    typedef double Scalar;
     typedef Matrix<Scalar,Dynamic,1> Vector;
-    typedef typename traits_type::template vector_type<
-        typename std::remove_const<pointer>::type
-        >::type bucket_pointer_vector_type;
-    typedef typename traits_type::template vector_type<bucket_pointer_vector_type>::type connectivity_type;
-    typedef typename traits_type::template vector_type<size_t>::type connectivity_type;
-    typedef typename traits_type::template vector_type<size_t>::type particles_type;
-    connectivity_type m_row_buffer;
-    connectivity_type m_row_buckets;
-    connectivity_type m_col_buffer;
-    connectivity_type m_col_buckets;
-
+    typedef Vector<Vector<size_t>> connectivity_type;
+    connectivity_type m_domain_indicies;
+    connectivity_type m_domain_buffer;
+    connectivity_type m_domain_mask;
+    Scalar m_buffer;
+    size_t m_goal;
 
   public:
     typedef typename Vector::StorageIndex StorageIndex;
@@ -80,126 +75,17 @@ class RASMPreconditioner
     Index rows() const { return m_invdiag.size(); }
     Index cols() const { return m_invdiag.size(); }
 
-    void store_domain_indicies(double_d low, double_d high) {
-        const size_t domain_index = m_number_of_domains++;
-        m_row_buffer.resize(m_number_of_domains);
-        m_row_indicies.resize(m_number_of_domains);
-        m_row_particles.push_back(a_particles);
-        m_col_buffer.resize(m_number_of_domains);
-        m_col_indicies.resize(m_number_of_domains);
-        m_col_particles.push_back(b_particles);
-
-        const query_range a_range = a_query.get_buckets_near_point(
-                                        0.5*(high-low)+low,
-                                        0.5*(high-low)+m_buffer);
-        
-        for(reference_a a_bucket: a_range) {
-            auto a_particles = a_query.get_bucket_particles(a_bucket);
-            for (particle_a_reference a_particle: a_particles) {
-                const size_t index = ;
-                if ((get<position>(a_particle) < low).any()
-                        || (get<position>(a_particle) > high).any()) {
-                    m_row_buffer[domain_index].push_back(index);
-                } else {
-                    m_row_indicies[domain_index].push_back(index);
-                }
-            }
-        }
-
-        const query_range b_range = b_query.get_buckets_near_point(
-                                        0.5*(high-low)+low,
-                                        0.5*(high-low)+m_buffer);
-
-        for(reference_b b_bucket: b_range) {
-            auto b_particles = b_query.get_bucket_particles(b_bucket);
-            for (particle_b_reference b_particle: b_particles) {
-                const size_t index = ;
-                if ((get<position>(b_particle) < low).any()
-                        || (get<position>(b_particle) > high).any()) {
-                    m_col_buffer[domain_index].push_back(index);
-                } else {
-                    m_col_indicies[domain_index].push_back(index);
-                }
-            }
-        }
+    void set_buffer_size(double size) {
+        m_buffer = size;
     }
 
-    template <typename query_type_a>
-    size_t analyze_dive(reference_a bucket) {
-        size_t count;
-        if (a_query.is_leaf_node(bucket)) {
-            auto particles = a_query.get_bucket_particles(bucket);
-            count = std::distance(particles.begin(),particles.end());
-            
-        } else {
-            count = factorize_dive(a_query.get_child1(&bucket))
-                    + factorize_dive(a_query.get_child2(&bucket));
-        }
-        if (count < goal) {
-            return count;
-        } else {
-            store_domain_indicies(
-                    a_query.get_bounds_low(bucket),
-                    a_query.get_bounds_high(bucket));
-        }
+    void set_number_of_particles_per_domain(size_t n) {
+        m_goal = n;
     }
 
-    // for a tree, use data structure to find a good division
-    template <typename block_type>
-    void analyze_impl_block(const Index i, const block_type& block) const {
-        particle_type_a a;
-        query_type_a a_query;
-        typedef query_type_a::reference reference_a;
-        for (reference root: a.get_root_buckets()) {
-            if (a_query.is_leaf_node(root)) {
-                // no tree!, just accept this one I guess
-                good_bucket(root);
-            } else {
-                // dive tree, find bucket with given number of particles
-                factorize_dive(root);
-            }
-        }
-    }
-
-    // for a regular grid, assume particles are evenly distributed
-    template <typename block_type>
-    void analyze_impl_block(const Index i, const block_type& block) const {
-        particle_type_a a;
-        query_type_a a_query;
-        typedef query_type_a::reference reference_a;
-
-        const double_d& low = a_query.get_bounds_low();
-        const double_d& high = a_query.get_bounds_high();
-        const size_t N = a.size();
-        const double total_volume = (high-low).prod();
-        const double box_volume = double(m_goal_n)/double(N)*total_volume;
-        const double box_side_length = std::pow(box_volume,1.0/dimension);
-        const unsigned_int_d size = 
-                    floor((high-low)/box_side_length)
-                    .template cast<unsigned int>();
-        for (int i=0; i<dimension; ++i) {
-            if (size[i] == 0) {
-                size[i] = 1;
-            }
-        }
-        side_length = (high-low)/size;
-        iterator_range<lattice_iterator<dimension>> range(
-                lattice_iterator<dimension>(int_d(0),size,int_d(0)),
-                ++lattice_iterator<dimension>(int_d(0),size,size));
-        for (lattice_iterator<dimension>::reference box: range) {
-            store_domain_indicies(box*side_length,(box+1)*side_length);
-        }
-    }
-
-    template<std::size_t... I>
-    void analyze_impl(detail::index_sequence<I...>) const {
-        factorize_impl_block(start_row<I>,tuple_ns::get<I*NJ+I>(m_blocks));
-    }
-    
     template<typename MatType>
     RASMPreconditioner& analyzePattern(const MatType& )
     {
-        analyze_impl(detail::make_index_sequence<NI>());
         return *this;
     }
 
@@ -237,31 +123,106 @@ class RASMPreconditioner
         
     }
 
-    template <typename query_type_a>
-    size_t analyze_dive(reference_a bucket) {
-        size_t count;
-        if (a_query.is_leaf_node(bucket)) {
-            auto particles = a_query.get_bucket_particles(bucket);
+    // dive tree accumulating a count of particles in each bucket
+    // if the count >= goal, then factorize the bucket
+    // if a child is factorized, then factorize the other children
+    template <typename Query, 
+             typename Reference=typename Query::reference,
+             typename Pair=std::pair<bool,size_t>>
+    Pair factorize_dive(Query& query, Reference bucket) {
+        size_t count = 0;
+        bool factorized = false;
+        if (query.is_leaf_node(bucket)) {
+            auto particles = query.get_bucket_particles(bucket);
             count = std::distance(particles.begin(),particles.end());
-            
-        } else {
-            count = factorize_dive(a_query.get_child1(&bucket))
-                    + factorize_dive(a_query.get_child2(&bucket));
-        }
-        if (count < goal) {
-            return count;
-        } else {
-            store_domain_indicies(
+            if (count >= m_goal) {
+                factorize_domain(
                     a_query.get_bounds_low(bucket),
                     a_query.get_bounds_high(bucket));
+                factorized = true;
+            }
+        } else {
+            Pair child1 = factorize_dive(a_query.get_child1(&bucket));
+            Pair child2 = factorize_dive(a_query.get_child2(&bucket));
+            count = child1.second + child2.second;
+            if (child1.first && child2.first) {
+                factorized = true;
+            if (!child1.first && child2.first) {
+                // if one branch factorised, factorise others
+                factorize_domain(
+                    a_query.get_bounds_low(query.get_child1(&bucket)),
+                    a_query.get_bounds_high(query.get_child1(&bucket)));
+                factorized = true;
+            } else if (child1.first && !child2.first) {
+                // if one branch factorised, factorise others
+                factorize_domain(
+                    a_query.get_bounds_low(query.get_child2(&bucket)),
+                    a_query.get_bounds_high(query.get_child2(&bucket)));
+                factorized = true;
+            } else if (count >= m_goal) {
+                // if this branch needs factorizing, do it
+                factorize_domain(
+                    a_query.get_bounds_low(bucket),
+                    a_query.get_bounds_high(bucket));
+                factorized = true;
+            }
+        }
+        return Pair(count,factorized);
+    }
+
+    template <typename Block>
+    void factorize_impl_block(const Index i, const Block& block) const {
+        typedef Block::row_particles_type row_particles_type;
+        typedef row_particles_type::query_type row_query_type;
+        row_particles_type& a = block.get_row_particles();
+        row_query_type& query = a.get_query();
+        typedef query_type::reference reference;
+        if (query.is_tree()) {
+            // for a tree, use data structure to find a good division
+            for (reference root: a.get_root_buckets()) {
+                if (query.is_leaf_node(root)) {
+                    // no tree!, just accept this one I guess
+                    factorize_domain(
+                            query.get_bounds_low(root),
+                            query.get_bounds_high(root));
+                } else {
+                    // dive tree, find bucket with given number of particles
+                    factorize_dive(query,root);
+                }
+            }
+        } else {
+            // for a regular grid, assume particles are evenly distributed
+            const double_d& low = a_query.get_bounds_low();
+            const double_d& high = a_query.get_bounds_high();
+            const size_t N = a.size();
+            const double total_volume = (high-low).prod();
+            const double box_volume = double(m_goal_n)/double(N)*total_volume;
+            const double box_side_length = std::pow(box_volume,1.0/dimension);
+            const unsigned_int_d size = 
+                floor((high-low)/box_side_length)
+                .template cast<unsigned int>();
+            for (int i=0; i<dimension; ++i) {
+                if (size[i] == 0) {
+                    size[i] = 1;
+                }
+            }
+            side_length = (high-low)/size;
+            iterator_range<lattice_iterator<dimension>> range(
+                    lattice_iterator<dimension>(int_d(0),size,int_d(0)),
+                    ++lattice_iterator<dimension>(int_d(0),size,size));
+            for (lattice_iterator<dimension>::reference box: range) {
+                factorize_domain(box*side_length,(box+1)*side_length);
+            }
         }
     }
 
-
-
-    // for a regular grid, assume particles are evenly distributed
-    template <typename block_type>
-    void factorize_impl_block(const Index i, const block_type& block) const {
+    template <typename RowParticles, typename ColParticles, typename F>
+    template <typename Block, 
+             typename RowParticles=Block::row_particles_type,
+             typename RowSearch=RowParticles::search_type,
+template <typename> class SearchMethod
+             typename = typename std::enable_if<>
+    void factorize_impl_block(const Index i, const KernelDense<RowParticles,ColParticles,F>& block) {
         particle_type_a a;
         query_type_a a_query;
         typedef query_type_a::reference reference_a;
@@ -289,34 +250,17 @@ class RASMPreconditioner
         }
     }
 
-    template<std::size_t... I>
-    void factorize_impl(detail::index_sequence<I...>) const {
-        factorize_impl_block(start_row<I>,tuple_ns::get<I*NJ+I>(m_blocks));
+    template<unsigned int NI, unsigned int NJ, typename Blocks, std::size_t... I>
+    void factorize_impl(const MatrixReplacement<NI,NJ,Blocks>& mat, detail::index_sequence<I...>) {
+        int dummy[] = { 0, factorize_impl_block(start_row<I>,tuple_ns::get<I*NJ+I>(mat.m_blocks))... };
+        static_cast<void>(dummy);
     }
     
-    template<typename MatType>
-    RASMPreconditioner& factorize(const MatType& mat)
+    template<unsigned int NI, unsigned int NJ, typename Blocks>
+    RASMPreconditioner& factorize(const MatrixReplacement<NI,NJ,Blocks>& mat)
     {
-
-        for (int i = 0; i < m_number_of_domains; ++i) {
-            
-        }
-        factorize_impl(detail::make_index_sequence<NI>());
-        // loop over leaf buckets and factorize relevent sub-matricies
-        // of mat
-        
-      m_invdiag.resize(mat.cols());
-      for(int j=0; j<mat.outerSize(); ++j)
-      {
-        typename MatType::InnerIterator it(mat,j);
-        while(it && it.index()!=j) ++it;
-        if(it && it.index()==j && it.value()!=Scalar(0))
-          m_invdiag(j) = Scalar(1)/it.value();
-        else
-          m_invdiag(j) = Scalar(1);
-      }
-      m_isInitialized = true;
-      return *this;
+        factorize_impl(mat, detail::make_index_sequence<NI>());
+        return *this;
     }
     
     template<typename MatType>
