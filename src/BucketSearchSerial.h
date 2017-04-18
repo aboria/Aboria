@@ -501,6 +501,10 @@ struct bucket_search_serial_query {
         return true;
     }
 
+    static bool is_tree() {
+        return false;
+    }
+
     // dodgy hack cause nullptr cannot be converted to pointer
     static const pointer get_child1(const pointer& bucket) {
         CHECK(false,"this should not be called")
