@@ -622,13 +622,6 @@ struct bucket_search_serial_query {
                 );
     }
         
-    CUDA_HOST_DEVICE
-    iterator_range<leaf_iterator> get_leaf_buckets() const {
-        return iterator_range<leaf_iterator>(
-                leaf_iterator(int_d(0),m_end_bucket,int_d(0)),
-                ++leaf_iterator(int_d(0),m_end_bucket,m_end_bucket)
-                );
-    }
 
     iterator_range<all_iterator> get_subtree(reference bucket) const {
         return iterator_range<all_iterator>(

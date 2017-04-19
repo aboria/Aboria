@@ -33,50 +33,51 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef PRECONDITIONERS_H_
 #define PRECONDITIONERS_H_
 
-#include <type_traits>
-
 #ifdef HAVE_EIGEN
-#include "detail/Operators.h"
 
 namespace Aboria {
 
-
 template <template<typename> class Solver=Eigen::HouseholderQR, 
-          template<typename,typename> class Vector=std::vector>
-class RASMPreconditioner
-{
+          template<typename> class StorageVector=std::vector>
+class RASMPreconditioner {
     typedef double Scalar;
+    typedef size_t Index;
     typedef Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
+    typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> vector_type;
     typedef Solver<matrix_type> solver_type;
-    typedef Vector<Vector<size_t>> connectivity_type;
+    typedef StorageVector<StorageVector<size_t>> connectivity_type;
     connectivity_type m_domain_indicies;
     connectivity_type m_domain_buffer;
     connectivity_type m_domain_mask;
-    Vector<solver_type> m_domain_factorized_matrix;
+    StorageVector<solver_type> m_domain_factorized_matrix;
     Scalar m_buffer;
     size_t m_goal;
+    Index m_rows;
+    Index m_cols;
 
   public:
-    typedef typename Vector::StorageIndex StorageIndex;
+    typedef typename vector_type::StorageIndex StorageIndex;
     enum {
-      ColsAtCompileTime = Dynamic,
-      MaxColsAtCompileTime = Dynamic
+      ColsAtCompileTime = Eigen::Dynamic,
+      MaxColsAtCompileTime = Eigen::Dynamic
     };
 
-    RASMPreconditioner() : m_isInitialized(false) {}
+    RASMPreconditioner() : 
+        m_isInitialized(false),
+        m_buffer(1.0),
+        m_goal(10)
+    {}
 
     template<typename MatType>
-    explicit RASMPreconditioner(const MatType& mat) : m_invdiag(mat.cols())
-    {
+    explicit RASMPreconditioner(const MatType& mat) {
       compute(mat);
     }
 
-    Index rows() const { return m_invdiag.size(); }
-    Index cols() const { return m_invdiag.size(); }
+    Index rows() const { return m_rows(); }
+    Index cols() const { return m_cols(); }
 
     void set_buffer_size(double size) {
         m_buffer = size;
@@ -86,69 +87,41 @@ class RASMPreconditioner
         m_goal = n;
     }
 
-    template<typename MatType>
-    RASMPreconditioner& analyzePattern(const MatType& )
-    {
-        return *this;
-    }
-
-    template<typename Kernel, typename Query>
-    void factorize_domain(const Kernel& kernel, const Query& query, 
-                          double_d low, double_d high) {
-        const size_t domain_index = m_number_of_domains++;
+    template<typename Kernel, typename Query,
+        unsigned int D = Query::dimension>
+    void analyze_domain(const Index start_row, 
+                        const Kernel& kernel, 
+                        const Query& query, 
+                        const Vector<double,D>& low, 
+                        const Vector<double,D>& high) {
+        const size_t domain_index = m_domain_indicies.size();
         m_domain_indicies.push_back(connectivity_type::value_type());
         m_domain_buffer.push_back(connectivity_type::value_type());
         m_domain_mask.push_back(connectivity_type::value_type());
-        m_domain_factorized_matrix.push_back(solver_type());
-        connectivity_type::reference buffer = m_domain_buffer[domain_index];
-        connectivity_type::reference indicies = m_domain_indicies[domain_index];
-        connectivity_type::reference mask = m_domain_mask[domain_index];
-        solver_type& solver = m_domain_factorized_matrix[domain_index];
+        typename connectivity_type::reference buffer = m_domain_buffer[domain_index];
+        typename connectivity_type::reference indicies = m_domain_indicies[domain_index];
+        typename connectivity_type::reference mask = m_domain_mask[domain_index];
             
-        const query_range range = query.get_buckets_near_point(
-                                        0.5*(high-low)+low,
-                                        0.5*(high-low)+m_buffer);
+        auto range = query.get_buckets_near_point(
+                              0.5*(high-low)+low,
+                              0.5*(high-low)+m_buffer);
         
+        typedef typename Query::reference reference;
+        typedef typename Query::position position;
+        typedef typename Query::particle_iterator::reference particle_reference;
         for(reference bucket: range) {
             auto particles = query.get_bucket_particles(bucket);
             for (particle_reference particle: particles) {
                 const size_t index = &particle-query.get_particles_begin();
                 if ((get<position>(particle) < low).any()
                         || (get<position>(particle) > high).any()) {
-                    buffer.push_back(index);
+                    buffer.push_back(start_row + index);
                 } else {
                     mask.push_back(indicies.size()+buffer.size());
-                    indicies.push_back(index);
+                    indicies.push_back(start_row + index);
                 }
             }
         }
-
-        matrix_type domain_matrix(indicies.size()+buffer.size(),
-                                  indicies.size()+buffer.size());
-
-        for (int i = 0; i < indicies.size(); ++i) {
-            const size_t big_index_i = indicies[i];
-            for (int j = 0; j < indicies.size(); ++j) {
-                const size_t big_index_j = indicies[j];
-                domain_matrix(i,j) = kernel.coeff(big_index_i,big_index_j);
-            }
-            for (int j = 0; j < buffer.size(); ++j) {
-                const size_t big_index_j = buffer[j];
-                domain_matrix(i,j) = kernel.coeff(big_index_i,big_index_j);
-            }
-        }
-        for (int i = 0; i < buffer.size(); ++i) {
-            const size_t big_index_i = buffer[i];
-            for (int j = 0; j < indicies.size(); ++j) {
-                const size_t big_index_j = indicies[j];
-                domain_matrix(i,j) = kernel.coeff(big_index_i,big_index_j);
-            }
-            for (int j = 0; j < buffer.size(); ++j) {
-                const size_t big_index_j = buffer[j];
-                domain_matrix(i,j) = kernel.coeff(big_index_i,big_index_j);
-            }
-        }
-        solver.compute(domain_matrix);
     }
 
     // dive tree accumulating a count of particles in each bucket
@@ -158,65 +131,78 @@ class RASMPreconditioner
              typename Query, 
              typename Reference=typename Query::reference,
              typename Pair=std::pair<bool,size_t>>
-    Pair factorize_dive(const Kernel& kernel, const Query& query, Reference bucket) {
+    Pair analyze_dive(const Index start_row, 
+                      const Kernel& kernel, 
+                      const Query& query, 
+                      Reference bucket) {
         size_t count = 0;
-        bool factorized = false;
+        bool done = false;
         if (query.is_leaf_node(bucket)) {
             auto particles = query.get_bucket_particles(bucket);
             count = std::distance(particles.begin(),particles.end());
             if (count >= m_goal) {
-                factorize_domain(kernel, query,
+                analyze_domain(start_row, kernel, query,
                     query.get_bounds_low(bucket),
                     query.get_bounds_high(bucket));
-                factorized = true;
+                done = true;
             }
         } else {
-            Pair child1 = factorize_dive(query.get_child1(&bucket));
-            Pair child2 = factorize_dive(query.get_child2(&bucket));
+            Pair child1 = analyze_dive(start_row, query.get_child1(&bucket));
+            Pair child2 = analyze_dive(start_row, query.get_child2(&bucket));
             count = child1.second + child2.second;
             if (child1.first && child2.first) {
-                factorized = true;
-            if (!child1.first && child2.first) {
+                done = true;
+            } else if (!child1.first && child2.first) {
                 // if one branch factorised, factorise others
-                factorize_domain(kernel, query,
+                analyze_domain(start_row, kernel, query,
                     query.get_bounds_low(query.get_child1(&bucket)),
                     query.get_bounds_high(query.get_child1(&bucket)));
-                factorized = true;
+                done = true;
             } else if (child1.first && !child2.first) {
                 // if one branch factorised, factorise others
-                factorize_domain(kernel, query,
+                analyze_domain(start_row, kernel, query,
                     query.get_bounds_low(query.get_child2(&bucket)),
                     query.get_bounds_high(query.get_child2(&bucket)));
-                factorized = true;
+                done = true;
             } else if (count >= m_goal) {
                 // if this branch needs factorizing, do it
-                factorize_domain(kernel, query,
+                analyze_domain(start_row, kernel, query,
                     query.get_bounds_low(bucket),
                     query.get_bounds_high(bucket));
-                factorized = true;
+                done = true;
             }
         }
-        return Pair(count,factorized);
+        return Pair(count,done);
     }
 
     template <typename Kernel>
-    void factorize_impl_block(const Index i, const Kernel& kernel) {
-        typedef Kernel::row_particles_type row_particles_type;
-        typedef row_particles_type::query_type row_query_type;
+    void analyze_impl_block(const Index start_row, const Kernel& kernel) {
+        typedef typename Kernel::row_particles_type row_particles_type;
+        typedef typename Kernel::col_particles_type col_particles_type;
+        typedef typename row_particles_type::query_type query_type;
+        typedef typename query_type::reference reference;
+        static const unsigned int dimension = query_type::dimension;
+        typedef Vector<double,dimension> double_d;
+        typedef Vector<unsigned int,dimension> unsigned_int_d;
+        typedef Vector<int,dimension> int_d;
+
+        static_assert(std::is_same<row_particles_type,col_particles_type>::value,
+           "RASM preconditioner restricted to identical row and col particle sets");
         const row_particles_type& a = kernel.get_row_particles();
-        const row_query_type& query = a.get_query();
-        typedef query_type::reference reference;
+        CHECK(&a == &(kernel.get_col_particles()),
+           "RASM preconditioner restricted to identical row and col particle sets");
+        const query_type& query = a.get_query();
         if (query.is_tree()) {
             // for a tree, use data structure to find a good division
             for (reference root: a.get_root_buckets()) {
                 if (query.is_leaf_node(root)) {
                     // no tree!, just accept this one I guess
-                    factorize_domain(kernel, query,
+                    analyze_domain(start_row,kernel, query,
                             query.get_bounds_low(root),
                             query.get_bounds_high(root));
                 } else {
                     // dive tree, find bucket with given number of particles
-                    factorize_dive(kernel,query,root);
+                    analyze_dive(start_row,kernel,query,root);
                 }
             }
         } else {
@@ -235,37 +221,98 @@ class RASMPreconditioner
                     size[i] = 1;
                 }
             }
-            side_length = (high-low)/size;
+            double_d side_length = (high-low)/size;
             iterator_range<lattice_iterator<dimension>> range(
                     lattice_iterator<dimension>(int_d(0),size,int_d(0)),
                     ++lattice_iterator<dimension>(int_d(0),size,size));
-            for (lattice_iterator<dimension>::reference box: range) {
-                factorize_domain(kernel, query,
+            for (typename lattice_iterator<dimension>::reference box: range) {
+                analyze_domain(start_row, kernel, query,
                         box*side_length,(box+1)*side_length);
             }
         }
     }
 
+    template <typename RowParticles, typename ColParticles>
+    void analyze_impl_block(
+            const Index start_row, 
+            const KernelZero<RowParticles,ColParticles>& kernel) {
+    }
+     
     template<unsigned int NI, unsigned int NJ, typename Blocks, std::size_t... I>
-    void factorize_impl(const MatrixReplacement<NI,NJ,Blocks>& mat, 
+    void analyze_impl(const MatrixReplacement<NI,NJ,Blocks>& mat, 
                         detail::index_sequence<I...>) {
         int dummy[] = { 0, 
-          factorize_impl_block(start_row<I>,tuple_ns::get<I*NJ+I>(mat.m_blocks))... 
+          analyze_impl_block(start_row<I>,tuple_ns::get<I*NJ+I>(mat.m_blocks))... 
             };
         static_cast<void>(dummy);
     }
-    
+
     template<unsigned int NI, unsigned int NJ, typename Blocks>
-    RASMPreconditioner& factorize(const MatrixReplacement<NI,NJ,Blocks>& mat)
+    RASMPreconditioner& analyzePattern(const MatrixReplacement<NI,NJ,Blocks>& mat)
     {
-        factorize_impl(mat, detail::make_index_sequence<NI>());
+        m_rows = mat.rows();
+        m_cols = mat.cols();
+        analyze_impl(mat, detail::make_index_sequence<NI>());
+        return *this;
+    }
+
+    template<typename MatType>
+    RASMPreconditioner& factorize(const MatType& mat)
+    {
+        eigen_assert(m_rows==mat.rows()
+                && "RASMPreconditioner::solve(): invalid number of rows of mat");
+        eigen_assert(m_cols==mat.cols()
+                && "RASMPreconditioner::solve(): invalid number of rows of mat");
+
+        m_domain_factorized_matrix.resize(m_domain_indicies.size());
+
+        matrix_type domain_matrix;
+
+        for (int i = 0; i < m_domain_factorized_matrix.size(); ++i) {
+            connectivity_type::reference buffer = m_domain_buffer[i];
+            connectivity_type::reference indicies = m_domain_indicies[i];
+            connectivity_type::reference mask = m_domain_mask[i];
+            solver_type& solver = m_domain_factorized_matrix[i];
+
+            domain_matrix.resize(indicies.size()+buffer.size(),
+                                 indicies.size()+buffer.size());
+
+            for (int i = 0; i < indicies.size(); ++i) {
+                const size_t big_index_i = indicies[i];
+                for (int j = 0; j < indicies.size(); ++j) {
+                    const size_t big_index_j = indicies[j];
+                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+                }
+                for (int j = 0; j < buffer.size(); ++j) {
+                    const size_t big_index_j = buffer[j];
+                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+                }
+            }
+            for (int i = 0; i < buffer.size(); ++i) {
+                const size_t big_index_i = buffer[i];
+                for (int j = 0; j < indicies.size(); ++j) {
+                    const size_t big_index_j = indicies[j];
+                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+                }
+                for (int j = 0; j < buffer.size(); ++j) {
+                    const size_t big_index_j = buffer[j];
+                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+                }
+            }
+
+            solver.compute(domain_matrix);
+        }
+
+        m_isInitialized = true;
+
         return *this;
     }
     
     template<typename MatType>
     RASMPreconditioner& compute(const MatType& mat)
     {
-      return factorize(mat);
+        analyze_domain(mat);
+        return factorize(mat);
     }
 
     /** \internal */
@@ -274,8 +321,8 @@ class RASMPreconditioner
     {
         // loop over domains and invert relevent sub-matricies in
         // mat
-        Vector domain_x;
-        Vector domain_b;
+        vector_type domain_x;
+        vector_type domain_b;
         for (int i = 0; i < m_number_of_domains; ++i) {
             connectivity_type::reference buffer = m_domain_buffer[i];
             connectivity_type::reference indicies = m_domain_indicies[i];
@@ -305,18 +352,23 @@ class RASMPreconditioner
     }
     
 
-    template<typename Rhs> inline const Solve<RASMPreconditioner, Rhs>
-    solve(const MatrixBase<Rhs>& b) const
-    {
-      eigen_assert(m_isInitialized && "RASMPreconditioner is not initialized.");
-      eigen_assert(m_invdiag.size()==b.rows()
+    template<typename Rhs> 
+    inline const Eigen::Solve<RASMPreconditioner, Rhs>
+    solve(const Eigen::MatrixBase<Rhs>& b) const {
+        Eigen::eigen_assert(m_isInitialized 
+                && "RASMPreconditioner is not initialized.");
+        Eigen::eigen_assert(m_invdiag.size()==b.rows()
                 && "RASMPreconditioner::solve(): invalid number of rows of the right hand side matrix b");
-      return Solve<RASMPreconditioner, Rhs>(*this, b.derived());
+        return Solve<RASMPreconditioner, Rhs>(*this, b.derived());
     }
     
-    ComputationInfo info() { return Success; }
+    Eigen::ComputationInfo info() { return Eigen::Success; }
 
   protected:
-    Vector m_invdiag;
     bool m_isInitialized;
 };
+
+}
+
+#endif //HAVE_EIGEN
+#endif 
