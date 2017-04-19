@@ -72,6 +72,7 @@ public:
         typedef typename position::value_type const & const_position_reference;
         typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> matrix_type; 
        	ParticlesType knots;
        	ParticlesType augment;
        	ParticlesType test;
@@ -132,39 +133,47 @@ public:
         }
         phi[knots.size()] = 0;
 
-        Eigen::ConjugateGradient<decltype(W), 
-            Eigen::Lower|Eigen::Upper,  Eigen::DiagonalPreconditioner<double>> cg;
+        matrix_type W_matrix(N+1,N+1);
+        W.assemble(W_matrix);
+
+        Eigen::ConjugateGradient<matrix_type, 
+            Eigen::Lower|Eigen::Upper,  RASMPreconditioner> cg;
         cg.setMaxIterations(max_iter);
-        cg.compute(W);
+        cg.analyzePattern(W);
+        cg.factorize(W_matrix);
         gamma = cg.solve(phi);
         std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
 
-
-        Eigen::BiCGSTAB<decltype(W), Eigen::DiagonalPreconditioner<double>> bicg;
+        Eigen::BiCGSTAB<matrix_type,RASMPreconditioner> bicg;
         bicg.setMaxIterations(max_iter);
-        bicg.compute(W);
+        bicg.analyzePattern(W);
+        bicg.factorize(W_matrix);
         gamma = bicg.solve(phi);
         std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
 
-        Eigen::MINRES<decltype(W), Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> minres;
+        Eigen::MINRES<matrix_type, Eigen::Lower|Eigen::Upper, RASMPreconditioner> minres;
         minres.setMaxIterations(max_iter);
-        minres.compute(W);
+        minres.analyzePattern(W);
+        minres.factorize(W_matrix);
         gamma = minres.solve(phi);
         std::cout << "MINRES:   #iterations: " << minres.iterations() << ", estimated error: " << minres.error() << std::endl;
 
-        Eigen::GMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> gmres;
+        Eigen::GMRES<matrix_type, RASMPreconditioner> gmres;
         gmres.setMaxIterations(max_iter);
+        gmres.analyzePattern(W);
         gmres.set_restart(restart);
-        gmres.compute(W);
+        gmres.factorize(W_matrix);
         gamma = gmres.solve(phi);
         std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
-        Eigen::DGMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> dgmres;
+        Eigen::DGMRES<matrix_type, RASMPreconditioner> dgmres;
         dgmres.setMaxIterations(max_iter);
         dgmres.set_restart(restart);
-        dgmres.compute(W);
+        dgmres.analyzePattern(W);
+        dgmres.factorize(W_matrix);
         gamma = dgmres.solve(phi);
         std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+
 
         phi = W*gamma;
         for (int i=0; i<knots.size(); ++i) {
