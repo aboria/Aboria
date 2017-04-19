@@ -131,6 +131,8 @@ public:
         double2 periodic(false);
         
         const int N = 100;
+        const int RASM_buffer = std::sqrt(0.1)*(max[0]-min[0]);
+        const int RASM_n = 0.1*N;
         const int nx = 3;
         const int max_iter = 100;
         const int restart = 100;
@@ -150,6 +152,8 @@ public:
             get<constant2>(p) = std::pow(c,2);  
             test.push_back(p);
         }
+
+        knots.init_neighbour_search(min,max,periodic);
 
         augment.push_back(p);
 
@@ -184,41 +188,53 @@ public:
         matrix_type W_matrix(N+1,N+1);
         W.assemble(W_matrix);
 
+        /*
         Eigen::ConjugateGradient<matrix_type, 
-            Eigen::Lower|Eigen::Upper,  RASMPreconditioner> cg;
+            Eigen::Lower|Eigen::Upper,  RASMPreconditioner<Eigen::HouseholderQR>> cg;
         cg.setMaxIterations(max_iter);
-        cg.analyzePattern(W);
-        cg.factorize(W_matrix);
+        cg.preconditioner().set_buffer_size(RASM_buffer);
+        cg.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        cg.preconditioner().analyzePattern(W);
+        cg.compute(W_matrix);
         gamma = cg.solve(phi);
         std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
 
-        Eigen::BiCGSTAB<matrix_type,RASMPreconditioner> bicg;
+        Eigen::BiCGSTAB<matrix_type,RASMPreconditioner<Eigen::HouseholderQR>> bicg;
         bicg.setMaxIterations(max_iter);
-        bicg.analyzePattern(W);
-        bicg.factorize(W_matrix);
+        bicg.preconditioner().set_buffer_size(RASM_buffer);
+        bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        bicg.preconditioner().analyzePattern(W);
+        bicg.compute(W_matrix);
         gamma = bicg.solve(phi);
         std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
 
-        Eigen::MINRES<matrix_type, Eigen::Lower|Eigen::Upper, RASMPreconditioner> minres;
+        Eigen::MINRES<matrix_type, Eigen::Lower|Eigen::Upper, RASMPreconditioner<Eigen::HouseholderQR>> minres;
         minres.setMaxIterations(max_iter);
-        minres.analyzePattern(W);
-        minres.factorize(W_matrix);
+        minres.preconditioner().set_buffer_size(RASM_buffer);
+        minres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        minres.preconditioner().analyzePattern(W);
+        minres.compute(W_matrix);
         gamma = minres.solve(phi);
         std::cout << "MINRES:   #iterations: " << minres.iterations() << ", estimated error: " << minres.error() << std::endl;
 
-        Eigen::GMRES<matrix_type, RASMPreconditioner> gmres;
+        */
+        Eigen::GMRES<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> gmres;
         gmres.setMaxIterations(max_iter);
-        gmres.analyzePattern(W);
+        gmres.preconditioner().set_buffer_size(RASM_buffer);
+        gmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        gmres.preconditioner().analyzePattern(W);
         gmres.set_restart(restart);
-        gmres.factorize(W_matrix);
+        gmres.compute(W_matrix);
         gamma = gmres.solve(phi);
         std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
-        Eigen::DGMRES<matrix_type, RASMPreconditioner> dgmres;
+        Eigen::DGMRES<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
         dgmres.setMaxIterations(max_iter);
         dgmres.set_restart(restart);
-        dgmres.analyzePattern(W);
-        dgmres.factorize(W_matrix);
+        dgmres.preconditioner().set_buffer_size(RASM_buffer);
+        dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        dgmres.preconditioner().analyzePattern(W);
+        dgmres.compute(W_matrix);
         gamma = dgmres.solve(phi);
         std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 

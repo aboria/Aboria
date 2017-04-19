@@ -83,6 +83,14 @@ namespace Aboria {
             return m_row_particles;
         }
 
+        ColParticles& get_col_particles() {
+            return m_col_particles;
+        }
+
+        const ColParticles& get_col_particles() const {
+            return m_col_particles;
+        }
+
         size_t size_row() const {
             return m_row_particles.size();
         }

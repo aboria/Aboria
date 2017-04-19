@@ -40,19 +40,19 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <template<typename> class Solver=Eigen::HouseholderQR, 
-          template<typename> class StorageVector=std::vector>
+template <template<typename> class Solver=Eigen::HouseholderQR>
 class RASMPreconditioner {
     typedef double Scalar;
     typedef size_t Index;
     typedef Eigen::Matrix<Scalar,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
     typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> vector_type;
     typedef Solver<matrix_type> solver_type;
-    typedef StorageVector<StorageVector<size_t>> connectivity_type;
+    typedef std::vector<size_t> storage_vector_type;
+    typedef std::vector<storage_vector_type> connectivity_type;
     connectivity_type m_domain_indicies;
     connectivity_type m_domain_buffer;
     connectivity_type m_domain_mask;
-    StorageVector<solver_type> m_domain_factorized_matrix;
+    std::vector<solver_type> m_domain_factorized_matrix;
     Scalar m_buffer;
     size_t m_goal;
     Index m_rows;
@@ -76,8 +76,8 @@ class RASMPreconditioner {
       compute(mat);
     }
 
-    Index rows() const { return m_rows(); }
-    Index cols() const { return m_cols(); }
+    Index rows() const { return m_rows; }
+    Index cols() const { return m_cols; }
 
     void set_buffer_size(double size) {
         m_buffer = size;
@@ -98,21 +98,22 @@ class RASMPreconditioner {
         m_domain_indicies.push_back(connectivity_type::value_type());
         m_domain_buffer.push_back(connectivity_type::value_type());
         m_domain_mask.push_back(connectivity_type::value_type());
-        typename connectivity_type::reference buffer = m_domain_buffer[domain_index];
-        typename connectivity_type::reference indicies = m_domain_indicies[domain_index];
-        typename connectivity_type::reference mask = m_domain_mask[domain_index];
+        storage_vector_type& buffer = m_domain_buffer[domain_index];
+        storage_vector_type& indicies = m_domain_indicies[domain_index];
+        storage_vector_type& mask = m_domain_mask[domain_index];
             
         auto range = query.get_buckets_near_point(
                               0.5*(high-low)+low,
                               0.5*(high-low)+m_buffer);
         
         typedef typename Query::reference reference;
-        typedef typename Query::position position;
+        typedef typename Query::traits_type::position position;
         typedef typename Query::particle_iterator::reference particle_reference;
         for(reference bucket: range) {
             auto particles = query.get_bucket_particles(bucket);
             for (particle_reference particle: particles) {
-                const size_t index = &particle-query.get_particles_begin();
+                const size_t index = &(get<position>(particle))
+                                        -get<position>(query.get_particles_begin());
                 if ((get<position>(particle) < low).any()
                         || (get<position>(particle) > high).any()) {
                     buffer.push_back(start_row + index);
@@ -142,33 +143,33 @@ class RASMPreconditioner {
             count = std::distance(particles.begin(),particles.end());
             if (count >= m_goal) {
                 analyze_domain(start_row, kernel, query,
-                    query.get_bounds_low(bucket),
-                    query.get_bounds_high(bucket));
+                    query.get_bucket_bounds_low(bucket),
+                    query.get_bucket_bounds_high(bucket));
                 done = true;
             }
         } else {
-            Pair child1 = analyze_dive(start_row, query.get_child1(&bucket));
-            Pair child2 = analyze_dive(start_row, query.get_child2(&bucket));
+            Pair child1 = analyze_dive(start_row, kernel, query, query.get_child1(&bucket));
+            Pair child2 = analyze_dive(start_row, kernel, query, query.get_child2(&bucket));
             count = child1.second + child2.second;
             if (child1.first && child2.first) {
                 done = true;
             } else if (!child1.first && child2.first) {
                 // if one branch factorised, factorise others
                 analyze_domain(start_row, kernel, query,
-                    query.get_bounds_low(query.get_child1(&bucket)),
-                    query.get_bounds_high(query.get_child1(&bucket)));
+                    query.get_bucket_bounds_low(query.get_child1(&bucket)),
+                    query.get_bucket_bounds_high(query.get_child1(&bucket)));
                 done = true;
             } else if (child1.first && !child2.first) {
                 // if one branch factorised, factorise others
                 analyze_domain(start_row, kernel, query,
-                    query.get_bounds_low(query.get_child2(&bucket)),
-                    query.get_bounds_high(query.get_child2(&bucket)));
+                    query.get_bucket_bounds_low(query.get_child2(&bucket)),
+                    query.get_bucket_bounds_high(query.get_child2(&bucket)));
                 done = true;
             } else if (count >= m_goal) {
                 // if this branch needs factorizing, do it
                 analyze_domain(start_row, kernel, query,
-                    query.get_bounds_low(bucket),
-                    query.get_bounds_high(bucket));
+                    query.get_bucket_bounds_low(bucket),
+                    query.get_bucket_bounds_high(bucket));
                 done = true;
             }
         }
@@ -194,12 +195,12 @@ class RASMPreconditioner {
         const query_type& query = a.get_query();
         if (query.is_tree()) {
             // for a tree, use data structure to find a good division
-            for (reference root: a.get_root_buckets()) {
+            for (reference root: query.get_root_buckets()) {
                 if (query.is_leaf_node(root)) {
                     // no tree!, just accept this one I guess
-                    analyze_domain(start_row,kernel, query,
-                            query.get_bounds_low(root),
-                            query.get_bounds_high(root));
+                    analyze_domain(start_row, kernel, query,
+                            query.get_bucket_bounds_low(root),
+                            query.get_bucket_bounds_high(root));
                 } else {
                     // dive tree, find bucket with given number of particles
                     analyze_dive(start_row,kernel,query,root);
@@ -213,7 +214,7 @@ class RASMPreconditioner {
             const double total_volume = (high-low).prod();
             const double box_volume = double(m_goal)/double(N)*total_volume;
             const double box_side_length = std::pow(box_volume,1.0/dimension);
-            const unsigned_int_d size = 
+            unsigned_int_d size = 
                 floor((high-low)/box_side_length)
                 .template cast<unsigned int>();
             for (int i=0; i<dimension; ++i) {
@@ -221,7 +222,7 @@ class RASMPreconditioner {
                     size[i] = 1;
                 }
             }
-            double_d side_length = (high-low)/size;
+            const double_d side_length = (high-low)/size;
             iterator_range<lattice_iterator<dimension>> range(
                     lattice_iterator<dimension>(int_d(0),size,int_d(0)),
                     ++lattice_iterator<dimension>(int_d(0),size,size));
@@ -242,7 +243,7 @@ class RASMPreconditioner {
     void analyze_impl(const MatrixReplacement<NI,NJ,Blocks>& mat, 
                         detail::index_sequence<I...>) {
         int dummy[] = { 0, 
-          analyze_impl_block(start_row<I>,tuple_ns::get<I*NJ+I>(mat.m_blocks))... 
+          (analyze_impl_block(mat.template start_row<I>(),tuple_ns::get<I*NJ+I>(mat.m_blocks)),0)... 
             };
         static_cast<void>(dummy);
     }
@@ -254,6 +255,15 @@ class RASMPreconditioner {
         m_cols = mat.cols();
         analyze_impl(mat, detail::make_index_sequence<NI>());
         return *this;
+    }
+
+    template <int _Options, typename _StorageIndex>
+    RASMPreconditioner& analyzePattern(const Eigen::SparseMatrix<Scalar,_Options,_StorageIndex>& mat) {
+        CHECK(m_domain_indicies.size()>0, "RASMPreconditioner::analyzePattern(): cannot analyze sparse matrix, call analyzePattern using a Aboria MatrixReplacement class first");
+    }
+    template<typename Derived>
+    RASMPreconditioner& analyzePattern(const Eigen::DenseBase<Derived>& mat) {
+        CHECK(m_domain_indicies.size()>0, "RASMPreconditioner::analyzePattern(): cannot analyze dense matrix, call analyzePattern need to pass a Aboria MatrixReplacement class first");
     }
 
     template<typename MatType>
@@ -268,36 +278,35 @@ class RASMPreconditioner {
 
         matrix_type domain_matrix;
 
-        for (int i = 0; i < m_domain_factorized_matrix.size(); ++i) {
-            connectivity_type::reference buffer = m_domain_buffer[i];
-            connectivity_type::reference indicies = m_domain_indicies[i];
-            connectivity_type::reference mask = m_domain_mask[i];
-            solver_type& solver = m_domain_factorized_matrix[i];
+        for (int domain_index = 0; domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
+            const storage_vector_type& buffer = m_domain_buffer[domain_index];
+            const storage_vector_type& indicies = m_domain_indicies[domain_index];
+            const storage_vector_type& mask = m_domain_mask[domain_index];
+            solver_type& solver = m_domain_factorized_matrix[domain_index];
 
             domain_matrix.resize(indicies.size()+buffer.size(),
                                  indicies.size()+buffer.size());
 
-            for (int i = 0; i < indicies.size(); ++i) {
-                const size_t big_index_i = indicies[i];
-                for (int j = 0; j < indicies.size(); ++j) {
-                    const size_t big_index_j = indicies[j];
-                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+            size_t i = 0;
+            for (const size_t& big_index_i: indicies) {
+                size_t j = 0;
+                for (const size_t& big_index_j: indicies) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
                 }
-                for (int j = 0; j < buffer.size(); ++j) {
-                    const size_t big_index_j = buffer[j];
-                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+                for (const size_t& big_index_j: buffer) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
                 }
+                ++i;
             }
-            for (int i = 0; i < buffer.size(); ++i) {
-                const size_t big_index_i = buffer[i];
-                for (int j = 0; j < indicies.size(); ++j) {
-                    const size_t big_index_j = indicies[j];
-                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+            for (const size_t& big_index_i: buffer) {
+                size_t j = 0;
+                for (const size_t& big_index_j: indicies) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
                 }
-                for (int j = 0; j < buffer.size(); ++j) {
-                    const size_t big_index_j = buffer[j];
-                    domain_matrix(i,j) = mat.coeff(big_index_i,big_index_j);
+                for (const size_t& big_index_j: buffer) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
                 }
+                ++i;
             }
 
             solver.compute(domain_matrix);
@@ -311,7 +320,7 @@ class RASMPreconditioner {
     template<typename MatType>
     RASMPreconditioner& compute(const MatType& mat)
     {
-        analyze_domain(mat);
+        analyzePattern(mat);
         return factorize(mat);
     }
 
@@ -323,10 +332,10 @@ class RASMPreconditioner {
         // mat
         vector_type domain_x;
         vector_type domain_b;
-        for (int i = 0; i < m_number_of_domains; ++i) {
-            connectivity_type::reference buffer = m_domain_buffer[i];
-            connectivity_type::reference indicies = m_domain_indicies[i];
-            connectivity_type::reference mask = m_domain_mask[i];
+        for (int i = 0; i < m_domain_indicies.size(); ++i) {
+            const storage_vector_type& buffer = m_domain_buffer[i];
+            const storage_vector_type& indicies = m_domain_indicies[i];
+            const storage_vector_type& mask = m_domain_mask[i];
             
             const size_t nb = indicies.size()+buffer.size();
             domain_x.resize(nb);
@@ -334,19 +343,19 @@ class RASMPreconditioner {
 
             // copy x values from big vector
             size_t sub_index = 0;
-            for (int j = 0; j < indicies.size(); ++i) {
-                domain_x[sub_index++] = x[indicies[j]];
+            for (int j = 0; j < indicies.size(); ++j) {
+                domain_b[sub_index++] = b[indicies[j]];
             }
-            for (int j = 0; j < buffer.size(); ++i) {
-                domain_x[sub_index++] = x[buffer[j]];
+            for (int j = 0; j < buffer.size(); ++j) {
+                domain_b[sub_index++] = b[buffer[j]];
             }
 
             // invert submatrix and mask off the buffer indicies
-            domain_b = m_domain_factorized_matrix[i].solve(domain_x);
+            domain_x = m_domain_factorized_matrix[i].solve(domain_b);
 
             // copy b values to big vector
-            for (int j = 0; j < indicies.size(); ++i) {
-                b[indicies[j]] = domain_b[mask[j]];
+            for (int j = 0; j < indicies.size(); ++j) {
+                x[indicies[j]] = domain_x[mask[j]];
             }
         }
     }
@@ -355,11 +364,11 @@ class RASMPreconditioner {
     template<typename Rhs> 
     inline const Eigen::Solve<RASMPreconditioner, Rhs>
     solve(const Eigen::MatrixBase<Rhs>& b) const {
-        Eigen::eigen_assert(m_isInitialized 
-                && "RASMPreconditioner is not initialized.");
-        Eigen::eigen_assert(m_invdiag.size()==b.rows()
+        eigen_assert(m_rows==b.rows()
                 && "RASMPreconditioner::solve(): invalid number of rows of the right hand side matrix b");
-        return Solve<RASMPreconditioner, Rhs>(*this, b.derived());
+        eigen_assert(m_isInitialized 
+                && "RASMPreconditioner is not initialized.");
+        return Eigen::Solve<RASMPreconditioner, Rhs>(*this, b.derived());
     }
     
     Eigen::ComputationInfo info() { return Eigen::Success; }
