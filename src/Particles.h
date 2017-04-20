@@ -745,8 +745,8 @@ private:
 
 
     data_type data;
-    bool searchable;
     int next_id;
+    bool searchable;
     uint32_t seed;
     std::map<size_t,size_t> id_to_index;
     search_type search;

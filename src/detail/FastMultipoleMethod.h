@@ -94,7 +94,8 @@ namespace detail {
         static double L2P(const double_d& p,
                    const box_type& box, 
                    const expansion_type& source) {
-                }
+            return 0.0;
+        }
 
     };
 

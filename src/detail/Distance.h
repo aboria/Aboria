@@ -129,6 +129,7 @@ struct distance_helper {
         for (int i = 0; i < D; ++i) {
             accum = accumulate_norm(accum,vector[i]);
         }
+        return accum;
     }
 };
 

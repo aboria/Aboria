@@ -102,10 +102,6 @@ struct iterator_range{
     iterator_range()
     {}
     CUDA_HOST_DEVICE
-    iterator_range(IteratorType&& begin, IteratorType&& end):
-        m_begin(std::move(begin)),m_end(std::move(end)) 
-    {}
-    CUDA_HOST_DEVICE
     iterator_range(const IteratorType& begin, const IteratorType& end):
         m_begin(begin),m_end(end)
     {}
@@ -557,7 +553,7 @@ public:
     friend class boost::iterator_core_access;
 
     CUDA_HOST_DEVICE
-    bool increment() {
+    void increment() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tincrement (index_vector_iterator):"); 
 #endif

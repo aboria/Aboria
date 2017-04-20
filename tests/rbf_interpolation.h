@@ -131,11 +131,9 @@ public:
         double2 periodic(false);
         
         const int N = 100;
-        const int RASM_buffer = std::sqrt(0.1)*(max[0]-min[0]);
-        const int RASM_n = 0.1*N;
         const int nx = 3;
         const int max_iter = 100;
-        const int restart = 100;
+        const int restart = 101;
         const double delta = 1.0/nx;
         typename ParticlesType::value_type p;
 
@@ -177,6 +175,10 @@ public:
         auto W = create_block_operator<2,2>(G, P,
                                             Pt,Zero);
 
+        auto G_test = create_dense_operator(test,knots,kernel);
+        auto W_test = create_block_operator<2,2>(G_test, P,
+                                                 Pt,     Zero);
+
         vector_type phi(N+1), gamma(N+1);
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
@@ -188,107 +190,39 @@ public:
         matrix_type W_matrix(N+1,N+1);
         W.assemble(W_matrix);
 
-        /*
-        Eigen::ConjugateGradient<matrix_type, 
-            Eigen::Lower|Eigen::Upper,  RASMPreconditioner<Eigen::HouseholderQR>> cg;
-        cg.setMaxIterations(max_iter);
-        cg.preconditioner().set_buffer_size(RASM_buffer);
-        cg.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        cg.preconditioner().analyzePattern(W);
-        cg.compute(W_matrix);
-        gamma = cg.solve(phi);
-        std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
-
-        Eigen::BiCGSTAB<matrix_type,RASMPreconditioner<Eigen::HouseholderQR>> bicg;
-        bicg.setMaxIterations(max_iter);
-        bicg.preconditioner().set_buffer_size(RASM_buffer);
-        bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        bicg.preconditioner().analyzePattern(W);
-        bicg.compute(W_matrix);
-        gamma = bicg.solve(phi);
-        std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
-
-        Eigen::MINRES<matrix_type, Eigen::Lower|Eigen::Upper, RASMPreconditioner<Eigen::HouseholderQR>> minres;
-        minres.setMaxIterations(max_iter);
-        minres.preconditioner().set_buffer_size(RASM_buffer);
-        minres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        minres.preconditioner().analyzePattern(W);
-        minres.compute(W_matrix);
-        gamma = minres.solve(phi);
-        std::cout << "MINRES:   #iterations: " << minres.iterations() << ", estimated error: " << minres.error() << std::endl;
-
-        */
-        Eigen::GMRES<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> gmres;
-        gmres.setMaxIterations(max_iter);
-        gmres.preconditioner().set_buffer_size(RASM_buffer);
-        gmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        gmres.preconditioner().analyzePattern(W);
-        gmres.set_restart(restart);
-        gmres.compute(W_matrix);
-        gamma = gmres.solve(phi);
-        std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
-
-        Eigen::DGMRES<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-        dgmres.setMaxIterations(max_iter);
-        dgmres.set_restart(restart);
-        dgmres.preconditioner().set_buffer_size(RASM_buffer);
-        dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        dgmres.preconditioner().analyzePattern(W);
-        dgmres.compute(W_matrix);
-        gamma = dgmres.solve(phi);
-        std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
-
+        gamma = W_matrix.ldlt().solve(phi);
 
         phi = W*gamma;
-        for (int i=0; i<knots.size(); ++i) {
-            const double x = get<position>(knots[i])[0];
-            const double y = get<position>(knots[i])[1];
-            phi[i] = funct(x,y);
-            TS_ASSERT_DELTA(phi[i],funct(x,y),2e-3); 
-        }
-        TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
-
-
-        // wrap Aboria vectors as Eigen vectors
-        map_type alpha_wrap(get<alpha>(knots).data(),N);
-        map_type interp_wrap(get<interpolated>(knots).data(),N);
-
-        alpha_wrap = gamma.segment<N>(0);
-        vector_type beta = vector_type::Constant(N,gamma[N]);
-        interp_wrap = G*alpha_wrap + beta;
-
         double rms_error = 0;
         double scale = 0;
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
-            const double eval_value = get<interpolated>(knots[i]);
+            const double eval_value = phi[i];
             rms_error += std::pow(eval_value-truth,2);
             scale += std::pow(truth,2);
-            TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+            //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
 
         std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-8);
-
-        map_type interp_wrap_test(get<interpolated>(test).data(),N);
-        auto G_test = create_dense_operator(test,knots,kernel);
-        interp_wrap_test = G_test*alpha_wrap + beta;
-                
+        
+        phi = W_test*gamma;
         rms_error = 0;
         scale = 0;
         for (int i=0; i<test.size(); ++i) {
             const double x = get<position>(test[i])[0];
             const double y = get<position>(test[i])[1];
             const double truth = funct(x,y);
-            const double eval_value = get<interpolated>(test[i]);
+            const double eval_value = phi[i];
             rms_error += std::pow(eval_value-truth,2);
             scale += std::pow(truth,2);
-            TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+            //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
         std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1.5e-4);
+
 
 //=}
 //]
@@ -313,20 +247,27 @@ void helper_compact(void) {
         typedef typename position::value_type const & const_position_reference;
         typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        typedef Eigen::SparseMatrix<double> matrix_type; 
        	ParticlesType knots,augment;
        	ParticlesType test;
 
-        const double hfac = 2.0;
+        const double hfac = 4.0;
         double2 min(0);
         double2 max(1);
         double2 periodic(false);
         
         const int N = 1000;
+        
         const int max_iter = 100;
-        const int restart = 100;
+        const int restart = 101;
         const double delta = std::pow(double(N),-1.0/2.0);
        	const double h = hfac*delta;
         std::cout << "using h = "<<h<<std::endl;
+        const double RASM_size = 2*h;
+        const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
+        const double RASM_buffer = 0.9*RASM_size;
+        std::cout << "RASM_size = "<<RASM_size<<" RASM_n = "<<RASM_n<<" RASM_buffer = "<<RASM_buffer<<std::endl;
+
         typename ParticlesType::value_type p;
 
         std::default_random_engine generator(123);
@@ -343,19 +284,6 @@ void helper_compact(void) {
         augment.push_back(p);
 
 	    knots.init_neighbour_search(min,max,periodic);
-
-        Symbol<alpha> al;
-        Symbol<interpolated> interp;
-        Symbol<position> r;
-        Symbol<constant2> c2;
-        Label<0,ParticlesType> a(knots);
-        Label<1,ParticlesType> b(knots);
-        Label<0,ParticlesType> i(augment);
-        Label<1,ParticlesType> j(augment);
-        Label<0,ParticlesType> k(test);
-        auto dx = create_dx(a,b);
-        auto dx2 = create_dx(k,b);
-        Accumulate<std::plus<double> > sum;
 
         auto kernel = [h](const_position_reference dx,
                          const_particle_reference a,
@@ -377,103 +305,117 @@ void helper_compact(void) {
         auto W = create_block_operator<2,2>(G, P,
                                             Pt,Zero);
 
+        auto G_test = create_sparse_operator(test,knots,2*h,kernel);
+        auto W_test = create_block_operator<2,2>(G_test, P,
+                                                 Pt,     Zero);
+
+
         vector_type phi(N+1), gamma(N+1);
-        for (int i=0; i<knots.size(); ++i) {
+        for (size_t i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             phi[i] = funct(x,y);
         }
         phi[knots.size()] = 0;
 
-        Eigen::ConjugateGradient<decltype(W), 
-            Eigen::Lower|Eigen::Upper,  Eigen::DiagonalPreconditioner<double>> cg;
+        matrix_type W_matrix(N+1,N+1);
+        W.assemble(W_matrix);
+
+        Eigen::ConjugateGradient<matrix_type, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> cg_test;
+        cg_test.setMaxIterations(max_iter);
+        cg_test.compute(W_matrix);
+        gamma = cg_test.solve(phi);
+        std::cout << "CG:       #iterations: " << cg_test.iterations() << ", estimated error: " << cg_test.error() << std::endl;
+
+        Eigen::ConjugateGradient<matrix_type, 
+            Eigen::Lower|Eigen::Upper, RASMPreconditioner<Eigen::HouseholderQR>> cg;
         cg.setMaxIterations(max_iter);
-        cg.compute(W);
+        cg.preconditioner().set_buffer_size(RASM_buffer);
+        cg.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        cg.preconditioner().analyzePattern(W);
+        cg.compute(W_matrix);
         gamma = cg.solve(phi);
-        std::cout << std::endl << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+        std::cout << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
 
-        Eigen::BiCGSTAB<decltype(W), Eigen::DiagonalPreconditioner<double>> bicg;
-        bicg.setMaxIterations(max_iter);
-        bicg.compute(W);
-        gamma = bicg.solve(phi);
-        std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
-
-        Eigen::MINRES<decltype(W), Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> minres;
+        
+        Eigen::MINRES<matrix_type, Eigen::Lower|Eigen::Upper,  RASMPreconditioner<Eigen::HouseholderQR>> minres;
         minres.setMaxIterations(max_iter);
-        minres.compute(W);
+        minres.preconditioner().set_buffer_size(RASM_buffer);
+        minres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        minres.preconditioner().analyzePattern(W);
+        minres.compute(W_matrix);
         gamma = minres.solve(phi);
         std::cout << "MINRES:   #iterations: " << minres.iterations() << ", estimated error: " << minres.error() << std::endl;
 
-        Eigen::GMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> gmres;
+        Eigen::GMRES<matrix_type,  RASMPreconditioner<Eigen::HouseholderQR>> gmres;
         gmres.setMaxIterations(max_iter);
+        gmres.preconditioner().set_buffer_size(RASM_buffer);
+        gmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        gmres.preconditioner().analyzePattern(W);
         gmres.set_restart(restart);
-        gmres.compute(W);
+        gmres.compute(W_matrix);
         gamma = gmres.solve(phi);
         std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
-        Eigen::DGMRES<decltype(W), Eigen::DiagonalPreconditioner<double>> dgmres;
+        Eigen::DGMRES<matrix_type,  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
         dgmres.setMaxIterations(max_iter);
+        dgmres.preconditioner().set_buffer_size(RASM_buffer);
+        dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        dgmres.preconditioner().analyzePattern(W);
         dgmres.set_restart(restart);
-        dgmres.compute(W);
+        dgmres.compute(W_matrix);
         gamma = dgmres.solve(phi);
-        std::cout << "DGMRES:   #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+        std::cout << "DGMRES:   #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
 
-        phi = W*gamma;
-        for (int i=0; i<knots.size(); ++i) {
-            const double x = get<position>(knots[i])[0];
-            const double y = get<position>(knots[i])[1];
-            phi[i] = funct(x,y);
-            TS_ASSERT_DELTA(phi[i],funct(x,y),2e-3); 
-        }
-        TS_ASSERT_DELTA(phi[knots.size()],0,2e-3); 
+        Eigen::BiCGSTAB<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> bicg;
+        bicg.setMaxIterations(max_iter);
+        bicg.preconditioner().set_buffer_size(RASM_buffer);
+        bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        bicg.preconditioner().analyzePattern(W);
+        bicg.compute(W_matrix);
+        gamma = bicg.solve(phi);
+        std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
 
-
-        map_type alpha_wrap(get<alpha>(knots).data(),N);
-        map_type interp_wrap(get<interpolated>(knots).data(),N);
-
-        alpha_wrap = gamma.segment<N>(0);
-        vector_type beta = vector_type::Constant(N,gamma[N]);
-        interp_wrap = G*alpha_wrap + beta;
 
         double rms_error = 0;
         double scale = 0;
-        for (int i=0; i<knots.size(); ++i) {
+        phi = W*gamma;
+        for (size_t i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
-            const double eval_value = get<interpolated>(knots[i]);
+            const double eval_value = phi[i];
             rms_error += std::pow(eval_value-truth,2);
             scale += std::pow(truth,2);
-            TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+            //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
         std::cout << "rms_error for compact support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
 
-        map_type interp_wrap_test(get<interpolated>(test).data(),N);
-        auto G_test = create_sparse_operator(test,knots,2*h,kernel);
-        interp_wrap_test = G_test*alpha_wrap + beta;
-                
         rms_error = 0;
         scale = 0;
-        for (int i=0; i<test.size(); ++i) {
+        phi = W_test*gamma;
+        for (size_t i=0; i<test.size(); ++i) {
             const double x = get<position>(test[i])[0];
             const double y = get<position>(test[i])[1];
             const double truth = funct(x,y);
-            const double eval_value = get<interpolated>(test[i]);
+            const double eval_value = phi[i];
             rms_error += std::pow(eval_value-truth,2);
             scale += std::pow(truth,2);
-            TS_ASSERT_DELTA(eval_value,truth,1e-1/truth); 
+            //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
+
         std::cout << "rms_error for compact support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),4e-2);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-2);
+
 
         
 #endif // HAVE_EIGEN
     }
 
     void test_bucket_search_parallel() {
-        helper_global<bucket_search_parallel>();
-        helper_compact<bucket_search_parallel>();
+        //helper_global<bucket_search_parallel>();
+        //helper_compact<bucket_search_parallel>();
     }
 
     void test_bucket_search_serial() {
