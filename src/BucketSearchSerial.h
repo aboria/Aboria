@@ -566,7 +566,7 @@ struct bucket_search_serial_query {
     CUDA_HOST_DEVICE
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
-        get_buckets_near_point(position,double_d(max_distance));
+        return get_buckets_near_point(position,double_d(max_distance));
     }
      
 

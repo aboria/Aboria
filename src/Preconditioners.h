@@ -51,7 +51,6 @@ class RASMPreconditioner {
     typedef std::vector<storage_vector_type> connectivity_type;
     connectivity_type m_domain_indicies;
     connectivity_type m_domain_buffer;
-    connectivity_type m_domain_mask;
     std::vector<solver_type> m_domain_factorized_matrix;
     Scalar m_buffer;
     size_t m_goal;
@@ -97,11 +96,12 @@ class RASMPreconditioner {
         const size_t domain_index = m_domain_indicies.size();
         m_domain_indicies.push_back(connectivity_type::value_type());
         m_domain_buffer.push_back(connectivity_type::value_type());
-        m_domain_mask.push_back(connectivity_type::value_type());
         storage_vector_type& buffer = m_domain_buffer[domain_index];
         storage_vector_type& indicies = m_domain_indicies[domain_index];
-        storage_vector_type& mask = m_domain_mask[domain_index];
             
+        //TODO: cant use chebyshev search function as does not yet
+        //support anisotropic distance measures, need to add this then 
+        //remove hack below
         auto range = query.get_buckets_near_point(
                               0.5*(high-low)+low,
                               0.5*(high-low)+m_buffer);
@@ -114,12 +114,14 @@ class RASMPreconditioner {
             for (particle_reference particle: particles) {
                 const size_t index = &(get<position>(particle))
                                         -get<position>(query.get_particles_begin());
-                if ((get<position>(particle) < low).any()
-                        || (get<position>(particle) > high).any()) {
-                    buffer.push_back(start_row + index);
-                } else {
-                    mask.push_back(indicies.size()+buffer.size());
-                    indicies.push_back(start_row + index);
+                if ((get<position>(particle) >= low-m_buffer).all()
+                        && (get<position>(particle) < high+m_buffer).all()) {
+                    if ((get<position>(particle) < low).any()
+                            || (get<position>(particle) >= high).any()) {
+                        buffer.push_back(start_row + index);
+                    } else {
+                        indicies.push_back(start_row + index);
+                    }
                 }
             }
         }
@@ -224,8 +226,8 @@ class RASMPreconditioner {
             }
             const double_d side_length = (high-low)/size;
             iterator_range<lattice_iterator<dimension>> range(
-                    lattice_iterator<dimension>(int_d(0),size,int_d(0)),
-                    ++lattice_iterator<dimension>(int_d(0),size,size));
+                    lattice_iterator<dimension>(int_d(0),size-1,int_d(0)),
+                    ++lattice_iterator<dimension>(int_d(0),size-1,size-1));
             for (typename lattice_iterator<dimension>::reference box: range) {
                 analyze_domain(start_row, kernel, query,
                         box*side_length,(box+1)*side_length);
@@ -260,10 +262,19 @@ class RASMPreconditioner {
     template <int _Options, typename _StorageIndex>
     RASMPreconditioner& analyzePattern(const Eigen::SparseMatrix<Scalar,_Options,_StorageIndex>& mat) {
         CHECK(m_domain_indicies.size()>0, "RASMPreconditioner::analyzePattern(): cannot analyze sparse matrix, call analyzePattern using a Aboria MatrixReplacement class first");
+        return *this;
     }
+
+    template <int _Options, typename _StorageIndex,  int RefOptions, typename RefStrideType>
+    RASMPreconditioner& analyzePattern(const Eigen::Ref<const Eigen::SparseMatrix<Scalar,_Options,_StorageIndex>,RefOptions,RefStrideType>& mat) {
+        CHECK(m_domain_indicies.size()>0, "RASMPreconditioner::analyzePattern(): cannot analyze sparse matrix, call analyzePattern using a Aboria MatrixReplacement class first");
+        return *this;
+    }
+
     template<typename Derived>
     RASMPreconditioner& analyzePattern(const Eigen::DenseBase<Derived>& mat) {
         CHECK(m_domain_indicies.size()>0, "RASMPreconditioner::analyzePattern(): cannot analyze dense matrix, call analyzePattern need to pass a Aboria MatrixReplacement class first");
+        return *this;
     }
 
     template<typename MatType>
@@ -281,7 +292,6 @@ class RASMPreconditioner {
         for (int domain_index = 0; domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
             const storage_vector_type& buffer = m_domain_buffer[domain_index];
             const storage_vector_type& indicies = m_domain_indicies[domain_index];
-            const storage_vector_type& mask = m_domain_mask[domain_index];
             solver_type& solver = m_domain_factorized_matrix[domain_index];
 
             domain_matrix.resize(indicies.size()+buffer.size(),
@@ -308,7 +318,6 @@ class RASMPreconditioner {
                 }
                 ++i;
             }
-
             solver.compute(domain_matrix);
         }
 
@@ -332,10 +341,12 @@ class RASMPreconditioner {
         // mat
         vector_type domain_x;
         vector_type domain_b;
+        x = b;
         for (int i = 0; i < m_domain_indicies.size(); ++i) {
+            if (m_domain_indicies.size() == 0) continue;
+
             const storage_vector_type& buffer = m_domain_buffer[i];
             const storage_vector_type& indicies = m_domain_indicies[i];
-            const storage_vector_type& mask = m_domain_mask[i];
             
             const size_t nb = indicies.size()+buffer.size();
             domain_x.resize(nb);
@@ -350,12 +361,12 @@ class RASMPreconditioner {
                 domain_b[sub_index++] = b[buffer[j]];
             }
 
-            // invert submatrix and mask off the buffer indicies
+            // solve domain 
             domain_x = m_domain_factorized_matrix[i].solve(domain_b);
 
-            // copy b values to big vector
+            // copy accumulate b values to big vector
             for (int j = 0; j < indicies.size(); ++j) {
-                x[indicies[j]] = domain_x[mask[j]];
+                x[indicies[j]] = domain_x[j];
             }
         }
     }

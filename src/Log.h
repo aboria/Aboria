@@ -99,7 +99,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     	std::cout << color << message << reset << std::endl; \
     }
 
-        //char color[] =  { 0x1b, '[', '1', ';', '3', '7', 'm', 0 }; \
+        //char color[] =  { 0x1b, '[', '1', ';', '3', '7', 'm', 0 }; 
         
 #define LOG_BOLD(level, message) \
     if (level <= ABORIA_LOG_LEVEL) { \
