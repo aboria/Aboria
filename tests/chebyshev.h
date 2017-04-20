@@ -193,7 +193,6 @@ public:
         helper_fast_methods_calculate<2>(particles,kernel,scale);
         helper_fast_methods_calculate<3>(particles,kernel,scale);
         helper_fast_methods_calculate<4>(particles,kernel,scale);
-        helper_fast_methods_calculate<5>(particles,kernel,scale);
     }
 
     
@@ -418,7 +417,7 @@ public:
     }
 
     void test_fast_methods_kd_tree(void) {
-        const size_t N = 10000;
+        const size_t N = 1000;
         std::cout << "KD_TREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 2D..." << std::endl;
