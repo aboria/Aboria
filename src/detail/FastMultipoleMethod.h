@@ -102,8 +102,9 @@ namespace detail {
 
     template <unsigned int D, unsigned int N, typename Function> 
     struct BlackBoxExpansions {
+        
         typedef detail::bbox<D> box_type;
-        static const size_t ncheb = std::pow(N,D); 
+        static constexpr size_t ncheb = ipow(N,D); 
         typedef std::array<double,ncheb> expansion_type;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
