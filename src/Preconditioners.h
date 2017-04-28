@@ -51,9 +51,11 @@ class RASMPreconditioner {
     typedef std::vector<storage_vector_type> connectivity_type;
     connectivity_type m_domain_indicies;
     connectivity_type m_domain_buffer;
+    connectivity_type m_domain_random;
     std::vector<solver_type> m_domain_factorized_matrix;
     Scalar m_buffer;
     size_t m_goal;
+    size_t m_random;
     Index m_rows;
     Index m_cols;
 
@@ -66,8 +68,9 @@ class RASMPreconditioner {
 
     RASMPreconditioner() : 
         m_isInitialized(false),
-        m_buffer(1.0),
-        m_goal(10)
+        m_buffer(0),
+        m_goal(10),
+        m_random(0)
     {}
 
     template<typename MatType>
@@ -84,6 +87,10 @@ class RASMPreconditioner {
 
     void set_number_of_particles_per_domain(size_t n) {
         m_goal = n;
+    }
+
+    void set_number_of_random_particles(size_t n) {
+        m_random = n;
     }
 
     template<typename Kernel, typename Query,
@@ -256,6 +263,23 @@ class RASMPreconditioner {
         m_rows = mat.rows();
         m_cols = mat.cols();
         analyze_impl(mat, detail::make_index_sequence<NI>());
+
+        const size_t n = m_domain_indicies.size();
+        generator_type generator(time(NULL));
+        std::uniform_int_distribution<int> uniform_domain(0,n-1);
+
+        m_domain_random.resize(n);
+        for (int domain_index = 0; domain_index < n; ++domain_index) {
+            storage_vector_type& random = m_domain_random[domain_index];
+            random.resize(m_random);
+            for (int d = 0; d < m_random; ++d) {
+                do {
+                    int other_domain = uniform_domain(generator);
+                    while (other_domain == domain_index) other_domain = uniform_domain(generator);
+                    random[d] = m_domain_indicies[other_domain][uniform_index(generator)];
+                } while ((random.begin()+d)!=std::find(random.begin(),random.begin()+d,random[d]));
+            }
+        }
         return *this;
     }
 
@@ -292,10 +316,13 @@ class RASMPreconditioner {
         for (int domain_index = 0; domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
             const storage_vector_type& buffer = m_domain_buffer[domain_index];
             const storage_vector_type& indicies = m_domain_indicies[domain_index];
+            const storage_vector_type& random = m_domain_random[domain_index];
             solver_type& solver = m_domain_factorized_matrix[domain_index];
 
-            domain_matrix.resize(indicies.size()+buffer.size(),
-                                 indicies.size()+buffer.size());
+            const size_t size = indicies.size()+buffer.size()+random.size();
+            std::cout << "domain "<<domain_index<<"indicies = "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random = "<<random.size()<<std::endl;
+
+            domain_matrix.resize(size,size);
 
             size_t i = 0;
             for (const size_t& big_index_i: indicies) {
@@ -306,6 +333,9 @@ class RASMPreconditioner {
                 for (const size_t& big_index_j: buffer) {
                     domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
                 }
+                for (const size_t& big_index_j: random) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
+                }
                 ++i;
             }
             for (const size_t& big_index_i: buffer) {
@@ -314,6 +344,22 @@ class RASMPreconditioner {
                     domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
                 }
                 for (const size_t& big_index_j: buffer) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
+                }
+                for (const size_t& big_index_j: random) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
+                }
+                ++i;
+            }
+            for (const size_t& big_index_i: random) {
+                size_t j = 0;
+                for (const size_t& big_index_j: indicies) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
+                }
+                for (const size_t& big_index_j: buffer) {
+                    domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
+                }
+                for (const size_t& big_index_j: random) {
                     domain_matrix(i,j++) = mat.coeff(big_index_i,big_index_j);
                 }
                 ++i;
@@ -347,8 +393,9 @@ class RASMPreconditioner {
 
             const storage_vector_type& buffer = m_domain_buffer[i];
             const storage_vector_type& indicies = m_domain_indicies[i];
+            const storage_vector_type& random = m_domain_random[i];
             
-            const size_t nb = indicies.size()+buffer.size();
+            const size_t nb = indicies.size()+buffer.size()+random.size();
             domain_x.resize(nb);
             domain_b.resize(nb);
 
@@ -359,6 +406,9 @@ class RASMPreconditioner {
             }
             for (int j = 0; j < buffer.size(); ++j) {
                 domain_b[sub_index++] = b[buffer[j]];
+            }
+            for (int j = 0; j < random.size(); ++j) {
+                domain_b[sub_index++] = b[random[j]];
             }
 
             // solve domain 
