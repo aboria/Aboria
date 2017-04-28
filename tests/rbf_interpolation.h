@@ -129,8 +129,14 @@ public:
         double2 min(0);
         double2 max(1);
         double2 periodic(false);
+
         
-        const int N = 100;
+        const int N = 1000;
+        const int RASM_n = 100;
+        const double RASM_buffer = 0.0;
+        const int RASM_random = 100;
+        std::cout << " RASM_n = "<<RASM_n<<" RASM_random = "<<RASM_random<<" RASM_buffer = "<<RASM_buffer<<std::endl;
+
         const int nx = 3;
         const int max_iter = 100;
         const int restart = 101;
@@ -191,6 +197,16 @@ public:
         W.assemble(W_matrix);
 
         gamma = W_matrix.ldlt().solve(phi);
+
+        Eigen::BiCGSTAB<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> bicg;
+        bicg.setMaxIterations(max_iter);
+        bicg.preconditioner().set_buffer_size(RASM_buffer);
+        bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        bicg.preconditioner().set_number_of_random_particles(RASM_random);
+        bicg.preconditioner().analyzePattern(W);
+        bicg.compute(W_matrix);
+        gamma = bicg.solve(phi);
+        std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
 
         phi = W*gamma;
         double rms_error = 0;
