@@ -110,32 +110,32 @@ public:
         
         auto kernel_x = [&](const double2& dx) {
             const double r = dx.norm()*invh;
-            return -26.0*dx[0]*invh*std::pow(r-1.0,9)*(5.0 + 3.0*r*(15.0 + r*(53.0+77.0*r))); 
+            return -26.0*dx[0]*std::pow(invh,2)*std::pow(r-1.0,9)*(5.0 + 3.0*r*(15.0 + r*(53.0+77.0*r))); 
         };
         auto kernel_y = [&](const double2& dx) {
             const double r = dx.norm()*invh;
-            return -26.0*dx[1]*invh*std::pow(r-1.0,9)*(5.0 + 3.0*r*(15.0 + r*(53.0+77.0*r))); 
+            return -26.0*dx[1]*std::pow(invh,2)*std::pow(r-1.0,9)*(5.0 + 3.0*r*(15.0 + r*(53.0+77.0*r))); 
         };
         auto kernel_xx = [&](const double2& dx) {
             const double r = dx.norm()*invh;
-            return 26.0*std::pow(r-1.0,8)*((-1.0 + r)*(5.0+3.0*r*(15.0+r*(53.0+77.0*r))) 
+            return 26.0*std::pow(invh,2)*std::pow(r-1.0,8)*((-1.0 + r)*(5.0+3.0*r*(15.0+r*(53.0+77.0*r))) 
                                         + 132.0*(1.0+r*(8.0+21.0*r))*dx[0]*dx[0]*invh*invh); 
         };
         auto kernel_yy = [&](const double2& dx) {
             const double r = dx.norm()*invh;
-            return 26.0*std::pow(r-1.0,8)*((-1.0 + r)*(5.0+3.0*r*(15.0+r*(53.0+77.0*r))) 
+            return 26.0*std::pow(invh,2)*std::pow(r-1.0,8)*((-1.0 + r)*(5.0+3.0*r*(15.0+r*(53.0+77.0*r))) 
                                         + 132.0*(1.0+r*(8.0+21.0*r))*dx[1]*dx[1]*invh*invh); 
         };
         auto kernel_xy = [&](const double2& dx) {
             const double r = dx.norm()*invh;
-            return 3432.0*dx[0]*dx[1]*invh*invh*std::pow(r-1.0,8)*(1.0 + r*(8.0 + 21.0*r)); 
+            return 3432.0*dx[0]*dx[1]*std::pow(invh,4)*std::pow(r-1.0,8)*(1.0 + r*(8.0 + 21.0*r)); 
         };
         auto laplace_xx = [&](const double2& dx) {
             const double r = dx.norm()*invh;
             const double r2 = r*r;
             const double r3 = r2*r;
             const double r4 = r2*r2;
-            return 6864.0*std::pow(r-1.0,6)*(2.0+12.0*r-3.0*r2-158.0*r3+147.0*r4
+            return 6864.0*std::pow(invh,4)*std::pow(r-1.0,6)*(2.0+12.0*r-3.0*r2-158.0*r3+147.0*r4
                                     +30.0*(-3.0+r*(-18.0+49.0*r))*dx[0]*dx[0]*invh*invh);
         };
         auto laplace_yy = [&](const double2& dx) {
@@ -143,19 +143,19 @@ public:
             const double r2 = r*r;
             const double r3 = r2*r;
             const double r4 = r2*r2;
-            return 6864.0*std::pow(r-1.0,6)*(2.0+12.0*r-3.0*r2-158.0*r3+147.0*r4
+            return 6864.0*std::pow(invh,4)*std::pow(r-1.0,6)*(2.0+12.0*r-3.0*r2-158.0*r3+147.0*r4
                                     +30.0*(-3.0+r*(-18.0+49.0*r))*dx[1]*dx[1]*invh*invh);
         };
         auto laplace_xy = [&](const double2& dx) {
             const double r = dx.norm()*invh;
-            return 205920.0*dx[0]*dx[1]*invh*invh*std::pow(r-1.0,6)*(-3.0+r*(-18.0+49.0*r));
+            return 205920.0*dx[0]*dx[1]*std::pow(invh,6)*std::pow(r-1.0,6)*(-3.0+r*(-18.0+49.0*r));
         };
         auto laplace2_xx = [&](const double2& dx) {
             const double r = dx.norm()*invh;
             const double r2 = r*r;
             const double r3 = r2*r;
             const double r4 = r2*r2;
-            return 2471040.0*std::pow(r-1.0,4)*(-1.0-4.0*r+46.0*r2-90.0*r3+49.0*r4
+            return 2471040.0*std::pow(invh,6)*std::pow(r-1.0,4)*(-1.0-4.0*r+46.0*r2-90.0*r3+49.0*r4
                                 +14.0*(8.0+r*(-31.0+28.0*r))*dx[0]*dx[0]*invh*invh);
         };
         auto laplace2_yy = [&](const double2& dx) {
@@ -163,12 +163,12 @@ public:
             const double r2 = r*r;
             const double r3 = r2*r;
             const double r4 = r2*r2;
-            return 2471040.0*std::pow(r-1.0,4)*(-1.0-4.0*r+46.0*r2-90.0*r3+49.0*r4
+            return 2471040.0*std::pow(invh,6)*std::pow(r-1.0,4)*(-1.0-4.0*r+46.0*r2-90.0*r3+49.0*r4
                                 +14.0*(8.0+r*(-31.0+28.0*r))*dx[1]*dx[1]*invh*invh);
         };
         auto laplace2_xy = [&](const double2& dx) {
             const double r = dx.norm()*invh;
-            return 34594560.0*dx[0]*dx[1]*invh*invh*std::pow(r-1.0,4)*(8.0+r*(-31.0+28.0*r));
+            return 34594560.0*dx[0]*dx[1]*std::pow(invh,8)*std::pow(r-1.0,4)*(8.0+r*(-31.0+28.0*r));
         };
 
         const double search_radius = h;
@@ -187,7 +187,7 @@ public:
                         if (get<boundary>(j)) {
                             return mu*laplace_yy(dx);
                         } else {
-                            return -mu*mu*laplace2_yy(dx) - 1e6*kernel_xx(dx);
+                            return -mu*mu*laplace2_yy(dx) - kernel_xx(dx);
                         }
                     }
                });
@@ -206,7 +206,7 @@ public:
                         if (get<boundary>(j)) {
                             return -mu*laplace_xy(dx);
                         } else {
-                            return mu*mu*laplace2_xy(dx) - 1e6*kernel_xy(dx);
+                            return mu*mu*laplace2_xy(dx) - kernel_xy(dx);
                         }
                     }
                });
@@ -225,7 +225,7 @@ public:
                         if (get<boundary>(j)) {
                             return mu*laplace_xx(dx);
                         } else {
-                            return -mu*mu*laplace2_xx(dx) - 1e6*kernel_yy(dx);
+                            return -mu*mu*laplace2_xx(dx) - kernel_yy(dx);
                         }
                     }
                });
@@ -310,7 +310,7 @@ public:
                     if (get<boundary>(j)) {
                         return 0.0;
                     } else {
-                        return -1e6*kernel_xx(dx);
+                        return -kernel_xx(dx);
                     }
                });
 
@@ -321,7 +321,7 @@ public:
                     if (get<boundary>(j)) {
                         return 0.0;
                     } else {
-                        return -1e6*kernel_xy(dx);
+                        return -kernel_xy(dx);
                     }
                });
 
@@ -332,7 +332,7 @@ public:
                     if (get<boundary>(j)) {
                         return 0.0;
                     } else {
-                        return -1e6*kernel_yy(dx);
+                        return -kernel_yy(dx);
                     }
                });
 
@@ -354,12 +354,12 @@ public:
             const double2& velocity_solution = u_sol(get<position>(knots[i]));
             const double2& pressure_solution = grad_p_sol(get<position>(knots[i]));
             L2[0] += (double2(u[i],v[i])-velocity_solution).squaredNorm();
-            L2[1] += (double2(prx[i],pry[i])*invh*invh-pressure_solution).squaredNorm();
+            L2[1] += (double2(prx[i],pry[i])-pressure_solution).squaredNorm();
             scale[0] += velocity_solution.squaredNorm();
             scale[1] += pressure_solution.squaredNorm();
         }
         TS_ASSERT_DELTA(std::sqrt(L2[0]/scale[0]),0,1e-5); 
-        TS_ASSERT_DELTA(std::sqrt(L2[1]/scale[1]),0,1e-3); 
+        TS_ASSERT_DELTA(std::sqrt(L2[1]/scale[1]),0,3e-2); 
         std::cout << "rms errors (u,p) = ("
                   <<std::sqrt(L2[0]/scale[0])<<","
                   <<std::sqrt(L2[1]/scale[1])<<")"<<std::endl;
