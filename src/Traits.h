@@ -219,6 +219,16 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<std::size_t... I>
+    static const_iterator cbegin_impl(const data_type& data, detail::index_sequence<I...>) {
+        return const_iterator(get_by_index<I>(data).cbegin()...);
+    }
+
+    template<std::size_t... I>
+    static const_iterator cend_impl(const data_type& data, detail::index_sequence<I...>) {
+        return const_iterator(get_by_index<I>(data).cend()...);
+    }
+
+    template<std::size_t... I>
     static reference index_impl(data_type& data, const size_t i, detail::index_sequence<I...>, std::true_type) {
         return reference(get_by_index<I>(data)[i]...);
     }
@@ -298,6 +308,16 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     template<typename Indices = detail::make_index_sequence<N>>
     static iterator end(data_type& data) {
         return end_impl(data, Indices());
+    }
+
+    template<typename Indices = detail::make_index_sequence<N>>
+    static const_iterator cbegin(const data_type& data) {
+        return cbegin_impl(data, Indices());
+    }
+
+    template<typename Indices = detail::make_index_sequence<N>>
+    static const_iterator cend(const data_type& data) {
+        return cend_impl(data, Indices());
     }
 
     template<typename Indices = detail::make_index_sequence<N>>

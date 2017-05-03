@@ -355,6 +355,26 @@ public:
         return traits_type::end(data);
     }
 
+    /// returns an iterator to the beginning of the container
+    const_iterator begin() const {
+        return traits_type::cbegin(data);
+    }
+
+    /// returns an iterator to the end of the container
+    const_iterator end() const {
+        return traits_type::cend(data);
+    }
+
+    /// returns a const_iterator to the beginning of the container
+    const_iterator cbegin() const {
+        return traits_type::cbegin(data);
+    }
+
+    /// returns an iterator to the end of the container
+    const_iterator cend() const {
+        return traits_type::cend(data);
+    }
+
     /// sets container to empty and deletes all particles
     void clear() {
         return traits_type::clear(data);
