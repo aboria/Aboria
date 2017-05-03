@@ -44,6 +44,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Search.h"
 #include "Kernels.h"
 #include "Operators.h"
+#include "Preconditioners.h"
+#include "FastMultipoleMethod.h"
 
 //Level3
 #include "Symbolic.h"

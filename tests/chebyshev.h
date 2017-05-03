@@ -98,7 +98,7 @@ public:
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type;
         typedef Eigen::Map<vector_type> map_type;
         map_type source_vect(get<source>(particles).data(),N);
-        map_type target_vect(get<target_operator>(particles).data(),N);
+        map_type target_vect(get<target_cheb>(particles).data(),N);
         t0 = Clock::now();
         target_vect = C*source_vect;
         t1 = Clock::now();
@@ -112,11 +112,10 @@ public:
                 [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
                 );
 
-        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_cheb error = "<< L2_cheb <<". L2_cheb relative error is "<<std::sqrt(L2_cheb/scale)<<". time_cheb_setup  = "<<time_op_setup.count()<<". time_cheb_eval = "<<time_cheb_eval.count()<<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_cheb error = "<< L2_cheb <<". L2_cheb relative error is "<<std::sqrt(L2_cheb/scale)<<". time_cheb_setup  = "<<time_cheb_setup.count()<<". time_cheb_eval = "<<time_cheb_eval.count()<<std::endl;
 
         //TODO: is there a better test than this, maybe shouldn't randomly do it?
-        if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_alg/scale),0.001);
-        if (D==2 && n >=10) TS_ASSERT_LESS_THAN(std::sqrt(L2_op/scale),0.001);
+        if (dimension==2 && N >=5) TS_ASSERT_LESS_THAN(std::sqrt(L2_cheb/scale),0.001);
 #endif
     }
 
@@ -160,7 +159,7 @@ public:
         std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                        std::begin(get<source>(particles)), source_fn);
 
-        const double c = 0.1;
+        const double c = 0.01;
         auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
             return std::sqrt(dx.squaredNorm() + c); 
         };
@@ -397,7 +396,6 @@ public:
         }
     }
 
-
     void test_fast_methods_bucket_search_serial(void) {
         const size_t N = 1000;
         std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
@@ -406,8 +404,6 @@ public:
         helper_fast_methods<2,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_serial>(N);
-        std::cout << "BUCKET_SEARCH_SERIAL: testing 4D..." << std::endl;
-        helper_fast_methods<4,std::vector,bucket_search_serial>(N);
     }
 
     void test_fast_methods_bucket_search_parallel(void) {
@@ -418,20 +414,16 @@ public:
         helper_fast_methods<2,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_parallel>(N);
-        std::cout << "BUCKET_SEARCH_PARALLEL: testing 4D..." << std::endl;
-        helper_fast_methods<4,std::vector,bucket_search_parallel>(N);
     }
 
     void test_fast_methods_kd_tree(void) {
-        const size_t N = 10000;
+        const size_t N = 1000;
         std::cout << "KD_TREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,nanoflann_adaptor>(N);
-        std::cout << "KD_TREE: testing 4D..." << std::endl;
-        helper_fast_methods<4,std::vector,nanoflann_adaptor>(N);
     }
 
 

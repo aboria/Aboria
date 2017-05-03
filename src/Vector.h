@@ -126,7 +126,7 @@ public:
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector(const Vector<T2,N> &arg) {
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 	}
@@ -139,7 +139,7 @@ public:
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector<T,N> &operator =(Vector<T2,N> &arg) {
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 		return *this;

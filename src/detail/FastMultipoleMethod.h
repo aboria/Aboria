@@ -94,15 +94,17 @@ namespace detail {
         static double L2P(const double_d& p,
                    const box_type& box, 
                    const expansion_type& source) {
-                }
+            return 0.0;
+        }
 
     };
 
 
     template <unsigned int D, unsigned int N, typename Function> 
     struct BlackBoxExpansions {
+        
         typedef detail::bbox<D> box_type;
-        static const size_t ncheb = std::pow(N,D); 
+        static constexpr size_t ncheb = ipow(N,D); 
         typedef std::array<double,ncheb> expansion_type;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
@@ -140,27 +142,23 @@ namespace detail {
 
                 lattice_iterator<D> mi(int_d(0),int_d(N-1),int_d(0));
                 for (int i=0; i<ncheb; ++i,++mi) {
-                    /*
-                    int_d check1(0);
-                    int_d check2(0);
-                    check1[0] = 2;
-                    check2[0] = 3;
-                    if ((*mi == check1).all() && (*mj == check2).all()) {
-                        std::cout << "accumulating M2M from node "<<*mj<<" "<<pj<<" to node "<<*mi<<" with Rn = "<<cheb_rn(*mi)<<std::endl;
-                    }
-                    */
-                    /*
-                    const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
-                    const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
-                        + target_box.bmin;
-                    const double_d &pj_target_unit =  (2*pj-target_box.bmin-target_box.bmax)/(target_box.bmax-target_box.bmin);
-                    */
-
-                    //std::cout << "accumulating M2M from source node"<<*mj<<" located at "<<pj<<" to node "<<*mi<<" located at "<<pi<<" with Rn = "<<cheb_rn(*mi)<<". note: slow rn = "<<chebyshev_Rn_slow(pj_target_unit, *mi, N)<<std::endl;
- 
                     accum[i] += cheb_rn(*mi)*source[j];
                 }
             }
+            /*
+            lattice_iterator<dimension> mi(int_d(0),int_d(N-1),int_d(0));
+            for (int i=0; i<ncheb; ++i,++mi) {
+                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                    + target_box.bmin;
+                detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
+
+                lattice_iterator<D> mj(int_d(0),int_d(N-1),int_d(0));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    accum[i] += cheb_rn(*mj)*source[j];
+                }
+            }
+            */
         }
 
 
@@ -201,18 +199,23 @@ namespace detail {
 
                 lattice_iterator<D> mj(int_d(0),int_d(N-1),int_d(0));
                 for (int j=0; j<ncheb; ++j,++mj) {
-                    /*
-                    int_d check1(0);
-                    int_d check2(0);
-                    check1[0] = 2;
-                    check2[0] = 3;
-                    if ((*mi == check2).all() && (*mj == check1).all()) {
-                        std::cout << "accumulating L2L from node "<<*mj<<" to node "<<*mi<<" "<<pi<<" with Rn = "<<cheb_rn(*mj)<<std::endl;
-                    }
-                    */
                     accum[i] += cheb_rn(*mj)*source[j];
                 }
             }
+            /*
+            lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
+            for (int j=0; j<ncheb; ++j,++mj) {
+                const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
+                const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                    + source_box.bmin;
+                detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
+
+                lattice_iterator<D> mi(int_d(0),int_d(N-1),int_d(0));
+                for (int i=0; i<ncheb; ++i,++mi) {
+                    accum[i] += cheb_rn(*mi)*source[j];
+                }
+            }
+            */
         }
 
         static double L2P(const double_d& p,

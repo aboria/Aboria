@@ -62,6 +62,9 @@ namespace Aboria {
         typedef typename std::result_of<F(const_position_reference, 
                                   const_row_reference, 
                                   const_col_reference)>::type Scalar;
+        typedef RowParticles row_particles_type;
+        typedef ColParticles col_particles_type;
+        typedef F function_type;
 
         KernelBase(const RowParticles& row_particles,
                    const ColParticles& col_particles,
@@ -71,6 +74,22 @@ namespace Aboria {
             m_col_particles(col_particles)
         {};
 
+
+        RowParticles& get_row_particles() {
+            return m_row_particles;
+        }
+
+        const RowParticles& get_row_particles() const {
+            return m_row_particles;
+        }
+
+        ColParticles& get_col_particles() {
+            return m_col_particles;
+        }
+
+        const ColParticles& get_col_particles() const {
+            return m_col_particles;
+        }
 
         size_t size_row() const {
             return m_row_particles.size();

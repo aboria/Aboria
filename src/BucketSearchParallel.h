@@ -329,6 +329,10 @@ struct bucket_search_parallel_query {
         return true;
     }
 
+    static bool is_tree() {
+        return false;
+    }
+
     // dodgy hack cause nullptr cannot be converted to pointer
     static const pointer get_child1(const pointer& bucket) {
         CHECK(false,"this should not be called")
@@ -386,11 +390,17 @@ struct bucket_search_parallel_query {
         return m_point_to_bucket_index.collapse_index_vector(bucket);
     }
 
-
     template <int LNormNumber=-1>
     CUDA_HOST_DEVICE
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
+        return get_buckets_near_point(position,double_d(max_distance));
+    }
+
+    template <int LNormNumber=-1>
+    CUDA_HOST_DEVICE
+    iterator_range<query_iterator> 
+    get_buckets_near_point(const double_d &position, const double_d& max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif

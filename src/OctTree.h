@@ -47,38 +47,72 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+template <typename Traits>
+class octtree_query; 
 
-template <typename traits>
-class OctTree {
-    UNPACK_TRAITS(traits)
+template <typename Traits>
+class octtree: 
+    public neighbour_search_base<octtree<Traits>,
+                                 Traits,
+                                 octtree_query<Traits>> {
+
+    typedef typename Traits::double_d double_d;
+    typedef typename Traits::position position;
+    typedef typename Traits::vector_double_d_const_iterator vector_double_d_const_iterator;
+    typedef typename Traits::vector_unsigned_int_iterator vector_unsigned_int_iterator;
+    typedef typename Traits::vector_unsigned_int vector_unsigned_int;
+    typedef typename Traits::unsigned_int_d unsigned_int_d;
+    typedef typename Traits::iterator iterator;
+
+    typedef neighbour_search_base<octtree<Traits>,
+                                 Traits,
+                                 octtree_query<Traits>> base_type;
+
+    friend base_type;
+
 
 public:
-    OctTree() {};
-
-    void embed_points(vector_double_d& points);
-
-    //void get_neighbours(const double_d &centre_point, const double radius, std::vector<range> &neighbours);
-
-    //template<typename targets_traits, typename F>
-    //void evaluate_kernel_fmm(targets_traits::iterator targets_begin, targets_traits::iterator targets_end, F &functor);
-
-    void set_domain(double_d &min_in, double_d &max_in, bool_d &periodic_in) {
-        bounds.bmin = min_in;
-        bounds.bmax = max_in;
-        periodic = periodic_in;
+    octtree():base_type() {}
+    static constexpr bool cheap_copy_and_delete_at_end() {
+        return false;
     }
-    void get_domain(double_d &min_out, double_d &max_out, bool_d &periodic_out) {
-        min_out = bounds.bmin;
-        max_out = bounds.bmax;
-        periodic_out = periodic;
-    }
-    void set_max_points(int arg) { max_points = arg; }
-    int get_max_points() { return max_points; }
-    void set_max_level(int arg) { max_level = arg; }
-    int get_max_level() { return max_level; }
-    void set_threshold(int arg) { threshold = arg; }
-    int get_threshold() { return threshold; }
 
+private:
+
+
+    void set_domain_impl() {
+        const size_t n = this->m_particles_end - this->m_particles_begin;
+    }
+    void update_iterator_impl() {
+        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+    }
+
+    void embed_points_impl() {
+        set_domain_impl();
+        const size_t n = this->m_particles_end - this->m_particles_begin;
+    }
+
+    void add_points_at_end_impl(const size_t dist) {
+        set_domain_impl();
+        auto start_adding = this->m_particles_end-dist;
+    }
+
+
+    void delete_points_at_end_impl(const size_t dist) {
+        set_domain_impl();
+        const size_t n = this->m_particles_end - this->m_particles_begin;
+    }
+     
+    void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
+        auto positions_from = get<position>(copy_from_iterator);
+        auto positions_to = get<position>(copy_to_iterator);
+    }
+    const octtree_query<Traits>& get_query_impl() const {
+        return m_query;
+    }
+
+     
 private:
     void build_tree();
 

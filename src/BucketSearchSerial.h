@@ -501,6 +501,10 @@ struct bucket_search_serial_query {
         return true;
     }
 
+    static bool is_tree() {
+        return false;
+    }
+
     // dodgy hack cause nullptr cannot be converted to pointer
     static const pointer get_child1(const pointer& bucket) {
         CHECK(false,"this should not be called")
@@ -562,6 +566,14 @@ struct bucket_search_serial_query {
     CUDA_HOST_DEVICE
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
+        return get_buckets_near_point(position,double_d(max_distance));
+    }
+     
+
+    template <int LNormNumber=-1>
+    CUDA_HOST_DEVICE
+    iterator_range<query_iterator> 
+    get_buckets_near_point(const double_d &position, const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
@@ -604,11 +616,12 @@ struct bucket_search_serial_query {
 
     CUDA_HOST_DEVICE
     iterator_range<root_iterator> get_root_buckets() const {
-        return iterator_range<query_iterator>(
+        return iterator_range<root_iterator>(
                 root_iterator(int_d(0),m_end_bucket,int_d(0)),
                 ++root_iterator(int_d(0),m_end_bucket,m_end_bucket)
                 );
     }
+        
 
     iterator_range<all_iterator> get_subtree(reference bucket) const {
         return iterator_range<all_iterator>(
