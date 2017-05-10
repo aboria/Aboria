@@ -460,6 +460,8 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
+            matrix.setZero();
+
             //sparse a x b block
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
