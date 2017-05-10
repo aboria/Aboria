@@ -276,7 +276,7 @@ class RASMPreconditioner {
                 do {
                     int other_domain = uniform_domain(generator);
                     while (other_domain == domain_index) other_domain = uniform_domain(generator);
-                    random[d] = m_domain_indicies[other_domain][uniform_index(generator)];
+                    //random[d] = m_domain_indicies[other_domain][uniform_index(generator)];
                 } while ((random.begin()+d)!=std::find(random.begin(),random.begin()+d,random[d]));
             }
         }
