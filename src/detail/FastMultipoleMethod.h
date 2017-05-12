@@ -234,6 +234,7 @@ namespace detail {
     };
 
 
+
     template <typename Expansions,
               typename Traits, 
               typename SourceVectorType, 
