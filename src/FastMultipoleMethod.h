@@ -103,7 +103,7 @@ struct calculate_P2M_and_M2M {
 };
 
 template <typename Expansions, typename NeighbourQuery, 
-          typename SourceVectorType, typename ConnectivityType, typename Function>
+          typename SourceVectorType, typename ConnectivityType>
 struct calculate_M2L_and_L2L {
     typedef typename NeighbourQuery::reference reference;
     typedef typename NeighbourQuery::pointer pointer;
@@ -302,7 +302,7 @@ struct calculate_M2L_and_L2L {
 };
 
    
-template <typename Expansions, typename Function, typename NeighbourQuery>
+template <typename Expansions, typename NeighbourQuery>
 class FastMultipoleMethod {
     typedef typename NeighbourQuery::traits_type traits_type;
     typedef typename NeighbourQuery::reference reference;
@@ -359,8 +359,7 @@ public:
         std::for_each(root_buckets.begin(),
                       root_buckets.end(),
                       calculate_M2L_and_L2L<Expansions,NeighbourQuery,
-                                            VectorType,connectivity_type
-                                            ,Function>(
+                                            VectorType,connectivity_type>(
                                                 *m_query,
                                                 m_expansions,
                                                 m_W,
@@ -406,6 +405,19 @@ public:
     }
 
 };
+
+
+template <unsigned int D, unsigned int N, typename Function> 
+detail::BlackBoxExpansions<D,N,Function> make_black_box_expansion(const Function& function) {
+    return detail::BlackBoxExpansions<D,N,Function>(function);
+}
+
+
+template <typename Expansions, typename NeighbourQuery>
+FastMultipoleMethod<Expansions,NeighbourQuery>
+make_fmm_query(const NeighbourQuery &query, const Expansions& expansions) {
+    return FastMultipoleMethod<Expansions,NeighbourQuery>(query,expansions);
+}
 
 }
 
