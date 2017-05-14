@@ -57,11 +57,15 @@ class octtree:
                                  octtree_query<Traits>> {
 
     typedef typename Traits::double_d double_d;
+    typedef typename Traits::bool_d bool_d;
     typedef typename Traits::position position;
     typedef typename Traits::vector_double_d_const_iterator vector_double_d_const_iterator;
     typedef typename Traits::vector_unsigned_int_iterator vector_unsigned_int_iterator;
     typedef typename Traits::vector_unsigned_int vector_unsigned_int;
+    typedef typename Traits::vector_int vector_int;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
+    typedef typename Traits::template vector_type<int2>::type vector_int2;
+    static const unsigned int dimension = Traits::dimension;
     typedef typename Traits::iterator iterator;
 
     typedef neighbour_search_base<octtree<Traits>,
@@ -128,39 +132,39 @@ private:
     int threshold;
     bool_d periodic;
 
-    vector_int tags;
-    vector_int nodes;
-    vector_int indices;
-    detail::bbox<dimension> bounds;
-    vector_int2 leaves;
+    vector_int m_tags;
+    vector_int m_nodes;
+    vector_int m_indices;
+    detail::bbox<dimension> m_bounds;
+    vector_int2 m_leaves;
 };
 
 
 template <typename traits>
-void OctTree<traits>::embed_points(vector_double_d& points) {
+void octtree<traits>::embed_points(vector_double_d& points) {
 
     const int num_points = points.size();
 
-    nodes.clear();
-    leaves.clear();
-    tags.resize(num_points);
-    indices.resize(num_points);
+    m_nodes.clear();
+    m_leaves.clear();
+    m_tags.resize(num_points);
+    m_indices.resize(num_points);
 
     /******************************************
-     * 2. Compute bounding box                *
+     * 2. Compute bounding box TOOK THIS OUT                *
      ******************************************/
 
-    detail::bbox<dimension> points_bounds = detail::reduce(points.begin(), points.end(), detail::bbox<dimension>(), std::plus<detail::bbox<dimension> >());
-    assert(points_bounds < bounds);
+    //detail::bbox<dimension> points_bounds = detail::reduce(points.begin(), points.end(), detail::bbox<dimension>(), std::plus<detail::bbox<dimension> >());
+    //assert(points_bounds < m_bounds);
 
     /******************************************
      * 3. Classify points                     *
      ******************************************/
 
-    traits::transform(points.begin(), 
+    detail::transform(points.begin(), 
             points.end(), 
-            tags.begin(), 
-            classify_point(bounds, max_level));
+            m_tags.begin(), 
+            classify_point(m_bounds, max_level));
 
     /******************************************
      * 4. Sort according to classification    *
@@ -169,8 +173,8 @@ void OctTree<traits>::embed_points(vector_double_d& points) {
 
     // Now that we have the geometric information, we can sort the
     // points accordingly.
-    traits::sequence(indices.begin(), indices.end());
-    sort_by_key(tags.begin(), tags.end(), indices.begin());
+    detail::sequence(m_indices.begin(), m_indices.end());
+    detail::sort_by_key(m_tags.begin(), m_tags.end(), m_indices.begin());
 
     build_tree();
 }
@@ -178,7 +182,7 @@ void OctTree<traits>::embed_points(vector_double_d& points) {
 
 
 template <typename traits>
-void OctTree<traits>::build_tree() {
+void octTree<traits>::build_tree() {
   vector_int active_nodes(1,0);
 
   // Build the tree one level at a time, starting at the root
@@ -188,11 +192,12 @@ void OctTree<traits>::build_tree() {
      * 1. Calculate children                  *
      ******************************************/
 
-    // New children: 4 quadrants per active node = 4 children
-    vector_int children(4*active_nodes.size());
+    // New children: 2^D quadrants per active node
+    constexpr size_t nchild = detail::ipow(2,dimension);
+    vector_int children(nchild*active_nodes.size());
 
-    // For each active node, generate the tag mask for each of its 4 children
-    tabulate(children.begin(), children.end(),
+    // For each active node, generate the tag mask for each of its 2^D children
+    detail::tabulate(children.begin(), children.end(),
                    child_index_to_tag_mask(level, max_level, active_nodes.data()));
 
     /******************************************
@@ -204,20 +209,19 @@ void OctTree<traits>::build_tree() {
     vector_int upper_bounds(children.size());
 
     // Locate lower and upper bounds for points in each quadrant
-    lower_bound(tags.begin(),
-                      tags.end(),
-                      children.begin(),
-                      children.end(),
-                      lower_bounds.begin());
+    detail::lower_bound(m_tags.begin(),
+                m_tags.end(),
+                children.begin(),
+                children.end(),
+                lower_bounds.begin());
   
     int length = (1 << (max_level - level) * 2) - 1;
 
-    upper_bound(tags.begin(),
-                      tags.end(),
-                      make_transform_iterator(children.begin(), traits::_1 + length),
-                      make_transform_iterator(children.end(), traits::_1 + length),
-                      upper_bounds.begin());
-
+    detail::upper_bound(m_tags.begin(),
+                m_tags.end(),
+                make_transform_iterator(children.begin(), detail::_1 + length),
+                make_transform_iterator(children.end(), detail::_1 + length),
+                upper_bounds.begin());
 
     /******************************************
      * 3. Mark each child as empty/leaf/node  *
@@ -225,7 +229,7 @@ void OctTree<traits>::build_tree() {
 
     // Mark each child as either empty, a node, or a leaf
     vector_int child_node_kind(children.size(), 0);
-    transform(lower_bounds.begin(), lower_bounds.end(),
+    detail::transform(lower_bounds.begin(), lower_bounds.end(),
                     upper_bounds.begin(),
                     child_node_kind.begin(),
                     classify_node(threshold, level == max_level));
@@ -265,37 +269,37 @@ void OctTree<traits>::build_tree() {
 
     int num_children = child_node_kind.size();
 
-    int children_begin = nodes.size();
-    nodes.resize(nodes.size() + num_children);
+    int children_begin = m_nodes.size();
+    m_nodes.resize(m_nodes.size() + num_children);
       
     detail::transform(
-            make_zip_iterator(
-                make_tuple(child_node_kind.begin(), nodes_on_this_level.begin(), leaves_on_this_level.begin())),
-             make_zip_iterator(
-                make_tuple(child_node_kind.end(), nodes_on_this_level.end(), leaves_on_this_level.end())),
-                nodes.begin() + children_begin,
-                write_nodes(nodes.size(), leaves.size()));
+            detail::make_zip_iterator(
+                detail::make_tuple(child_node_kind.begin(), nodes_on_this_level.begin(), leaves_on_this_level.begin())),
+            detail::make_zip_iterator(
+                detail::make_tuple(child_node_kind.end(), nodes_on_this_level.end(), leaves_on_this_level.end())),
+                m_nodes.begin() + children_begin,
+                write_nodes(m_nodes.size(), m_leaves.size()));
 
 
     /******************************************
      * 6. Add the leaves to the leaf list     *
      ******************************************/
 
-    children_begin = leaves.size();
+    children_begin = m_leaves.size();
 
-    leaves.resize(leaves.size() + num_leaves_on_this_level);
+    m_leaves.resize(m_leaves.size() + num_leaves_on_this_level);
 
-    scatter_if(make_transform_iterator(
-                         make_zip_iterator(
-                             make_tuple(lower_bounds.begin(), upper_bounds.begin())),
-                         make_leaf()),
-                     make_transform_iterator(
-                         make_zip_iterator(
-                             make_tuple(lower_bounds.end(), upper_bounds.end())),
-                         make_leaf()),
-                     leaves_on_this_level.begin(),
-                     child_node_kind.begin(),
-                     leaves.begin() + children_begin,
+    detail::scatter_if(detail::make_transform_iterator(
+                detail::make_zip_iterator(
+                    detail::make_tuple(lower_bounds.begin(), upper_bounds.begin())),
+                make_leaf()),
+            detail::make_transform_iterator(
+                detail::make_zip_iterator(
+                    detail::make_tuple(lower_bounds.end(), upper_bounds.end())),
+                make_leaf()),
+            leaves_on_this_level.begin(),
+            child_node_kind.begin(),
+            m_leaves.begin() + children_begin,
                      detail::is_a<detail::LEAF>());
 
 
@@ -306,7 +310,7 @@ void OctTree<traits>::build_tree() {
     // Set active nodes for the next level to be all the childs nodes from this level
     active_nodes.resize(num_nodes_on_this_level);
   
-    copy_if(children.begin(),
+    detail::copy_if(children.begin(),
                   children.end(),
                   child_node_kind.begin(),
                   active_nodes.begin(),
@@ -317,7 +321,7 @@ void OctTree<traits>::build_tree() {
 
 // Classify a point with respect to the bounding box.
 template <typename traits>
-struct OctTree<traits>::classify_point {
+struct octtree<traits>::classify_point {
     detail::bbox<dimension> box;
     int max_level;
 
@@ -326,30 +330,37 @@ struct OctTree<traits>::classify_point {
 
     // Classify a point
     inline CUDA_HOST_DEVICE
-        int operator()(const double_d &p) { return point_to_tag(p, box, max_level); }
+    int operator()(const double_d &p) { return point_to_tag(p, box, max_level); }
 };
 
 
 template <typename traits>
-struct OctTree<traits>::child_index_to_tag_mask {
-    int level, max_level;
-    typedef typename vector_int::const_pointer ptr_type;
-    ptr_type nodes;
+struct octtree<traits>::child_index_to_tag_mask {
+    const int level, max_level;
 
-    child_index_to_tag_mask(int lvl, int max_lvl, ptr_type nodes) : level(lvl), max_level(max_lvl), nodes(nodes) {}
+    // number of tree children (fixed from number of dimensions)
+    const static int nchild = detail::ipow(2,dimension);
+
+    // mask for lower n bits, where n is the number of dimensions
+    const static unsigned mask = (1  << dimension) - 1;
+
+    typedef typename vector_int::const_pointer ptr_type;
+    ptr_type m_nodes;
+
+    child_index_to_tag_mask(int lvl, int max_lvl, ptr_type nodes) : level(lvl), max_level(max_lvl), m_nodes(nodes) {}
 
     inline CUDA_HOST_DEVICE
     int operator()(int idx) const
     {
-        int tag = nodes[idx/4];
-        int which_child = (idx&3);
+        int tag = m_nodes[idx/nchild];
+        int which_child = (idx&mask);
         return detail::child_tag_mask(tag, which_child, level, max_level);
     }
 };
 
 
 template <typename traits>
-struct OctTree<traits>::classify_node
+struct octtree<traits>::classify_node
 {
     int threshold;
     int last_level;
@@ -376,7 +387,7 @@ struct OctTree<traits>::classify_node
 };
 
 template <typename traits>
-struct OctTree<traits>::write_nodes {
+struct octtree<traits>::write_nodes {
     int num_nodes, num_leaves;
 
     write_nodes(int num_nodes, int num_leaves) : 
@@ -407,7 +418,7 @@ struct OctTree<traits>::write_nodes {
 };
 
 template <typename traits>
-struct OctTree<traits>::make_leaf {
+struct octtree<traits>::make_leaf {
     typedef int2 result_type;
     template <typename tuple_type>
         inline CUDA_HOST_DEVICE

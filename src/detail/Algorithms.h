@@ -49,15 +49,32 @@ static const thrust::detail::functional::placeholder<0>::type _1;
 static const thrust::detail::functional::placeholder<1>::type _2;
 static const thrust::detail::functional::placeholder<2>::type _3;
 
+using thrust::make_transform_iterator;
+using thrust::make_zip_iterator;
+using thrust::make_tuple;
 #else
 
 template <typename T>
 using counting_iterator = boost::counting_iterator<T>;
 
+template <class UnaryFunction, class Iterator>
+using transform_iterator = boost::transform_iterator<UnaryFunction, Iterator>;
+
 const boost::lambda::placeholder1_type _1;
 const boost::lambda::placeholder2_type _2;
 const boost::lambda::placeholder3_type _3;
 
+using boost::make_transform_iterator;
+using boost::make_zip_iterator;
+using boost::make_tuple;
+
+//template <class UnaryFunction, class Iterator>
+//transform_iterator<UnaryFunction, Iterator>
+//make_transform_iterator(Iterator&& it, UnaryFunction&& fun) {
+//    return boost::make_transform_iterator(
+//            std::forward<Iterator>(it), 
+//            std::forward<UnaryFunction>(fun));
+//}
 #endif
 
 
