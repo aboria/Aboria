@@ -259,9 +259,12 @@ private:
     void sort_by_bucket_index() {
         // sort the points by their bucket index
         if (m_bucket_indices.size() > 0) {
+            m_indices.resize(m_bucket_indices.size());
+            detail::sequence(m_indices.begin(), m_indices.end());
             detail::sort_by_key(m_bucket_indices.begin(),
-                m_bucket_indices.end(),
-                this->m_particles_begin);
+                                m_bucket_indices.end(),
+                                m_indices.begin());
+            detail::reorder_destructive(m_indices.begin(), m_indices.end(), this->m_particles_begin);
         }
     }
 
@@ -273,6 +276,7 @@ private:
     vector_unsigned_int m_bucket_begin;
     vector_unsigned_int m_bucket_end;
     vector_unsigned_int m_bucket_indices;
+    vector_unsigned_int m_indices;
     bucket_search_parallel_query<Traits> m_query;
 
     double_d m_bucket_side_length;
