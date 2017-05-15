@@ -12,6 +12,37 @@
 namespace Aboria {
 
 namespace detail {
+
+// reorders v such that v_new[i] == v[order[i]]
+template< typename order_iterator, typename value_iterator >
+void reorder_destructive( order_iterator order_begin, order_iterator order_end, value_iterator v )  {
+    typedef typename std::iterator_traits< value_iterator >::value_type value_t;
+    typedef typename std::iterator_traits< value_iterator >::reference reference;
+    typedef typename std::iterator_traits< order_iterator >::value_type index_t;
+    typedef typename std::iterator_traits< order_iterator >::difference_type diff_t;
+
+    diff_t size = order_end - order_begin;
+    
+    size_t i, j, k;
+    value_t temp;
+    for(i = 0; i < size; i++){
+        if(i != order_begin[i]){
+            temp = v[i];
+            k = i;
+            while(i != (j = order_begin[k])){
+                // every move places a value in it's final location
+                // NOTE: need the static cast or assignment has no effect (TODO: why?)
+                static_cast<reference>(v[k])  = v[j];
+                order_begin[k] = k;
+                k = j;
+            }
+            v[k] = temp;
+            order_begin[k] = k;
+        }
+    }
+}
+
+
 template <typename value_type> 
 struct iter_comp {
     bool operator()(const value_type& t1, const value_type& t2) { return get<0>(t1.get_tuple()) < get<0>(t2.get_tuple()); }
