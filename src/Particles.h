@@ -258,11 +258,11 @@ public:
     /// range-based copy-constructor. performs deep copying of all 
     /// particles from \p first to \p last
     Particles(iterator first, iterator last):
-        data(first,last),
+        data(traits_type::construct(first,last)),
         searchable(false),
         seed(0)
     {
-        if (searchable) embed_points(begin(),end());
+        if (searchable) search.embed_points(begin(),end());
     }
 
     
@@ -408,7 +408,7 @@ public:
 
     /// insert a particle \p val into the container at \p position
     iterator insert (iterator position, const value_type& val) {
-        traits_type::insert(data,position,val);
+        return traits_type::insert(data,position,val);
     }
 
     /// insert a \p n copies of the particle \p val into the container at \p position
@@ -416,11 +416,14 @@ public:
         traits_type::insert(data,position,n,val);
     }
 
+    
+
     /// insert a range of particles pointed to by \p first and \p last at \p position 
     template <class InputIterator>
-    void insert (iterator position, InputIterator first, InputIterator last) {
-        traits_type::insert(data,position,first,last);
-        data.insert(position,first,last);
+    iterator insert (iterator position, InputIterator first, InputIterator last) {
+        return insert_dispatch(position, first, last, std::integral_constant<bool,
+                            std::is_same<InputIterator,iterator>::value 
+                            || std::is_same<InputIterator,const_iterator>::value>());
     }
 
     /// return the total number of particles in the container
@@ -691,6 +694,24 @@ public:
 #endif
 
 private:
+
+    template <class InputIterator>
+    iterator insert_dispatch (iterator position, InputIterator first, InputIterator last, 
+            std::false_type) {
+        //TODO: this is very inefficient, but need to handle normal iterators
+        //to value_type. Could improve....
+        if (first==last) return position;
+        for (InputIterator it = last; it != first; --it) {
+            position = insert(position, *it);
+        }
+        return insert(position, *first);
+    }
+
+    template <class InputIterator>
+    iterator insert_dispatch (iterator position, InputIterator first, InputIterator last, 
+            std::true_type) {
+        return traits_type::insert(data,position,first,last);
+    }
 
     /// enforce a cuboidal domain. Any particles outside this domain for 
     /// non-periodic dimensions will have alive set to false. For periodic dimensions

@@ -263,9 +263,10 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<std::size_t... I>
-    static void insert_impl(data_type& data, iterator position, const value_type& val, detail::index_sequence<I...>) {
-        int dummy[] = { 0, (get_by_index<I>(data).insert(position,get_by_index<I>(val)))... };
-        static_cast<void>(dummy);
+    static iterator insert_impl(data_type& data, iterator position, const value_type& val, detail::index_sequence<I...>) {
+        return iterator(
+                get_by_index<I>(data).insert(get_by_index<I>(position),get_by_index<I>(val))...
+                );
     }
 
     template<std::size_t... I>
@@ -275,9 +276,18 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<class InputIterator, std::size_t... I>
-    static void insert_impl(data_type& data, iterator position, InputIterator first, InputIterator last, detail::index_sequence<I...>) {
-        int dummy[] = { 0, (get_by_index<I>(data).insert(position,first,last))... };
-        static_cast<void>(dummy);
+    static iterator insert_impl(data_type& data, iterator position, InputIterator first, InputIterator last, detail::index_sequence<I...>) {
+        return iterator(get_by_index<I>(data).insert(
+                                get_by_index<I>(position),
+                                get_by_index<I>(first),
+                                get_by_index<I>(last))...);
+    }
+
+    template<class InputIterator, std::size_t... I>
+    static data_type construct_impl(InputIterator first, InputIterator last, detail::index_sequence<I...>) {
+        return data_type(typename tuple_ns::tuple_element<I,vectors_data_type>::type(
+                            get_by_index<I>(first),get_by_index<I>(last)
+                            )...);
     }
 
     template<typename Indices = detail::make_index_sequence<N>>
@@ -321,21 +331,24 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<typename Indices = detail::make_index_sequence<N>>
-    static void insert(data_type& data, iterator pos, const value_type& val) {
-        insert_impl(data, val, Indices());
+    static iterator insert(data_type& data, iterator pos, const value_type& val) {
+        return insert_impl(data, pos, val, Indices());
     }
 
     template<typename Indices = detail::make_index_sequence<N>>
     static void insert(data_type& data, iterator position, size_t n,  const value_type& val) {
-        insert_impl(data, val, n, Indices());
+        insert_impl(data, position, val, n, Indices());
     }
 
     template<class InputIterator, typename Indices = detail::make_index_sequence<N>>
-    static void insert(data_type& data, iterator pos, InputIterator first, InputIterator last) {
-        insert_impl(data, pos, first, last, Indices());
+    static iterator insert(data_type& data, iterator pos, InputIterator first, InputIterator last) {
+        return insert_impl(data, pos, first, last, Indices());
     }
 
-
+    template<class InputIterator, typename Indices = detail::make_index_sequence<N>>
+    static data_type construct(InputIterator first, InputIterator last) {
+        return construct_impl(first, last, Indices());
+    }
 
     typedef typename position_vector_type::size_type size_type; 
     typedef typename position_vector_type::difference_type difference_type; 

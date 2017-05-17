@@ -91,6 +91,12 @@ struct getter_type{
         return *this;
     }
 #endif
+
+    template <typename T1, typename T2> 
+    CUDA_HOST_DEVICE
+    bool operator==( const getter_type<T1,T2>& other) {
+        return data == other.data;
+    }
     
     CUDA_HOST_DEVICE
     void swap(getter_type &other) {
