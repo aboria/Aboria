@@ -226,8 +226,8 @@ void octtree<traits>::build_tree() {
 
         detail::upper_bound(m_tags.begin(),
                 m_tags.end(),
-                make_transform_iterator(children.begin(), detail::_1 + length),
-                make_transform_iterator(children.end(), detail::_1 + length),
+                detail::make_transform_iterator(children.begin(), detail::_1 + length),
+                detail::make_transform_iterator(children.end(), detail::_1 + length),
                 upper_bounds.begin());
 
         /******************************************
