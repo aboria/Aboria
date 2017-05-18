@@ -61,6 +61,7 @@ class nanoflann_adaptor_query;
 #include "nanoflann/nanoflann.hpp"
 
 
+namespace Aboria {
 namespace detail {
 
 template <typename Traits>

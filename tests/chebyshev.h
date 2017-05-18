@@ -63,11 +63,8 @@ public:
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
 
-        typedef detail::BlackBoxExpansions<dimension,N,KernelFunction> expansion_type;
-        typedef typename ParticlesType::query_type query_type;
-        typedef FastMultipoleMethod<expansion_type,KernelFunction,query_type> fmm_type;
-
-        fmm_type fmm(particles.get_query(),expansion_type(kernel));
+        auto fmm = make_fmm_query(particles.get_query(),
+                make_black_box_expansion<dimension,N>(kernel));
 
         auto t0 = Clock::now();
         fmm.calculate_expansions(get<source>(particles));
