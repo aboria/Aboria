@@ -435,13 +435,411 @@ struct octtree<traits>::make_leaf {
         }
 };
 
+template <unsigned int D>
+class child_iterator {
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef Vector<bool,D> bool_d;
+
+    bool_d m_high;
+    int* m_index;
+public:
+    typedef const int_d pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const int reference;
+    typedef const int_d value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    lattice_iterator()
+    {}
+
+    CUDA_HOST_DEVICE
+    lattice_iterator(const int* start):
+        m_high(false),
+        m_index(start)
+    {}
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator ->() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    lattice_iterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator==(const lattice_iterator& rhs) const {
+        return equal(rhs);
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const lattice_iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+private:
+
+    CUDA_HOST_DEVICE
+    bool equal(lattice_iterator const& other) const {
+        return (m_index == other.m_index).all();
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { 
+        return m_index; 
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+        for (int i=0; i<D; i++) {
+            ++m_index[i];
+            if (m_index[i] <= m_max[i]) break;
+            if (i != D-1) {
+                m_index[i] = m_min[i];
+            } 
+        }
+    }
+
+    CUDA_HOST_DEVICE
+    void increment(const int n) {
+        int collapsed_index = m_bucket_index.collapse_index_vector(m_index);
+        m_index = m_bucket_index.reassemble_index_vector(collapsed_index += n);
+    }
+};
+
+
+
+template <typename Query>
+class octtree_depth_first_iterator {
+    typedef tree_depth_first_iterator<Query> iterator;
+    static const unsigned int dimension = Query::dimension;
+    typedef Vector<double,dimension> double_d;
+    typedef Vector<int,dimension> int_d;
+
+public:
+    typedef int* value_type;
+    typedef const value_type* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const value_type& reference;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    octtree_depth_first_iterator():
+        m_node(nullptr)
+    {}
+       
+    /// this constructor is used to start the iterator at the head of a bucket 
+    /// list
+    CUDA_HOST_DEVICE
+    octtree_depth_first_iterator(int* start_node,
+                        const Query *query
+                  ):
+        m_query(query),
+        m_node(start_node)
+    {}
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    CUDA_HOST_DEVICE
+    size_t operator-(iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+ private:
+    friend class boost::iterator_core_access;
+
+    CUDA_HOST_DEVICE
+    void increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (octtree_depth_first_iterator):"); 
+#endif
+        if (m_query->is_leaf_node(*m_node)) {
+            if (m_stack.empty()) {
+                m_node = nullptr;
+            } else {
+                m_node = m_stack.top();
+                m_stack.pop();
+            }
+        } else {
+            m_node = m_query->get_children(m_node);
+            for (int i = 0; i < m_query->number_of_children(); ++i) {
+                m_stack.push(m_node+i);
+            }
+        }
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (octtree_depth_first_iterator): m_node = "<<m_node); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        return m_node == other.m_node;
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return m_node; }
+
+
+    std::stack<int*> m_stack;
+    const int* m_node;
+    const Query *m_query;
+};
+
+template <typename Query, int LNormNumber>
+class octtree_query_iterator {
+    typedef octtree_query_iterator<Query,LNormNumber> iterator;
+    static const unsigned int dimension = Query::dimension;
+    typedef Vector<double,dimension> double_d;
+    typedef Vector<int,dimension> int_d;
+
+public:
+    typedef typename Query::value_type const value_type;
+    typedef const value_type* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const value_type& reference;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    octtree_query_iterator():
+        m_node(nullptr)
+    {}
+       
+    /// this constructor is used to start the iterator at the head of a bucket 
+    /// list
+    CUDA_HOST_DEVICE
+    octtree_query_iterator(const int* start_node,
+                  const double_d& query_point,
+                  const double_d& max_distance,
+                  const Query *query
+                  ):
+
+        m_query_point(query_point),
+        m_inv_max_distance(1.0/max_distance),
+        m_dists(0),
+        m_query(query),
+        m_node(nullptr)
+    {
+        if (start_node == nullptr) {
+                LOG(4,"\tocttree_query_iterator (constructor) empty tree, returning default iterator");
+        } else {
+            double accum = 0;
+            for (int i = 0; i < dimension; ++i) {
+                const double val = m_query_point[i];
+                if (val < m_query->get_bounds_low()[i]) {
+                    m_dists[i] = val - m_query->get_bounds_low()[i];
+                } else if (m_query_point[i] > m_query->get_bounds_high()[i]) {
+                    m_dists[i] = val - m_query->get_bounds_high()[i];
+                }
+                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]*m_inv_max_distance[i]); 
+            }
+            if (accum <= 1.0) {
+                LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
+                m_node = start_node;
+                go_to_next_leaf();
+            } else {
+                LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
+            }
+        }
+    }
+
+
+    octtree_query_iterator(const iterator& copy):
+        m_query_point(copy.m_query_point),
+        m_inv_max_distance(copy.m_inv_max_distance),
+        m_node(copy.m_node),
+        m_dists(copy.m_dists)
+    {
+        m_stack = copy.m_stack;
+        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+    }
+
+    iterator& operator=(const iterator& copy) {
+        m_query_point = copy.m_query_point;
+        m_inv_max_distance = copy.m_inv_max_distance;
+        m_node=copy.m_node;
+        m_dists=copy.m_dists;
+        m_stack = copy.m_stack;
+        return *this;
+        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+    }
+
+    iterator& operator=(const octtree_depth_first_iterator<Query>& copy) {
+        m_node=copy.m_node;
+#ifndef NDEBUG
+        const double_d low = copy.m_query->get_bounds_low(*m_node);
+        const double_d high = copy.m_query->get_bounds_high(*m_node);
+        ASSERT((low <= m_query_point).all() && (high > m_query_point).all(),"query point not in depth_first_iterator")
+#endif
+        std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+        return *this;
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    CUDA_HOST_DEVICE
+    size_t operator-(iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+ private:
+    friend class boost::iterator_core_access;
+
+    void go_to_next_leaf() {
+        while(!m_query->is_leaf_node(*m_node)) {
+            ASSERT(m_query->get_child1(m_node) != NULL,"no child1");
+            ASSERT(m_query->get_child2(m_node) != NULL,"no child2");
+
+            /* Which child branch should be taken first? */
+            const double_d dist = m_query_point 
+                                    - m_query->get_bucket_cut(m_node); 
+
+            LOG(4,"\tocttree_query_iterator (go_to_next_leaf) with query pt = "<<m_query_point<<"):  diff_cut = "<<diff_cut<<std::endl);
+
+            for (child_iterator<dimension> ci = m_query->get_children(m_node); 
+                    ci != false; ++ci) {
+                double_d shortest_dist;
+                for (int j = 0; j < dimension; j++) {
+                    // zero dist if query_point is in this child, keep original
+                    // dist (neg or pos) if not
+                    shortest_dist[j] = ((ci.is_high()[j])^(dist[j]>0))*dist[j]; 
+                }
+                                    
+                // calculate norm of m_dists 
+                double accum = 0;
+                for (int i = 0; i < dimension; ++i) {
+                    accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,shortest_dists[i]*m_inv_max_distance[i]); 
+                }
+                if (accum < 1.0) { // child possible
+                    if (accum == 0.0) { // this is the best child
+                        m_node = *ci;
+                    } else { // save possible child to stack for later
+                        m_stack.push(*ci);
+                    }
+                }
+            }
+            // m_node should now be updated with the best child, moving on...
+        }
+        LOG(4,"\tocttree_query_iterator (go_to_next_leaf) found a leaf node");
+    }
+    
+    void pop_new_child_from_stack() {
+        std::tie(m_node,m_dists) = m_stack.top();
+        m_stack.pop();
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (tree_iterator):"); 
+#endif
+        if (m_stack.empty()) {
+            m_node = nullptr;
+        } else {
+            pop_new_child_from_stack();
+            go_to_next_leaf();
+        }
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (tree_iterator): m_node = "<<m_node); 
+#endif
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        return m_node == other.m_node;
+    }
+
+
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return *m_node; }
+
+
+    std::stack<std::pair<pointer,double_d>> m_stack;
+    double_d m_query_point;
+    double_d m_inv_max_distance;
+    const value_type* m_node;
+    double_d m_dists;
+    const Query *m_query;
+};
+
+
+
 template <typename Traits>
 struct octtree_query {
     const static unsigned int dimension = Traits::dimension;
-    typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
-    typedef typename kd_tree_type::Node value_type;
-    typedef const value_type& reference;
-    typedef const value_type* pointer;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;
@@ -449,51 +847,42 @@ struct octtree_query {
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
-    typedef tree_query_iterator<nanoflann_adaptor_query,-1> query_iterator;
-    typedef value_type* root_iterator;
-    typedef tree_depth_first_iterator<nanoflann_adaptor_query> all_iterator;
+    typedef octtree_query_iterator<dimension> query_iterator;
+    typedef octtree_depth_first_iterator<dimension> root_iterator;
+    typedef octtree_depth_first_iterator<dimension> all_iterator;
+    typedef typename query_iterator::reference reference;
+    typedef typename query_iterator::pointer pointer;
+    typedef typename query_iterator::value_type value_type;
+
     typedef ranges_iterator<Traits> particle_iterator;
 
     bool_d m_periodic;
     detail::bbox<dimension> m_bounds;
     raw_pointer m_particles_begin;
-    size_t m_number_of_buckets;
+    size_t m_number_of_nodes;
 
-    value_type* m_root;
+    int2* m_leaves_begin;
+    int* m_nodes_begin;
 
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
     const double_d& get_bounds_high() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
 
     /*
-     * functions for tree_query_iterator
+     * functions for octtree_query_iterator
      */
-    static bool get_max_levels() {
-        return 5;
-    }
     static bool is_leaf_node(reference bucket) {
-        return (bucket.child1 == NULL) && (bucket.child2 == NULL);
+        return bucket < 0;
     }
     static bool is_tree() {
         return true;
     }
-    static size_t get_dimension_index(reference bucket) {
-        return bucket.node_type.sub.divfeat;
+    pointer get_children(pointer bucket) {
+        return m_nodes_begin + *bucket;
     }
-    static double get_cut_low(reference bucket) {
-        return bucket.node_type.sub.divlow;
-    }
-    static double get_cut_high(reference bucket) {
-        return bucket.node_type.sub.divhigh;
-    }
-    static pointer get_child1(pointer bucket) {
-	    return bucket->child1;
-    }
-    static pointer get_child2(pointer bucket) {
-	    return bucket->child2;
-    }
+
     /*
-     * end functions for tree_query_iterator
+     * end functions for octtree_query_iterator
      */
 
     friend std::ostream& operator<<(std::ostream& os, reference bucket) {
@@ -509,32 +898,18 @@ struct octtree_query {
 
     iterator_range<particle_iterator> 
     get_bucket_particles(reference bucket) const {
+        const int leaf_idx = -m_particles_begin[bucket];
+        ASSERT(leaf_idx > 0, "ERROR: bucket is not a leaf!");
+        const int2& particle_idxs = m_leaves_begin[leaf_idx];
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_bucket_particles: looking in bucket with bounding box low =  "<<get_bucket_bounds_low(bucket)<<" and high = "<<get_bucket_bounds_high(bucket)<<" idx = "<<get_dimension_index(bucket)<<" start index = "<<bucket.node_type.lr.left<<" end index = "<<bucket.node_type.lr.right);
+        LOG(4,"\tget_bucket_particles: looking in bucket with start index = "<<particle_idxs[0]<<" end index = "<<particle_idxs[1]);
 #endif        
-        
+
         return iterator_range<particle_iterator>(
-                        particle_iterator(m_particles_begin + bucket.node_type.lr.left),
-                        particle_iterator(m_particles_begin + bucket.node_type.lr.right));
+                        particle_iterator(m_particles_begin + particle_idxs[0]),
+                        particle_iterator(m_particles_begin + particle_idxs[1]));
     }
 
-    static double_d
-    get_bucket_bounds_low(reference bucket) {
-        double_d low;
-        for (int i = 0; i < dimension; ++i) {
-            low[i] = bucket.bbox[i].low;
-        }
-        return low;
-    }
-
-    static double_d
-    get_bucket_bounds_high(reference bucket) {
-        double_d high;
-        for (int i = 0; i < dimension; ++i) {
-            high[i] = bucket.bbox[i].high;
-        }
-        return high;
-    }
 
      CUDA_HOST_DEVICE
     reference get_bucket(const double_d &position) const {
@@ -561,7 +936,7 @@ struct octtree_query {
     }
 
     size_t number_of_buckets() const {
-        return m_number_of_buckets;
+        return m_number_of_nodes;
     }
 
     template <int LNormNumber=-1>
