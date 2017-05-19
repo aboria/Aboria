@@ -370,6 +370,9 @@ struct nanoflann_adaptor_query {
 
      CUDA_HOST_DEVICE
     reference get_bucket(const double_d &position) const {
+        query_iterator it(m_root,position,double_d(1),this);
+        return *it;
+        /*
         pointer node = m_root;
         while(!is_leaf_node(*node)) {
             ASSERT(get_child1(node) != nullptr,"no child1");
@@ -385,6 +388,7 @@ struct nanoflann_adaptor_query {
             }
         }
         return *node;
+        */
     }
 
     CUDA_HOST_DEVICE
