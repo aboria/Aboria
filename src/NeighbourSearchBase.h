@@ -1667,6 +1667,7 @@ private:
 };
 
 
+
 template <unsigned int D>
 class lattice_iterator_with_hole {
     typedef Vector<double,D> double_d;
