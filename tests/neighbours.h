@@ -474,6 +474,11 @@ For example,
         helper_d_test_list_regular<std::vector,nanoflann_adaptor>();
     }
 
+    void test_std_vector_octtree(void) {
+        helper_d_test_list_random<std::vector,octtree>();
+        helper_d_test_list_regular<std::vector,octtree>();
+    }
+
     void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__CUDACC__)
         helper_d_test_list_regular<thrust::device_vector,bucket_search_serial>();
