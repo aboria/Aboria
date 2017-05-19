@@ -709,13 +709,13 @@ public:
     }
 
     iterator& operator=(const octtree_depth_first_iterator<Query>& copy) {
-        m_node=copy.m_node;
+        m_node = copy.m_node;
 #ifndef NDEBUG
         const double_d low = copy.m_query->get_bounds_low(*m_node);
         const double_d high = copy.m_query->get_bounds_high(*m_node);
         ASSERT((low <= m_query_point).all() && (high > m_query_point).all(),"query point not in depth_first_iterator")
 #endif
-        std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+        m_stack = copy.m_stack;
         return *this;
     }
 
@@ -904,7 +904,6 @@ struct octtree_query {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_bucket_particles: looking in bucket with start index = "<<particle_idxs[0]<<" end index = "<<particle_idxs[1]);
 #endif        
-
         return iterator_range<particle_iterator>(
                         particle_iterator(m_particles_begin + particle_idxs[0]),
                         particle_iterator(m_particles_begin + particle_idxs[1]));
@@ -964,10 +963,6 @@ struct octtree_query {
 
 
 };
-
-
-
-}
 
 
 }
