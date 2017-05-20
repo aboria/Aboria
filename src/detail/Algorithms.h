@@ -232,6 +232,15 @@ void tabulate (
 
 }
 
+template<typename InputIterator , typename OutputIterator >
+OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result) {
+#ifdef __aboria_use_thrust_algorithms__
+    return thrust::copy(first,last,result);
+#else
+    return std::copy(first,last,result);
+#endif
+}
+
 template<typename InputIterator, typename OutputIterator, typename UnaryFunction, 
     typename T, typename AssociativeOperator>
 OutputIterator transform_exclusive_scan(

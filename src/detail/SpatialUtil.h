@@ -303,6 +303,41 @@ int point_to_tag(const Vector<double,D> &p, bbox<D> box, int max_level) {
   return result;
 }
 
+template<unsigned int D>
+CUDA_HOST_DEVICE
+int tag_to_lower_bound(const Vector<double,D> &p, bbox<D> box, int max_level) {
+    TODO
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    int result = 0;
+  
+    for (int level = 1 ; level <= max_level ; ++level) {
+        double_d mid;
+        int_d hi_half;
+    
+        for (int i=0; i<D; i++) {
+            // Classify in i-direction
+            mid[i] = 0.5f * (box.bmin[i] + box.bmax[i]);
+            hi_half[i] = (p[i] < mid[i]) ? 0 : 1;
+  
+            // Push the bit into the result as we build it
+            result |= hi_half[i];
+            result <<= 1;
+        }
+  
+        // Shrink the bounding box, still encapsulating the point
+        for (int i=0; i<D; i++) {
+            box.bmin[i] = (hi_half[i]) ? mid[i] : box.bmin[i];
+            box.bmax[i] = (hi_half[i]) ? box.bmax[i] : mid[i];
+        }
+
+  }
+  // Unshift the last
+  result >>= 1;
+
+  return result;
+}
+
 template <typename T=void>
 void print_tag(int tag, int max_level)
 {

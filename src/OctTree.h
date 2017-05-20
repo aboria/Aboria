@@ -68,7 +68,7 @@ class octtree:
     static const unsigned int dimension = Traits::dimension;
 
     // number of children = 2^d
-    static const size_t nchild = (1  << dimension);
+    static const size_t nchild = (1 << dimension);
 
     typedef typename Traits::iterator iterator;
 
@@ -93,7 +93,6 @@ private:
     }
     void update_iterator_impl() {
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
     void embed_points_impl() {
@@ -181,8 +180,11 @@ private:
     vector_int m_tags;
     vector_int m_indices;
     vector_int m_nodes;
+    vector_int m_node_tags;
     vector_int2 m_leaves;
     detail::bbox<dimension> m_bounds;
+
+    octtree_query<Traits> m_query;
 };
 
 
@@ -190,6 +192,7 @@ private:
 template <typename traits>
 void octtree<traits>::build_tree() {
     m_nodes.clear();
+    m_node_tags.clear();
     m_leaves.clear();
     vector_int active_nodes(1,0);
 
@@ -236,8 +239,17 @@ void octtree<traits>::build_tree() {
 
         // Mark each child as either empty, a node, or a leaf
         vector_int child_node_kind(children.size(), 0);
-        detail::transform(lower_bounds.begin(), lower_bounds.end(),
-                upper_bounds.begin(),
+        detail::transform(
+                //TODO: boost make_zip_iterator does not work with std::tuple, so
+                //have to use the boost make_tuple here
+                detail::make_zip_iterator(
+                    detail::make_tuple(
+                        lower_bounds.begin(), upper_bounds.begin()
+                        )),
+                detail::make_zip_iterator(
+                    detail::make_tuple(
+                        lower_bounds.end(),upper_bounds.end()
+                        )),
                 child_node_kind.begin(),
                 classify_node(this->m_n_particles_in_leaf, level == m_max_level));
 
@@ -287,6 +299,14 @@ void octtree<traits>::build_tree() {
                 m_nodes.begin() + children_begin,
                 write_nodes(m_nodes.size(), m_leaves.size()));
 
+        /*******************************************************
+         * 5.1. Add the children's tags to the node tag list   *
+         *******************************************************/
+
+        m_node_tags.resize(m_nodes.size());
+
+        detail::copy(children.begin(), children.end(),
+                m_node_tags.begin() + children_begin);
 
         /******************************************
          * 6. Add the leaves to the leaf list     *
@@ -371,9 +391,12 @@ struct octtree<traits>::classify_node
 
     classify_node(int threshold, int last_level) : threshold(threshold), last_level(last_level) {}
 
+    template <typename tuple_type>
     inline CUDA_HOST_DEVICE
-    int operator()(int lower_bound, int upper_bound) const
+    int operator()(const tuple_type& t) const
     {
+        int lower_bound= get<0>(t);
+        int upper_bound= get<1>(t);
         const int count = upper_bound - lower_bound;
         if (count == 0)
         {
@@ -863,6 +886,7 @@ struct octtree_query {
 
     int2* m_leaves_begin;
     int* m_nodes_begin;
+    int* m_node_tags_begin;
 
     const double_d& get_bounds_low() const { return m_bounds.bmin; }
     const double_d& get_bounds_high() const { return m_bounds.bmax; }
@@ -881,24 +905,18 @@ struct octtree_query {
         return child_iterator<dimension>(m_nodes_begin + *bucket);
     }
 
+    double_d get_bucket_cut(reference bucket) {
+        return 0.5*(get_bucket_bounds_low(bucket)+get_bucket_bounds_high(bucket));
+    }
+
     /*
      * end functions for octtree_query_iterator
      */
 
-    friend std::ostream& operator<<(std::ostream& os, reference bucket) {
-        if (is_leaf_node(bucket)) {
-            os << "Leaf node";
-        } else {
-            os << "Node";
-        } 
-        os <<" with bounding box " << get_bucket_bbox(bucket) << std::endl;
-        return os;
-    }   
-           
 
     iterator_range<particle_iterator> 
     get_bucket_particles(reference bucket) const {
-        const int leaf_idx = -m_particles_begin[bucket];
+        const int leaf_idx = -m_nodes_begin[bucket];
         ASSERT(leaf_idx > 0, "ERROR: bucket is not a leaf!");
         const int2& particle_idxs = m_leaves_begin[leaf_idx];
 #ifndef __CUDA_ARCH__
@@ -909,8 +927,20 @@ struct octtree_query {
                         particle_iterator(m_particles_begin + particle_idxs[1]));
     }
 
+    CUDA_HOST_DEVICE
+    double_d get_bucket_bounds_low(reference bucket) {
+        const size_t index = &bucket - m_nodes_begin;
+        return detail::tag_to_lower_bound(m_node_tags_begin[index]);
+    }
 
-     CUDA_HOST_DEVICE
+    CUDA_HOST_DEVICE
+    double_d get_bucket_bounds_high(reference bucket) {
+        const size_t index = &bucket - m_nodes_begin;
+        return detail::tag_to_lower_bound(m_node_tags_begin[index]);
+    }
+
+
+    CUDA_HOST_DEVICE
     reference get_bucket(const double_d &position) const {
         query_iterator it(m_nodes_begin,position,double_d(1),this);
         return *it;
