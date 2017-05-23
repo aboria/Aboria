@@ -449,6 +449,7 @@ public:
     void init_neighbour_search(const double_d& low, const double_d& high, const double length_scale, const bool_d& periodic) {
         search.set_domain(low,high,periodic,double_d(length_scale));
         enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
+        search.embed_points(begin(),end());
         searchable = true;
     }
 
@@ -533,7 +534,7 @@ public:
             while (Aboria::get<alive>(*i) == false) {
                 if ((index < size()-1) && (size() > 1)) {
                     *i = *(end()-1);
-                    if (search.unordered()) {
+                    if (searchable && search.unordered()) {
                         search.copy_points(end()-1,i);
                     }
                     pop_back(false);
