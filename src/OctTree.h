@@ -119,7 +119,7 @@ private:
         build_tree();
 
 #ifndef __CUDA_ARCH__
-        if (4 <= ABORIA_LOG_LEVEL) { 
+        if (3 <= ABORIA_LOG_LEVEL) { 
             detail::print_nodes(m_nodes,dimension);
             detail::print_leaves(m_leaves);
         }
@@ -541,7 +541,7 @@ public:
     }
 
     bool is_high(const size_t i) const {
-        return m_high & (1<<i);
+        return m_high & (1<<(D-1-i));
     }
 
     box_type get_bounds() const {
@@ -757,11 +757,11 @@ public:
 
         if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain.");
+            LOG(3,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain.");
 #endif
         } else {
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"):  found m_node = "<<*m_stack.top());
+            LOG(3,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"):  found bbox = "<<m_query->get_bounds(m_stack.top()));
 #endif
         }
     }
@@ -840,7 +840,6 @@ public:
             const bool less_than_bmin = m_query_point[j]<bounds.bmin[j];
             const bool more_than_bmax = m_query_point[j]>bounds.bmax[j];
 
-
             // dist 0 if between min/max, or distance to min/max if not
             const double dist = (less_than_bmin^more_than_bmax)
                                 *(less_than_bmin?
@@ -868,15 +867,22 @@ public:
 
 
     void go_to_next_leaf() {
-        while (!m_stack.empty() && !m_query->is_leaf_node(*m_stack.top())) {
+        bool exit = m_stack.empty();
+        while (!exit) {
             child_iterator& node = m_stack.top();
-            LOG(4,"\tgo_to_next_leaf with child "<<node.get_child_number()<<" with bounds "<<node.get_bounds());
-            if (child_is_within_query(node)) { // could be in this child, so dive down
-                LOG(4,"\tthis child is within query, so dive down");
-                m_stack.push(m_query->get_children(node));
+            LOG(3,"\tgo_to_next_leaf with child "<<node.get_child_number()<<" with bounds "<<node.get_bounds());
+            if (child_is_within_query(node)) { // could be in this child
+                LOG(4,"\tthis child is within query, so going to next child");
+                if (m_query->is_leaf_node(*m_stack.top())) {
+                    exit = true;
+                } else {
+                    LOG(4,"\tdive down");
+                    m_stack.push(m_query->get_children(node));
+                }
             } else { // not in this one, so go to next child, or go up if no more children
                 LOG(4,"\tthis child is NOT within query, so going to next child");
                 increment_stack();
+                exit = m_stack.empty();
             }
         }
 #ifndef __CUDA_ARCH__
@@ -900,11 +906,11 @@ public:
 
         if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tend increment (octree_query_iterator): no more nodes"); 
+            LOG(3,"\tend increment (octree_query_iterator): no more nodes"); 
 #endif
         } else {
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tend increment (octree_query_iterator): m_node = "<<*m_stack.top()); 
+            LOG(3,"\tend increment (octree_query_iterator): looking in bbox "<<m_query->get_bounds(m_stack.top())); 
 #endif
         }
     }

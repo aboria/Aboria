@@ -202,7 +202,7 @@ public:
 #endif
         while (m_current_bucket == m_bucket_range.end()) {
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tgo_to_next periodic (search_iterator):"); 
+            LOG(3,"\tgo_to_next periodic (search_iterator):"); 
 #endif
             ++m_current_periodic;
             if (m_current_periodic == m_periodic.end()) {
@@ -212,7 +212,7 @@ public:
                 return false; 
             }
             m_current_point = m_r + (*m_current_periodic)*
-                                (m_query->get_bounds().bmin-m_query->get_bounds().bmax);
+                                (m_query->get_bounds().bmax-m_query->get_bounds().bmin);
             m_bucket_range = m_query->get_buckets_near_point(m_current_point,m_max_distance);
             m_current_bucket = m_bucket_range.begin();
         }
@@ -262,7 +262,7 @@ public:
             } 
         }
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tcheck_candidate: m_r = "<<m_current_point<<" other r = "<<get<position>(*m_current_particle)<<". outside = "<<outside); 
+        LOG(3,"\tcheck_candidate: m_r = "<<m_current_point<<" other r = "<<get<position>(*m_current_particle)<<". outside = "<<outside); 
 #endif
         return !outside;
     }
@@ -276,7 +276,7 @@ public:
         while (!found_good_candidate && (m_valid=go_to_next_candidate())) {
             found_good_candidate = check_candidate();
 #ifndef __CUDA_ARCH__
-            LOG(3,"\tfound_good_candidate = "<<found_good_candidate); 
+            LOG(4,"\tfound_good_candidate = "<<found_good_candidate); 
 #endif
             
         }
