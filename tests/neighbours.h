@@ -359,27 +359,8 @@ For example,
 
     	particles.init_neighbour_search(min,max,periodic,neighbour_n);
 
-        // Aboria search
-        
-        auto t0 = Clock::now();
-        Aboria::detail::for_each(particles.begin(),particles.end(),
-                [&](typename particles_type::reference i) {
-                    int count = 0;
-                    //std::cout << "position of i = "<<get<position>(i)<<std::endl;
-                    for (auto tpl: euclidean_search(particles.get_query(),get<position>(i),r)) {
-                        typename particles_type::const_reference j = std::get<0>(tpl);
-                        typename particles_type::double_d dx = std::get<1>(tpl);
-                        //std::cout << "position of j = "<<get<position>(j)<<std::endl;
-                        TS_ASSERT_LESS_THAN_EQUALS(dx.squaredNorm(),r2);
-                        count++;
-                    }
-                    get<neighbours>(i) = count;
-                });
-        auto t1 = Clock::now();
-        std::chrono::duration<double> dt_aboria = t1 - t0;
-
         // brute force search
-        t0 = Clock::now();
+        auto t0 = Clock::now();
         Aboria::detail::for_each(particles.begin(),particles.end(),
                 [&](typename particles_type::reference i) {
                     int count = 0;
@@ -401,15 +382,37 @@ For example,
                             }
                         }
                     }
+                    get<neighbours>(i) = count;
+                    
+                });
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt_brute = t1 - t0;
+
+
+        // Aboria search
+        
+        t0 = Clock::now();
+        Aboria::detail::for_each(particles.begin(),particles.end(),
+                [&](typename particles_type::reference i) {
+                    int count = 0;
+                    //std::cout << "position of i = "<<get<position>(i)<<std::endl;
+                    for (auto tpl: euclidean_search(particles.get_query(),get<position>(i),r)) {
+                        typename particles_type::const_reference j = std::get<0>(tpl);
+                        typename particles_type::double_d dx = std::get<1>(tpl);
+                        //std::cout << "position of j = "<<get<position>(j)<<std::endl;
+                        TS_ASSERT_LESS_THAN_EQUALS(dx.squaredNorm(),r2);
+                        count++;
+                    }
                     TS_ASSERT_EQUALS(count,get<neighbours>(i));
                     if (get<id>(i)==0) {
-                        std::cout << "\tfor id = 0 found "<<get<neighbours>(i)
-                                  <<" neighbours and expected "<<count
+                        std::cout << "\tfor id = 0 found "<<count 
+                                  <<" neighbours and expected "<<get<neighbours>(i)
                                   <<" neighbours"<<std::endl;
                     }
                 });
         t1 = Clock::now();
-        std::chrono::duration<double> dt_brute = t1 - t0;
+        std::chrono::duration<double> dt_aboria = t1 - t0;
+
         std::cout << "\ttiming result: Aboria = "<<dt_aboria.count()
                   <<" versus brute force = "<<dt_brute.count()<<std::endl;
     }
