@@ -130,6 +130,7 @@ set(BDTest
     test_bucket_search_serial
     test_bucket_search_parallel
     test_nanoflann_adaptor
+    test_octtree
     )
 
 set(SPHTestFile sph.h)
@@ -144,6 +145,7 @@ set(MDTest
     test_bucket_search_serial
     test_bucket_search_parallel
     test_nanoflann_adaptor
+    test_octtree
     )
  
 set(RbfInterpolationTestFile rbf_interpolation.h)

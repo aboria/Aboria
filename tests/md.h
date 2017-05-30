@@ -213,6 +213,10 @@ public:
         helper_md<nanoflann_adaptor>();
     }
 
+    void test_octtree() {
+        helper_md<octtree>();
+    }
+
 
 };
 
