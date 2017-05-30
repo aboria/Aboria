@@ -558,138 +558,6 @@ private:
 };
 
 
-template <unsigned int D>
-class octtree_child_query_iterator {
-    typedef Vector<double,D> double_d;
-    typedef Vector<int,D> int_d;
-    typedef Vector<bool,D> bool_d;
-    typedef detail::bbox<D> box_type;
-    typedef octtree_child_iterator<D> child_iterator;
-    static const unsigned int nchild = (1<<D);
-
-    std::array<int,nchild> m_indices;
-public:
-    typedef const int* pointer;
-	typedef std::forward_iterator_tag iterator_category;
-    typedef const int* value_type;
-    typedef const int*& reference;
-	typedef std::ptrdiff_t difference_type;
-
-    octtree_child_query_iterator():
-        m_index(nullptr)
-    {}
-
-    CUDA_HOST_DEVICE
-    octtree_child_query_iterator(const child_iterator& node, const double_d query_point, const double_d cut_dist):
-        m_high(0),
-        m_index(start),
-        m_bounds(bounds)
-    {
-            std::array<float,nchild> distances;
-
-            // loop through all children
-            for (int i = 0; i < nchild; ++i) {
-                
-                double_d shortest_dist;
-                for (int j = 0; j < dimension; j++) {
-                    // zero dist if query_point is in this child, keep original
-                    // dist (neg or pos) if not
-                    //
-                    const bool is_high = i & (1<<i);
-                    shortest_dist[j] = (is_high^(dist[j]>0))*dist[j]; 
-                }
-                                    
-                // calculate norm of m_dists 
-                double accum = 0;
-                for (int i = 0; i < dimension; ++i) {
-                    accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,dist[i]*m_inv_max_distance[i]); 
-                }
-                if (accum < 1.0) { // child possible
-                    if (accum == 0.0) { // this is the best child
-                        m_node = m_query->get_child(m_node,i);
-                    } else { // save possible child to stack for later
-                        m_stack.push(m_query->get_child(m_node,i));
-                    }
-                }
-            }
-            // m_node should now be updated with the best child, moving on...
-        }
-
-    
-    
-    }
-
-    bool is_high(const size_t i) {
-        return m_high & (1<<i);
-    }
-
-    box_type& get_bounds() {
-        return m_bounds;
-    }
-
-    CUDA_HOST_DEVICE
-    reference operator *() const {
-        return dereference();
-    }
-
-    CUDA_HOST_DEVICE
-    reference operator ->() const {
-        return dereference();
-    }
-
-    CUDA_HOST_DEVICE
-    octtree_child_iterator& operator++() {
-        increment();
-        return *this;
-    }
-
-    CUDA_HOST_DEVICE
-    inline bool operator==(const octtree_child_iterator& rhs) const {
-        return equal(rhs);
-    }
-
-    CUDA_HOST_DEVICE
-    inline bool operator!=(const octtree_child_iterator& rhs) const {
-        return !operator==(rhs);
-    }
-
-    inline bool operator==(const bool rhs) const {
-        return equal(rhs);
-    }
-
-    inline bool operator!=(const bool rhs) const {
-        return !operator==(rhs);
-    }
-
-private:
-
-    CUDA_HOST_DEVICE
-    bool equal(octtree_child_iterator const& other) const {
-        return (m_index == other.m_index).all();
-    }
-
-    bool equal(const bool other) const {
-        return (m_high<(1<<D))==other;
-    }
-
-    CUDA_HOST_DEVICE
-    reference dereference() const { 
-        return m_index; 
-    }
-
-    CUDA_HOST_DEVICE
-    void increment() {
-        ++m_index;
-        ++m_high;
-        for (int i = 0; i < D; ++i) {
-            const bool high = m_high & (1<<i);
-            m_bounds.bmin[i] = high?
-                                0.5*(m_bounds.bmax[i]+m_bounds.bmin[i]):
-                                m_bounds.bmin[i];
-        }
-    }
-};
-
 
 template <typename Query>
 class octtree_depth_first_iterator {
@@ -776,7 +644,7 @@ public:
         }
 
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (octtree_depth_first_iterator): m_node = "<<m_node); 
+        LOG(4,"\tend increment (octtree_depth_first_iterator):"); 
 #endif
     }
 
@@ -801,6 +669,7 @@ class octtree_query_iterator {
     static const unsigned int dimension = Query::dimension;
     typedef Vector<double,dimension> double_d;
     typedef Vector<int,dimension> int_d;
+    typedef detail::bbox<dimension> box_type;
 
 public:
     typedef typename child_iterator::value_type value_type;
@@ -825,27 +694,12 @@ public:
         m_inv_max_distance(1.0/max_distance),
         m_query(query)
     {
-        if (start_node == nullptr) {
-                LOG(4,"\tocttree_query_iterator (constructor) empty tree, returning default iterator");
+        if (child_is_within_query(start_node)) {
+            LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
+            m_query->get_children(start_node);
+            go_to_next_leaf();
         } else {
-            double accum = 0;
-            const box_type& bounds = m_query->get_bounds(start_node);
-            for (int i = 0; i < dimension; ++i) {
-                double dist = m_query_point[i];
-                if (dist < bounds.bmin[i]) {
-                    dist -= bounds.bmin[i];
-                } else if (dist > bounds.bmax[i]) {
-                    dist -= bounds.bmax[i];
-                }
-                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,dist*m_inv_max_distance[i]); 
-            }
-            if (accum <= 1.0) {
-                LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
-                m_stack.push(m_query->get_child_query(start_node,query_point,max_distance));
-                go_to_next_leaf();
-            } else {
-                LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
-            }
+            LOG(4,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
         }
     }
 
@@ -865,15 +719,13 @@ public:
         //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
     }
 
+    /*
     iterator& operator=(const octtree_depth_first_iterator<Query>& copy) {
-#ifndef NDEBUG
-        const double_d low = copy.m_query->get_bounds_low(*m_node);
-        const double_d high = copy.m_query->get_bounds_high(*m_node);
-        ASSERT((low <= m_query_point).all() && (high > m_query_point).all(),"query point not in depth_first_iterator")
-#endif
         m_stack = copy.m_stack;
+        go_to_next_leaf();
         return *this;
     }
+    */
 
 
     CUDA_HOST_DEVICE
@@ -916,47 +768,54 @@ public:
  private:
     friend class boost::iterator_core_access;
 
-    void increment() {
+    bool child_is_within_query(const child_iterator& node) {
+        const box_type& bounds = m_query->get_bounds(node);
+        double accum = 0;
+        for (int j = 0; j < dimension; j++) {
+            const bool less_than_bmin = m_query_point[j]<bounds.bmin[j];
+            const bool more_than_bmax = m_query_point[j]>bounds.bmax[j];
 
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (octtree_query_iterator):"); 
-#endif
+            // dist 0 if between min/max, or distance to min/max if not
+            const double dist = (less_than_bmin^more_than_bmax)
+                                *(less_than_bmin?
+                                        (bounds.bmin[j]-m_query_point[j]):
+                                        (m_query_point[j]-bounds.bmax[j]));
 
-        ++stack.top();
+            accum = detail::distance_helper<LNormNumber>::
+                        accumulate_norm(accum,dist*m_inv_max_distance[j]); 
+        }
+        return (accum < 1.0);
+    }
 
-        while (!stack.empty() && !m_query->is_leaf_node(stack.top())) {
-            child_iterator& node = stack.top();
-            const bbox& bounds = m_query->get_bounds(node);
-            double accum = 0;
-            for (int j = 0; j < dimension; j++) {
-                const bool less_than_bmin = m_query_point[j]<bounds.bmin[j];
-                const bool more_than_bmax = m_query_point[j]>bounds.bmax[j];
-
-                // dist 0 if between min/max, or distance to min/max if not
-                const double dist = (less_than_bmin^more_than_bmax)
-                                    *(less_than_bmin?
-                                            (bounds.bmin[j]-m_query_point[j]):
-                                            (m_query_point[j]-bounds.bmax[j]));
-
-                accum = detail::distance_helper<LNormNumber>::
-                            accumulate_norm(accum,dist*m_inv_max_distance[j]); 
-            }
-            if (accum < 1.0) { // could be in this child, so dive down
-                stack.push(m_query->get_children(node));
+    void go_to_next_leaf() {
+        while (!m_stack.empty() && !m_query->is_leaf_node(m_stack.top())) {
+            child_iterator& node = m_stack.top();
+            if (child_is_within_query(node)) { // could be in this child, so dive down
+                m_stack.push(m_query->get_children(node));
             } else { // not in this one, so go to next child, or go up if no more children
-                ++stack.top();
-                while (!stack.empty() && stack.top() == false) {
-                    stack.pop();
+                ++m_stack.top();
+                while (!m_stack.empty() && m_stack.top() == false) {
+                    m_stack.pop();
                 }
             }
         }
-        if (stack.empty()) {
+    }
+
+    void increment() {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tincrement (octtree_query_iterator):"); 
+#endif
+        ++m_stack.top();
+
+        go_to_next_leaf();
+
+        if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
             LOG(4,"\tend increment (octree_query_iterator): no more nodes"); 
 #endif
         } else {
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tend increment (octree_query_iterator): m_node = "<<stack.top()); 
+            LOG(4,"\tend increment (octree_query_iterator): m_node = "<<m_stack.top()); 
 #endif
         }
     }
@@ -964,13 +823,17 @@ public:
 
     CUDA_HOST_DEVICE
     bool equal(iterator const& other) const {
-        return m_node == other.m_node;
+        if (m_stack.empty() || other.m_stack.empty()) {
+            return m_stack.empty() == other.m_stack.empty();
+        } else {
+            return m_stack.top() == other.m_stack.top();
+        }
     }
 
 
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return *m_node; }
+    { return *m_stack.top(); }
 
 
     std::stack<child_iterator> m_stack;
@@ -1014,37 +877,22 @@ struct octtree_query {
     const box_type& get_bounds() const { return m_bounds; }
     const bool_d& get_periodic() const { return m_periodic; }
 
-    /*
-     * functions for octtree_query_iterator
-     */
-    pointer get_child(pointer bucket, const int i) {
-        return m_nodes_begin + *bucket + i;
+    static bool is_leaf_node(reference b) {
+        return *b < 0;
     }
 
-    double_d get_bucket_cut(reference bucket) {
-        return double_d(0.5);
+    child_iterator get_children(reference b) {
+        CHECK(&bucket == m_nodes_begin, "bucket should be a root bucket");
+        return child_iterator(m_nodes_begin + bucket, m_bounds);
     }
 
-    /*
-     * end functions for octtree_query_iterator
-     */
-
-    static bool is_leaf_node(reference bucket) {
-        return bucket < 0;
-    }
-
-    child_iterator get_children(pointer bucket) {
-        CHECK(bucket == m_nodes_begin, "bucket should be a root bucket");
-        return child_iterator(m_nodes_begin + *bucket, m_bounds);
-    }
-    child_iterator get_children(const child_iterator& ci) {
+    static child_iterator get_children(const child_iterator& ci) {
         return child_iterator(&(*ci), ci.get_bounds());
     }
 
-    const box_type& get_bucket_bounds(const child_iterator& ci) {
+    static const box_type& get_bounds(const child_iterator& ci) {
         return ci.get_bounds();
     }
-
 
     iterator_range<particle_iterator> 
     get_bucket_particles(reference bucket) const {
@@ -1059,25 +907,7 @@ struct octtree_query {
                         particle_iterator(m_particles_begin + particle_idxs[1]));
     }
 
-    box_type get_child_bounds(const child_iterator<dimension>& ci, reference parent, const box_type& parent_box) {
-        box_type ret;
-        for (int i = 0; i < dimension; ++i) {
-            if (ci.is_high(i)) {
-                ret.bmin[i] = parent_box.bmax[i]/2; 
-                ret.bmax[i] = parent_box.bmax[i]; 
-            } else {
-                ret.bmin[i] = parent_box.bmin[i]; 
-                ret.bmax[i] = parent_box.bmax[i]/2; 
-            }
-
-        }
-        return ret;
-    }
-
-
-        const size_t index = &bucket - m_nodes_begin;
-        return detail::tag_to_lower_bound(m_node_tags_begin[index]);
-    }
+    
 
     CUDA_HOST_DEVICE
     box_type get_root_bucket_bounds(reference bucket) {

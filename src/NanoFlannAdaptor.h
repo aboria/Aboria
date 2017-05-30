@@ -264,6 +264,109 @@ private:
     nanoflann_adaptor_query<Traits> m_query;
 };
 
+template <typename Traits>
+class nanoflann_child_iterator {
+    static const unsigned int D = Traits::dimension;
+    typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef Vector<bool,D> bool_d;
+    typedef detail::bbox<D> box_type;
+
+    int  m_high;
+    int* m_index;
+    box_type m_bounds;
+public:
+    typedef const int* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const int* value_type;
+    typedef const int*& reference;
+	typedef std::ptrdiff_t difference_type;
+
+    octtree_child_iterator():
+        m_index(nullptr)
+    {}
+
+    CUDA_HOST_DEVICE
+    octtree_child_iterator(int* const start, const box_type& bounds):
+        m_high(0),
+        m_index(start),
+        m_bounds(bounds)
+    {}
+
+    bool is_high(const size_t i) {
+        return m_high & (1<<i);
+    }
+
+    box_type& get_bounds() {
+        return m_bounds;
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator ->() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    octtree_child_iterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator==(const octtree_child_iterator& rhs) const {
+        return equal(rhs);
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const octtree_child_iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+    inline bool operator==(const bool rhs) const {
+        return equal(rhs);
+    }
+
+    inline bool operator!=(const bool rhs) const {
+        return !operator==(rhs);
+    }
+
+private:
+
+    CUDA_HOST_DEVICE
+    bool equal(octtree_child_iterator const& other) const {
+        return (m_index == other.m_index).all();
+    }
+
+    bool equal(const bool other) const {
+        return (m_high<(1<<D))==other;
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { 
+        return m_index; 
+    }
+
+    CUDA_HOST_DEVICE
+    void increment() {
+        ++m_index;
+        ++m_high;
+        for (int i = 0; i < D; ++i) {
+            const bool high = m_high & (1<<i);
+            m_bounds.bmin[i] = high?
+                                0.5*(m_bounds.bmax[i]+m_bounds.bmin[i]):
+                                m_bounds.bmin[i];
+        }
+    }
+};
+
+
+
 
 // this is NOT going to work from device code because we are adapting
 // a host code only library
