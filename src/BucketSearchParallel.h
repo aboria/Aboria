@@ -300,6 +300,7 @@ struct bucket_search_parallel_query {
     typedef lattice_iterator<dimension> query_iterator;
     typedef lattice_iterator<dimension> root_iterator;
     typedef lattice_iterator<dimension> all_iterator;
+    typedef int* child_iterator;
     typedef typename query_iterator::reference reference;
     typedef typename query_iterator::pointer pointer;
     typedef typename query_iterator::value_type value_type;
@@ -336,6 +337,21 @@ struct bucket_search_parallel_query {
 
     static bool is_tree() {
         return false;
+    }
+
+    static child_iterator get_children(reference bucket) {
+        CHECK(false,"this should not be called")
+        return nullptr;
+    }
+
+    static child_iterator get_children(const child_iterator& ci) {
+        CHECK(false,"this should not be called")
+        return nullptr;
+    }
+
+    static const box_type get_bounds(const child_iterator& ci) {
+        CHECK(false,"this should not be called")
+        return box_type();
     }
 
     // dodgy hack cause nullptr cannot be converted to pointer

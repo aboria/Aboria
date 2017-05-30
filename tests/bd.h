@@ -144,15 +144,23 @@ public:
 //]
 
     void test_bucket_search_parallel() {
+        std::cout << "bucket_search_parallel" << std::endl;
         helper_bd<bucket_search_parallel>();
     }
 
     void test_bucket_search_serial() {
+        std::cout << "bucket_search_serial" << std::endl;
         helper_bd<bucket_search_serial>();
     }
 
     void test_nanoflann_adaptor() {
+        std::cout << "nanoflann_adaptor" << std::endl;
         helper_bd<nanoflann_adaptor>();
+    }
+
+    void test_octtree() {
+        std::cout << "octtree" << std::endl;
+        helper_bd<octtree>();
     }
 
 };
