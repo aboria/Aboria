@@ -123,10 +123,12 @@ public:
         m_periodic(get_periodic_range(m_query->get_periodic())),
         m_current_periodic(m_periodic.begin()),
         m_current_point(r+(*m_current_periodic)
-                            *(m_query->get_bounds_high()-m_query->get_bounds_low())),
+                            *(m_query->get_bounds().bmax-m_query->get_bounds().bmin)),
         m_bucket_range(query.get_buckets_near_point(m_current_point,max_distance)),
         m_current_bucket(m_bucket_range.begin())
     {
+
+        LOG(3,"\tconstructor (search_iterator with query pt = "<<m_r<<", and m_current_point = "<<m_current_point<<")");
         if ((m_valid = get_valid_bucket())) {
             m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
             m_current_particle = m_particle_range.begin();
@@ -210,7 +212,7 @@ public:
                 return false; 
             }
             m_current_point = m_r + (*m_current_periodic)*
-                                (m_query->get_bounds_high()-m_query->get_bounds_low());
+                                (m_query->get_bounds().bmin-m_query->get_bounds().bmax);
             m_bucket_range = m_query->get_buckets_near_point(m_current_point,m_max_distance);
             m_current_bucket = m_bucket_range.begin();
         }
