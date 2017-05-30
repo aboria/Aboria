@@ -252,10 +252,11 @@ OutputIterator transform_exclusive_scan(
     return thrust::transform_exclusive_scan(first,last,result,unary_op,init,binary_op);
 #else
     const size_t n = last-first;
-    result[0] = 0;
+    result[0] = init;
     for (int i=1; i<n; ++i) {
-        result[i] = binary_op(result[i-1],unary_op(first[i]));
+        result[i] = binary_op(result[i-1],unary_op(first[i-1]));
     }
+    return result + n;
 #endif
 }
 

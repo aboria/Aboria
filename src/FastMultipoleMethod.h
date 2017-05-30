@@ -71,6 +71,7 @@ struct calculate_P2M_and_M2M {
 
     expansion_type& calculate_dive(const child_iterator& it) {
         const size_t my_index = m_query.get_bucket_index(*it);
+        const box_type& my_box = it.get_bounds();
         expansion_type& W = m_W[my_index];
         if (m_query.is_leaf_node(*it)) { // leaf node
             detail::calculate_P2M(W, my_box, 
@@ -103,7 +104,7 @@ struct calculate_P2M_and_M2M {
             for (child_iterator ci = m_query->get_children(bucket,my_box); 
                     ci != false; ++ci) {
                 expansion_type& child_W = calculate_dive(ci);
-                const box_type child_box& = ci.get_bounds();
+                const box_type& child_box = ci.get_bounds();
                 m_expansions.M2M(W,my_box,child_box,child_W);
             }
         }
@@ -149,7 +150,7 @@ struct calculate_M2L_and_L2L {
                         const box_type& box_parent, 
                         const child_iterator& it) {
         const box_type& target_box = it.get_bounds();
-        size_t target_index = m_query.get_bucket_index(bucket);
+        size_t target_index = m_query.get_bucket_index(*it);
         expansion_type& g = m_g[target_index];
 #ifndef NDEBUG
         for (int i = 0; i < g.size(); ++i) {
@@ -172,13 +173,14 @@ struct calculate_M2L_and_L2L {
             } else {
                 for (child_iterator ci = m_query->get_children(source); 
                     ci != false; ++ci) {
-                const box_type& child_box = ci.get_bounds();
-                if (theta.check(child_box.bmin,child_box.bmax)) {
-                    connected_buckets.push_back(ci);
-                } else {
-                    //std::cout << "bucket from "<<child1_box.bmin<<" to "<<child1_box.bmax<<"is not connected to target box from "<<target_box.bmin<<" to "<<target_box.bmax<<std::endl;
-                    size_t child1_index = m_query.get_bucket_index(*ci);
-                    m_expansions.M2L(g,target_box,child_box,m_W[child1_index]);
+                    const box_type& child_box = ci.get_bounds();
+                    if (theta.check(child_box.bmin,child_box.bmax)) {
+                        connected_buckets.push_back(ci);
+                    } else {
+                        //std::cout << "bucket from "<<child1_box.bmin<<" to "<<child1_box.bmax<<"is not connected to target box from "<<target_box.bmin<<" to "<<target_box.bmax<<std::endl;
+                        size_t child1_index = m_query.get_bucket_index(*ci);
+                        m_expansions.M2L(g,target_box,child_box,m_W[child1_index]);
+                    }
                 }
             }
         }
@@ -214,7 +216,7 @@ struct calculate_M2L_and_L2L {
 
         // now dive into the tree and do a proper FMM
         if (!m_query.is_leaf_node(bucket)) { 
-            for (child_iterator ci = m_query->get_children(bucket,my_box); 
+            for (child_iterator ci = m_query->get_children(bucket,target_box); 
                     ci != false; ++ci) {
                 calculate_dive(connected_buckets,g,target_box,ci);
             }

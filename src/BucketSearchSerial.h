@@ -475,6 +475,7 @@ struct bucket_search_serial_query {
     typedef typename query_iterator::pointer pointer;
     typedef typename query_iterator::value_type value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
+    typedef detail::bbox<dimension> box_type;
 
     bool_d m_periodic;
     double_d m_bucket_side_length; 
@@ -515,8 +516,7 @@ struct bucket_search_serial_query {
 	    return pointer(-1);
     }
 
-    const double_d& get_bounds_low() const { return m_bounds.bmin; }
-    const double_d& get_bounds_high() const { return m_bounds.bmax; }
+    const box_type& get_bounds() const { return m_bounds; }
     const bool_d& get_periodic() const { return m_periodic; }
 
     CUDA_HOST_DEVICE

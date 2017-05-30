@@ -304,6 +304,7 @@ struct bucket_search_parallel_query {
     typedef typename query_iterator::pointer pointer;
     typedef typename query_iterator::value_type value_type;
     typedef ranges_iterator<Traits> particle_iterator;
+    typedef detail::bbox<dimension> box_type;
 
     raw_pointer m_particles_begin;
     raw_pointer m_particles_end;
@@ -348,8 +349,7 @@ struct bucket_search_parallel_query {
     }
 
     //const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
-    const double_d& get_bounds_low() const { return m_bounds.bmin; }
-    const double_d& get_bounds_high() const { return m_bounds.bmax; }
+    const box_type& get_bounds() const { return m_bounds; }
     const bool_d& get_periodic() const { return m_periodic; }
 
     CUDA_HOST_DEVICE

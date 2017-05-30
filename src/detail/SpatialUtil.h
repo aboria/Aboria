@@ -255,9 +255,9 @@ inline CUDA_HOST_DEVICE
 int get_leaf_offset(int id) { return 0x80000000 ^ id; }
 
 inline CUDA_HOST_DEVICE
-int child_tag_mask(int tag, int which_child, int level, int max_level)
+int child_tag_mask(int tag, int which_child, int level, int max_level, unsigned int D)
 {
-  int shift = (max_level - level) * 2;
+  int shift = (max_level - level) * D;
   return tag | (which_child << shift);
 }
 
@@ -303,82 +303,64 @@ int point_to_tag(const Vector<double,D> &p, bbox<D> box, int max_level) {
   return result;
 }
 
-template<unsigned int D>
-CUDA_HOST_DEVICE
-int tag_to_lower_bound(const Vector<double,D> &p, bbox<D> box, int max_level) {
-    TODO
-    typedef Vector<double,D> double_d;
-    typedef Vector<int,D> int_d;
-    int result = 0;
-  
-    for (int level = 1 ; level <= max_level ; ++level) {
-        double_d mid;
-        int_d hi_half;
-    
-        for (int i=0; i<D; i++) {
-            // Classify in i-direction
-            mid[i] = 0.5f * (box.bmin[i] + box.bmax[i]);
-            hi_half[i] = (p[i] < mid[i]) ? 0 : 1;
-  
-            // Push the bit into the result as we build it
-            result |= hi_half[i];
-            result <<= 1;
-        }
-  
-        // Shrink the bounding box, still encapsulating the point
-        for (int i=0; i<D; i++) {
-            box.bmin[i] = (hi_half[i]) ? mid[i] : box.bmin[i];
-            box.bmax[i] = (hi_half[i]) ? box.bmax[i] : mid[i];
-        }
 
-  }
-  // Unshift the last
-  result >>= 1;
-
-  return result;
-}
-
-template <typename T=void>
+template <unsigned int D>
 void print_tag(int tag, int max_level)
 {
   for (int level = 1 ; level <= max_level ; ++level)
   {
-    std::bitset<2> bits = tag >> (max_level - level) * 2;
+    std::bitset<D> bits = tag >> (max_level - level) * D;
     std::cout << bits << " ";
   }
 }
 
-template<typename Vector>
+template<unsigned int D, typename Vector>
 void print_active_nodes(const Vector &active_nodes, int max_level)
 {
   std::cout << "Active nodes:\n      ";
-  for (int i = 1 ; i <= max_level ; ++i)
-  {
-    std::cout << "xy ";
+  for (int i = 1 ; i <= max_level ; ++i) {
+      for (int j = 0; j < D; j++) {
+          if (j == 0) {
+              std::cout << "x";
+          } else if (j == 1) {
+              std::cout << "y";
+          } else if (j == 2) {
+              std::cout << "z";
+          }
+      }
+      std::cout << " ";
   }
   std::cout << std::endl;
   for (int i = 0 ; i < active_nodes.size() ; ++i)
   {
     std::cout << std::setw(4) << i << ": ";
-    print_tag(active_nodes[i], max_level);
+    print_tag<D>(active_nodes[i], max_level);
     std::cout << std::endl;
   }
   std::cout << std::endl;
 }
 
-template<typename Vector>
+template<unsigned int D, typename Vector>
 void print_children(const Vector &children, int max_level)
 {
   std::cout << "Children:\n      ";
-  for (int i = 1 ; i <= max_level ; ++i)
-  {
-    std::cout << "xy ";
+  for (int i = 1 ; i <= max_level ; ++i) {
+      for (int j = 0; j < D; j++) {
+          if (j == 0) {
+              std::cout << "x";
+          } else if (j == 1) {
+              std::cout << "y";
+          } else if (j == 2) {
+              std::cout << "z";
+          }
+      }
+      std::cout << " ";
   }
   std::cout << std::endl;
   for (int i = 0 ; i < children.size() ; ++i)
   {
     std::cout << std::setw(4) << i << ": ";
-    print_tag(children[i], max_level);
+    print_tag<D>(children[i], max_level);
     std::cout << std::endl;
   }
   std::cout << std::endl;
@@ -457,13 +439,13 @@ void print_child_enumeration(const Vector &child_node_kind,
 }
 
 template<typename Vector>
-void print_nodes(const Vector &nodes)
+void print_nodes(const Vector &nodes, const unsigned int D)
 {
-  std::cout << "Quadtree nodes:\n";
+  std::cout << "Octtree nodes:\n";
   std::cout << "          [ nodeid  leafid ]\n";
   
   int next_level = 0;
-  int children_at_next_level = 4;
+  int children_at_next_level = 1<<D;
 
   for (int i = 0 ; i < nodes.size() ; ++i)
   {
@@ -471,9 +453,8 @@ void print_nodes(const Vector &nodes)
     {
       std::cout << "          [================]\n";
       next_level += children_at_next_level;
-      children_at_next_level = 0;
     }
-    else if (i % 4 == 0)
+    else if (i % children_at_next_level == 0)
     {
       std::cout << "          [----------------]\n";
     }
@@ -503,14 +484,14 @@ void print_nodes(const Vector &nodes)
 template<typename Vector>
 void print_leaves(const Vector &leaves)
 {
-  std::cout << "Quadtree leaves:\n";
+  std::cout << "Octtree leaves:\n";
   std::cout << "          [ lower    upper ]\n";
   
   for (int i = 0 ; i < leaves.size() ; ++i)
   {
     std::cout << std::setw(7) << i << " : [ ";
-    std::cout << std::setw(4) << leaves[i].x << "    ";
-    std::cout << std::setw(4) << leaves[i].y << "   ]\n";
+    std::cout << std::setw(4) << leaves[i][0] << "    ";
+    std::cout << std::setw(4) << leaves[i][1] << "   ]\n";
   }
 }
 
