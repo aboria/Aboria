@@ -233,8 +233,8 @@ class RASMPreconditioner {
             }
             const double_d side_length = (high-low)/size;
             iterator_range<lattice_iterator<dimension>> range(
-                    lattice_iterator<dimension>(int_d(0),size-1,int_d(0)),
-                    ++lattice_iterator<dimension>(int_d(0),size-1,size-1));
+                    lattice_iterator<dimension>(int_d(0),size),
+                    lattice_iterator<dimension>());
             for (typename lattice_iterator<dimension>::reference box: range) {
                 analyze_domain(start_row, kernel, query,
                         box*side_length,(box+1)*side_length);

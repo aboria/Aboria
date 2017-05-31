@@ -451,7 +451,11 @@ struct nanoflann_adaptor_query {
      * end functions for tree_query_iterator
      */
 
-    child_iterator get_children(reference bucket) const {
+    child_iterator get_children() const {
+        return child_iterator(m_root, m_bounds);
+    }
+
+    child_iterator get_children(reference bucket, const box_type& bounds) const {
         CHECK(&bucket == m_root, "bucket should be a root bucket");
         return child_iterator(m_root, m_bounds);
     }
@@ -516,10 +520,10 @@ struct nanoflann_adaptor_query {
 
     CUDA_HOST_DEVICE
     void get_bucket(const double_d &position, pointer& bucket, box_type& bounds) const {
-        child_iterator i(m_root,m_bounds);
+        child_iterator i = get_children();
         i.go_to(position);
         
-        while (!is_leaf(*i)) {
+        while (!is_leaf_node(*i)) {
             i = get_children(i);
             i.go_to(position);
         }
@@ -545,7 +549,7 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(get_children(*m_root),position,double_d(max_distance),this),
+                query_iterator(get_children(),position,double_d(max_distance),this),
                 query_iterator()
                 );
     }
@@ -557,7 +561,7 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(get_children(*m_root),position,max_distance,this),
+                query_iterator(get_children(),position,max_distance,this),
                 query_iterator()
                 );
     }

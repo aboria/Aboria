@@ -99,11 +99,14 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     static iterator_range<periodic_iterator_type> get_periodic_range(const bool_d is_periodic) {
-        int_d start = int_d(-1)*is_periodic;
-        int_d end = int_d(1)*is_periodic;
+        int_d start,end;
+        for (int i = 0; i < dimension; ++i) {
+           start[i] = is_periodic[i] ? 0 : -1;  
+           end[i] =   is_periodic[i] ? 1 : 2;  
+        }
         return iterator_range<periodic_iterator_type>(
-                periodic_iterator_type(start,end,start),
-                ++periodic_iterator_type(start,end,end));
+                periodic_iterator_type(start,end),
+                periodic_iterator_type());
     }
 
     CUDA_HOST_DEVICE

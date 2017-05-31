@@ -121,7 +121,7 @@ namespace detail {
                  const double& source ) {
 
             detail::ChebyshevRnSingle<D,N> cheb_rn(position,box);
-            lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
+            lattice_iterator<dimension> mj(int_d(0),int_d(N));
             for (int j=0; j<ncheb; ++j,++mj) {
                 //std::cout << "accumulating P2M from "<<position<<" to node "<<*mj<<" with Rn = "<<cheb_rn(*mj)<<std::endl;
                 accum[j] += cheb_rn(*mj)*source;
@@ -133,14 +133,14 @@ namespace detail {
                  const box_type& source_box, 
                  const expansion_type& source) {
 
-            lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
+            lattice_iterator<dimension> mj(int_d(0),int_d(N));
             for (int j=0; j<ncheb; ++j,++mj) {
                 const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
                 const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                     + source_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
 
-                lattice_iterator<D> mi(int_d(0),int_d(N-1),int_d(0));
+                lattice_iterator<D> mi(int_d(0),int_d(N));
                 for (int i=0; i<ncheb; ++i,++mi) {
                     accum[i] += cheb_rn(*mi)*source[j];
                 }
@@ -167,13 +167,13 @@ namespace detail {
                  const box_type& source_box, 
                  const expansion_type& source) {
 
-            lattice_iterator<dimension> mi(int_d(0),int_d(N-1),int_d(0));
+            lattice_iterator<dimension> mi(int_d(0),int_d(N));
             for (int i=0; i<ncheb; ++i,++mi) {
                 const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
                                                                     + target_box.bmin;
 
-                lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
+                lattice_iterator<dimension> mj(int_d(0),int_d(N));
                 for (int j=0; j<ncheb; ++j,++mj) {
                     const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
@@ -190,14 +190,14 @@ namespace detail {
                  const box_type& source_box, 
                  const expansion_type& source) {
             //M2M(accum,target_box,source_box,source);
-            lattice_iterator<dimension> mi(int_d(0),int_d(N-1),int_d(0));
+            lattice_iterator<dimension> mi(int_d(0),int_d(N));
             for (int i=0; i<ncheb; ++i,++mi) {
                 const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
                     + target_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
 
-                lattice_iterator<D> mj(int_d(0),int_d(N-1),int_d(0));
+                lattice_iterator<D> mj(int_d(0),int_d(N));
                 for (int j=0; j<ncheb; ++j,++mj) {
                     accum[i] += cheb_rn(*mj)*source[j];
                 }
@@ -222,7 +222,7 @@ namespace detail {
                    const box_type& box, 
                    const expansion_type& source) {
             detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
-            lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
+            lattice_iterator<dimension> mj(int_d(0),int_d(N));
             double sum = 0;
             for (int j=0; j<ncheb; ++j,++mj) {
                 //std::cout << "cheb node "<<*mj<<" p = "<<cheb_rn.get_position(*mj)<<" source = "<<source[j]<<std::endl;

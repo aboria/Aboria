@@ -70,7 +70,7 @@ void chebyshev_interpolation(
     const size_t targetN = std::distance(output_iterator_begin,output_iterator_end);
     const size_t ncheb = std::pow(n,D);
     const int_d start = int_d(0);
-    const int_d end = int_d(n-1);
+    const int_d end = int_d(n);
 
     map_type source_values(&(*input_iterator_begin),sourceN);
     map_type target_values(&(*output_iterator_begin),targetN);
@@ -83,7 +83,7 @@ void chebyshev_interpolation(
     // fill source_Rn matrix
     matrix_type source_Rn_matrix(ncheb,sourceN);
     for (int i=0; i<sourceN; ++i) {
-        lattice_iterator<D> mi(start,end,start);
+        lattice_iterator<D> mi(start,end);
         for (int j=0; j<ncheb; ++j,++mi) {
             source_Rn_matrix(j,i) = source_Rn(*mi,i);
         }
@@ -94,10 +94,10 @@ void chebyshev_interpolation(
 
     // fill kernel matrix
     matrix_type kernel_matrix(ncheb,ncheb);
-    lattice_iterator<D> mi(start,end,start);
+    lattice_iterator<D> mi(start,end);
     for (int i=0; i<ncheb; ++i,++mi) {
         const double_d pi = source_Rn.get_position(*mi);
-        lattice_iterator<D> mj(start,end,start);
+        lattice_iterator<D> mj(start,end);
         for (int j=0; j<ncheb; ++j,++mj) {
             const double_d pj = target_Rn.get_position(*mj);
             kernel_matrix(i,j) = kernel(pi-pj,pj,pi);
@@ -110,7 +110,7 @@ void chebyshev_interpolation(
     // fill target_Rn matrix
     matrix_type target_Rn_matrix(targetN,ncheb);
     for (int i=0; i<targetN; ++i) {
-        lattice_iterator<D> mj(start,end,start);
+        lattice_iterator<D> mj(start,end);
         for (int j=0; j<ncheb; ++j,++mj) {
             target_Rn_matrix(i,j) = target_Rn(*mj,i);
         }
