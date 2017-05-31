@@ -829,6 +829,8 @@ namespace nanoflann
         friend class Aboria::nanoflann_adaptor;
         template <typename Traits>
         friend class Aboria::nanoflann_adaptor_query;
+        template <typename Traits>
+        friend class Aboria::nanoflann_child_iterator;
 	private:
 		/** Hidden copy constructor, to disallow copying indices (Not implemented) */
 		KDTreeSingleIndexAdaptor(const KDTreeSingleIndexAdaptor<Distance,DatasetAdaptor,DIM,IndexType>&);
