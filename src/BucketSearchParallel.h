@@ -300,9 +300,9 @@ struct bucket_search_parallel_query {
     typedef lattice_iterator<dimension> query_iterator;
     typedef lattice_iterator<dimension> root_iterator;
     typedef lattice_iterator<dimension> all_iterator;
-    typedef int* child_iterator;
     typedef typename query_iterator::reference reference;
     typedef typename query_iterator::pointer pointer;
+    typedef pointer child_iterator;
     typedef typename query_iterator::value_type value_type;
     typedef ranges_iterator<Traits> particle_iterator;
     typedef detail::bbox<dimension> box_type;
@@ -344,10 +344,6 @@ struct bucket_search_parallel_query {
         return nullptr;
     }
 
-    static child_iterator get_children(const child_iterator& ci) {
-        CHECK(false,"this should not be called")
-        return nullptr;
-    }
 
     static const box_type get_bounds(const child_iterator& ci) {
         CHECK(false,"this should not be called")
@@ -401,8 +397,10 @@ struct bucket_search_parallel_query {
     }
 
     CUDA_HOST_DEVICE
-    value_type get_bucket(const double_d &position) const {
-        return m_point_to_bucket_index.find_bucket_index_vector(position);
+    void get_bucket(const double_d &position, pointer& bucket, box_type& bounds) const {
+        bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
+        bounds.bmin = bucket*m_bucket_side_length + m_bounds.bmin;
+        bounds.bmax = (bucket+1)*m_bucket_side_length + m_bounds.bmin;
     }
 
     CUDA_HOST_DEVICE

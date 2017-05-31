@@ -713,7 +713,8 @@ public:
     tree_query_iterator(const child_iterator& start,
                   const double_d& query_point,
                   const double_d& max_distance,
-                  const Query *query
+                  const Query *query,
+                  const bool ordered=false
                   ):
         m_query_point(query_point),
         m_inv_max_distance(1.0/max_distance),
