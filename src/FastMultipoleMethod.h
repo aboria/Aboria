@@ -311,13 +311,13 @@ public:
         */
             
         double sum = Expansions::L2P(p,box,m_g[index]);
-        for (pointer& source_pointer: m_connectivity[index]) { 
+        for (child_iterator& source_pointer: m_connectivity[index]) { 
             if (m_query->is_leaf_node(*source_pointer)) {
                 sum += detail::calculate_K_direct(p
                     ,m_query->get_bucket_particles(*source_pointer)
                     ,m_expansions,source_vector,m_query->get_particles_begin());
             } else {
-                for (reference subtree_reference: m_query->get_subtree(*source_pointer)) {
+                for (reference subtree_reference: m_query->get_subtree(source_pointer)) {
                     if (m_query->is_leaf_node(*source_pointer)) {
                         sum += detail::calculate_K_direct(p
                                 ,m_query->get_bucket_particles(subtree_reference)

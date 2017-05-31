@@ -56,6 +56,9 @@ class nanoflann_adaptor;
 template <typename Traits>
 class nanoflann_adaptor_query; 
 
+template <typename Traits>
+class nanoflann_child_iterator; 
+
 }
 
 #include "nanoflann/nanoflann.hpp"
@@ -285,17 +288,21 @@ public:
     {}
 
     CUDA_HOST_DEVICE
-    nanoflann_child_iterator(int* const start, const box_type& bounds):
+    nanoflann_child_iterator(pointer start, const box_type& bounds):
         m_high(0),
         m_index(start),
         m_bounds(bounds)
     {}
 
-    bool is_high() {
+    int get_child_number() const {
+        return m_high;
+    }
+
+    bool is_high() const {
         return m_high>0;
     }
 
-    box_type get_bounds() {
+    box_type get_bounds() const {
         box_type ret = m_bounds;
         const int i = m_index->node_type.sub.divfeat;
         if (is_high()) {
@@ -366,347 +373,6 @@ private:
     }
 };
 
-template <typename Query>
-class kdtree_depth_first_iterator {
-    typedef kdtree_depth_first_iterator<Query> iterator;
-    static const unsigned int dimension = Query::dimension;
-    typedef Vector<double,dimension> double_d;
-    typedef Vector<int,dimension> int_d;
-
-public:
-    typedef typename Query::value_type const value_type;
-    typedef const value_type* pointer;
-	typedef std::forward_iterator_tag iterator_category;
-    typedef const value_type& reference;
-	typedef std::ptrdiff_t difference_type;
-
-    CUDA_HOST_DEVICE
-    kdtree_depth_first_iterator():
-        m_node(nullptr)
-    {}
-       
-    /// this constructor is used to start the iterator at the head of a bucket 
-    /// list
-    CUDA_HOST_DEVICE
-    kdtree_depth_first_iterator(pointer start_node,
-                        const Query *query
-                  ):
-        m_query(query),
-        m_node(start_node)
-    {}
-
-    CUDA_HOST_DEVICE
-    reference operator *() const {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    reference operator ->() {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    iterator& operator++() {
-        increment();
-        return *this;
-    }
-    CUDA_HOST_DEVICE
-    iterator operator++(int) {
-        iterator tmp(*this);
-        operator++();
-        return tmp;
-    }
-    CUDA_HOST_DEVICE
-    size_t operator-(iterator start) const {
-        size_t count = 0;
-        while (start != *this) {
-            start++;
-            count++;
-        }
-        return count;
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator==(const iterator& rhs) const {
-        return equal(rhs);
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator!=(const iterator& rhs) const {
-        return !operator==(rhs);
-    }
-
- private:
-    friend class boost::iterator_core_access;
-
-    CUDA_HOST_DEVICE
-    void increment() {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (kdtree_depth_first_iterator):"); 
-#endif
-        if (m_query->is_leaf_node(*m_node)) {
-            if (m_stack.empty()) {
-                m_node = nullptr;
-            } else {
-                m_node = m_stack.top();
-                m_stack.pop();
-            }
-        } else {
-            pointer child1 = m_query->get_child1(m_node);
-            pointer child2 = m_query->get_child2(m_node);
-            m_stack.push(child2);
-            m_node = child1;
-        }
-
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (kdtree_depth_first_iterator): m_node = "<<m_node); 
-#endif
-    }
-
-    CUDA_HOST_DEVICE
-    bool equal(iterator const& other) const {
-        return m_node == other.m_node;
-    }
-
-
-    CUDA_HOST_DEVICE
-    reference dereference() const
-    { return *m_node; }
-
-
-    std::stack<pointer> m_stack;
-    const value_type* m_node;
-    const Query *m_query;
-};
-
-template <typename Query, int LNormNumber>
-class kdtree_query_iterator {
-    typedef kdtree_query_iterator<Query,LNormNumber> iterator;
-    static const unsigned int dimension = Query::dimension;
-    typedef Vector<double,dimension> double_d;
-    typedef Vector<int,dimension> int_d;
-
-public:
-    typedef typename Query::value_type const value_type;
-    typedef const value_type* pointer;
-	typedef std::forward_iterator_tag iterator_category;
-    typedef const value_type& reference;
-	typedef std::ptrdiff_t difference_type;
-
-    CUDA_HOST_DEVICE
-    kdtree_query_iterator():
-        m_node(nullptr)
-    {}
-       
-    /// this constructor is used to start the iterator at the head of a bucket 
-    /// list
-    CUDA_HOST_DEVICE
-    kdtree_query_iterator(const value_type* start_node,
-                  const double_d& query_point,
-                  const double_d& max_distance,
-                  const Query *query
-                  ):
-
-        m_query_point(query_point),
-        m_inv_max_distance(1.0/max_distance),
-        m_dists(0),
-        m_query(query),
-        m_node(nullptr)
-    {
-        //m_stack.reserve(m_query->get_max_levels());
-        if (start_node == nullptr) {
-                LOG(4,"\tkdtree_query_iterator (constructor) empty tree, returning default iterator");
-        } else {
-            double accum = 0;
-            for (int i = 0; i < dimension; ++i) {
-                const double val = m_query_point[i];
-                if (val < m_query->get_bounds().bmin[i]) {
-                    m_dists[i] = val - m_query->get_bounds().bmin[i];
-                } else if (m_query_point[i] > m_query->get_bounds().bmax[i]) {
-                    m_dists[i] = val - m_query->get_bounds().bmax[i];
-                }
-                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]*m_inv_max_distance[i]); 
-            }
-            if (accum <= 1.0) {
-                LOG(4,"\tkdtree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
-                m_node = start_node;
-                go_to_next_leaf();
-            } else {
-                LOG(4,"\tkdtree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
-            }
-        }
-    }
-
-
-    kdtree_query_iterator(const iterator& copy):
-        m_query_point(copy.m_query_point),
-        m_inv_max_distance(copy.m_inv_max_distance),
-        m_node(copy.m_node),
-        m_dists(copy.m_dists)
-    {
-        m_stack = copy.m_stack;
-        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
-    }
-
-    iterator& operator=(const iterator& copy) {
-        m_query_point = copy.m_query_point;
-        m_inv_max_distance = copy.m_inv_max_distance;
-        m_node=copy.m_node;
-        m_dists=copy.m_dists;
-        m_stack = copy.m_stack;
-        return *this;
-        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
-    }
-
-    iterator& operator=(const kdtree_depth_first_iterator<Query>& copy) {
-        m_node=copy.m_node;
-        std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
-        return *this;
-    }
-
-
-    /*
-    iterator& operator=(iterator&& copy):
-        m_stack=std::move(copy.m_stack),
-        m_query_point(copy.m_query_point),
-        m_max_distance2(copy.m_max_distance2),
-        m_node(copy.m_node),
-        m_dists(copy.m_dists)
-    {}
-    */
-
-
-    CUDA_HOST_DEVICE
-    reference operator *() const {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    reference operator ->() {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    iterator& operator++() {
-        increment();
-        return *this;
-    }
-    CUDA_HOST_DEVICE
-    iterator operator++(int) {
-        iterator tmp(*this);
-        operator++();
-        return tmp;
-    }
-    CUDA_HOST_DEVICE
-    size_t operator-(iterator start) const {
-        size_t count = 0;
-        while (start != *this) {
-            start++;
-            count++;
-        }
-        return count;
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator==(const iterator& rhs) const {
-        return equal(rhs);
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator!=(const iterator& rhs) const {
-        return !operator==(rhs);
-    }
-
- private:
-    friend class boost::iterator_core_access;
-
-    void go_to_next_leaf() {
-        while(!m_query->is_leaf_node(*m_node)) {
-            ASSERT(m_query->get_child1(m_node) != NULL,"no child1");
-            ASSERT(m_query->get_child2(m_node) != NULL,"no child2");
-            /* Which child branch should be taken first? */
-            const size_t idx = m_query->get_dimension_index(*m_node);
-            const double val = m_query_point[idx];
-            const double diff_cut_high = val - m_query->get_cut_high(*m_node);
-            const double diff_cut_low = val - m_query->get_cut_low(*m_node);
-
-            pointer bestChild;
-            pointer otherChild;
-            double cut_dist,bound_dist;
-
-
-            LOG(4,"\tkdtree_query_iterator (go_to_next_leaf) with query pt = "<<m_query_point<<"): idx = "<<idx<<" cut_high = "<<m_query->get_cut_high(*m_node)<<" cut_low = "<<m_query->get_cut_low(*m_node));
-            
-            if ((diff_cut_low+diff_cut_high)<0) {
-                LOG(4,"\tkdtree_query_iterator (go_to_next_leaf) low child is best");
-                bestChild = m_query->get_child1(m_node);
-                otherChild = m_query->get_child2(m_node);
-                cut_dist = diff_cut_high;
-                //bound_dist = val - m_query->get_bounds_high(*m_node);
-            } else {
-                LOG(4,"\tkdtree_query_iterator (go_to_next_leaf) high child is best");
-                bestChild = m_query->get_child2(m_node);
-                otherChild = m_query->get_child1(m_node);
-                cut_dist = diff_cut_low;
-                //bound_dist = val - m_query->get_bounds_low(*m_node);
-            }
-            
-            // if other child possible save it to stack for later
-            double save_dist = m_dists[idx];
-            m_dists[idx] = cut_dist;
-
-            // calculate norm of m_dists 
-            double accum = 0;
-            for (int i = 0; i < dimension; ++i) {
-                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]*m_inv_max_distance[i]); 
-            }
-            if (accum <= 1.0) {
-                LOG(4,"\tkdtree_query_iterator (go_to_next_leaf) push other child for later");
-                m_stack.push(std::make_pair(otherChild,m_dists));
-            }
-
-            // restore m_dists and move to bestChild
-            m_dists[idx] = save_dist;
-            m_node = bestChild;
-        }
-        LOG(4,"\tkdtree_query_iterator (go_to_next_leaf) found a leaf node");
-    }
-    
-    void pop_new_child_from_stack() {
-        std::tie(m_node,m_dists) = m_stack.top();
-        m_stack.pop();
-    }
-
-    CUDA_HOST_DEVICE
-    void increment() {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (kdtree_iterator):"); 
-#endif
-        if (m_stack.empty()) {
-            m_node = nullptr;
-        } else {
-            pop_new_child_from_stack();
-            go_to_next_leaf();
-        }
-
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (kdtree_iterator): m_node = "<<m_node); 
-#endif
-    }
-
-    CUDA_HOST_DEVICE
-    bool equal(iterator const& other) const {
-        return m_node == other.m_node;
-    }
-
-
-    CUDA_HOST_DEVICE
-    reference dereference() const
-    { return *m_node; }
-
-
-    std::stack<std::pair<pointer,double_d>> m_stack;
-    double_d m_query_point;
-    double_d m_inv_max_distance;
-    const value_type* m_node;
-    double_d m_dists;
-    const Query *m_query;
-};
-
-
-
 
 // this is NOT going to work from device code because we are adapting
 // a host code only library
@@ -724,9 +390,9 @@ struct nanoflann_adaptor_query {
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
-    typedef kdtree_query_iterator<nanoflann_adaptor_query,-1> query_iterator;
+    typedef tree_query_iterator<nanoflann_adaptor_query,-1> query_iterator;
     typedef value_type* root_iterator;
-    typedef kdtree_depth_first_iterator<nanoflann_adaptor_query> all_iterator;
+    typedef depth_first_iterator<nanoflann_adaptor_query> all_iterator;
     typedef nanoflann_child_iterator<Traits> child_iterator;
     typedef ranges_iterator<Traits> particle_iterator;
     typedef detail::bbox<dimension> box_type;
@@ -772,7 +438,7 @@ struct nanoflann_adaptor_query {
      * end functions for tree_query_iterator
      */
 
-    child_iterator get_children(reference bucket) {
+    child_iterator get_children(reference bucket) const {
         CHECK(&bucket == m_root, "bucket should be a root bucket");
         return child_iterator(m_root, m_bounds);
     }
@@ -781,8 +447,16 @@ struct nanoflann_adaptor_query {
         return child_iterator(&(*ci), ci.get_bounds());
     }
 
-    static const box_type& get_bounds(const child_iterator& ci) {
+    static const box_type get_bounds(const child_iterator& ci) {
         return ci.get_bounds();
+    }
+
+    static const box_type get_bounds(const query_iterator& qi) {
+        return qi.get_bounds();
+    }
+
+    static const box_type get_bounds(const all_iterator& ai) {
+        return ai.get_bounds();
     }
 
     friend std::ostream& operator<<(std::ostream& os, reference bucket) {
@@ -829,7 +503,7 @@ struct nanoflann_adaptor_query {
 
      CUDA_HOST_DEVICE
     reference get_bucket(const double_d &position) const {
-        query_iterator it(m_root,position,double_d(1),this);
+        query_iterator it(get_children(*m_root),position,double_d(1),this);
         return *it;
         /*
         pointer node = m_root;
@@ -866,7 +540,7 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(m_root,position,double_d(max_distance),this),
+                query_iterator(get_children(*m_root),position,double_d(max_distance),this),
                 query_iterator()
                 );
     }
@@ -878,7 +552,7 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(m_root,position,max_distance,this),
+                query_iterator(get_children(*m_root),position,max_distance,this),
                 query_iterator()
                 );
     }
@@ -887,8 +561,8 @@ struct nanoflann_adaptor_query {
         return iterator_range<root_iterator>(m_root, m_root+1);
     }
 
-    iterator_range<all_iterator> get_subtree(reference bucket) const {
-        return iterator_range<all_iterator>(all_iterator(&bucket,this),all_iterator());
+    iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
+        return iterator_range<all_iterator>(all_iterator(ci,this),all_iterator());
     }
 
     raw_pointer get_particles_begin() const {
