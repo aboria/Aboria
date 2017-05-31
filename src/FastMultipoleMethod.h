@@ -235,7 +235,7 @@ class FastMultipoleMethod {
     typedef typename Expansions::expansion_type expansion_type;
     typedef typename traits_type::template vector_type<expansion_type>::type storage_type;
     typedef typename traits_type::template vector_type<
-        child_iterator
+        typename std::remove_reference<child_iterator>::type
         >::type child_iterator_vector_type;
     typedef typename traits_type::template vector_type<child_iterator_vector_type>::type connectivity_type;
     typedef iterator_range<typename NeighbourQuery::root_iterator> root_iterator_range;
@@ -297,10 +297,10 @@ public:
     // evaluate expansions for given point
     template <typename VectorType>
     double evaluate_expansion(const Vector<double,dimension>& p, const VectorType& source_vector) {
-        reference bucket = m_query->get_bucket(p);
-        const size_t index = m_query->get_bucket_index(bucket); 
-        box_type box(m_query->get_bucket_bounds_low(bucket),
-                     m_query->get_bucket_bounds_high(bucket));
+        pointer bucket;
+        box_type box;
+        m_query->get_bucket(p,bucket,box);
+        const size_t index = m_query->get_bucket_index(*bucket); 
 
         /*
         std::cout <<"(";

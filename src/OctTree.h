@@ -536,6 +536,21 @@ public:
         }
     }
 
+    void go_to(const double_d& position) {
+        int new_high = 0;
+        for (int i = 0; i < D; ++i) {
+            ASSERT(position[i] < m_bounds[i].bmax[i],"position out of bounds");
+            ASSERT(position[i] >= m_bounds[i].bmin[i],"position out of bounds");
+            const double mid = 0.5*(m_bounds[i].bmax[i]+m_bounds[i].bmin[i]);
+  
+            // Push the bit into the result as we build it
+            new_high |= position[i] < mid ? 0 : 1;
+            new_high <<= 1;
+        }
+        m_index = m_index - m_high + new_high;
+        m_high = new_high;
+    }
+
     int get_child_number() const {
         return m_high;
     }
@@ -696,11 +711,19 @@ struct octtree_query {
 
 
     CUDA_HOST_DEVICE
-    reference get_bucket(const double_d &position) const {
-        query_iterator it(get_children(*m_nodes_begin),position,double_d(1),this);
-        return *it;
+    void get_bucket(const double_d &position, pointer& bucket, box_type& bounds) const {
+        child_iterator i(m_nodes_begin,m_bounds);
+        i.go_to(position);
+        
+        while (!is_leaf(*i)) {
+            i = get_children(i);
+            i.go_to(position);
+        }
+
+        bucket = &(*i);
+        bounds = i.get_bounds();
     }
-    
+
     CUDA_HOST_DEVICE
     size_t get_bucket_index(reference bucket) const {
         return &bucket - m_nodes_begin;

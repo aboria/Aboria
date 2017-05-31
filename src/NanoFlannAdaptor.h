@@ -294,6 +294,19 @@ public:
         m_bounds(bounds)
     {}
 
+    void go_to(const double_d& position) {
+        const int i = m_index->node_type.sub.divfeat;
+        const double diff = position[i] 
+                        - 0.5*(m_index->node_type.sub.divhigh+m_index->node_type.sub.divhigh);
+        ASSERT(position[i] < m_bounds[i].bmax[i],"position out of bounds");
+        ASSERT(position[i] >= m_bounds[i].bmin[i],"position out of bounds");
+        if (diff < 0) {
+            m_high = 0;
+        } else {
+            m_high = 1;
+        }
+    }
+
     int get_child_number() const {
         return m_high;
     }
@@ -501,28 +514,20 @@ struct nanoflann_adaptor_query {
     }
     */
 
-     CUDA_HOST_DEVICE
-    reference get_bucket(const double_d &position) const {
-        query_iterator it(get_children(*m_root),position,double_d(1),this);
-        return *it;
-        /*
-        pointer node = m_root;
-        while(!is_leaf_node(*node)) {
-            ASSERT(get_child1(node) != nullptr,"no child1");
-            ASSERT(get_child2(node) != nullptr,"no child2");
-            const size_t idx = get_dimension_index(*node);
-            const double diff_cut_high = position[idx] - get_cut_high(*node);
-            const double diff_cut_low = position[idx]- get_cut_low(*node);
-
-            if ((diff_cut_low+diff_cut_high)<0) {
-                node = get_child1(node);
-            } else {
-                node = get_child2(node);
-            }
+    CUDA_HOST_DEVICE
+    void get_bucket(const double_d &position, pointer& bucket, box_type& bounds) const {
+        child_iterator i(m_root,m_bounds);
+        i.go_to(position);
+        
+        while (!is_leaf(*i)) {
+            i = get_children(i);
+            i.go_to(position);
         }
-        return *node;
-        */
+
+        bucket = &(*i);
+        bounds = i.get_bounds();
     }
+    
 
     CUDA_HOST_DEVICE
     size_t get_bucket_index(reference bucket) const {
