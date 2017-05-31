@@ -327,7 +327,7 @@ namespace Aboria {
                         const PositionF& function): m_n(n),
                                             m_ncheb(std::pow(n,dimension)),
                                             m_start(0),
-                                            m_end(n-1),
+                                            m_end(n),
                                             m_position_function(function),
                                             base_type(row_particles,
                                                   col_particles,
@@ -353,7 +353,7 @@ namespace Aboria {
             // fill row_Rn matrix
             m_row_Rn_matrix.resize(N,m_ncheb);
             for (int i=0; i<N; ++i) {
-                lattice_iterator<dimension> mj(m_start,m_end,m_start);
+                lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     m_row_Rn_matrix(i,j) = row_Rn(*mj,i);
                 }
@@ -363,10 +363,10 @@ namespace Aboria {
         void update_kernel_matrix() {
             // fill kernel matrix
             m_kernel_matrix.resize(m_ncheb,m_ncheb);
-            lattice_iterator<dimension> mi(m_start,m_end,m_start);
+            lattice_iterator<dimension> mi(m_start,m_end);
             for (int i=0; i<m_ncheb; ++i,++mi) {
                 const double_d pi = col_Rn.get_position(*mi);
-                lattice_iterator<dimension> mj(m_start,m_end,m_start);
+                lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
                     m_kernel_matrix(i,j) = m_position_function(pi-pj,pj,pi);
@@ -381,7 +381,7 @@ namespace Aboria {
             // fill row_Rn matrix
             m_col_Rn_matrix.resize(m_ncheb,N);
             for (int i=0; i<N; ++i) {
-                lattice_iterator<dimension> mi(m_start,m_end,m_start);
+                lattice_iterator<dimension> mi(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mi) {
                     m_col_Rn_matrix(j,i) = col_Rn(*mi,i);
                 }

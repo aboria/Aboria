@@ -214,8 +214,8 @@ public:
             const int_d start = int_d(0);
             const int_d end = int_d(n-1);
             auto range = iterator_range<lattice_iterator<D>>(
-                lattice_iterator<D>(start,end,start)
-                ,++lattice_iterator<D>(start,end,end)
+                lattice_iterator<D>(start,end)
+                ,lattice_iterator<D>()
                 );
             const double_d scale = double_d(1.0)/(Rn.box.bmax-Rn.box.bmin);
             for (int i=0; i<positions.size(); ++i) {
@@ -233,8 +233,8 @@ public:
             const int_d start = int_d(0);
             const int_d end = int_d(n-1);
             auto range = iterator_range<lattice_iterator<D>>(
-                lattice_iterator<D>(start,end,start)
-                ,++lattice_iterator<D>(start,end,end)
+                lattice_iterator<D>(start,end)
+                ,lattice_iterator<D>()
                 );
 
             for (const int_d& m: range) {

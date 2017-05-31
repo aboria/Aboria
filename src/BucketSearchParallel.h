@@ -300,9 +300,9 @@ struct bucket_search_parallel_query {
     typedef lattice_iterator<dimension> query_iterator;
     typedef lattice_iterator<dimension> root_iterator;
     typedef lattice_iterator<dimension> all_iterator;
+    typedef lattice_iterator<dimension> child_iterator;
     typedef typename query_iterator::reference reference;
     typedef typename query_iterator::pointer pointer;
-    typedef pointer child_iterator;
     typedef typename query_iterator::value_type value_type;
     typedef ranges_iterator<Traits> particle_iterator;
     typedef detail::bbox<dimension> box_type;
@@ -339,11 +339,10 @@ struct bucket_search_parallel_query {
         return false;
     }
 
-    static child_iterator get_children(reference bucket) {
+    static child_iterator get_children(reference, const box_type&) {
         CHECK(false,"this should not be called")
         return nullptr;
     }
-
 
     static const box_type get_bounds(const child_iterator& ci) {
         CHECK(false,"this should not be called")
@@ -388,12 +387,12 @@ struct bucket_search_parallel_query {
                 );
     }
 
-    double_d get_bucket_bounds_low(const reference bucket) const {
-        return bucket*m_bucket_side_length + m_bounds.bmin;
-    }
-
-    double_d get_bucket_bounds_high(const reference bucket) const {
-        return (bucket+1)*m_bucket_side_length + m_bounds.bmin;
+    CUDA_HOST_DEVICE
+    box_type get_root_bucket_bounds(reference bucket) const {
+        box_type bounds;
+        bounds.bmin = bucket*m_bucket_side_length + m_bounds.bmin;
+        bounds.bmax = (bucket+1)*m_bucket_side_length + m_bounds.bmin;
+        return bounds;
     }
 
     CUDA_HOST_DEVICE
@@ -447,13 +446,13 @@ struct bucket_search_parallel_query {
 #endif
         if (no_buckets) {
             return iterator_range<query_iterator>(
-                    query_iterator(end,end,end)
-                    ,query_iterator(end,end,end)
+                    query_iterator()
+                   ,query_iterator()
                     );
         } else {
             return iterator_range<query_iterator>(
-                    query_iterator(start,end,start)
-                    ,++query_iterator(start,end,end)
+                    query_iterator(start,end+1)
+                   ,query_iterator()
                     );
         }
     }
@@ -461,15 +460,15 @@ struct bucket_search_parallel_query {
     CUDA_HOST_DEVICE
     iterator_range<root_iterator> get_root_buckets() const {
         return iterator_range<query_iterator>(
-                root_iterator(int_d(0),m_end_bucket,int_d(0)),
-                ++root_iterator(int_d(0),m_end_bucket,m_end_bucket)
+                root_iterator(int_d(0),m_end_bucket+1),
+                root_iterator()
                 );
     }
 
     iterator_range<all_iterator> get_subtree(reference bucket) const {
         return iterator_range<all_iterator>(
-                all_iterator(bucket,bucket,bucket),
-                ++all_iterator(bucket,bucket,bucket));
+                all_iterator(bucket,bucket+1),
+                all_iterator());
     }
 
 
