@@ -189,7 +189,6 @@ public:
         helper_fast_methods_calculate<1>(particles,kernel,scale);
         helper_fast_methods_calculate<2>(particles,kernel,scale);
         helper_fast_methods_calculate<3>(particles,kernel,scale);
-        helper_fast_methods_calculate<4>(particles,kernel,scale);
     }
 
     
@@ -212,7 +211,7 @@ public:
         for (int n=1; n<10; ++n) {
             Rn.calculate_Sn(std::begin(positions),N,n);
             const int_d start = int_d(0);
-            const int_d end = int_d(n-1);
+            const int_d end = int_d(n);
             auto range = iterator_range<lattice_iterator<D>>(
                 lattice_iterator<D>(start,end)
                 ,lattice_iterator<D>()
@@ -231,7 +230,7 @@ public:
             const double_d &x =  (2*positions[i]-Rn.box.bmin-Rn.box.bmax)*scale;
             detail::ChebyshevRnSingle<D,n> cheb_rn(positions[i],Rn.box);
             const int_d start = int_d(0);
-            const int_d end = int_d(n-1);
+            const int_d end = int_d(n);
             auto range = iterator_range<lattice_iterator<D>>(
                 lattice_iterator<D>(start,end)
                 ,lattice_iterator<D>()
@@ -421,6 +420,16 @@ public:
         helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,nanoflann_adaptor>(N);
+    }
+
+    void test_fast_methods_octtree(void) {
+        const size_t N = 1000;
+        std::cout << "OCTTREE: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,octtree>(N);
+        std::cout << "OCTTREE: testing 2D..." << std::endl;
+        helper_fast_methods<2,std::vector,octtree>(N);
+        std::cout << "OCTTREE: testing 3D..." << std::endl;
+        helper_fast_methods<3,std::vector,octtree>(N);
     }
 
 

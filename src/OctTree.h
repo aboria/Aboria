@@ -539,14 +539,17 @@ public:
     void go_to(const double_d& position) {
         int new_high = 0;
         for (int i = 0; i < D; ++i) {
-            ASSERT(position[i] < m_bounds[i].bmax[i],"position out of bounds");
-            ASSERT(position[i] >= m_bounds[i].bmin[i],"position out of bounds");
-            const double mid = 0.5*(m_bounds[i].bmax[i]+m_bounds[i].bmin[i]);
+            ASSERT(position[i] < m_bounds.bmax[i],"position out of bounds");
+            ASSERT(position[i] >= m_bounds.bmin[i],"position out of bounds");
+            const double mid = 0.5*(m_bounds.bmax[i]+m_bounds.bmin[i]);
   
             // Push the bit into the result as we build it
             new_high |= position[i] < mid ? 0 : 1;
             new_high <<= 1;
         }
+        // Unshift the last
+        new_high >>= 1;
+
         m_index = m_index - m_high + new_high;
         m_high = new_high;
     }
@@ -585,6 +588,12 @@ public:
     octtree_child_iterator& operator++() {
         increment();
         return *this;
+    }
+
+    octtree_child_iterator operator++(int) {
+        octtree_child_iterator tmp(*this);
+        operator++();
+        return tmp;
     }
 
     CUDA_HOST_DEVICE
@@ -766,7 +775,7 @@ struct octtree_query {
     }
 
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
-        return iterator_range<all_iterator>(all_iterator(ci,this),all_iterator());
+        return iterator_range<all_iterator>(all_iterator(get_children(ci),this),all_iterator());
     }
 
     raw_pointer get_particles_begin() const {

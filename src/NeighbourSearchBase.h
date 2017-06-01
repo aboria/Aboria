@@ -657,15 +657,17 @@ public:
     CUDA_HOST_DEVICE
     void increment() {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (depth_first_iterator):"); 
+        LOG(4,"\tincrement (depth_first_iterator): depth = "<<m_stack.size()<<" top child number "<<m_stack.top().get_child_number()); 
 #endif
         if (m_query->is_leaf_node(*m_stack.top())) {
             ++m_stack.top();
-            if (m_stack.top() == false) {
+            while (!m_stack.empty() && m_stack.top() == false) {
+                LOG(4,"\tpop stack (depth_first_iterator):"); 
                 m_stack.pop();
             }
         } else {
-            m_stack.push(m_query->get_children(m_stack.top()));
+            LOG(4,"\tpush stack (depth_first_iterator):"); 
+            m_stack.push(m_query->get_children(m_stack.top()++));
         }
 
 #ifndef __CUDA_ARCH__
@@ -675,7 +677,11 @@ public:
 
     CUDA_HOST_DEVICE
     bool equal(iterator const& other) const {
-        return m_stack.top() == other.m_stack.top();
+        if (m_stack.empty() || other.m_stack.empty()) {
+            return m_stack.empty() == other.m_stack.empty();
+        } else {
+            return m_stack.top() == other.m_stack.top();
+        }
     }
 
     CUDA_HOST_DEVICE
@@ -845,7 +851,7 @@ public:
             LOG(3,"\tgo_to_next_leaf with child "<<node.get_child_number()<<" with bounds "<<node.get_bounds());
             if (child_is_within_query(node)) { // could be in this child
                 LOG(4,"\tthis child is within query, so going to next child");
-                if (m_query->is_leaf_node(*m_stack.top())) {
+                if (m_query->is_leaf_node(node)) {
                     exit = true;
                 } else {
                     LOG(4,"\tdive down");

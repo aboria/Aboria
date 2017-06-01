@@ -469,7 +469,6 @@ struct bucket_search_serial_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     const static unsigned int dimension = Traits::dimension;
     typedef lattice_iterator<dimension> query_iterator;
-    typedef lattice_iterator<dimension> root_iterator;
     typedef lattice_iterator<dimension> all_iterator;
     typedef lattice_iterator<dimension> child_iterator;
     typedef typename query_iterator::reference reference;
@@ -507,16 +506,21 @@ struct bucket_search_serial_query {
         return false;
     }
 
-    static child_iterator get_children(reference, const box_type&) {
-        CHECK(false,"this should not be called")
-        return nullptr;
+    child_iterator get_children() const {
+        return child_iterator(int_d(0),m_end_bucket+1);
     }
 
-    static const box_type get_bounds(const child_iterator& ci) {
-        CHECK(false,"this should not be called")
-        return box_type();
+    child_iterator get_children(const child_iterator& ci) const {
+        return child_iterator();
     }
 
+    const box_type get_bounds(const child_iterator& ci) const {
+        box_type bounds;
+        bounds.bmin = (*ci)*m_bucket_side_length + m_bounds.bmin;
+        bounds.bmax = ((*ci)+1)*m_bucket_side_length + m_bounds.bmin;
+        return bounds;
+    }
+    
     // dodgy hack cause nullptr cannot be converted to pointer
     static const pointer get_child1(const pointer& bucket) {
         CHECK(false,"this should not be called")
@@ -627,18 +631,9 @@ struct bucket_search_serial_query {
     }
 
 
-    CUDA_HOST_DEVICE
-    iterator_range<root_iterator> get_root_buckets() const {
-        return iterator_range<root_iterator>(
-                root_iterator(int_d(0),m_end_bucket+1),
-                root_iterator()
-                );
-    }
-        
-
-    iterator_range<all_iterator> get_subtree(reference bucket) const {
+    iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
         return iterator_range<all_iterator>(
-                all_iterator(bucket,bucket+1),
+                all_iterator(),
                 all_iterator());
     }
 

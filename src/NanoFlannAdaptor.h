@@ -298,8 +298,8 @@ public:
         const int i = m_index->node_type.sub.divfeat;
         const double diff = position[i] 
                         - 0.5*(m_index->node_type.sub.divhigh+m_index->node_type.sub.divhigh);
-        ASSERT(position[i] < m_bounds[i].bmax[i],"position out of bounds");
-        ASSERT(position[i] >= m_bounds[i].bmin[i],"position out of bounds");
+        ASSERT(position[i] < m_bounds.bmax[i],"position out of bounds");
+        ASSERT(position[i] >= m_bounds.bmin[i],"position out of bounds");
         if (diff < 0) {
             m_high = 0;
         } else {
@@ -340,6 +340,12 @@ public:
     nanoflann_child_iterator& operator++() {
         increment();
         return *this;
+    }
+
+    nanoflann_child_iterator operator++(int) {
+        nanoflann_child_iterator tmp(*this);
+        operator++();
+        return tmp;
     }
 
     CUDA_HOST_DEVICE
@@ -571,7 +577,7 @@ struct nanoflann_adaptor_query {
     }
 
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
-        return iterator_range<all_iterator>(all_iterator(ci,this),all_iterator());
+        return iterator_range<all_iterator>(all_iterator(get_children(ci),this),all_iterator());
     }
 
     raw_pointer get_particles_begin() const {
