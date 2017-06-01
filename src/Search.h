@@ -101,8 +101,8 @@ public:
     static iterator_range<periodic_iterator_type> get_periodic_range(const bool_d is_periodic) {
         int_d start,end;
         for (int i = 0; i < dimension; ++i) {
-           start[i] = is_periodic[i] ? 0 : -1;  
-           end[i] =   is_periodic[i] ? 1 : 2;  
+           start[i] = is_periodic[i] ? -1 : 0;  
+           end[i] =   is_periodic[i] ?  2 : 1;  
         }
         return iterator_range<periodic_iterator_type>(
                 periodic_iterator_type(start,end),
@@ -205,7 +205,7 @@ public:
 #endif
         while (m_current_bucket == m_bucket_range.end()) {
 #ifndef __CUDA_ARCH__
-            LOG(3,"\tgo_to_next periodic (search_iterator):"); 
+            LOG(3,"\tgo_to_next periodic (search_iterator): m_current_periodic = "<<*m_current_periodic); 
 #endif
             ++m_current_periodic;
             if (m_current_periodic == m_periodic.end()) {

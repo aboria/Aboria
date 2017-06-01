@@ -327,10 +327,8 @@ For example,
                         typename particles_type::double_d pi = get<position>(i);
                         typename particles_type::double_d pj = get<position>(j);
                         if (is_periodic) {
-                            lattice_iterator<D> periodic_it(int_d(-1),int_d(1),int_d(-1));
-                            lattice_iterator<D> periodic_end(int_d(-1),int_d(1),int_d(1));
-                            ++periodic_end;
-                            for (; periodic_it != periodic_end; ++periodic_it) {
+                            for (lattice_iterator<D> periodic_it(int_d(-1),int_d(2)); 
+                                    periodic_it != false; ++periodic_it) {
                                 if ((pi+(*periodic_it)*(max-min)-pj).squaredNorm() <= r2) {
                                     count++;
                                 }
