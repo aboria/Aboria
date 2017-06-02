@@ -292,7 +292,13 @@ public:
         m_high(0),
         m_index(start),
         m_bounds(bounds)
-    {}
+    {
+        // deal with case of empty tree or leaf node start
+        if ((start == nullptr) || (start->child1 == nullptr)) {
+            m_high = 2;
+        }
+    
+    }
 
     void go_to(const double_d& position) {
         const int i = m_index->node_type.sub.divfeat;
