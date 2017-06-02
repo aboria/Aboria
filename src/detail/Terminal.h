@@ -113,7 +113,7 @@ struct accumulate_within_distance {
         init = arg;
     }
     void set_max_distance(const double arg) {
-        init = arg;
+        max_distance = arg;
     }
     T functor;
     init_type init;
