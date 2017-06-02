@@ -531,12 +531,9 @@ public:
         m_index(start),
         m_bounds(bounds)
     {
-        if (start == nullptr) {
-            m_high = 1<<D;
-        } else {
-            while (detail::is_empty(*m_index)) {
-                increment();
-            }
+        ASSERT(start != nullptr, "start pointer should not be null");
+        if (detail::is_empty(*m_index)) {
+            increment();
         }
     }
 

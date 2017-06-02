@@ -416,7 +416,7 @@ public:
             }
             return_iterator = erase(last-1,false);
             if (searchable) {
-                if (search.unordered()) {
+                if (search.cheap_copy_and_delete_at_end()) {
                     search.delete_points_at_end(begin(),end());
                 } else {
                     search.embed_points(begin(),end());
@@ -558,9 +558,10 @@ public:
         for (int index = 0; index < size(); ++index) {
             iterator i = begin() + index;
             while (Aboria::get<alive>(*i) == false) {
+                LOG(3,"Particle: delete_particles: deleting particle "<<get<id>(*i)<<" with position "<<get<position>(*i));
                 if ((index < size()-1) && (size() > 1)) {
                     *i = *(end()-1);
-                    if (searchable && search.unordered()) {
+                    if (searchable && update_neighbour_search && search.cheap_copy_and_delete_at_end()) {
                         search.copy_points(end()-1,i);
                     }
                     pop_back(false);
@@ -570,9 +571,10 @@ public:
                     break;
                 }
             }
+            LOG(4,"Particle: delete_particles: after deleting: iterator has particle "<<get<id>(*i)<<" with position "<<get<position>(*i)<<" and alive "<< bool(get<alive>(*i)));
         }
         if (searchable && update_neighbour_search) {
-            if (search.unordered()) {
+            if (search.cheap_copy_and_delete_at_end()) {
                 search.delete_points_at_end(begin(),end());
             } else {
                 search.embed_points(begin(),end());
