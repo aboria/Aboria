@@ -299,8 +299,8 @@ public:
     void set_seed(const uint32_t value) {
         seed = value;
         for (size_t i=0; i<size(); ++i) {
-            Aboria::get<random>(data[i]).seed(
-                        seed + uint32_t(Aboria::get<id>(data[i]))
+            Aboria::get<random>(data)[i].seed(
+                        seed + uint32_t(Aboria::get<id>(data)[i])
                     );
         }
     }
@@ -747,7 +747,7 @@ private:
     data_type data;
     int next_id;
     bool searchable;
-    const uint32_t seed;
+    uint32_t seed;
     std::map<size_t,size_t> id_to_index;
     search_type search;
 
