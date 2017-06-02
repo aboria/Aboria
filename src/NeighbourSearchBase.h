@@ -606,7 +606,13 @@ public:
                   ):
         m_query(query)
     {
-        m_stack.push(start_node); 
+        if (start_node != false) {
+            m_stack.push(start_node); 
+        } else {
+#ifndef __CUDA_ARCH__
+            LOG(3,"\tdepth_first_iterator (constructor): start is false, no children to search.");
+#endif
+        }
     }
 
 
@@ -726,12 +732,18 @@ public:
         m_inv_max_distance(1.0/max_distance),
         m_query(query)
     {
-        m_stack.push(start);
-        go_to_next_leaf();
+        if (start != false) {
+            m_stack.push(start);
+            go_to_next_leaf();
+        } else {
+#ifndef __CUDA_ARCH__
+            LOG(3,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): start is false, no children to search.");
+#endif
+        }
 
         if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
-            LOG(3,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain.");
+            LOG(3,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain or no children to search.");
 #endif
         } else {
 #ifndef __CUDA_ARCH__
@@ -851,7 +863,7 @@ public:
             LOG(3,"\tgo_to_next_leaf with child "<<node.get_child_number()<<" with bounds "<<node.get_bounds());
             if (child_is_within_query(node)) { // could be in this child
                 LOG(4,"\tthis child is within query, so going to next child");
-                if (m_query->is_leaf_node(node)) {
+                if (m_query->is_leaf_node(*node)) {
                     exit = true;
                 } else {
                     LOG(4,"\tdive down");
