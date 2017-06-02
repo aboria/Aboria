@@ -99,8 +99,8 @@ public:
 
 		Normal N;
 		VectorSymbolic<double,3> vector;		
-        AccumulateWithinDistance<std::bit_or<bool> > any(4);
-        AccumulateWithinDistance<std::plus<double3> > sum(4);
+        AccumulateWithinDistance<std::bit_or<bool> > any(2);
+        AccumulateWithinDistance<std::plus<double3> > sum(2);
 
 		/*
 		 * Kill any points within spheres
@@ -111,6 +111,7 @@ public:
 		 * Check no points within spheres
 		 */
 		for(auto i: points) {
+			TS_ASSERT_EQUALS(get<alive>(i), true);
 			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,0)).norm(), 1.0);
 			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(5,0,0)).norm(), 2.0);
 			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,-5,0)).norm(), 1.5);

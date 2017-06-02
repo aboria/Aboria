@@ -235,6 +235,11 @@ private:
 
 
         this->m_query.m_root = m_kd_tree.get_root_node();
+        this->m_query.m_dummy_root.child1 = this->m_query.m_root;
+        this->m_query.m_dummy_root.child2 = this->m_query.m_root;
+        this->m_query.m_dummy_root.node_type.sub.divfeat = 0;
+        this->m_query.m_dummy_root.node_type.sub.divlow = this->m_query.m_bounds.bmin[0];
+        this->m_query.m_dummy_root.node_type.sub.divhigh = this->m_query.m_bounds.bmin[0];
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
 
@@ -293,11 +298,8 @@ public:
         m_index(start),
         m_bounds(bounds)
     {
-        // deal with case of empty tree or leaf node start
-        if ((start == nullptr) || (start->child1 == nullptr)) {
-            m_high = 2;
-        }
-    
+        ASSERT(start != nullptr, "start pointer should not be null");
+        ASSERT(start->child1 != nullptr, "start pointer should point to leaf");
     }
 
     void go_to(const double_d& position) {
@@ -325,9 +327,9 @@ public:
         box_type ret = m_bounds;
         const int i = m_index->node_type.sub.divfeat;
         if (is_high()) {
-            ret.bmin[i] = m_index->node_type.sub.divlow;
+            ret.bmin[i] = m_index->node_type.sub.divhigh;
         } else {
-            ret.bmax[i] = m_index->node_type.sub.divhigh;
+            ret.bmax[i] = m_index->node_type.sub.divlow;
         }
         return ret;
     }
@@ -428,6 +430,7 @@ struct nanoflann_adaptor_query {
     size_t m_number_of_buckets;
 
     value_type* m_root;
+    value_type m_dummy_root;
 
     const box_type& get_bounds() const { return m_bounds; }
     const bool_d& get_periodic() const { return m_periodic; }
@@ -464,7 +467,13 @@ struct nanoflann_adaptor_query {
      */
 
     child_iterator get_children() const {
-        return child_iterator(m_root, m_bounds);
+        if (m_root == nullptr) { // empty tree, return a false child iterator
+            return child_iterator();
+        } else if (is_leaf_node(*m_root)) { // leaf root, return a child iterator pointing to the leaf
+            return ++child_iterator(&m_dummy_root, m_bounds);
+        } else {
+            return child_iterator(m_root, m_bounds);
+        }
     }
 
     child_iterator get_children(reference bucket, const box_type& bounds) const {

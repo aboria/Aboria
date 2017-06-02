@@ -141,7 +141,7 @@ public:
         set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),10,false); 
     };
 
-    static constexpr bool unordered() {
+    static constexpr bool cheap_copy_and_delete_at_end() {
         return true;
     }
 
