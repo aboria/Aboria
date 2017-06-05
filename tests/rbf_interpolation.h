@@ -86,8 +86,6 @@ public:
         const int N = 1000;
         const int RASM_n = 100;
         const double RASM_buffer = 0.0;
-        const int RASM_random = 100;
-        std::cout << " RASM_n = "<<RASM_n<<" RASM_random = "<<RASM_random<<" RASM_buffer = "<<RASM_buffer<<std::endl;
 
         const int nx = 3;
         const int max_iter = 100;
@@ -150,15 +148,12 @@ public:
 
         gamma = W_matrix.ldlt().solve(phi);
 
-        Eigen::BiCGSTAB<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> bicg;
-        bicg.setMaxIterations(max_iter);
-        bicg.preconditioner().set_buffer_size(RASM_buffer);
-        bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        bicg.preconditioner().set_number_of_random_particles(RASM_random);
-        bicg.preconditioner().analyzePattern(W);
-        bicg.compute(W_matrix);
-        gamma = bicg.solve(phi);
-        std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
+        Eigen::GMRES<matrix_type> gmres;
+        gmres.setMaxIterations(max_iter);
+        gmres.set_restart(restart);
+        gmres.compute(W_matrix);
+        gamma = gmres.solve(phi);
+        std::cout << "GMRES:       #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
         phi = W*gamma;
         double rms_error = 0;
@@ -174,7 +169,7 @@ public:
         }
 
         std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-8);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-6);
         
         phi = W_test*gamma;
         rms_error = 0;
@@ -189,7 +184,7 @@ public:
             //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
         std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1.5e-4);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-5);
 
 
 //=}
@@ -293,7 +288,7 @@ void helper_compact(void) {
         cg_test.setMaxIterations(max_iter);
         cg_test.compute(W_matrix);
         gamma = cg_test.solve(phi);
-        std::cout << "CG:       #iterations: " << cg_test.iterations() << ", estimated error: " << cg_test.error() << std::endl;
+        std::cout << "CG:          #iterations: " << cg_test.iterations() << ", estimated error: " << cg_test.error() << std::endl;
 
         Eigen::ConjugateGradient<matrix_type, 
             Eigen::Lower|Eigen::Upper, RASMPreconditioner<Eigen::HouseholderQR>> cg;
@@ -303,7 +298,7 @@ void helper_compact(void) {
         cg.preconditioner().analyzePattern(W);
         cg.compute(W_matrix);
         gamma = cg.solve(phi);
-        std::cout << "CG:       #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
+        std::cout << "CG-RASM:     #iterations: " << cg.iterations() << ", estimated error: " << cg.error() << std::endl;
 
         
         Eigen::MINRES<matrix_type, Eigen::Lower|Eigen::Upper,  RASMPreconditioner<Eigen::HouseholderQR>> minres;
@@ -313,7 +308,7 @@ void helper_compact(void) {
         minres.preconditioner().analyzePattern(W);
         minres.compute(W_matrix);
         gamma = minres.solve(phi);
-        std::cout << "MINRES:   #iterations: " << minres.iterations() << ", estimated error: " << minres.error() << std::endl;
+        std::cout << "MINRES-RASM: #iterations: " << minres.iterations() << ", estimated error: " << minres.error() << std::endl;
 
         Eigen::GMRES<matrix_type,  RASMPreconditioner<Eigen::HouseholderQR>> gmres;
         gmres.setMaxIterations(max_iter);
@@ -323,7 +318,7 @@ void helper_compact(void) {
         gmres.set_restart(restart);
         gmres.compute(W_matrix);
         gamma = gmres.solve(phi);
-        std::cout << "GMRES:    #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+        std::cout << "GMRES-RASM:  #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
 
         Eigen::DGMRES<matrix_type,  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
         dgmres.setMaxIterations(max_iter);
@@ -333,7 +328,7 @@ void helper_compact(void) {
         dgmres.set_restart(restart);
         dgmres.compute(W_matrix);
         gamma = dgmres.solve(phi);
-        std::cout << "DGMRES:   #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
+        std::cout << "DGMRES-RASM:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
 
         Eigen::BiCGSTAB<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> bicg;
         bicg.setMaxIterations(max_iter);
@@ -342,7 +337,7 @@ void helper_compact(void) {
         bicg.preconditioner().analyzePattern(W);
         bicg.compute(W_matrix);
         gamma = bicg.solve(phi);
-        std::cout << "BiCGSTAB: #iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
+        std::cout << "BiCGSTAB-RASM:#iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
 
 
         double rms_error = 0;
