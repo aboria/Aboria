@@ -54,6 +54,7 @@ namespace detail {
         typedef detail::bbox<D> box_type;
         static const size_t ncheb = std::pow(N,D); 
         typedef std::array<double,ncheb> expansion_type;
+        typedef Eigen::Matrix<double,ncheb,ncheb> matrix_type;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         static const unsigned int dimension = D;
