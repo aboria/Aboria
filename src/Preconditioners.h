@@ -90,16 +90,18 @@ class RASMPreconditioner {
     }
 
     void set_number_of_random_particles(size_t n) {
+        ERROR("RASM Preconditioner random support not working")
         m_random = n;
     }
 
     template<typename Kernel, typename Query,
-        unsigned int D = Query::dimension>
+        unsigned int D = Query::dimension,
+        typename box_type = detail::bbox<D>
+        >
     void analyze_domain(const Index start_row, 
                         const Kernel& kernel, 
                         const Query& query, 
-                        const Vector<double,D>& low, 
-                        const Vector<double,D>& high) {
+                        const box_type& bounds) {
         const size_t domain_index = m_domain_indicies.size();
         m_domain_indicies.push_back(connectivity_type::value_type());
         m_domain_buffer.push_back(connectivity_type::value_type());
@@ -110,8 +112,8 @@ class RASMPreconditioner {
         //support anisotropic distance measures, need to add this then 
         //remove hack below
         auto range = query.get_buckets_near_point(
-                              0.5*(high-low)+low,
-                              0.5*(high-low)+m_buffer);
+                              0.5*(bounds.bmax-bounds.bmin)+bounds.bmin,
+                              0.5*(bounds.bmax-bounds.bmin)+m_buffer);
         
         typedef typename Query::reference reference;
         typedef typename Query::traits_type::position position;
@@ -121,10 +123,10 @@ class RASMPreconditioner {
             for (particle_reference particle: particles) {
                 const size_t index = &(get<position>(particle))
                                         -get<position>(query.get_particles_begin());
-                if ((get<position>(particle) >= low-m_buffer).all()
-                        && (get<position>(particle) < high+m_buffer).all()) {
-                    if ((get<position>(particle) < low).any()
-                            || (get<position>(particle) >= high).any()) {
+                if ((get<position>(particle) >= bounds.bmin-m_buffer).all()
+                        && (get<position>(particle) < bounds.bmax+m_buffer).all()) {
+                    if ((get<position>(particle) < bounds.bmin).any()
+                            || (get<position>(particle) >= bounds.bmax).any()) {
                         buffer.push_back(start_row + index);
                     } else {
                         indicies.push_back(start_row + index);
@@ -140,46 +142,34 @@ class RASMPreconditioner {
     template <typename Kernel,
              typename Query, 
              typename Reference=typename Query::reference,
-             typename Pair=std::pair<bool,size_t>>
+             typename Pair=std::pair<bool,size_t>,
+             unsigned int D = Query::dimension,
+             typename child_iterator = typename Query::child_iterator,
+             typename box_type = detail::bbox<D>
+             >
     Pair analyze_dive(const Index start_row, 
                       const Kernel& kernel, 
                       const Query& query, 
-                      Reference bucket) {
+                      const child_iterator& ci) {
         size_t count = 0;
         bool done = false;
-        if (query.is_leaf_node(bucket)) {
-            auto particles = query.get_bucket_particles(bucket);
+        if (query.is_leaf_node(*ci)) {
+            auto particles = query.get_bucket_particles(*ci);
             count = std::distance(particles.begin(),particles.end());
             if (count >= m_goal) {
                 analyze_domain(start_row, kernel, query,
-                    query.get_bucket_bounds_low(bucket),
-                    query.get_bucket_bounds_high(bucket));
+                        query.get_bounds(ci));
                 done = true;
             }
         } else {
-            Pair child1 = analyze_dive(start_row, kernel, query, query.get_child1(&bucket));
-            Pair child2 = analyze_dive(start_row, kernel, query, query.get_child2(&bucket));
-            count = child1.second + child2.second;
-            if (child1.first && child2.first) {
-                done = true;
-            } else if (!child1.first && child2.first) {
-                // if one branch factorised, factorise others
-                analyze_domain(start_row, kernel, query,
-                    query.get_bucket_bounds_low(query.get_child1(&bucket)),
-                    query.get_bucket_bounds_high(query.get_child1(&bucket)));
-                done = true;
-            } else if (child1.first && !child2.first) {
-                // if one branch factorised, factorise others
-                analyze_domain(start_row, kernel, query,
-                    query.get_bucket_bounds_low(query.get_child2(&bucket)),
-                    query.get_bucket_bounds_high(query.get_child2(&bucket)));
-                done = true;
-            } else if (count >= m_goal) {
-                // if this branch needs factorizing, do it
-                analyze_domain(start_row, kernel, query,
-                    query.get_bucket_bounds_low(bucket),
-                    query.get_bucket_bounds_high(bucket));
-                done = true;
+            for (child_iterator cj = query.get_children(ci); cj != false; ++cj) {
+                Pair child = analyze_dive(start_row, kernel, query, cj);
+                count += child.second;
+                if ((!child.first) && (done || (count >= m_goal))) {
+                    analyze_domain(start_row, kernel, query,
+                        query.get_bounds(cj));
+                    done = true;
+                }
             }
         }
         return Pair(count,done);
@@ -195,6 +185,8 @@ class RASMPreconditioner {
         typedef Vector<double,dimension> double_d;
         typedef Vector<unsigned int,dimension> unsigned_int_d;
         typedef Vector<int,dimension> int_d;
+        typedef detail::bbox<dimension> box_type;
+        typedef typename query_type::child_iterator child_iterator;
 
         static_assert(std::is_same<row_particles_type,col_particles_type>::value,
            "RASM preconditioner restricted to identical row and col particle sets");
@@ -204,40 +196,38 @@ class RASMPreconditioner {
         const query_type& query = a.get_query();
         if (query.is_tree()) {
             // for a tree, use data structure to find a good division
-            for (reference root: query.get_root_buckets()) {
-                if (query.is_leaf_node(root)) {
+            for (child_iterator ci = query.get_children(); ci != false; ++ci) {
+                if (query.is_leaf_node(*ci)) {
                     // no tree!, just accept this one I guess
                     analyze_domain(start_row, kernel, query,
-                            query.get_bucket_bounds_low(root),
-                            query.get_bucket_bounds_high(root));
+                            query.get_bounds(ci));
                 } else {
                     // dive tree, find bucket with given number of particles
-                    analyze_dive(start_row,kernel,query,root);
+                    analyze_dive(start_row,kernel,query,ci);
                 }
             }
         } else {
             // for a regular grid, assume particles are evenly distributed
-            const double_d& low = query.get_bounds_low();
-            const double_d& high = query.get_bounds_high();
+            const box_type& bounds = query.get_bounds();
             const size_t N = a.size();
-            const double total_volume = (high-low).prod();
+            const double total_volume = (bounds.bmax-bounds.bmin).prod();
             const double box_volume = double(m_goal)/double(N)*total_volume;
             const double box_side_length = std::pow(box_volume,1.0/dimension);
             unsigned_int_d size = 
-                floor((high-low)/box_side_length)
+                floor((bounds.bmax-bounds.bmin)/box_side_length)
                 .template cast<unsigned int>();
             for (int i=0; i<dimension; ++i) {
                 if (size[i] == 0) {
                     size[i] = 1;
                 }
             }
-            const double_d side_length = (high-low)/size;
+            const double_d side_length = (bounds.bmax-bounds.bmin)/size;
             iterator_range<lattice_iterator<dimension>> range(
                     lattice_iterator<dimension>(int_d(0),size),
                     lattice_iterator<dimension>());
             for (typename lattice_iterator<dimension>::reference box: range) {
                 analyze_domain(start_row, kernel, query,
-                        box*side_length,(box+1)*side_length);
+                        box_type(box*side_length,(box+1)*side_length));
             }
         }
     }
@@ -276,7 +266,8 @@ class RASMPreconditioner {
                 do {
                     int other_domain = uniform_domain(generator);
                     while (other_domain == domain_index) other_domain = uniform_domain(generator);
-                    //random[d] = m_domain_indicies[other_domain][uniform_index(generator)];
+                    std::uniform_int_distribution<int> uniform_index(0,m_domain_indicies[other_domain].size()-1);
+                    random[d] = m_domain_indicies[other_domain][uniform_index(generator)];
                 } while ((random.begin()+d)!=std::find(random.begin(),random.begin()+d,random[d]));
             }
         }
@@ -320,7 +311,7 @@ class RASMPreconditioner {
             solver_type& solver = m_domain_factorized_matrix[domain_index];
 
             const size_t size = indicies.size()+buffer.size()+random.size();
-            std::cout << "domain "<<domain_index<<"indicies = "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random = "<<random.size()<<std::endl;
+            //std::cout << "domain "<<domain_index<<"indicies = "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random = "<<random.size()<<std::endl;
 
             domain_matrix.resize(size,size);
 
