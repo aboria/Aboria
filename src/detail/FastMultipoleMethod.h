@@ -55,6 +55,9 @@ namespace detail {
         static const size_t ncheb = std::pow(N,D); 
         typedef std::array<double,ncheb> expansion_type;
         typedef Eigen::Matrix<double,ncheb,ncheb> matrix_type;
+        typedef Eigen::Matrix<double,ncheb,Eigen::Dynamic> p2m_matrix_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,ncheb> m2p_matrix_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> dynamic_vector_type;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         static const unsigned int dimension = D;
@@ -107,6 +110,9 @@ namespace detail {
         typedef detail::bbox<D> box_type;
         static constexpr size_t ncheb = ipow(N,D); 
         typedef std::array<double,ncheb> expansion_type;
+        typedef Eigen::Matrix<double,ncheb,ncheb> matrix_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,ncheb> l2p_matrix_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> dynamic_vector_type;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         static const unsigned int dimension = D;
