@@ -55,6 +55,7 @@ class ChebyshevTest : public CxxTest::TestSuite {
     ABORIA_VARIABLE(target_cheb,double,"target chebyshev");
     ABORIA_VARIABLE(target_manual,double,"target manual");
     ABORIA_VARIABLE(target_fmm,double,"target fmm");
+    ABORIA_VARIABLE(target_h2,double,"target h2");
 
 public:
     template <unsigned int N, typename ParticlesType, typename KernelFunction>
@@ -87,6 +88,27 @@ public:
 
         std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_fmm error = "<<L2_fmm<<". L2_fmm relative error is "<<std::sqrt(L2_fmm/scale)<<". time_fmm_setup = "<<time_fmm_setup.count()<<". time_fmm_eval = "<<time_fmm_eval.count()<<std::endl;
 #ifdef HAVE_EIGEN
+        // perform the operation using h2 matrix
+        t0 = Clock::now();
+        auto h2_matrix = make_h2_matrix(particles,particles,
+                make_black_box_expansion<dimension,N>(kernel));
+        t1 = Clock::now();
+        std::chrono::duration<double> time_h2_setup = t1 - t0;
+        t0 = Clock::now();
+        h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
+        t1 = Clock::now();
+        std::chrono::duration<double> time_h2_eval = t1 - t0;
+        
+        const double L2_h2 = std::inner_product(
+                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<target_manual>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
         // perform the operation using chebyshev interpolation operator 
         t0 = Clock::now();
         auto C = create_chebyshev_operator(particles,particles,N,kernel);
@@ -131,7 +153,7 @@ public:
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
 
-        typedef Particles<std::tuple<source,target_cheb,target_manual,target_fmm>,D,StorageVector,SearchMethod> ParticlesType;
+        typedef Particles<std::tuple<source,target_cheb,target_manual,target_fmm,target_h2>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
         ParticlesType particles(N);
 

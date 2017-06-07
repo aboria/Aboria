@@ -467,6 +467,13 @@ struct bucket_search_parallel_query {
                 all_iterator());
     }
 
+    iterator_range<all_iterator> get_subtree() const {
+        return iterator_range<all_iterator>(
+                all_iterator(int_d(0),m_end_bucket+1),
+                all_iterator()
+                );
+    }
+
     size_t number_of_buckets() const {
         return (m_end_bucket+1).prod();
     }
