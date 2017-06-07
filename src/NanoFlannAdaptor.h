@@ -595,6 +595,10 @@ struct nanoflann_adaptor_query {
         return iterator_range<all_iterator>(all_iterator(get_children(ci),this),all_iterator());
     }
 
+    iterator_range<all_iterator> get_subtree() const {
+        return iterator_range<all_iterator>(all_iterator(get_children(),this),all_iterator());
+    }
+
     raw_pointer get_particles_begin() const {
         return m_particles_begin;
     }

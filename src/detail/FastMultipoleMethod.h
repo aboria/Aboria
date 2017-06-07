@@ -110,9 +110,16 @@ namespace detail {
         typedef detail::bbox<D> box_type;
         static constexpr size_t ncheb = ipow(N,D); 
         typedef std::array<double,ncheb> expansion_type;
-        typedef Eigen::Matrix<double,ncheb,ncheb> matrix_type;
+
+#ifdef HAVE_EIGEN
+        typedef Eigen::Matrix<double,ncheb,ncheb> m2l_matrix_type;
+        typedef Eigen::Matrix<double,ncheb,ncheb> l2l_matrix_type;
+        typedef Eigen::Matrix<double,ncheb,Eigen::Dynamic> p2m_matrix_type;
         typedef Eigen::Matrix<double,Eigen::Dynamic,ncheb> l2p_matrix_type;
-        typedef Eigen::Matrix<double,Eigen::Dynamic,1> dynamic_vector_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> p2p_matrix_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> p_vector_type;
+        typedef Eigen::Matrix<double,ncheb,1> m_vector_type;
+#endif
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         static const unsigned int dimension = D;
@@ -135,6 +142,27 @@ namespace detail {
             }
         }
 
+#ifdef HAVE_EIGEN
+        template <typename ParticlesType>
+        static void P2M_matrix(p2m_matrix_type& matrix, 
+                    const box_type& box,
+                    const std::vector<size_t>& indicies,
+                    const ParticlesType& particles) {
+            typedef typename ParticlesType::position position;
+            matrix.resize(ncheb,indicies.size());
+            for (int i = 0; i < indicies.size(); ++i) {
+                const double_d& p = get<position>(particles)[indicies[i]];
+                detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
+                lattice_iterator<dimension> mj(int_d(0),int_d(N));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    matrix(j,i) = cheb_rn(*mj);
+                }
+                
+            }
+        }
+#endif
+
+
         static void M2M(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
@@ -152,22 +180,26 @@ namespace detail {
                     accum[i] += cheb_rn(*mi)*source[j];
                 }
             }
-            /*
-            lattice_iterator<dimension> mi(int_d(0),int_d(N-1),int_d(0));
-            for (int i=0; i<ncheb; ++i,++mi) {
-                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
-                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
-                    + target_box.bmin;
-                detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
-
-                lattice_iterator<D> mj(int_d(0),int_d(N-1),int_d(0));
-                for (int j=0; j<ncheb; ++j,++mj) {
-                    accum[i] += cheb_rn(*mj)*source[j];
-                }
-            }
-            */
         }
 
+#ifdef HAVE_EIGEN
+        static void M2M_matrix(l2l_matrix_type& matrix, 
+                 const box_type& target_box, 
+                 const box_type& source_box) {
+            lattice_iterator<dimension> mj(int_d(0),int_d(N));
+            for (int j=0; j<ncheb; ++j,++mj) {
+                const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
+                const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                    + source_box.bmin;
+                detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
+
+                lattice_iterator<D> mi(int_d(0),int_d(N));
+                for (int i=0; i<ncheb; ++i,++mi) {
+                    matrix(i,j) = cheb_rn(*mi);
+                }
+            }
+        }
+#endif
 
         void M2L(expansion_type& accum, 
                  const box_type& target_box, 
@@ -188,9 +220,29 @@ namespace detail {
                     accum[i] += m_K(pj-pi,pi,pj)*source[j];
                 }
             }
+        }
+
+#ifdef HAVE_EIGEN
+        void M2L_matrix(m2l_matrix_type& matrix, 
+                 const box_type& target_box, 
+                 const box_type& source_box) {
+            lattice_iterator<dimension> mi(int_d(0),int_d(N));
+            for (int i=0; i<ncheb; ++i,++mi) {
+                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                                                                    + target_box.bmin;
+                lattice_iterator<dimension> mj(int_d(0),int_d(N));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
+                    const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                                                                    + source_box.bmin;
+                    matrix(i,j) = m_K(pj-pi,pi,pj);
+                }
+            }
 
 
         }
+#endif
 
         static void L2L(expansion_type& accum, 
                  const box_type& target_box, 
@@ -209,21 +261,26 @@ namespace detail {
                     accum[i] += cheb_rn(*mj)*source[j];
                 }
             }
-            /*
-            lattice_iterator<dimension> mj(int_d(0),int_d(N-1),int_d(0));
-            for (int j=0; j<ncheb; ++j,++mj) {
-                const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
-                const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
-                    + source_box.bmin;
-                detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
+        }
 
-                lattice_iterator<D> mi(int_d(0),int_d(N-1),int_d(0));
-                for (int i=0; i<ncheb; ++i,++mi) {
-                    accum[i] += cheb_rn(*mi)*source[j];
+#ifdef HAVE_EIGEN
+        static void L2L_matrix(l2l_matrix_type& matrix, 
+                 const box_type& target_box, 
+                 const box_type& source_box) {
+            lattice_iterator<dimension> mi(int_d(0),int_d(N));
+            for (int i=0; i<ncheb; ++i,++mi) {
+                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                    + target_box.bmin;
+                detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
+
+                lattice_iterator<D> mj(int_d(0),int_d(N));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    matrix(i,j) = cheb_rn(*mj);
                 }
             }
-            */
         }
+#endif
 
         static double L2P(const double_d& p,
                    const box_type& box, 
@@ -237,6 +294,44 @@ namespace detail {
             }
             return sum;
         }
+
+#ifdef HAVE_EIGEN
+        template <typename ParticlesType>
+        static void L2P_matrix(l2p_matrix_type& matrix, 
+                    const box_type& box,
+                    const std::vector<size_t>& indicies,
+                    const ParticlesType& particles) {
+            typedef typename ParticlesType::position position;
+            matrix.resize(ncheb,indicies.size());
+            for (int i = 0; i < indicies.size(); ++i) {
+                const double_d& p = get<position>(particles)[indicies[i]];
+                detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
+                lattice_iterator<dimension> mj(int_d(0),int_d(N));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    matrix(i,j) = cheb_rn(*mj);
+                }
+                
+            }
+        }
+
+        template <typename RowParticlesType, typename ColParticlesType>
+        void P2P_matrix(p2p_matrix_type& matrix, 
+                    const std::vector<size_t>& row_indicies,
+                    const std::vector<size_t>& col_indicies,
+                    const RowParticlesType& row_particles,
+                    const ColParticlesType& col_particles) {
+            typedef typename ColParticlesType::position position;
+            matrix.resize(row_indicies.size(),col_indicies.size());
+            for (int i = 0; i < row_indicies.size(); ++i) {
+                const double_d& pi = get<position>(row_particles)[row_indicies[i]];
+                for (int j = 0; j < col_indicies.size(); ++i) {
+                    const double_d& pj = get<position>(col_particles)[col_indicies[j]];
+                    matrix(i,j) = m_K(pj-pi,pi,pj);
+                }
+                
+            }
+        }
+#endif
 
     };
 
