@@ -50,7 +50,7 @@ typedef std::chrono::system_clock Clock;
 
 using namespace Aboria;
 
-class ChebyshevTest : public CxxTest::TestSuite {
+class FMMTest : public CxxTest::TestSuite {
     ABORIA_VARIABLE(source,double,"source");
     ABORIA_VARIABLE(target_manual,double,"target manual");
     ABORIA_VARIABLE(target_fmm,double,"target fmm");
@@ -337,18 +337,7 @@ public:
         std::cout << "OCTTREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,octtree>(N);
     }
-
-
-    void test_Rn_calculation(void) {
-        std::cout << "testing 1D..." << std::endl;
-        helper_Rn_calculation<1>();
-        std::cout << "testing 2D..." << std::endl;
-        helper_Rn_calculation<2>();
-        std::cout << "testing 3D..." << std::endl;
-        helper_Rn_calculation<3>();
-        std::cout << "testing 4D..." << std::endl;
-        helper_Rn_calculation<4>();
-    }
+    
 };
 
 
