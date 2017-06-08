@@ -263,6 +263,7 @@ namespace detail {
             }
         }
 
+
 #ifdef HAVE_EIGEN
         static void L2L_matrix(l2l_matrix_type& matrix, 
                  const box_type& target_box, 
@@ -302,7 +303,7 @@ namespace detail {
                     const std::vector<size_t>& indicies,
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
-            matrix.resize(ncheb,indicies.size());
+            matrix.resize(indicies.size(),ncheb);
             for (int i = 0; i < indicies.size(); ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
@@ -324,7 +325,7 @@ namespace detail {
             matrix.resize(row_indicies.size(),col_indicies.size());
             for (int i = 0; i < row_indicies.size(); ++i) {
                 const double_d& pi = get<position>(row_particles)[row_indicies[i]];
-                for (int j = 0; j < col_indicies.size(); ++i) {
+                for (int j = 0; j < col_indicies.size(); ++j) {
                     const double_d& pj = get<position>(col_particles)[col_indicies[j]];
                     matrix(i,j) = m_K(pj-pi,pi,pj);
                 }

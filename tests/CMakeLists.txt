@@ -40,6 +40,8 @@ if (Aboria_RUN_TESTS)
         OperatorsTest
         SpatialUtilsTest
         ChebyshevTest
+        FMMTest
+        H2Test
         )
     foreach(test_suite ${all_test_suites})
         option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
@@ -183,6 +185,28 @@ set(ChebyshevTest
     test_fmm_operators
     test_chebyshev_polynomial_calculation
     )
+
+
+set(FMMTestFile fmm.h)
+set(FMMTest
+    test_fast_methods_bucket_search_serial
+    test_fast_methods_bucket_search_parallel
+    test_fast_methods_kd_tree
+    test_fast_methods_octtree
+    test_fmm_operators
+    )
+
+set(H2TestFile h2.h)
+set(H2Test
+    test_fast_methods_bucket_search_serial
+    test_fast_methods_bucket_search_parallel
+    test_fast_methods_kd_tree
+    test_fast_methods_octtree
+    )
+
+
+
+
 
 
 message("-- Adding test suites:")

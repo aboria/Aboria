@@ -620,6 +620,10 @@ public:
         return m_stack.top().get_bounds();
     }
 
+    const child_iterator& get_child_iterator() const {
+        return m_stack.top();
+    }
+
     CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
@@ -1578,6 +1582,10 @@ public:
 
     explicit operator size_t() const {
         return collapse_index_vector(m_index);
+    }
+
+    const lattice_iterator& get_child_iterator() const {
+        return *this;
     }
 
     reference operator *() const {
