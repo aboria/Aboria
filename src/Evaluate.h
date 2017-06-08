@@ -68,7 +68,6 @@ void evaluate_nonlinear(ExprRHS const & expr, LabelType &label) {
         : get<VariableType>(label.get_buffers());
     buffer.resize(particles.size());
 
-
     // evaluate expression for all particles and store in buffer
     const size_t n = particles.size();
     Functor functor;

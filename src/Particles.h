@@ -738,6 +738,7 @@ private:
         if (remove_deleted_particles && (periodic==false).any()) {
             delete_particles();
         }
+
         if (remove_deleted_particles || (periodic==true).any()) {
             search.embed_points(begin(),end());
         }
