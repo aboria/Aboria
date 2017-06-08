@@ -65,7 +65,7 @@ public:
 
         const double L = 10.0;
         const double D = 1.0;
-        const double dt = 0.1;
+        const double dt = 0.01;
         const double timesteps = 1000;
 
         spheres.push_back(double3(0,0,0));
@@ -78,7 +78,7 @@ public:
         get<radius>(spheres[3]) = 1.0;
 
         points_type points;
-        std::uniform_real_distribution<double> uni(-L,L);
+        std::uniform_real_distribution<double> uni(-L+L/5,L-L/5);
         for (int i = 0; i < 1000; ++i) {
             points.push_back(double3(uni(generator),uni(generator),uni(generator)));
         }
@@ -134,7 +134,7 @@ public:
                 std::cout << "." << std::flush;
             }
             p[i] += std::sqrt(2*D*dt)*vector(N[i],N[i],N[i]);
-            p[i] += sum(b, if_else(norm(dx) < r[b]
+            p[i] += sum(b, if_else(norm(dx) < r[b] && norm(dx) != 0
                                 ,-2*(r[b]/norm(dx)-1)*dx
                                 ,0));
 
