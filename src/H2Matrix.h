@@ -308,10 +308,10 @@ private:
                         if (m_query->is_leaf_node(*i)) {
                             m_strong_connectivity[target_index].push_back(i.get_child_iterator());
                             m_p2p_matrices[target_index].push_back(p2p_matrix_type());
-                            size_t source_index = m_query->get_bucket_index(*i);
+                            size_t index = m_query->get_bucket_index(*i);
                             m_expansions.P2P_matrix(
                                 *(m_p2p_matrices[target_index].end()-1),
-                                m_row_indices[target_index],m_col_indices[source_index],
+                                m_row_indices[target_index],m_col_indices[index],
                                 row_particles,col_particles);
                         }
                     }
@@ -329,6 +329,7 @@ private:
             W = m_p2m_matrices[my_index]*m_source_vector[my_index];
         } else { 
             // do M2M 
+            W = m_vector_type::Zero();
             for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
                 const size_t child_index = m_query->get_bucket_index(*cj);
                 m_vector_type& child_W = mvm_upward_sweep(cj);

@@ -49,7 +49,7 @@ typedef std::chrono::system_clock Clock;
 
 using namespace Aboria;
 
-class ChebyshevTest : public CxxTest::TestSuite {
+class H2Test: public CxxTest::TestSuite {
     ABORIA_VARIABLE(source,double,"source");
     ABORIA_VARIABLE(target_manual,double,"target manual");
     ABORIA_VARIABLE(target_h2,double,"target h2");
@@ -81,6 +81,10 @@ public:
                 );
 
         std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
+        if (N == 3) {
+            TS_ASSERT_LESS_THAN(L2_h2/scale,1e-2);
+        }
 
     }
 
@@ -172,7 +176,6 @@ public:
         typedef typename Expansions::l2l_matrix_type l2l_matrix_type;
         typedef typename Expansions::m2l_matrix_type m2l_matrix_type;
 
-
         // unit box
         detail::bbox<D> parent(double_d(0.0),double_d(1.0));
         detail::bbox<D> leaf1(double_d(0.0),double_d(1.0));
@@ -190,12 +193,14 @@ public:
         p_vector_type source_leaf1;
         source_leaf1.resize(n);
         std::vector<size_t> leaf1_indicies;
-        double field_just_self_leaf1[n];
+        p_vector_type field_just_self_leaf1;
+        field_just_self_leaf1.resize(n);
         double field_all_leaf1[n];
         p_vector_type source_leaf2;
         source_leaf2.resize(n);
         std::vector<size_t> leaf2_indicies;
-        double field_just_self_leaf2[n];
+        p_vector_type field_just_self_leaf2;
+        field_just_self_leaf2.resize(n);
         double field_all_leaf2[n];
 
         auto f = [](const double_d& p) {
@@ -226,6 +231,7 @@ public:
                 field_just_self_leaf1[i] += source_leaf1[j]
                     *expansions.m_K(pj_leaf1-pi_leaf1,pi_leaf1,pj_leaf1);
                 field_just_self_leaf2[i] += source_leaf2[j]
+                    *expansions.m_K(pj_leaf2-pi_leaf2,pi_leaf2,pj_leaf2);
             }
             field_all_leaf1[i] = field_just_self_leaf1[i];
             field_all_leaf2[i] = field_just_self_leaf2[i];
@@ -233,66 +239,75 @@ public:
                 const double_d& pj_leaf1 = get<position>(particles)[j];
                 const double_d& pj_leaf2 = get<position>(particles)[n+j];
                 field_all_leaf1[i] += source_leaf2[j]
-                    *expansions.m_K(pj_leaf2-pi_leaf1,pj_leaf1,pi_leaf1);                field_all_leaf2[i] += source_leaf1[j]
+                    *expansions.m_K(pj_leaf2-pi_leaf1,pi_leaf1,pj_leaf2);                    
+                field_all_leaf2[i] += source_leaf1[j]
+                    *expansions.m_K(pj_leaf1-pi_leaf2,pi_leaf2,pj_leaf1);                    
             }
         }
 
         // check P2M, and L2P
         m_vector_type expansionM_leaf1 = m_vector_type::Zero();
 
-        for (int i = 0; i < n; ++i) {
-            p2m_matrix_type m;
-            expansions.P2M_matrix(m,leaf1,leaf1_indicies,particles);
-            expansionM_leaf1 = m*source_leaf1;
-        }
+        p2m_matrix_type p2m_matrix_leaf1;
+        expansions.P2M_matrix(p2m_matrix_leaf1,leaf1,leaf1_indicies,particles);
+        expansionM_leaf1 = p2m_matrix_leaf1*source_leaf1;
 
         m_vector_type expansionL_leaf1 = m_vector_type::Zero();
         m2l_matrix_type m2l_leaf1;
         expansions.M2L_matrix(m2l_leaf1,leaf1,leaf1);
         expansionL_leaf1 = m2l_leaf1*expansionM_leaf1;
 
+        l2p_matrix_type l2p_matrix_leaf1;
+        expansions.L2P_matrix(l2p_matrix_leaf1,leaf1,leaf1_indicies,particles);
+        p_vector_type result_leaf1 = l2p_matrix_leaf1*expansionL_leaf1;
+
         double L2 = 0;
         double scale = 0;
         for (int i = 0; i < n; ++i) {
-            const double check = expansions.L2P(particles_in_leaf1[i],leaf1,expansionL_leaf1);
-            L2 += std::pow(check-field_just_self_leaf1[i],2);
+            L2 += std::pow(result_leaf1[i]-field_just_self_leaf1[i],2);
             scale += std::pow(field_just_self_leaf1[i],2);
-            TS_ASSERT_LESS_THAN(std::abs(check-field_just_self_leaf1[i]),1e-4);
+            TS_ASSERT_LESS_THAN(std::abs(result_leaf1[i]-field_just_self_leaf1[i]),1e-4);
         }
 
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
 
-        m_vector_type expansionM_leaf2 = m_vector_type::Zero();
-        for (int i = 0; i < n; ++i) {
-            expansions.P2M(expansionM_leaf2,leaf2,particles_in_leaf2[i],source_leaf2[i]);
-        }
+        p2m_matrix_type p2m_matrix_leaf2;
+        expansions.P2M_matrix(p2m_matrix_leaf2,leaf2,leaf2_indicies,particles);
+        m_vector_type expansionM_leaf2 = p2m_matrix_leaf2*source_leaf2;
 
-        m_vector_type expansionL_leaf2 = m_vector_type::Zero();
-        expansions.M2L(expansionL_leaf2,leaf2,leaf2,expansionM_leaf2);
+        m2l_matrix_type m2l_leaf2;
+        expansions.M2L_matrix(m2l_leaf2,leaf2,leaf2);
+        m_vector_type expansionL_leaf2 = m2l_leaf2*expansionM_leaf2;
+
+        l2p_matrix_type l2p_matrix_leaf2;
+        expansions.L2P_matrix(l2p_matrix_leaf2,leaf2,leaf2_indicies,particles);
+        p_vector_type result_leaf2 = l2p_matrix_leaf2*expansionL_leaf2;
 
         L2 = 0;
         for (int i = 0; i < n; ++i) {
-            const double check = expansions.L2P(particles_in_leaf2[i],leaf2,expansionL_leaf2);
-            L2 += std::pow(check-field_just_self_leaf2[i],2);
+            L2 += std::pow(result_leaf2[i]-field_just_self_leaf2[i],2);
             scale += std::pow(field_just_self_leaf2[i],2);
         }
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
         
         // check M2M and L2L
-        m_vector_type expansionM_parent = m_vector_type::Zero();
-        expansions.M2M(expansionM_parent,parent,leaf1,expansionM_leaf1);
-        expansions.M2M(expansionM_parent,parent,leaf2,expansionM_leaf2);
-        m_vector_type expansionL_parent = m_vector_type::Zero();
-        expansions.M2L(expansionL_parent,parent,parent,expansionM_parent);
+        l2l_matrix_type l2l_leaf1,l2l_leaf2;
+        expansions.L2L_matrix(l2l_leaf1,leaf1,parent);
+        expansions.L2L_matrix(l2l_leaf2,leaf2,parent);
 
-        m_vector_type reexpansionL_leaf1 = m_vector_type::Zero();
-        expansions.L2L(reexpansionL_leaf1,leaf1,parent,expansionL_parent);
+        m_vector_type expansionM_parent = l2l_leaf1.transpose()*expansionM_leaf1 
+                                        + l2l_leaf2.transpose()*expansionM_leaf2;
+        m2l_matrix_type m2l_parent;
+        expansions.M2L_matrix(m2l_parent,parent,parent);
+        m_vector_type expansionL_parent = m2l_parent*expansionM_parent;
+
+        m_vector_type reexpansionL_leaf1 = l2l_leaf1*expansionL_parent;
+        p_vector_type total_result_leaf1 = l2p_matrix_leaf1*reexpansionL_leaf1;
 
         L2 = 0;
         scale = 0;
         for (int i = 0; i < n; ++i) {
-            const double check = expansions.L2P(particles_in_leaf1[i],leaf1,reexpansionL_leaf1);
-            L2 += std::pow(check-field_all_leaf1[i],2);
+            L2 += std::pow(total_result_leaf1[i]-field_all_leaf1[i],2);
             scale += std::pow(field_all_leaf1[i],2);
         }
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);

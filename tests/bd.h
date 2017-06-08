@@ -78,13 +78,13 @@ public:
         get<radius>(spheres[3]) = 1.0;
 
         points_type points;
-        std::uniform_real_distribution<double> uni(-L/5,L/5);
+        std::uniform_real_distribution<double> uni(-L,L);
         for (int i = 0; i < 1000; ++i) {
             points.push_back(double3(uni(generator),uni(generator),uni(generator)));
         }
 
 
-        points.init_neighbour_search(double3(-L/5,-L/5,-L/5),double3(L/5,L/5,L/5),bool3(true,true,true));
+        points.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(true,true,true));
         spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(false,false,false));
 
         Symbol<position> p;
