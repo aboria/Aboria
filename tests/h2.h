@@ -90,6 +90,7 @@ public:
 
     template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>
     void helper_fast_methods(size_t N) {
+#ifdef HAVE_EIGEN
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         typedef Vector<bool,D> bool_d;
@@ -161,10 +162,12 @@ public:
         helper_fast_methods_calculate<1>(particles,kernel,scale);
         helper_fast_methods_calculate<2>(particles,kernel,scale);
         helper_fast_methods_calculate<3>(particles,kernel,scale);
+#endif
     }
 
     template <typename Expansions>
     void helper_fmm_matrix_operators(Expansions& expansions) {
+#ifdef HAVE_EIGEN
         const unsigned int D = Expansions::dimension;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
@@ -311,10 +314,11 @@ public:
             scale += std::pow(field_all_leaf1[i],2);
         }
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
-
+#endif
     }
         
     void test_fmm_matrix_operators() {
+#ifdef HAVE_EIGEN
         const unsigned int D = 2;
         typedef Vector<double,D> double_d;
         auto kernel = [](const double_d &dx, const double_d &pa, const double_d &pb) {
@@ -322,6 +326,7 @@ public:
         };
         detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);
         helper_fmm_matrix_operators(expansions);
+#endif
     }
 
     
