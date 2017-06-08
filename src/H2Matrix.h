@@ -48,6 +48,7 @@ class H2Matrix {
     static const unsigned int dimension = Query::dimension;
     typedef position_d<dimension> position;
     typedef typename Query::child_iterator child_iterator;
+    typedef typename Query::all_iterator all_iterator;
     typedef typename traits_type::template vector_type<
         child_iterator
         >::type child_iterator_vector_type;
@@ -112,8 +113,11 @@ public:
         m_m2l_matrices.resize(n);
         m_row_indices.resize(n);
         m_col_indices.resize(n);
+        m_source_vector.resize(n);
+        m_target_vector.resize(n);
         m_l2p_matrices.resize(n);
         m_p2m_matrices.resize(n);
+        m_p2p_matrices.resize(n);
         m_strong_connectivity.resize(n);
         m_weak_connectivity.resize(n);
 
@@ -248,7 +252,7 @@ private:
         } else {
 
             // transfer matrix with parent if not at start
-            m_expansions.L2L_matrix(m_l2l_matrices[target_index],box_parent,target_box);
+            m_expansions.L2L_matrix(m_l2l_matrices[target_index],target_box,box_parent);
 
             for (const child_iterator& source: parents_strong_connections) {
                 if (m_query->is_leaf_node(*source)) {
@@ -288,7 +292,7 @@ private:
 
             
             child_iterator_vector_type strong_copy = m_strong_connectivity[target_index];
-            m_strong_connectivity[target_index].empty();
+            m_strong_connectivity[target_index].clear();
             for (child_iterator& source: strong_copy) {
                 if (m_query->is_leaf_node(*source)) {
                     m_p2p_matrices[target_index].push_back(p2p_matrix_type());
@@ -299,11 +303,12 @@ private:
                             m_row_indices[target_index],m_col_indices[source_index],
                             row_particles,col_particles);
                 } else {
-                    for (reference bucket: m_query->get_subtree(source)) {
-                        if (m_query->is_leaf_node(bucket)) {
-                            m_strong_connectivity[target_index].push_back(source);
+                    auto range = m_query->get_subtree(source);
+                    for (all_iterator i = range.begin(); i!=range.end(); ++i) {
+                        if (m_query->is_leaf_node(*i)) {
+                            m_strong_connectivity[target_index].push_back(i.get_child_iterator());
                             m_p2p_matrices[target_index].push_back(p2p_matrix_type());
-                            size_t source_index = m_query->get_bucket_index(bucket);
+                            size_t source_index = m_query->get_bucket_index(*i);
                             m_expansions.P2P_matrix(
                                 *(m_p2p_matrices[target_index].end()-1),
                                 m_row_indices[target_index],m_col_indices[source_index],
@@ -340,11 +345,7 @@ private:
         LOG(3,"calculate_dive_M2L_and_L2L with bucket "<<target_box);
         size_t target_index = m_query->get_bucket_index(*ci);
         m_vector_type& g = m_g[target_index];
-#ifndef NDEBUG
-        for (int i = 0; i < g.size(); ++i) {
-            ASSERT(std::abs(g[i]) < std::numeric_limits<double>::epsilon(),"g not zeroed");
-        }
-#endif
+
         // L2L
         g = m_l2l_matrices[target_index]*g_parent;
 
