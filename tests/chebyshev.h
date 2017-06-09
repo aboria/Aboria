@@ -116,8 +116,8 @@ public:
         std::chrono::duration<double> time_cheb_setup = t1 - t0;
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type;
         typedef Eigen::Map<vector_type> map_type;
-        map_type source_vect(get<source>(particles).data(),N);
-        map_type target_vect(get<target_cheb>(particles).data(),N);
+        map_type source_vect(get<source>(particles).data(),particles.size());
+        map_type target_vect(get<target_cheb>(particles).data(),particles.size());
         t0 = Clock::now();
         target_vect = C*source_vect;
         t1 = Clock::now();
