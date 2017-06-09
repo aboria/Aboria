@@ -64,55 +64,12 @@ public:
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
 
-        auto fmm = make_fmm_query(particles.get_query(),
-                make_black_box_expansion<dimension,N>(kernel));
-
-        auto t0 = Clock::now();
-        fmm.calculate_expansions(get<source>(particles));
-        auto t1 = Clock::now();
-        std::chrono::duration<double> time_fmm_setup = t1 - t0;
-        t0 = Clock::now();
-        for (reference p: particles) {
-            get<target_fmm>(p) = fmm.evaluate_expansion(get<position>(p),get<source>(particles));
-        }
-        t1 = Clock::now();
-        std::chrono::duration<double> time_fmm_eval = t1 - t0;
-
-        const double L2_fmm = std::inner_product(
-                std::begin(get<target_fmm>(particles)), std::end(get<target_fmm>(particles)),
-                std::begin(get<target_manual>(particles)), 
-                0.0,
-                [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
-                );
-
-        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_fmm error = "<<L2_fmm<<". L2_fmm relative error is "<<std::sqrt(L2_fmm/scale)<<". time_fmm_setup = "<<time_fmm_setup.count()<<". time_fmm_eval = "<<time_fmm_eval.count()<<std::endl;
 #ifdef HAVE_EIGEN
-        // perform the operation using h2 matrix
-        t0 = Clock::now();
-        auto h2_matrix = make_h2_matrix(particles,particles,
-                make_black_box_expansion<dimension,N>(kernel));
-        t1 = Clock::now();
-        std::chrono::duration<double> time_h2_setup = t1 - t0;
-        t0 = Clock::now();
-        h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
-        t1 = Clock::now();
-        std::chrono::duration<double> time_h2_eval = t1 - t0;
-        
-        const double L2_h2 = std::inner_product(
-                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
-                std::begin(get<target_manual>(particles)), 
-                0.0,
-                [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
-                );
-
-        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
 
         // perform the operation using chebyshev interpolation operator 
-        t0 = Clock::now();
+        auto t0 = Clock::now();
         auto C = create_chebyshev_operator(particles,particles,N,kernel);
-        t1 = Clock::now();
+        auto t1 = Clock::now();
         std::chrono::duration<double> time_cheb_setup = t1 - t0;
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type;
         typedef Eigen::Map<vector_type> map_type;
@@ -134,7 +91,7 @@ public:
         std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_cheb error = "<< L2_cheb <<". L2_cheb relative error is "<<std::sqrt(L2_cheb/scale)<<". time_cheb_setup  = "<<time_cheb_setup.count()<<". time_cheb_eval = "<<time_cheb_eval.count()<<std::endl;
 
         //TODO: is there a better test than this, maybe shouldn't randomly do it?
-        if (dimension==2 && N >=5) TS_ASSERT_LESS_THAN(std::sqrt(L2_cheb/scale),0.001);
+        if (dimension==3 && N >= 9) TS_ASSERT_LESS_THAN(std::sqrt(L2_cheb/scale),0.01);
 #endif
     }
 
@@ -208,9 +165,14 @@ public:
 
         std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<scale<<std::endl;
 
-        helper_fast_methods_calculate<1>(particles,kernel,scale);
-        helper_fast_methods_calculate<2>(particles,kernel,scale);
         helper_fast_methods_calculate<3>(particles,kernel,scale);
+        helper_fast_methods_calculate<4>(particles,kernel,scale);
+        helper_fast_methods_calculate<5>(particles,kernel,scale);
+        helper_fast_methods_calculate<6>(particles,kernel,scale);
+        helper_fast_methods_calculate<7>(particles,kernel,scale);
+        helper_fast_methods_calculate<8>(particles,kernel,scale);
+        helper_fast_methods_calculate<9>(particles,kernel,scale);
+        helper_fast_methods_calculate<10>(particles,kernel,scale);
     }
 
     
