@@ -46,6 +46,11 @@ typedef std::chrono::system_clock Clock;
 #include "Level1.h"
 #include "Kernels.h"
 #include "H2Matrix.h"
+#ifdef HAVE_GPERFTOOLS
+#include <gperftools/profiler.h>
+#endif
+
+
 
 using namespace Aboria;
 
@@ -332,42 +337,67 @@ public:
     
     void test_fast_methods_bucket_search_serial(void) {
         const size_t N = 1000;
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStart("h2_bucket_search_serial");
+#endif
         std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_serial>(N);
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
+
     }
 
     void test_fast_methods_bucket_search_parallel(void) {
         const size_t N = 1000;
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStart("h2_bucket_search_parallel");
+#endif
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_parallel>(N);
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
     }
 
     void test_fast_methods_kd_tree(void) {
         const size_t N = 1000;
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStart("h2_kd_tree");
+#endif
         std::cout << "KD_TREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,nanoflann_adaptor>(N);
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
     }
 
     void test_fast_methods_octtree(void) {
         const size_t N = 1000;
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStart("h2_octtree");
+#endif
         std::cout << "OCTTREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,octtree>(N);
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
     }
 
 };

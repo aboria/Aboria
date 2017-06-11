@@ -127,9 +127,16 @@ namespace detail {
         static const unsigned int dimension = D;
         static const unsigned int number_of_nodes_in_each_direction = N;
         Function m_K;
+        std::array<double_d,ncheb> m_cheb_points; 
 
         BlackBoxExpansions(const Function &K):m_K(K) 
-        {}
+        {
+            //precalculate cheb_points
+            lattice_iterator<dimension> mi(int_d(0),int_d(N));
+            for (int i=0; i<ncheb; ++i,++mi) {
+                m_cheb_points[i] = detail::chebyshev_node_nd(*mi,N);
+            }
+        }
 
         static void P2M(expansion_type& accum, 
                  const box_type& box, 
@@ -165,14 +172,13 @@ namespace detail {
 #endif
 
 
-        static void M2M(expansion_type& accum, 
+        void M2M(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
                  const expansion_type& source) {
 
-            lattice_iterator<dimension> mj(int_d(0),int_d(N));
-            for (int j=0; j<ncheb; ++j,++mj) {
-                const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
+            for (int j=0; j<ncheb; ++j) {
+                const double_d& pj_unit_box = m_cheb_points[j];
                 const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                     + source_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
@@ -185,12 +191,11 @@ namespace detail {
         }
 
 #ifdef HAVE_EIGEN
-        static void M2M_matrix(l2l_matrix_type& matrix, 
+        void M2M_matrix(l2l_matrix_type& matrix, 
                  const box_type& target_box, 
                  const box_type& source_box) {
-            lattice_iterator<dimension> mj(int_d(0),int_d(N));
-            for (int j=0; j<ncheb; ++j,++mj) {
-                const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
+            for (int j=0; j<ncheb; ++j) {
+                const double_d& pj_unit_box = m_cheb_points[j];
                 const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                     + source_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
@@ -208,15 +213,13 @@ namespace detail {
                  const box_type& source_box, 
                  const expansion_type& source) {
 
-            lattice_iterator<dimension> mi(int_d(0),int_d(N));
-            for (int i=0; i<ncheb; ++i,++mi) {
-                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+            for (int i=0; i<ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
                                                                     + target_box.bmin;
 
-                lattice_iterator<dimension> mj(int_d(0),int_d(N));
-                for (int j=0; j<ncheb; ++j,++mj) {
-                    const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
+                for (int j=0; j<ncheb; ++j) {
+                    const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
                     accum[i] += m_K(pj-pi,pi,pj)*source[j];
@@ -228,14 +231,12 @@ namespace detail {
         void M2L_matrix(m2l_matrix_type& matrix, 
                  const box_type& target_box, 
                  const box_type& source_box) {
-            lattice_iterator<dimension> mi(int_d(0),int_d(N));
-            for (int i=0; i<ncheb; ++i,++mi) {
-                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+            for (int i=0; i<ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
                                                                     + target_box.bmin;
-                lattice_iterator<dimension> mj(int_d(0),int_d(N));
-                for (int j=0; j<ncheb; ++j,++mj) {
-                    const double_d pj_unit_box = detail::chebyshev_node_nd(*mj,N);
+                for (int j=0; j<ncheb; ++j) {
+                    const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
                     matrix(i,j) = m_K(pj-pi,pi,pj);
@@ -246,14 +247,13 @@ namespace detail {
         }
 #endif
 
-        static void L2L(expansion_type& accum, 
+        void L2L(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
                  const expansion_type& source) {
             //M2M(accum,target_box,source_box,source);
-            lattice_iterator<dimension> mi(int_d(0),int_d(N));
-            for (int i=0; i<ncheb; ++i,++mi) {
-                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+            for (int i=0; i<ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
                     + target_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
@@ -267,12 +267,11 @@ namespace detail {
 
 
 #ifdef HAVE_EIGEN
-        static void L2L_matrix(l2l_matrix_type& matrix, 
+        void L2L_matrix(l2l_matrix_type& matrix, 
                  const box_type& target_box, 
                  const box_type& source_box) {
-            lattice_iterator<dimension> mi(int_d(0),int_d(N));
-            for (int i=0; i<ncheb; ++i,++mi) {
-                const double_d pi_unit_box = detail::chebyshev_node_nd(*mi,N);
+            for (int i=0; i<ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
                     + target_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
