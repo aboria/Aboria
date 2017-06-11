@@ -1187,10 +1187,8 @@ namespace nanoflann
 			NodePtr node = pool.allocate<Node>(); // allocate memory
             node->index = m_number_of_nodes++;
 
-            assert(vind.size()==m_size);
 			/* If too few exemplars remain, then make this a leaf node. */
 			if ( (right-left) <= static_cast<IndexType>(m_leaf_max_size) ) {
-                assert(vind.size()==m_size);
 				node->child1 = node->child2 = NULL;    /* Mark as leaf node. */
 				node->node_type.lr.left = left;
 				node->node_type.lr.right = right;

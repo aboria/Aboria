@@ -252,12 +252,19 @@ struct ChebyshevRnSingle {
     const detail::bbox<D>& m_box;
     ChebyshevRnSingle(const double_d& position, const detail::bbox<D>& box):
         m_box(box) {
-        const double_d shift_position = (2*position-box.bmin-box.bmax)/(box.bmax-box.bmin);
-#ifndef NDEBUG
+
+        // if box width is zero in any direction set the shifted position
+        // to the middle of the range [-1,1] i.e. 0
+        double_d shift_position;
         for (int i = 0; i < D; ++i) {
-            ASSERT(!std::isnan(shift_position[i])," is nan!!!");
+            const double span = box.bmax[i]-box.bmin[i];
+            if (span > 0.0) {
+                shift_position[i] = (2*position[i]-box.bmin[i]-box.bmax[i])/span;
+            } else {
+                shift_position[i] = 0;
+            }
         }
-#endif
+
         for (int m=0; m<N; ++m) {
             m_Sn[m] = chebyshev_Sn(shift_position,m,N);
         }
