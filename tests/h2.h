@@ -72,6 +72,7 @@ public:
                 make_black_box_expansion<dimension,N>(kernel));
         auto t1 = Clock::now();
         std::chrono::duration<double> time_h2_setup = t1 - t0;
+        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
         t0 = Clock::now();
         h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
         t1 = Clock::now();
@@ -336,7 +337,7 @@ public:
 
     
     void test_fast_methods_bucket_search_serial(void) {
-        const size_t N = 1000;
+        const size_t N = 10000;
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("h2_bucket_search_serial");
 #endif
@@ -353,7 +354,7 @@ public:
     }
 
     void test_fast_methods_bucket_search_parallel(void) {
-        const size_t N = 1000;
+        const size_t N = 10000;
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("h2_bucket_search_parallel");
 #endif
@@ -369,7 +370,7 @@ public:
     }
 
     void test_fast_methods_kd_tree(void) {
-        const size_t N = 1000;
+        const size_t N = 10000;
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("h2_kd_tree");
 #endif
@@ -385,7 +386,7 @@ public:
     }
 
     void test_fast_methods_octtree(void) {
-        const size_t N = 1000;
+        const size_t N = 10000;
 #ifdef HAVE_GPERFTOOLS
         ProfilerStart("h2_octtree");
 #endif
