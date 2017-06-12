@@ -158,6 +158,7 @@ public:
     }
 
 
+    // target_vector += A*source_vector
     template <typename VectorType>
     void matrix_vector_multiply(VectorType& target_vector, const VectorType& source_vector) {
 
@@ -187,7 +188,7 @@ public:
             if (m_query->is_leaf_node(bucket)) { // leaf node
                 const size_t index = m_query->get_bucket_index(bucket); 
                 for (int i = 0; i < m_row_indices[index].size(); ++i) {
-                    target_vector[m_row_indices[index][i]] = m_target_vector[index][i];
+                    target_vector[m_row_indices[index][i]] += m_target_vector[index][i];
                 }
             }
         }
@@ -207,7 +208,7 @@ public:
         for (int i = 0; i < m_strong_connectivity[index].size(); ++i) {
             child_iterator& source_ci = m_strong_connectivity[index][i];
             size_t source_index = m_query->get_bucket_index(*source_ci);
-            sum += detail::calculate_K_direct(p
+            sum += detail::calculate_P2P_position(p
                     ,m_query->get_bucket_particles(*source_ci)
                     ,m_expansions,source_vector,m_query->get_particles_begin());
         }

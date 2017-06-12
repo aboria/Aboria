@@ -388,13 +388,142 @@ namespace detail {
 
     }
 
+    template <typename Expansions,
+              typename Traits, 
+              typename TargetVectorType, 
+                    typename VectorType=typename Expansions::expansion_type,
+                    typename ParticleIterator=typename Traits::raw_pointer, 
+                    unsigned int D=Traits::dimension>
+    void calculate_L2P(
+                        TargetVectorType& target_vector,
+                        const VectorType& source, 
+                        const detail::bbox<D>& box, 
+                        const iterator_range<ranges_iterator<Traits>>& range, 
+                        const ParticleIterator& target_particles_begin,
+                        const Expansions& expansions) {
+        typedef typename Traits::position position;
+        LOG(3,"calculate_L2P (range): box = "<<box);
+        const size_t N = std::distance(range.begin(),range.end());
+        const Vector<double,D>* pbegin_range = &get<position>(*range.begin());
+        const Vector<double,D>* pbegin = &get<position>(target_particles_begin)[0];
+        const size_t index = pbegin_range - pbegin;
+        for (int i = index; i < index+N; ++i) {
+            const Vector<double,D>& pi = pbegin[i]; 
+            target_vector[i] += expansions.L2P(pi,box,source);  
+        }
+    }
+
+    // assume serial processing of particles, this could be more efficient for ranges iterators
+    template <typename Expansions,
+                typename Iterator, 
+              typename TargetVectorType, 
+                 typename VectorType=typename Expansions::expansion_type, 
+                 typename Traits=typename Iterator::traits_type,
+                 typename ParticleIterator=typename Traits::raw_pointer, 
+                 unsigned int D=Traits::dimension,
+                 typename = typename
+        std::enable_if<!std::is_same<Iterator,ranges_iterator<Traits>>::value>>
+    void calculate_L2P(
+                        TargetVectorType& target_vector,
+                        const VectorType& source, 
+                        const detail::bbox<D>& box, 
+                        const iterator_range<Iterator>& range, 
+                        const ParticleIterator& target_particles_begin,
+                        const Expansions &expansions) {
+
+        LOG(3,"calculate_L2P: box = "<<box);
+        typedef typename Traits::position position;
+        typedef typename Iterator::reference reference;
+        for (reference i: range) {
+            const Vector<double,D>& pi = get<position>(i); 
+            const size_t index = &pi- &get<position>(target_particles_begin)[0];
+            target_vector[index] += expansions.L2P(pi,box,source);  
+        }
+
+    }
+
+    template <typename Expansions,
+              typename Traits, 
+              typename TargetVectorType, 
+              typename SourceVectorType, 
+                    typename VectorType=typename Expansions::expansion_type,
+                    typename ParticleIterator=typename Traits::raw_pointer, 
+                    unsigned int D=Traits::dimension>
+    void calculate_P2P(
+                        TargetVectorType& target_vector,
+                        const SourceVectorType& source_vector,
+                        const iterator_range<ranges_iterator<Traits>>& target_range, 
+                        const iterator_range<ranges_iterator<Traits>>& source_range, 
+                        const ParticleIterator& target_particles_begin,
+                        const ParticleIterator& source_particles_begin,
+                        const Expansions& expansions) {
+        typedef typename Traits::position position;
+
+        const size_t n_target = std::distance(target_range.begin(),target_range.end());
+        const size_t n_source = std::distance(source_range.begin(),source_range.end());
+
+        const Vector<double,D>* pbegin_target_range = &get<position>(*target_range.begin());
+        const Vector<double,D>* pbegin_target = &get<position>(target_particles_begin)[0];
+        const size_t index_target = pbegin_target_range - pbegin_target;
+
+        const Vector<double,D>* pbegin_source_range = &get<position>(*source_range.begin());
+        const Vector<double,D>* pbegin_source = &get<position>(source_particles_begin)[0];
+        const size_t index_source = pbegin_source_range - pbegin_source;
+
+        for (int i = index_target; i < index_target+n_target; ++i) {
+            const Vector<double,D>& pi = pbegin_target[i]; 
+            for (int j = index_source; j < index_source+n_source; ++j) {
+                const Vector<double,D>& pj = pbegin_source[j]; 
+                target_vector[i] += expansions.m_K(pj-pi,pi,pj)
+                                                    *source_vector[j];
+            }
+        }
+    }
+
+    // assume serial processing of particles, this could be more efficient for ranges iterators
+    template <typename Expansions,
+                typename TargetIterator, 
+                typename SourceIterator, 
+              typename TargetVectorType, 
+              typename SourceVectorType, 
+                 typename VectorType=typename Expansions::expansion_type, 
+                 typename Traits=typename TargetIterator::traits_type,
+                 typename ParticleIterator=typename Traits::raw_pointer, 
+                 unsigned int D=Traits::dimension,
+                 typename = typename
+        std::enable_if<!(std::is_same<TargetIterator,ranges_iterator<Traits>>::value
+                            && std::is_same<SourceIterator,ranges_iterator<Traits>>::value)>>
+    void calculate_P2P(
+                        TargetVectorType& target_vector,
+                        const SourceVectorType& source_vector,
+                        const iterator_range<TargetIterator>& target_range, 
+                        const iterator_range<SourceIterator>& source_range, 
+                        const ParticleIterator& target_particles_begin,
+                        const ParticleIterator& source_particles_begin,
+                        const Expansions &expansions) {
+
+        typedef typename Traits::position position;
+        for (auto& i: target_range) {
+            const Vector<double,D>& pi = get<position>(i); 
+            const size_t target_index = &pi - &get<position>(target_particles_begin)[0];
+            for (auto& j: source_range) {
+                const Vector<double,D>& pj = get<position>(j); 
+                const size_t source_index = &pj - &get<position>(source_particles_begin)[0];
+                LOG(4,"calculate_P2P: i = "<<target_index<<" pi = "<<pi<<" j = "<<source_index<<" pj = "<<pj);
+                target_vector[target_index] += expansions.m_K(pj-pi,pi,pj)
+                                                    *source_vector[source_index];
+            }
+        }
+
+    }
+
 
     template <typename Traits, 
               typename Expansions, 
               typename SourceVectorType,
                     typename SourceParticleIterator=typename Traits::raw_pointer, 
                     unsigned int D=Traits::dimension>
-    double calculate_K_direct(const Vector<double,D>& p,
+    double calculate_P2P_position(const Vector<double,D>& p,
                             const iterator_range<ranges_iterator<Traits>>& range, 
                             Expansions& expansions,
                             const SourceVectorType& source_vector,
@@ -420,7 +549,7 @@ namespace detail {
                     unsigned int D=Traits::dimension,
                     typename = typename
         std::enable_if<!std::is_same<Iterator,ranges_iterator<Traits>>::value>>
-    double calculate_K_direct(const Vector<double,D>& p,
+    double calculate_P2P_position(const Vector<double,D>& p,
                             const iterator_range<Iterator>& range, 
                             Expansions& expansions,
                             const SourceVectorType& source_vector,

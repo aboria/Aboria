@@ -59,8 +59,22 @@ if (Aboria_RUN_BENCHMARKS)
         list(APPEND Aboria_LIBRARIES "${GROMACS_LIBRARIES}")
         include_directories(${GROMACS_INCLUDE_DIRS})
     endif()
-    set(test_suites ${test_suites} SpeedTest)
+    set(benchmark_test_suites
+            SpeedTest
+            BenchmarkFMM
+            )
+    foreach(test_suite ${benchmark_test_suites})
+        option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
+        if (Aboria_RUN_TEST_${test_suite})
+            set(test_suites ${test_suites} ${test_suite})
+        endif()
+    endforeach()
 endif()
+
+set(BenchmarkFMMFile benchmark_fmm.h)
+set(BenchmarkFMM
+    test_multiquadric
+    )
 
 set(SpeedTestFile speed_test.h)
 set(SpeedTest 
@@ -71,6 +85,18 @@ set(SpeedTest
     test_multiquadric_scaling
     test_linear_spring
     )
+
+set(SpeedTestFile speed_test.h)
+set(SpeedTest 
+    test_vector_addition
+    test_daxpy
+    test_finite_difference
+    test_multiquadric
+    test_multiquadric_scaling
+    test_linear_spring
+    )
+
+
 
 set(MetafunctionsTestFile metafunctions.h) 
 set(MetafunctionsTest
