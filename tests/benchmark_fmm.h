@@ -65,11 +65,12 @@ public:
             const std::vector<double>& source_vect, 
             const std::vector<double>& target_vect, 
             const Kernel& kernel,
-            const size_t repeats) {
+            const size_t repeats,
+            const size_t nbucket) {
         typedef Vector<double,D> double_d;
         typedef Vector<bool,D> bool_d;
         const size_t n = source_vect.size();
-        std::cout << "multiquadric_fmm: D = "<<D<<" N = "<<N<<" n = "<<n<<std::endl;
+        std::cout << "multiquadric_fmm: D = "<<D<<" N = "<<N<<" n = "<<n<<" nbucket = "<<nbucket<<" repeats = "<<repeats<<std::endl;
         ABORIA_VARIABLE(source,double,"source")
         ABORIA_VARIABLE(target,double,"target")
     	typedef Particles<std::tuple<source,target>,D,std::vector,SearchMethod> particles_type;
@@ -86,7 +87,7 @@ public:
             get<target>(particles)[i] = 0;
         }
 
-        particles.init_neighbour_search(min,max,periodic);
+        particles.init_neighbour_search(min,max,periodic,nbucket);
 
         auto fmm = make_fmm_query(particles.get_query(),
                 make_black_box_expansion<D,N>(kernel));
@@ -107,14 +108,15 @@ public:
         std::chrono::duration<double> dt = t1 - t0;
         std::cout << "time = "<<dt.count()/repeats<<std::endl;
 
-        const double L2 = std::inner_product(
-                std::begin(get<target>(particles)), std::end(get<target>(particles)),
-                std::begin(target_vect), 
-                0.0,
-                [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
-                );
+        /*
+        double L2 = 0;
+        for (int i=0; i<n; ++i) {
+            const double e = get<target>(particles)[i]-target_vect[get<id>(particles)[i]];
+            L2 += std::pow(e,2);
+        }
+            
         TS_ASSERT_LESS_THAN(L2,1e-2);
+        */
 
         return dt.count()/repeats;
     }
@@ -163,16 +165,24 @@ public:
     template <unsigned int D>
     void helper_multiquadric() {
         std::ofstream file;
-        const size_t base_repeats = 5e6;
+        const size_t nbucket_min = 10;
+        const size_t nbucket_max = 100;
+        const size_t nbucket_incr = 10;
+        const size_t base_repeatsN2 = 1e7;
+        const size_t base_repeatsN = 2e5;
         file.open("benchmark_fmm_" + std::to_string(D) + ".csv");
-        file <<"#"<< std::setw(14) << "N" 
-             << std::setw(15) << "vector" 
-             << std::setw(15) << "fmm-kdtree-N-2" 
-             << std::setw(15) << "fmm-octtree-N-2" 
-             << std::setw(15) << "fmm-kdtree-N-3" 
-             << std::setw(15) << "fmm-octtree-N-3" 
-             << std::endl;
-        for (double i = 100; i < 10000; i *= 1.1) {
+        file <<"#"<< std::setw(25) << "N" 
+             << std::setw(25) << "vector";
+        for (size_t i = nbucket_min; i < nbucket_max; i += nbucket_incr) {
+             file << std::setw(25) << "fmm-kdtree-N-2-nb-"+std::to_string(i) 
+             << std::setw(25) << "fmm-octtree-N-2-nb-"+std::to_string(i) 
+             << std::setw(25) << "fmm-kdtree-N-3-nb-"+std::to_string(i) 
+             << std::setw(25) << "fmm-octtree-N-3-nb-"+std::to_string(i) 
+             << std::setw(25) << "fmm-kdtree-N-4-nb-"+std::to_string(i) 
+             << std::setw(25) << "fmm-octtree-N-4-nb-"+std::to_string(i);
+        }
+        file << std::endl;
+        for (double i = 1000; i < 10000; i *= 1.1) {
             const size_t N = i;
             // randomly generate a bunch of positions over a range 
             const double pos_min = 0;
@@ -210,8 +220,8 @@ public:
                 return std::sqrt(dx.squaredNorm() + c); 
             };
 
-            //const size_t repeats = base_repeats/std::pow(N,2) + 1;
-            const size_t repeats = 1.0;
+            const size_t repeatsN2 = base_repeatsN2/std::pow(N,2) + 1;
+            const size_t repeatsN = base_repeatsN/N + 1;
             file << std::setw(15) << N;
 #ifdef HAVE_OPENMP
             omp_set_num_threads(1);
@@ -219,20 +229,28 @@ public:
             Eigen::setNbThreads(1);
 #endif
 #endif
-            file << std::setw(15) << multiquadric_vector(target,positions,source,kernel,repeats);
-            file << std::setw(15) << 
-                multiquadric_fmm<2,nanoflann_adaptor>(positions,source,
-                                                        target,kernel,repeats);
-            file << std::setw(15) << 
-                multiquadric_fmm<2,octtree>(positions,source,
-                                                        target,kernel,repeats);
-            file << std::setw(15) << 
-                multiquadric_fmm<3,nanoflann_adaptor>(positions,source,
-                                                        target,kernel,repeats);
-            file << std::setw(15) << 
-                multiquadric_fmm<3,octtree>(positions,source,
-                                                        target,kernel,repeats);
+            file << std::setw(25) << multiquadric_vector(target,positions,source,kernel,repeatsN2);
 
+            for (size_t i = nbucket_min; i < nbucket_max; i += nbucket_incr) {
+                file << std::setw(25) << 
+                    multiquadric_fmm<2,nanoflann_adaptor>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_fmm<2,octtree>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_fmm<3,nanoflann_adaptor>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_fmm<3,octtree>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_fmm<4,nanoflann_adaptor>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_fmm<4,octtree>(positions,source,
+                            target,kernel,repeatsN,i);
+            }
 
             file << std::endl;
         }
@@ -240,7 +258,10 @@ public:
     }
 
     void test_multiquadric() {
+        helper_multiquadric<1>();
         helper_multiquadric<2>();
+        helper_multiquadric<3>();
+        helper_multiquadric<4>();
     }
 
 
