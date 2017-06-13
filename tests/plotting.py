@@ -1,6 +1,8 @@
 import matplotlib as mpl
 mpl.use('pdf')
 import matplotlib.pyplot as plt
+
+from matplotlib.font_manager import FontProperties
 import numpy as np
 import glob
 import re
@@ -10,9 +12,14 @@ rc('text', usetex=True)
 
 
 
-for filename in ['vector_addition','daxpy','finite_difference','multiquadric','linear_spring','multiquadric_scaling']:
+for filename in ['benchmark_fmm','vector_addition','daxpy','finite_difference','multiquadric','linear_spring','multiquadric_scaling']:
 #for filename in ['linear_spring']:
-    if filename in ['linear_spring']:
+    if filename in ['benchmark_fmm']:
+        files = ['tests/benchmark_fmm_1.csv','tests/benchmark_fmm_2.csv','tests/benchmark_fmm_3.csv']
+        datas = []
+        for f in files:
+            datas.append(np.loadtxt(f))
+    elif filename in ['linear_spring']:
         files = glob.glob('tests/'+filename+'*.csv')
         datas = []
         radius_div_h = []
@@ -22,10 +29,42 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
             datas.append(np.loadtxt(f))
     else:
         data = np.loadtxt('tests/'+filename+'.csv')
-    plt.figure(figsize= (6,5))
+
+    if filename in ['benchmark_fmm']:
+        f = plt.figure(figsize= (10,5))
+    else:
+        f = plt.figure(figsize= (6,5))
 
     handles = []
-    if filename in ['vector_addition']:
+    if filename in ['benchmark_fmm']:
+        plt.title(r'fmm')
+        plt.loglog(datas[1][:,0],datas[1][:,1],label='direct Dim=2')
+        plt.loglog(datas[2][:,0],datas[2][:,1],label='direct Dim=3')
+        #plt.loglog(datas[0][:,0],datas[0][:,2],label='kdtree N=2 nb=10 Dim=1')
+        #plt.loglog(datas[0][:,0],datas[0][:,3],label='octtree N=2 nb=10 Dim=1')
+        #plt.loglog(datas[1][:,0],datas[1][:,2],label='kdtree N=2 nb=10 Dim=2')
+        #plt.loglog(datas[1][:,0],datas[1][:,3],label='octtree N=2 nb=10 Dim=2')
+        #plt.loglog(datas[2][:,0],datas[2][:,2],label='kdtree N=2 nb=10 Dim=3')
+        #plt.loglog(datas[2][:,0],datas[2][:,3],label='octtree N=2 nb=10 Dim=3')
+
+        #plt.loglog(datas[0][:,0],datas[0][:,4],label='kdtree N=3 nb=10 Dim=1')
+        #plt.loglog(datas[0][:,0],datas[0][:,5],label='octtree N=3 nb=10 Dim=1')
+        plt.loglog(datas[1][:,0],datas[1][:,4+(3-1)*6],label='kdtree N=3 nb=30 Dim=2')
+        #plt.loglog(datas[1][:,0],datas[1][:,3+(3-1)*6],label='octtree N=3 nb=30 Dim=2')
+        plt.loglog(datas[2][:,0],datas[2][:,4+(3-1)*6],label='kdtree N=3 nb=30 Dim=3')
+        #plt.loglog(datas[2][:,0],datas[2][:,3+(6-1)*6],label='octtree N=3 nb=60 Dim=3')
+
+        #plt.loglog(datas[0][:,0],datas[0][:,6],label='kdtree N=4 nb=10 Dim=1')
+        #plt.loglog(datas[0][:,0],datas[0][:,7],label='octtree N=4 nb=10 Dim=1')
+        #plt.loglog(datas[1][:,0],datas[1][:,6],label='kdtree N=4 nb=10 Dim=2')
+        #plt.loglog(datas[1][:,0],datas[1][:,7],label='octtree N=4 nb=10 Dim=2')
+        #plt.loglog(datas[2][:,0],datas[2][:,6],label='kdtree N=4 nb=10 Dim=3')
+        #plt.loglog(datas[2][:,0],datas[2][:,7],label='octtree N=4 nb=10 Dim=3')
+
+        plt.loglog(datas[1][:,0],0.5e-8*datas[1][:,0]**2,linestyle='--',label='$N^2$')
+        plt.loglog(datas[1][:,0],3.0e-6*datas[1][:,0],linestyle='--',label='$N$')
+        #plt.loglog(datas[1][:,0],1.3e-4*datas[1][:,0],linestyle='--',label='$N$')
+    elif filename in ['vector_addition']:
         plt.title(r'$a_i = b_i + c_i$')
         plt.semilogx(data[:,0],data[:,1]/1e6,label='Aboria (Level 1)')
         plt.semilogx(data[:,0],data[:,2]/1e6,label='Aboria (Level 2)')
@@ -73,9 +112,18 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
         plt.semilogx(data[:,0],data[:,3]/1e6,label='Eigen')
 
 
-    if filename in ['multiquadric_scaling']:
+
+    if filename in ['benchmark_fmm']:
+        # Shrink current axis by 20%
+        print 'asdfasdfsdafd'
+        fontP = FontProperties()
+        fontP.set_size('small')
+        box = plt.gca().get_position()
+        plt.gca().set_position([box.x0, box.y0, box.width * 0.65, box.height])
+        leg = plt.legend(fancybox=True,prop=fontP,loc='center left',bbox_to_anchor=(1.0,0.5))
+    elif filename in ['multiquadric_scaling']:
         leg = plt.legend(fancybox=True,loc='upper right')
-    if filename in ['multiquadric']:
+    elif filename in ['multiquadric']:
         leg = plt.legend(fancybox=True,loc='lower right')
     elif filename in ['linear_spring']:
         leg = plt.legend(handles=handles,fancybox=True,loc='upper left')
@@ -86,12 +134,14 @@ for filename in ['vector_addition','daxpy','finite_difference','multiquadric','l
 
     leg.get_frame().set_alpha(0.3)
     plt.xlabel(r'$N$')
-    if filename in ['vector_addition', 'daxpy']:
+    if filename in ['benchmark_fmm']:
+        plt.ylabel(r'$T_e$')
+    elif filename in ['vector_addition', 'daxpy']:
         plt.ylabel(r'$N / T_e$ ($\times 10^6$)')
     elif filename in ['linear_spring']:
         plt.ylabel(r'$N^2 / T_e$ ($\times 10^6$)')
     else:
         plt.ylabel(r'$N^2 / T_e$ ($\times 10^6$)')
-    plt.tight_layout()
+    #plt.tight_layout()
     plt.savefig(filename+'.pdf')
     plt.savefig(filename+'.svg')
