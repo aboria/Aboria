@@ -182,7 +182,7 @@ public:
              << std::setw(25) << "fmm-octtree-N-4-nb-"+std::to_string(i);
         }
         file << std::endl;
-        for (double i = 1000; i < 10000; i *= 1.1) {
+        for (double i = 1000; i < 100000; i *= 1.1) {
             const size_t N = i;
             // randomly generate a bunch of positions over a range 
             const double pos_min = 0;
