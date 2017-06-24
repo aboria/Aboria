@@ -291,13 +291,24 @@ namespace detail {
             lattice_iterator<dimension> mj(int_d(0),int_d(N));
             double sum = 0;
             for (int j=0; j<ncheb; ++j,++mj) {
-                //std::cout << "cheb node "<<*mj<<" p = "<<cheb_rn.get_position(*mj)<<" source = "<<source[j]<<std::endl;
                 sum += cheb_rn(*mj)*source[j];
             }
             return sum;
         }
 
 #ifdef HAVE_EIGEN
+        static double L2P(const double_d& p,
+                   const box_type& box, 
+                   const m_vector_type& source) {
+            detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
+            lattice_iterator<dimension> mj(int_d(0),int_d(N));
+            double sum = 0;
+            for (int j=0; j<ncheb; ++j,++mj) {
+                sum += cheb_rn(*mj)*source[j];
+            }
+            return sum;
+        }
+
         template <typename ParticlesType>
         static void L2P_matrix(l2p_matrix_type& matrix, 
                     const box_type& box,
