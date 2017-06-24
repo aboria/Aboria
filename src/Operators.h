@@ -151,6 +151,17 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
             return Eigen::Product<MatrixReplacement,Rhs,Eigen::AliasFreeProduct>(*this, x.derived());
         }
 
+        template <unsigned int I, unsigned int J>
+        const typename tuple_ns::tuple_element<I*NJ+J,Blocks>::type& 
+        get_kernel() const {
+            return tuple_ns::get<I*NJ+J>(m_blocks);
+        }
+
+        const typename tuple_ns::tuple_element<0,Blocks>::type& 
+        get_first_kernel() const {
+            return get_kernel<0,0>();
+        }
+
         template<typename Derived>
         void assemble(Eigen::DenseBase<Derived>& matrix) const {
             const size_t na = rows();
@@ -331,7 +342,72 @@ Operator create_chebyshev_operator(const RowParticles& row_particles,
                 );
     }
 
+/// \brief creates a matrix-free linear operator using the Black-Box
+///        Fast Multipole Method (FMM)
+///
+/// This function returns a MatrixReplacement object that acts like a 
+/// dense linear operator (i.e. matrix) in Eigen. It uses FMM
+/// speed up its application to a vector. For repeated uses it is better
+/// to use create_h2_operator
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+/// \param function A function object that returns the value of the operator
+///                 for a given particle pair
+///
+/// \tparam N The number of chebyshev nodes in each dimension to use
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
+template<unsigned int N, typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelFMM<RowParticles,ColParticles,F,N>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_fmm_operator(const RowParticles& row_particles,
+                               const ColParticles& col_particles,
+                               const F& function) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles,function)
+                    )
+                );
+    }
 
+/// \brief creates a matrix-free linear operator using the Black-Box
+///        Fast Multipole Method (FMM) to internally create a H2
+///        hierarchical matrix
+///
+/// This function returns a MatrixReplacement object that acts like a 
+/// dense linear operator (i.e. matrix) in Eigen. It internally creates
+/// a H2 hierarchical matrix to speed up repeated applications of the
+/// operator
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+/// \param function A function object that returns the value of the operator
+///                 for a given particle pair
+///
+/// \tparam N The number of chebyshev nodes in each dimension to use
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
+template<unsigned int N, typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelH2<RowParticles,ColParticles,F,N>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_h2_operator(const RowParticles& row_particles,
+                               const ColParticles& col_particles,
+                               const F& function) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles,function)
+                    )
+                );
+    }
 
 /// \brief creates a sparse matrix-free linear operator for use with Eigen
 ///

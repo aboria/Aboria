@@ -196,7 +196,7 @@ public:
 
     // evaluate expansions for given point
     template <typename VectorType>
-    double matrix_vector_multiply_eval_point(const Vector<double,dimension>& p, const VectorType& source_vector) {
+    double eval_target_point(const Vector<double,dimension>& p, const VectorType& source_vector) const {
         pointer bucket;
         box_type box;
         m_query->get_bucket(p,bucket,box);
@@ -206,7 +206,7 @@ public:
         double sum = Expansions::L2P(p,box,m_g[index]);
         // direct evaluation (strongly connected buckets)
         for (int i = 0; i < m_strong_connectivity[index].size(); ++i) {
-            child_iterator& source_ci = m_strong_connectivity[index][i];
+            const child_iterator& source_ci = m_strong_connectivity[index][i];
             size_t source_index = m_query->get_bucket_index(*source_ci);
             sum += detail::calculate_P2P_position(p
                     ,m_query->get_bucket_particles(*source_ci)

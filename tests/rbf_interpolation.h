@@ -84,8 +84,6 @@ public:
 
         
         const int N = 1000;
-        const int RASM_n = 100;
-        const double RASM_buffer = 0.0;
 
         const int nx = 3;
         const int max_iter = 100;
@@ -376,6 +374,141 @@ void helper_compact(void) {
 #endif // HAVE_EIGEN
     }
 
+template<template <typename> class SearchMethod>
+    void helper_h2(void) {
+#ifdef HAVE_EIGEN
+//->
+//=int main() {
+        auto funct = [](const double x, const double y) { 
+            return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
+            //return x; 
+        };
+
+        ABORIA_VARIABLE(alpha,double,"alpha value")
+        ABORIA_VARIABLE(interpolated,double,"interpolated value")
+
+    	typedef Particles<std::tuple<alpha,interpolated>,2,std::vector,SearchMethod> ParticlesType;
+        typedef position_d<2> position;
+        typedef typename ParticlesType::const_reference const_particle_reference;
+        typedef typename position::value_type const & const_position_reference;
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> matrix_type; 
+       	ParticlesType knots;
+       	ParticlesType augment;
+       	ParticlesType test;
+
+       	const double c = 0.5;
+        const double c2 = std::pow(c,2);
+        double2 min(0);
+        double2 max(1);
+        double2 periodic(false);
+
+        
+        const int N = 1000;
+
+        const int nx = 3;
+        const int max_iter = 100;
+        const int restart = 101;
+        const double delta = 1.0/nx;
+        typename ParticlesType::value_type p;
+
+        std::default_random_engine generator;
+        std::uniform_real_distribution<double> distribution(0.0,1.0);
+        for (int i=0; i<N; ++i) {
+            get<position>(p) = double2(distribution(generator),
+                                       distribution(generator));
+            knots.push_back(p);
+
+            get<position>(p) = double2(distribution(generator),
+                                       distribution(generator));
+            test.push_back(p);
+        }
+
+        knots.init_neighbour_search(min,max,periodic);
+
+        augment.push_back(p);
+
+        auto kernel = [&](const double2& dx,
+                         const double2& a,
+                         const double2& b) {
+                            return std::sqrt(dx.squaredNorm() + c2);
+                        };
+
+        auto one = [](const_position_reference dx,
+                      const_particle_reference a,
+                      const_particle_reference b) {
+                            return 1.0;
+                        };
+
+        auto G = create_h2_operator<4>(knots,knots,kernel);
+        auto P = create_dense_operator(knots,augment,one);
+        auto Pt = create_dense_operator(augment,knots,one);
+        auto Zero = create_zero_operator(augment,augment);
+
+        auto W = create_block_operator<2,2>(G, P,
+                                            Pt,Zero);
+
+        vector_type phi(N+1), gamma(N+1);
+        for (int i=0; i<knots.size(); ++i) {
+            const double x = get<position>(knots[i])[0];
+            const double y = get<position>(knots[i])[1];
+            phi[i] = funct(x,y);
+        }
+        phi[knots.size()] = 0;
+
+        matrix_type W_matrix(N+1,N+1);
+        W.assemble(W_matrix);
+
+        gamma = W_matrix.ldlt().solve(phi);
+
+        Eigen::GMRES<matrix_type> gmres;
+        gmres.setMaxIterations(max_iter);
+        gmres.set_restart(restart);
+        gmres.compute(W_matrix);
+        gamma = gmres.solve(phi);
+        std::cout << "GMRES:       #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+
+        phi = W*gamma;
+        double rms_error = 0;
+        double scale = 0;
+        for (int i=0; i<knots.size(); ++i) {
+            const double x = get<position>(knots[i])[0];
+            const double y = get<position>(knots[i])[1];
+            const double truth = funct(x,y);
+            const double eval_value = phi[i];
+            rms_error += std::pow(eval_value-truth,2);
+            scale += std::pow(truth,2);
+            //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+        }
+
+        std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-6);
+        
+        rms_error = 0;
+        scale = 0;
+        for (int i=0; i<test.size(); ++i) {
+            const double2 p = get<position>(test)[i]; 
+            const double eval_value = G.get_first_kernel()
+                                       .get_h2_matrix()
+                                       .eval_target_point(p,gamma) 
+                                    + gamma[knots.size()];
+            const double truth = funct(p[0],p[1]);
+            rms_error += std::pow(eval_value-truth,2);
+            scale += std::pow(truth,2);
+            //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
+        }
+        std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-5);
+
+
+//=}
+//]
+#endif // HAVE_EIGEN
+    }
+
+
+
     void test_bucket_search_parallel() {
         //helper_global<bucket_search_parallel>();
         //helper_compact<bucket_search_parallel>();
@@ -386,7 +519,13 @@ void helper_compact(void) {
         helper_compact<bucket_search_serial>();
     }
 
+    void test_kdtree() {
+        helper_h2<nanoflann_adaptor>();
+    }
 
+    void test_octtree() {
+        helper_h2<octtree>();
+    }
 
 };
 

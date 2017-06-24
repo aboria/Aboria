@@ -44,6 +44,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Eigen/Core>
 #endif
 
+#include "FastMultipoleMethod.h"
+#include "H2Matrix.h"
 
 
 namespace Aboria {
@@ -270,7 +272,6 @@ namespace Aboria {
        }
     };
 
-#ifdef HAVE_EIGEN
     namespace detail {
         template <typename RowParticles, typename ColParticles, typename F,
                  typename double_d=
@@ -292,6 +293,7 @@ namespace Aboria {
         };
     }
     
+#ifdef HAVE_EIGEN
     template<typename RowParticles, typename ColParticles, typename PositionF,
         typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
     class KernelChebyshev: public KernelDense<RowParticles,ColParticles,F> {
@@ -412,7 +414,141 @@ namespace Aboria {
             lhs = m_row_Rn_matrix*m_fcheb;
         }
     };
+
+    template<typename RowParticles, typename ColParticles, typename PositionF,
+        unsigned int N,
+        typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
+    class KernelH2: public KernelDense<RowParticles,ColParticles,F> {
+        typedef KernelDense<RowParticles,ColParticles,F> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::int_d int_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+        typedef typename ColParticles::query_type query_type;
+        static const unsigned int dimension = base_type::dimension;
+        typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
+        typedef H2Matrix<expansions_type,query_type> h2_matrix_type;
+
+        expansions_type m_expansions;
+        h2_matrix_type m_h2_matrix;
+
+    public:
+        typedef typename base_type::Scalar Scalar;
+
+        KernelH2(const RowParticles& row_particles,
+                        const ColParticles& col_particles,
+                        const PositionF& function): 
+                                            m_expansions(function),
+                                            m_h2_matrix(row_particles,col_particles,
+                                                        m_expansions),
+                                            base_type(row_particles,
+                                                  col_particles,
+                                                  F(function)) {
+        };
+
+        const h2_matrix_type& get_h2_matrix() const {
+            return m_h2_matrix;
+        }
+
+        /// Evaluates a h2 matrix linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template<typename VectorLHS,typename VectorRHS>
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+            m_h2_matrix.matrix_vector_multiply(lhs,rhs);
+        }
+    };
+
 #endif
+
+    template<typename RowParticles, typename ColParticles, typename PositionF,
+        unsigned int N,
+        typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
+    class KernelFMM: public KernelDense<RowParticles,ColParticles,F> {
+        typedef KernelDense<RowParticles,ColParticles,F> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::int_d int_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+        typedef typename ColParticles::query_type query_type;
+        static const unsigned int dimension = base_type::dimension;
+        typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
+        typedef FastMultipoleMethod<expansions_type,query_type> fmm_type;
+
+        expansions_type m_expansions;
+        fmm_type m_fmm;
+
+    public:
+        typedef typename base_type::Scalar Scalar;
+
+        KernelFMM(const RowParticles& row_particles,
+                        const ColParticles& col_particles,
+                        const PositionF& function): 
+                                            m_expansions(function),
+                                            m_fmm(col_particles.get_query(),
+                                                  m_expansions),
+                                            base_type(row_particles,
+                                                  col_particles,
+                                                  F(function)) {
+        };
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template<typename VectorLHS,typename VectorRHS>
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+            m_fmm.calculate_expansions(rhs);
+            for (int i = 0; i < this->m_row_particles.size(); ++i) {
+                lhs[i] = m_fmm.evaluate_expansion(
+                            get<position>(this->m_row_particles)[i],rhs);
+            }
+        }
+    };
+
+    template<typename Particles, typename PositionF, unsigned int N>
+    class KernelFMM<Particles,Particles,PositionF,N>: public KernelDense<Particles,Particles,detail::position_lambda<Particles,Particles,PositionF>> {
+        typedef KernelDense<Particles,Particles,detail::position_lambda<Particles,Particles,PositionF>> base_type;
+        typedef typename base_type::position position;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::int_d int_d;
+        typedef typename base_type::const_position_reference const_position_reference;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+        typedef typename Particles::query_type query_type;
+        static const unsigned int dimension = base_type::dimension;
+        typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
+        typedef FastMultipoleMethod<expansions_type,query_type> fmm_type;
+
+
+        expansions_type m_expansions;
+        fmm_type m_fmm;
+
+    public:
+        typedef typename base_type::Scalar Scalar;
+
+        KernelFMM(const Particles& row_particles,
+                        const Particles& col_particles,
+                        const PositionF& function): 
+                                            m_expansions(function),
+                                            m_fmm(col_particles.get_query(),
+                                                  m_expansions),
+                                            base_type(row_particles,
+                                                  col_particles,
+                                                  F(function)) {
+        };
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template<typename VectorLHS,typename VectorRHS>
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+            m_fmm.gemv(lhs,rhs);
+        }
+    };
 
 
     template<typename RowParticles, typename ColParticles, typename FRadius, typename F>
