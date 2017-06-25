@@ -40,7 +40,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <typename Expansions, typename Query>
+template <typename Expansions, typename ColParticles,
+         typename Query=typename ColParticles::query_type>
 class H2Matrix {
     typedef typename Query::traits_type traits_type;
     typedef typename Query::reference reference;
@@ -78,10 +79,12 @@ class H2Matrix {
     typedef typename Query::particle_iterator particle_iterator;
     typedef typename particle_iterator::reference particle_reference;
     typedef detail::bbox<dimension> box_type;
-    m_vectors_type m_W;
-    m_vectors_type m_g;
-    p_vectors_type m_source_vector;
-    p_vectors_type m_target_vector;
+
+    // vectors used to cache values
+    mutable m_vectors_type m_W;
+    mutable m_vectors_type m_g;
+    mutable p_vectors_type m_source_vector;
+    mutable p_vectors_type m_target_vector;
 
     l2p_matrices_type m_l2p_matrices;
     p2m_matrices_type m_p2m_matrices;
@@ -97,12 +100,15 @@ class H2Matrix {
     Expansions m_expansions;
 
     const Query* m_query;
+    const ColParticles* m_col_particles;
 
 public:
 
-    template <typename RowParticles, typename ColParticles>
+    template <typename RowParticles>
     H2Matrix(const RowParticles &row_particles, const ColParticles &col_particles, const Expansions& expansions):
-        m_query(&col_particles.get_query()),m_expansions(expansions)
+        m_query(&col_particles.get_query()),
+        m_expansions(expansions),
+        m_col_particles(col_particles)
     {
         //generate h2 matrix 
         const size_t n = m_query->number_of_buckets();
@@ -157,10 +163,69 @@ public:
         }
     }
 
+    // copy construct from another h2_matrix with different row_particles.
+    template <typename RowParticles>
+    H2Matrix(const H2Matrix<Expansions,Query>& matrix, 
+             const RowParticles &row_particles):
+        m_W(matrix.m_W.size()),
+        m_g(matrix.m_g.size()),
+        m_source_vector(matrix.m_source_vector),
+        //m_target_vector(matrix.m_target_vector), \\going to redo
+        m_l2p_matrices(matrix.m_l2p_matrices),
+        m_p2m_matrices(matrix.m_p2m_matrices),
+        m_l2l_matrices(matrix.m_l2l_matrices),
+        //m_p2p_matrices(matrix.m_p2p_matrices), \\going to redo these
+        m_m2l_matrices(matrix.m_m2l_matrices),
+        //m_row_indices(matrix.m_row_indices), \\going to redo these
+        m_col_indices(matrix.m_col_indices),
+        m_strong_connectivity(matrix.m_strong_connectivity),
+        m_weak_connectivity(matrix.m_weak_connectivity),
+        m_query(matrix.m_query),
+        m_expansions(matrix.expansions),
+        m_col_particles(matrix.m_col_particles)
+    {
+        const size_t n = m_query->number_of_buckets();
+        const bool row_equals_col = &row_particles == m_col_particles;
+        m_target_vector.resize(n);
+        m_row_indices.resize(n);
+        m_p2p_matrices.resize(n);
+
+        // setup row and column indices
+        if (row_equals_col) {
+            std::copy(std::begin(m_col_indices),std::end(m_col_indices),
+                      std::begin(m_row_indicies));
+        } else {
+            for (int i = 0; i < row_particles.size(); ++i) {
+                //get target index
+                pointer bucket;
+                box_type box;
+                m_query->get_bucket(get<position>(row_particles)[i],bucket,box);
+                const size_t index = m_query->get_bucket_index(*bucket); 
+                m_row_indices[index].push_back(i);
+            }
+        }
+        for (int i = 0; i < m_row_indices.size(); ++i) {
+            m_target_vector[i].resize(m_row_indices[i].size());
+        }
+
+        for (auto& bucket: m_query->get_subtree()) {
+            if (!m_query->is_leaf_node(bucket)) { // leaf node
+                size_t target_index = m_query->get_bucket_index(bucket);
+                for (child_iterator& source: m_strong_connectivity[target_index]) {
+                    m_p2p_matrices[target_index].push_back(p2p_matrix_type());
+                    size_t index = m_query->get_bucket_index(*source);
+                    m_expansions.P2P_matrix(
+                        *(m_p2p_matrices[index].end()-1),
+                        m_row_indices[target_index],m_col_indices[index],
+                        row_particles,*m_col_particles);
+                }
+            }
+        }
+    }
 
     // target_vector += A*source_vector
     template <typename VectorType>
-    void matrix_vector_multiply(VectorType& target_vector, const VectorType& source_vector) {
+    void matrix_vector_multiply(VectorType& target_vector, const VectorType& source_vector) const {
 
         // for all leaf nodes setup source vector
         for (auto& bucket: m_query->get_subtree()) {
@@ -194,29 +259,8 @@ public:
         }
     }
 
-    // evaluate expansions for given point
-    template <typename VectorType>
-    double eval_target_point(const Vector<double,dimension>& p, const VectorType& source_vector) const {
-        pointer bucket;
-        box_type box;
-        m_query->get_bucket(p,bucket,box);
-        LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
-        const size_t index = m_query->get_bucket_index(*bucket); 
-
-        double sum = Expansions::L2P(p,box,m_g[index]);
-        // direct evaluation (strongly connected buckets)
-        for (int i = 0; i < m_strong_connectivity[index].size(); ++i) {
-            const child_iterator& source_ci = m_strong_connectivity[index][i];
-            size_t source_index = m_query->get_bucket_index(*source_ci);
-            sum += detail::calculate_P2P_position(p
-                    ,m_query->get_bucket_particles(*source_ci)
-                    ,m_expansions,source_vector,m_query->get_particles_begin());
-        }
-        return sum;
-    }
-
 private:
-    template <typename RowParticles, typename ColParticles>
+    template <typename RowParticles>
     void generate_matrices(
             const child_iterator_vector_type& parents_strong_connections,
             const box_type& box_parent, 
@@ -380,11 +424,10 @@ private:
 };
 
 
-template <typename Expansions, typename RowParticlesType, typename ColParticlesType,
-         typename NeighbourQuery = typename ColParticlesType::query_type>
-H2Matrix<Expansions,NeighbourQuery>
+template <typename Expansions, typename RowParticlesType, typename ColParticlesType>
+H2Matrix<Expansions,ColParticlesType>
 make_h2_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions) {
-    return H2Matrix<Expansions,NeighbourQuery>(row_particles,col_particles,expansions);
+    return H2Matrix<Expansions,ColParticlesType>(row_particles,col_particles,expansions);
 }
 
 }
