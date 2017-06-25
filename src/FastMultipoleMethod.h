@@ -41,7 +41,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
    
-template <typename Expansions, typename NeighbourQuery>
+template <typename Expansions, typename ColParticles,
+         typename NeighbourQuery = typename ColParticles::query_type>
 class FastMultipoleMethod {
     typedef typename NeighbourQuery::traits_type traits_type;
     typedef typename NeighbourQuery::reference reference;
@@ -62,14 +63,18 @@ class FastMultipoleMethod {
     storage_type m_g;
     connectivity_type m_connectivity; 
     const NeighbourQuery *m_query;
+    const ColParticles* m_col_particles;
     Expansions m_expansions;
 
 public:
-
-    FastMultipoleMethod(const NeighbourQuery &query, const Expansions& expansions):
-        m_query(&query),m_expansions(expansions)
+    FastMultipoleMethod(const ColParticles &col_particles, 
+                        const Expansions& expansions):
+        m_query(&col_particles.get_query()),
+        m_expansions(expansions),
+        m_col_particles(&col_particles)
     {}
 
+protected:
     template <typename VectorType>
     expansion_type& calculate_dive_P2M_and_M2M(const child_iterator& ci, 
                                                const VectorType& source_vector) {
@@ -173,14 +178,26 @@ public:
             }
         }
     }
+};
 
+template <typename Expansions, typename ColParticles,
+         typename NeighbourQuery = typename ColParticles::query_type>
+class FastMultipoleMethod: public FastMultipoleMethodBase<Expansions,ColParticles> {
+   typedef FastMultipoleMethodBase<Expansions,ColParticles> base_type; 
+public:
+    FastMultipoleMethod(const ColParticles &col_particles, 
+                        const Expansions& expansions):
+        base_type(col_particles,expansions)
+    {}
 
-    // note: assumes identical source and target particle sets
+private:
+
     // target_vector += A*source_vector
-    template <typename VectorType>
-    void gemv(VectorType& target_vector, const VectorType& source_vector) {
+    template <typename RowParticles, typename VectorType>
+    void matrix_vector_multiply(const RowParticles& row_particles, 
+                                VectorType& target_vector, 
+                                const VectorType& source_vector) const {
         CHECK(target_vector.size() == source_vector.size(), "source and target vector not same length")
-
         const size_t n = m_query->number_of_buckets();
         m_W.resize(n);
         m_g.resize(n);
@@ -194,17 +211,61 @@ public:
 
         // downward sweep of tree. 
         //
-        for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
-            child_iterator_vector_type dummy;
-            expansion_type g = {};
-            calculate_dive_M2L_and_L2L(target_vector,dummy,g,box_type(),ci,source_vector);
+        if (&row_particles == m_col_particles) {
+            for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+                child_iterator_vector_type dummy;
+                expansion_type g = {};
+                calculate_dive_M2L_and_L2L(target_vector,dummy,g,box_type(),ci,source_vector);
+            }
+        } else {
+            for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+                child_iterator_vector_type dummy;
+                VectorType dummy2;
+                expansion_type g = {};
+                calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
+            }
+
+            for (int i = 0; i < row_particles.size(); ++i) {
+                const double_d& p = get<position>(row_particles)[i];
+                pointer bucket;
+                box_type box;
+                m_query->get_bucket(p,bucket,box);
+                LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
+                const size_t index = m_query->get_bucket_index(*bucket); 
+
+                double sum = Expansions::L2P(p,box,m_g[index]);
+                for (child_iterator& ci: m_connectivity[index]) { 
+                    if (m_query->is_leaf_node(*ci)) {
+                        sum += detail::calculate_P2P_position(p
+                            ,m_query->get_bucket_particles(*ci)
+                            ,m_expansions,source_vector,m_query->get_particles_begin());
+                    } else {
+                        for (reference subtree_reference: m_query->get_subtree(ci)) {
+                            if (m_query->is_leaf_node(subtree_reference)) {
+                                sum += detail::calculate_P2P_position(p
+                                        ,m_query->get_bucket_particles(subtree_reference)
+                                        ,m_expansions,source_vector,m_query->get_particles_begin());
+                            }
+                        }
+                    }
+                }
+                target_vector[i] += sum;
+            }
         }
     }
+};
 
-
+template <typename Expansions, typename ColParticles,
+         typename NeighbourQuery = typename ColParticles::query_type>
+class FastMultipoleMethodWithSource: public FastMultipoleMethodBase<Expansions,ColParticles> {
+   typedef FastMultipoleMethodBase<Expansions,ColParticles> base_type; 
+public:
     template <typename VectorType>
-    void calculate_expansions(const VectorType& source_vector) {
-
+    FastMultipoleMethod(const ColParticles& col_particles, 
+                        const Expansions& expansions,
+                        const VectorType& source_vector):
+        base_type(col_particles,expansions)
+    {
         const size_t n = m_query->number_of_buckets();
         m_W.resize(n);
         m_g.resize(n);
@@ -229,7 +290,7 @@ public:
 
     // evaluate expansions for given point
     template <typename VectorType>
-    double evaluate_expansion(const Vector<double,dimension>& p, const VectorType& source_vector) {
+    double evaluate_at_point(const Vector<double,dimension>& p, const VectorType& source_vector) {
         pointer bucket;
         box_type box;
         m_query->get_bucket(p,bucket,box);
@@ -257,17 +318,21 @@ public:
 
 };
 
-
 template <unsigned int D, unsigned int N, typename Function> 
 detail::BlackBoxExpansions<D,N,Function> make_black_box_expansion(const Function& function) {
     return detail::BlackBoxExpansions<D,N,Function>(function);
 }
 
+template <typename Expansions, typename ColParticles>
+FastMultipoleMethod<Expansions,ColParticles>
+make_fmm(const ColParticles &col_particles, const Expansions& expansions) {
+    return FastMultipoleMethod<Expansions,ColParticles>(col_particles,expansions);
+}
 
-template <typename Expansions, typename NeighbourQuery>
-FastMultipoleMethod<Expansions,NeighbourQuery>
-make_fmm_query(const NeighbourQuery &query, const Expansions& expansions) {
-    return FastMultipoleMethod<Expansions,NeighbourQuery>(query,expansions);
+template <typename Expansions, typename ColParticles>
+FastMultipoleMethodWithSource<Expansions,ColParticles>
+make_fmm_with_source(const ColParticles &col_particles, const Expansions& expansions) {
+    return FastMultipoleMethodWithSource<Expansions,ColParticles>(col_particles,expansions);
 }
 
 }
