@@ -446,14 +446,18 @@ template<template <typename> class SearchMethod>
        	ParticlesType augment;
        	ParticlesType test;
 
-       	const double c = 0.5;
+       	const double c = 3.0;
         const double c2 = std::pow(c,2);
         double2 min(0);
         double2 max(1);
         double2 periodic(false);
 
-        
-        const int N = 1000;
+        const int N = 10000;
+
+        const double RASM_size = 1/c;
+        const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
+        const double RASM_buffer = 0.9*RASM_size;
+        std::cout << "RASM_size = "<<RASM_size<<" RASM_n = "<<RASM_n<<" RASM_buffer = "<<RASM_buffer<<std::endl;
 
         const int nx = 3;
         const int max_iter = 100;
@@ -480,7 +484,7 @@ template<template <typename> class SearchMethod>
         auto kernel = [&](const double2& dx,
                          const double2& a,
                          const double2& b) {
-                            return std::sqrt(dx.squaredNorm() + c2);
+                            return std::exp(-dx.squaredNorm()*c2);
                         };
 
         auto one = [](const_position_reference dx,
@@ -510,17 +514,15 @@ template<template <typename> class SearchMethod>
         }
         phi[knots.size()] = 0;
 
-        matrix_type W_matrix(N+1,N+1);
-        W.assemble(W_matrix);
-
-        gamma = W_matrix.ldlt().solve(phi);
-
-        Eigen::GMRES<matrix_type> gmres;
-        gmres.setMaxIterations(max_iter);
-        gmres.set_restart(restart);
-        gmres.compute(W_matrix);
-        gamma = gmres.solve(phi);
-        std::cout << "GMRES:       #iterations: " << gmres.iterations() << ", estimated error: " << gmres.error() << std::endl;
+        Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
+        dgmres.setMaxIterations(max_iter);
+        dgmres.preconditioner().set_buffer_size(RASM_buffer);
+        dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        dgmres.preconditioner().analyzePattern(W);
+        dgmres.set_restart(restart);
+        dgmres.compute(W);
+        gamma = dgmres.solve(phi);
+        std::cout << "DGMRES-RASM:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
 
         phi = W*gamma;
         double rms_error = 0;
@@ -536,7 +538,7 @@ template<template <typename> class SearchMethod>
         }
 
         std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-6);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
         
         rms_error = 0;
         scale = 0;

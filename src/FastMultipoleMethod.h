@@ -43,7 +43,8 @@ namespace Aboria {
    
 template <typename Expansions, typename ColParticles,
          typename NeighbourQuery = typename ColParticles::query_type>
-class FastMultipoleMethod {
+class FastMultipoleMethodBase {
+protected:
     typedef typename NeighbourQuery::traits_type traits_type;
     typedef typename NeighbourQuery::reference reference;
     typedef typename NeighbourQuery::pointer pointer;
@@ -66,15 +67,13 @@ class FastMultipoleMethod {
     const ColParticles* m_col_particles;
     Expansions m_expansions;
 
-public:
-    FastMultipoleMethod(const ColParticles &col_particles, 
+    FastMultipoleMethodBase(const ColParticles &col_particles, 
                         const Expansions& expansions):
         m_query(&col_particles.get_query()),
         m_expansions(expansions),
         m_col_particles(&col_particles)
     {}
 
-protected:
     template <typename VectorType>
     expansion_type& calculate_dive_P2M_and_M2M(const child_iterator& ci, 
                                                const VectorType& source_vector) {
@@ -184,6 +183,15 @@ template <typename Expansions, typename ColParticles,
          typename NeighbourQuery = typename ColParticles::query_type>
 class FastMultipoleMethod: public FastMultipoleMethodBase<Expansions,ColParticles> {
    typedef FastMultipoleMethodBase<Expansions,ColParticles> base_type; 
+   typedef typename base_type::child_iterator child_iterator;
+   typedef typename base_type::child_iterator_vector_type child_iterator_vector_type;
+   typedef typename base_type::expansion_type expansion_type;
+   typedef typename base_type::box_type box_type;
+   typedef typename base_type::double_d double_d;
+   typedef typename base_type::position position;
+   typedef typename base_type::pointer pointer;
+   typedef typename base_type::reference reference;
+    static const unsigned int dimension = base_type::dimension;
 public:
     FastMultipoleMethod(const ColParticles &col_particles, 
                         const Expansions& expansions):
@@ -198,27 +206,27 @@ private:
                                 VectorType& target_vector, 
                                 const VectorType& source_vector) const {
         CHECK(target_vector.size() == source_vector.size(), "source and target vector not same length")
-        const size_t n = m_query->number_of_buckets();
-        m_W.resize(n);
-        m_g.resize(n);
-        m_connectivity.resize(n);
+        const size_t n = this->m_query->number_of_buckets();
+        this->m_W.resize(n);
+        this->m_g.resize(n);
+        this->m_connectivity.resize(n);
 
         // upward sweep of tree
         //
-        for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+        for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
             calculate_dive_P2M_and_M2M(ci,source_vector);
         }
 
         // downward sweep of tree. 
         //
-        if (&row_particles == m_col_particles) {
-            for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+        if (&row_particles == this->m_col_particles) {
+            for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
                 child_iterator_vector_type dummy;
                 expansion_type g = {};
                 calculate_dive_M2L_and_L2L(target_vector,dummy,g,box_type(),ci,source_vector);
             }
         } else {
-            for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+            for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
                 child_iterator_vector_type dummy;
                 VectorType dummy2;
                 expansion_type g = {};
@@ -229,22 +237,22 @@ private:
                 const double_d& p = get<position>(row_particles)[i];
                 pointer bucket;
                 box_type box;
-                m_query->get_bucket(p,bucket,box);
+                this->m_query->get_bucket(p,bucket,box);
                 LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
-                const size_t index = m_query->get_bucket_index(*bucket); 
+                const size_t index = this->m_query->get_bucket_index(*bucket); 
 
-                double sum = Expansions::L2P(p,box,m_g[index]);
-                for (child_iterator& ci: m_connectivity[index]) { 
-                    if (m_query->is_leaf_node(*ci)) {
+                double sum = Expansions::L2P(p,box,this->m_g[index]);
+                for (child_iterator& ci: this->m_connectivity[index]) { 
+                    if (this->m_query->is_leaf_node(*ci)) {
                         sum += detail::calculate_P2P_position(p
-                            ,m_query->get_bucket_particles(*ci)
-                            ,m_expansions,source_vector,m_query->get_particles_begin());
+                            ,this->m_query->get_bucket_particles(*ci)
+                            ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
                     } else {
-                        for (reference subtree_reference: m_query->get_subtree(ci)) {
-                            if (m_query->is_leaf_node(subtree_reference)) {
+                        for (reference subtree_reference: this->m_query->get_subtree(ci)) {
+                            if (this->m_query->is_leaf_node(subtree_reference)) {
                                 sum += detail::calculate_P2P_position(p
-                                        ,m_query->get_bucket_particles(subtree_reference)
-                                        ,m_expansions,source_vector,m_query->get_particles_begin());
+                                        ,this->m_query->get_bucket_particles(subtree_reference)
+                                        ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
                             }
                         }
                     }
@@ -258,28 +266,37 @@ private:
 template <typename Expansions, typename ColParticles,
          typename NeighbourQuery = typename ColParticles::query_type>
 class FastMultipoleMethodWithSource: public FastMultipoleMethodBase<Expansions,ColParticles> {
-   typedef FastMultipoleMethodBase<Expansions,ColParticles> base_type; 
+    typedef FastMultipoleMethodBase<Expansions,ColParticles> base_type; 
+    typedef typename base_type::child_iterator child_iterator;
+    typedef typename base_type::child_iterator_vector_type child_iterator_vector_type;
+    typedef typename base_type::expansion_type expansion_type;
+    typedef typename base_type::box_type box_type;
+    typedef typename base_type::double_d double_d;
+    typedef typename base_type::position position;
+    typedef typename base_type::pointer pointer;
+    typedef typename base_type::reference reference;
+    static const unsigned int dimension = base_type::dimension;
 public:
     template <typename VectorType>
-    FastMultipoleMethod(const ColParticles& col_particles, 
+    FastMultipoleMethodWithSource(const ColParticles& col_particles, 
                         const Expansions& expansions,
                         const VectorType& source_vector):
         base_type(col_particles,expansions)
     {
-        const size_t n = m_query->number_of_buckets();
-        m_W.resize(n);
-        m_g.resize(n);
-        m_connectivity.resize(n);
+        const size_t n = this->m_query->number_of_buckets();
+        this->m_W.resize(n);
+        this->m_g.resize(n);
+        this->m_connectivity.resize(n);
 
         // upward sweep of tree
         //
-        for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+        for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
             calculate_dive_P2M_and_M2M(ci,source_vector);
         }
 
         // downward sweep of tree.
         //
-        for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+        for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
             child_iterator_vector_type dummy;
             VectorType dummy2;
             expansion_type g = {};
@@ -293,22 +310,22 @@ public:
     double evaluate_at_point(const Vector<double,dimension>& p, const VectorType& source_vector) {
         pointer bucket;
         box_type box;
-        m_query->get_bucket(p,bucket,box);
+        this->m_query->get_bucket(p,bucket,box);
         LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
-        const size_t index = m_query->get_bucket_index(*bucket); 
+        const size_t index = this->m_query->get_bucket_index(*bucket); 
 
-        double sum = Expansions::L2P(p,box,m_g[index]);
-        for (child_iterator& ci: m_connectivity[index]) { 
-            if (m_query->is_leaf_node(*ci)) {
+        double sum = Expansions::L2P(p,box,this->m_g[index]);
+        for (child_iterator& ci: this->m_connectivity[index]) { 
+            if (this->m_query->is_leaf_node(*ci)) {
                 sum += detail::calculate_P2P_position(p
-                    ,m_query->get_bucket_particles(*ci)
-                    ,m_expansions,source_vector,m_query->get_particles_begin());
+                    ,this->m_query->get_bucket_particles(*ci)
+                    ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
             } else {
-                for (reference subtree_reference: m_query->get_subtree(ci)) {
-                    if (m_query->is_leaf_node(subtree_reference)) {
+                for (reference subtree_reference: this->m_query->get_subtree(ci)) {
+                    if (this->m_query->is_leaf_node(subtree_reference)) {
                         sum += detail::calculate_P2P_position(p
-                                ,m_query->get_bucket_particles(subtree_reference)
-                                ,m_expansions,source_vector,m_query->get_particles_begin());
+                                ,this->m_query->get_bucket_particles(subtree_reference)
+                                ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
                     }
                 }
             }
