@@ -431,26 +431,42 @@ namespace Aboria {
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
         typedef H2Matrix<expansions_type,query_type> h2_matrix_type;
 
-        expansions_type m_expansions;
         h2_matrix_type m_h2_matrix;
+        PositionF m_position_function;
 
     public:
         typedef typename base_type::Scalar Scalar;
+        typedef PositionF position_function_type;
+        static const unsigned int expansion_N;
 
         KernelH2(const RowParticles& row_particles,
                         const ColParticles& col_particles,
                         const PositionF& function): 
-                                            m_expansions(function),
                                             m_h2_matrix(row_particles,col_particles,
                                                         m_expansions),
+                                            m_position_function(function),
                                             base_type(row_particles,
                                                   col_particles,
                                                   F(function)) {
         };
 
+        template <typename OldH2Kernel>
+        KernelH2(const OldH2Kernel& h2_kernel, const RowParticles& row_particles): 
+                       m_h2_matrix(k2_kernel.get_h2_matrix(),row_particles),
+                       m_position_function(k2_kernel.get_position_function()),
+                       base_type(row_particles,
+                                 k2_kernel.get_col_particles(),
+                                 F(k2_kernel.get_position_function())) {
+        };
+
         const h2_matrix_type& get_h2_matrix() const {
             return m_h2_matrix;
         }
+
+        const PositionF& get_position_function() const {
+            return m_position_function;
+        }
+
 
         /// Evaluates a h2 matrix linear operator given by \p expr \p if_expr,
         /// and particle sets \p a and \p b on a vector rhs and
