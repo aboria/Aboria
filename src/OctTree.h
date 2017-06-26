@@ -677,6 +677,10 @@ struct octtree_query {
         return detail::is_leaf(bucket);
     }
 
+    static bool is_tree() {
+        return true;
+    }
+
     child_iterator get_children() const {
         return child_iterator(m_nodes_begin, m_bounds);
     }

@@ -171,7 +171,7 @@ public:
         m_g(matrix.m_g.size()),
         m_source_vector(matrix.m_source_vector),
         //m_target_vector(matrix.m_target_vector), \\going to redo
-        m_l2p_matrices(matrix.m_l2p_matrices),
+        //m_l2p_matrices(matrix.m_l2p_matrices),     \\going to redo
         m_p2m_matrices(matrix.m_p2m_matrices),
         m_l2l_matrices(matrix.m_l2l_matrices),
         //m_p2p_matrices(matrix.m_p2p_matrices), \\going to redo these
@@ -189,6 +189,7 @@ public:
         m_target_vector.resize(n);
         m_row_indices.resize(n);
         m_p2p_matrices.resize(n);
+        m_l2p_matrices.resize(n);
 
         // setup row and column indices
         if (row_equals_col) {
@@ -208,18 +209,9 @@ public:
             m_target_vector[i].resize(m_row_indices[i].size());
         }
 
-        for (auto& bucket: m_query->get_subtree()) {
-            if (!m_query->is_leaf_node(bucket)) { // leaf node
-                size_t target_index = m_query->get_bucket_index(bucket);
-                for (child_iterator& source: m_strong_connectivity[target_index]) {
-                    m_p2p_matrices[target_index].push_back(p2p_matrix_type());
-                    size_t index = m_query->get_bucket_index(*source);
-                    m_expansions.P2P_matrix(
-                        *(m_p2p_matrices[target_index].end()-1),
-                        m_row_indices[target_index],m_col_indices[index],
-                        row_particles,*m_col_particles);
-                }
-            }
+        for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+            const box_type& target_box = m_query->get_bounds(ci);
+            generate_row_matrices(ci,row_particles,*m_col_particles);
         }
     }
 
@@ -362,6 +354,40 @@ private:
                         }
                     }
                 }
+            }
+        }
+    }
+
+    template <typename RowParticles>
+    void generate_row_matrices(
+            const child_iterator& ci,
+            const RowParticles &row_particles,
+            const ColParticles &col_particles
+            ) {
+
+        const box_type& target_box = m_query->get_bounds(ci);
+        size_t target_index = m_query->get_bucket_index(*ci);
+        LOG(3,"generate_row_matrices with bucket "<<target_box);
+        
+        if (!m_query->is_leaf_node(*ci)) { // leaf node
+            for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
+                generate_row_matrices(cj,row_particles,col_particles);
+            }
+        } else {
+            m_expansions.L2P_matrix(m_l2p_matrices[target_index], 
+                    target_box,
+                    m_row_indices[target_index],
+                    row_particles);
+
+            for (child_iterator& source: m_strong_connectivity[target_index]) {
+                ASSERT(m_query->is_leaf_node(*source),"should be leaf node");
+                m_p2p_matrices[target_index].push_back(p2p_matrix_type());
+                size_t source_index = m_query->get_bucket_index(*source);
+                m_expansions.P2P_matrix(
+                        *(m_p2p_matrices[target_index].end()-1),
+                        m_row_indices[target_index],m_col_indices[source_index],
+                        row_particles,col_particles);
+
             }
         }
     }

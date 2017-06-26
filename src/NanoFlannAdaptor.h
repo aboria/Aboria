@@ -435,6 +435,7 @@ struct nanoflann_adaptor_query {
     const box_type& get_bounds() const { return m_bounds; }
     const bool_d& get_periodic() const { return m_periodic; }
 
+
     /*
      * functions for tree_query_iterator
      */

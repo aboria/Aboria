@@ -165,6 +165,7 @@ class RASMPreconditioner {
             for (child_iterator cj = query.get_children(ci); cj != false; ++cj) {
                 Pair child = analyze_dive(start_row, kernel, query, cj);
                 count += child.second;
+                //std::cout << "child count = "<<child.second << std::endl;
                 if ((!child.first) && (done || (count >= m_goal))) {
                     analyze_domain(start_row, kernel, query,
                         query.get_bounds(cj));
@@ -172,7 +173,9 @@ class RASMPreconditioner {
                 }
             }
         }
-        return Pair(count,done);
+        //std::cout << "analyze_dive bounds "<< query.get_bounds(ci) << std::endl;
+        //std::cout << "leaf = "<<query.is_leaf_node(*ci)<<" count = "<<count<<" done = "<<done << std::endl;
+        return Pair(done,count);
     }
 
     template <typename Kernel>
