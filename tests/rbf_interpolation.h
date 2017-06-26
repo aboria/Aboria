@@ -497,6 +497,11 @@ template<template <typename> class SearchMethod>
         auto W = create_block_operator<2,2>(G, P,
                                             Pt,Zero);
 
+        auto Gtest = create_h2_operator(G.get_first_kernel(),test);
+        auto Ptest = create_dense_operator(test,augment,one);
+        auto Wtest = create_block_operator<2,2>(Gtest, Ptest,
+                                                Pt,Zero);
+
         vector_type phi(N+1), gamma(N+1);
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
@@ -535,12 +540,10 @@ template<template <typename> class SearchMethod>
         
         rms_error = 0;
         scale = 0;
+        vector_type phi_test = Wtest*gamma;
         for (int i=0; i<test.size(); ++i) {
             const double2 p = get<position>(test)[i]; 
-            const double eval_value = G.get_first_kernel()
-                                       .get_h2_matrix()
-                                       .eval_target_point(p,gamma) 
-                                    + gamma[knots.size()];
+            const double eval_value = phi_test[i];
             const double truth = funct(p[0],p[1]);
             rms_error += std::pow(eval_value-truth,2);
             scale += std::pow(truth,2);

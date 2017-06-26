@@ -409,6 +409,37 @@ Operator create_h2_operator(const RowParticles& row_particles,
                 );
     }
 
+/// \brief creates a matrix-free linear operator by modifying an existing
+///         H2 operator to use a different set of target particles 
+///
+/// This function returns a MatrixReplacement object that acts like a 
+/// dense linear operator (i.e. matrix) in Eigen. It modifies an existing
+/// H2 hierarchical matrix to use a different set of row/target particles
+///
+/// \param h2_matrix The H2 matrix operator to be modified
+/// \param row_particles The rows of the linear operator index
+///
+/// \tparam N The number of chebyshev nodes in each dimension to use
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
+template<typename Operator, typename RowParticles,
+         typename Kernel=typename tuple_ns::tuple_element<0,Operator>::type,
+         typename NewKernel=KernelH2<RowParticles,
+                                  typename Kernel::col_particles_type,
+                                  typename Kernel::position_function_type,
+                                  typename Kernel::expansion_N>,
+         typename NewOperator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+NewOperator create_h2_operator(const Operator& h2_op,
+                            const RowParticles& row_particles) {
+        return NewOperator(
+                tuple_ns::make_tuple(
+                    NewKernel(h2_op.get_first_kernel(),row_particles)
+                    )
+                );
+    }
+
 /// \brief creates a sparse matrix-free linear operator for use with Eigen
 ///
 /// This function returns a MatrixReplacement object that acts like a 
