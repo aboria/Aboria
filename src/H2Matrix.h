@@ -108,7 +108,7 @@ public:
     H2Matrix(const RowParticles &row_particles, const ColParticles &col_particles, const Expansions& expansions):
         m_query(&col_particles.get_query()),
         m_expansions(expansions),
-        m_col_particles(col_particles)
+        m_col_particles(&col_particles)
     {
         //generate h2 matrix 
         const size_t n = m_query->number_of_buckets();
@@ -165,7 +165,7 @@ public:
 
     // copy construct from another h2_matrix with different row_particles.
     template <typename RowParticles>
-    H2Matrix(const H2Matrix<Expansions,Query>& matrix, 
+    H2Matrix(const H2Matrix<Expansions,ColParticles>& matrix, 
              const RowParticles &row_particles):
         m_W(matrix.m_W.size()),
         m_g(matrix.m_g.size()),
@@ -181,7 +181,7 @@ public:
         m_strong_connectivity(matrix.m_strong_connectivity),
         m_weak_connectivity(matrix.m_weak_connectivity),
         m_query(matrix.m_query),
-        m_expansions(matrix.expansions),
+        m_expansions(matrix.m_expansions),
         m_col_particles(matrix.m_col_particles)
     {
         const size_t n = m_query->number_of_buckets();
@@ -193,7 +193,7 @@ public:
         // setup row and column indices
         if (row_equals_col) {
             std::copy(std::begin(m_col_indices),std::end(m_col_indices),
-                      std::begin(m_row_indicies));
+                      std::begin(m_row_indices));
         } else {
             for (int i = 0; i < row_particles.size(); ++i) {
                 //get target index
@@ -215,7 +215,7 @@ public:
                     m_p2p_matrices[target_index].push_back(p2p_matrix_type());
                     size_t index = m_query->get_bucket_index(*source);
                     m_expansions.P2P_matrix(
-                        *(m_p2p_matrices[index].end()-1),
+                        *(m_p2p_matrices[target_index].end()-1),
                         m_row_indices[target_index],m_col_indices[index],
                         row_particles,*m_col_particles);
                 }
@@ -224,8 +224,9 @@ public:
     }
 
     // target_vector += A*source_vector
-    template <typename VectorType>
-    void matrix_vector_multiply(VectorType& target_vector, const VectorType& source_vector) const {
+    template <typename VectorTypeTarget, typename VectorTypeSource>
+    void matrix_vector_multiply(VectorTypeTarget& target_vector, 
+                          const VectorTypeSource& source_vector) const {
 
         // for all leaf nodes setup source vector
         for (auto& bucket: m_query->get_subtree()) {
@@ -365,7 +366,7 @@ private:
         }
     }
 
-    m_vector_type& mvm_upward_sweep(const child_iterator& ci) {
+    m_vector_type& mvm_upward_sweep(const child_iterator& ci) const {
         const size_t my_index = m_query->get_bucket_index(*ci);
         const box_type& target_box = m_query->get_bounds(ci);
         LOG(3,"calculate_dive_P2M_and_M2M with bucket "<<target_box);
@@ -386,7 +387,7 @@ private:
 
     void mvm_downward_sweep(
             const m_vector_type& g_parent, 
-            const child_iterator& ci) {
+            const child_iterator& ci) const {
         const box_type& target_box = m_query->get_bounds(ci);
         LOG(3,"calculate_dive_M2L_and_L2L with bucket "<<target_box);
         size_t target_index = m_query->get_bucket_index(*ci);
@@ -397,7 +398,7 @@ private:
 
         // M2L (weakly connected buckets)
         for (int i = 0; i < m_weak_connectivity[target_index].size(); ++i) {
-            child_iterator& source_ci = m_weak_connectivity[target_index][i];
+            const child_iterator& source_ci = m_weak_connectivity[target_index][i];
             size_t source_index = m_query->get_bucket_index(*source_ci);
             g += m_m2l_matrices[target_index][i]*m_W[source_index];
         }
@@ -411,7 +412,7 @@ private:
 
             // direct evaluation (strongly connected buckets)
             for (int i = 0; i < m_strong_connectivity[target_index].size(); ++i) {
-                child_iterator& source_ci = m_strong_connectivity[target_index][i];
+                const child_iterator& source_ci = m_strong_connectivity[target_index][i];
                 size_t source_index = m_query->get_bucket_index(*source_ci);
                 m_target_vector[target_index] += 
                         m_p2p_matrices[target_index][i]*m_source_vector[source_index];

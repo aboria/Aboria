@@ -429,7 +429,7 @@ namespace Aboria {
         typedef typename ColParticles::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef H2Matrix<expansions_type,query_type> h2_matrix_type;
+        typedef H2Matrix<expansions_type,ColParticles> h2_matrix_type;
 
         h2_matrix_type m_h2_matrix;
         PositionF m_position_function;
@@ -437,13 +437,13 @@ namespace Aboria {
     public:
         typedef typename base_type::Scalar Scalar;
         typedef PositionF position_function_type;
-        static const unsigned int expansion_N;
+        static const unsigned int expansion_N = N;
 
         KernelH2(const RowParticles& row_particles,
                         const ColParticles& col_particles,
                         const PositionF& function): 
                                             m_h2_matrix(row_particles,col_particles,
-                                                        m_expansions),
+                                                        expansions_type(function)),
                                             m_position_function(function),
                                             base_type(row_particles,
                                                   col_particles,
@@ -452,11 +452,11 @@ namespace Aboria {
 
         template <typename OldH2Kernel>
         KernelH2(const OldH2Kernel& h2_kernel, const RowParticles& row_particles): 
-                       m_h2_matrix(k2_kernel.get_h2_matrix(),row_particles),
-                       m_position_function(k2_kernel.get_position_function()),
+                       m_h2_matrix(h2_kernel.get_h2_matrix(),row_particles),
+                       m_position_function(h2_kernel.get_position_function()),
                        base_type(row_particles,
-                                 k2_kernel.get_col_particles(),
-                                 F(k2_kernel.get_position_function())) {
+                                 h2_kernel.get_col_particles(),
+                                 F(h2_kernel.get_position_function())) {
         };
 
         const h2_matrix_type& get_h2_matrix() const {
@@ -493,7 +493,7 @@ namespace Aboria {
         typedef typename ColParticles::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef FastMultipoleMethod<expansions_type,query_type> fmm_type;
+        typedef FastMultipoleMethod<expansions_type,ColParticles> fmm_type;
 
         expansions_type m_expansions;
         fmm_type m_fmm;

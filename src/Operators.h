@@ -423,19 +423,18 @@ Operator create_h2_operator(const RowParticles& row_particles,
 /// \tparam RowParticles The type of the row particle set
 /// \tparam ColParticles The type of the column particle set
 /// \tparam F The type of the function object
-template<typename Operator, typename RowParticles,
-         typename Kernel=typename tuple_ns::tuple_element<0,Operator>::type,
+template<typename OldKernel, typename RowParticles,
          typename NewKernel=KernelH2<RowParticles,
-                                  typename Kernel::col_particles_type,
-                                  typename Kernel::position_function_type,
-                                  typename Kernel::expansion_N>,
-         typename NewOperator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                                  typename OldKernel::col_particles_type,
+                                  typename OldKernel::position_function_type,
+                                  OldKernel::expansion_N>,
+         typename NewOperator=MatrixReplacement<1,1,tuple_ns::tuple<NewKernel>>
                 >
-NewOperator create_h2_operator(const Operator& h2_op,
+NewOperator create_h2_operator(const OldKernel& h2_kernel,
                             const RowParticles& row_particles) {
         return NewOperator(
                 tuple_ns::make_tuple(
-                    NewKernel(h2_op.get_first_kernel(),row_particles)
+                    NewKernel(h2_kernel,row_particles)
                     )
                 );
     }
