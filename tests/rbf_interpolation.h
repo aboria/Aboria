@@ -454,13 +454,13 @@ template<template <typename> class SearchMethod>
 
         const int N = 10000;
 
-        const double RASM_size = 1/c;
+        const double RASM_size = 0.1/c;
         const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
         const double RASM_buffer = 0.9*RASM_size;
         std::cout << "RASM_size = "<<RASM_size<<" RASM_n = "<<RASM_n<<" RASM_buffer = "<<RASM_buffer<<std::endl;
 
         const int nx = 3;
-        const int max_iter = 100;
+        const int max_iter = 50;
         const int restart = 101;
         const double delta = 1.0/nx;
         typename ParticlesType::value_type p;
@@ -515,6 +515,7 @@ template<template <typename> class SearchMethod>
         phi[knots.size()] = 0;
 
         Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
+        //Eigen::DGMRES<decltype(W)> dgmres;
         dgmres.setMaxIterations(max_iter);
         dgmres.preconditioner().set_buffer_size(RASM_buffer);
         dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
@@ -574,6 +575,7 @@ template<template <typename> class SearchMethod>
 
     void test_kdtree() {
         helper_h2<nanoflann_adaptor>();
+        helper_compact<nanoflann_adaptor>();
     }
 
     void test_octtree() {
