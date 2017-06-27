@@ -471,7 +471,7 @@ template<template <typename> class SearchMethod>
         dgmres.setMaxIterations(max_iter);
         dgmres.preconditioner().set_buffer_size(RASM_buffer);
         dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        dgmres.preconditioner().analyzePattern(W);
+        //dgmres.preconditioner().analyzePattern(W);
         dgmres.set_restart(restart);
         dgmres.compute(W);
         gamma = dgmres.solve(phi);

@@ -134,7 +134,9 @@ class RASMPreconditioner {
                 }
             }
         }
+        //std::cout << "analyze_domain with bounds = "<<bounds<<" indicies = "<<indicies.size()<<" buffer = "<<buffer.size() << " volume = "<<(bounds.bmax-bounds.bmin).prod()<<std::endl;
     }
+
 
     // dive tree accumulating a count of particles in each bucket
     // if the count >= goal, then factorize the bucket
@@ -156,22 +158,29 @@ class RASMPreconditioner {
         if (query.is_leaf_node(*ci)) {
             auto particles = query.get_bucket_particles(*ci);
             count = std::distance(particles.begin(),particles.end());
-            if (count >= m_goal) {
-                analyze_domain(start_row, kernel, query,
-                        query.get_bounds(ci));
-                done = true;
-            }
         } else {
+            std::vector<child_iterator> not_done;
             for (child_iterator cj = query.get_children(ci); cj != false; ++cj) {
                 Pair child = analyze_dive(start_row, kernel, query, cj);
+                done |= child.first;
+                if (!child.first) {
+                    not_done.push_back(cj);
+                }
                 count += child.second;
-                //std::cout << "child count = "<<child.second << std::endl;
-                if ((!child.first) && (done || (count >= m_goal))) {
+                
+            }
+            // if any child is done, need to analyze domain for siblings
+            if (done) {
+                for (child_iterator& cj: not_done) {
                     analyze_domain(start_row, kernel, query,
-                        query.get_bounds(cj));
-                    done = true;
+                            query.get_bounds(cj));
                 }
             }
+        }
+        if (count >= m_goal && !done) {
+            analyze_domain(start_row, kernel, query,
+                    query.get_bounds(ci));
+            done = true;
         }
         //std::cout << "analyze_dive bounds "<< query.get_bounds(ci) << std::endl;
         //std::cout << "leaf = "<<query.is_leaf_node(*ci)<<" count = "<<count<<" done = "<<done << std::endl;
@@ -256,6 +265,15 @@ class RASMPreconditioner {
         m_rows = mat.rows();
         m_cols = mat.cols();
         analyze_impl(mat, detail::make_index_sequence<NI>());
+
+        int count = 0;
+        for (int domain_index = 0; domain_index < m_domain_indicies.size(); ++domain_index) {
+            for (auto indices: m_domain_indicies[domain_index]) {
+                count++;
+            }
+        }
+        std::cout << "counted "<<count<<" particles"  << std::endl;
+
 
         const size_t n = m_domain_indicies.size();
         generator_type generator(time(NULL));
