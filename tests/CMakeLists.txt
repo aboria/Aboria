@@ -38,7 +38,7 @@ if (Aboria_RUN_TESTS)
         VariablesTest
         ConstructorsTest
         OperatorsTest
-        SpatialUtilsTest
+        UtilsTest
         ChebyshevTest
         FMMTest
         H2Test
@@ -106,9 +106,10 @@ set(MetafunctionsTest
     test_thrust
     ) 
 
-set(SpatialUtilsTestFile spatial_utils.h)
-set(SpatialUtilsTest
+set(UtilsTestFile utils.h)
+set(UtilsTest
     test_bucket_indicies
+    test_low_rank
     )
 
 set(SymbolicTestFile symbolic.h)

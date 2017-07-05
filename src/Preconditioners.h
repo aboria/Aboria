@@ -134,6 +134,8 @@ class RASMPreconditioner {
                 }
             }
         }
+        ASSERT(buffer.size() > 0, "no particles in buffer");
+        ASSERT(indicies.size() > 0, "no particles in domain");
         //std::cout << "analyze_domain with bounds = "<<bounds<<" indicies = "<<indicies.size()<<" buffer = "<<buffer.size() << " volume = "<<(bounds.bmax-bounds.bmin).prod()<<std::endl;
     }
 
@@ -262,18 +264,13 @@ class RASMPreconditioner {
     template<unsigned int NI, unsigned int NJ, typename Blocks>
     RASMPreconditioner& analyzePattern(const MatrixReplacement<NI,NJ,Blocks>& mat)
     {
+
+        LOG(2,"RASMPreconditioner: analyze pattern");
         m_rows = mat.rows();
         m_cols = mat.cols();
         analyze_impl(mat, detail::make_index_sequence<NI>());
 
-        int count = 0;
-        for (int domain_index = 0; domain_index < m_domain_indicies.size(); ++domain_index) {
-            for (auto indices: m_domain_indicies[domain_index]) {
-                count++;
-            }
-        }
-        std::cout << "counted "<<count<<" particles"  << std::endl;
-
+        
 
         const size_t n = m_domain_indicies.size();
         generator_type generator(time(NULL));
@@ -292,6 +289,17 @@ class RASMPreconditioner {
                 } while ((random.begin()+d)!=std::find(random.begin(),random.begin()+d,random[d]));
             }
         }
+
+        int count = 0;
+        int minsize = 1000;
+        int maxsize = 0;
+        for (int domain_index = 0; domain_index < m_domain_indicies.size(); ++domain_index) {
+            const int size = m_domain_indicies[domain_index].size();
+            count += size;
+            if (size < minsize) minsize = size;
+            if (size > maxsize) maxsize = size;
+        }
+        LOG(2,"RASMPreconditioner: finished analysis, found "<<m_domain_indicies.size()<<" domains, with "<<minsize<<"--"<<maxsize<<" particles ("<<count<<" total).");
         return *this;
     }
 
@@ -316,6 +324,7 @@ class RASMPreconditioner {
     template<typename MatType>
     RASMPreconditioner& factorize(const MatType& mat)
     {
+        LOG(2,"RASMPreconditioner: factorizing domain");
         eigen_assert(m_rows==mat.rows()
                 && "RASMPreconditioner::solve(): invalid number of rows of mat");
         eigen_assert(m_cols==mat.cols()
