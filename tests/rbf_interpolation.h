@@ -406,7 +406,7 @@ template<template <typename> class SearchMethod>
 
         const int N = 10000;
 
-        const double RASM_size = 0.1/c;
+        const double RASM_size = 0.3/c;
         const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
         const double RASM_buffer = 0.9*RASM_size;
         std::cout << "RASM_size = "<<RASM_size<<" RASM_n = "<<RASM_n<<" RASM_buffer = "<<RASM_buffer<<std::endl;
