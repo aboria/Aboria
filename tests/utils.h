@@ -41,6 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "Aboria.h"
 #include "detail/LowRank.h"
+#include "RedSVD/RedSVD.h"
 
 using namespace Aboria;
 
@@ -81,20 +82,24 @@ public:
         // randomly generate a bunch of positions over a range 
         const double pos_min = 0;
         const double pos_max = 1;
-        std::uniform_real_distribution<double> U(pos_min,pos_max);
+        std::uniform_real_distribution<double> U1(pos_min,pos_max);
+        std::uniform_real_distribution<double> U2(pos_min-2,pos_max-2);
         generator_type generator(time(NULL));
-        auto gen = std::bind(U, generator);
+        auto gen1 = std::bind(U1, generator);
+        auto gen2 = std::bind(U2, generator);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
 
         typedef Particles<std::tuple<>,D> ParticlesType;
         typedef ParticlesType::const_reference const_reference;
         typedef typename ParticlesType::position position;
-        ParticlesType particles(N);
+        ParticlesType particles1(N);
+        ParticlesType particles2(N);
 
         for (int i=0; i<N; i++) {
             for (int d=0; d<D; ++d) {
-                get<position>(particles)[i][d] = gen();
+                get<position>(particles1)[i][d] = gen1();
+                get<position>(particles2)[i][d] = gen2();
             }
         }
 
@@ -103,7 +108,7 @@ public:
             return std::sqrt(dx.squaredNorm() + c); 
         };
 
-        KernelDense<ParticlesType,ParticlesType,decltype(kernel_fun)> kernel(particles,particles,kernel_fun);
+        KernelDense<ParticlesType,ParticlesType,decltype(kernel_fun)> kernel(particles1,particles2,kernel_fun);
 
         // fill a matrix with the result
         Eigen::Matrix<double,N,N> fixed_mat;
@@ -120,18 +125,18 @@ public:
             }
         }
 
-        for (int k = 1; k < N; ++k) {
+        for (int k = 1; k < 10; ++k) {
             Eigen::Matrix<double,N,Eigen::Dynamic> U(N,k);
             Eigen::Matrix<double,Eigen::Dynamic,N> V(k,N);
 
-            detail::adaptive_cross_approximation(fixed_mat,k,0.01,U,V);
+            size_t est_k = detail::adaptive_cross_approximation(fixed_mat,k,0.01,U,V);
 
             // check accuracy
             double rms_error_fixed = 0;
             for (int i=0; i<N; i++) {
                 for (int j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<k; kk++) {
+                    for (int kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_fixed += std::pow(Ztilde-fixed_mat(i,j),2);
@@ -140,14 +145,14 @@ public:
 
             std::cout << "fixed-ACA: k = "<<k<<" rms error = "<<std::sqrt(rms_error_fixed/rms_error_scale)<<std::endl;
 
-            detail::adaptive_cross_approximation(dyn_mat,k,0.01,U,V);
+            est_k = detail::adaptive_cross_approximation(dyn_mat,k,0.01,U,V);
             
             // check accuracy
             double rms_error_dyn = 0;
             for (int i=0; i<N; i++) {
                 for (int j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<k; kk++) {
+                    for (int kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_dyn += std::pow(Ztilde-dyn_mat(i,j),2);
@@ -156,14 +161,14 @@ public:
 
             std::cout << "dyn-ACA: k = "<<k<<" rms error = "<<std::sqrt(rms_error_dyn/rms_error_scale)<<std::endl;
             
-            //detail::adaptive_cross_approximation(kernel,k,0.01,U,V);
+            est_k = detail::adaptive_cross_approximation(kernel,k,0.01,U,V);
 
             // check accuracy
             double rms_error_kernel = 0;
             for (int i=0; i<N; i++) {
                 for (int j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<k; kk++) {
+                    for (int kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_kernel += std::pow(Ztilde-kernel.coeff(i,j),2);
@@ -171,6 +176,48 @@ public:
             }
 
             std::cout << "kernel-ACA: k = "<<k<<" rms error = "<<std::sqrt(rms_error_kernel/rms_error_scale)<<std::endl;
+
+            typedef RedSVD::RedSVD<decltype(fixed_mat)> fixed_svd_type;
+            fixed_svd_type svd(fixed_mat,k);
+            fixed_svd_type::ScalarVector diagonals = svd.singularValues();
+            decltype(fixed_mat) fixed_mat_approx = svd.matrixU()
+                            *Eigen::DiagonalWrapper<fixed_svd_type::ScalarVector>(diagonals)
+                            *svd.matrixV().transpose();
+
+            double rms_error_svd_fixed = 0;
+            for (int i=0; i<N; i++) {
+                for (int j=0; j<N; j++) {
+                    rms_error_svd_fixed += std::pow(fixed_mat_approx(i,j)-fixed_mat(i,j),2);
+                }
+            }
+
+            std::cout << "fixed-RSVD: k = "<<k<<" rms error = "<<std::sqrt(rms_error_svd_fixed/rms_error_scale)<<std::endl;
+
+            typedef RedSVD::RedSVD<decltype(dyn_mat)> dyn_svd_type;
+            dyn_svd_type svd2(dyn_mat,k);
+            dyn_svd_type::ScalarVector diagonals2 = svd2.singularValues();
+            decltype(dyn_mat) dyn_mat_approx = svd2.matrixU()
+                            *Eigen::DiagonalWrapper<dyn_svd_type::ScalarVector>(diagonals)
+                            *svd2.matrixV().transpose();
+
+            double rms_error_svd_dyn = 0;
+            for (int i=0; i<N; i++) {
+                for (int j=0; j<N; j++) {
+                    rms_error_svd_dyn += std::pow(dyn_mat_approx(i,j)-dyn_mat(i,j),2);
+                }
+            }
+
+            std::cout << "dyn-RSVD: k = "<<k<<" rms error = "<<std::sqrt(rms_error_svd_dyn/rms_error_scale)<<std::endl;
+            std::cout << "--------------------" << std::endl;
+            if (k == 9) {
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_fixed/rms_error_scale),0.001);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_dyn/rms_error_scale),0.001);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_kernel/rms_error_scale),0.001);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_svd_fixed/rms_error_scale),0.001);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_svd_dyn/rms_error_scale),0.001);
+            }
+
+
         }
 
 

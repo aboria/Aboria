@@ -192,12 +192,12 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
 
         template<std::size_t... I>
         Index rows_impl(detail::index_sequence<I...>) const {
-            return detail::sum(tuple_ns::get<I*NJ>(m_blocks).size_row()...);
+            return detail::sum(tuple_ns::get<I*NJ>(m_blocks).rows()...);
         }
 
         template<std::size_t... J>
         Index cols_impl(detail::index_sequence<J...>) const {
-            return detail::sum(tuple_ns::get<J>(m_blocks).size_col()...);
+            return detail::sum(tuple_ns::get<J>(m_blocks).cols()...);
         }
 
         template <int I>
@@ -205,20 +205,24 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
             return cols_impl(detail::make_index_sequence<I>());
         }
 
+        /*
         template <int I>
         Index size_col() const {
-            return tuple_ns::get<I>(m_blocks).size_col();
+            return tuple_ns::get<I>(m_blocks).cols();
         }
+        */
 
         template <int I>
         Index start_row() const {
             return rows_impl(detail::make_index_sequence<I>());
         }
 
+        /*
         template <int I>
         Index size_row() const {
-            return tuple_ns::get<I*NJ>(m_blocks).size_row();
+            return tuple_ns::get<I*NJ>(m_blocks).rows();
         }
+        */
 
         template <typename block_type>
         Scalar coeff_impl_block(const Index i, const Index j, const block_type& block) const {
