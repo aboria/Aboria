@@ -67,6 +67,11 @@ namespace Aboria {
         typedef RowParticles row_particles_type;
         typedef ColParticles col_particles_type;
         typedef F function_type;
+        typedef size_t Index;
+        enum {
+            ColsAtCompileTime = -1,
+            RowsAtCompileTime = -1
+        };
 
         KernelBase(const RowParticles& row_particles,
                    const ColParticles& col_particles,
@@ -93,11 +98,11 @@ namespace Aboria {
             return m_col_particles;
         }
 
-        size_t size_row() const {
+        size_t rows() const {
             return m_row_particles.size();
         }
 
-        size_t size_col() const {
+        size_t cols() const {
             return m_col_particles.size();
         }
 
