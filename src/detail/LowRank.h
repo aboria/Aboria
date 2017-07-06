@@ -41,9 +41,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 namespace detail {
+
 /*
-Kezhong Zhao, M. N. Vouvakis and Jin-Fa Lee, "The adaptive cross approximation algorithm for accelerated method of moments computations of EMC problems," in IEEE Transactions on Electromagnetic Compatibility, vol. 47, no. 4, pp. 763-773, Nov. 2005.
-URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=1580747&isnumber=33389
+ * Implementation of partially-pivoted ACA, using reference:
+ *
+ * Kezhong Zhao, M. N. Vouvakis and Jin-Fa Lee, "The adaptive cross approximation 
+ * algorithm for accelerated method of moments computations of EMC problems," in IEEE 
+ * Transactions on Electromagnetic Compatibility, vol. 47, no. 4, pp. 763-773, Nov. 
+ * 2005.
+ * URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=1580747&isnumber=33389
 */
 template <typename Kernel,typename DerivedU, typename DerivedV>
 size_t adaptive_cross_approximation(const Kernel& Z, 
@@ -76,7 +82,7 @@ size_t adaptive_cross_approximation(const Kernel& Z,
     }
     
 
-    LOG(3,"adaptive_cross_approximation (Z = ["<<rows<<","<<cols<<"] max_k = "<<max_k<<" epsilon = "<<epsilon<<")")
+    LOG(3,"adaptive_cross_approximation (parial) (Z = ["<<rows<<","<<cols<<"] max_k = "<<max_k<<" epsilon = "<<epsilon<<")")
 
     index_type k = 0;
     index_type i = 0;
@@ -148,6 +154,70 @@ size_t adaptive_cross_approximation(const Kernel& Z,
     }
     return k;
 }
+
+/*
+ * Implementation of fully-pivoted ACA (same as fully-pivoted LU decomp), 
+ * using reference:
+ *
+ * Note: overwrites input matrix Z
+ *
+ * Bebendorf, Mario, and Sergej Rjasanow. "Adaptive low-rank approximation of     
+ * collocation matrices." Computing 70.1 (2003): 1-24.
+*/
+template <typename DerivedZ,typename DerivedU, typename DerivedV>
+size_t adaptive_cross_approximation(Eigen::MatrixBase<DerivedZ>& Z, 
+        const size_t max_k, const double epsilon,
+        Eigen::MatrixBase<DerivedU>& U,Eigen::MatrixBase<DerivedV>& V) {
+    ASSERT(U.rows() == Z.rows(), "number of U rows not equal to number of Z rows");
+    ASSERT(V.cols() == Z.cols(), "number of V cols not equal to number of Z cols");
+    typedef Kernel matrix_type;
+    typedef Eigen::Matrix<double,matrix_type::RowsAtCompileTime,1> col_vector_type;
+    typedef Eigen::Matrix<double,1,matrix_type::ColsAtCompileTime> row_vector_type;
+    typedef typename matrix_type::Index index_type;
+    //init
+    //init I_1 = 1 and set Z = 0
+    const index_type rows = Z.rows();
+    const index_type cols = Z.cols();
+    const double epsilon2 = std::pow(epsilon,2);
+    
+    LOG(3,"adaptive_cross_approximation (full) (Z = ["<<rows<<","<<cols<<"] max_k = "<<max_k<<" epsilon = "<<epsilon<<")")
+
+    index_type k = 0;
+    index_type i = 0;
+    index_type j;
+    double B_norm2 = Z.squaredNorm();
+    double Z_norm2 = B_norm2
+    while (Z_norm2 > epsilon2*B_norm2 && k < max_k) {
+        // find max element i,j
+        double max = 0;
+        for (int ii = 0; ii < rows; ++ii) {
+            for (int jj = 0; jj < cols; ++jj) {
+                const double aij = std::abs(Z(ii,jj));
+                if (max < aij) {
+                    max = aij;
+                    i = ii;
+                    j = jj;
+                }
+            }
+        }
+
+        LOG(4,"\trow pivot = "<<j);
+        LOG(4,"\tcol pivot = "<<j);
+
+        // store u and v vectors
+        V.row(k) = Z.row(i);
+        U.col(k) = Z.col(j);
+
+        // update Z
+        Z -= U.col(k)*V.row(k)/Z(i,j);
+
+        // stopping criteria
+        Z_norm2 = Z.squaredNorm();
+    }
+    return k;
+}
+
+
 
 
     
