@@ -300,7 +300,7 @@ public:
         seed = value;
         for (size_t i=0; i<size(); ++i) {
             Aboria::get<random>(data)[i].seed(
-                        seed + uint32_t(Aboria::get<id>(data[i]))
+                        seed + uint32_t(Aboria::get<id>(data)[i])
                     );
         }
     }
