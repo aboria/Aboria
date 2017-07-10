@@ -100,6 +100,10 @@ enable_testing()
 if (CXXTEST_FOUND)
     add_subdirectory(tests)
 endif()
-add_subdirectory(doc)
+
+option(Aboria_BUILD_DOCUMENTATION "Build Aboria documentation" OFF)
+if (Aboria_BUILD_DOCUMENTATION)
+    add_subdirectory(doc)
+endif()
 
 
