@@ -135,7 +135,13 @@ void test_getting_started(void) {
      * write particle container to a vtk
      * unstructured grid file
      */
+//<-
+#ifdef HAVE_VTK
+//->
     vtkWriteGrid("aboria",0,particles.get_grid(true));
+//<-
+#endif
+//->
 
 //=}
     /*`
