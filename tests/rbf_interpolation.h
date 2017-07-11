@@ -103,6 +103,9 @@ public:
     template<template <typename> class SearchMethod>
     void helper_global(void) {
 #ifdef HAVE_EIGEN
+        std::cout << "---------------------\n" <<
+                      "Running global test....\n" <<
+                      "---------------------" << std::endl;
 //->
 //=int main() {
         auto funct = [](const double x, const double y) { 
@@ -153,7 +156,7 @@ public:
             test.push_back(p);
         }
 
-        knots.init_neighbour_search(min,max,periodic);
+        //knots.init_neighbour_search(min,max,periodic);
 
         augment.push_back(p);
 
@@ -238,9 +241,18 @@ public:
 #endif // HAVE_EIGEN
     }
 
+
 template<template <typename> class SearchMethod>
 void helper_compact(void) {
 #ifdef HAVE_EIGEN
+        std::cout << "---------------------\n" <<
+                     "Running compact test....\n" <<
+                     "---------------------" << std::endl;
+
+//[rbf_interpolation_compact
+//=#include "Aboria.h"
+//=#include <random>
+//=int main() {
         auto funct = [](const double x, const double y) { 
             return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
             //return x; 
@@ -417,15 +429,20 @@ void helper_compact(void) {
         std::cout << "rms_error for compact support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
         TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-2);
 
-
-        
+//=}
+//]
 #endif // HAVE_EIGEN
     }
 
 template<template <typename> class SearchMethod>
     void helper_h2(void) {
 #ifdef HAVE_EIGEN
-//->
+        std::cout << "---------------------\n"<<
+                     "Running h2 test....\n" <<
+                     "---------------------" << std::endl;
+//[rbf_interpolation_h2
+//=#include "Aboria.h"
+//=#include <random>
 //=int main() {
         auto funct = [](const double x, const double y) { 
             return std::exp(-9*std::pow(x-0.5,2) - 9*std::pow(y-0.25,2)); 
@@ -457,10 +474,10 @@ template<template <typename> class SearchMethod>
         const double RASM_size = 0.3/c;
         const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
         const double RASM_buffer = 0.9*RASM_size;
-        std::cout << "RASM_size = "<<RASM_size<<" RASM_n = "<<RASM_n<<" RASM_buffer = "<<RASM_buffer<<std::endl;
+        //std::cout << "RASM_size = "<<RASM_size<<" RASM_n = "<<RASM_n<<" RASM_buffer = "<<RASM_buffer<<std::endl;
 
         const int nx = 3;
-        const int max_iter = 50;
+        const int max_iter = 100;
         const int restart = 101;
         const double delta = 1.0/nx;
         typename ParticlesType::value_type p;
@@ -514,12 +531,11 @@ template<template <typename> class SearchMethod>
         }
         phi[knots.size()] = 0;
 
-        Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-        //Eigen::DGMRES<decltype(W)> dgmres;
+        //Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
+        Eigen::DGMRES<decltype(W)> dgmres;
         dgmres.setMaxIterations(max_iter);
-        dgmres.preconditioner().set_buffer_size(RASM_buffer);
-        dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        //dgmres.preconditioner().analyzePattern(W);
+        //dgmres.preconditioner().set_buffer_size(RASM_buffer);
+        //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
         dgmres.set_restart(restart);
         dgmres.compute(W);
         gamma = dgmres.solve(phi);
@@ -553,7 +569,7 @@ template<template <typename> class SearchMethod>
             //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
         std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-5);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
 
 
 //=}
@@ -564,21 +580,34 @@ template<template <typename> class SearchMethod>
 
 
     void test_bucket_search_parallel() {
-        //helper_global<bucket_search_parallel>();
-        //helper_compact<bucket_search_parallel>();
+        std::cout << "-------------------------------------------\n"<<
+                     "Running tests on bucket_search_parallel....\n" <<
+                     "------------------------------------------" << std::endl;
+        helper_global<bucket_search_parallel>();
+        helper_compact<bucket_search_parallel>();
     }
 
     void test_bucket_search_serial() {
+        std::cout << "-------------------------------------------\n"<<
+                     "Running tests on bucket_search_serial....\n" <<
+                     "------------------------------------------" << std::endl;
         helper_global<bucket_search_serial>();
         helper_compact<bucket_search_serial>();
     }
 
     void test_kdtree() {
-        helper_h2<nanoflann_adaptor>();
+        std::cout << "-------------------------------------------\n"<<
+                     "Running tests on kdtree....\n" <<
+                     "------------------------------------------" << std::endl;
         helper_compact<nanoflann_adaptor>();
+        helper_h2<nanoflann_adaptor>();
     }
 
     void test_octtree() {
+        std::cout << "-------------------------------------------\n"<<
+                     "Running tests on octtree....\n" <<
+                     "------------------------------------------" << std::endl;
+        helper_compact<nanoflann_adaptor>();
         helper_h2<octtree>();
     }
 

@@ -205,24 +205,20 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
             return cols_impl(detail::make_index_sequence<I>());
         }
 
-        /*
         template <int I>
         Index size_col() const {
             return tuple_ns::get<I>(m_blocks).cols();
         }
-        */
 
         template <int I>
         Index start_row() const {
             return rows_impl(detail::make_index_sequence<I>());
         }
 
-        /*
         template <int I>
         Index size_row() const {
             return tuple_ns::get<I*NJ>(m_blocks).rows();
         }
-        */
 
         template <typename block_type>
         Scalar coeff_impl_block(const Index i, const Index j, const block_type& block) const {

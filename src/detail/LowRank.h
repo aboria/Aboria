@@ -52,7 +52,7 @@ namespace detail {
  * URL: http://ieeexplore.ieee.org/stamp/stamp.jsp?tp=&arnumber=1580747&isnumber=33389
 */
 template <typename Kernel,typename DerivedU, typename DerivedV>
-size_t adaptive_cross_approximation(const Kernel& Z, 
+size_t adaptive_cross_approximation_partial(const Kernel& Z, 
         const size_t max_k, const double epsilon,
         Eigen::MatrixBase<DerivedU>& U,Eigen::MatrixBase<DerivedV>& V) {
     ASSERT(U.rows() == Z.rows(), "number of U rows not equal to number of Z rows");
@@ -165,12 +165,12 @@ size_t adaptive_cross_approximation(const Kernel& Z,
  * collocation matrices." Computing 70.1 (2003): 1-24.
 */
 template <typename DerivedZ,typename DerivedU, typename DerivedV>
-size_t adaptive_cross_approximation(Eigen::MatrixBase<DerivedZ>& Z, 
+size_t adaptive_cross_approximation_full(Eigen::MatrixBase<DerivedZ>& Z, 
         const size_t max_k, const double epsilon,
         Eigen::MatrixBase<DerivedU>& U,Eigen::MatrixBase<DerivedV>& V) {
     ASSERT(U.rows() == Z.rows(), "number of U rows not equal to number of Z rows");
     ASSERT(V.cols() == Z.cols(), "number of V cols not equal to number of Z cols");
-    typedef Kernel matrix_type;
+    typedef DerivedZ matrix_type;
     typedef Eigen::Matrix<double,matrix_type::RowsAtCompileTime,1> col_vector_type;
     typedef Eigen::Matrix<double,1,matrix_type::ColsAtCompileTime> row_vector_type;
     typedef typename matrix_type::Index index_type;
@@ -183,10 +183,10 @@ size_t adaptive_cross_approximation(Eigen::MatrixBase<DerivedZ>& Z,
     LOG(3,"adaptive_cross_approximation (full) (Z = ["<<rows<<","<<cols<<"] max_k = "<<max_k<<" epsilon = "<<epsilon<<")")
 
     index_type k = 0;
-    index_type i = 0;
+    index_type i;
     index_type j;
     double B_norm2 = Z.squaredNorm();
-    double Z_norm2 = B_norm2
+    double Z_norm2 = epsilon2*B_norm2+1.0;
     while (Z_norm2 > epsilon2*B_norm2 && k < max_k) {
         // find max element i,j
         double max = 0;
@@ -201,18 +201,22 @@ size_t adaptive_cross_approximation(Eigen::MatrixBase<DerivedZ>& Z,
             }
         }
 
-        LOG(4,"\trow pivot = "<<j);
+        LOG(4,"\trow pivot = "<<i);
         LOG(4,"\tcol pivot = "<<j);
 
         // store u and v vectors
-        V.row(k) = Z.row(i);
+        //
+        V.row(k) = Z.row(i)/Z(i,j);
         U.col(k) = Z.col(j);
 
         // update Z
-        Z -= U.col(k)*V.row(k)/Z(i,j);
+        Z -= U.col(k)*V.row(k);
 
         // stopping criteria
         Z_norm2 = Z.squaredNorm();
+
+        // increment k
+        ++k;
     }
     return k;
 }
