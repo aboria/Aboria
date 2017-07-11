@@ -253,7 +253,7 @@ public:
             const double check = expansions.L2P(particles_in_leaf1[i],leaf1,expansionL_leaf1);
             L2 += std::pow(check-field_just_self_leaf1[i],2);
             scale += std::pow(field_just_self_leaf1[i],2);
-            TS_ASSERT_LESS_THAN(std::abs(check-field_just_self_leaf1[i]),1e-4);
+            TS_ASSERT_LESS_THAN(std::abs(check-field_just_self_leaf1[i]),2e-4);
         }
 
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
