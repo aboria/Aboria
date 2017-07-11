@@ -24,7 +24,7 @@ matrix:
     include:
         # Documentation
         - compiler: gcc
-          env: Travis_UPDATE_DOC=on CMAKE_BUILD_TYPE=Release 
+          env: Travis_UPDATE_DOC=on CMAKE_BUILD_TYPE=Release Aboria_BUILD_DOCUMENTATION=on
         # Coverage
         - compiler: gcc
           env: Aboria_COVERAGE=on CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on  
@@ -71,7 +71,7 @@ before_script:
 - git remote add origin https://martinjrobins:${GH_TOKEN}@github.com/martinjrobins/Aboria.git
 
 script:
-- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE .
+- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION .
 - make
 - ctest --output-on-failure
 
