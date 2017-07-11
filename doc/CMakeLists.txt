@@ -61,6 +61,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         ../tests/rbf_interpolation.h
         ../tests/rbf_pde.h
         ../tests/speed_test.h
+        ../tests/doc_getting_started.h
         )
 
 

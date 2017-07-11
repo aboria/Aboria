@@ -42,6 +42,7 @@ if (Aboria_RUN_TESTS)
         ChebyshevTest
         FMMTest
         H2Test
+        DocGettingStartedTest
         )
     foreach(test_suite ${all_test_suites})
         option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
@@ -70,6 +71,12 @@ if (Aboria_RUN_BENCHMARKS)
         endif()
     endforeach()
 endif()
+
+set(DocGettingStartedTestFile doc_getting_started.h)
+set(DocGettingStartedTest
+    test_getting_started
+    )
+
 
 set(BenchmarkFMMFile benchmark_fmm.h)
 set(BenchmarkFMM

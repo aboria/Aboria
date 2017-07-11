@@ -1,6 +1,6 @@
 [article Aboria
     [quickbook 1.6]
-    [version 0.4]
+    [version 0.5]
     [id aboria]
     [copyright 2015-2017 Martin Robinson]
     [authors [Robinson, Martin]]
@@ -11,7 +11,9 @@
 
 [include abstract.qbk]
 [include introduction.qbk]
-[include installation.qbk]
+
+[import ../tests/doc_getting_started.h]
+[getting_started]
 
 [/ import documentation from particle_container.h]
 [import ../tests/particle_container.h]
