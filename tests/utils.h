@@ -40,8 +40,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 
 #include "Aboria.h"
+
+#ifdef HAVE_EIGEN
 #include "detail/LowRank.h"
 #include "RedSVD/RedSVD.h"
+#endif
 
 using namespace Aboria;
 
@@ -129,39 +132,73 @@ public:
             Eigen::Matrix<double,N,Eigen::Dynamic> U(N,k);
             Eigen::Matrix<double,Eigen::Dynamic,N> V(k,N);
 
-            size_t est_k = detail::adaptive_cross_approximation(fixed_mat,k,0.01,U,V);
+            Eigen::Matrix<double,N,N> fixed_mat_copy = fixed_mat;
+            size_t est_k = detail::adaptive_cross_approximation_full(fixed_mat_copy,k,0.01,U,V);
 
             // check accuracy
-            double rms_error_fixed = 0;
+            double rms_error_full_fixed = 0;
             for (int i=0; i<N; i++) {
                 for (int j=0; j<N; j++) {
                     double Ztilde = 0;
                     for (int kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
-                    rms_error_fixed += std::pow(Ztilde-fixed_mat(i,j),2);
+                    rms_error_full_fixed += std::pow(Ztilde-fixed_mat(i,j),2);
                 }
             }
 
-            std::cout << "fixed-ACA: k = "<<k<<" rms error = "<<std::sqrt(rms_error_fixed/rms_error_scale)<<std::endl;
+            std::cout << "fixed-ACA (full): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_full_fixed/rms_error_scale)<<std::endl;
 
-            est_k = detail::adaptive_cross_approximation(dyn_mat,k,0.01,U,V);
+            Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> dyn_mat_copy = dyn_mat;
+            est_k = detail::adaptive_cross_approximation_full(dyn_mat_copy,k,0.01,U,V);
             
             // check accuracy
-            double rms_error_dyn = 0;
+            double rms_error_full_dyn = 0;
             for (int i=0; i<N; i++) {
                 for (int j=0; j<N; j++) {
                     double Ztilde = 0;
                     for (int kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
-                    rms_error_dyn += std::pow(Ztilde-dyn_mat(i,j),2);
+                    rms_error_full_dyn += std::pow(Ztilde-dyn_mat(i,j),2);
                 }
             }
 
-            std::cout << "dyn-ACA: k = "<<k<<" rms error = "<<std::sqrt(rms_error_dyn/rms_error_scale)<<std::endl;
+            std::cout << "dyn-ACA (full): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_full_dyn/rms_error_scale)<<std::endl;
+
+            est_k = detail::adaptive_cross_approximation_partial(fixed_mat,k,0.01,U,V);
+
+            // check accuracy
+            double rms_error_partial_fixed = 0;
+            for (int i=0; i<N; i++) {
+                for (int j=0; j<N; j++) {
+                    double Ztilde = 0;
+                    for (int kk=0; kk<est_k; kk++) {
+                        Ztilde += U(i,kk)*V(kk,j);
+                    }
+                    rms_error_partial_fixed += std::pow(Ztilde-fixed_mat(i,j),2);
+                }
+            }
+
+            std::cout << "fixed-ACA (partial): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_partial_fixed/rms_error_scale)<<std::endl;
+
+            est_k = detail::adaptive_cross_approximation_partial(dyn_mat,k,0.01,U,V);
             
-            est_k = detail::adaptive_cross_approximation(kernel,k,0.01,U,V);
+            // check accuracy
+            double rms_error_partial_dyn = 0;
+            for (int i=0; i<N; i++) {
+                for (int j=0; j<N; j++) {
+                    double Ztilde = 0;
+                    for (int kk=0; kk<est_k; kk++) {
+                        Ztilde += U(i,kk)*V(kk,j);
+                    }
+                    rms_error_partial_dyn += std::pow(Ztilde-dyn_mat(i,j),2);
+                }
+            }
+
+            std::cout << "dyn-ACA (partial): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_partial_dyn/rms_error_scale)<<std::endl;
+            
+            est_k = detail::adaptive_cross_approximation_partial(kernel,k,0.01,U,V);
 
             // check accuracy
             double rms_error_kernel = 0;
@@ -175,7 +212,7 @@ public:
                 }
             }
 
-            std::cout << "kernel-ACA: k = "<<k<<" rms error = "<<std::sqrt(rms_error_kernel/rms_error_scale)<<std::endl;
+            std::cout << "kernel-ACA (partial): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_kernel/rms_error_scale)<<std::endl;
 
             typedef RedSVD::RedSVD<decltype(fixed_mat)> fixed_svd_type;
             fixed_svd_type svd(fixed_mat,k);
@@ -210,8 +247,10 @@ public:
             std::cout << "dyn-RSVD: k = "<<k<<" rms error = "<<std::sqrt(rms_error_svd_dyn/rms_error_scale)<<std::endl;
             std::cout << "--------------------" << std::endl;
             if (k == 9) {
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_fixed/rms_error_scale),0.001);
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_dyn/rms_error_scale),0.001);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_fixed/rms_error_scale),0.009);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_dyn/rms_error_scale),0.009);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_fixed/rms_error_scale),0.001);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_dyn/rms_error_scale),0.001);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_kernel/rms_error_scale),0.001);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_svd_fixed/rms_error_scale),0.001);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_svd_dyn/rms_error_scale),0.001);
