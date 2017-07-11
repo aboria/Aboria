@@ -112,6 +112,7 @@ public:
     {
         //generate h2 matrix 
         const size_t n = m_query->number_of_buckets();
+        LOG(2,"H2Matrix: creating matrix with "<<n<<" buckets, using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles");
         const bool row_equals_col = &row_particles == &col_particles;
         m_W.resize(n);
         m_g.resize(n);
@@ -129,6 +130,7 @@ public:
 
         // setup row and column indices
         if (!row_equals_col) {
+            LOG(2,"\trow particles are different to column particles");
             for (int i = 0; i < row_particles.size(); ++i) {
                 //get target index
                 pointer bucket;
@@ -157,10 +159,12 @@ public:
         }
 
         // downward sweep of tree to generate matrices
+        LOG(2,"\tgenerating matrices...");
         for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
             const box_type& target_box = m_query->get_bounds(ci);
             generate_matrices(child_iterator_vector_type(),box_type(),ci,row_particles,col_particles);
         }
+        LOG(2,"\tdone");
     }
 
     // copy construct from another h2_matrix with different row_particles.

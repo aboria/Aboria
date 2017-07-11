@@ -247,8 +247,8 @@ public:
             std::cout << "dyn-RSVD: k = "<<k<<" rms error = "<<std::sqrt(rms_error_svd_dyn/rms_error_scale)<<std::endl;
             std::cout << "--------------------" << std::endl;
             if (k == 9) {
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_fixed/rms_error_scale),0.009);
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_dyn/rms_error_scale),0.009);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_fixed/rms_error_scale),0.01);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_dyn/rms_error_scale),0.01);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_fixed/rms_error_scale),0.001);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_dyn/rms_error_scale),0.001);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_kernel/rms_error_scale),0.001);

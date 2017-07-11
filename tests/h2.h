@@ -109,6 +109,7 @@ public:
         auto gen = std::bind(U, generator);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
+        const int num_particles_per_bucket = 50;
 
         typedef Particles<std::tuple<source,target_manual,target_h2>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
@@ -120,7 +121,7 @@ public:
                 get<source>(particles)[i] = gen();
             }
         }
-        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false));
+        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false),num_particles_per_bucket);
 
         // generate a source vector using a smooth cosine
         auto source_fn = [&](const double_d &p) {

@@ -58,6 +58,8 @@ protected:
     typedef typename traits_type::template vector_type<child_iterator_vector_type>::type connectivity_type;
     typedef typename NeighbourQuery::particle_iterator particle_iterator;
     typedef typename particle_iterator::reference particle_reference;
+    typedef typename traits_type::double_d double_d;
+    typedef typename traits_type::position position;
     static const unsigned int dimension = traits_type::dimension;
     typedef detail::bbox<dimension> box_type;
     storage_type m_W;
@@ -223,14 +225,14 @@ private:
             for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
                 child_iterator_vector_type dummy;
                 expansion_type g = {};
-                calculate_dive_M2L_and_L2L(target_vector,dummy,g,box_type(),ci,source_vector);
+                this->calculate_dive_M2L_and_L2L(target_vector,dummy,g,box_type(),ci,source_vector);
             }
         } else {
             for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
                 child_iterator_vector_type dummy;
                 VectorType dummy2;
                 expansion_type g = {};
-                calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
+                this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
             }
 
             for (int i = 0; i < row_particles.size(); ++i) {
@@ -291,7 +293,7 @@ public:
         // upward sweep of tree
         //
         for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
-            calculate_dive_P2M_and_M2M(ci,source_vector);
+            this->calculate_dive_P2M_and_M2M(ci,source_vector);
         }
 
         // downward sweep of tree.
@@ -300,7 +302,7 @@ public:
             child_iterator_vector_type dummy;
             VectorType dummy2;
             expansion_type g = {};
-            calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
+            this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
         }
     }
 
@@ -346,10 +348,12 @@ make_fmm(const ColParticles &col_particles, const Expansions& expansions) {
     return FastMultipoleMethod<Expansions,ColParticles>(col_particles,expansions);
 }
 
-template <typename Expansions, typename ColParticles>
+template <typename Expansions, typename ColParticles, typename VectorType>
 FastMultipoleMethodWithSource<Expansions,ColParticles>
-make_fmm_with_source(const ColParticles &col_particles, const Expansions& expansions) {
-    return FastMultipoleMethodWithSource<Expansions,ColParticles>(col_particles,expansions);
+make_fmm_with_source(const ColParticles &col_particles, 
+                     const Expansions& expansions, 
+                     const VectorType& source_vector) {
+    return FastMultipoleMethodWithSource<Expansions,ColParticles>(col_particles,expansions,source_vector);
 }
 
 }

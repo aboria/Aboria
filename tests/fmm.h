@@ -67,20 +67,17 @@ public:
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
 
-        auto fmm = make_fmm_query(particles.get_query(),
-                make_black_box_expansion<dimension,N>(kernel));
-
-        std::fill(std::begin(get<target_fmm>(particles)),
-                  std::end(get<target_fmm>(particles)),0.0);
+        
 
         auto t0 = Clock::now();
-        fmm.calculate_expansions(get<source>(particles));
-        //fmm.gemv(get<target_fmm>(particles),get<source>(particles));
+        auto fmm = make_fmm_with_source(particles,
+                        make_black_box_expansion<dimension,N>(kernel),
+                        get<source>(particles));
         auto t1 = Clock::now();
         std::chrono::duration<double> time_fmm_setup = t1 - t0;
         t0 = Clock::now();
         for (reference p: particles) {
-            get<target_fmm>(p) = fmm.evaluate_expansion(get<position>(p),get<source>(particles));
+            get<target_fmm>(p) = fmm.evaluate_at_point(get<position>(p),get<source>(particles));
         }
         t1 = Clock::now();
         std::chrono::duration<double> time_fmm_eval = t1 - t0;
@@ -110,6 +107,7 @@ public:
         auto gen = std::bind(U, generator);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
+        const int num_particles_per_bucket = 50;
 
         typedef Particles<std::tuple<source,target_manual,target_fmm>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
@@ -122,7 +120,7 @@ public:
             }
             get<target_fmm>(particles)[i] = 0.0;
         }
-        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false));
+        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false),num_particles_per_bucket);
 
         // generate a source vector using a smooth cosine
         auto source_fn = [&](const double_d &p) {
