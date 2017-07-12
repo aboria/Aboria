@@ -52,10 +52,10 @@ public:
 #ifdef HAVE_EIGEN
 //[operators
 /*`
-[section Matrix-free Linear Algebra with Eigen]
+[section Evaluating and Solving Kernel Operators with Eigen]
 
 Given that Aboria can describe non-linear operators, this naturally covers
-linear operators (i.e. matricies) as well. Consider the summation operator
+linear operators (i.e. matrices) as well. Consider the summation operator
 given by the kernel function $K(x_i,x_j)$, over a set of $N$ particles
 
 $$
@@ -65,8 +65,8 @@ $$
 This is a common enough operator that can be used in many areas. If
 $K(x_i,x_j) = 1/(x_j-x_i)$, then the operator might be calculating the 
 force on a set of charged particles via a Coulomb force. If 
-$K(x_i,x_j) = \sqrt{(x_j-x_i)^2 + c^2}$, then the operator might be used to
-for function interpolation using the multiquadric function.
+$K(x_i,x_j) = \sqrt{(x_j-x_i)^2 + c^2}$, then the operator might be used 
+for function interpolation using the multiquadric basis function.
 
 One way to evaluate this operator is to use a matrix to store the values of 
 $K(x_i,x_j)$ for each particle pair, leading to a matrix $\mathbf{K}$ with 
@@ -81,24 +81,29 @@ However, $\mathbf{K}$ could be too large to fit in memory, or the values of
 $x_i$ and $x_j$ might  change too frequently for this to be useful. Or you may
 wish to take advantage of the fact that $K(x_i,x_j)$ is a continuous function
 and use method such as Chebyshev interpolation or Fast Multipole methods to
-calculate the operator efficiently. For any of these reasons you might want
-prefer matrix-free methods, and Aboria can help you do this.
+efficiently calculate the action of the operator on the vector $\mathbf{b}$.
+For any of these reasons, Aboria can help you out.
 
-[caution Currently Aboria only supports basic dense and sparse matrix-free
-operators based on local neighbourhood searches. A Chebyshev operator has been
-implemented, but this is still being tested, and the API is not stable, so is
-not documented. All going well, a Fast Multipole method (hopefully using a few
-different methods) will be implemented after this.]
+Aboria provides functionality to describe linear operators arising from the 
+evaluation of kernel functions at a set of points (i.e. particles in Aboria's
+terminology) in $N$ dimensional space. From now on we will refer to these types
+of operators as kernel operators. To provide the concept and API of a 
+matrix or linear operator, we will use the C++ library [@eigen.tuxfamily.org Eigen]. 
+Aboria provides functionality to wrap kernel operators as [classref
+Aboria::MatrixReplacement], so that Eigen can treat them as normal dense or 
+sparse matrices.
 
-To provide the concept and API of a matrix or linear operator, we will use the
-C++ library [@eigen.tuxfamily.org Eigen]. Aboria provides functionality to wrap
-summation operators involving an arbitrary kernel $K()$ in [classref
-Aboria::MatrixReplacement], so that Eigen can treat them as normal matricies.
+Using this wrapping, we can take advantage of Eigen to:
+
+# calculate the action of a kernel operator on a vector (i.e. a matrix-vector
+multiplication)
+# use Eigen's iterative solvers to solve a large linear system of equations 
+arising from a kernel operator.
 
 [section Creating Dense Operators]
 
-The most general case involves a summation kernel function $K$ that is non-zero
-for every possible particle pair. This kernel function can depend on the
+The most general case involves a kernel operator $K$ that is non-zero
+for every possible particle pair. The kernel function can depend on the
 particle positions and/or the variables assigned to each particle. For example,
 say we had a particle set with particle positions $\mathbf{x}_i$ for $i=1..N$,
 and a single variable $a_i$.  We wish to create a summation operator using the
@@ -136,7 +141,7 @@ particle in the container
         typedef particle_type::const_reference const_particle_reference;
 
 /*`
-We then create a dense matrix-free summation operator using the 
+We then create a dense kernel operator using the 
 [funcref Aboria::create_dense_operator] function
 */
         auto K = create_dense_operator(particles,particles,
@@ -188,17 +193,22 @@ $$
 Note that rather then storing all the values of K that are needed for this
 summation, Aboria will instead evaluate these values as they are needed.
 Therefore the memory requirements are only $\mathcal{O}(N)$, rather than
-$\mathcal{O}(N^2)$ for a traditional matrix.
+$\mathcal{O}(N^2)$ for a traditional matrix. However, this requires evaluating
+the kernel function for each pair of particles at a cost of $\mathcal{O}(N^2)$.
+If you wish to calculate this operation approximately, then Aboria can perform
+the same operation using the Fast Multipole Method or Hierarchical Matrices, 
+please see subsequent sections for more details on how to do this.
 
-[caution the matrix-free operator `K` cannot be used, for example, in
-multiplications or additions with other Eigen matricies. Thus far, it has only
+[caution the [classref Aboria::MatrixReplacement] operator `K` cannot be used, for example, in
+multiplications or additions with other Eigen matrices. Thus far, it has only
 really been tested with matrix-vector multiplication and Eigen's iterative
 solvers]
 
 If we wish to perform the same operator, but using a traditional matrix, we can
 use `K`'s [memberref Aboria::MatrixReplacement::assemble] member function to
 fill in a normal Eigen matrix with the values of the kernel function
-$K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$
+$K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$. This might be useful if you wish to perform
+the same operation repeatedly, or in an iterative solver.
 
 */
         Eigen::MatrixXd K_eigen(N,N);
@@ -214,8 +224,8 @@ $K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$
 [section Creating Sparse Operators]
 
 Is is common in particle-based methods that the kernel function $K$ be non-zero
-for particle pairs separated by less than a certain radius. In this case we have
-a summation operator like so
+only for particle pairs separated by less than a certain radius. In this case we have
+a summation operation like so
 
 $$
 c_i = \sum_j^N b_j K_s(\mathbf{x}\_i,a_i,\mathbf{x}\_j,a_j)  \text{ for } i=1..N
@@ -237,10 +247,7 @@ $$
 
 Since the summation is only non-zero for $||\mathbf{dx}_{ij}||<r$, we wish to aim
 for better than $\mathcal{O}(N^2)$ time and combine the sum with a spatial
-search of radius $r$. Assuming the particle positions are uniformly distributed
-and that $r$ is much smaller than the domain size, this will result in
-$\mathcal{O}(1)$ particles within the search radius and the operator taking only
-$\mathcal{O}(N)$ time.
+search of radius $r$. 
 
 Lets assume that we wish a similar kernel function as before 
 
@@ -300,6 +307,26 @@ efficient operator
         TS_ASSERT(c_4.isApprox(c_3)); 
 //->
 /*`
+[endsect]
+
+
+[section Creating Chebyshev Operators]
+
+TODO
+
+[endsect]
+
+[section Creating Fast Multipole Method Operators]
+
+TODO
+
+[endsect]
+
+
+[section Creating Hierarchical Matrix Operators]
+
+TODO
+
 [endsect]
 
 [section Block Operators]
