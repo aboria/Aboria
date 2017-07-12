@@ -15,6 +15,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Variable.h
     ../src/BucketSearchParallel.h
     ../src/BucketSearchSerial.h
+    ../src/NanoFlannAdaptor.h
+    ../src/OctTree.h
     ../src/NeighbourSearchBase.h
     ../src/Operators.h
     ../src/Chebyshev.h
@@ -25,7 +27,10 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Traits.h
     ../src/Get.h
     ../src/Evaluate.h
+    ../src/Search.h
     ../src/Vector.h
+    ../src/FastMultipoleMethod.h
+    ../src/H2Matrix.h
     )
 
   add_reference(libaboria.xml ${ABORIA_HEADERS} 

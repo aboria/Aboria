@@ -276,7 +276,7 @@ public:
         for (int i = 0; i < n; ++i) {
             L2 += std::pow(result_leaf1[i]-field_just_self_leaf1[i],2);
             scale += std::pow(field_just_self_leaf1[i],2);
-            TS_ASSERT_LESS_THAN(std::abs(result_leaf1[i]-field_just_self_leaf1[i]),1e-4);
+            TS_ASSERT_LESS_THAN(std::abs(result_leaf1[i]-field_just_self_leaf1[i]),2e-4);
         }
 
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
