@@ -138,11 +138,12 @@ There are two cell list data structures within Aboria. Both divide the domain in
 a regular grid of hypercubes with side length set so that the average number of 
 particles within each box is close to a given value. Each particle in the container is assigned to the cell that contains its position, and neighbourhood queries search within that cell and its neighbours within the given radius. 
 
+For example, the following diagram illustrates a cell list data structure in two dimensions, shown as a regular array of grey squares each containing zero or more particles. The user wishes to find all the particles within a given euclidean distance around the red point. To accomplish this query efficiently, Aboria would then search all the red-shaded cells for particles that fall within the red circle.
 
-[$images/neighbour/cell_lists.svg [width 100%]  [align center]] 
+[$images/neighbour/cell_lists.svg] 
 
 The first cell list data structure supports serial insertion of particles, and parallel
-queries. The relevant classes are [classref Aboria::bucket_search_serial] and [classref Aboria::bucket_search_serial_query]. This data structure can be selected on a per particle set basis, by setting the fourth template argument for [classref Aboria::Particles]. I.e.
+queries. The relevant classes are [classref Aboria::bucket_search_serial] and [classref Aboria::bucket_search_serial_query]. This data structure can be selected on a per-particle-set basis, by setting the fourth template argument for [classref Aboria::Particles]. I.e.
 
 */
 
@@ -170,15 +171,45 @@ are also local in space. The relevant classes are [classref Aboria::bucket_searc
 [endsect]
 
 [section Kd-Tree]
-TODO
+
+A kd-tree builds up a hierarchical tree of cells, with only the leaf cells actually containing particles. It is an efficient data structure to use if your particles are clustered in certain regions of the domain, and so you wish to adapt the size of your cells with the local particle density.
+
+Each level of the tree divides the cells in the parent level in half along a certain dimension (the dimension is chosen based on the distribution of particles within the cell). Any cells that contain a number of particles that is smaller than a given amount (set in [memberref Aboria::Particles::init_neighbour_search]) are marked as leaf cells, and are not divided on subsequent levels.
+
+The construction of the kd-tree in Aboria simply wraps the popular NanoFLANN library [@https://github.com/jlblancoc/nanoflann], and reorders the particle set according to which leaf cell a particle belongs to. However, Aboria's native neighbourhood queries are used instead of those provided with NanoFLANN.
+
+The relevent classes within Aboria are [classref Aboria::nanoflann_adaptor] and [classref Aboria::nanoflann_adaptor_query]. You can create a particle set using a kd-tree by setting the [classref Aboria::Particles] template arguments accordingly.
+
+*/
+        
+        typedef Particles<std::tuple<>,3,std::vector,nanoflann_adaptor> particle_kdtree_type;
+
+/*`
+
+
+
 [endsect]
 
 
 [section Hyper Oct-Tree]
 
-[$images/neighbour/octtree.svg [width 100%]  [align center]] 
+A hyper oct-tree is a generalisation of an oct-tree (in 3 dimensions) to $N$ dimensions. Is also builds up a hierarchical tree of cells, however in this case each level of the tree is split along [*all] dimensions, so that each cell has $2^N$ children. Any cells that contain less that the given number of particles (set in [funcref Aboria::Particles::init_neighbour_search]) are marked as leaf cells. Empty cells are included in the data structure, but are ignored by any queries.
 
-TODO
+For example, the diagram below shows the leaf cells of a hyper oct-tree in 2 dimensions (this is the same as a quad-tree). If the user wishes to find all the particles within a given euclidean distance of the red particle, then Aboria will search through all the red-shaded cells for matching particles.
+
+[$images/neighbour/octtree.svg] 
+
+The relevent classes within Aboria are [classref Aboria::octtree] and [classref Aboria::octtree_query].
+You can create a particle set using a hyper oct-tree by setting the [classref Aboria::Particles] template arguments accordingly.
+
+*/
+        
+        typedef Particles<std::tuple<>,3,std::vector,octtree> particle_octtree_type;
+
+/*`
+
+
+
 [endsect]
 [endsect]
 
