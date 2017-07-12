@@ -174,7 +174,7 @@ are also local in space. The relevant classes are [classref Aboria::bucket_searc
 
 A kd-tree builds up a hierarchical tree of cells, with only the leaf cells actually containing particles. It is an efficient data structure to use if your particles are clustered in certain regions of the domain, and so you wish to adapt the size of your cells with the local particle density.
 
-Each level of the tree divides the cells in the parent level in half along a certain dimension (the dimension is chosen based on the distribution of particles within the cell). Any cells that contain a number of particles that is smaller than a given amount (set in [memberref Aboria::Particles::init_neighbour_search]) are marked as leaf cells, and are not divided on subsequent levels.
+Each level of the tree divides the cells in the parent level in half along a certain dimension (the dimension is chosen based on the distribution of particles within the cell). Any cells that contain a number of particles that is smaller than a given threshold (set in [memberref Aboria::Particles::init_neighbour_search]) are marked as leaf cells, and are not divided on subsequent levels.
 
 The construction of the kd-tree in Aboria simply wraps the popular NanoFLANN library [@https://github.com/jlblancoc/nanoflann], and reorders the particle set according to which leaf cell a particle belongs to. However, Aboria's native neighbourhood queries are used instead of those provided with NanoFLANN.
 
