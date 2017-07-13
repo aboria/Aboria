@@ -62,9 +62,11 @@ protected:
     typedef typename traits_type::position position;
     static const unsigned int dimension = traits_type::dimension;
     typedef detail::bbox<dimension> box_type;
-    storage_type m_W;
-    storage_type m_g;
-    connectivity_type m_connectivity; 
+
+    mutable storage_type m_W;
+    mutable storage_type m_g;
+    mutable connectivity_type m_connectivity; 
+
     const NeighbourQuery *m_query;
     const ColParticles* m_col_particles;
     Expansions m_expansions;
@@ -78,7 +80,7 @@ protected:
 
     template <typename VectorType>
     expansion_type& calculate_dive_P2M_and_M2M(const child_iterator& ci, 
-                                               const VectorType& source_vector) {
+                                               const VectorType& source_vector) const {
         const size_t my_index = m_query->get_bucket_index(*ci);
         const box_type& my_box = m_query->get_bounds(ci);
         LOG(3,"calculate_dive_P2M_and_M2M with bucket "<<my_box);
@@ -98,14 +100,14 @@ protected:
         return W;
     }
 
-    template <typename VectorType>
+    template <typename VectorTypeTarget, typename VectorTypeSource>
     void calculate_dive_M2L_and_L2L(
-            VectorType& target_vector,
+            VectorTypeTarget& target_vector,
             const child_iterator_vector_type& connected_buckets_parent,
             const expansion_type& g_parent, 
             const box_type& box_parent, 
             const child_iterator& ci,
-            const VectorType& source_vector) {
+            const VectorTypeSource& source_vector) const {
         const box_type& target_box = m_query->get_bounds(ci);
         LOG(3,"calculate_dive_M2L_and_L2L with bucket "<<target_box);
         size_t target_index = m_query->get_bucket_index(*ci);
@@ -200,13 +202,11 @@ public:
         base_type(col_particles,expansions)
     {}
 
-private:
-
     // target_vector += A*source_vector
-    template <typename RowParticles, typename VectorType>
+    template <typename RowParticles, typename VectorTypeTarget, typename VectorTypeSource>
     void matrix_vector_multiply(const RowParticles& row_particles, 
-                                VectorType& target_vector, 
-                                const VectorType& source_vector) const {
+                                VectorTypeTarget& target_vector, 
+                                const VectorTypeSource& source_vector) const {
         CHECK(target_vector.size() == source_vector.size(), "source and target vector not same length")
         const size_t n = this->m_query->number_of_buckets();
         this->m_W.resize(n);
@@ -216,7 +216,7 @@ private:
         // upward sweep of tree
         //
         for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
-            calculate_dive_P2M_and_M2M(ci,source_vector);
+            this->calculate_dive_P2M_and_M2M(ci,source_vector);
         }
 
         // downward sweep of tree. 
@@ -230,7 +230,7 @@ private:
         } else {
             for (child_iterator ci = this->m_query->get_children(); ci != false; ++ci) {
                 child_iterator_vector_type dummy;
-                VectorType dummy2;
+                std::vector<double> dummy2;
                 expansion_type g = {};
                 this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
             }
@@ -309,7 +309,7 @@ public:
 
     // evaluate expansions for given point
     template <typename VectorType>
-    double evaluate_at_point(const Vector<double,dimension>& p, const VectorType& source_vector) {
+    double evaluate_at_point(const Vector<double,dimension>& p, const VectorType& source_vector) const {
         pointer bucket;
         box_type box;
         this->m_query->get_bucket(p,bucket,box);

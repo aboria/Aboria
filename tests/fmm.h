@@ -67,8 +67,6 @@ public:
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
 
-        
-
         auto t0 = Clock::now();
         auto fmm = make_fmm_with_source(particles,
                         make_black_box_expansion<dimension,N>(kernel),
@@ -82,7 +80,7 @@ public:
         t1 = Clock::now();
         std::chrono::duration<double> time_fmm_eval = t1 - t0;
 
-        const double L2_fmm = std::inner_product(
+        double L2_fmm = std::inner_product(
                 std::begin(get<target_fmm>(particles)), std::end(get<target_fmm>(particles)),
                 std::begin(get<target_manual>(particles)), 
                 0.0,
@@ -90,7 +88,47 @@ public:
                 [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
                 );
 
+        std::cout << "for fmm with source:" <<std::endl;
         std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_fmm error = "<<L2_fmm<<". L2_fmm relative error is "<<std::sqrt(L2_fmm/scale)<<". time_fmm_setup = "<<time_fmm_setup.count()<<". time_fmm_eval = "<<time_fmm_eval.count()<<std::endl;
+
+        if (N == 3) {
+            TS_ASSERT_LESS_THAN(L2_fmm/scale,1e-2);
+        }
+
+#ifdef HAVE_EIGEN
+        for (reference p: particles) {
+            get<target_fmm>(p) = 0;
+        }
+        t0 = Clock::now();
+        auto fmm_eigen = create_fmm_operator<N>(particles,particles,
+                                    kernel);
+        t1 = Clock::now();
+        time_fmm_setup = t1 - t0;
+
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        map_type target_eigen(get<target_fmm>(particles).data(),particles.size());
+        map_type source_eigen(get<source>(particles).data(),particles.size());
+        t0 = Clock::now();
+        target_eigen = fmm_eigen*source_eigen; 
+        t1 = Clock::now();
+        time_fmm_eval = t1 - t0;
+
+        L2_fmm = std::inner_product(
+                std::begin(get<target_fmm>(particles)), std::end(get<target_fmm>(particles)),
+                std::begin(get<target_manual>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "for fmm operator:" <<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_fmm error = "<<L2_fmm<<". L2_fmm relative error is "<<std::sqrt(L2_fmm/scale)<<". time_fmm_setup = "<<time_fmm_setup.count()<<". time_fmm_eval = "<<time_fmm_eval.count()<<std::endl;
+
+        if (N == 3) {
+            TS_ASSERT_LESS_THAN(L2_fmm/scale,1e-2);
+        }
+#endif
+
     }
 
     template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>

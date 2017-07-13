@@ -510,7 +510,7 @@ namespace Aboria {
                         const ColParticles& col_particles,
                         const PositionF& function): 
                                             m_expansions(function),
-                                            m_fmm(col_particles.get_query(),
+                                            m_fmm(col_particles,
                                                   m_expansions),
                                             base_type(row_particles,
                                                   col_particles,
@@ -522,55 +522,9 @@ namespace Aboria {
         /// accumulates the result in vector lhs
         template<typename VectorLHS,typename VectorRHS>
         void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
-            m_fmm.calculate_expansions(rhs);
-            for (int i = 0; i < this->m_row_particles.size(); ++i) {
-                lhs[i] = m_fmm.evaluate_expansion(
-                            get<position>(this->m_row_particles)[i],rhs);
-            }
+            m_fmm.matrix_vector_multiply(this->m_row_particles,lhs,rhs);
         }
     };
-
-    template<typename Particles, typename PositionF, unsigned int N>
-    class KernelFMM<Particles,Particles,PositionF,N>: public KernelDense<Particles,Particles,detail::position_lambda<Particles,Particles,PositionF>> {
-        typedef KernelDense<Particles,Particles,detail::position_lambda<Particles,Particles,PositionF>> base_type;
-        typedef typename base_type::position position;
-        typedef typename base_type::double_d double_d;
-        typedef typename base_type::int_d int_d;
-        typedef typename base_type::const_position_reference const_position_reference;
-        typedef typename base_type::const_row_reference const_row_reference;
-        typedef typename base_type::const_col_reference const_col_reference;
-        typedef typename Particles::query_type query_type;
-        static const unsigned int dimension = base_type::dimension;
-        typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef FastMultipoleMethod<expansions_type,query_type> fmm_type;
-
-
-        expansions_type m_expansions;
-        fmm_type m_fmm;
-
-    public:
-        typedef typename base_type::Scalar Scalar;
-
-        KernelFMM(const Particles& row_particles,
-                        const Particles& col_particles,
-                        const PositionF& function): 
-                                            m_expansions(function),
-                                            m_fmm(col_particles.get_query(),
-                                                  m_expansions),
-                                            base_type(row_particles,
-                                                  col_particles,
-                                                  F(function)) {
-        };
-
-        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
-        /// and particle sets \p a and \p b on a vector rhs and
-        /// accumulates the result in vector lhs
-        template<typename VectorLHS,typename VectorRHS>
-        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
-            m_fmm.gemv(lhs,rhs);
-        }
-    };
-
 
     template<typename RowParticles, typename ColParticles, typename FRadius, typename F>
     class KernelSparse: public KernelBase<RowParticles,ColParticles,F> {

@@ -82,16 +82,16 @@ $x_i$ and $x_j$ might  change too frequently for this to be useful. Or you may
 wish to take advantage of the fact that $K(x_i,x_j)$ is a continuous function
 and use method such as Chebyshev interpolation or Fast Multipole methods to
 efficiently calculate the action of the operator on the vector $\mathbf{b}$.
-For any of these reasons, Aboria can help you out.
+For any of these reasons and many others, Aboria can help you out.
 
 Aboria provides functionality to describe linear operators arising from the 
 evaluation of kernel functions at a set of points (i.e. particles in Aboria's
 terminology) in $N$ dimensional space. From now on we will refer to these types
-of operators as kernel operators. To provide the concept and API of a 
-matrix or linear operator, we will use the C++ library [@eigen.tuxfamily.org Eigen]. 
-Aboria provides functionality to wrap kernel operators as [classref
-Aboria::MatrixReplacement], so that Eigen can treat them as normal dense or 
-sparse matrices.
+of operators as [*kernel operators]. To provide the concept and API of a 
+matrix or linear operator, we will use the C++ linear algebra library 
+[@eigen.tuxfamily.org Eigen]. Aboria provides functionality to wrap kernel 
+operators as [classref Aboria::MatrixReplacement], so that Eigen can treat 
+them as normal dense or sparse matrices.
 
 Using this wrapping, we can take advantage of Eigen to:
 
@@ -312,20 +312,182 @@ efficient operator
 
 [section Creating Chebyshev Operators]
 
-TODO
+Lets assume that the kernel function of interest depends only on the particle positions
+
+$$
+c_i = \sum_j^N b_j K(\mathbf{x}_i,\mathbf{x}_j) \text{ for } i=1..N
+$$
+
+and that we can approximate $K(\mathbf{x}_i,\mathbf{x}_j)$ using interpolation. 
+That is, if $w_l(x)$ denotes a set of interpolating functions, then
+
+$$
+K(\mathbf{x}_i,\mathbf{x}_j) \approx \sum_l \sum_m K(\mathbf{x}_l,\mathbf{x}_m) w_l(\mathbf{x}_i) w_m(\mathbf{x}_j)
+$$
+
+Using this idea, we can use chebyshev interpolation to interpolate $K(\mathbf{x}_i,\mathbf{x}_j)$ 
+at the chebyshev nodes, leading to an operator that can be applied to a vector at a reduced cost. 
+How reduced depends on the number of chebyshev nodes that are chosen. A small number of nodes
+means that the error in the approximation grows, while a larger number of nodes means increased
+computational cost.
+
+Note that this idea has been published in the following paper, which was used as a reference for 
+Aboria's implementation:
+
+Fong, William, and Eric Darve. "The black-box fast multipole method." Journal of Computational Physics 228.23 (2009): 8712-8725.
+
+One restriction on the kernel function in this context is that it must be a smooth function of 
+only position. With this in mind, we will define the following kernel function
+
+$$
+K(\mathbf{x}\_i,\mathbf{x}\_j) = \sqrt{||\mathbf{dx}\_{ij}|| + \epsilon} 
+$$
+
+which is the multiquadric radial basis function.
+
+A kernel operator using this function and chebyshev interpolation can be created in Aboria
+using the [funcref Aboria::create_chebyshev_operator] function
+
+*/
+        const unsigned int n = 10;
+        auto K_c = create_chebyshev_operator(particles,particles,n,
+                [epsilon](const_position_reference dx,
+                          const_position_reference i,
+                          const_position_reference j) {
+                return std::sqrt(dx.norm() + epsilon);
+                });
+
+/*`
+
+where `n` sets the number of chebyshev nodes in each dimension. 
+
+[caution Once `K_c` is created, it assumes that the positions of the particles in 
+`particles` do not change. If this is not true, then you can use the function of 
+the underlying kernel class [classref Aboria::KernelChebyshev] to update the positions.]
+
+[note Aboria's neighbourhood searching does not need to be initialized in this case, as
+no neighbourhood queries are used.]
+
+As before, this operator can be applied to an Eigen vector
+
+*/
+
+        Eigen::VectorXd c_5 = K_c*b;
+
+/*`
+
 
 [endsect]
 
 [section Creating Fast Multipole Method Operators]
 
-TODO
+One disadvantage of using chebyshev interpolation to construct an operator is that it is not
+valid if the kernel function is discontinuous. This is violated by many kernels which contain
+singularities when $\mathbf{x}_i = \mathbf{x}_j$. Also, often large numbers of chebyshev nodes 
+are required, which does not reduce the computational cost sufficiently while retaining accuracy. 
+
+Another powerful class of methods are based on the Fast Multipole Method, which
+has been also implemented in Aboria. These are valid for kernel functions with singularities and
+which boasts $\mathcal{O}(N)$ complexity if the column and row particle sets are identical, and
+$\mathcal{O}(NlogN)$ if they are not.
+
+Once again, we will use chebyshev interpolation, but now will construct a tree data structure using
+one of Aboria's tree data structures (kd-tree or octtree). When the kernel operator is applied to
+a vector, the fast multiplole algorithm will be invoked, which leads to traversals up and down the
+tree, using chebyshev interpolation to compress the kernel function for clusters of particles that
+are ['well separated]. The interaction of particle clusters that are not well separated are calculated
+directly. The details of this are in the following article, which was used as a reference for 
+Aboria's implementation:
+
+Fong, William, and Eric Darve. "The black-box fast multipole method." Journal of Computational Physics 228.23 (2009): 8712-8725.
+
+A kernel operator using the fast multipole method can be created in Aboria
+using the [funcref Aboria::create_fmm_operator] function
+
+*/
+        const unsigned int n2 = 4;
+        auto K_f = create_fmm_operator<n2>(particles,particles,
+                [epsilon](const_position_reference dx,
+                          const_position_reference i,
+                          const_position_reference j) {
+                return std::sqrt(dx.norm() + epsilon);
+                });
+
+/*`
+
+where `n2` sets the number of chebyshev nodes in each dimension. Note that this is typically
+much less than what is required by the chebyshev operator discussed in the previous section.
+
+[note the [funcref Aboria::create_fmm_operator] function creates a kernel operator in which 
+the fast multipole algorithm is applied completely "on the fly". The fmm can be
+significantly speeded up for static particle positions by storing a hierarchical matrix. 
+Please see the next section for more details of how to do this in Aboria.]
+
+As before, this operator can be applied to an Eigen vector
+
+*/
+
+        Eigen::VectorXd c_6 = K_f*b;
+
+/*`
+
+
+
 
 [endsect]
 
 
 [section Creating Hierarchical Matrix Operators]
 
-TODO
+The fast multipole method (fmm) results in multiple tree traversals while applying
+linear operators to the multipole vectors. Rather than calculating these linear operators
+during the algorithm, it is also possible to pre-calculate them and store them in a 
+hierarchical H2 matrix. The advantage of this is that applying the operator to a vector
+is much faster, the downside is that it assumes that the particle positions do not change.
+
+A kernel operator which does this can be created using the 
+[funcref Aboria::create_h2_operator] function
+
+*/
+        auto K_h = create_h2_operator<n2>(particles,particles,
+                [epsilon](const_position_reference dx,
+                          const_position_reference i,
+                          const_position_reference j) {
+                return std::sqrt(dx.norm() + epsilon);
+                });
+
+/*`
+
+As before, this operator can be applied to an Eigen vector
+
+*/
+
+        Eigen::VectorXd c_7 = K_h*b;
+
+/*`
+
+As noted earlier, the `K_h` operator assumes that the particle positions do not change once
+it is constructed. However, it is a relativly fast operation to change the positions for
+the [*row] particle set (this corresponds to the target particles in fmm terminology). Thus,
+a new h2 operator can also be contructed from an old h2 operator, using a different set of
+row particles.
+
+*/
+        /*
+         * create new particle set
+         */
+        particle_type particles2(N);
+        for (int i=0; i<N; ++i) {
+            get<position>(particles2)[i] = double3(uniform(gen),uniform(gen),uniform(gen));
+        }
+
+        /*
+         * create new h2 operator with new row particles
+         */
+        auto K_h2 = create_h2_operator(K_h.get_first_kernel(),particles2);
+
+/*`
+
 
 [endsect]
 

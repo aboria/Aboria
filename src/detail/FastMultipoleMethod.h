@@ -175,7 +175,7 @@ namespace detail {
         void M2M(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 const expansion_type& source) {
+                 const expansion_type& source) const {
 
             for (int j=0; j<ncheb; ++j) {
                 const double_d& pj_unit_box = m_cheb_points[j];
@@ -193,7 +193,7 @@ namespace detail {
 #ifdef HAVE_EIGEN
         void M2M_matrix(l2l_matrix_type& matrix, 
                  const box_type& target_box, 
-                 const box_type& source_box) {
+                 const box_type& source_box) const {
             for (int j=0; j<ncheb; ++j) {
                 const double_d& pj_unit_box = m_cheb_points[j];
                 const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
@@ -211,7 +211,7 @@ namespace detail {
         void M2L(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 const expansion_type& source) {
+                 const expansion_type& source) const {
 
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
@@ -230,7 +230,7 @@ namespace detail {
 #ifdef HAVE_EIGEN
         void M2L_matrix(m2l_matrix_type& matrix, 
                  const box_type& target_box, 
-                 const box_type& source_box) {
+                 const box_type& source_box) const {
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -250,7 +250,7 @@ namespace detail {
         void L2L(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 const expansion_type& source) {
+                 const expansion_type& source) const {
             //M2M(accum,target_box,source_box,source);
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
@@ -269,7 +269,7 @@ namespace detail {
 #ifdef HAVE_EIGEN
         void L2L_matrix(l2l_matrix_type& matrix, 
                  const box_type& target_box, 
-                 const box_type& source_box) {
+                 const box_type& source_box) const {
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -332,7 +332,7 @@ namespace detail {
                     const std::vector<size_t>& row_indicies,
                     const std::vector<size_t>& col_indicies,
                     const RowParticlesType& row_particles,
-                    const ColParticlesType& col_particles) {
+                    const ColParticlesType& col_particles) const {
             typedef typename ColParticlesType::position position;
             matrix.resize(row_indicies.size(),col_indicies.size());
             for (int i = 0; i < row_indicies.size(); ++i) {

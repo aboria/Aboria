@@ -78,7 +78,7 @@ public:
         t1 = Clock::now();
         std::chrono::duration<double> time_h2_eval = t1 - t0;
         
-        const double L2_h2 = std::inner_product(
+        double L2_h2 = std::inner_product(
                 std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
                 std::begin(get<target_manual>(particles)), 
                 0.0,
@@ -86,7 +86,45 @@ public:
                 [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
                 );
 
+        std::cout << "for h2 matrix class:" <<std::endl;
         std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
+        if (N == 3) {
+            TS_ASSERT_LESS_THAN(L2_h2/scale,1e-2);
+        }
+
+        for (reference p: particles) {
+            get<target_h2>(p) = 0;
+        }
+        t0 = Clock::now();
+        auto h2_eigen = create_h2_operator<N>(particles,particles,
+                                    kernel);
+        t1 = Clock::now();
+        time_h2_setup = t1 - t0;
+
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        map_type target_eigen(get<target_h2>(particles).data(),particles.size());
+        map_type source_eigen(get<source>(particles).data(),particles.size());
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        vector_type target_eigen_v(particles.size());
+        vector_type source_eigen_v(particles.size());
+        source_eigen_v = source_eigen;
+
+        t0 = Clock::now();
+        target_eigen_v = h2_eigen*source_eigen_v; 
+        t1 = Clock::now();
+        time_h2_eval = t1 - t0;
+
+        L2_h2 = std::inner_product(
+                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<target_manual>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "for h2 operator:" <<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_fmm relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
 
         if (N == 3) {
             TS_ASSERT_LESS_THAN(L2_h2/scale,1e-2);
