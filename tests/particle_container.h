@@ -155,7 +155,7 @@ public:
 
         /*`
         You can give the `MyParticles` constructor a single `int` argument to 
-        initalise the container with `n` particles:
+        initialise the container with `n` particles:
         */
 
         const int n = 100;
@@ -170,7 +170,7 @@ public:
 
         /*`
         Each `value_type` is a tuple of values, of the types specified by each variable. 
-        You can retreive or set these value using the [funcref Aboria::get] function,
+        You can retrieve or set these value using the [funcref Aboria::get] function,
         which is templated on the variable type. For example, say you wanted to set the 
         `scalar` variable for particle `p`:
         */

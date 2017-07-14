@@ -59,6 +59,34 @@ Header: `<Aboria.h>`
         the particle's variables]]
 ]
 
+[table Neighbourhood Search Data Structures 
+
+[[Class Name] [Description]]
+
+    [[[classref Aboria::bucket_search_serial]]         
+    
+        []]
+
+    [[[classref Aboria::bucket_search_parallel]]         
+    
+        []]
+
+    [[[classref Aboria::nanoflann_adaptor]]         
+    
+        []]
+
+    [[[classref Aboria::octtree]]         
+    
+        []]
+
+
+
+
+
+]
+
+
+
 
 [table Internal Traits for Level 0 vector
     [[[classref Aboria::Traits<std::vector>]]         
@@ -69,9 +97,88 @@ Header: `<Aboria.h>`
 ]
 
 
-[h3 Level 2 - Algorithms and Matrix-free Linear Operators]
+[h3 Level 2 - Algorithms ]
 
-[table Creating Linear Operators
+[table Neighbourhood Searching
+
+[[Class Name] [Description]]
+
+    [[[funcref Aboria::distance_search]]
+        [performs a distance search around a given point, using a given p-norm 
+        for the distance measure]]
+    [[[funcref Aboria::euclidean_search]]
+        [performs a distance search around a given point, using euclidean 
+        distance]]
+    [[[funcref Aboria::manhatten_search]]
+        [performs a distance search around a given point, using manhatten 
+        distance]]
+    [[[funcref Aboria::manhatten_search]]
+        [performs a distance search around a given point, using chebyshev 
+        distance]]
+]
+
+
+[table Kernel Approximations
+
+[[Class Name] [Description]]
+
+    [[[classref Aboria::FastMultipoleMethod]]
+        [Class used to perform a fast multipole method. Takes a set of 
+        expansions that are used to approximate the kernel function]]
+    [[[funcref Aboria::make_fmm]]
+        [Helper class that returns a [classref Aboria::FastMultipoleMethod]]]
+    [[[classref Aboria::FastMultipoleMethodWithSource]]
+        [Class used to perform a fast multipole method using an constant source 
+        particle set and source vector. Takes a set of expansions, a source 
+        vector and a source particle set. After this the user can evaluate the
+        kernel at any given point]]
+    [[[funcref Aboria::make_fmm_with_source]]
+        [Helper class that returns a [classref 
+        Aboria::FastMultipoleMethodWithSource]]]
+    [[[funcref Aboria::make_black_box_expansion]]
+        [Returns a set of expansions for the black box fast multipole method.  
+        Uses chebyshev interpolation to approximate a kernel function]]
+    [[[classref Aboria::H2Matrix]]
+        [Same as [classref Aboria::FastMultipoleMethod], but stores the action 
+        of the kernel operator as a hierarchical matrix, for repeated 
+        applications]]
+    [[[funcref Aboria::make_h2_matrix]]
+        [Helper class that returns a [classref Aboria::H2Matrix]]]
+]
+
+[table Kernels
+
+[[Class Name] [Description]]
+
+    [[[classref Aboria::KernelDense]]
+        [Class for a dense kernel operator - normally not used directly but 
+        wrapped by [classref Aboria::MatrixReplacement] for use as an Eigen
+        matrix]]
+    [[[classref Aboria::KernelSparse]]
+        [Class for a sparse kernel operator - normally not used directly but 
+        wrapped by [classref Aboria::MatrixReplacement] for use as an Eigen
+        matrix]]
+    [[[classref Aboria::KernelChebyshev]]
+        [Class for a kernel operator approximated using chebyshev interpolation 
+        - normally not used directly but wrapped by [classref 
+        Aboria::MatrixReplacement] for use as an Eigen
+        matrix]]
+    [[[classref Aboria::KernelFMM]]
+        [Class for a kernel operator approximated using [classref 
+        Aboria::FastMultipoleMethod]- normally not used directly but wrapped by 
+        [classref Aboria::MatrixReplacement] for use as an Eigen
+        matrix]]
+    [[[classref Aboria::KernelH2]]
+        [Class for a kernel operator approximated using [classref 
+        Aboria::H2Matrix]- normally not used directly but wrapped by [classref 
+        Aboria::MatrixReplacement] for use as an Eigen
+        matrix]]
+]
+
+
+[h3 Level 3 - Kernel Operators]
+
+[table Eigen Wrapping
 
 [[Class Name] [Description]]
 
@@ -83,13 +190,19 @@ Header: `<Aboria.h>`
         [@https://eigen.tuxfamily.org/dox/group__MatrixfreeSolverExample.html 
         documentation for matrix-free operators]. Note that this "matrix"
         can only be used in a matrix-vector multiply with a standard Eigen 
-        vector]]
+        vector, or in Eigen's iterative solvers]]
+
+]
+
+
+[table Creating Eigen Kernel Operators
+
+[[Class Name] [Description]]
 
     [[[funcref Aboria::create_dense_operator]]         
     
-        [Creates an instance of [classref Aboria::MatrixReplacement] that 
-        implements a fully dense matrix. It takes a standard C++ function object 
-        or lambda expression]]
+        [Creates an instance of [classref Aboria::MatrixReplacement]. It takes a 
+        standard C++ function object or lambda expression]]
 
     [[[funcref Aboria::create_sparse_operator]]         
     
@@ -104,10 +217,24 @@ Header: `<Aboria.h>`
 
     [[[funcref Aboria::create_chebyshev_operator]]         
     
-        [Creates an instance of [classref Aboria::MatrixReplacement] that 
-        implements a dense matrix. When multiplied by a vector, the result
-        is approximated using Chebyshev interpolation]]
+        [Creates an instance of [classref Aboria::MatrixReplacement]. When 
+        multiplied by a vector, the result is approximated using Chebyshev 
+        interpolation. This operator assumes that the row and column particle 
+        sets do not change]]
 
+    [[[funcref Aboria::create_fmm_operator]]         
+    
+        [Creates an instance of [classref Aboria::MatrixReplacement]. When 
+        multiplied by a vector, the result is approximated using the black-box
+        fast multipole method]]
+
+    [[[funcref Aboria::create_h2_operator]]         
+    
+        [Creates an instance of [classref Aboria::MatrixReplacement]. When 
+        multiplied by a vector, the result is approximated using the black-box
+        fast multipole method. Unlike [funcref Aboria::create_fmm_operator], 
+        this operator assumes that the row and column particle sets do not 
+        change]]
 
     [[[funcref Aboria::create_block_operator]]         
     

@@ -185,7 +185,7 @@ Each level of the tree divides the cells in the parent level in half along a cer
 
 The construction of the kd-tree in Aboria simply wraps the popular NanoFLANN library [@https://github.com/jlblancoc/nanoflann], and reorders the particle set according to which leaf cell a particle belongs to. However, Aboria's native neighbourhood queries are used instead of those provided with NanoFLANN.
 
-The relevent classes within Aboria are [classref Aboria::nanoflann_adaptor] and [classref Aboria::nanoflann_adaptor_query]. You can create a particle set using a kd-tree by setting the [classref Aboria::Particles] template arguments accordingly.
+The relevant classes within Aboria are [classref Aboria::nanoflann_adaptor] and [classref Aboria::nanoflann_adaptor_query]. You can create a particle set using a kd-tree by setting the [classref Aboria::Particles] template arguments accordingly.
 
 */
         
@@ -206,7 +206,7 @@ For example, the diagram below shows the leaf cells of a hyper oct-tree in 2 dim
 
 [$images/neighbour/octtree.svg] 
 
-The relevent classes within Aboria are [classref Aboria::octtree] and [classref Aboria::octtree_query].
+The relevant classes within Aboria are [classref Aboria::octtree] and [classref Aboria::octtree_query].
 You can create a particle set using a hyper oct-tree by setting the [classref Aboria::Particles] template arguments accordingly.
 
 */

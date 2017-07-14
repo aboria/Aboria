@@ -36,19 +36,10 @@ no-slip boundary. The *x* and *y* directions are periodic.
 
 [endsect]
 
-[section Radial Basis Function (RBF) Interpolation (Dense Matrices)]
+[section Radial Basis Function (RBF) Interpolation]
 
 [import ../tests/rbf_interpolation.h]
 [rbf_interpolation_global]
-[endsect]
-
-
-[section Radial Basis Function (RBF) Interpolation (Sparse Matrices)]
-[rbf_interpolation_compact]
-[endsect]
-
-[section Radial Basis Function (RBF) Interpolation (H2 Matrices)]
-[rbf_interpolation_h2]
 [endsect]
 
 [section Kansa Method for PDEs]

@@ -87,7 +87,7 @@ where $v_{sig} = 2(c_s + |\mathbf{v}\_{ab} \cdot \mathbf{r}\_{ab}| /
 information propagates between the particles.
 
 The particle's position and velocity were integrated using the
-Leapfrog second order method, which isalso reversible in time in the absence of viscosity. 
+Leapfrog second order method, which is also reversible in time in the absence of viscosity. 
 To preserve the reversibility of the simulation, $d\rho/dt$ was
 calculated using the particle's position and velocity at the end of the
 timestep, rather than the middle as is commonly done. The full integration scheme is given by 

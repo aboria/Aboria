@@ -70,7 +70,7 @@ for function interpolation using the multiquadric basis function.
 
 One way to evaluate this operator is to use a matrix to store the values of 
 $K(x_i,x_j)$ for each particle pair, leading to a matrix $\mathbf{K}$ with 
-storage size $N^2$. Then the summation operator above is equivilent to the
+storage size $N^2$. Then the summation operator above is equivalent to the
 matrix-vector product
 
 $$
@@ -392,7 +392,7 @@ which boasts $\mathcal{O}(N)$ complexity if the column and row particle sets are
 $\mathcal{O}(NlogN)$ if they are not.
 
 Once again, we will use chebyshev interpolation, but now will construct a tree data structure using
-one of Aboria's tree data structures (kd-tree or octtree). When the kernel operator is applied to
+one of Aboria's tree data structures (kd-tree or oct-tree). When the kernel operator is applied to
 a vector, the fast multiplole algorithm will be invoked, which leads to traversals up and down the
 tree, using chebyshev interpolation to compress the kernel function for clusters of particles that
 are ['well separated]. The interaction of particle clusters that are not well separated are calculated
@@ -467,9 +467,9 @@ As before, this operator can be applied to an Eigen vector
 /*`
 
 As noted earlier, the `K_h` operator assumes that the particle positions do not change once
-it is constructed. However, it is a relativly fast operation to change the positions for
+it is constructed. However, it is a relatively fast operation to change the positions for
 the [*row] particle set (this corresponds to the target particles in fmm terminology). Thus,
-a new h2 operator can also be contructed from an old h2 operator, using a different set of
+a new h2 operator can also be constructed from an old h2 operator, using a different set of
 row particles.
 
 */
@@ -509,7 +509,7 @@ $$
 
 where $e_i$ and $d_j$ are elements of vectors $\mathbf{e}$ and $\mathbf{d}$ of
 size $2N$.  Using matrix notation, and using $\mathbf{K}$ and $\mathbf{K}_s$ to
-represent the operators `K` and `K_s`, this is equivilent to 
+represent the operators `K` and `K_s`, this is equivalent to 
 
 $$
 \mathbf{e} = \begin{pmatrix} 
@@ -518,7 +518,7 @@ $$
 \end{pmatrix} \mathbf{d}
 $$
 
-We first need operators representing the zero matricies in the upper right and
+We first need operators representing the zero matrices in the upper right and
 lower left corners of the block operator. We create these in Aboria like so
 
 */
@@ -572,7 +572,7 @@ We can simply pass the dense operator `K` to Eigen's GMRES iterative solver like
         gmres_matrix_free.compute(K);
         Eigen::VectorXd h_1 = gmres_matrix_free.solve(c_1);
 /*`
-This will solve the equation in a matrix-free fashion. Alternativly, we can use the 
+This will solve the equation in a matrix-free fashion. Alternatively, we can use the 
 normal matrix `K_eigen` that we assembled previously to solve the equation
 */
 
