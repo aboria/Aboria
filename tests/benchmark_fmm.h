@@ -60,6 +60,78 @@ class BenchmarkFMM: public CxxTest::TestSuite {
 public:
     template<unsigned int N, template <typename> class SearchMethod
             ,unsigned int D, typename Kernel>
+    double multiquadric_h2(
+            const std::vector<Vector<double,D>>& position_vect, 
+            const std::vector<double>& source_vect, 
+            const std::vector<double>& target_vect, 
+            const Kernel& kernel,
+            const size_t repeats,
+            const size_t nbucket) {
+        typedef Vector<double,D> double_d;
+        typedef Vector<bool,D> bool_d;
+        const size_t n = source_vect.size();
+        std::cout << "multiquadric_h2: D = "<<D<<" N = "<<N<<" n = "<<n<<" nbucket = "<<nbucket<<" repeats = "<<repeats<<std::endl;
+        ABORIA_VARIABLE(source,double,"source")
+        ABORIA_VARIABLE(target,double,"target")
+    	typedef Particles<std::tuple<source,target>,D,std::vector,SearchMethod> particles_type;
+        typedef typename particles_type::position position;
+       	particles_type particles(n);
+
+        double_d min(-0.1);
+        double_d max(1.1);
+        bool_d periodic(false);
+        
+        for (int i=0; i<n; ++i) {
+            get<position>(particles)[i] = position_vect[i];
+            get<source>(particles)[i] = source_vect[i];
+            get<target>(particles)[i] = 0;
+        }
+
+        particles.init_neighbour_search(min,max,periodic,nbucket);
+
+        auto h2 = create_h2_operator<N>(particles,particles,
+                                    kernel);
+
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        map_type targetv(get<target>(particles).data(),particles.size());
+        map_type sourcev(get<source>(particles).data(),particles.size());
+        targetv += h2*sourcev;
+
+        auto t0 = Clock::now();
+#ifdef HAVE_GPERFTOOLS
+        typedef typename particles_type::traits_type traits_type;
+        if (std::is_same<SearchMethod<traits_type>,
+                nanoflann_adaptor<traits_type>>::value) {
+            ProfilerStart(("multiquadric_h2_kdtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
+        } else {
+            ProfilerStart(("multiquadric_h2_octtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
+        }
+#endif
+        for (int ii=0; ii<repeats; ++ii) {
+            targetv += h2*sourcev;
+        }
+#ifdef HAVE_GPERFTOOLS
+        ProfilerStop();
+#endif
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        std::cout << "time = "<<dt.count()/repeats<<std::endl;
+
+        /*
+        double L2 = 0;
+        for (int i=0; i<n; ++i) {
+            const double e = get<target>(particles)[i]-target_vect[get<id>(particles)[i]];
+            L2 += std::pow(e,2);
+        }
+            
+        TS_ASSERT_LESS_THAN(L2,1e-2);
+        */
+
+        return dt.count()/repeats;
+    }
+
+    template<unsigned int N, template <typename> class SearchMethod
+            ,unsigned int D, typename Kernel>
     double multiquadric_fmm(
             const std::vector<Vector<double,D>>& position_vect, 
             const std::vector<double>& source_vect, 
@@ -89,17 +161,26 @@ public:
 
         particles.init_neighbour_search(min,max,periodic,nbucket);
 
-        auto fmm = make_fmm_query(particles.get_query(),
-                make_black_box_expansion<D,N>(kernel));
+        auto fmm = create_fmm_operator<N>(particles,particles,
+                                    kernel);
 
-        fmm.gemv(get<target>(particles),get<source>(particles));
+        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
+        map_type targetv(get<target>(particles).data(),particles.size());
+        map_type sourcev(get<source>(particles).data(),particles.size());
+        targetv += fmm*sourcev;
 
         auto t0 = Clock::now();
 #ifdef HAVE_GPERFTOOLS
-        ProfilerStart("multiquadric_fmm");
+        typedef typename particles_type::traits_type traits_type;
+        if (std::is_same<SearchMethod<traits_type>,
+                nanoflann_adaptor<traits_type>>::value) {
+            ProfilerStart(("multiquadric_fmm_kdtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
+        } else {
+            ProfilerStart(("multiquadric_fmm_octtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
+        }
 #endif
         for (int ii=0; ii<repeats; ++ii) {
-            fmm.gemv(get<target>(particles),get<source>(particles));
+            targetv += fmm*sourcev;
         }
 #ifdef HAVE_GPERFTOOLS
         ProfilerStop();
@@ -175,14 +256,22 @@ public:
              << std::setw(25) << "vector";
         for (size_t i = nbucket_min; i < nbucket_max; i += nbucket_incr) {
              file << std::setw(25) << "fmm-kdtree-N-2-nb-"+std::to_string(i) 
-             << std::setw(25) << "fmm-octtree-N-2-nb-"+std::to_string(i) 
-             << std::setw(25) << "fmm-kdtree-N-3-nb-"+std::to_string(i) 
-             << std::setw(25) << "fmm-octtree-N-3-nb-"+std::to_string(i) 
-             << std::setw(25) << "fmm-kdtree-N-4-nb-"+std::to_string(i) 
-             << std::setw(25) << "fmm-octtree-N-4-nb-"+std::to_string(i);
+                  << std::setw(25) << "fmm-octtree-N-2-nb-"+std::to_string(i) 
+                  << std::setw(25) << "h2-kdtree-N-2-nb-"+std::to_string(i) 
+                  << std::setw(25) << "h2-octtree-N-2-nb-"+std::to_string(i) 
+                  << std::setw(25) << "fmm-kdtree-N-3-nb-"+std::to_string(i) 
+                  << std::setw(25) << "fmm-octtree-N-3-nb-"+std::to_string(i) 
+                  << std::setw(25) << "h2-kdtree-N-3-nb-"+std::to_string(i) 
+                  << std::setw(25) << "h2-octtree-N-3-nb-"+std::to_string(i) 
+                  << std::setw(25) << "fmm-kdtree-N-4-nb-"+std::to_string(i) 
+                  << std::setw(25) << "fmm-octtree-N-4-nb-"+std::to_string(i)
+                  << std::setw(25) << "h2-kdtree-N-4-nb-"+std::to_string(i) 
+                  << std::setw(25) << "h2-octtree-N-4-nb-"+std::to_string(i);
         }
         file << std::endl;
-        for (double i = 1000; i < 100000; i *= 1.1) {
+        //for (double i = 1000; i < 100000; i *= 1.1) {
+        {
+            double i = 10000;
             const size_t N = i;
             // randomly generate a bunch of positions over a range 
             const double pos_min = 0;
@@ -231,12 +320,20 @@ public:
 #endif
             file << std::setw(25) << multiquadric_vector(target,positions,source,kernel,repeatsN2);
 
-            for (size_t i = nbucket_min; i < nbucket_max; i += nbucket_incr) {
+            //for (size_t i = nbucket_min; i < nbucket_max; i += nbucket_incr) {
+            {
+                size_t i = 50;
                 file << std::setw(25) << 
                     multiquadric_fmm<2,nanoflann_adaptor>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_fmm<2,octtree>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_h2<2,nanoflann_adaptor>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_h2<2,octtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_fmm<3,nanoflann_adaptor>(positions,source,
@@ -245,11 +342,24 @@ public:
                     multiquadric_fmm<3,octtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
+                    multiquadric_h2<3,nanoflann_adaptor>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_h2<3,octtree>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
                     multiquadric_fmm<4,nanoflann_adaptor>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_fmm<4,octtree>(positions,source,
                             target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_h2<4,nanoflann_adaptor>(positions,source,
+                            target,kernel,repeatsN,i);
+                file << std::setw(25) << 
+                    multiquadric_h2<4,octtree>(positions,source,
+                            target,kernel,repeatsN,i);
+
             }
 
             file << std::endl;
@@ -261,7 +371,7 @@ public:
         helper_multiquadric<1>();
         helper_multiquadric<2>();
         helper_multiquadric<3>();
-        helper_multiquadric<4>();
+        //helper_multiquadric<4>();
     }
 
 

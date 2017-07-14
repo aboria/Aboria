@@ -167,6 +167,12 @@ public:
         LOG(2,"\tdone");
     }
 
+    H2Matrix(const H2Matrix& matrix) = default;
+
+    H2Matrix(H2Matrix&& matrix) = default;
+
+    ~H2Matrix() = default;
+
     // copy construct from another h2_matrix with different row_particles.
     template <typename RowParticles>
     H2Matrix(const H2Matrix<Expansions,ColParticles>& matrix, 
@@ -283,7 +289,7 @@ private:
                     // from weakly connected buckets, 
                     // add connectivity and generate m2l matricies
                     size_t source_index = m_query->get_bucket_index(*cj);
-                    m_m2l_matrices[target_index].push_back(m2l_matrix_type());
+                    m_m2l_matrices[target_index].emplace_back();
                     m_expansions.M2L_matrix(
                             *(m_m2l_matrices[target_index].end()-1)
                             ,target_box,source_box);
@@ -306,7 +312,7 @@ private:
                             m_strong_connectivity[target_index].push_back(cj);
                         } else {
                             size_t source_index = m_query->get_bucket_index(*cj);
-                            m_m2l_matrices[target_index].push_back(m2l_matrix_type());
+                            m_m2l_matrices[target_index].emplace_back();
                             m_expansions.M2L_matrix(
                                     *(m_m2l_matrices[target_index].end()-1)
                                     ,target_box,source_box);
@@ -337,7 +343,7 @@ private:
             m_strong_connectivity[target_index].clear();
             for (child_iterator& source: strong_copy) {
                 if (m_query->is_leaf_node(*source)) {
-                    m_p2p_matrices[target_index].push_back(p2p_matrix_type());
+                    m_p2p_matrices[target_index].emplace_back();
                     m_strong_connectivity[target_index].push_back(source);
                     size_t source_index = m_query->get_bucket_index(*source);
                     m_expansions.P2P_matrix(
@@ -349,7 +355,7 @@ private:
                     for (all_iterator i = range.begin(); i!=range.end(); ++i) {
                         if (m_query->is_leaf_node(*i)) {
                             m_strong_connectivity[target_index].push_back(i.get_child_iterator());
-                            m_p2p_matrices[target_index].push_back(p2p_matrix_type());
+                            m_p2p_matrices[target_index].emplace_back();
                             size_t index = m_query->get_bucket_index(*i);
                             m_expansions.P2P_matrix(
                                 *(m_p2p_matrices[target_index].end()-1),
@@ -385,7 +391,7 @@ private:
 
             for (child_iterator& source: m_strong_connectivity[target_index]) {
                 ASSERT(m_query->is_leaf_node(*source),"should be leaf node");
-                m_p2p_matrices[target_index].push_back(p2p_matrix_type());
+                m_p2p_matrices[target_index].emplace_back();
                 size_t source_index = m_query->get_bucket_index(*source);
                 m_expansions.P2P_matrix(
                         *(m_p2p_matrices[target_index].end()-1),

@@ -188,7 +188,7 @@ namespace detail {
     void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs) {}
 
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs, typename I, typename J, typename T1, typename ... T>
-    void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const tuple_ns::tuple<I,J,T1>& block, const T&... other_blocks) {
+    void evalTo_unpack_blocks(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, const tuple_ns::tuple<I,J,T1&>& block, const T&... other_blocks) {
         evalTo_block(y.segment(lhs.template start_row<I::value>(),lhs.template size_row<I::value>()),
                 rhs.segment(lhs.template start_col<J::value>(),lhs.template size_col<J::value>()),
                 tuple_ns::get<2>(block));
@@ -197,7 +197,12 @@ namespace detail {
 
     template<typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs, std::size_t... I>
     void evalTo_impl(Dest& y, const MatrixReplacement<NI,NJ,Blocks>& lhs, const Rhs& rhs, detail::index_sequence<I...>) {
-        evalTo_unpack_blocks(y,lhs,rhs,tuple_ns::make_tuple(mpl::int_<I/NJ>(), mpl::int_<I%NJ>(), tuple_ns::get<I>(lhs.m_blocks))...);
+        evalTo_unpack_blocks(y,lhs,rhs,
+                tuple_ns::tuple<mpl::int_<I/NJ>,mpl::int_<I%NJ>,
+                            typename tuple_ns::tuple_element<I,Blocks>::type const &>
+                          (mpl::int_<I/NJ>(), 
+                           mpl::int_<I%NJ>(), 
+                           tuple_ns::get<I>(lhs.m_blocks))...);
     }
 } // namespace detail
 } // namespace Aboria

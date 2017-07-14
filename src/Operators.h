@@ -93,6 +93,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
         typedef detail::InnerIterator<MatrixReplacement> InnerIterator;
 
         MatrixReplacement(const Blocks& blocks):m_blocks(blocks) {};
+        MatrixReplacement(Blocks&& blocks):m_blocks(std::move(blocks)) {};
 
         CUDA_HOST_DEVICE
         Index rows() const {
