@@ -60,6 +60,7 @@ class H2Test: public CxxTest::TestSuite {
     ABORIA_VARIABLE(target_h2,double,"target h2");
 
 public:
+#ifdef HAVE_EIGEN
     template <unsigned int N, typename ParticlesType, typename KernelFunction>
     void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const double scale) {
         typedef typename ParticlesType::position position;
@@ -105,13 +106,9 @@ public:
         typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
         map_type target_eigen(get<target_h2>(particles).data(),particles.size());
         map_type source_eigen(get<source>(particles).data(),particles.size());
-        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
-        vector_type target_eigen_v(particles.size());
-        vector_type source_eigen_v(particles.size());
-        source_eigen_v = source_eigen;
 
         t0 = Clock::now();
-        target_eigen_v = h2_eigen*source_eigen_v; 
+        target_eigen = h2_eigen*source_eigen; 
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
 
@@ -124,7 +121,7 @@ public:
                 );
 
         std::cout << "for h2 operator:" <<std::endl;
-        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_fmm relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
 
         if (N == 3) {
             TS_ASSERT_LESS_THAN(L2_h2/scale,1e-2);
@@ -134,7 +131,6 @@ public:
 
     template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>
     void helper_fast_methods(size_t N) {
-#ifdef HAVE_EIGEN
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         typedef Vector<bool,D> bool_d;
@@ -207,12 +203,10 @@ public:
         helper_fast_methods_calculate<1>(particles,kernel,scale);
         helper_fast_methods_calculate<2>(particles,kernel,scale);
         helper_fast_methods_calculate<3>(particles,kernel,scale);
-#endif
     }
 
     template <typename Expansions>
     void helper_fmm_matrix_operators(Expansions& expansions) {
-#ifdef HAVE_EIGEN
         const unsigned int D = Expansions::dimension;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
@@ -359,8 +353,8 @@ public:
             scale += std::pow(field_all_leaf1[i],2);
         }
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
-#endif
     }
+#endif
         
     void test_fmm_matrix_operators() {
 #ifdef HAVE_EIGEN
@@ -376,67 +370,50 @@ public:
 
     
     void test_fast_methods_bucket_search_serial(void) {
+#ifdef HAVE_EIGEN
         const size_t N = 10000;
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStart("h2_bucket_search_serial");
-#endif
         std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_serial>(N);
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStop();
 #endif
-
     }
 
     void test_fast_methods_bucket_search_parallel(void) {
+#ifdef HAVE_EIGEN
         const size_t N = 10000;
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStart("h2_bucket_search_parallel");
-#endif
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,bucket_search_parallel>(N);
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStop();
 #endif
     }
 
     void test_fast_methods_kd_tree(void) {
+#ifdef HAVE_EIGEN
         const size_t N = 10000;
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStart("h2_kd_tree");
-#endif
         std::cout << "KD_TREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,nanoflann_adaptor>(N);
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStop();
 #endif
     }
 
     void test_fast_methods_octtree(void) {
+#ifdef HAVE_EIGEN
         const size_t N = 10000;
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStart("h2_octtree");
-#endif
         std::cout << "OCTTREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,octtree>(N);
-#ifdef HAVE_GPERFTOOLS
-        ProfilerStop();
 #endif
     }
 
