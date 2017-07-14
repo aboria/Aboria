@@ -15,10 +15,14 @@ Aboria provides:
   a position and unique id for each particle, as well as any number of 
   user-defined variables with arbitrary types.
 * the ability to embed each particle set within a hypercube N-dimensional
-  domain with arbitrary periodicity
-* flexible neighbourhood queries that return iterators, and can use any 
-  L-norm distance measure (L1 = Manhattan distance, L2 = Euclidean distance, 
-  ... , Linf = Chebyshev distance)
+  domain with arbitrary periodicity. The underlying data structure can be a 
+  [cell list](https://en.wikipedia.org/wiki/Cell_lists), 
+  [kd-tree](https://en.wikipedia.org/wiki/K-d_tree) or hyper 
+  [oct-tree](https://en.wikipedia.org/wiki/Octree).
+* flexible neighbourhood queries that return iterators, and can use any integer 
+  [p-norm](https://en.wikipedia.org/wiki/Norm_(mathematics)) distance measure 
+  for `p > 0` (`p == 1`: Manhattan distance, `p == 2`: Euclidean distance, ... , 
+  `p -> inf`:  Chebyshev distance)
 * an expression template API for forming non-linear operators over the 
   particles. This can be used, for example, to implement interaction forces
   in Molecular Dynamics.

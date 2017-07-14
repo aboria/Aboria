@@ -90,8 +90,10 @@ is periodic in all directions.
 /*`
 
 Once this is done you can begin using the neighbourhood search queries using the 
-[funcref Aboria::euclidean_search] function. This returns a lightweight container with `begin()` and `end()` functions that return `const` forward only iterators to the particles that satisfy the neighbour search. For example, the following counts all the
-particles within a distance `radius` of the point $(0,0,0)$. 
+[funcref Aboria::euclidean_search] function. This returns a lightweight container 
+with `begin()` and `end()` functions that return `const` forward only iterators 
+to the particles that satisfy the neighbour search. For example, the following 
+counts all the particles within a distance `radius` of the point $(0,0,0)$. 
 
 */
 
@@ -104,7 +106,12 @@ particles within a distance `radius` of the point $(0,0,0)$.
 
 /*`
 
-Note that [funcref Aboria::euclidean_search] uses the euclidean or L2-norm distance ($\sqrt{\sum_i^d x^2}$), but there are other functions for other distance norms. [funcref Aboria::manhatten_search] uses the L1-norm ($\sum_i^d |x|$), [funcref Aboria::chebyshev_search] uses the Linf-norm ($\max_i^d |x|$), and you can use the generic [funcref Aboria::distance_search] for the Ln-norm ($(\sum_i^d x^n)^{1/n}$)
+Note that [funcref Aboria::euclidean_search] uses the euclidean or 2-norm distance 
+($\sqrt{\sum_i^d x^2}$), but there are other functions for other distance norms. 
+[funcref Aboria::manhatten_search] uses the 1-norm ($\sum_i^d |x|$), 
+[funcref Aboria::chebyshev_search] uses the inf-norm ($\max_i^d |x|$), and you can 
+use the generic [funcref Aboria::distance_search] for the $p$-norm ($(\sum_i^d x^n)^{1/n}$), 
+where $p$ is any integer greater than 0.
 
 When dereferenced, the neighbourhood iterator returns a tuple of size 2 
 containing 
