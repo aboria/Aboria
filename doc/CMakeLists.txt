@@ -138,6 +138,7 @@ MathJax.Hub.Config({
     images/up.png
     images/down.png
     images/home.png
+    images/note.png
     css/boostbook.css
   )
 

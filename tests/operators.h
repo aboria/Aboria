@@ -482,7 +482,7 @@ row particles.
         }
 
         /*
-         * create new h2 operator with new row particles
+         * create h2 operator with new row particles
          */
         auto K_h2 = create_h2_operator(K_h.get_first_kernel(),particles2);
 

@@ -1,0 +1,33 @@
+#######################################
+#           Aboria 0.5                #
+#######################################
+
+Summary
+
+    This version has extensive changes to the backend iterators that are used to interact
+    with the neighbourhood search data structures, to fit in the new tree-based structures.
+    In particular, there is a new `child_iterator` that is used to iterate through children
+    of a node in a tree, a depth-first search iterator, and a query iterator specificly
+    for neighbour searches on a tree
+    
+    There are also large changes with the backend neighbourhood search functionality. Now 
+    a distance search can:
+        * be anisotropic, the distance measure is scaled independently in each dimension
+        * use any L-norm for a distance measure, L1, L2, L3, ...., Linf
+        * can handle periodic domains independently of the data structure
+        * can handle any radius, independently of how the data structure was initialized 
+          (see below)
+
+    Finally, the syntax for the `Aboria::Particles::init_neighbour_search` does not require
+    the user to enter in a cut-off radius, instead the user can enter in a number corresponding
+    to the average (for cell lists) or maximum (for trees) number of particles in each cell/bucket.
+
+    New search data structures! Finally have a kd-tree (courtesy of nannoflann 
+    - https://github.com/jlblancoc/nanoflann), and an octtree. These are used for the new 
+    fast multipole method and hierarchical matrix kernel operators.
+
+    New kernel operators - Aboria now has implementations of the black-box fast multipole
+    method, and the ability to store this as a H2 hierarchical matrix for repeated evaluations.
+    Please see documentation for more details. btw. The previous functionality termed "matrix-free"
+    operators has been renamed to "kernel operators" to factor in these changes.
+        

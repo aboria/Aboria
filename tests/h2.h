@@ -94,9 +94,6 @@ public:
             TS_ASSERT_LESS_THAN(L2_h2/scale,1e-2);
         }
 
-        for (reference p: particles) {
-            get<target_h2>(p) = 0;
-        }
         t0 = Clock::now();
         auto h2_eigen = create_h2_operator<N>(particles,particles,
                                     kernel);
