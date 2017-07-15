@@ -17,6 +17,7 @@ BUILD_DIR=`pwd`
 
 # Clone the existing gh-pages for this repo into out/
 # Create a new empty branch if gh-pages doesn't exist yet (should only happen on first deply)
+rm -rf $HTML_DIR
 git clone $REPO $HTML_DIR
 cd $HTML_DIR
 git checkout $TARGET_BRANCH || git checkout --orphan $TARGET_BRANCH
@@ -26,6 +27,7 @@ cd $BUILD_DIR
 rm -rf $HTML_DIR/**/* || exit 0
 
 # Run our compile script
+cmake .
 make aboria-html-website
 
 # Now let's go have some fun with the cloned repo
