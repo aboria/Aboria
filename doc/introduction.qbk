@@ -95,15 +95,15 @@ structure, and in any number of dimensions.
 The highest abstraction level in Aboria implements two higher level APIs, 
 suitable for implementing particle-based methods:
 
+# kernel operators specified by C++ lambda functions. These can be wrapped in 
+[@eigen.tuxfamily.org Eigen] matrix replacement classes, so they can be treated 
+as standard matrices, and used in iterative solvers.
 # a Domain Specific Language (DSL) for specifying non-linear operators on the 
 set of particles, using the 
 [@http://www.boost.org/doc/libs/1_63_0/doc/html/proto.html Boost.Proto] library.  
 Users can use standard C++ operators (e.g. `*`, `+` or `/`), and/or a set of 
 supplied functions (e.g. `sqrt`, `pow` or `norm`), to express any non-linear 
 operator over individual particles or particle pairs.
-# kernel operators specified by C++ lambda functions. These can be wrapped in 
-[@eigen.tuxfamily.org Eigen] matrix replacement classes, so they can be treated 
-as standard matrices, and used in iterative solvers.
 
 [endsect]
 
