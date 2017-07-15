@@ -63,30 +63,25 @@ Header: `<Aboria.h>`
 
 [[Class Name] [Description]]
 
-    [[[classref Aboria::bucket_search_serial]]         
+    [[[classref Aboria::bucket_search_serial_query]]         
     
-        []]
+        [[memberref Aboria::Particles::get_query] returns a query object that 
+        can be used to query the spatial data structure for that particle set.  
+        This is the query object for the serial cell lists data structure]]
 
-    [[[classref Aboria::bucket_search_parallel]]         
+    [[[classref Aboria::bucket_search_parallel_query]]         
     
-        []]
+        [This is the query object for the parallel cell lists data structure]]
 
-    [[[classref Aboria::nanoflann_adaptor]]         
+    [[[classref Aboria::nanoflann_adaptor_query]]         
     
-        []]
+        [This is the query object for the kd-tree data structure]]
 
-    [[[classref Aboria::octtree]]         
+    [[[classref Aboria::octtree_query]]         
     
-        []]
-
-
-
-
+        [This is the query object for the hyper oct-tree data structure]]
 
 ]
-
-
-
 
 [table Internal Traits for Level 0 vector
     [[[classref Aboria::Traits<std::vector>]]         
@@ -144,35 +139,6 @@ Header: `<Aboria.h>`
         applications]]
     [[[funcref Aboria::make_h2_matrix]]
         [Helper class that returns a [classref Aboria::H2Matrix]]]
-]
-
-[table Kernels
-
-[[Class Name] [Description]]
-
-    [[[classref Aboria::KernelDense]]
-        [Class for a dense kernel operator - normally not used directly but 
-        wrapped by [classref Aboria::MatrixReplacement] for use as an Eigen
-        matrix]]
-    [[[classref Aboria::KernelSparse]]
-        [Class for a sparse kernel operator - normally not used directly but 
-        wrapped by [classref Aboria::MatrixReplacement] for use as an Eigen
-        matrix]]
-    [[[classref Aboria::KernelChebyshev]]
-        [Class for a kernel operator approximated using chebyshev interpolation 
-        - normally not used directly but wrapped by [classref 
-        Aboria::MatrixReplacement] for use as an Eigen
-        matrix]]
-    [[[classref Aboria::KernelFMM]]
-        [Class for a kernel operator approximated using [classref 
-        Aboria::FastMultipoleMethod]- normally not used directly but wrapped by 
-        [classref Aboria::MatrixReplacement] for use as an Eigen
-        matrix]]
-    [[[classref Aboria::KernelH2]]
-        [Class for a kernel operator approximated using [classref 
-        Aboria::H2Matrix]- normally not used directly but wrapped by [classref 
-        Aboria::MatrixReplacement] for use as an Eigen
-        matrix]]
 ]
 
 
@@ -279,11 +245,11 @@ Header: `<Aboria.h>`
 
     [[[funcref Aboria::norm]]         
     
-        [A lazy function that calculates the L2 norm of a vector ]]
+        [A lazy function that calculates the 2-norm of a vector ]]
 
     [[[funcref Aboria::inf_norm]]         
     
-        [A lazy function that calculates the Linf norm of a vector ]]
+        [A lazy function that calculates the inf-norm of a vector ]]
 
     [[[funcref Aboria::dot]]         
     

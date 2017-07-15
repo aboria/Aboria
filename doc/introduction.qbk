@@ -17,16 +17,21 @@ between the particles.
 
 
 __aboria__ attempts to provide a general purpose library that can be used to 
-support the implementation of particle-based numerical methods. It does this by 
-abstracting (in an efficient manner) many of the difficult algorithmic aspects 
-of particle-based methods, such as neighbourhood searches, while still allowing 
-the user complete control of the non-linear operators they wish to apply to the 
-particle set. The current version of __aboria__ implements the abstraction API 
-described herein, with optional shared memory parallelism. The over-arching 
-design philosophy of Aboria is based on "zero-cost abstraction", that the data 
-structures in Level 1 and the Level 3 API should run as fast as hand-coded 
-operators. The benchmarks in Section 3 demonstrate that this has indeed been 
-achieved.
+support the implementation of particle-based numerical methods.  The idea is to 
+give the user complete control to define of operators on the particle set, while 
+implementing efficiently the difficult algorithmic aspects of particle-based 
+methods, such as neighbourhood searches and fast summation algorithms. However, 
+even at this level it is not a one-fits-all situation and Aboria is designed to 
+allow users to choose specific algorithms that are best suited to the particular 
+application. For example, calculating neighbourhood interactions for a uniform 
+particle  distribution is best done using a regular cell-list data structure, 
+while for a highly non-uniform particle distribution a tree data structure like 
+    a kd-tree might be preferable . For neighbourhood interactions that are zero 
+    beyond a certain radius, a radial search is the best algorithm to obtain 
+    interacting particle pairs, while for interactions that can be approximated 
+    for well-separated clusters of particles, the fast multipole method is an 
+        efficient fast summation algorithm. 
+
 
 [h1 Design]
 
@@ -63,48 +68,42 @@ non-periodic boundaries. The particle set container interacts with a neighbour
 searching classes to embed the particles within the domain ensuring that the two 
 data structures are kept in sync, while still allowing for updates to the 
 particles positions throughout the domain. The current version of the code has 
-two possible neighbour search classes:
+four possible neighbour search classes:
 
-# A cell list data structure, which divides the domain into a square lattice of 
-buckets. Each bucket contains zero or more particles. Neighbours near a position 
-$r_i$ can be found by looking within the cell containing this position, and its 
-neighbours. Queries to this data structure are thread-safe and can be used in 
-parallel, but particle insertion is not.
-# Another cell list data structure, but this one supports parallel insertion and 
-queries.
+# Two types of cell lists, one supporting serial insertion and parallel queries,
+the other supporting parallel insertion and queries.
+# A kd-tree, useful for clustered particle distributions and for using Aboria's 
+fast multipole capabilities
+# A hyper oct-tree
 
 [h2 Aboria Level 2]
 
-This implements fast summation algorithms useful for particle-based methods, 
-using the particle set and neighbour search classes in Level 1. Currently this 
-includes:
+This implements neighbourhood searching and fast summation algorithms useful for 
+particle-based methods, using the particle set and neighbour search classes in 
+Level 1.  Currently this includes:
 
-# a simple box search algorithm (e.g. for particle interactions that are zero 
-beyond a certain radius). 
+# Neighbourhood searches using a $p$-norm distance measure, where $p$ can be any
+integer greater than 0, as well as $p \rightarrow \infty$ (chebyshev distance)
+# Approximation of kernel operators using interpolation with chebyshev 
+polynomials, the fast multipole method, or hierarchical H2 matrices.
+
+Note that all these algorithms can work with any neighbour search data 
+structure, and in any number of dimensions.
 
 [h2 Aboria Level 3]
 
-The highest abstraction level in Aboria implements a Domain Specific Language 
-(DSL) for specifying non-linear operators on the set of particles, using the 
-[@http://www.boost.org/doc/libs/1_63_0/doc/html/proto.html Boost.Proto] library. 
+The highest abstraction level in Aboria implements two higher level APIs, 
+suitable for implementing particle-based methods:
+
+# a Domain Specific Language (DSL) for specifying non-linear operators on the 
+set of particles, using the 
+[@http://www.boost.org/doc/libs/1_63_0/doc/html/proto.html Boost.Proto] library.  
 Users can use standard C++ operators (e.g. `*`, `+` or `/`), and/or a set of 
-supplied functions (e.g. `sqrt`, `pow` or `norm`), to express the operator they 
-wish to apply to the given particle set. 
-
-This operator is not applied immediately, but rather the symbolic form of the 
-operator is kept and analysed by __aboria__. Using the form of the operator 
-__aboria__ can detect when a Level 2 fast summation method is available, can 
-detect and compensate for aliasing, and when the particle positions are altered 
-(thus requiring an update of the neighbour searching data structure). As the 
-symbolic form of the operator is known at compile-time, it can be efficiently 
-inlined to all the low-level routines implemented in Level 1 and 2, ensuring 
-zero overhead costs associated with this level.
-
-In summary, while Levels 1 and 2 provide useful /functionality/ for 
-particle-based methods, the purpose of Level 3 is to tie together this 
-functionality and to provide a easy-to-use interface that ensures that the 
-capabilities of Levels 1 and 2 are used in the best possible way. 
-
+supplied functions (e.g. `sqrt`, `pow` or `norm`), to express any non-linear 
+operator over individual particles or particle pairs.
+# kernel operators specified by C++ lambda functions. These can be wrapped in 
+[@eigen.tuxfamily.org Eigen] matrix replacement classes, so they can be treated 
+as standard matrices, and used in iterative solvers.
 
 [endsect]
 
