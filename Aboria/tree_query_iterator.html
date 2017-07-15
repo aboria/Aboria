@@ -1,0 +1,138 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template tree_query_iterator</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.5">
+<link rel="up" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/mrobins/git/Aboria/src/NeighbourSearchBase.h&gt;">
+<link rel="prev" href="ranges_iterator.html" title="Class template ranges_iterator">
+<link rel="next" href="octtree.html" title="Class template octtree">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="ranges_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="octtree.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.tree_query_iterator"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template tree_query_iterator</span></h2>
+<p>Aboria::tree_query_iterator</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/mrobins/git/Aboria/src/NeighbourSearchBase.h&gt;">/home/mrobins/git/Aboria/src/NeighbourSearchBase.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Query<span class="special">,</span> <span class="keyword">int</span> LNormNumber<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="tree_query_iterator.html" title="Class template tree_query_iterator">tree_query_iterator</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">child_iterator</span><span class="special">::</span><span class="identifier">value_type</span> <a name="Aboria.tree_query_iterator.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>       
+  <span class="keyword">typedef</span> <span class="identifier">child_iterator</span><span class="special">::</span><span class="identifier">pointer</span>    <a name="Aboria.tree_query_iterator.pointer"></a><span class="identifier">pointer</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">forward_iterator_tag</span>  <a name="Aboria.tree_query_iterator.iterator_category"></a><span class="identifier">iterator_category</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">child_iterator</span><span class="special">::</span><span class="identifier">reference</span>  <a name="Aboria.tree_query_iterator.reference"></a><span class="identifier">reference</span><span class="special">;</span>        
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>             <a name="Aboria.tree_query_iterator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>  
+
+  <span class="comment">// <a class="link" href="tree_query_iterator.html#Aboria.tree_query_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="tree_query_iterator.html#idm45289815882640-bb"><span class="identifier">tree_query_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="tree_query_iterator.html#idm45289815882352-bb"><span class="identifier">tree_query_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> double_d <span class="special">&amp;</span><span class="special">,</span> 
+                      <span class="keyword">const</span> double_d <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Query</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="tree_query_iterator.html#idm45289815876960-bb"><span class="identifier">tree_query_iterator</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  iterator <span class="special">&amp;</span> <a class="link" href="tree_query_iterator.html#idm45289815875536-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="tree_query_iterator.html#idm45289815895696-bb">public member functions</a></span>
+  <span class="identifier">box_type</span> <a class="link" href="tree_query_iterator.html#idm45289815895136-bb"><span class="identifier">get_bounds</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="tree_query_iterator.html#idm45289815894016-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="tree_query_iterator.html#idm45289815892896-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  iterator <span class="special">&amp;</span> <a class="link" href="tree_query_iterator.html#idm45289815892048-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  iterator <a class="link" href="tree_query_iterator.html#idm45289815890912-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="tree_query_iterator.html#idm45289815889248-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span>iterator<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="tree_query_iterator.html#idm45289815887312-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="tree_query_iterator.html#idm45289815885056-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="tree_query_iterator.html#idm45289815873536-bb">private member functions</a></span>
+  <span class="keyword">bool</span> <a class="link" href="tree_query_iterator.html#idm45289815872960-bb"><span class="identifier">child_is_within_query</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="tree_query_iterator.html#idm45289815871424-bb"><span class="identifier">increment_stack</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="tree_query_iterator.html#idm45289815870576-bb"><span class="identifier">go_to_next_leaf</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="tree_query_iterator.html#idm45289815869728-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="tree_query_iterator.html#idm45289815868880-bb"><span class="identifier">equal</span></a><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="tree_query_iterator.html#idm45289815866784-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idm46537677386560"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idm46537677386144"></a><h3>
+<a name="Aboria.tree_query_iteratorconstruct-copy-destruct"></a><code class="computeroutput">tree_query_iterator</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idm45289815882640-bb"></a><span class="identifier">tree_query_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><a name="idm45289815882352-bb"></a><span class="identifier">tree_query_iterator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> start<span class="special">,</span> 
+                    <span class="keyword">const</span> double_d <span class="special">&amp;</span> query_point<span class="special">,</span> 
+                    <span class="keyword">const</span> double_d <span class="special">&amp;</span> max_distance<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Query</span> <span class="special">*</span> query<span class="special">,</span> 
+                    <span class="keyword">const</span> <span class="keyword">bool</span> ordered <span class="special">=</span> <span class="keyword">false</span><span class="special">)</span><span class="special">;</span></pre>
+<p>this constructor is used to start the iterator at the head of a bucket list </p>
+</li>
+<li class="listitem"><pre class="literallayout"><a name="idm45289815876960-bb"></a><span class="identifier">tree_query_iterator</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> copy<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout">iterator <span class="special">&amp;</span> <a name="idm45289815875536-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> copy<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm46537677352416"></a><h3>
+<a name="idm45289815895696-bb"></a><code class="computeroutput">tree_query_iterator</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="identifier">box_type</span> <a name="idm45289815895136-bb"></a><span class="identifier">get_bounds</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45289815894016-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45289815892896-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout">iterator <span class="special">&amp;</span> <a name="idm45289815892048-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout">iterator <a name="idm45289815890912-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idm45289815889248-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span>iterator start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45289815887312-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45289815885056-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idm46537677305328"></a><h3>
+<a name="idm45289815873536-bb"></a><code class="computeroutput">tree_query_iterator</code> private member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45289815872960-bb"></a><span class="identifier">child_is_within_query</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> node<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45289815871424-bb"></a><span class="identifier">increment_stack</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45289815870576-bb"></a><span class="identifier">go_to_next_leaf</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45289815869728-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idm45289815868880-bb"></a><span class="identifier">equal</span><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idm45289815866784-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="ranges_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="octtree.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,205 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Installation and Getting Started</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.5">
+<link rel="up" href="../index.html" title="Aboria 0.5">
+<link rel="prev" href="introduction.html" title="Introduction">
+<link rel="next" href="particle_container.html" title="Particle Container">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="introduction.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="particle_container.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.installation_and_getting_started"></a><a class="link" href="installation_and_getting_started.html" title="Installation and Getting Started">Installation and
+    Getting Started</a>
+</h2></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.getting_prerequisites">Getting
+      prerequisites</a></span></dt>
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_a_program_using_aboria">Compiling
+      a program using Aboria</a></span></dt>
+</dl></div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.getting_prerequisites"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.getting_prerequisites" title="Getting prerequisites">Getting
+      prerequisites</a>
+</h3></div></div></div>
+<p>
+        This software is tested on Ubuntu 14.04LTS with the GCC compiler (version
+        5.4.1), and Clang compiler (version 3.8.0). See our <a href="https://travis-ci.org/martinjrobins/Aboria" target="_top">Travis
+        CI page</a> for more details.
+      </p>
+<p>
+        You will need to install a C++ compiler with C++11 support, and the <a href="https://cmake.org/" target="_top">CMake</a> build software prior to using Aboria,
+        which you can do on a Debian-based OS using
+      </p>
+<pre class="programlisting"><span class="identifier">sudo</span> <span class="identifier">apt</span><span class="special">-</span><span class="identifier">get</span> <span class="identifier">install</span> <span class="identifier">build</span><span class="special">-</span><span class="identifier">essential</span> <span class="identifier">cmake</span>
+</pre>
+<p>
+        The only required dependency is the <a href="http://www.boost.org" target="_top">Boost</a>
+        library. Optional dependencies are <a href="http://www.vtk.org/" target="_top">The Visualization
+        Toolkit</a> and <a href="http://eigen.tuxfamily.org" target="_top">Eigen</a>
+        (version &gt;= 3.3~beta1), both of which add extra functionality. To install
+        all these dependencies in a Debian-based OS you can type
+      </p>
+<pre class="programlisting"><span class="identifier">sudo</span> <span class="identifier">apt</span><span class="special">-</span><span class="identifier">get</span> <span class="identifier">install</span> <span class="identifier">libboost</span><span class="special">-</span><span class="identifier">dev</span> <span class="identifier">libvtk5</span><span class="special">-</span><span class="identifier">dev</span> <span class="identifier">libeigen3</span><span class="special">-</span><span class="identifier">dev</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.compiling_a_program_using_aboria"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_a_program_using_aboria" title="Compiling a program using Aboria">Compiling
+      a program using Aboria</a>
+</h3></div></div></div>
+<p>
+        Aboria is a header-only library, so at a minimum you will need to add the
+        <code class="computeroutput"><span class="identifier">Aboria</span><span class="special">/</span><span class="identifier">src</span></code> directory to your include path and
+        include the <code class="computeroutput"><span class="identifier">Aboria</span><span class="special">.</span><span class="identifier">h</span></code> header, e.g.
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">Aboria</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span>
+</pre>
+<p>
+        If you need more detail than this, then this section will give a step-by-step
+        guide on compiling your first Aboria program
+      </p>
+<p>
+        First clone the Aboria GitHub repository like so
+      </p>
+<pre class="programlisting">$ git clone https://github.com/martinjrobins/Aboria
+</pre>
+<p>
+        Then copy and paste the code below into a C++ source file named <code class="computeroutput"><span class="identifier">getting_started</span><span class="special">.</span><span class="identifier">cpp</span></code>.
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
+
+<span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
+
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
+    <span class="comment">/*
+     * Create a 2d particle container type with one
+     * additional variable "velocity", represented
+     * by a 2d double vector
+     */</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span><span class="identifier">double2</span><span class="special">,</span><span class="string">"velocity"</span><span class="special">)</span>
+    <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;,</span><span class="number">2</span><span class="special">&gt;</span> <span class="identifier">container_type</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">container_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
+
+    <span class="comment">/*
+     * create a particle set with size N
+     */</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
+    <span class="identifier">container_type</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">default_random_engine</span> <span class="identifier">gen</span><span class="special">;</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+        <span class="comment">/*
+         * set a random position, and initialise velocity
+         */</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">);</span>
+    <span class="special">}</span>
+
+    <span class="comment">/*
+     * write particle container to a vtk
+     * unstructured grid file
+     */</span>
+    <span class="identifier">vtkWriteGrid</span><span class="special">(</span><span class="string">"aboria"</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_grid</span><span class="special">(</span><span class="keyword">true</span><span class="special">));</span>
+
+<span class="special">}</span>
+</pre>
+<p>
+        Now copy and paste the CMake config file below into another file called
+        <code class="computeroutput"><span class="identifier">CMakeLists</span><span class="special">.</span><span class="identifier">txt</span></code>. Note that this assumes that the Aboria
+        repository is in your current directory, which it will be if you just cloned
+        the repo using the git command above.
+      </p>
+<pre class="programlisting">cmake_minimum_required(VERSION 2.8)
+
+# Boost
+find_package(Boost 1.50.0 COMPONENTS python REQUIRED)
+list(APPEND LIBRARIES ${Boost_LIBRARIES})
+list(APPEND INCLUDES ${Boost_INCLUDE_DIRS})
+
+# VTK
+find_package(VTK REQUIRED)
+if (VTK_FOUND)
+    add_definitions(-DHAVE_VTK)
+endif(VTK_FOUND)
+list(APPEND LIBRARIES ${VTK_LIBRARIES})
+list(APPEND INCLUDES ${VTK_INCLUDE_DIRS})
+
+set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++11")
+
+# Aboria
+set(Aboria_LOG_LEVEL 1 CACHE STRING "Logging level (1 = least, 3 = most)")
+add_definitions(-DABORIA_LOG_LEVEL=${Aboria_LOG_LEVEL})
+list(APPEND INCLUDES Aboria/src)
+list(APPEND INCLUDES Aboria/third-party)
+
+include_directories(src ${INCLUDES})
+
+set(SOURCE
+    getting_started.cpp
+    )
+
+add_executable(getting_started ${SOURCE})
+target_link_libraries(getting_started ${LIBRARIES})
+</pre>
+<p>
+        If you wish to use <a href="http://www.vtk.org/" target="_top">The Visualisation Toolkit</a>
+        or <a href="http://eigen.tuxfamily.org" target="_top">Eigen</a> with Aboria then
+        you will need to define the <code class="computeroutput">HAVE_VTK</code> and <code class="computeroutput">HAVE_EIGEN</code>
+        compiler definitions, as done using the above <code class="computeroutput">CMakeLists.txt</code>
+      </p>
+<p>
+        Finally, configure and compile <code class="computeroutput">getting_started.cpp</code>, then run
+        it like so
+      </p>
+<pre class="programlisting">$ cmake .
+$ make
+$ ./getting_started
+</pre>
+<p>
+        You now should have a file <code class="computeroutput"><span class="identifier">aboria00000</span><span class="special">.</span><span class="identifier">vtu</span></code> in
+        your directory, which you can open and view using any application that supports
+        the VTK unstructured grid format (such as Paraview)
+      </p>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="introduction.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="particle_container.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

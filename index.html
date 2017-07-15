@@ -1,10 +1,10 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
-<title>Aboria 0.4</title>
+<title>Aboria 0.5</title>
 <link rel="stylesheet" href="css/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="index.html" title="Aboria 0.4">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="index.html" title="Aboria 0.5">
 <link rel="next" href="aboria/introduction.html" title="Introduction">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
@@ -34,7 +34,7 @@ MathJax.Hub.Config({
 <div class="titlepage">
 <div>
 <div><h2 class="title">
-<a name="aboria"></a>Aboria 0.4</h2></div>
+<a name="aboria"></a>Aboria 0.5</h2></div>
 <div><div class="authorgroup"><div class="author"><h3 class="author">
 <span class="firstname">Martin</span> <span class="surname">Robinson</span>
 </h3></div></div></div>
@@ -47,8 +47,14 @@ MathJax.Hub.Config({
 <dl class="toc">
 <dt><span class="section"><a href="index.html#aboria.abstract">Abstract</a></span></dt>
 <dt><span class="section"><a href="aboria/introduction.html">Introduction</a></span></dt>
-<dt><span class="section"><a href="aboria/installation.html">Installation</a></span></dt>
-<dt><span class="section"><a href="aboria/continuous_integration.html">Continuous Integration</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html">Installation and
+    Getting Started</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.getting_prerequisites">Getting
+      prerequisites</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_a_program_using_aboria">Compiling
+      a program using Aboria</a></span></dt>
+</dl></dd>
 <dt><span class="section"><a href="aboria/particle_container.html">Particle Container</a></span></dt>
 <dd><dl>
 <dt><span class="section"><a href="aboria/particle_container.html#aboria.particle_container.creating_particles">Creating
@@ -67,16 +73,28 @@ MathJax.Hub.Config({
       differences from STL containers</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/neighbourhood_searching.html">Neighbourhood Searching</a></span></dt>
-<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html">Matrix-free Linear
-    Algebra with Eigen</a></span></dt>
 <dd><dl>
-<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.creating_dense_operators">Creating
+<dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.cell_lists">Cell Lists</a></span></dt>
+<dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.kd_tree">Kd-Tree</a></span></dt>
+<dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.hyper_oct_tree">Hyper
+      Oct-Tree</a></span></dt>
+</dl></dd>
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html">Evaluating and
+    Solving Kernel Operators with Eigen</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.creating_dense_operators">Creating
       Dense Operators</a></span></dt>
-<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.creating_sparse_operators">Creating
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.creating_sparse_operators">Creating
       Sparse Operators</a></span></dt>
-<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.block_operators">Block
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.creating_chebyshev_operators">Creating
+      Chebyshev Operators</a></span></dt>
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.creating_fast_multipole_method_o">Creating
+      Fast Multipole Method Operators</a></span></dt>
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.creating_hierarchical_matrix_ope">Creating
+      Hierarchical Matrix Operators</a></span></dt>
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.block_operators">Block
       Operators</a></span></dt>
-<dt><span class="section"><a href="aboria/matrix_free_linear_algebra_with_.html#aboria.matrix_free_linear_algebra_with_.iterative_solvers">Iterative
+<dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.iterative_solvers">Iterative
       Solvers</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/symbolic_expressions.html">Symbolic Expressions</a></span></dt>
@@ -148,7 +166,7 @@ MathJax.Hub.Config({
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
-<td align="left"><p><small>Last revised: March 31, 2017 at 09:03:34 GMT</small></p></td>
+<td align="left"><p><small>Last revised: July 15, 2017 at 19:07:23 GMT</small></p></td>
 <td align="right"><div class="copyright-footer"></div></td>
 </tr></table>
 <hr>

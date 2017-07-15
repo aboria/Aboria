@@ -3,11 +3,11 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Neighbourhood Searching</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.4">
-<link rel="up" href="../index.html" title="Aboria 0.4">
+<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<link rel="home" href="../index.html" title="Aboria 0.5">
+<link rel="up" href="../index.html" title="Aboria 0.5">
 <link rel="prev" href="particle_container.html" title="Particle Container">
-<link rel="next" href="matrix_free_linear_algebra_with_.html" title="Matrix-free Linear Algebra with Eigen">
+<link rel="next" href="evaluating_and_solving_kernel_op.html" title="Evaluating and Solving Kernel Operators with Eigen">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,32 +32,25 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="particle_container.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="matrix_free_linear_algebra_with_.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="particle_container.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="evaluating_and_solving_kernel_op.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
 <a name="aboria.neighbourhood_searching"></a><a class="link" href="neighbourhood_searching.html" title="Neighbourhood Searching">Neighbourhood Searching</a>
 </h2></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.cell_lists">Cell Lists</a></span></dt>
+<dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.kd_tree">Kd-Tree</a></span></dt>
+<dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.hyper_oct_tree">Hyper
+      Oct-Tree</a></span></dt>
+</dl></div>
 <p>
       The <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> container
-      gives you neighbourhood searching functionality, using a simple cell-list approach.
-      The domain is divided into a regular grid of hypercubes with side length equal
-      to a lengthscale that is supplied by the user. Each particle in the container
-      is assigned to the cell that contains its position. Neighbourhood search queries
-      at a given point return all the particles within the cell that contains this
-      point and the immediate cell neighbours.
+      gives you neighbourhood searching functionality, using a variety of spatial
+      data structures as described below. All these data structure can be used in
+      any number of dimensions, with arbitrary periodicity. Any neighbour search
+      is performed within a hypercube domain, with extents specified by the user.
     </p>
-<div class="caution"><table border="0" summary="Caution">
-<tr>
-<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
-<th align="left">Caution</th>
-</tr>
-<tr><td align="left" valign="top"><p>
-        v0.5 of Aboria will introduce a new and improved neighbourhood searching
-        design, which also includes a k-d tree data structure for searching. The
-        other "caution" messages below describe what will change
-      </p></td></tr>
-</table></div>
 <p>
       To start with, we will create a particle set in three dimensions (the default)
       containing a few randomly placed particles
@@ -73,87 +66,41 @@ MathJax.Hub.Config({
 <span class="special">}</span>
 </pre>
 <p>
-      Here we use the default data structure for neighbourhood searching, which is
-      a cell-list data structure that supports serial insertion of points, and parallel
-      queries. You can explicitly choose this data structure like so:
-    </p>
-<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_serial</span><span class="special">&gt;</span> <span class="identifier">particle_bs_serial_type</span><span class="special">;</span>
-</pre>
-<p>
-      You will notice that we also need to specify the vector data structure that
-      the particle container uses, which in this case is a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
-    </p>
-<p>
-      The alternative is a cell-list data structure that supports parallel insetion
-      of points, and parallel queries. This constantly re-orders the particles in
-      the particle container so that they are sorted into individual cells, so if
-      particles are changing cells often this can be slower. But theoretically (this
-      hasn't been tested yet) this should speed up neighbourhood search queries as
-      the particles that are local in memory are also local in space. You can use
-      this data structure like so:
-    </p>
-<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_parallel</span><span class="special">&gt;</span> <span class="identifier">particle_bs_parallel_type</span><span class="special">;</span>
-</pre>
-<p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47815184970576-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45289815421760-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
       In this case, we will initialise a domain from $(-1,-1,-1)$ to $(1,1,1)$, which
-      is periodic in all directions. We will set the search radius to 0.2.
+      is periodic in all directions.
     </p>
-<div class="caution"><table border="0" summary="Caution">
-<tr>
-<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
-<th align="left">Caution</th>
-</tr>
-<tr><td align="left" valign="top"><p>
-        This will change in v0.5 of Aboria, insead of setting a search radius you
-        will specify a number of particles per unit cell of the neighbourhood search
-        data structure (This also means you don't have to specify your maximum search
-        radius here, which is annoying)
-      </p></td></tr>
-</table></div>
 <pre class="programlisting"><span class="identifier">double3</span> <span class="identifier">min</span><span class="special">(-</span><span class="number">1</span><span class="special">);</span>
 <span class="identifier">double3</span> <span class="identifier">max</span><span class="special">(</span><span class="number">1</span><span class="special">);</span>
 <span class="identifier">bool3</span> <span class="identifier">periodic</span><span class="special">(</span><span class="keyword">true</span><span class="special">);</span>
-<span class="keyword">double</span> <span class="identifier">radius</span> <span class="special">=</span> <span class="number">0.2</span><span class="special">;</span>
-<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">min</span><span class="special">,</span><span class="identifier">max</span><span class="special">,</span><span class="identifier">radius</span><span class="special">,</span><span class="identifier">periodic</span><span class="special">);</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">min</span><span class="special">,</span><span class="identifier">max</span><span class="special">,</span><span class="identifier">periodic</span><span class="special">);</span>
 </pre>
 <p>
-      Here <code class="computeroutput"><span class="identifier">radius</span></code> is the lengthscale
-      of the neighbourhood search. That is, any particles that are separated by more
-      than <code class="computeroutput"><span class="identifier">radius</span></code> might not be classified
-      as neighbours.
-    </p>
-<p>
       Once this is done you can begin using the neighbourhood search queries using
-      the <code class="computeroutput"><span class="identifier">box_search</span></code> function. This
-      returns a lightweight container with <code class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> functions that return <code class="computeroutput"><span class="keyword">const</span></code>
+      the <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.euclidean_search">Aboria::euclidean_search</a></code>
+      function. This returns a lightweight container with <code class="computeroutput"><span class="identifier">begin</span><span class="special">()</span></code> and <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> functions that return <code class="computeroutput"><span class="keyword">const</span></code>
       forward only iterators to the particles that satisfy the neighbour search.
-      For example, the following counts all the particles within a square domain
-      of side length <code class="computeroutput"><span class="identifier">radius</span></code> of the
-      point $(0,0,0)$
+      For example, the following counts all the particles within a distance <code class="computeroutput"><span class="identifier">radius</span></code> of the point $(0,0,0)$.
     </p>
-<div class="caution"><table border="0" summary="Caution">
-<tr>
-<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
-<th align="left">Caution</th>
-</tr>
-<tr><td align="left" valign="top"><p>
-        This will change in v0.5 of Aboria, instead you will use a more generic distance
-        search within a given maximum distance, from a given query point, where the
-        distance metric can be L1 (manhatten distance) , L2 (euclidian distance)
-        , ... , Linf (a box search region).
-      </p></td></tr>
-</table></div>
-<pre class="programlisting"><span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
-<span class="keyword">for</span> <span class="special">(</span><span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+<pre class="programlisting"><span class="keyword">double</span> <span class="identifier">radius</span> <span class="special">=</span> <span class="number">0.2</span><span class="special">;</span>
+<span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">),</span><span class="identifier">radius</span><span class="special">))</span> <span class="special">{</span>
     <span class="identifier">count</span><span class="special">++;</span>
 <span class="special">}</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"There are "</span><span class="special">&lt;&lt;</span> <span class="identifier">count</span> <span class="special">&lt;&lt;</span> <span class="string">" particles.\n"</span><span class="special">;</span>
 </pre>
+<p>
+      Note that <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.euclidean_search">Aboria::euclidean_search</a></code>
+      uses the euclidean or 2-norm distance ($\sqrt{\sum_i^d x^2}$), but there are
+      other functions for other distance norms. <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.manhatten_search">Aboria::manhatten_search</a></code>
+      uses the 1-norm ($\sum_i^d |x|$), <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.chebyshev_search">Aboria::chebyshev_search</a></code>
+      uses the inf-norm ($\max_i^d |x|$), and you can use the generic <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.distance_search">Aboria::distance_search</a></code> for the
+      $p$-norm ($(\sum_i^d x^n)^{1/n}$), where $p$ is any integer greater than 0.
+    </p>
 <p>
       When dereferenced, the neighbourhood iterator returns a tuple of size 2 containing
     </p>
@@ -175,12 +122,128 @@ MathJax.Hub.Config({
 <p>
       For example,
     </p>
-<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">box_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">)))</span> <span class="special">{</span>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">),</span><span class="identifier">radius</span><span class="special">))</span> <span class="special">{</span>
     <span class="identifier">particle_type</span><span class="special">::</span><span class="identifier">const_reference</span> <span class="identifier">b</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">0</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">);</span>
     <span class="keyword">const</span> <span class="identifier">double3</span><span class="special">&amp;</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">1</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">);</span>
     <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Found a particle with dx = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">dx</span> <span class="special">&lt;&lt;</span> <span class="string">" and id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">b</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.neighbourhood_searching.cell_lists"></a><a class="link" href="neighbourhood_searching.html#aboria.neighbourhood_searching.cell_lists" title="Cell Lists">Cell Lists</a>
+</h3></div></div></div>
+<p>
+        There are two cell list data structures within Aboria. Both divide the domain
+        into a regular grid of hypercubes with side length set so that the average
+        number of particles within each box is close to a given value. Each particle
+        in the container is assigned to the cell that contains its position, and
+        neighbourhood queries search within that cell and its neighbours within the
+        given radius.
+      </p>
+<p>
+        For example, the following diagram illustrates a cell list data structure
+        in two dimensions, shown as a regular array of grey squares each containing
+        zero or more particles. The user wishes to find all the particles within
+        a given euclidean distance around the red point. To accomplish this query
+        efficiently, Aboria would then search all the red-shaded cells for particles
+        that fall within the red circle.
+      </p>
+<p>
+        <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/neighbour/cell_lists.svg" width="282" height="283"></object></span>
+      </p>
+<p>
+        The first cell list data structure supports serial insertion of particles,
+        and parallel queries. The relevant classes are <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial.html" title="Class template bucket_search_serial">Aboria::bucket_search_serial</a></code>
+        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html" title="Struct template bucket_search_serial_query">Aboria::bucket_search_serial_query</a></code>.
+        This data structure can be selected on a per-particle-set basis, by setting
+        the fourth template argument for <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code>.
+        I.e.
+      </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_serial</span><span class="special">&gt;</span> <span class="identifier">particle_bs_serial_type</span><span class="special">;</span>
+</pre>
+<p>
+        You will notice that we also need to specify the vector data structure that
+        the particle container uses, which in this case is a <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
+      </p>
+<p>
+        The alternative is a cell-list data structure that supports parallel insertion
+        of points, and parallel queries. This constantly re-orders the particles
+        in the particle container so that they are sorted into individual cells,
+        so if particles are changing cells often this can be slower. But theoretically
+        (this hasn't been tested yet) this should speed up neighbourhood search queries
+        as the particles that are local in memory are also local in space. The relevant
+        classes are <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_parallel.html" title="Class template bucket_search_parallel">Aboria::bucket_search_parallel</a></code>
+        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idm45289830168576.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
+        and you can use this data structure like so:
+      </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_parallel</span><span class="special">&gt;</span> <span class="identifier">particle_bs_parallel_type</span><span class="special">;</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.neighbourhood_searching.kd_tree"></a><a class="link" href="neighbourhood_searching.html#aboria.neighbourhood_searching.kd_tree" title="Kd-Tree">Kd-Tree</a>
+</h3></div></div></div>
+<p>
+        A kd-tree builds up a hierarchical tree of cells, with only the leaf cells
+        actually containing particles. It is an efficient data structure to use if
+        your particles are clustered in certain regions of the domain, and so you
+        wish to adapt the size of your cells with the local particle density.
+      </p>
+<p>
+        Each level of the tree divides the cells in the parent level in half along
+        a certain dimension (the dimension is chosen based on the distribution of
+        particles within the cell). Any cells that contain a number of particles
+        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45289815421760-bb">Aboria::Particles::init_neighbour_search</a></code>)
+        are marked as leaf cells, and are not divided on subsequent levels.
+      </p>
+<p>
+        The construction of the kd-tree in Aboria simply wraps the popular NanoFLANN
+        library <a href="https://github.com/jlblancoc/nanoflann" target="_top">https://github.com/jlblancoc/nanoflann</a>,
+        and reorders the particle set according to which leaf cell a particle belongs
+        to. However, Aboria's native neighbourhood queries are used instead of those
+        provided with NanoFLANN.
+      </p>
+<p>
+        The relevant classes within Aboria are <code class="computeroutput"><a class="link" href="../Aboria/nanoflann_adaptor.html" title="Class template nanoflann_adaptor">Aboria::nanoflann_adaptor</a></code>
+        and <code class="computeroutput"><a class="link" href="../Aboria/nanoflann_adaptor_query.html" title="Struct template nanoflann_adaptor_query">Aboria::nanoflann_adaptor_query</a></code>.
+        You can create a particle set using a kd-tree by setting the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code>
+        template arguments accordingly.
+      </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">nanoflann_adaptor</span><span class="special">&gt;</span> <span class="identifier">particle_kdtree_type</span><span class="special">;</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.neighbourhood_searching.hyper_oct_tree"></a><a class="link" href="neighbourhood_searching.html#aboria.neighbourhood_searching.hyper_oct_tree" title="Hyper Oct-Tree">Hyper
+      Oct-Tree</a>
+</h3></div></div></div>
+<p>
+        A hyper oct-tree is a generalisation of an oct-tree (in 3 dimensions) to
+        $N$ dimensions. Is also builds up a hierarchical tree of cells, however in
+        this case each level of the tree is split along <span class="bold"><strong>all</strong></span>
+        dimensions, so that each cell has $2^N$ children. Any cells that contain
+        less that the given number of particles (set in <code class="computeroutput">Aboria::Particles::init_neighbour_search</code>)
+        are marked as leaf cells. Empty cells are included in the data structure,
+        but are ignored by any queries.
+      </p>
+<p>
+        For example, the diagram below shows the leaf cells of a hyper oct-tree in
+        2 dimensions (this is the same as a quad-tree). If the user wishes to find
+        all the particles within a given euclidean distance of the red particle,
+        then Aboria will search through all the red-shaded cells for matching particles.
+      </p>
+<p>
+        <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/neighbour/octtree.svg" width="282" height="283"></object></span>
+      </p>
+<p>
+        The relevant classes within Aboria are <code class="computeroutput"><a class="link" href="../Aboria/octtree.html" title="Class template octtree">Aboria::octtree</a></code>
+        and <code class="computeroutput"><a class="link" href="../Aboria/octtree_query.html" title="Struct template octtree_query">Aboria::octtree_query</a></code>.
+        You can create a particle set using a hyper oct-tree by setting the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> template arguments
+        accordingly.
+      </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">octtree</span><span class="special">&gt;</span> <span class="identifier">particle_octtree_type</span><span class="special">;</span>
+</pre>
+</div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
@@ -188,7 +251,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="particle_container.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="matrix_free_linear_algebra_with_.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="particle_container.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="evaluating_and_solving_kernel_op.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
