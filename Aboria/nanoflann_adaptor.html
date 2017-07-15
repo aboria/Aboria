@@ -71,18 +71,18 @@ MathJax.Hub.Config({
   <span class="keyword">const</span> <a class="link" href="nanoflann_adaptor_query.html" title="Struct template nanoflann_adaptor_query">nanoflann_adaptor_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="nanoflann_adaptor.html#idm45289816251120-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm46537680135856"></a><h2>Description</h2>
+<a name="idm46288604326880"></a><h2>Description</h2>
 <p>This class implements neighbourhood searching using a bucket search algorithm. The domain is first divided up into a regular grid of constant size "buckets", either by using the class constructor to initialise the domain extents, bucket size etc., or by using the reset() member function to reset these parameters.</p>
 <p>After the buckets are created, a set of 3D points can be assigned to their respective buckets using the embed_points() member function. After this, neighbourhood queries around a given point can be performed using find_broadphase_neighbours(), which returns a const iterator to all the points in the same bucket or surrounding buckets of the given point. </p>
 <div class="refsect2">
-<a name="idm46537680134224"></a><h3>
+<a name="idm46288604325248"></a><h3>
 <a name="Aboria.nanoflann_adaptorconstruct-copy-destruct"></a><code class="computeroutput">nanoflann_adaptor</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idm45289816264784-bb"></a><span class="identifier">nanoflann_adaptor</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm46537680128288"></a><h3>
+<a name="idm46288604319312"></a><h3>
 <a name="idm45289816274960-bb"></a><code class="computeroutput">nanoflann_adaptor</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idm45289816274400-bb"></a><span class="identifier">kdtree_get_point_count</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
@@ -92,12 +92,12 @@ MathJax.Hub.Config({
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm46537680094064"></a><h3>
+<a name="idm46288604285184"></a><h3>
 <a name="idm45289816264496-bb"></a><code class="computeroutput">nanoflann_adaptor</code> public static functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idm45289816263936-bb"></a><span class="identifier">cheap_copy_and_delete_at_end</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm46537680086128"></a><h3>
+<a name="idm46288604277248"></a><h3>
 <a name="idm45289816262640-bb"></a><code class="computeroutput">nanoflann_adaptor</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45289816262064-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>

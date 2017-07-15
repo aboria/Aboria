@@ -66,23 +66,23 @@ MathJax.Hub.Config({
   <span class="keyword">const</span> <a class="link" href="bucket_search_serial_query.html" title="Struct template bucket_search_serial_query">bucket_search_serial_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="bucket_search_serial.html#idm45289816966208-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm46537685442048"></a><h2>Description</h2>
+<a name="idm46288609633520"></a><h2>Description</h2>
 <p>This class implements neighbourhood searching using a bucket search algorithm. The domain is first divided up into a regular grid of constant size "buckets", either by using the class constructor to initialise the domain extents, bucket size etc., or by using the reset() member function to reset these parameters.</p>
 <p>After the buckets are created, a set of 3D points can be assigned to their respective buckets using the embed_points() member function. After this, neighbourhood queries around a given point can be performed using find_broadphase_neighbours(), which returns a const iterator to all the points in the same bucket or surrounding buckets of the given point. </p>
 <div class="refsect2">
-<a name="idm46537685440416"></a><h3>
+<a name="idm46288609631888"></a><h3>
 <a name="Aboria.bucket_search_serialconstruct-copy-destruct"></a><code class="computeroutput">bucket_search_serial</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idm45289816980160-bb"></a><span class="identifier">bucket_search_serial</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm46537685434544"></a><h3>
+<a name="idm46288609626080"></a><h3>
 <a name="idm45289816979872-bb"></a><code class="computeroutput">bucket_search_serial</code> public static functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idm45289816979312-bb"></a><span class="identifier">cheap_copy_and_delete_at_end</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idm46537685426736"></a><h3>
+<a name="idm46288609618208"></a><h3>
 <a name="idm45289816978016-bb"></a><code class="computeroutput">bucket_search_serial</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45289816977440-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
