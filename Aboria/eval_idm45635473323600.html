@@ -6,8 +6,8 @@
 <meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
 <link rel="home" href="../index.html" title="Aboria 0.5">
 <link rel="up" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h" title="Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;">
-<link rel="prev" href="eval_idm45289815210704.html" title="Function template eval">
-<link rel="next" href="eval_idm45289815201024.html" title="Function template eval">
+<link rel="prev" href="eval_idm45635473329696.html" title="Function template eval">
+<link rel="next" href="eval_idm45635473317088.html" title="Function template eval">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,10 +32,10 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="eval_idm45289815210704.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="eval_idm45289815201024.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="eval_idm45635473329696.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="eval_idm45635473317088.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
-<a name="Aboria.eval_idm45289815205872"></a><div class="titlepage"></div>
+<a name="Aboria.eval_idm45635473323600"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Function template eval</span></h2>
 <p>Aboria::eval</p>
@@ -45,10 +45,11 @@ MathJax.Hub.Config({
 
 </span>
 <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Expr<span class="special">,</span> <span class="keyword">typename</span> AnyRef<span class="special">&gt;</span> 
-  <span class="emphasis"><em><span class="identifier">unspecified</span></em></span> <span class="identifier">eval</span><span class="special">(</span><span class="identifier">Expr</span> <span class="special">&amp;</span> expr<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">AnyRef</span> <span class="special">&amp;</span> particle_a<span class="special">)</span><span class="special">;</span></pre></div>
+  <span class="emphasis"><em><span class="identifier">unspecified</span></em></span> <span class="identifier">eval</span><span class="special">(</span><span class="identifier">Expr</span> <span class="special">&amp;</span> expr<span class="special">,</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span> dx<span class="special">,</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span> particle_a<span class="special">,</span> 
+                   <span class="keyword">const</span> <span class="identifier">AnyRef</span> <span class="special">&amp;</span> particle_b<span class="special">)</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm46288596844016"></a><h2>Description</h2>
-<p>evaluate a given expression that returns a constant value (scaler or vector)  expr the expression to evaluate. Must be an expression that returns a constant, i.e. that does not depend on a particle's variables  particle_a dummy arguement, not used 
+<a name="idm45338110640464"></a><h2>Description</h2>
+<p>evaluate a given expression that depends on a single label $i$, for a single input particle  expr the expression to evaluate  dx dummy arguement not used  particle_a the particle to be substituted for the label $i$  particle_b dummy particle, not used 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -57,7 +58,7 @@ MathJax.Hub.Config({
 </colgroup>
 <tbody><tr>
 <td><p><span class="term">Returns:</span></p></td>
-<td><p>the result of the expression </p></td>
+<td><p>the result of the expression after substituting in the particle values </p></td>
 </tr></tbody>
 </table></div>
 </div>
@@ -68,7 +69,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="eval_idm45289815210704.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="eval_idm45289815201024.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="eval_idm45635473329696.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="eval_idm45635473317088.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
