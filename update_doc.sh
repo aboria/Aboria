@@ -58,4 +58,5 @@ ssh-add travis
 
 # Now that we're all set up, we can push.
 git push $SSH_REPO $TARGET_BRANCH
+eval `ssh-agent -k`
 
