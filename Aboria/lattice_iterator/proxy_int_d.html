@@ -3,11 +3,11 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Struct proxy_int_d</title>
 <link rel="stylesheet" href="../../css/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../../index.html" title="Aboria 0.5">
-<link rel="up" href="../lattice_iterator.html#idm45338116347232" title="Description">
+<link rel="up" href="../lattice_iterator.html#idp47408900138448" title="Description">
 <link rel="prev" href="../lattice_iterator.html" title="Class template lattice_iterator">
-<link rel="next" href="../linked_list_iterator.html" title="Class template linked_list_iterator">
+<link rel="next" href="../octtree_query.html" title="Struct template octtree_query">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../lattice_iterator.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../lattice_iterator.html#idm45338116347232"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../linked_list_iterator.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../lattice_iterator.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../lattice_iterator.html#idp47408900138448"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../octtree_query.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.lattice_iterator.proxy_int_d"></a><div class="titlepage"></div>
@@ -41,45 +41,45 @@ MathJax.Hub.Config({
 <p>Aboria::lattice_iterator::proxy_int_d</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/mrobins/git/Aboria/src/NeighbourSearchBase.h&gt;">/home/mrobins/git/Aboria/src/NeighbourSearchBase.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h</a>&gt;
 
 </span>
 
 <span class="keyword">struct</span> <a class="link" href="proxy_int_d.html" title="Struct proxy_int_d">proxy_int_d</a> <span class="special">:</span> <span class="keyword">public</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">Vector</span><span class="special">&lt;</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <span class="special">{</span>
   <span class="comment">// <a class="link" href="proxy_int_d.html#Aboria.lattice_iterator.proxy_int_dconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="proxy_int_d.html#idm45635474173952-bb"><span class="identifier">proxy_int_d</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="proxy_int_d.html#idm45635474173664-bb"><span class="identifier">proxy_int_d</span></a><span class="special">(</span><span class="keyword">const</span> int_d <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="proxy_int_d.html#idp47465995609792-bb"><span class="identifier">proxy_int_d</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="proxy_int_d.html#idp47465995609920-bb"><span class="identifier">proxy_int_d</span></a><span class="special">(</span><span class="keyword">const</span> int_d <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="proxy_int_d.html#idm45635474180576-bb">public member functions</a></span>
-  <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idm45635474180016-bb"><span class="keyword">operator</span><span class="special">&amp;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idm45635474179168-bb"><span class="keyword">operator</span><span class="special">&amp;</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idm45635474178048-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idm45635474176928-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">*</span> <a class="link" href="proxy_int_d.html#idm45635474176080-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">proxy_int_d</span> <span class="special">*</span> <a class="link" href="proxy_int_d.html#idm45635474174960-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="proxy_int_d.html#idp47465995603632-bb">public member functions</a></span>
+  <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idp47465995604032-bb"><span class="keyword">operator</span><span class="special">&amp;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idp47465995604992-bb"><span class="keyword">operator</span><span class="special">&amp;</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idp47465995605952-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a class="link" href="proxy_int_d.html#idp47465995606912-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">*</span> <a class="link" href="proxy_int_d.html#idp47465995607872-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">proxy_int_d</span> <span class="special">*</span> <a class="link" href="proxy_int_d.html#idp47465995608832-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45338116123808"></a><h2>Description</h2>
+<a name="idp47408900361984"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idm45338116123392"></a><h3>
+<a name="idp47408900362400"></a><h3>
 <a name="Aboria.lattice_iterator.proxy_int_dconstruct-copy-destruct"></a><code class="computeroutput">proxy_int_d</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idm45635474173952-bb"></a><span class="identifier">proxy_int_d</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a name="idm45635474173664-bb"></a><span class="identifier">proxy_int_d</span><span class="special">(</span><span class="keyword">const</span> int_d <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp47465995609792-bb"></a><span class="identifier">proxy_int_d</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp47465995609920-bb"></a><span class="identifier">proxy_int_d</span><span class="special">(</span><span class="keyword">const</span> int_d <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45338116112272"></a><h3>
-<a name="idm45635474180576-bb"></a><code class="computeroutput">proxy_int_d</code> public member functions</h3>
+<a name="idp47408900373520"></a><h3>
+<a name="idp47465995603632-bb"></a><code class="computeroutput">proxy_int_d</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idm45635474180016-bb"></a><span class="keyword">operator</span><span class="special">&amp;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idm45635474179168-bb"></a><span class="keyword">operator</span><span class="special">&amp;</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idm45635474178048-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idm45635474176928-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">*</span> <a name="idm45635474176080-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">proxy_int_d</span> <span class="special">*</span> <a name="idm45635474174960-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idp47465995604032-bb"></a><span class="keyword">operator</span><span class="special">&amp;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idp47465995604992-bb"></a><span class="keyword">operator</span><span class="special">&amp;</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idp47465995605952-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">proxy_int_d</span> <span class="special">&amp;</span> <a name="idp47465995606912-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">proxy_int_d</span> <span class="special">*</span> <a name="idp47465995607872-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">proxy_int_d</span> <span class="special">*</span> <a name="idp47465995608832-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -90,7 +90,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../lattice_iterator.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../lattice_iterator.html#idm45338116347232"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../linked_list_iterator.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="../lattice_iterator.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../lattice_iterator.html#idp47408900138448"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="../octtree_query.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

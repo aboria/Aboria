@@ -3,7 +3,7 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Neighbourhood Searching</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.5">
 <link rel="up" href="../index.html" title="Aboria 0.5">
 <link rel="prev" href="particle_container.html" title="Particle Container">
@@ -67,7 +67,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45635473550432-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47465996077440-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
@@ -149,7 +149,7 @@ MathJax.Hub.Config({
         that fall within the red circle.
       </p>
 <p>
-        <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/neighbour/cell_lists.svg" width="282" height="283"></object></span>
+        <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/neighbour/cell_lists.svg"></object></span>
       </p>
 <p>
         The first cell list data structure supports serial insertion of particles,
@@ -173,7 +173,7 @@ MathJax.Hub.Config({
         (this hasn't been tested yet) this should speed up neighbourhood search queries
         as the particles that are local in memory are also local in space. The relevant
         classes are <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_parallel.html" title="Class template bucket_search_parallel">Aboria::bucket_search_parallel</a></code>
-        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idm45635488299264.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
+        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp47465987583264.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
         and you can use this data structure like so:
       </p>
 <pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_parallel</span><span class="special">&gt;</span> <span class="identifier">particle_bs_parallel_type</span><span class="special">;</span>
@@ -193,7 +193,7 @@ MathJax.Hub.Config({
         Each level of the tree divides the cells in the parent level in half along
         a certain dimension (the dimension is chosen based on the distribution of
         particles within the cell). Any cells that contain a number of particles
-        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idm45635473550432-bb">Aboria::Particles::init_neighbour_search</a></code>)
+        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47465996077440-bb">Aboria::Particles::init_neighbour_search</a></code>)
         are marked as leaf cells, and are not divided on subsequent levels.
       </p>
 <p>
@@ -233,7 +233,7 @@ MathJax.Hub.Config({
         then Aboria will search through all the red-shaded cells for matching particles.
       </p>
 <p>
-        <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/neighbour/octtree.svg" width="282" height="283"></object></span>
+        <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/neighbour/octtree.svg"></object></span>
       </p>
 <p>
         The relevant classes within Aboria are <code class="computeroutput"><a class="link" href="../Aboria/octtree.html" title="Class template octtree">Aboria::octtree</a></code>

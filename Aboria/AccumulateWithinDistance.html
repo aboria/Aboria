@@ -3,11 +3,11 @@
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
 <title>Struct template AccumulateWithinDistance</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
-<meta name="generator" content="DocBook XSL Stylesheets V1.79.1">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.5">
-<link rel="up" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h" title="Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">
 <link rel="prev" href="Accumulate.html" title="Struct template Accumulate">
-<link rel="next" href="Dx.html" title="Struct template Dx">
+<link rel="next" href="min.html" title="Struct template min">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Accumulate.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Dx.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="Accumulate.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="min.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.AccumulateWithinDistance"></a><div class="titlepage"></div>
@@ -41,7 +41,7 @@ MathJax.Hub.Config({
 <p>Aboria::AccumulateWithinDistance</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h" title="Header &lt;/home/mrobins/git/Aboria/src/Symbolic.h&gt;">/home/mrobins/git/Aboria/src/Symbolic.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Symbolic.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">int</span> LNormNumber <span class="special">=</span> <span class="number">2</span><span class="special">,</span> 
          <span class="keyword">typename</span> Terminal <span class="special">=</span> <span class="keyword">typename</span> <span class="identifier">detail</span><span class="special">::</span><span class="identifier">accumulate_within_distance</span><span class="special">&lt;</span><span class="identifier">T</span><span class="special">,</span><span class="identifier">mpl</span><span class="special">::</span><span class="identifier">int_</span><span class="special">&lt;</span><span class="identifier">LNormNumber</span><span class="special">&gt;&gt;</span> <span class="special">&gt;</span> 
@@ -51,43 +51,43 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">terminal</span><span class="special">&lt;</span> <span class="identifier">data_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a name="Aboria.AccumulateWithinDistance.expr_type"></a><span class="identifier">expr_type</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="AccumulateWithinDistance.html#Aboria.AccumulateWithinDistanceconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idm45635473410368-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idp47465996246416-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> 
-    <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idm45635473408048-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idp47465996248576-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="AccumulateWithinDistance.html#idm45635473414640-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idm45635473414080-bb"><span class="identifier">set_init</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idm45635473412064-bb"><span class="identifier">set_max_distance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="AccumulateWithinDistance.html#idp47465996242240-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idp47465996242640-bb"><span class="identifier">set_init</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idp47465996244768-bb"><span class="identifier">set_max_distance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idm45338111066464"></a><h2>Description</h2>
+<a name="idp47408904732464"></a><h2>Description</h2>
 <p>an accumulation expression, for example a sum or product, over neighbouring particles within a given radius 
 </p>
 <div class="refsect2">
-<a name="idm45338111065664"></a><h3>
+<a name="idp47408904733264"></a><h3>
 <a name="Aboria.AccumulateWithinDistanceconstruct-copy-destruct"></a><code class="computeroutput">AccumulateWithinDistance</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">explicit</span> <a name="idm45635473410368-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span></pre>empty constructor, makes an instantiation of the functor class <code class="computeroutput">T</code>
+<pre class="literallayout"><span class="keyword">explicit</span> <a name="idp47465996246416-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span></pre>empty constructor, makes an instantiation of the functor class <code class="computeroutput">T</code>
 </li>
 <li class="listitem">
 <pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> 
-  <span class="keyword">explicit</span> <a name="idm45635473408048-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>constructor that passes a single argument to the functor class <code class="computeroutput">T</code>
+  <span class="keyword">explicit</span> <a name="idp47465996248576-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>constructor that passes a single argument to the functor class <code class="computeroutput">T</code>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idm45338111043984"></a><h3>
-<a name="idm45635473414640-bb"></a><code class="computeroutput">AccumulateWithinDistance</code> public member functions</h3>
+<a name="idp47408904754864"></a><h3>
+<a name="idp47465996242240-bb"></a><code class="computeroutput">AccumulateWithinDistance</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idm45635473414080-bb"></a><span class="identifier">set_init</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47465996242640-bb"></a><span class="identifier">set_init</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
 <p>a function used to set the initial value of the accumulation 
 </p>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idm45635473412064-bb"></a><span class="identifier">set_max_distance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47465996244768-bb"></a><span class="identifier">set_max_distance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -98,7 +98,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="Accumulate.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.mrobins.git.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="Dx.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="Accumulate.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="min.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
