@@ -55,58 +55,58 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>            <a name="Aboria.index_vector_iterator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>  
 
   <span class="comment">// <a class="link" href="index_vector_iterator.html#Aboria.index_vector_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="index_vector_iterator.html#idp47465995536528-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="index_vector_iterator.html#idp47465995536656-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="identifier">Iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="index_vector_iterator.html#idp46963378552928-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="index_vector_iterator.html#idp46963378553056-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="identifier">Iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp47465995525216-bb">public member functions</a></span>
-  <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp47465995525616-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp47465995526576-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  iterator <span class="special">&amp;</span> <a class="link" href="index_vector_iterator.html#idp47465995527536-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  iterator <a class="link" href="index_vector_iterator.html#idp47465995528784-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="index_vector_iterator.html#idp47465995530560-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span>iterator<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp47465995532336-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp47465995534432-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp46963378541616-bb">public member functions</a></span>
+  <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp46963378542016-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp46963378542976-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  iterator <span class="special">&amp;</span> <a class="link" href="index_vector_iterator.html#idp46963378543936-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  iterator <a class="link" href="index_vector_iterator.html#idp46963378545184-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="index_vector_iterator.html#idp46963378546960-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span>iterator<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp46963378548736-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp46963378550832-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp47465995538640-bb">private member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="index_vector_iterator.html#idp47465995539056-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp47465995540016-bb"><span class="identifier">equal</span></a><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp47465995541952-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp46963378555040-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="index_vector_iterator.html#idp46963378555456-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp46963378556416-bb"><span class="identifier">equal</span></a><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp46963378558352-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47408899398816"></a><h2>Description</h2>
+<a name="idp47123455672064"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp47408899399232"></a><h3>
+<a name="idp47123455672480"></a><h3>
 <a name="Aboria.index_vector_iteratorconstruct-copy-destruct"></a><code class="computeroutput">index_vector_iterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idp47465995536528-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp46963378552928-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp47465995536656-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="identifier">Iterator</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span> particles_begin<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp46963378553056-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="identifier">Iterator</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span> particles_begin<span class="special">)</span><span class="special">;</span></pre>
 <p>this constructor is used to start the iterator at the head of a bucket list </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47408899412624"></a><h3>
-<a name="idp47465995525216-bb"></a><code class="computeroutput">index_vector_iterator</code> public member functions</h3>
+<a name="idp47123455685872"></a><h3>
+<a name="idp46963378541616-bb"></a><code class="computeroutput">index_vector_iterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47465995525616-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47465995526576-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout">iterator <span class="special">&amp;</span> <a name="idp47465995527536-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout">iterator <a name="idp47465995528784-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47465995530560-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span>iterator start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47465995532336-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47465995534432-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp46963378542016-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp46963378542976-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout">iterator <span class="special">&amp;</span> <a name="idp46963378543936-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout">iterator <a name="idp46963378545184-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp46963378546960-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span>iterator start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46963378548736-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46963378550832-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47408899454768"></a><h3>
-<a name="idp47465995538640-bb"></a><code class="computeroutput">index_vector_iterator</code> private member functions</h3>
+<a name="idp47123455727952"></a><h3>
+<a name="idp46963378555040-bb"></a><code class="computeroutput">index_vector_iterator</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47465995539056-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47465995540016-bb"></a><span class="identifier">equal</span><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47465995541952-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46963378555456-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46963378556416-bb"></a><span class="identifier">equal</span><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp46963378558352-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
