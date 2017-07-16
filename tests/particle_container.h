@@ -334,28 +334,32 @@ public:
 
         The [classref Aboria::Particles] data structure acts fairly typically like a 
         normal STL random-access container, with a few important differences.  It has 
-        methods like [memberref Aboria::Particles::push_back], 
-        [memberref Aboria::Particles::clear], [memberref Aboria::Particles::size], 
-        [memberref Aboria::Particles::erase].  It provides 
-        subtypes like [classref Aboria::Particles::value_type], 
-        [classref Aboria::Particles::reference], 
-        [classref Aboria::Particles::const_reference], 
-        [classref Aboria::Particles::iterator], 
-        [classref Aboria::Particles::const_terator]. All of the normal algorithms 
-        in the standard library *should* 
+        methods like [memberref Aboria::Particles::push_back push_back], 
+        [memberref Aboria::Particles::clear clear], 
+        [memberref Aboria::Particles::size size], 
+        [memberref Aboria::Particles::erase erase].  It provides 
+        subtypes like [classref Aboria::Particles::value_type value_type], 
+        [classref Aboria::Particles::reference reference], 
+        [classref Aboria::Particles::const_reference const_reference], 
+        [classref Aboria::Particles::iterator iterator], 
+        [classref Aboria::Particles::const_iterator const_iterator]. 
+        All of the normal algorithms in the standard library *should* 
         work with this container, if you find any that don't please let us know and we 
         will try to fix this.
 
         The main differences between [classref Aboria::Particles] and normal STL 
         containers are:
 
-        1. The difference between [classref Aboria::Particles::value_type]& and 
-        [classref Aboria::Particles::reference] mentioned described earlier.
+        1. The difference between 
+        [classref Aboria::Particles::value_type value_type]& and 
+        [classref Aboria::Particles::reference reference] mentioned described earlier.
 
         2. Additional member functions are available to suit the specific purpose of 
-        this container, for example the [memberref Aboria::Particles::push_back] 
+        this container, for example the 
+        [memberref Aboria::Particles::push_back push_back] 
         function can take a vector data-type for the particle position, and the 
-        [memberref Aboria::Particle::get_query] function for neighbour searching.
+        [memberref Aboria::Particles::get_query get_query] function for neighbour 
+        searching.
 
         3.  When using the neighbourhood searching capabilities of the container, the 
         order of the particles in the particle container might change due to internal 
