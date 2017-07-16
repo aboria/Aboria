@@ -66,10 +66,6 @@ before_script:
 - grep "#define BOOST_VERSION " /usr/include/boost/version.hpp
 - doxygen --version
 - if [ "$Travis_UPDATE_DOC" == "on" ]; then cp doc/user-config.jam ~; fi
-- git config --global user.email "martinjrobins@gmail.com"
-- git config --global user.name "Martin Robinson"
-- git remote rm origin
-- git remote add origin https://martinjrobins:${GH_TOKEN}@github.com/martinjrobins/Aboria.git
 
 script:
 - cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION .
