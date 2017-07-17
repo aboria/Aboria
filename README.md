@@ -10,8 +10,8 @@ space, with the aim of providing a useful library for implementing
 particle-based numerical algorithms, for example Molecular Dynamics, Smoothed 
 Particle Hydrodynamics or Radial Basis Functions. 
 
-Aboria provides:
-* a STL compatible container class to store a particle set containing
+Aboria gives you:
+* an STL compatible container class to store a particle set containing
   a position and unique id for each particle, as well as any number of 
   user-defined variables with arbitrary types.
 * the ability to embed each particle set within a hypercube N-dimensional
