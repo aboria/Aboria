@@ -1,13 +1,13 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
-<title>Function template log</title>
+<title>Function template norm</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.5">
 <link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Functions.h&gt;">
-<link rel="prev" href="erfc.html" title="Function template erfc">
-<link rel="next" href="abs_idp46963377884112.html" title="Function template abs">
+<link rel="prev" href="reflect_fun.html" title="Struct template reflect_fun">
+<link rel="next" href="inf_norm.html" title="Function template inf_norm">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,24 +32,24 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="erfc.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="abs_idp46963377884112.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="reflect_fun.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="inf_norm.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
-<a name="Aboria.log_idp46963377880944"></a><div class="titlepage"></div>
+<a name="Aboria.norm_idp47292421341776"></a><div class="titlepage"></div>
 <div class="refnamediv">
-<h2><span class="refentrytitle">Function template log</span></h2>
-<p>Aboria::log</p>
+<h2><span class="refentrytitle">Function template norm</span></h2>
+<p>Aboria::norm</p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Functions.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Functions.h</a>&gt;
 
 </span>
 <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Expr<span class="special">&gt;</span> 
-  <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">make_expr</span><span class="special">&lt;</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">tag</span><span class="special">::</span><span class="identifier">function</span><span class="special">,</span> <span class="identifier">SymbolicDomain</span><span class="special">,</span> <a class="link" href="log_fun.html" title="Struct log_fun">log_fun</a><span class="special">,</span> <span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="keyword">const</span> 
-  <span class="identifier">log</span><span class="special">(</span><span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></div>
+  <span class="identifier">proto</span><span class="special">::</span><span class="identifier">result_of</span><span class="special">::</span><span class="identifier">make_expr</span><span class="special">&lt;</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">tag</span><span class="special">::</span><span class="identifier">function</span><span class="special">,</span> <span class="identifier">SymbolicDomain</span><span class="special">,</span> <a class="link" href="norm_fun.html" title="Struct norm_fun">norm_fun</a><span class="special">,</span> <span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <span class="keyword">const</span> 
+  <span class="identifier">norm</span><span class="special">(</span><span class="identifier">Expr</span> <span class="keyword">const</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47123450497104"></a><h2>Description</h2>
-<p>a symbolic log function for scalars </p>
+<a name="idp47331801061648"></a><h2>Description</h2>
+<p>a symbolic norm function for Vect3d </p>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
@@ -58,7 +58,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="erfc.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="abs_idp46963377884112.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="reflect_fun.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Functions_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="inf_norm.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
