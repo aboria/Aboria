@@ -299,6 +299,78 @@ namespace Aboria {
     }
     
 #ifdef HAVE_EIGEN
+    template<typename RowParticles, typename ColParticles, typename F>
+    class KernelMatrix: public KernelBase<RowParticles,ColParticles,F> {
+    protected:
+        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef typename base_type::position position;
+        static const unsigned int dimension = base_type::dimension;
+        typedef typename base_type::double_d double_d;
+        typedef typename base_type::int_d int_d;
+        typedef typename position::value_type const & const_position_reference;
+        typedef typename position::value_type position_value_type;
+        typedef typename base_type::const_row_reference const_row_reference;
+        typedef typename base_type::const_col_reference const_col_reference;
+
+        typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> matrix_type;
+
+        matrix_type m_matrix;
+    public:
+        typedef typename base_type::Scalar Scalar;
+
+        KernelMatrix(const RowParticles& row_particles,
+                    const ColParticles& col_particles,
+                    const F& function): base_type(row_particles,
+                                                  col_particles,
+                                                  function) 
+        {
+            assemble_matrix(); 
+        };
+
+        void assemble_matrix() {
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            const bool is_periodic = !a.get_periodic().any();
+
+            m_matrix.resize(a.size(),b.size());
+            for (size_t i=0; i<a.size(); ++i) {
+                const_row_reference ai = a[i];
+                for (size_t j=0; j<b.size(); ++j) {
+                    const_col_reference bj = b[j];
+                    position_value_type dx; 
+                    if (is_periodic) { 
+                        dx = b.correct_dx_for_periodicity(get<position>(bj)-
+                                                          get<position>(ai));
+                    } else {
+                        dx = get<position>(bj)-get<position>(ai);
+                    }
+                    m_matrix(i,j) = this->eval(dx,ai,bj);
+                }
+            }
+        }
+
+        Scalar coeff(const size_t i, const size_t j) const {
+            return m_matrix(i,j);
+        }
+
+        template<typename MatrixType>
+        void assemble(const MatrixType &matrix) const {
+            const_cast< MatrixType& >(matrix) = m_matrix;
+        }
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template<typename VectorLHS,typename VectorRHS>
+        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+            lhs += m_matrix*rhs;
+        }
+    };
+
+
+
+
     template<typename RowParticles, typename ColParticles, typename PositionF,
         typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
     class KernelChebyshev: public KernelDense<RowParticles,ColParticles,F> {

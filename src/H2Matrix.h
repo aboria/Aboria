@@ -113,7 +113,8 @@ public:
         //generate h2 matrix 
         const size_t n = m_query->number_of_buckets();
         LOG(2,"H2Matrix: creating matrix with "<<n<<" buckets, using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles");
-        const bool row_equals_col = &row_particles == &col_particles;
+        const bool row_equals_col = static_cast<const void*>(&row_particles) 
+                                        == static_cast<const void*>(&col_particles);
         m_W.resize(n);
         m_g.resize(n);
         m_l2l_matrices.resize(n);

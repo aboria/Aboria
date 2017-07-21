@@ -310,6 +310,38 @@ Operator create_dense_operator(const RowParticles& row_particles,
                 );
     }
 
+/// \brief creates a matrix linear operator for use with Eigen
+///
+/// This function returns a MatrixReplacement object that acts like a 
+/// dense linear operator (i.e. matrix) in Eigen. 
+///
+/// \param row_particles The rows of the linear operator index this 
+///                      first particle set
+/// \param col_particles The columns of the linear operator index this 
+///                      first particle set
+/// \param function A function object that returns the value of the operator
+///                 for a given particle pair
+///
+///
+/// \tparam RowParticles The type of the row particle set
+/// \tparam ColParticles The type of the column particle set
+/// \tparam F The type of the function object
+template<typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelMatrix<RowParticles,ColParticles,F>,
+         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+                >
+Operator create_matrix_operator(const RowParticles& row_particles,
+                               const ColParticles& col_particles,
+                               const F& function) {
+        return Operator(
+                tuple_ns::make_tuple(
+                    Kernel(row_particles,col_particles,function)
+                    )
+                );
+    }
+
+
+
 /// \brief creates a matrix-free linear operator using chebyshev interpolation
 ///        for use with Eigen
 ///
