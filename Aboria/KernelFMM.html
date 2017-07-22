@@ -52,28 +52,28 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">base_type</span><span class="special">::</span><span class="identifier">Scalar</span> <a name="Aboria.KernelFMM.Scalar"></a><span class="identifier">Scalar</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="KernelFMM.html#Aboria.KernelFMMconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="KernelFMM.html#idp47101000326448-bb"><span class="identifier">KernelFMM</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">PositionF</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="KernelFMM.html#idp47641130333040-bb"><span class="identifier">KernelFMM</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">PositionF</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="KernelFMM.html#idp47101000320016-bb">public member functions</a></span>
+  <span class="comment">// <a class="link" href="KernelFMM.html#idp47641130326608-bb">public member functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorLHS<span class="special">,</span> <span class="keyword">typename</span> VectorRHS<span class="special">&gt;</span> 
-    <span class="keyword">void</span> <a class="link" href="KernelFMM.html#idp47101000320416-bb"><span class="identifier">evaluate</span></a><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="keyword">void</span> <a class="link" href="KernelFMM.html#idp47641130327008-bb"><span class="identifier">evaluate</span></a><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46422977457584"></a><h2>Description</h2>
+<a name="idp46889304162800"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46422977458000"></a><h3>
+<a name="idp46889304163216"></a><h3>
 <a name="Aboria.KernelFMMconstruct-copy-destruct"></a><code class="computeroutput">KernelFMM</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47101000326448-bb"></a><span class="identifier">KernelFMM</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47641130333040-bb"></a><span class="identifier">KernelFMM</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
           <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">PositionF</span> <span class="special">&amp;</span> function<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46422977471552"></a><h3>
-<a name="idp47101000320016-bb"></a><code class="computeroutput">KernelFMM</code> public member functions</h3>
+<a name="idp46889304176560"></a><h3>
+<a name="idp47641130326608-bb"></a><code class="computeroutput">KernelFMM</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
 <pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorLHS<span class="special">,</span> <span class="keyword">typename</span> VectorRHS<span class="special">&gt;</span> 
-  <span class="keyword">void</span> <a name="idp47101000320416-bb"></a><span class="identifier">evaluate</span><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span> lhs<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+  <span class="keyword">void</span> <a name="idp47641130327008-bb"></a><span class="identifier">evaluate</span><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span> lhs<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>Evaluates a matrix-free linear operator given by <code class="computeroutput">expr</code> <code class="computeroutput">if_expr</code>, and particle sets <code class="computeroutput">a</code> and <code class="computeroutput">b</code> on a vector rhs and accumulates the result in vector lhs </p>
 </li></ol></div>
 </div>
