@@ -167,7 +167,6 @@ private:
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
-
     void add_points_at_end_impl(const size_t dist) {
         const bool embed_all = set_domain_impl();
         auto start_adding = embed_all?this->m_particles_begin:
@@ -178,7 +177,6 @@ private:
         m_bucket_indices.resize(total);
         auto bucket_indices_start_adding = embed_all?m_bucket_indices.begin():
                                                       m_bucket_indices.end() - dist;
-
         build_bucket_indices(positions_start_adding,
                              get<position>(this->m_particles_end),
                              bucket_indices_start_adding);

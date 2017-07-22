@@ -255,6 +255,7 @@ private:
         ASSERT(embed_all || m_linked_list.size() == start_adding, "m_linked_list not consistent with dist");
         ASSERT(embed_all || m_linked_list_reverse.size() == start_adding, "m_linked_list_reverse not consistent with dist");
         ASSERT(embed_all || m_dirty_buckets.size() == start_adding, "m_dirty_buckets not consistent with dist");
+
         m_linked_list.resize(n,detail::get_empty_id());
         m_linked_list_reverse.resize(n,detail::get_empty_id());
         m_dirty_buckets.resize(n,detail::get_empty_id());
