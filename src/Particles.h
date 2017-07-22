@@ -235,14 +235,7 @@ public:
         searchable(false),
         seed(time(NULL))
     {
-        traits_type::resize(data,size);         
-        for (int i=0; i<size; ++i) {
-            Aboria::get<alive>(data)[i] = true;
-            Aboria::get<id>(data)[i] = this->next_id++;
-            Aboria::get<random>(data)[i].seed(
-                        seed + uint32_t(Aboria::get<id>(data)[i])
-                    );
-        }
+        resize(size);
     }
 
     /// copy-constructor. performs deep copying of all particles
@@ -269,6 +262,24 @@ public:
     //
     // STL Container
     //
+    
+
+    /// resize the continer. Note that if new particles are created, they
+    /// are NOT added to the neighbour search structure, and might be outside
+    /// the domain
+    void resize(size_type n) {
+        size_t old_n = this->size();
+        traits_type::resize(data,n);         
+        if (n > old_n) {
+            for (int i=old_n; i<n; ++i) {
+                Aboria::get<alive>(data)[i] = true;
+                Aboria::get<id>(data)[i] = this->next_id++;
+                Aboria::get<random>(data)[i].seed(
+                        seed + uint32_t(Aboria::get<id>(data)[i])
+                        );
+            }
+        }
+    }
     
     /// push the particle \p val to the back of the container (if its within
     /// the searchable domain)

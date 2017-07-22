@@ -104,7 +104,7 @@ public:
     }
 
 private:
-    void set_domain_impl() {
+    bool set_domain_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         if (n < 0.5*m_size_calculated_with_n || n > 2*m_size_calculated_with_n) {
             m_size_calculated_with_n = n;
@@ -143,6 +143,9 @@ private:
             this->m_query.m_periodic = this->m_periodic;
             this->m_query.m_end_bucket = m_size-1;
             this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -245,12 +248,13 @@ private:
 
 
     void add_points_at_end_impl(const size_t dist) {
-        set_domain_impl(); 
+        const bool embed_all = set_domain_impl(); 
         const size_t n = this->m_particles_end - this->m_particles_begin;
-        const size_t start_adding = n-dist;
-        ASSERT(m_linked_list.size() == start_adding, "m_linked_list not consistent with dist");
-        ASSERT(m_linked_list_reverse.size() == start_adding, "m_linked_list_reverse not consistent with dist");
-        ASSERT(m_dirty_buckets.size() == start_adding, "m_dirty_buckets not consistent with dist");
+        const size_t start_adding = embed_all?0:(n-dist);
+        
+        ASSERT(embed_all || m_linked_list.size() == start_adding, "m_linked_list not consistent with dist");
+        ASSERT(embed_all || m_linked_list_reverse.size() == start_adding, "m_linked_list_reverse not consistent with dist");
+        ASSERT(embed_all || m_dirty_buckets.size() == start_adding, "m_dirty_buckets not consistent with dist");
         m_linked_list.resize(n,detail::get_empty_id());
         m_linked_list_reverse.resize(n,detail::get_empty_id());
         m_dirty_buckets.resize(n,detail::get_empty_id());

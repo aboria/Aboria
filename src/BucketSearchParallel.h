@@ -99,7 +99,7 @@ public:
 private:
 
 
-    void set_domain_impl() {
+    bool set_domain_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         if (n < 0.5*m_size_calculated_with_n || n > 2*m_size_calculated_with_n) {
             LOG(2,"bucket_search_serial: recalculating bucket size");
@@ -140,6 +140,9 @@ private:
             this->m_query.m_periodic = this->m_periodic;
             this->m_query.m_end_bucket = m_size-1;
             this->m_query.m_point_to_bucket_index = m_point_to_bucket_index;
+            return true;
+        } else {
+            return false;
         }
     }
 
@@ -166,15 +169,19 @@ private:
 
 
     void add_points_at_end_impl(const size_t dist) {
-        set_domain_impl();
-        auto start_adding = this->m_particles_end-dist;
+        const bool embed_all = set_domain_impl();
+        auto start_adding = embed_all?this->m_particles_begin:
+                                      (this->m_particles_end-dist);
         const size_t total = m_bucket_indices.size() + dist;
-        auto positions_end = get<position>(this->m_particles_end);
-        auto positions_start_adding = positions_end - dist;
+        auto positions_start_adding = embed_all?get<position>(this->m_particles_begin):
+                                            get<position>(this->m_particles_end)- dist;
         m_bucket_indices.resize(total);
-        auto bucket_indices_start_adding = m_bucket_indices.end() - dist;
+        auto bucket_indices_start_adding = embed_all?m_bucket_indices.begin():
+                                                      m_bucket_indices.end() - dist;
 
-        build_bucket_indices(positions_start_adding,positions_end,bucket_indices_start_adding);
+        build_bucket_indices(positions_start_adding,
+                             get<position>(this->m_particles_end),
+                             bucket_indices_start_adding);
         sort_by_bucket_index();
         build_buckets();
 

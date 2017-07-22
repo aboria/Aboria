@@ -374,7 +374,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     template<unsigned int D, 
              template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
-    void helper_d_random(const int N, const double r, const int neighbour_n, const bool is_periodic) {
+    void helper_d_random(const int N, const double r, const int neighbour_n, const bool is_periodic, const bool push_back_construction) {
         ABORIA_VARIABLE(neighbours,int,"number of neighbours")
     	typedef Particles<std::tuple<neighbours>,D,VectorType,SearchMethod> particles_type;
         typedef position_d<D> position;
@@ -385,22 +385,33 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     	double_d min(-1);
     	double_d max(1);
     	bool_d periodic(is_periodic);
-        particles_type particles(N);
+        particles_type particles;
         double r2 = r*r;
 
-
-        std::cout << "random test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<"):" << std::endl;
+        std::cout << "random test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<" push_back_construction = "<<push_back_construction<<"):" << std::endl;
 
         unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
         std::default_random_engine gen(seed1); 
         std::uniform_real_distribution<double> uniform(-1,1);
-        for (int i=0; i<N; ++i) {
-            for (int d = 0; d < D; ++d) {
-                get<position>(particles)[i][d] = uniform(gen);
-            }
-        }
 
-    	particles.init_neighbour_search(min,max,periodic,neighbour_n);
+        if (push_back_construction) {
+    	    particles.init_neighbour_search(min,max,periodic,neighbour_n);
+            typename particles_type::value_type p;
+            for (int i=0; i<N; ++i) {
+                for (int d = 0; d < D; ++d) {
+                    get<position>(p)[d] = uniform(gen);
+                }
+                particles.push_back(p);
+            }
+        } else {
+            particles.resize(N);
+            for (int i=0; i<N; ++i) {
+                for (int d = 0; d < D; ++d) {
+                    get<position>(particles)[i][d] = uniform(gen);
+                }
+            }
+    	    particles.init_neighbour_search(min,max,periodic,neighbour_n);
+        }
 
         // brute force search
         auto t0 = Clock::now();
@@ -475,34 +486,46 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     template<template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
     void helper_d_test_list_random() {
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false);
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true);
-        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true);
-        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false);
-        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,true);
-        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,false);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,true);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,false);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,true);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,false);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,true);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,false);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,true);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,false);
-        helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,true);
-        helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,false);
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,false);
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,false);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,false);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,false);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,true);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,true);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,true,false);
+        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,false,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true,true);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false,true);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true,true);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false,true);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,true,false);
+        helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,false,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,true,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,false,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,true,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,false,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,true,true);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,false,true);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,true,false);
+        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,false,false);
+        helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,true,false);
+        helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,false,false);
+
+       
     }
 
     void test_std_vector_bucket_search_serial(void) {
+        helper_d_test_list_random<std::vector,bucket_search_serial>();
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
        
         helper_d_test_list_regular<std::vector,bucket_search_serial>();
-        helper_d_test_list_random<std::vector,bucket_search_serial>();
     }
 
     void test_std_vector_bucket_search_parallel(void) {
