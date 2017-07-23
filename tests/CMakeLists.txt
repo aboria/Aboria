@@ -26,13 +26,6 @@ if (Aboria_RUN_TESTS)
     set(all_test_suites
         MetafunctionsTest 
         NeighboursTest
-        BDTest
-        SPHTest
-        MDTest
-        RbfInterpolationTest
-        RbfPdeTest
-        RbfStokesTest
-        DiffusionAroundSpheres
         ParticleContainerTest
         SymbolicTest
         VariablesTest
@@ -41,11 +34,32 @@ if (Aboria_RUN_TESTS)
         UtilsTest
         ChebyshevTest
         FMMTest
-        H2Test
         DocGettingStartedTest
         )
+    set(release_test_suites
+        BDTest
+        SPHTest
+        MDTest
+        DiffusionAroundSpheres
+        RbfInterpolationTest
+        RbfPdeTest
+        RbfStokesTest
+        H2Test
+        )
+
     foreach(test_suite ${all_test_suites})
         option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
+        if (Aboria_RUN_TEST_${test_suite})
+            set(test_suites ${test_suites} ${test_suite})
+        endif()
+    endforeach()
+
+    foreach(test_suite ${release_test_suites})
+        if (CMAKE_BUILD_TYPE EQUAL "Release")
+            option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
+        else()
+            option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" OFF)
+        endif()
         if (Aboria_RUN_TEST_${test_suite})
             set(test_suites ${test_suites} ${test_suite})
         endif()
@@ -188,6 +202,7 @@ set(RbfInterpolationTestFile rbf_interpolation.h)
 set(RbfInterpolationTest 
     test_bucket_search_serial
     test_bucket_search_parallel
+    test_kdtree
     )
     
 set(RbfPdeTestFile rbf_pde.h)
