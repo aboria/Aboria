@@ -55,7 +55,7 @@ if (Aboria_RUN_TESTS)
     endforeach()
 
     foreach(test_suite ${notdebug_test_suites})
-        if (CMAKE_BUILD_TYPE EQUAL "Debug")
+        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
             option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" OFF)
         else()
             option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
