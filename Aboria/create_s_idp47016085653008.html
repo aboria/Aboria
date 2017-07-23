@@ -6,8 +6,8 @@
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.5">
 <link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Operators.h&gt;">
-<link rel="prev" href="create_s_idp46189864740144.html" title="Function template create_sparse_operator">
-<link rel="next" href="create_zero_operator.html" title="Function template create_zero_operator">
+<link rel="prev" href="create_h_idp47016085644752.html" title="Function template create_h2_operator">
+<link rel="next" href="create_s_idp47016085667328.html" title="Function template create_sparse_operator">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,10 +32,10 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="create_s_idp46189864740144.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="create_zero_operator.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="create_h_idp47016085644752.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="create_s_idp47016085667328.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
-<a name="Aboria.create_s_idp46189864754464"></a><div class="titlepage"></div>
+<a name="Aboria.create_s_idp47016085653008"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Function template create_sparse_operator</span></h2>
 <p>Aboria::create_sparse_operator &#8212; creates a sparse matrix-free linear operator for use with Eigen </p>
@@ -44,14 +44,17 @@ MathJax.Hub.Config({
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Operators.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Operators.h</a>&gt;
 
 </span>
-<span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> RowParticles<span class="special">,</span> <span class="keyword">typename</span> ColParticles<span class="special">,</span> <span class="keyword">typename</span> F<span class="special">,</span> 
-         <span class="keyword">typename</span> Kernel <span class="special">=</span> <span class="identifier">KernelSparseConst</span><span class="special">&lt;</span><span class="identifier">RowParticles</span><span class="special">,</span><span class="identifier">ColParticles</span><span class="special">,</span><span class="identifier">F</span><span class="special">&gt;</span><span class="special">,</span> 
-         <span class="keyword">typename</span> Operator <span class="special">=</span> <span class="identifier">MatrixReplacement</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">,</span><span class="identifier">tuple_ns</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">Kernel</span><span class="special">&gt;&gt;</span> <span class="special">&gt;</span> 
+<span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> RowParticles<span class="special">,</span> <span class="keyword">typename</span> ColParticles<span class="special">,</span> <span class="keyword">typename</span> FRadius<span class="special">,</span> 
+         <span class="keyword">typename</span> F<span class="special">,</span> 
+         <span class="keyword">typename</span> Kernel <span class="special">=</span> <span class="identifier">KernelSparse</span><span class="special">&lt;</span><span class="identifier">RowParticles</span><span class="special">,</span><span class="identifier">ColParticles</span><span class="special">,</span><span class="identifier">FRadius</span><span class="special">,</span><span class="identifier">F</span><span class="special">&gt;</span><span class="special">,</span> 
+         <span class="keyword">typename</span> Operator <span class="special">=</span> <span class="identifier">MatrixReplacement</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">,</span><span class="identifier">tuple_ns</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">Kernel</span><span class="special">&gt;&gt;</span><span class="special">,</span> 
+         <span class="keyword">typename</span>  <span class="special">=</span> <span class="keyword">typename</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">enable_if</span><span class="special">&lt;</span><span class="special">!</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">is_arithmetic</span><span class="special">&lt;</span><span class="identifier">FRadius</span><span class="special">&gt;</span><span class="special">::</span><span class="identifier">value</span><span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span><span class="special">&gt;</span> 
   <span class="identifier">Operator</span> <span class="identifier">create_sparse_operator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
                                   <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">,</span> 
-                                  <span class="keyword">const</span> <span class="keyword">double</span> radius<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">F</span> <span class="special">&amp;</span> function<span class="special">)</span><span class="special">;</span></pre></div>
+                                  <span class="keyword">const</span> <span class="identifier">FRadius</span> <span class="special">&amp;</span> radius_function<span class="special">,</span> 
+                                  <span class="keyword">const</span> <span class="identifier">F</span> <span class="special">&amp;</span> function<span class="special">)</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46630357387200"></a><h2>Description</h2>
+<a name="idp46689088822272"></a><h2>Description</h2>
 <p>This function returns a <code class="computeroutput"><a class="link" href="MatrixReplacement.html" title="Class template MatrixReplacement">MatrixReplacement</a></code> object that acts like a sparse linear operator (i.e. matrix) in Eigen, in that only particle pairs (i.e. a row/column pair) with a separation less that a given value are considered to be non-zero</p>
 <p>
 
@@ -79,8 +82,8 @@ MathJax.Hub.Config({
 <td><p>A function object that returns the value of the operator for a given particle pair</p></td>
 </tr>
 <tr>
-<td><p><span class="term"><code class="computeroutput">radius</code></span></p></td>
-<td><p>It is assumed that <code class="computeroutput">function</code> returns a zero value for all particle pairs with a separation greater than this value </p></td>
+<td><p><span class="term"><code class="computeroutput">radius_function</code></span></p></td>
+<td><p>A function object that takes a const_reference to a particle and returns a double value. It is assumed that <code class="computeroutput">function</code> returns a zero value for all particle pairs with a separation greater than this value </p></td>
 </tr>
 <tr>
 <td><p><span class="term"><code class="computeroutput">row_particles</code></span></p></td>
@@ -122,7 +125,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="create_s_idp46189864740144.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="create_zero_operator.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="create_h_idp47016085644752.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Operators_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="create_s_idp47016085667328.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

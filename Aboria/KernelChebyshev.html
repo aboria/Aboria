@@ -53,39 +53,39 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">base_type</span><span class="special">::</span><span class="identifier">Scalar</span> <a name="Aboria.KernelChebyshev.Scalar"></a><span class="identifier">Scalar</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="KernelChebyshev.html#Aboria.KernelChebyshevconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="KernelChebyshev.html#idp46189863966992-bb"><span class="identifier">KernelChebyshev</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span><span class="special">,</span> 
+  <a class="link" href="KernelChebyshev.html#idp47016084879856-bb"><span class="identifier">KernelChebyshev</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span><span class="special">,</span> 
                   <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">PositionF</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="KernelChebyshev.html#idp46189863956032-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp46189863956432-bb"><span class="identifier">set_n</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp46189863958080-bb"><span class="identifier">update_row_positions</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp46189863959040-bb"><span class="identifier">update_kernel_matrix</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp46189863960000-bb"><span class="identifier">update_col_positions</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="KernelChebyshev.html#idp47016084868896-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp47016084869296-bb"><span class="identifier">set_n</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp47016084870944-bb"><span class="identifier">update_row_positions</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp47016084871904-bb"><span class="identifier">update_kernel_matrix</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp47016084872864-bb"><span class="identifier">update_col_positions</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorLHS<span class="special">,</span> <span class="keyword">typename</span> VectorRHS<span class="special">&gt;</span> 
-    <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp46189863960960-bb"><span class="identifier">evaluate</span></a><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="keyword">void</span> <a class="link" href="KernelChebyshev.html#idp47016084873824-bb"><span class="identifier">evaluate</span></a><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46630351137888"></a><h2>Description</h2>
+<a name="idp46689082678752"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46630351138304"></a><h3>
+<a name="idp46689082679168"></a><h3>
 <a name="Aboria.KernelChebyshevconstruct-copy-destruct"></a><code class="computeroutput">KernelChebyshev</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46189863966992-bb"></a><span class="identifier">KernelChebyshev</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47016084879856-bb"></a><span class="identifier">KernelChebyshev</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
                 <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">,</span> 
                 <span class="keyword">const</span> <span class="identifier">PositionF</span> <span class="special">&amp;</span> function<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46630351154528"></a><h3>
-<a name="idp46189863956032-bb"></a><code class="computeroutput">KernelChebyshev</code> public member functions</h3>
+<a name="idp46689082695328"></a><h3>
+<a name="idp47016084868896-bb"></a><code class="computeroutput">KernelChebyshev</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46189863956432-bb"></a><span class="identifier">set_n</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46189863958080-bb"></a><span class="identifier">update_row_positions</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46189863959040-bb"></a><span class="identifier">update_kernel_matrix</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46189863960000-bb"></a><span class="identifier">update_col_positions</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47016084869296-bb"></a><span class="identifier">set_n</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47016084870944-bb"></a><span class="identifier">update_row_positions</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47016084871904-bb"></a><span class="identifier">update_kernel_matrix</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47016084872864-bb"></a><span class="identifier">update_col_positions</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
 <pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorLHS<span class="special">,</span> <span class="keyword">typename</span> VectorRHS<span class="special">&gt;</span> 
-  <span class="keyword">void</span> <a name="idp46189863960960-bb"></a><span class="identifier">evaluate</span><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span> lhs<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+  <span class="keyword">void</span> <a name="idp47016084873824-bb"></a><span class="identifier">evaluate</span><span class="special">(</span><span class="identifier">VectorLHS</span> <span class="special">&amp;</span> lhs<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorRHS</span> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>Evaluates a matrix-free linear operator given by <code class="computeroutput">expr</code> <code class="computeroutput">if_expr</code>, and particle sets <code class="computeroutput">a</code> and <code class="computeroutput">b</code> on a vector rhs and accumulates the result in vector lhs </p>
 </li>
 </ol></div>
