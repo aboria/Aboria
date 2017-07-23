@@ -36,7 +36,7 @@ if (Aboria_RUN_TESTS)
         FMMTest
         DocGettingStartedTest
         )
-    set(release_test_suites
+    set(notdebug_test_suites
         BDTest
         SPHTest
         MDTest
@@ -54,11 +54,11 @@ if (Aboria_RUN_TESTS)
         endif()
     endforeach()
 
-    foreach(test_suite ${release_test_suites})
-        if (CMAKE_BUILD_TYPE EQUAL "Release")
-            option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
-        else()
+    foreach(test_suite ${notdebug_test_suites})
+        if (CMAKE_BUILD_TYPE EQUAL "Debug")
             option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" OFF)
+        else()
+            option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
         endif()
         if (Aboria_RUN_TEST_${test_suite})
             set(test_suites ${test_suites} ${test_suite})
