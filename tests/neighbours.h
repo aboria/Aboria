@@ -49,6 +49,7 @@ class NeighboursTest : public CxxTest::TestSuite {
 public:
 
     void test_documentation(void) {
+#if not defined(__CUDACC__)
 //[neighbour_search
 /*`
 [section Neighbourhood Searching]
@@ -70,7 +71,7 @@ containing a few randomly placed particles
         std::default_random_engine gen; 
         std::uniform_real_distribution<double> uniform(-1,1);
         for (int i=0; i<N; ++i) {
-            get<position>(particles)[i] = double3(uniform(gen),uniform(gen),uniform(gen));
+            get<position>(particles)[i] = Aboria::double3(uniform(gen),uniform(gen),uniform(gen));
         }
 
 /*`
@@ -83,8 +84,8 @@ is periodic in all directions.
 
 */
 
-        double3 min(-1);
-        double3 max(1);
+        Aboria::double3 min(-1);
+        Aboria::double3 max(1);
         bool3 periodic(true);
         particles.init_neighbour_search(min,max,periodic);
 /*`
@@ -99,7 +100,7 @@ counts all the particles within a distance `radius` of the point $(0,0,0)$.
 
         double radius = 0.2;
         int count = 0;
-        for (const auto& i: euclidean_search(particles.get_query(),double3(0),radius)) {
+        for (const auto& i: euclidean_search(particles.get_query(),Aboria::double3(0),radius)) {
             count++;
         }
         std::cout << "There are "<< count << " particles.\n";
@@ -131,9 +132,9 @@ For example,
 
 */
 
-        for (const auto& i: euclidean_search(particles.get_query(),double3(0),radius)) {
+        for (const auto& i: euclidean_search(particles.get_query(),Aboria::double3(0),radius)) {
             particle_type::const_reference b = std::get<0>(i);
-            const double3& dx = std::get<1>(i);
+            const Aboria::double3& dx = std::get<1>(i);
             std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
         }
 
@@ -222,6 +223,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
 */
 //]
+#endif
     }
 
 
@@ -232,26 +234,26 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     	typedef Particles<std::tuple<scalar>,3,Vector,SearchMethod> Test_type;
         typedef position_d<3> position;
     	Test_type test;
-    	double3 min(-1,-1,-1);
-    	double3 max(1,1,1);
-    	double3 periodic(true,true,true);
+    	Aboria::double3 min(-1,-1,-1);
+    	Aboria::double3 max(1,1,1);
+    	Aboria::double3 periodic(true,true,true);
     	double radius = 0.1;
     	test.init_neighbour_search(min,max,periodic);
     	typename Test_type::value_type p;
 
-        get<position>(p) = double3(0,0,0);
+        get<position>(p) = Aboria::double3(0,0,0);
     	test.push_back(p);
 
     	int count = 0;
-    	for (auto tpl: euclidean_search(test.get_query(),double3(radius/2,radius/2,0),radius)) {
+    	for (auto tpl: euclidean_search(test.get_query(),Aboria::double3(radius/2,radius/2,0),radius)) {
     		count++;
     	}
     	TS_ASSERT_EQUALS(count,1);
 
-    	auto tpl = euclidean_search(test.get_query(),double3(radius/2,radius/2,0),radius);
+    	auto tpl = euclidean_search(test.get_query(),Aboria::double3(radius/2,radius/2,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
 
-    	tpl = euclidean_search(test.get_query(),double3(2*radius,0,0),radius);
+    	tpl = euclidean_search(test.get_query(),Aboria::double3(2*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
@@ -261,34 +263,34 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     	typedef Particles<std::tuple<scalar>,3,Vector,SearchMethod> Test_type;
         typedef position_d<3> position;
     	Test_type test;
-    	double3 min(-1,-1,-1);
-    	double3 max(1,1,1);
-    	double3 periodic(true,true,true);
+    	Aboria::double3 min(-1,-1,-1);
+    	Aboria::double3 max(1,1,1);
+    	Aboria::double3 periodic(true,true,true);
     	double radius = 0.1;
     	test.init_neighbour_search(min,max,periodic);
     	typename Test_type::value_type p;
 
-        get<position>(p) = double3(0,0,0);
+        get<position>(p) = Aboria::double3(0,0,0);
     	test.push_back(p);
 
-        get<position>(p) = double3(radius/2,0,0);
+        get<position>(p) = Aboria::double3(radius/2,0,0);
     	test.push_back(p);
 
-    	auto tpl = euclidean_search(test.get_query(),double3(1.1*radius,0,0),radius);
+    	auto tpl = euclidean_search(test.get_query(),Aboria::double3(1.1*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     	typename Test_type::const_reference pfound = tuple_ns::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
-    	tpl = euclidean_search(test.get_query(),double3(0.9*radius,0,0),radius);
+    	tpl = euclidean_search(test.get_query(),Aboria::double3(0.9*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = euclidean_search(test.get_query(),double3(1.6*radius,0,0),radius);
+    	tpl = euclidean_search(test.get_query(),Aboria::double3(1.6*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
 
-    	tpl = euclidean_search(test.get_query(),double3(0.25*radius,0.9*radius,0),radius);
+    	tpl = euclidean_search(test.get_query(),Aboria::double3(0.25*radius,0.9*radius,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = euclidean_search(test.get_query(),double3(0.25*radius,0.99*radius,0),radius);
+    	tpl = euclidean_search(test.get_query(),Aboria::double3(0.25*radius,0.99*radius,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
@@ -449,8 +451,8 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
                     int count = 0;
                     //std::cout << "position of i = "<<get<position>(i)<<std::endl;
                     for (auto tpl: euclidean_search(particles.get_query(),get<position>(i),r)) {
-                        typename particles_type::const_reference j = std::get<0>(tpl);
-                        typename particles_type::double_d dx = std::get<1>(tpl);
+                        typename particles_type::const_reference j = tuple_ns::get<0>(tpl);
+                        typename particles_type::double_d dx = tuple_ns::get<1>(tpl);
                         //std::cout << "position of j = "<<get<position>(j)<<std::endl;
                         TS_ASSERT_LESS_THAN_EQUALS(dx.squaredNorm(),r2);
                         count++;
@@ -486,10 +488,10 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     template<template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
     void helper_d_test_list_random() {
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
         helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,false);
         helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,false);
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
+        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,false);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,false);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,true);
@@ -537,13 +539,17 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_std_vector_nanoflann_adaptor(void) {
+#if not defined(__CUDACC__)
         helper_d_test_list_random<std::vector,nanoflann_adaptor>();
         helper_d_test_list_regular<std::vector,nanoflann_adaptor>();
+#endif
     }
 
     void test_std_vector_octtree(void) {
+#if not defined(__CUDACC__)
         helper_d_test_list_random<std::vector,octtree>();
         helper_d_test_list_regular<std::vector,octtree>();
+#endif
     }
 
     void test_thrust_vector_bucket_search_serial(void) {

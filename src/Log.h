@@ -99,6 +99,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     	std::cout << color << message << reset << std::endl; \
     }
 
+#define LOG_CUDA(level,message) \
+    if (level <= ABORIA_LOG_LEVEL) { \
+        printf("%s\n",message); \
+    }
+
         //char color[] =  { 0x1b, '[', '1', ';', '3', '7', 'm', 0 }; 
         
 #define LOG_BOLD(level, message) \
@@ -123,10 +128,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 
-#define LOG_CUDA(level,message) \
-    if (level <= ABORIA_LOG_LEVEL) { \
-        printf("%s\n",message); \
-    }
+
+
 
 
 

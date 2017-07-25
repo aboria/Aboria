@@ -120,6 +120,9 @@ public:
 		mem[3] = arg4;
 	}
 
+    CUDA_HOST_DEVICE
+	Vector(const Vector<T,N> &arg) = default;
+
     /// Vector copy-constructor
     ///
     /// \param arg constructs a vector as a copy of this arguement

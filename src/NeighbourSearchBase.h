@@ -719,13 +719,11 @@ public:
     typedef typename child_iterator::reference reference;
 	typedef std::ptrdiff_t difference_type;
 
-    CUDA_HOST_DEVICE
     tree_query_iterator()
     {}
        
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
-    CUDA_HOST_DEVICE
     tree_query_iterator(const child_iterator& start,
                   const double_d& query_point,
                   const double_d& max_distance,
@@ -787,26 +785,21 @@ public:
     */
 
 
-    CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
     }
-    CUDA_HOST_DEVICE
     reference operator ->() {
         return dereference();
     }
-    CUDA_HOST_DEVICE
     iterator& operator++() {
         increment();
         return *this;
     }
-    CUDA_HOST_DEVICE
     iterator operator++(int) {
         iterator tmp(*this);
         operator++();
         return tmp;
     }
-    CUDA_HOST_DEVICE
     size_t operator-(iterator start) const {
         size_t count = 0;
         while (start != *this) {
@@ -815,11 +808,9 @@ public:
         }
         return count;
     }
-    CUDA_HOST_DEVICE
     inline bool operator==(const iterator& rhs) const {
         return equal(rhs);
     }
-    CUDA_HOST_DEVICE
     inline bool operator!=(const iterator& rhs) const {
         return !operator==(rhs);
     }
@@ -910,7 +901,6 @@ public:
     }
     
 
-    CUDA_HOST_DEVICE
     bool equal(iterator const& other) const {
         if (m_stack.empty() || other.m_stack.empty()) {
             return m_stack.empty() == other.m_stack.empty();
@@ -920,7 +910,6 @@ public:
     }
 
 
-    CUDA_HOST_DEVICE
     reference dereference() const
     { return *m_stack.top(); }
 
@@ -1521,35 +1510,43 @@ class lattice_iterator {
     // reference (which are both of the
     // same type)
     struct proxy_int_d: public int_d {
+        CUDA_HOST_DEVICE
         proxy_int_d():
             int_d() 
         {}
 
+        CUDA_HOST_DEVICE
         proxy_int_d(const int_d& arg):
             int_d(arg) 
         {}
 
+        CUDA_HOST_DEVICE
         proxy_int_d& operator&() {
             return *this;
         }
         
+        CUDA_HOST_DEVICE
         const proxy_int_d& operator&() const {
             return *this;
         }
 
+        CUDA_HOST_DEVICE
         const proxy_int_d& operator*() const {
             return *this;
         }
 
+        CUDA_HOST_DEVICE
         proxy_int_d& operator*() {
             return *this;
         }
 
+        CUDA_HOST_DEVICE
         const proxy_int_d* operator->() const {
             return this;
         }
 
-       proxy_int_d* operator->() {
+        CUDA_HOST_DEVICE
+        proxy_int_d* operator->() {
             return this;
         }
     };
@@ -1567,10 +1564,12 @@ public:
     typedef proxy_int_d value_type;
 	typedef std::ptrdiff_t difference_type;
 
+    CUDA_HOST_DEVICE
     lattice_iterator():
         m_valid(false)
     {}
 
+    CUDA_HOST_DEVICE
     lattice_iterator(const int_d &min, 
                      const int_d &max):
         m_min(min),
@@ -1580,55 +1579,66 @@ public:
         m_valid(true)
     {}
 
+    CUDA_HOST_DEVICE
     explicit operator size_t() const {
         return collapse_index_vector(m_index);
     }
 
+    CUDA_HOST_DEVICE
     const lattice_iterator& get_child_iterator() const {
         return *this;
     }
 
+    CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
     }
 
+    CUDA_HOST_DEVICE
     reference operator ->() const {
         return dereference();
     }
 
+    CUDA_HOST_DEVICE
     iterator& operator++() {
         increment();
         return *this;
     }
 
+    CUDA_HOST_DEVICE
     iterator operator++(int) {
         iterator tmp(*this);
         operator++();
         return tmp;
     }
 
+    CUDA_HOST_DEVICE
     iterator operator+(const int n) {
         iterator tmp(*this);
         tmp.increment(n);
         return tmp;
     }
 
+    CUDA_HOST_DEVICE
     iterator& operator+=(const int n) {
         increment(n);
         return *this;
     }
 
+    CUDA_HOST_DEVICE
     iterator& operator-=(const int n) {
         increment(-n);
         return *this;
     }
 
+    CUDA_HOST_DEVICE
     iterator operator-(const int n) {
         iterator tmp(*this);
         tmp.increment(-n);
         return tmp;
     }
 
+    CUDA_HOST_DEVICE
     size_t operator-(const iterator& start) const {
         int distance;
         if (!m_valid) {
@@ -1643,18 +1653,22 @@ public:
         return distance;
     }
 
+    CUDA_HOST_DEVICE
     inline bool operator==(const iterator& rhs) const {
         return equal(rhs);
     }
 
+    CUDA_HOST_DEVICE
     inline bool operator==(const bool rhs) const {
         return equal(rhs);
     }
 
+    CUDA_HOST_DEVICE
     inline bool operator!=(const iterator& rhs) const {
         return !operator==(rhs);
     }
 
+    CUDA_HOST_DEVICE
     inline bool operator!=(const bool rhs) const {
         return !operator==(rhs);
     }
@@ -1662,6 +1676,7 @@ public:
 private:
 
     static inline 
+    CUDA_HOST_DEVICE
     int_d minus(const int_d& arg1, const int_d& arg2) {
         int_d ret;
         for (size_t i = 0; i < D; ++i) {
@@ -1671,6 +1686,7 @@ private:
     }
 
     static inline 
+    CUDA_HOST_DEVICE
     int_d minus(const int_d& arg1, const int arg2) {
         int_d ret;
         for (size_t i = 0; i < D; ++i) {
@@ -1679,6 +1695,7 @@ private:
         return ret;
     }
 
+    CUDA_HOST_DEVICE
     int collapse_index_vector(const int_d &vindex) const {
         int index = 0;
         unsigned int multiplier = 1.0;
@@ -1691,6 +1708,7 @@ private:
         return index;
     }
 
+    CUDA_HOST_DEVICE
     int_d reassemble_index_vector(const int index) const {
         int_d vindex;
         int i = index;
@@ -1702,6 +1720,7 @@ private:
         return vindex;
     }
 
+    CUDA_HOST_DEVICE
     bool equal(iterator const& other) const {
         if (!other.m_valid) return !m_valid;
         if (!m_valid) return !other.m_valid;
@@ -1713,14 +1732,17 @@ private:
         return true;
     }
 
+    CUDA_HOST_DEVICE
     bool equal(const bool other) const {
         return m_valid==other;
     }
 
+    CUDA_HOST_DEVICE
     reference dereference() const { 
         return m_index; 
     }
 
+    CUDA_HOST_DEVICE
     void increment() {
         for (int i=D-1; i>=0; --i) {
             ++m_index[i];
@@ -1733,6 +1755,7 @@ private:
         }
     }
 
+    CUDA_HOST_DEVICE
     void increment(const int n) {
         int collapsed_index = collapse_index_vector(m_index);
         m_index = reassemble_index_vector(collapsed_index += n);

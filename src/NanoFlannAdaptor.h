@@ -292,7 +292,6 @@ public:
         m_index(nullptr)
     {}
 
-    CUDA_HOST_DEVICE
     nanoflann_child_iterator(pointer start, const box_type& bounds):
         m_high(0),
         m_index(start),
@@ -334,17 +333,14 @@ public:
         return ret;
     }
 
-    CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
     }
 
-    CUDA_HOST_DEVICE
     reference operator ->() const {
         return dereference();
     }
 
-    CUDA_HOST_DEVICE
     nanoflann_child_iterator& operator++() {
         increment();
         return *this;
@@ -356,12 +352,10 @@ public:
         return tmp;
     }
 
-    CUDA_HOST_DEVICE
     inline bool operator==(const nanoflann_child_iterator& rhs) const {
         return equal(rhs);
     }
 
-    CUDA_HOST_DEVICE
     inline bool operator!=(const nanoflann_child_iterator& rhs) const {
         return !operator==(rhs);
     }
@@ -376,7 +370,6 @@ public:
 
 private:
 
-    CUDA_HOST_DEVICE
     bool equal(nanoflann_child_iterator const& other) const {
         return m_index == other.m_index && m_high == other.m_high;
     }
@@ -385,7 +378,6 @@ private:
         return (m_high<2)==other;
     }
 
-    CUDA_HOST_DEVICE
     reference dereference() const { 
         if (is_high()) {
             return *m_index->child2; 
@@ -394,7 +386,6 @@ private:
         }
     }
 
-    CUDA_HOST_DEVICE
     void increment() {
         ++m_high;
     }
@@ -540,7 +531,6 @@ struct nanoflann_adaptor_query {
     }
     */
 
-    CUDA_HOST_DEVICE
     void get_bucket(const double_d &position, pointer& bucket, box_type& bounds) const {
         child_iterator i = get_children();
         i.go_to(position);
@@ -555,7 +545,6 @@ struct nanoflann_adaptor_query {
     }
     
 
-    CUDA_HOST_DEVICE
     size_t get_bucket_index(reference bucket) const {
         return bucket.index;
     }
@@ -606,7 +595,6 @@ struct nanoflann_adaptor_query {
 
 
     /*
-    CUDA_HOST_DEVICE
     iterator_range<theta_iterator> get_theta_buckets(const reference bucket) const {
         return iterator_range<theta_iterator>(
                 theta_iterator(m_root,bucket),

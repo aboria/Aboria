@@ -22,6 +22,18 @@ struct default_traits {
     struct vector_type {
         typedef std::vector<T> type;
     };
+    template <typename ... T>
+    struct tuple_type {
+        typedef std::tuple<T...> type;
+    };
+    template< std::size_t I, class T >
+    struct tuple_element {
+        typedef std::tuple_element<I,T> type;
+    };
+    template< class T >
+    struct tuple_size {
+        typedef std::tuple_size<T> type;
+    };
 
 };
 
@@ -38,77 +50,18 @@ struct Traits<thrust::device_vector>: public default_traits {
     struct vector_type {
         typedef thrust::device_vector<T> type;
     };
-
-
-    template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
-    static void lower_bound(
-            ForwardIterator first,
-            ForwardIterator last,
-            InputIterator values_first,
-            InputIterator values_last,
-            OutputIterator result) {
-        thrust::lower_bound(first,last,values_first,values_last,result);
-    }
-
-    template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
-    static void upper_bound(
-            ForwardIterator first,
-            ForwardIterator last,
-            InputIterator values_first,
-            InputIterator values_last,
-            OutputIterator result) {
-        thrust::upper_bound(first,last,values_first,values_last,result);
-    }
-
-    template< class InputIt, class T, class BinaryOperation >
-    static T reduce( 
-        InputIt first, 
-        InputIt last, T init,
-        BinaryOperation op ) {
-        return thrust::reduce(first,last,init,op);
-    }
-
-    template <class InputIterator, class OutputIterator, class UnaryOperation>
-    static OutputIterator transform (
-            InputIterator first, InputIterator last,
-            OutputIterator result, UnaryOperation op) {
-    }
-
-    template <class ForwardIterator>
-    static void sequence (ForwardIterator first, ForwardIterator last) {
-    }
-
-    template<typename ForwardIterator , typename UnaryOperation >
-    static void tabulate (
-            ForwardIterator first,
-            ForwardIterator last,
-            UnaryOperation  unary_op) {	
-
-    }
-
-    template<typename InputIterator, typename OutputIterator, typename UnaryFunction, 
-        typename T, typename AssociativeOperator>
-    static OutputIterator transform_exclusive_scan(
-        InputIterator first, InputIterator last,
-        OutputIterator result,
-        UnaryFunction unary_op, T init, AssociativeOperator binary_op) {
-    }
-
-
-    template<typename InputIterator1, typename InputIterator2, 
-        typename InputIterator3, typename RandomAccessIterator , typename Predicate >
-    static void scatter_if(
-            InputIterator1 first, InputIterator1 last,
-            InputIterator2 map, InputIterator3 stencil,
-            RandomAccessIterator output, Predicate pred) {
-    }
-
-    template<typename InputIterator1, typename InputIterator2, 
-        typename OutputIterator, typename Predicate>
-    static OutputIterator copy_if(
-            InputIterator1 first, InputIterator1 last, 
-            InputIterator2 stencil, OutputIterator result, Predicate pred) {
-    }
+    template <typename ... T>
+    struct tuple_type {
+        typedef thrust::tuple<T...> type;
+    };
+    template< std::size_t I, class T >
+    struct tuple_element {
+        typedef thrust::tuple_element<I,T> type;
+    };
+    template< class T >
+    struct tuple_size {
+        typedef thrust::tuple_size<T> type;
+    };
 };
 #endif
 
@@ -120,8 +73,19 @@ struct TraitsCommon {
 template <typename traits, unsigned int D, typename ... TYPES>
 struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
+    template <typename ... T>
+    using tuple = typename traits::template tuple_type<T...>::type;
+
+    template <size_t I, typename T>
+    using tuple_element = typename traits::template tuple_element<I,T>::type;
+
+    template <typename T>
+    using vector = typename traits::template vector_type<T>::type;
+
+    //TODO: use vector below
+
     const static unsigned int dimension = D;
-    typedef typename traits::template vector_type<Vector<double,D> >::type vector_double_d;
+    typedef vector<Vector<double,D>> vector_double_d;
     typedef typename vector_double_d::iterator vector_double_d_iterator;
     typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;
     typedef typename traits::template vector_type<Vector<int,D> >::type vector_int_d;
@@ -170,7 +134,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             > tuple_of_raw_pointers_type;
             */
 
-    typedef tuple_ns::tuple<
+    typedef tuple<
             typename position_vector_type::iterator,
             typename id_vector_type::iterator,
             typename alive_vector_type::iterator,
@@ -178,7 +142,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             typename traits::template vector_type<typename TYPES::value_type>::type::iterator...
             > tuple_of_iterators_type;
 
-    typedef tuple_ns::tuple<
+    typedef tuple<
             typename position_vector_type::const_iterator,
             typename id_vector_type::const_iterator,
             typename alive_vector_type::const_iterator,
@@ -187,7 +151,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
             > tuple_of_const_iterators_type;
 
 
-    typedef tuple_ns::tuple<
+    // need a std::tuple here, rather than a thrust one...
+    typedef std::tuple<
         position_vector_type,
         id_vector_type,
         alive_vector_type,
@@ -206,7 +171,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename const_iterator::reference const_reference;
     typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
-    const static size_t N = tuple_ns::tuple_size<vectors_data_type>::value;
+    // need a std::tuple here, rather than a thrust one...
+    const static size_t N = std::tuple_size<vectors_data_type>::value;
 
     template<std::size_t... I>
     static iterator begin_impl(data_type& data, detail::index_sequence<I...>) {
@@ -295,7 +261,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     template<class InputIterator, std::size_t... I>
     static data_type construct_impl(InputIterator first, InputIterator last, detail::index_sequence<I...>) {
-        return data_type(typename tuple_ns::tuple_element<I,vectors_data_type>::type(
+        return data_type(typename tuple_element<I,vectors_data_type>::type(
                             get_by_index<I>(first),get_by_index<I>(last)
                             )...);
     }

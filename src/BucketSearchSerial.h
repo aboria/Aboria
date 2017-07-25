@@ -98,7 +98,7 @@ class bucket_search_serial:
     friend base_type;
 
 public:
-    bucket_search_serial():m_size_calculated_with_n(-1),base_type() {}
+    bucket_search_serial():m_size_calculated_with_n(0),base_type() {}
     static constexpr bool cheap_copy_and_delete_at_end() {
         return true;
     }
@@ -212,7 +212,7 @@ private:
         for (size_t i=0; i<n; ++i) {
             const double_d& r = get<position>(this->m_particles_begin)[i];
             const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-            ASSERT(bucketi < m_buckets.size() && bucketi >= 0, "bucket index out of range");
+            ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
             const int bucket_entry = m_buckets[bucketi];
 
             // Insert into own bucket
@@ -263,7 +263,7 @@ private:
         for (size_t i = start_adding; i<n; ++i) {
             const double_d& r = get<position>(this->m_particles_begin)[i];
             const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-            ASSERT(bucketi < m_buckets.size() && bucketi >= 0, "bucket index out of range");
+            ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
             const int bucket_entry = m_buckets[bucketi];
 
             // Insert into own cell
@@ -424,9 +424,9 @@ private:
         // setup fromi <-> toi 
         const int forwardi = m_linked_list[fromi];
         const int bucketi = m_dirty_buckets[fromi];
-        ASSERT(toi < m_linked_list.size() && toi >= 0,"invalid index");
+        ASSERT(toi < m_linked_list.size(),"invalid index");
         ASSERT(bucketi < m_buckets.size() && bucketi >= 0,"invalid index");
-        ASSERT(fromi < m_linked_list_reverse.size() && fromi >= 0,"invalid index");
+        ASSERT(fromi < m_linked_list_reverse.size(),"invalid index");
         ASSERT(forwardi == detail::get_empty_id() ||
             (forwardi < m_linked_list_reverse.size() && forwardi>= 0),
             "invalid index of "<<forwardi<<". Note linked list reverse size is "
@@ -503,22 +503,27 @@ struct bucket_search_serial_query {
     /*
      * functions for trees
      */
+    CUDA_HOST_DEVICE
     static bool is_leaf_node(const value_type& bucket) {
         return true;
     }
 
+    CUDA_HOST_DEVICE
     static bool is_tree() {
         return false;
     }
 
+    CUDA_HOST_DEVICE
     child_iterator get_children() const {
         return child_iterator(int_d(0),m_end_bucket+1);
     }
 
+    CUDA_HOST_DEVICE
     child_iterator get_children(const child_iterator& ci) const {
         return child_iterator();
     }
 
+    CUDA_HOST_DEVICE
     const box_type get_bounds(const child_iterator& ci) const {
         box_type bounds;
         bounds.bmin = (*ci)*m_bucket_side_length + m_bounds.bmin;
@@ -527,22 +532,28 @@ struct bucket_search_serial_query {
     }
     
     // dodgy hack cause nullptr cannot be converted to pointer
+    CUDA_HOST_DEVICE
     static const pointer get_child1(const pointer& bucket) {
         CHECK(false,"this should not be called")
 	    return pointer(-1);
     }
+    CUDA_HOST_DEVICE
     static const pointer get_child2(const pointer& bucket) {
         CHECK(false,"this should not be called")
 	    return pointer(-1);
     }
 
+    CUDA_HOST_DEVICE
     const box_type& get_bounds() const { return m_bounds; }
+    CUDA_HOST_DEVICE
     const bool_d& get_periodic() const { return m_periodic; }
 
     CUDA_HOST_DEVICE
     iterator_range<particle_iterator> 
     get_bucket_particles(const reference bucket) const {
+#ifndef __CUDA_ARCH__
         ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
+#endif
         
         const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(bucket);
 
@@ -599,7 +610,7 @@ struct bucket_search_serial_query {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
- 
+     
         value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
         int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
         int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
@@ -636,12 +647,14 @@ struct bucket_search_serial_query {
     }
 
 
+    CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
         return iterator_range<all_iterator>(
                 all_iterator(),
                 all_iterator());
     }
     
+    CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree() const {
         return iterator_range<all_iterator>(
                 all_iterator(int_d(0),m_end_bucket+1),
@@ -649,10 +662,12 @@ struct bucket_search_serial_query {
                 );
     }
 
+    CUDA_HOST_DEVICE
     size_t number_of_buckets() const {
         return (m_end_bucket+1).prod();
     }
 
+    CUDA_HOST_DEVICE
     raw_pointer get_particles_begin() const {
         return m_particles_begin;
     }

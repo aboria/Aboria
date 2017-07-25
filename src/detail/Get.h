@@ -213,77 +213,136 @@ struct zip_helper {};
 
 
 template <typename ... T>
-struct zip_helper<tuple_ns::tuple<T ...>> {
+struct zip_helper<std::tuple<T ...>> {
     //typedef std::false_type is_thrust;
-    typedef tuple_ns::tuple<T...> tuple_iterator_type; 
-    typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::value_type ...> tuple_value_type; 
-    typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::reference ...> tuple_reference; 
-    typedef tuple_ns::tuple<typename tuple_ns::iterator_traits<T>::pointer...> tuple_pointer; 
+    typedef std::tuple<T...> tuple_iterator_type; 
+    typedef std::tuple<typename std::iterator_traits<T>::value_type ...> tuple_value_type; 
+    typedef std::tuple<typename std::iterator_traits<T>::reference ...> tuple_reference; 
+    typedef std::tuple<typename std::iterator_traits<T>::pointer...> tuple_pointer; 
 
-    typedef tuple_ns::tuple<
+    typedef std::tuple<
         typename detail::remove_pointer_or_reference_for_null_type<
-            typename tuple_ns::iterator_traits<T>::value_type*>::type...
+            typename std::iterator_traits<T>::value_type*>::type...
         > tuple_raw_pointer; 
-    typedef tuple_ns::tuple<
+    typedef std::tuple<
         typename detail::remove_pointer_or_reference_for_null_type<
-            typename tuple_ns::iterator_traits<T>::value_type&>::type...
+            typename std::iterator_traits<T>::value_type&>::type...
         > tuple_raw_reference; 
-    typedef typename tuple_ns::tuple<T...> iterator_tuple_type;
+    typedef typename std::tuple<T...> iterator_tuple_type;
     template <unsigned int N>
-    using tuple_element = tuple_ns::tuple_element<N,iterator_tuple_type>;
-    typedef typename tuple_ns::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
-    typedef typename tuple_ns::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
-#if defined(__CUDACC__)
+    using tuple_element = std::tuple_element<N,iterator_tuple_type>;
+    typedef typename std::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
+    typedef typename std::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
+    typedef make_index_sequence<std::tuple_size<iterator_tuple_type>::value> index_type;
+
+};
+
+template <typename ... T>
+struct zip_helper<thrust::tuple<T ...>> {
+    //typedef std::false_type is_thrust;
+    typedef thrust::tuple<T...> tuple_iterator_type; 
+    typedef thrust::tuple<typename thrust::iterator_traits<T>::value_type ...> tuple_value_type; 
+    typedef thrust::tuple<typename thrust::iterator_traits<T>::reference ...> tuple_reference; 
+    typedef thrust::tuple<typename thrust::iterator_traits<T>::pointer...> tuple_pointer; 
+
+    typedef thrust::tuple<
+        typename detail::remove_pointer_or_reference_for_null_type<
+            typename thrust::iterator_traits<T>::value_type*>::type...
+        > tuple_raw_pointer; 
+    typedef thrust::tuple<
+        typename detail::remove_pointer_or_reference_for_null_type<
+            typename thrust::iterator_traits<T>::value_type&>::type...
+        > tuple_raw_reference; 
+    typedef typename thrust::tuple<T...> iterator_tuple_type;
+    template <unsigned int N>
+    using tuple_element = thrust::tuple_element<N,iterator_tuple_type>;
+    typedef typename thrust::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
+    typedef typename thrust::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
     typedef typename thrust::iterator_system<typename tuple_element<0>::type> system;
-#endif
-    typedef make_index_sequence<tuple_ns::tuple_size<iterator_tuple_type>::value> index_type;
+    typedef make_index_sequence<thrust::tuple_size<iterator_tuple_type>::value> index_type;
+
 };
 
 template<typename IteratorTuple, typename MplVector>
-struct zip_iterator_base {
+struct zip_iterator_base {};
 
-    typedef getter_type<typename zip_helper<IteratorTuple>::tuple_value_type,MplVector> value_type;
-    typedef getter_type<typename zip_helper<IteratorTuple>::tuple_reference,MplVector> reference;
+template <typename mpl_vector_type, typename ... Types> 
+struct zip_iterator_base<std::tuple<Types...>, mpl_vector_type>{
+    typedef std::tuple<Types...> iterator_tuple_type;
+ 
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,MplVector> value_type;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,MplVector> reference;
   
  public:
   
-#if defined(__CUDACC__)
-    typedef iterator_facade_ns::iterator_facade<
-        zip_iterator<IteratorTuple,MplVector>,
-        value_type,  
-        typename zip_helper<IteratorTuple>::system,
-        typename zip_helper<IteratorTuple>::iterator_category,
-        reference,
-        typename zip_helper<IteratorTuple>::difference_type
-    > type;
-#else
-    typedef iterator_facade_ns::iterator_facade<
-        zip_iterator<IteratorTuple,MplVector>,
-        value_type,  
-        typename zip_helper<IteratorTuple>::iterator_category,
-        reference,
-        typename zip_helper<IteratorTuple>::difference_type
-    > type;
-#endif
+typedef std::iterator_facade<
+    zip_iterator<iterator_tuple_type,MplVector>,
+    value_type,  
+    typename zip_helper<iterator_tuple_type>::iterator_category,
+    reference,
+    typename zip_helper<iterator_tuple_type>::difference_type
+> type;
 
 }; // end zip_iterator_base
+
+#ifdef HAVE_THRUST
+template <typename mpl_vector_type, typename ... Types> 
+struct zip_iterator_base<thrust::tuple<Types...>, mpl_vector_type>{
+    typedef thrust::tuple<Types...> iterator_tuple_type;
+ 
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,MplVector> value_type;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,MplVector> reference;
+  
+ public:
+  
+typedef iterator_facade_ns::iterator_facade<
+        zip_iterator<iterator_tuple_type,MplVector>,
+        value_type,  
+        typename zip_helper<iterator_tuple_type>::system,
+        typename zip_helper<iterator_tuple_type>::iterator_category,
+        reference,
+        typename zip_helper<iterator_tuple_type>::difference_type
+    > type;
+
+
+}; // end zip_iterator_base
+#endif
+
 
 
 template<typename tuple_type>
 struct getter_helper {};
 
+#ifdef HAVE_THRUST
 template <typename ... T>
-struct getter_helper<tuple_ns::tuple<T ...>> {
-    typedef typename tuple_ns::tuple<T...> tuple_type; 
-    typedef typename tuple_ns::tuple<T& ...> tuple_reference; 
+struct getter_helper<thrust::tuple<T ...>> {
+    typedef typename thrust::tuple<T...> tuple_type; 
+    typedef typename thrust::tuple<T& ...> tuple_reference; 
     template <unsigned int N>
-    using return_type = tuple_ns::tuple_element<N,tuple_type>;
-    typedef typename tuple_ns::tuple_element<0,tuple_type>::type first_type; 
+    using return_type = thrust::tuple_element<N,tuple_type>;
+    typedef typename thrust::tuple_element<0,tuple_type>::type first_type; 
     typedef typename std::is_reference<first_type> is_reference;
 
     template<std::size_t... I>
     static tuple_reference make_reference(tuple_type& tuple, detail::index_sequence<I...>) {
-        return tuple_ns::tie(tuple_ns::get<I>(tuple)...);
+        return thrust::tie(thrust::get<I>(tuple)...);
+    }
+
+};
+#endif
+
+template <typename ... T>
+struct getter_helper<std::tuple<T ...>> {
+    typedef typename std::tuple<T...> tuple_type; 
+    typedef typename std::tuple<T& ...> tuple_reference; 
+    template <unsigned int N>
+    using return_type = std::tuple_element<N,tuple_type>;
+    typedef typename std::tuple_element<0,tuple_type>::type first_type; 
+    typedef typename std::is_reference<first_type> is_reference;
+
+    template<std::size_t... I>
+    static tuple_reference make_reference(tuple_type& tuple, detail::index_sequence<I...>) {
+        return std::tie(std::get<I>(tuple)...);
     }
 
 };

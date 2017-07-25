@@ -98,6 +98,7 @@ public:
     typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
 
+    CUDA_HOST_DEVICE
     static iterator_range<periodic_iterator_type> get_periodic_range(const bool_d is_periodic) {
         int_d start,end;
         for (int i = 0; i < dimension; ++i) {
@@ -131,7 +132,11 @@ public:
         m_current_bucket(m_bucket_range.begin())
     {
 
+#if defined(__CUDA_ARCH__)
+        LOG_CUDA(3,"\tconstructor (search_iterator)");
+#else
         LOG(3,"\tconstructor (search_iterator with query pt = "<<m_r<<", and m_current_point = "<<m_current_point<<")");
+#endif
         if ((m_valid = get_valid_bucket())) {
             m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
             m_current_particle = m_particle_range.begin();
@@ -141,11 +146,20 @@ public:
                 }
             }
         }
+#if defined(__CUDA_ARCH__)
         if (m_valid) {
+            LOG_CUDA(3,"\tconstructor (search_iterator) found good candidate");
+        } else {
+            LOG_CUDA(3,"\tconstructor (search_iterator) didn't find good candidate");
+        }
+#else
+       if (m_valid) {
             LOG_BOLD(3,"\tconstructor (search_iterator with query pt = "<<m_r<<"): found good canditate at "<<get<position>(*m_current_particle));
         } else {
             LOG(3,"\tconstructor (search_iterator with query pt = "<<m_r<<"): didn't find good candidate");
         }
+
+#endif
     }
     
     CUDA_HOST_DEVICE

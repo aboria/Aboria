@@ -269,7 +269,7 @@ void scatter_if(
         RandomAccessIterator output, Predicate pred) {
 
 #ifdef __aboria_use_thrust_algorithms__
-    scatter_if(first,last,map,stencil,output,pred);
+    thrust::scatter_if(first,last,map,stencil,output,pred);
 #else
     const size_t n = last-first;
     for (int i=0; i<n; ++i) {
@@ -287,7 +287,7 @@ OutputIterator copy_if(
         InputIterator2 stencil, OutputIterator result, Predicate pred) {
 
 #ifdef __aboria_use_thrust_algorithms__
-    return copy_if(first,last,stencil,result,pred);
+    return thrust::copy_if(first,last,stencil,result,pred);
 #else
     const size_t n = last-first;
     for (int i=0; i<n; ++i) {

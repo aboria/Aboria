@@ -91,7 +91,7 @@ class bucket_search_parallel:
 
 
 public:
-    bucket_search_parallel():m_size_calculated_with_n(-1),base_type() {}
+    bucket_search_parallel():m_size_calculated_with_n(0),base_type() {}
     static constexpr bool cheap_copy_and_delete_at_end() {
         return false;
     }
@@ -335,22 +335,27 @@ struct bucket_search_parallel_query {
     /*
      * functions for trees
      */
+    CUDA_HOST_DEVICE
     static bool is_leaf_node(const value_type& bucket) {
         return true;
     }
 
+    CUDA_HOST_DEVICE
     static bool is_tree() {
         return false;
     }
 
+    CUDA_HOST_DEVICE
     child_iterator get_children() const {
         return child_iterator(int_d(0),m_end_bucket+1);
     }
 
+    CUDA_HOST_DEVICE
     child_iterator get_children(const child_iterator& ci) const {
         return child_iterator();
     }
 
+    CUDA_HOST_DEVICE
     const box_type get_bounds(const child_iterator& ci) const {
         box_type bounds;
         bounds.bmin = (*ci)*m_bucket_side_length + m_bounds.bmin;
@@ -359,22 +364,30 @@ struct bucket_search_parallel_query {
     }
 
     // dodgy hack cause nullptr cannot be converted to pointer
+    CUDA_HOST_DEVICE
     static const pointer get_child1(const pointer& bucket) {
         CHECK(false,"this should not be called")
 	    return pointer(-1);
     }
+
+    CUDA_HOST_DEVICE
     static const pointer get_child2(const pointer& bucket) {
         CHECK(false,"this should not be called")
 	    return pointer(-1);
     }
 
     //const double_d& get_min_bucket_size() const { return m_bucket_side_length; }
+    CUDA_HOST_DEVICE
     const box_type& get_bounds() const { return m_bounds; }
+
+    CUDA_HOST_DEVICE
     const bool_d& get_periodic() const { return m_periodic; }
 
     CUDA_HOST_DEVICE
     iterator_range<particle_iterator> get_bucket_particles(const reference bucket) const {
+#ifndef __CUDA_ARCH__
         ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
+#endif
 
         const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(bucket);
         const unsigned int range_start_index = m_bucket_begin[bucket_index]; 
@@ -466,12 +479,14 @@ struct bucket_search_parallel_query {
         }
     }
 
+    CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
         return iterator_range<all_iterator>(
                 all_iterator(),
                 all_iterator());
     }
 
+    CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree() const {
         return iterator_range<all_iterator>(
                 all_iterator(int_d(0),m_end_bucket+1),
@@ -479,10 +494,12 @@ struct bucket_search_parallel_query {
                 );
     }
 
+    CUDA_HOST_DEVICE
     size_t number_of_buckets() const {
         return (m_end_bucket+1).prod();
     }
 
+    CUDA_HOST_DEVICE
     raw_pointer get_particles_begin() const {
         return m_particles_begin;
     }

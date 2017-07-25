@@ -106,6 +106,7 @@ public:
     }
 
     void test_documentation(void) {
+#if not defined(__CUDACC__)
         //[particle_container
         /*`
         [section Particle Container]
@@ -373,6 +374,7 @@ public:
         [endsect]
         */
         //]
+#endif
     }
 
 

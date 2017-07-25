@@ -284,16 +284,20 @@ public:
     /// push the particle \p val to the back of the container (if its within
     /// the searchable domain)
     void push_back (const value_type& val, bool update_neighbour_search=true) {
+        // overwrite id, alive and random generator
+        Aboria::get<id>(val) = this->next_id++;
+        Aboria::get<random>(val).seed(seed + uint32_t(Aboria::get<id>(val)));
+        Aboria::get<alive>(val) = true;
+
+        // add val to container
         traits_type::push_back(data,val);
+
         reference i = *(end()-1);
-        Aboria::get<alive>(i) = true;
         if (searchable) {
             detail::enforce_domain_impl<traits_type::dimension,reference> enforcer(search.get_min(),search.get_max(),search.get_periodic());
             enforcer(i);
         }
         if (get<alive>(i)) {
-            Aboria::get<id>(i) = this->next_id++;
-            Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
             if (searchable && update_neighbour_search) {
                 search.add_points_at_end(begin(),end()-1,end());
             }
