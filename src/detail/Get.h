@@ -11,6 +11,8 @@
 #include <tuple>
 #include <type_traits>
 
+#include "Log.h"
+
 
 #if defined(__CUDACC__)
 namespace thrust {
@@ -30,6 +32,7 @@ template <typename TUPLE, typename mpl_vector_type>
 struct getter_type;
 
 // what follows is a copy of thrust's detail/raw_reference_cast.h for Aboria's getter type
+/*
 namespace detail {
 
 // specialize is_unwrappable
@@ -135,6 +138,7 @@ raw_reference_cast(Aboria::getter_type<TUPLE,mpl_vector_type> t)
   return thrust::detail::tuple_host_device_transform<detail::raw_reference_detail::raw_reference_tuple_helper>(t, f);
 } // end raw_reference_cast
 
+*/
 
 } //namespace thrust
 #endif
@@ -207,6 +211,93 @@ struct remove_pointer_or_reference_for_null_type<thrust::null_type&> {
 };
 #endif
 
+template <typename T>
+struct is_std_getter_type {
+    const static bool value = false;
+    typedef std::false_type type;
+};
+
+template <typename M, typename ... T>
+struct is_std_getter_type<getter_type<std::tuple<T...>,M>> {
+    const static bool value = true;
+    typedef std::true_type type;
+};
+
+template <typename T>
+struct is_thrust_getter_type {
+    const static bool value = false;
+    typedef std::false_type type;
+};
+
+template <typename M, typename ... T>
+struct is_thrust_getter_type<getter_type<thrust::tuple<T...>,M>> {
+    const static bool value = true;
+    typedef std::true_type type;
+};
+
+template<size_t I, typename ... T>
+__aboria_hd_warning_disable__ 
+CUDA_HOST_DEVICE
+typename std::tuple_element<I,std::tuple<T...>>::type const &
+get_impl(const std::tuple<T...>& arg)
+{
+#if defined(__CUDA_ARCH__)
+    ERROR_CUDA("Cannot use get_impl on `std::tuple` in device code");
+    return std::get<I>(arg);
+#else
+    return std::get<I>(arg);
+#endif
+}
+
+template<size_t I, typename ... T>
+__aboria_hd_warning_disable__ 
+CUDA_HOST_DEVICE
+typename std::tuple_element<I,std::tuple<T...>>::type &
+get_impl(std::tuple<T...>& arg)
+{
+#if defined(__CUDA_ARCH__)
+    ERROR_CUDA("Cannot use get_impl on `std::tuple` in device code");
+    return std::get<I>(arg);
+#else
+    return std::get<I>(arg);
+#endif
+}
+
+template<size_t I, typename ... T>
+__aboria_hd_warning_disable__ 
+CUDA_HOST_DEVICE
+typename std::tuple_element<I,std::tuple<T...>>::type &
+get_impl(std::tuple<T...>&& arg)
+{
+#if defined(__CUDA_ARCH__)
+    ERROR_CUDA("Cannot use get_impl on `std::tuple` in device code");
+    return std::get<I>(arg);
+#else
+    return std::get<I>(arg);
+#endif
+}
+
+template<size_t I, typename ... T>
+CUDA_HOST_DEVICE
+typename thrust::tuple_element<I,thrust::tuple<T...>>::type const &
+get_impl(const thrust::tuple<T...>& arg) {
+    return thrust::get<I>(arg);
+}
+
+template<size_t I, typename ... T>
+CUDA_HOST_DEVICE
+typename thrust::tuple_element<I,thrust::tuple<T...>>::type &
+get_impl(thrust::tuple<T...>& arg) {
+    return thrust::get<I>(arg);
+}
+
+template<size_t I, typename ... T>
+CUDA_HOST_DEVICE
+typename thrust::tuple_element<I,thrust::tuple<T...>>::type &
+get_impl(thrust::tuple<T...>&& arg) {
+    return thrust::get<I>(arg);
+}
+
 
 template<typename tuple_of_iterators>
 struct zip_helper {};
@@ -220,17 +311,28 @@ struct zip_helper<std::tuple<T ...>> {
     typedef std::tuple<typename std::iterator_traits<T>::reference ...> tuple_reference; 
     typedef std::tuple<typename std::iterator_traits<T>::pointer...> tuple_pointer; 
 
-    typedef std::tuple<
+#if defined(__CUDACC__)
+    typedef thrust::tuple<
         typename detail::remove_pointer_or_reference_for_null_type<
             typename std::iterator_traits<T>::value_type*>::type...
         > tuple_raw_pointer; 
+#else
+typedef std::tuple<
+        typename detail::remove_pointer_or_reference_for_null_type<
+            typename std::iterator_traits<T>::value_type*>::type...
+        > tuple_raw_pointer; 
+#endif
+
+
     typedef std::tuple<
         typename detail::remove_pointer_or_reference_for_null_type<
             typename std::iterator_traits<T>::value_type&>::type...
         > tuple_raw_reference; 
     typedef typename std::tuple<T...> iterator_tuple_type;
+
     template <unsigned int N>
     using tuple_element = std::tuple_element<N,iterator_tuple_type>;
+
     typedef typename std::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
     typedef typename std::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
     typedef make_index_sequence<std::tuple_size<iterator_tuple_type>::value> index_type;
@@ -254,8 +356,10 @@ struct zip_helper<thrust::tuple<T ...>> {
             typename thrust::iterator_traits<T>::value_type&>::type...
         > tuple_raw_reference; 
     typedef typename thrust::tuple<T...> iterator_tuple_type;
+
     template <unsigned int N>
     using tuple_element = thrust::tuple_element<N,iterator_tuple_type>;
+
     typedef typename thrust::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
     typedef typename thrust::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
     typedef typename thrust::iterator_system<typename tuple_element<0>::type> system;
@@ -270,13 +374,13 @@ template <typename mpl_vector_type, typename ... Types>
 struct zip_iterator_base<std::tuple<Types...>, mpl_vector_type>{
     typedef std::tuple<Types...> iterator_tuple_type;
  
-    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,MplVector> value_type;
-    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,MplVector> reference;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
   
  public:
   
-typedef std::iterator_facade<
-    zip_iterator<iterator_tuple_type,MplVector>,
+typedef boost::iterator_facade<
+    zip_iterator<iterator_tuple_type,mpl_vector_type>,
     value_type,  
     typename zip_helper<iterator_tuple_type>::iterator_category,
     reference,
@@ -290,13 +394,13 @@ template <typename mpl_vector_type, typename ... Types>
 struct zip_iterator_base<thrust::tuple<Types...>, mpl_vector_type>{
     typedef thrust::tuple<Types...> iterator_tuple_type;
  
-    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,MplVector> value_type;
-    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,MplVector> reference;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_value_type,mpl_vector_type> value_type;
+    typedef getter_type<typename zip_helper<iterator_tuple_type>::tuple_reference,mpl_vector_type> reference;
   
  public:
   
 typedef iterator_facade_ns::iterator_facade<
-        zip_iterator<iterator_tuple_type,MplVector>,
+        zip_iterator<iterator_tuple_type,mpl_vector_type>,
         value_type,  
         typename zip_helper<iterator_tuple_type>::system,
         typename zip_helper<iterator_tuple_type>::iterator_category,
@@ -351,14 +455,14 @@ __aboria_hd_warning_disable__
 template<typename reference, typename iterator_tuple_type, std::size_t... I>
 CUDA_HOST_DEVICE
 static reference make_reference(const iterator_tuple_type& tuple, index_sequence<I...>) {
-    return reference(*(tuple_ns::get<I>(tuple))...);
+    return reference(*(get_impl<I>(tuple))...);
 }
 
 __aboria_hd_warning_disable__
 template<typename pointer, typename tuple_type, std::size_t... I>
 CUDA_HOST_DEVICE
 static pointer make_pointer(tuple_type&& tuple, index_sequence<I...>) {
-    return pointer(&(tuple_ns::get<I>(std::forward(tuple)))...);
+    return pointer(&(get_impl<I>(std::forward(tuple)))...);
 }
 
 __aboria_hd_warning_disable__
@@ -367,7 +471,7 @@ CUDA_HOST_DEVICE
 static void increment_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
     //using expander = int[];
     //(void)expander { 0, (++std::get<I>(tuple),0)...};
-    int dummy[] = { 0, (++tuple_ns::get<I>(tuple),0)...};
+    int dummy[] = { 0, (++get_impl<I>(tuple),0)...};
     static_cast<void>(dummy);
 }
 
@@ -375,7 +479,7 @@ __aboria_hd_warning_disable__
 template<typename iterator_tuple_type, std::size_t... I>
 CUDA_HOST_DEVICE
 static void decrement_impl(iterator_tuple_type& tuple, index_sequence<I...>) {
-    int dummy[] = { 0, (--tuple_ns::get<I>(tuple),0)...};
+    int dummy[] = { 0, (--get_impl<I>(tuple),0)...};
     static_cast<void>(dummy);
 }
 
@@ -384,17 +488,17 @@ template<typename iterator_tuple_type, std::size_t... I>
 CUDA_HOST_DEVICE
 static void advance_impl(iterator_tuple_type& tuple, 
         const typename zip_helper<iterator_tuple_type>::difference_type n,  index_sequence<I...>) {
-    int dummy[] = { 0, (tuple_ns::get<I>(tuple)+=n,0)...};
+    int dummy[] = { 0, (get_impl<I>(tuple)+=n,0)...};
     static_cast<void>(dummy);
 }
 
 template <typename ZipIterator, std::size_t... I>
 typename ZipIterator::tuple_raw_pointer 
 iterator_to_raw_pointer_impl(const ZipIterator& arg, index_sequence<I...>) {
-#if defined(__CUDACC__)
-    return typename ZipIterator::tuple_raw_pointer(thrust::raw_pointer_cast(&*thrust::get<I>(arg.get_tuple()))...);
+#ifdef HAVE_THRUST
+    return typename ZipIterator::tuple_raw_pointer(thrust::raw_pointer_cast(&*get_impl<I>(arg.get_tuple()))...);
 #else
-    return typename ZipIterator::tuple_raw_pointer(&*std::get<I>(arg.get_tuple())...);
+    return typename ZipIterator::tuple_raw_pointer(&*get_impl<I>(arg.get_tuple())...);
 #endif
 }
     
@@ -408,7 +512,7 @@ iterator_to_raw_pointer(const zip_iterator<iterator_tuple_type,mpl_vector_type>&
 template <typename Iterator>
 typename std::iterator_traits<Iterator>::value_type*
 iterator_to_raw_pointer(const Iterator& arg, std::false_type) {
-#if defined(__CUDACC__)
+#ifdef HAVE_THRUST
     return thrust::raw_pointer_cast(&*arg);
 #else
     return &*arg;

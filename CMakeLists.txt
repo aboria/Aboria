@@ -57,6 +57,7 @@ if (Aboria_USE_THRUST)
     set(
     CUDA_NVCC_FLAGS
     ${CUDA_NVCC_FLAGS};
+    --expt-relaxed-constexpr
     --keep
     #--std=c++11
     -ftemplate-backtrace-limit=0

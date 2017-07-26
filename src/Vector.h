@@ -626,7 +626,7 @@ inline const Vector<T,N> imag(const Vector<T,N>& x)  { return 0; }
 template <typename T, unsigned int N>
 inline const Vector<T,N> abs(const Vector<T,N>& x)  { 
 	Vector<T,N> ret;
-    for (int i; i<N; ++i) {
+    for (int i=0; i<N; ++i) {
         ret[i] = std::fabs(x[i]);
     }
     return ret; 
@@ -636,7 +636,7 @@ inline const Vector<T,N> abs(const Vector<T,N>& x)  {
 template <typename T, unsigned int N>
 inline const Vector<T,N> abs2(const Vector<T,N>& x)  { 
 	Vector<T,N> ret;
-    for (int i; i<N; ++i) {
+    for (int i=0; i<N; ++i) {
         ret[i] = x[i]*x[i];
     }
     return ret; 
