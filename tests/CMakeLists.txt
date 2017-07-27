@@ -175,6 +175,10 @@ set(ParticleContainerTest
     test_documentation
     )
 
+set(ParticleContainerTestCuda
+    test_thrust_vector_bucket_search_parallel
+    )
+
 set(BDTestFile bd.h)
 set(BDTest
     test_bucket_search_serial
@@ -270,7 +274,6 @@ foreach(test_suite ${test_suites})
     aboria_cxx_test(${test_suite} ${test_suite}.cpp ${${test_suite}File})
     target_link_libraries(${test_suite} ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
     
-
     foreach(test_name ${${test_suite}})
         add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
     endforeach()

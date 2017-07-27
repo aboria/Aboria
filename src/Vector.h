@@ -664,29 +664,29 @@ std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     return out;
 }
 
-typedef Vector<double,1> double1;
-typedef Vector<double,2> double2;
-typedef Vector<double,3> double3;
-typedef Vector<double,4> double4;
-typedef Vector<double,5> double5;
-typedef Vector<double,6> double6;
-typedef Vector<double,7> double7;
+typedef Vector<double,1> vdouble1;
+typedef Vector<double,2> vdouble2;
+typedef Vector<double,3> vdouble3;
+typedef Vector<double,4> vdouble4;
+typedef Vector<double,5> vdouble5;
+typedef Vector<double,6> vdouble6;
+typedef Vector<double,7> vdouble7;
 
-typedef Vector<int,1> int1;
-typedef Vector<int,2> int2;
-typedef Vector<int,3> int3;
-typedef Vector<int,4> int4;
-typedef Vector<int,5> int5;
-typedef Vector<int,6> int6;
-typedef Vector<int,7> int7;
+typedef Vector<int,1> vint1;
+typedef Vector<int,2> vint2;
+typedef Vector<int,3> vint3;
+typedef Vector<int,4> vint4;
+typedef Vector<int,5> vint5;
+typedef Vector<int,6> vint6;
+typedef Vector<int,7> vint7;
 
-typedef Vector<bool,1> bool1;
-typedef Vector<bool,2> bool2;
-typedef Vector<bool,3> bool3;
-typedef Vector<bool,4> bool4;
-typedef Vector<bool,5> bool5;
-typedef Vector<bool,6> bool6;
-typedef Vector<bool,7> bool7;
+typedef Vector<bool,1> vbool1;
+typedef Vector<bool,2> vbool2;
+typedef Vector<bool,3> vbool3;
+typedef Vector<bool,4> vbool4;
+typedef Vector<bool,5> vbool5;
+typedef Vector<bool,6> vbool6;
+typedef Vector<bool,7> vbool7;
 
 /*
 #define double1 aboria_double1

@@ -64,7 +64,7 @@ class octtree:
     typedef typename Traits::vector_unsigned_int vector_unsigned_int;
     typedef typename Traits::vector_int vector_int;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
-    typedef typename Traits::template vector_type<int2>::type vector_int2;
+    typedef typename Traits::template vector_type<vint2>::type vector_int2;
     static const unsigned int dimension = Traits::dimension;
 
     // number of children = 2^d
@@ -492,7 +492,7 @@ struct octtree<traits>::write_nodes {
 
 template <typename traits>
 struct octtree<traits>::make_leaf {
-    typedef int2 result_type;
+    typedef vint2 result_type;
     template <typename tuple_type>
         inline CUDA_HOST_DEVICE
         result_type operator()(const tuple_type &t) const
@@ -667,7 +667,7 @@ struct octtree_query {
     raw_pointer m_particles_begin;
     size_t m_number_of_nodes;
 
-    int2* m_leaves_begin;
+    vint2* m_leaves_begin;
     int* m_nodes_begin;
 
     const box_type& get_bounds() const { return m_bounds; }
@@ -711,7 +711,7 @@ struct octtree_query {
     get_bucket_particles(reference bucket) const {
         ASSERT(detail::is_leaf(bucket), "ERROR: bucket is not a leaf!");
         const int leaf_idx = detail::get_leaf_offset(bucket);
-        const int2& particle_idxs = m_leaves_begin[leaf_idx];
+        const vint2& particle_idxs = m_leaves_begin[leaf_idx];
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_bucket_particles: looking in bucket with start index = "<<particle_idxs[0]<<" end index = "<<particle_idxs[1]);
 #endif        

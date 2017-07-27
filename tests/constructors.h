@@ -99,7 +99,7 @@ public:
     }
 
     void test_thrust_vector(void) {
-#ifdef HAVE_THRUST
+#if defined(__CUDACC__)
         helper_OneDouble<thrust::device_vector>();
         helper_OneVect3d<thrust::device_vector>();
         helper_NoData<thrust::device_vector>();

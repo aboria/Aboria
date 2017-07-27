@@ -135,12 +135,12 @@ public:
 
         /*`
         If you wanted each particle to have a potential variable held as a `double`, as 
-        well as a velocity variable held as a [classref Aboria::double3] vector class, 
+        well as a velocity variable held as a [classref Aboria::vdouble3] vector class, 
         then you would write the following
         */
 
         ABORIA_VARIABLE(potential,double,"potential energy")
-        ABORIA_VARIABLE(velocity,double3,"velocity")
+        ABORIA_VARIABLE(velocity,vdouble3,"velocity")
         typedef Particles<std::tuple<potential,velocity>> MyParticles3;
 
         /*`
@@ -193,7 +193,7 @@ public:
         */
         
         typedef MyParticles::position position;
-        get<position>(p) = double3(0,0,0);
+        get<position>(p) = vdouble3(0,0,0);
 
         /*`
         Getting the id or alive flag from a `value_type` is much simpler
@@ -226,7 +226,7 @@ public:
         /*`
         There are a number of predefined `double`, `int`, and `bool` vector types, up to 
         dimension 7, and typedefed by the pattern <type><dim>. E.g. [classref 
-        Aboria::double3], [classref Aboria::double6], [classref Aboria::int2], [classref 
+        Aboria::vdouble3], [classref Aboria::double6], [classref Aboria::int2], [classref 
         Aboria::bool5]... 
 
         [endsect]
@@ -377,8 +377,6 @@ public:
 #endif
     }
 
-
-
     void test_std_vector_bucket_search_serial(void) {
         helper_add_particle1<std::vector,bucket_search_serial>();
         helper_add_particle2<std::vector,bucket_search_serial>();
@@ -393,12 +391,12 @@ public:
         helper_add_delete_particle<std::vector,bucket_search_parallel>();
     }
 
-    void test_thrust_vector(void) {
-#ifdef HAVE_THRUST
-        helper_add_particle1<thrust::device_vector>();
-        helper_add_particle2<thrust::device_vector>();
-        helper_add_particle2_dimensions<thrust::device_vector>();
-        helper_add_delete_particle<thrust::device_vector>();
+    void test_thrust_vector_bucket_search_parallel(void) {
+#if defined(__CUDACC__)
+        helper_add_particle1<thrust::device_vector,bucket_search_parallel>();
+        helper_add_particle2<thrust::device_vector,bucket_search_parallel>();
+        helper_add_particle2_dimensions<thrust::device_vector,bucket_search_parallel>();
+        helper_add_delete_particle<thrust::device_vector,bucket_search_parallel>();
 #endif
     }
 
