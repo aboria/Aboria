@@ -46,6 +46,8 @@ if (Aboria_USE_THRUST)
     find_package(Thrust REQUIRED)
     find_package(CUDA REQUIRED)
 
+    add_definitions(-D__aboria_have_thrust__)
+
     option(Aboria_THRUST_USE_ALGORITHMS "Use CUDA Thrust library algorithms" ON)
     option(Aboria_THRUST_TEST_DEVICE_VECTOR "Turn on tests using thrust::device_vector" OFF)
     if (Aboria_THRUST_USE_ALGORITHMS)

@@ -451,15 +451,15 @@ public:
             LOG(4,"\tgoing to new particle m_current_index = "<<m_current_index);
 #endif
         } 
-        
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tend increment (linked_list_iterator): m_current_index = "<<m_current_index); 
+#endif
         if (m_current_index == detail::get_empty_id()) {
             return false;
         } else {
             return true;
         }
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (linked_list_iterator): m_current_index = "<<m_current_index); 
-#endif
     }
 
     CUDA_HOST_DEVICE

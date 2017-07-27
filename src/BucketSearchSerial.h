@@ -344,7 +344,6 @@ private:
 
     void update_point(iterator update_iterator) {
         const size_t i = std::distance(this->m_particles_begin,update_iterator);
-        const bool particle_based = true;
 
         const int forwardi = m_linked_list[i];
         const int backwardsi = m_linked_list_reverse[i];
@@ -373,7 +372,7 @@ private:
     }
 
     void untrack_point(const size_t i) {
-        ASSERT((i>=0) && (i<m_linked_list.size()),"invalid untrack index");
+        ASSERT(i<m_linked_list.size(),"invalid untrack index");
 
         const int forwardi = m_linked_list[i];
         const int backwardsi = m_linked_list_reverse[i];

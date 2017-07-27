@@ -113,8 +113,6 @@ namespace Aboria {
         }
 
         Scalar coeff(const size_t i, const size_t j) const {
-            ASSERT(i>=0, "i less than zero");
-            ASSERT(j>=0, "j less than zero");
             ASSERT(i < m_row_particles.size(),"i greater than a.size()");
             ASSERT(j < m_col_particles.size(),"j greater than b.size()");
             const_row_reference ai = m_row_particles[i];
@@ -620,8 +618,6 @@ namespace Aboria {
         {};
 
         Scalar coeff(const size_t i, const size_t j) const {
-            ASSERT(i>=0, "i less than zero");
-            ASSERT(j>=0, "j less than zero");
             ASSERT(i < this->m_row_particles.size(),"i greater than a.size()");
             ASSERT(j < this->m_col_particles.size(),"j greater than b.size()");
             const_row_reference ai = this->m_row_particles[i];
