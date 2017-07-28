@@ -89,10 +89,13 @@ swap(getter_type<tuple_type,mpl_vector_type>& x,
 }
 */
 
-
 template <typename iterator_tuple_type, typename mpl_vector_type>
-class zip_iterator: 
-    public detail::zip_iterator_base<iterator_tuple_type,mpl_vector_type>::type {
+class zip_iterator {};
+    
+template <typename mpl_vector_type, typename ... Types>
+class zip_iterator<std::tuple<Types...>, mpl_vector_type>: 
+    public detail::zip_iterator_base<std::tuple<Types...>,mpl_vector_type>::type {
+    typedef std::tuple<Types...> iterator_tuple_type;
 public:
     typedef iterator_tuple_type tuple_type;
     typedef typename detail::zip_iterator_base<tuple_type,mpl_vector_type>::value_type value_type;
@@ -104,8 +107,8 @@ public:
     typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
 
     // Note: Can't call it raw_pointer or thrust thinks it is a trivial iterator!
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> tuple_raw_pointer;
-    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_reference,mpl_vector_type> tuple_raw_reference;
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> getter_raw_pointer;
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_reference,mpl_vector_type> getter_raw_reference;
 
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;
@@ -173,8 +176,98 @@ private:
     }
 
     iterator_tuple_type iter;
-    friend class boost::iterator_core_access;
+    friend class detail::zip_helper<iterator_tuple_type>::iterator_core_access;
 };
+
+
+#ifdef __aboria_have_thrust__
+template <typename mpl_vector_type, typename ... Types>
+class zip_iterator<thrust::tuple<Types...>, mpl_vector_type>: 
+    public detail::zip_iterator_base<thrust::tuple<Types...>,mpl_vector_type>::type {
+    typedef thrust::tuple<Types...> iterator_tuple_type;
+public:
+    typedef iterator_tuple_type tuple_type;
+    typedef typename detail::zip_iterator_base<tuple_type,mpl_vector_type>::value_type value_type;
+    typedef typename detail::zip_iterator_base<tuple_type,mpl_vector_type>::reference reference;
+
+    typedef typename detail::zip_helper<iterator_tuple_type>::difference_type difference_type;
+    typedef typename detail::zip_helper<iterator_tuple_type>::iterator_category iterator_category;
+
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_pointer,mpl_vector_type> pointer;
+
+    // Note: Can't call it raw_pointer or thrust thinks it is a trivial iterator!
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,mpl_vector_type> getter_raw_pointer;
+    typedef getter_type<typename detail::zip_helper<iterator_tuple_type>::tuple_raw_reference,mpl_vector_type> getter_raw_reference;
+
+    template <typename T>
+    using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;
+
+    template<typename T>
+    struct return_type {
+        static const size_t N = elem_by_type<T>::index;
+        typedef const typename detail::zip_helper<iterator_tuple_type>::template tuple_element<N>::type type;
+    };
+
+    zip_iterator() {}
+
+    explicit zip_iterator(iterator_tuple_type iter) : iter(iter) {}
+
+    template <typename ...T>
+    explicit zip_iterator(T... args) : iter(args...) {}
+
+    CUDA_HOST_DEVICE
+    const iterator_tuple_type & get_tuple() const { 
+        #if defined(__CUDA_ARCH__)
+        ERROR_CUDA("Cannot use `zip_iterator` in device code");
+        #endif
+        return iter; 
+    }
+
+    CUDA_HOST_DEVICE
+    iterator_tuple_type & get_tuple() { 
+        #if defined(__CUDA_ARCH__)
+        ERROR_CUDA("Cannot use `zip_iterator` in device code");
+        #endif
+        return iter; 
+    }
+
+private:
+
+    typedef typename detail::zip_helper<iterator_tuple_type>::index_type index_type;
+
+    void increment() { 
+        detail::zip_helper<iterator_tuple_type>::increment_impl(iter,index_type()); 
+    }
+    
+    void decrement() { 
+        detail::zip_helper<iterator_tuple_type>::decrement_impl(iter,index_type()); 
+    }
+
+    bool equal(zip_iterator const& other) const { 
+        return detail::get_impl<0>(other.iter) 
+            == detail::get_impl<0>(iter);
+    }
+
+    reference dereference() const { 
+        return reference(
+                detail::zip_helper<iterator_tuple_type>::make_reference(
+                    iter,index_type())
+                ); 
+    }
+
+    difference_type distance_to(zip_iterator const& other) const { 
+        return thrust::get<0>(other.iter) 
+             - thrust::get<0>(iter);
+    }
+
+    void advance(difference_type n) { 
+        detail::zip_helper<iterator_tuple_type>::advance_impl(iter,n,index_type()); 
+    }
+
+    iterator_tuple_type iter;
+    friend class detail::zip_helper<iterator_tuple_type>::iterator_core_access;
+};
+#endif
 
 
 

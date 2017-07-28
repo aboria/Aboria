@@ -184,9 +184,9 @@ struct getter_type_base<false, MplVector, std::tuple<Types...>>{
  * TODO: api is not good, consider doing an iterator_facade type thing
  */
 #ifdef __aboria_have_thrust__ 
-template <typename MplVector, typename ... Types> 
-struct getter_type_base<false, MplVector, thrust::tuple<Types...>>{
-    typedef thrust::tuple<Types...> tuple_type;
+template <typename MplVector, typename TT1, typename TT2, typename TT3, typename TT4, typename TT5, typename TT6, typename TT7, typename TT8, typename TT9> 
+struct getter_type_base<false, MplVector, thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>>{
+    typedef thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9> tuple_type;
     typedef MplVector mpl_vector_type;
  
     typedef typename detail::getter_helper<tuple_type>::tuple_reference tuple_reference;
@@ -486,9 +486,9 @@ struct getter_type_base<true, MplVector, std::tuple<Types*...>>{
 };
 
 #ifdef __aboria_have_thrust__ 
-template <typename MplVector, typename ... Types> 
-struct getter_type_base<true, MplVector, thrust::tuple<Types*...>>{
-    typedef thrust::tuple<Types*...> tuple_type;
+template <typename MplVector, typename TT1, typename TT2, typename TT3, typename TT4, typename TT5, typename TT6, typename TT7, typename TT8, typename TT9> 
+struct getter_type_base<true, MplVector, thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>>{
+    typedef thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9> tuple_type;
     typedef MplVector mpl_vector_type;
 
     template <typename T>

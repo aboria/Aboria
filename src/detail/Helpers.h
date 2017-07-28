@@ -1,6 +1,9 @@
 #ifndef HELPERS_DETAIL_H_ 
 #define HELPERS_DETAIL_H_ 
 
+
+#include <boost/iterator/iterator_facade.hpp>
+
 namespace Aboria {
 namespace detail {
 
@@ -134,6 +137,7 @@ typedef std::tuple<
     typedef typename std::iterator_traits<typename tuple_element<0>::type>::difference_type difference_type;
     typedef typename std::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
     typedef make_index_sequence<std::tuple_size<iterator_tuple_type>::value> index_type;
+    typedef boost::iterator_core_access iterator_core_access;
 
     template<std::size_t... I>
     static void increment_impl(tuple_iterator_type& tuple, index_sequence<I...>) {
@@ -158,6 +162,14 @@ typedef std::tuple<
     static tuple_reference make_reference(const tuple_iterator_type& tuple, 
                                         index_sequence<I...>) {
         return tuple_reference(*(std::get<I>(tuple))...);
+    }
+
+    template <std::size_t... I>
+    static tuple_raw_pointer make_raw_pointer(const tuple_iterator_type& arg, 
+            index_sequence<I...>) {
+        return tuple_raw_pointer(
+                &*std::get<I>(arg)...
+                );
     }
 
 };
@@ -189,6 +201,7 @@ struct zip_helper<thrust::tuple<T ...>> {
     typedef typename thrust::iterator_traits<typename tuple_element<0>::type>::iterator_category iterator_category;
     typedef typename thrust::iterator_system<typename tuple_element<0>::type> system;
     typedef make_index_sequence<thrust::tuple_size<iterator_tuple_type>::value> index_type;
+    typedef thrust::iterator_core_access iterator_core_access;
 
     template<std::size_t... I>
     CUDA_HOST_DEVICE
@@ -217,6 +230,14 @@ struct zip_helper<thrust::tuple<T ...>> {
     static tuple_reference make_reference(const tuple_iterator_type& tuple, 
                                         index_sequence<I...>) {
         return tuple_reference(*(thrust::get<I>(tuple))...);
+    }
+
+    template <std::size_t... I>
+    static tuple_raw_pointer make_raw_pointer(const tuple_iterator_type& arg, 
+            index_sequence<I...>) {
+        return tuple_raw_pointer(
+                thrust::raw_pointer_cast(&*thrust::get<I>(arg))...
+                );
     }
 
 };

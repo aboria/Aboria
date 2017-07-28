@@ -61,7 +61,6 @@ if (Aboria_USE_THRUST)
     ${CUDA_NVCC_FLAGS};
     --expt-relaxed-constexpr
     --keep
-    #--std=c++11
     -ftemplate-backtrace-limit=0
     #-gencode arch=compute_20,code=sm_20
     )

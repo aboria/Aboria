@@ -290,7 +290,7 @@ public:
         // overwrite id, alive and random generator
         reference i = *(end()-1);
         Aboria::get<id>(i) = this->next_id++;
-        Aboria::get<random>(i).seed(seed + uint32_t(Aboria::get<id>(i)));
+        Aboria::get<random>(i) = generator_type((seed + uint32_t(Aboria::get<id>(i))));
         Aboria::get<alive>(i) = true;
 
         if (searchable) {

@@ -166,8 +166,8 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename iterator::reference reference;
     typedef typename iterator::value_type value_type;
     typedef typename iterator::pointer pointer;
-    typedef typename iterator::tuple_raw_pointer raw_pointer;
-    typedef typename iterator::tuple_raw_reference raw_reference;
+    typedef typename iterator::getter_raw_pointer raw_pointer;
+    typedef typename iterator::getter_raw_reference raw_reference;
     typedef typename const_iterator::reference const_reference;
     typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
@@ -229,6 +229,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     template<std::size_t... I>
     static void push_back_impl(data_type& data, const value_type& val, detail::index_sequence<I...>) {
         int dummy[] = { 0, (get_by_index<I>(data).push_back(get_by_index<I>(val)),void(),0)... };
+        //int dummy[] = { 0, (detail::get_impl<I>(data.get_tuple()).push_back(detail::get_impl<I>(val.get_tuple())),void(),0)... };
         static_cast<void>(dummy); // Avoid warning for unused variable.
     }
 
