@@ -106,6 +106,28 @@ struct enforce_domain_impl {
         Aboria::get<position>(i) = r;
     }
 };
+
+template <typename Reference>
+struct resize_lambda {
+    uint32_t seed;
+    int next_id;
+    const size_t *start_id_pointer;
+
+    resize_lambda(const uint32_t &seed, const int &next_id, const size_t *start_id_pointer):
+            seed(seed),next_id(next_id),start_id_pointer(start_id_pointer) {}
+
+    CUDA_HOST_DEVICE
+    void operator()(Reference i) const {
+        const size_t index = &Aboria::get<id>(i)-start_id_pointer;
+        Aboria::get<alive>(i) = true;
+        Aboria::get<id>(i) = index + next_id;
+        Aboria::get<random>(i).seed(
+                seed + uint32_t(Aboria::get<id>(i))
+                );
+
+    }
+};
+
 }
     /*
 #ifdef HAVE_THUST
@@ -271,13 +293,9 @@ public:
         size_t old_n = this->size();
         traits_type::resize(data,n);         
         if (n > old_n) {
-            for (int i=old_n; i<n; ++i) {
-                Aboria::get<alive>(data)[i] = true;
-                Aboria::get<id>(data)[i] = this->next_id++;
-                Aboria::get<random>(data)[i].seed(
-                        seed + uint32_t(Aboria::get<id>(data)[i])
-                        );
-            }
+            const size_t *start_id_pointer = iterator_to_raw_pointer(get<id>(data).begin() + old_n); 
+            detail::for_each(begin()+old_n, end(), detail::resize_lambda<reference>(seed,next_id,start_id_pointer));
+            next_id += n-old_n;
         }
     }
     

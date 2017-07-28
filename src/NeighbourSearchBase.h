@@ -311,8 +311,8 @@ public:
 
     CUDA_HOST_DEVICE
     size_t operator-(ranges_iterator start) const {
-        return tuple_ns::get<0>(m_current_p.get_tuple()) 
-                - tuple_ns::get<0>(start.m_current_p.get_tuple());
+        return get_by_index<0>(m_current_p) 
+                - get_by_index<0>(start.m_current_p);
     }
 
     CUDA_HOST_DEVICE
@@ -393,8 +393,8 @@ public:
     CUDA_HOST_DEVICE
     void operator=(const linked_list_iterator& other) {
         m_current_index = other.m_current_index;
-        if (tuple_ns::get<0>(m_particles_begin.get_tuple()) != 
-            tuple_ns::get<0>(other.m_particles_begin.get_tuple())) {
+        if (get_by_index<0>(m_particles_begin) != 
+            get_by_index<0>(other.m_particles_begin)) {
             m_particles_begin = other.m_particles_begin;
         }
         m_linked_list_begin = other.m_linked_list_begin;

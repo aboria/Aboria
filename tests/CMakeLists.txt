@@ -167,6 +167,11 @@ set(NeighboursTest
     test_std_vector_octtree
     test_documentation
     )
+set(NeighboursTestCuda
+    test_thrust_vector_bucket_search_serial
+    test_thrust_vector_bucket_search_parallel
+    )
+
 
 set(ParticleContainerTestFile particle_container.h)
 set(ParticleContainerTest 

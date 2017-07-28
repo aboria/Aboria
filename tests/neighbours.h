@@ -48,6 +48,9 @@ using namespace Aboria;
 class NeighboursTest : public CxxTest::TestSuite {
 public:
 
+    ABORIA_VARIABLE(scalar,double,"scalar")
+    ABORIA_VARIABLE(neighbours,int,"number of neighbours")
+        
     void test_documentation(void) {
 #if not defined(__CUDACC__)
 //[neighbour_search
@@ -71,7 +74,7 @@ containing a few randomly placed particles
         std::default_random_engine gen; 
         std::uniform_real_distribution<double> uniform(-1,1);
         for (int i=0; i<N; ++i) {
-            get<position>(particles)[i] = Aboria::double3(uniform(gen),uniform(gen),uniform(gen));
+            get<position>(particles)[i] = vdouble3(uniform(gen),uniform(gen),uniform(gen));
         }
 
 /*`
@@ -84,8 +87,8 @@ is periodic in all directions.
 
 */
 
-        Aboria::double3 min(-1);
-        Aboria::double3 max(1);
+        vdouble3 min(-1);
+        vdouble3 max(1);
         bool3 periodic(true);
         particles.init_neighbour_search(min,max,periodic);
 /*`
@@ -100,7 +103,7 @@ counts all the particles within a distance `radius` of the point $(0,0,0)$.
 
         double radius = 0.2;
         int count = 0;
-        for (const auto& i: euclidean_search(particles.get_query(),Aboria::double3(0),radius)) {
+        for (const auto& i: euclidean_search(particles.get_query(),vdouble3(0),radius)) {
             count++;
         }
         std::cout << "There are "<< count << " particles.\n";
@@ -132,9 +135,9 @@ For example,
 
 */
 
-        for (const auto& i: euclidean_search(particles.get_query(),Aboria::double3(0),radius)) {
+        for (const auto& i: euclidean_search(particles.get_query(),vdouble3(0),radius)) {
             particle_type::const_reference b = std::get<0>(i);
-            const Aboria::double3& dx = std::get<1>(i);
+            const vdouble3& dx = std::get<1>(i);
             std::cout << "Found a particle with dx = " << dx << " and id = " << get<id>(b) << "\n";
         }
 
@@ -230,67 +233,65 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
     template<template <typename,typename> class Vector,template <typename> class SearchMethod>
     void helper_single_particle(void) {
-        ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>,3,Vector,SearchMethod> Test_type;
         typedef position_d<3> position;
     	Test_type test;
-    	Aboria::double3 min(-1,-1,-1);
-    	Aboria::double3 max(1,1,1);
-    	Aboria::double3 periodic(true,true,true);
+    	vdouble3 min(-1,-1,-1);
+    	vdouble3 max(1,1,1);
+    	vdouble3 periodic(true,true,true);
     	double radius = 0.1;
     	test.init_neighbour_search(min,max,periodic);
     	typename Test_type::value_type p;
 
-        get<position>(p) = Aboria::double3(0,0,0);
+        get<position>(p) = vdouble3(0,0,0);
     	test.push_back(p);
 
     	int count = 0;
-    	for (auto tpl: euclidean_search(test.get_query(),Aboria::double3(radius/2,radius/2,0),radius)) {
+    	for (auto tpl: euclidean_search(test.get_query(),vdouble3(radius/2,radius/2,0),radius)) {
     		count++;
     	}
     	TS_ASSERT_EQUALS(count,1);
 
-    	auto tpl = euclidean_search(test.get_query(),Aboria::double3(radius/2,radius/2,0),radius);
+    	auto tpl = euclidean_search(test.get_query(),vdouble3(radius/2,radius/2,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
 
-    	tpl = euclidean_search(test.get_query(),Aboria::double3(2*radius,0,0),radius);
+    	tpl = euclidean_search(test.get_query(),vdouble3(2*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
     template<template <typename,typename> class Vector,template <typename> class SearchMethod>
     void helper_two_particles(void) {
-        ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>,3,Vector,SearchMethod> Test_type;
         typedef position_d<3> position;
     	Test_type test;
-    	Aboria::double3 min(-1,-1,-1);
-    	Aboria::double3 max(1,1,1);
-    	Aboria::double3 periodic(true,true,true);
+    	vdouble3 min(-1,-1,-1);
+    	vdouble3 max(1,1,1);
+    	vdouble3 periodic(true,true,true);
     	double radius = 0.1;
     	test.init_neighbour_search(min,max,periodic);
     	typename Test_type::value_type p;
 
-        get<position>(p) = Aboria::double3(0,0,0);
+        get<position>(p) = vdouble3(0,0,0);
     	test.push_back(p);
 
-        get<position>(p) = Aboria::double3(radius/2,0,0);
+        get<position>(p) = vdouble3(radius/2,0,0);
     	test.push_back(p);
 
-    	auto tpl = euclidean_search(test.get_query(),Aboria::double3(1.1*radius,0,0),radius);
+    	auto tpl = euclidean_search(test.get_query(),vdouble3(1.1*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
     	typename Test_type::const_reference pfound = tuple_ns::get<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
-    	tpl = euclidean_search(test.get_query(),Aboria::double3(0.9*radius,0,0),radius);
+    	tpl = euclidean_search(test.get_query(),vdouble3(0.9*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = euclidean_search(test.get_query(),Aboria::double3(1.6*radius,0,0),radius);
+    	tpl = euclidean_search(test.get_query(),vdouble3(1.6*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
 
-    	tpl = euclidean_search(test.get_query(),Aboria::double3(0.25*radius,0.9*radius,0),radius);
+    	tpl = euclidean_search(test.get_query(),vdouble3(0.25*radius,0.9*radius,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),2);
 
-    	tpl = euclidean_search(test.get_query(),Aboria::double3(0.25*radius,0.99*radius,0),radius);
+    	tpl = euclidean_search(test.get_query(),vdouble3(0.25*radius,0.99*radius,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),0);
     }
 
@@ -319,7 +320,6 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
              template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
     void helper_d(const int n, const double r, const int neighbour_n) {
-        ABORIA_VARIABLE(scalar,double,"scalar")
     	typedef Particles<std::tuple<scalar>,D,VectorType,SearchMethod> Test_type;
         typedef position_d<D> position;
         typedef Vector<double,D> double_d;
@@ -377,7 +377,6 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
              template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
     void helper_d_random(const int N, const double r, const int neighbour_n, const bool is_periodic, const bool push_back_construction) {
-        ABORIA_VARIABLE(neighbours,int,"number of neighbours")
     	typedef Particles<std::tuple<neighbours>,D,VectorType,SearchMethod> particles_type;
         typedef position_d<D> position;
         typedef Vector<double,D> double_d;
