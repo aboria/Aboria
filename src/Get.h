@@ -284,6 +284,24 @@ auto iterator_to_raw_pointer(const Iterator& arg) ->
 }
 
 
+
+/*
+template <typename Iterator>
+auto pointer_to_raw_pointer(const Iterator& arg) ->
+    decltype(detail::pointer_to_raw_pointer(arg,
+                typename detail::is_zip_iterator<Iterator>::type()
+                           ))
+
+{
+    return detail::pointer_to_raw_pointer(arg,
+            typename detail::is_zip_iterator<Iterator>::type()
+                           );
+}
+*/
+
+
+
+
 //
 // Particle getters/setters
 //

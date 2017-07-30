@@ -109,14 +109,14 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename position::value_type position_value_type;
     typedef alive::value_type alive_value_type;
     typedef id::value_type id_value_type;
-    typedef random::value_type random_value_type;
+    typedef generator::value_type random_value_type;
     typedef typename traits::template vector_type<position_value_type>::type position_vector_type;
     typedef typename traits::template vector_type<alive_value_type>::type alive_vector_type;
     typedef typename traits::template vector_type<id_value_type>::type id_vector_type;
     typedef typename traits::template vector_type<random_value_type>::type random_vector_type;
 
     typedef traits traits_type;
-    typedef mpl::vector<position,id,alive,random,TYPES...> mpl_type_vector;
+    typedef mpl::vector<position,id,alive,generator,TYPES...> mpl_type_vector;
 
     /*
     typedef tuple_ns::tuple<
@@ -168,6 +168,7 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef typename iterator::pointer pointer;
     typedef typename iterator::getter_raw_pointer raw_pointer;
     typedef typename iterator::getter_raw_reference raw_reference;
+    typedef typename const_iterator::getter_raw_reference raw_const_reference;
     typedef typename const_iterator::reference const_reference;
     typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 

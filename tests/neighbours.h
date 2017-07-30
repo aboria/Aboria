@@ -49,7 +49,8 @@ class NeighboursTest : public CxxTest::TestSuite {
 public:
 
     ABORIA_VARIABLE(scalar,double,"scalar")
-    ABORIA_VARIABLE(neighbours,int,"number of neighbours")
+    ABORIA_VARIABLE(neighbours_brute,int,"number of neighbours")
+    ABORIA_VARIABLE(neighbours_aboria,int,"number of neighbours")
         
     void test_documentation(void) {
 #if not defined(__CUDACC__)
@@ -89,7 +90,7 @@ is periodic in all directions.
 
         vdouble3 min(-1);
         vdouble3 max(1);
-        bool3 periodic(true);
+        vbool3 periodic(true);
         particles.init_neighbour_search(min,max,periodic);
 /*`
 
@@ -373,11 +374,107 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
     }
 
+    template <unsigned int D, typename Reference>
+    struct set_random_position {
+        double a,b;
+
+        set_random_position(double a, double b):a(a),b(b) {}
+
+        CUDA_HOST_DEVICE
+        void operator()(Reference arg) {
+            Vector<double,D>& p = get<position_d<D>>(arg);
+            generator_type& gen = get<generator>(arg);
+
+            detail::uniform_real_distribution<float> dist(a, b);
+            for (int d = 0; d < D; ++d) {
+                p[d] = dist(gen);
+            }
+
+        }
+    };
+
+    template <typename ParticlesType>
+    struct brute_force_check {
+        typedef typename ParticlesType::raw_reference reference;
+        typedef typename ParticlesType::raw_pointer pointer;
+        typedef typename ParticlesType::raw_const_reference const_reference;
+        typedef typename ParticlesType::double_d double_d;
+        typedef typename ParticlesType::int_d int_d;
+        typedef typename ParticlesType::query_type query_type;
+        typedef typename ParticlesType::position position;
+        static const unsigned int D = ParticlesType::dimension;
+
+        query_type query;
+        double_d min;
+        double_d max;
+        double r2;
+        bool is_periodic;
+
+        brute_force_check(ParticlesType &particles, double_d& min, double_d& max, double r2, bool is_periodic):
+            query(particles.get_query()),
+            min(min),max(max),r2(r2),is_periodic(is_periodic) {}
+
+        CUDA_HOST_DEVICE
+        void operator()(reference i) {
+            int count = 0;
+            pointer begin = query.get_particles_begin();
+            double_d& pi = get<position>(i);
+            for (int i = 0; i < query.number_of_particles(); ++i) {
+                const_reference j = *(begin + i);
+                const double_d& pj = get<position>(j);
+                if (is_periodic) {
+                    for (lattice_iterator<D> periodic_it(int_d(-1),int_d(2)); 
+                            periodic_it != false; ++periodic_it) {
+                        if ((pi+(*periodic_it)*(max-min)-pj).squaredNorm() <= r2) {
+                            count++;
+                        }
+                    }
+                } else {
+                    if ((pi-pj).squaredNorm() <= r2) {
+                        count++;
+                    }
+                }
+            }
+            get<neighbours_brute>(i) = count;
+        }
+    };
+    template <typename ParticlesType>
+    struct aboria_check {
+        typedef typename ParticlesType::raw_reference reference;
+        typedef typename ParticlesType::raw_pointer pointer;
+        typedef typename ParticlesType::raw_const_reference const_reference;
+        typedef typename ParticlesType::double_d double_d;
+        typedef typename ParticlesType::query_type query_type;
+        typedef typename ParticlesType::position position;
+        static const unsigned int D = ParticlesType::dimension;
+
+        query_type query;
+        double r;
+        double r2;
+
+        aboria_check(ParticlesType &particles, double r):
+            query(particles.get_query()),r(r),r2(r*r) {}
+
+        CUDA_HOST_DEVICE
+        void operator()(reference i) {
+            int count = 0;
+            for (auto tpl: euclidean_search(query,get<position>(i),r)) {
+                const_reference j = tuple_ns::get<0>(tpl);
+                const double_d& dx = tuple_ns::get<1>(tpl);
+                count++;
+            }
+            get<neighbours_aboria>(i) = count;
+            
+        }
+    };
+                
+
+
     template<unsigned int D, 
              template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
     void helper_d_random(const int N, const double r, const int neighbour_n, const bool is_periodic, const bool push_back_construction) {
-    	typedef Particles<std::tuple<neighbours>,D,VectorType,SearchMethod> particles_type;
+    	typedef Particles<std::tuple<neighbours_brute,neighbours_aboria>,D,VectorType,SearchMethod> particles_type;
         typedef position_d<D> position;
         typedef Vector<double,D> double_d;
         typedef Vector<bool,D> bool_d;
@@ -392,8 +489,9 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         std::cout << "random test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<" push_back_construction = "<<push_back_construction<<"):" << std::endl;
 
         unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
-        std::default_random_engine gen(seed1); 
-        std::uniform_real_distribution<double> uniform(-1,1);
+        particles.set_seed(seed1);
+        generator_type gen(seed1); 
+        detail::uniform_real_distribution<float> uniform(-1.0, 1.0);
 
         if (push_back_construction) {
     	    particles.init_neighbour_search(min,max,periodic,neighbour_n);
@@ -406,65 +504,30 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
             }
         } else {
             particles.resize(N);
-            for (int i=0; i<N; ++i) {
-                for (int d = 0; d < D; ++d) {
-                    get<position>(particles)[i][d] = uniform(gen);
-                }
-            }
+            detail::for_each(std::begin(particles),std::end(particles),set_random_position<D,typename particles_type::raw_reference>(-1.0,1.0));
+            
     	    particles.init_neighbour_search(min,max,periodic,neighbour_n);
         }
 
         // brute force search
         auto t0 = Clock::now();
         Aboria::detail::for_each(particles.begin(),particles.end(),
-                [&](typename particles_type::reference i) {
-                    int count = 0;
-                    for (typename particles_type::const_reference j: particles) {
-                        typename particles_type::double_d pi = get<position>(i);
-                        typename particles_type::double_d pj = get<position>(j);
-                        if (is_periodic) {
-                            for (lattice_iterator<D> periodic_it(int_d(-1),int_d(2)); 
-                                    periodic_it != false; ++periodic_it) {
-                                if ((pi+(*periodic_it)*(max-min)-pj).squaredNorm() <= r2) {
-                                    count++;
-                                }
-                            }
-                        } else {
-                            if ((pi-pj).squaredNorm() <= r2) {
-                                count++;
-                            }
-                        }
-                    }
-                    get<neighbours>(i) = count;
-                    
-                });
+                brute_force_check<particles_type>(particles,min,max,r2,is_periodic));
         auto t1 = Clock::now();
         std::chrono::duration<double> dt_brute = t1 - t0;
 
 
         // Aboria search
-        
         t0 = Clock::now();
         Aboria::detail::for_each(particles.begin(),particles.end(),
-                [&](typename particles_type::reference i) {
-                    int count = 0;
-                    //std::cout << "position of i = "<<get<position>(i)<<std::endl;
-                    for (auto tpl: euclidean_search(particles.get_query(),get<position>(i),r)) {
-                        typename particles_type::const_reference j = tuple_ns::get<0>(tpl);
-                        typename particles_type::double_d dx = tuple_ns::get<1>(tpl);
-                        //std::cout << "position of j = "<<get<position>(j)<<std::endl;
-                        TS_ASSERT_LESS_THAN_EQUALS(dx.squaredNorm(),r2);
-                        count++;
-                    }
-                    TS_ASSERT_EQUALS(count,get<neighbours>(i));
-                    if (get<id>(i)==0) {
-                        std::cout << "\tfor id = 0 found "<<count 
-                                  <<" neighbours and expected "<<get<neighbours>(i)
-                                  <<" neighbours"<<std::endl;
-                    }
-                });
+                aboria_check<particles_type>(particles,r)); 
         t1 = Clock::now();
         std::chrono::duration<double> dt_aboria = t1 - t0;
+        for (int i = 0; i < particles.size(); ++i) {
+            TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                             int(get<neighbours_aboria>(particles)[i]));
+        }
+            
 
         std::cout << "\ttiming result: Aboria = "<<dt_aboria.count()
                   <<" versus brute force = "<<dt_brute.count()<<std::endl;

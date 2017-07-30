@@ -190,6 +190,8 @@ struct getter_type_base<false, MplVector, thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,
     typedef MplVector mpl_vector_type;
  
     typedef typename detail::getter_helper<tuple_type>::tuple_reference tuple_reference;
+    typedef typename detail::getter_helper<tuple_type>::tuple_device_reference tuple_device_reference;
+    typedef typename detail::getter_helper<tuple_type>::index_type index_type;
     template <typename T>
     using elem_by_type = detail::get_elem_by_type<T,mpl_vector_type>;
     template <typename T>
@@ -206,9 +208,6 @@ struct getter_type_base<false, MplVector, thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,
     CUDA_HOST_DEVICE
     getter_type_base(const getter_type_base& other):data(other.data) {}
 
-    CUDA_HOST_DEVICE
-    getter_type_base(getter_type_base&& other):data(std::move(other.data)) {}
-
     template <typename T=tuple_reference, typename = typename
     std::enable_if<
         !std::is_same<T,tuple_type>::value
@@ -224,6 +223,22 @@ struct getter_type_base<false, MplVector, thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,
     CUDA_HOST_DEVICE
     getter_type_base(getter_type_base<false,mpl_vector_type,tuple_reference>&& other):
         data(std::move(other.data)) {}
+
+    template <typename T=tuple_device_reference, typename = typename
+    std::enable_if<
+        !std::is_same<T,tuple_type>::value
+        >::type>
+    CUDA_HOST_DEVICE
+    getter_type_base(const getter_type_base<false,mpl_vector_type,tuple_device_reference>& other):
+        data(detail::getter_helper<tuple_type>::raw_reference_cast(other.data,index_type())) {}
+
+    template <typename T=tuple_device_reference, typename = typename
+    std::enable_if<
+        !std::is_same<T,tuple_type>::value
+        >::type>
+    CUDA_HOST_DEVICE
+    getter_type_base(getter_type_base<false,mpl_vector_type,tuple_device_reference>&& other):
+        data(detail::getter_helper<tuple_type>::raw_reference_cast(std::move(other.data),index_type())) {}
 
     template <typename T, typename = typename
     std::enable_if<

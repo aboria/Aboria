@@ -146,7 +146,7 @@ struct normal {
     normal() {};
     normal(uint32_t seed): generator(seed) {};
     double operator()() {
-        std::normal_distribution<double> normal_distribution;
+        detail::normal_distribution<double> normal_distribution;
         return normal_distribution(generator);
     }
     /*
@@ -157,7 +157,7 @@ struct normal {
        }
        */
     double operator()(generator_type& gen) const {
-        std::normal_distribution<double> normal_distribution;
+        detail::normal_distribution<double> normal_distribution;
         return normal_distribution(gen);
     }
     generator_type generator;
@@ -169,7 +169,7 @@ struct uniform {
     uniform() {};
     uniform(uint32_t seed): generator(seed) {};
     double operator()() {
-        std::uniform_real_distribution<double> uniform_distribution;
+        detail::uniform_real_distribution<double> uniform_distribution;
         return uniform_distribution(generator);
     }
     /*
@@ -180,7 +180,7 @@ struct uniform {
        }
        */
     double operator()(generator_type& gen) const {
-        std::uniform_real_distribution<double> normal_distribution;
+        detail::uniform_real_distribution<double> normal_distribution;
         return normal_distribution(gen);
     }
     generator_type generator;

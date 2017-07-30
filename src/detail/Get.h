@@ -390,12 +390,23 @@ iterator_to_raw_pointer(const zip_iterator<iterator_tuple_type,mpl_vector_type>&
 
 template <typename Iterator>
 typename std::iterator_traits<Iterator>::value_type*
-iterator_to_raw_pointer(const Iterator& arg, std::false_type) {
-#ifdef __aboria_have_thrust__
-    return thrust::raw_pointer_cast(&*arg);
-#else
+single_iterator_to_raw_pointer(const Iterator& arg, std::random_access_iterator_tag) {
     return &*arg;
+}
+
+#ifdef __aboria_have_thrust__
+template <typename Iterator>
+typename std::iterator_traits<Iterator>::value_type*
+single_iterator_to_raw_pointer(const Iterator& arg, thrust::random_access_device_iterator_tag) {
+    return thrust::raw_pointer_cast(&*arg);
+}
 #endif
+
+template <typename Iterator>
+typename std::iterator_traits<Iterator>::value_type*
+iterator_to_raw_pointer(const Iterator& arg, std::false_type) {
+    return single_iterator_to_raw_pointer(arg, 
+            typename std::iterator_traits<Iterator>::iterator_category());
 }
 
 

@@ -72,9 +72,19 @@ struct upper_bound_impl {
     }
 };
 
-#ifdef __aboria_use_thrust_algorithms__
+#if defined(__CUDACC__)
+
 template <typename T>
 using counting_iterator = thrust::counting_iterator<T>;
+
+template <typename T>
+using counting_iterator = thrust::counting_iterator<T>;
+
+template <typename T>
+using uniform_real_distribution = thrust::uniform_real_distribution<T>;
+
+template <typename T>
+using normal_distribution = thrust::normal_distribution<T>;
 
 static const thrust::detail::functional::placeholder<0>::type _1;
 static const thrust::detail::functional::placeholder<1>::type _2;
@@ -83,10 +93,17 @@ static const thrust::detail::functional::placeholder<2>::type _3;
 using thrust::make_transform_iterator;
 using thrust::make_zip_iterator;
 using thrust::make_tuple;
+
 #else
 
 template <typename T>
 using counting_iterator = boost::counting_iterator<T>;
+
+template <typename T>
+using uniform_real_distribution = std::uniform_real_distribution<T>;
+
+template <typename T>
+using normal_distribution = std::normal_distribution<T>;
 
 template <class UnaryFunction, class Iterator>
 using transform_iterator = boost::transform_iterator<UnaryFunction, Iterator>;

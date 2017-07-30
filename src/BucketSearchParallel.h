@@ -500,6 +500,11 @@ struct bucket_search_parallel_query {
     }
 
     CUDA_HOST_DEVICE
+    size_t number_of_particles() const {
+        return (m_particles_end-m_particles_begin);
+    }
+
+    CUDA_HOST_DEVICE
     raw_pointer get_particles_begin() const {
         return m_particles_begin;
     }

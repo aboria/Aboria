@@ -9,6 +9,7 @@
     #include <thrust/iterator/iterator_facade.h>
     #include <thrust/sequence.h>
     #include <thrust/transform_scan.h>
+    #include <thrust/random.h>
     #include <nppdefs.h>
 #endif
 

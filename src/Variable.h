@@ -74,7 +74,7 @@ struct Variable {
 ABORIA_VARIABLE_VECTOR(position_d,double,"position")
 ABORIA_VARIABLE(alive,uint8_t,"is alive")
 ABORIA_VARIABLE(id,size_t,"id")
-ABORIA_VARIABLE(random,generator_type,"random")
+ABORIA_VARIABLE(generator,generator_type,"random generator seed")
 
 }
 #endif /* VARIABLE_H_ */

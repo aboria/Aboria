@@ -242,6 +242,8 @@ private:
         this->m_query.m_dummy_root.node_type.sub.divhigh = this->m_query.m_bounds.bmin[0];
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
+        this->m_query.m_number_of_particles = this->m_particles_end
+                                             -this->m_particles_begin;
 
         print_tree(m_kd_tree.get_root_node());
     }
@@ -419,6 +421,7 @@ struct nanoflann_adaptor_query {
     detail::bbox<dimension> m_bounds;
     raw_pointer m_particles_begin;
     size_t m_number_of_buckets;
+    size_t m_number_of_particles;
 
     value_type* m_root;
     value_type m_dummy_root;
@@ -587,6 +590,10 @@ struct nanoflann_adaptor_query {
 
     iterator_range<all_iterator> get_subtree() const {
         return iterator_range<all_iterator>(all_iterator(get_children(),this),all_iterator());
+    }
+
+    size_t number_of_particles() const {
+        return m_number_of_particles;
     }
 
     raw_pointer get_particles_begin() const {

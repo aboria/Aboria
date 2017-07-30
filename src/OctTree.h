@@ -129,6 +129,8 @@ private:
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
         this->m_query.m_number_of_nodes = m_nodes.size();
+        this->m_query.m_number_of_particles = this->m_particles_end
+                                             -this->m_particles_begin;
 
     }
 
@@ -154,6 +156,8 @@ private:
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
         this->m_query.m_number_of_nodes = m_nodes.size();
+        this->m_query.m_number_of_particles = this->m_particles_end
+                                             -this->m_particles_begin;
     }
 
 
@@ -167,6 +171,8 @@ private:
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
         this->m_query.m_number_of_nodes = m_nodes.size();
+        this->m_query.m_number_of_particles = this->m_particles_end
+                                             -this->m_particles_begin;
     }
      
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
@@ -666,6 +672,7 @@ struct octtree_query {
     box_type m_bounds;
     raw_pointer m_particles_begin;
     size_t m_number_of_nodes;
+    size_t m_number_of_particles;
 
     vint2* m_leaves_begin;
     int* m_nodes_begin;
@@ -785,7 +792,10 @@ struct octtree_query {
     iterator_range<all_iterator> get_subtree() const {
         return iterator_range<all_iterator>(all_iterator(get_children(),this),all_iterator());
     }
-    
+
+    size_t number_of_particles() const {
+        return m_number_of_particles;
+    }
 
     raw_pointer get_particles_begin() const {
         return m_particles_begin;

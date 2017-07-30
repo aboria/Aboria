@@ -183,6 +183,7 @@ private:
 
     void update_iterator_impl() {
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
         //check_data_structure();
     }
 
@@ -488,6 +489,7 @@ struct bucket_search_serial_query {
     detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 
     raw_pointer m_particles_begin;
+    raw_pointer m_particles_end;
     int *m_buckets_begin;
     int *m_linked_list_begin;
 
@@ -664,6 +666,11 @@ struct bucket_search_serial_query {
     CUDA_HOST_DEVICE
     size_t number_of_buckets() const {
         return (m_end_bucket+1).prod();
+    }
+
+    CUDA_HOST_DEVICE
+    size_t number_of_particles() const {
+        return (m_particles_end-m_particles_begin);
     }
 
     CUDA_HOST_DEVICE

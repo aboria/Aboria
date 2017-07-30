@@ -60,15 +60,36 @@ struct getter_helper {};
 template <typename ... T>
 struct getter_helper<thrust::tuple<T ...>> {
     typedef typename thrust::tuple<T...> tuple_type; 
-    typedef typename thrust::tuple<T& ...> tuple_reference; 
+
+    typedef typename thrust::tuple<
+                    typename std::conditional<
+                        std::is_same<T,thrust::null_type>::value,
+                        T,
+                        T&>::type ...> tuple_reference; 
+
+    typedef typename thrust::tuple<
+                    typename std::conditional<
+                        std::is_same<T,thrust::null_type>::value,
+                        T,
+                        thrust::device_reference<   
+                            typename std::remove_reference<T>::type>
+                            >::type ...> tuple_device_reference; 
     template <unsigned int N>
     using return_type = thrust::tuple_element<N,tuple_type>;
     typedef typename thrust::tuple_element<0,tuple_type>::type first_type; 
     typedef typename std::is_reference<first_type> is_reference;
 
+    typedef make_index_sequence<thrust::tuple_size<tuple_type>::value> index_type;
+
     template<std::size_t... I>
     static tuple_reference make_reference(tuple_type& tuple, detail::index_sequence<I...>) {
         return thrust::tie(thrust::get<I>(tuple)...);
+    }
+
+    template<std::size_t... I>
+    static tuple_reference raw_reference_cast(const tuple_device_reference& tuple, 
+                                              detail::index_sequence<I...>) {
+        return tuple_reference(thrust::raw_reference_cast(thrust::get<I>(tuple))...);
     }
 
 };
@@ -82,6 +103,7 @@ struct getter_helper<std::tuple<T ...>> {
     using return_type = std::tuple_element<N,tuple_type>;
     typedef typename std::tuple_element<0,tuple_type>::type first_type; 
     typedef typename std::is_reference<first_type> is_reference;
+    typedef make_index_sequence<std::tuple_size<tuple_type>::value> index_type;
 
     template<std::size_t... I>
     static tuple_reference make_reference(tuple_type& tuple, detail::index_sequence<I...>) {

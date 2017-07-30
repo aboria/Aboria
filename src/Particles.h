@@ -118,13 +118,28 @@ struct resize_lambda {
 
     CUDA_HOST_DEVICE
     void operator()(Reference i) const {
-        const size_t index = &Aboria::get<id>(i)-start_id_pointer;
         Aboria::get<alive>(i) = true;
-        Aboria::get<id>(i) = index + next_id;
-        Aboria::get<random>(i).seed(
-                seed + uint32_t(Aboria::get<id>(i))
-                );
 
+        const size_t index = Aboria::iterator_to_raw_pointer(&Aboria::get<id>(i))-start_id_pointer;
+        Aboria::get<id>(i) = index + next_id;
+
+        generator_type& gen = Aboria::get<generator>(i);
+        gen.seed(seed + uint32_t(Aboria::get<id>(i)));
+
+    }
+};
+
+template <typename Reference>
+struct set_seed_lambda {
+    uint32_t seed;
+
+    set_seed_lambda(const uint32_t &seed):
+            seed(seed) {}
+
+    CUDA_HOST_DEVICE
+    void operator()(Reference i) const {
+        generator_type& gen = Aboria::get<generator>(i);
+        gen.seed(seed + uint32_t(Aboria::get<id>(i)));
     }
 };
 
@@ -186,6 +201,17 @@ public:
     /// a tuple type containing const_references to value_types for each Variable
     typedef typename traits_type::const_reference const_reference;
 
+    /// 
+    /// a tuple type containing raw references to value_types for each Variable
+    typedef typename traits_type::raw_pointer raw_pointer;
+
+    /// 
+    /// a tuple type containing raw references to value_types for each Variable
+    typedef typename traits_type::raw_reference raw_reference;
+
+    /// 
+    /// a tuple type containing raw references to value_types for each Variable
+    typedef typename traits_type::raw_const_reference raw_const_reference;
    
     /// 
     /// type used to hold data (a tuple of vectors)
@@ -234,6 +260,10 @@ public:
     ///
     /// a type to store a vector of doubles with given dimension
     typedef Vector<double,dimension> double_d;
+
+    ///
+    /// a type to store a vector of doubles with given dimension
+    typedef Vector<double,dimension> int_d;
 
     ///
     /// a type to store a vector of bool with given dimension
@@ -294,7 +324,7 @@ public:
         traits_type::resize(data,n);         
         if (n > old_n) {
             const size_t *start_id_pointer = iterator_to_raw_pointer(get<id>(data).begin() + old_n); 
-            detail::for_each(begin()+old_n, end(), detail::resize_lambda<reference>(seed,next_id,start_id_pointer));
+            detail::for_each(begin()+old_n, end(), detail::resize_lambda<raw_reference>(seed,next_id,start_id_pointer));
             next_id += n-old_n;
         }
     }
@@ -308,7 +338,7 @@ public:
         // overwrite id, alive and random generator
         reference i = *(end()-1);
         Aboria::get<id>(i) = this->next_id++;
-        Aboria::get<random>(i) = generator_type((seed + uint32_t(Aboria::get<id>(i))));
+        Aboria::get<generator>(i) = generator_type((seed + uint32_t(Aboria::get<id>(i))));
         Aboria::get<alive>(i) = true;
 
         if (searchable) {
@@ -331,11 +361,9 @@ public:
     /// each particle is set to \p value plus the particle's id
     void set_seed(const uint32_t value) {
         seed = value;
-        for (size_t i=0; i<size(); ++i) {
-            Aboria::get<random>(data)[i].seed(
-                        seed + uint32_t(Aboria::get<id>(data)[i])
-                    );
-        }
+        detail::for_each(begin(),end(),
+                detail::set_seed_lambda<raw_reference>(seed));
+        
     }
 
     /// push a new particle with position \p position

@@ -45,6 +45,10 @@
     typedef unsigned __int64 uint64_t;  // Visual Studio 6.0(VC6) and newer..
     typedef unsigned __int32 uint32_t;
 #endif
+#if defined(__CUDACC__)
+    typedef thrust::detail::uint64_t uint64_t;  //nvcc 
+    typedef thrust::detail::uint32_t uint32_t;  //nvcc
+#endif
 
 // Double mixing function
 #define MIX2(x0,x1,rx,z0,z1,rz) \
@@ -98,7 +102,10 @@ public:
     typedef uint32_t result_type;
 
     // req: 26.5.1.3 Uniform random number generator requirements, p.906, table 116, row 3 & 4
-#if __cplusplus <= 199711L
+#if defined(__CUDACC__)
+    static const result_type min = 0;
+    static const result_type max = 0xFFFFFFFF;
+#elif __cplusplus <= 199711L
     static result_type (min)() { return 0; }
     static result_type (max)() { return 0xFFFFFFFF; }
 #else
