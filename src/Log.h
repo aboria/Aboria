@@ -59,6 +59,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
             raise(SIGTRAP); \
         }
 
+#define CHECK_CUDA(condition, message) \
+		if (! (condition)) { \
+            printf("Assertion %s failed in %s line %d message %s\n",#condition,__FILE__,__LINE__,message); \
+            raise(SIGTRAP); \
+        }
+
+
 #define ERROR(message) \
             std::cerr << "Error at " << __FILE__ \
                       << " line " << __LINE__ << ": " << message << std::endl; \

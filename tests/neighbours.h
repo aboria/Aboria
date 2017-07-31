@@ -280,7 +280,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
     	auto tpl = euclidean_search(test.get_query(),vdouble3(1.1*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
-    	typename Test_type::const_reference pfound = tuple_ns::get<0>(*tpl.begin());
+    	typename Test_type::const_reference pfound = detail::get_impl<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
     	tpl = euclidean_search(test.get_query(),vdouble3(0.9*radius,0,0),radius);
@@ -305,12 +305,11 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         double max_distance;
         query_type query;
 
-        CUDA_HOST_DEVICE 
         has_n_neighbours(const query_type& query, 
                 const double max_distance, const unsigned int n):
             query(query),n(n),max_distance(max_distance) {}
 
-        CUDA_HOST_DEVICE 
+        ABORIA_HOST_DEVICE_IGNORE_WARN
         void operator()(reference i) {
             auto tpl = distance_search<LNormNumber>(query,get<position>(i),max_distance);
             TS_ASSERT_EQUALS(tpl.end()-tpl.begin(),n);
@@ -414,7 +413,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
             query(particles.get_query()),
             min(min),max(max),r2(r2),is_periodic(is_periodic) {}
 
-        CUDA_HOST_DEVICE
+        ABORIA_HOST_DEVICE_IGNORE_WARN
         void operator()(reference i) {
             int count = 0;
             pointer begin = query.get_particles_begin();
@@ -455,12 +454,12 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         aboria_check(ParticlesType &particles, double r):
             query(particles.get_query()),r(r),r2(r*r) {}
 
-        CUDA_HOST_DEVICE
+        ABORIA_HOST_DEVICE_IGNORE_WARN
         void operator()(reference i) {
             int count = 0;
             for (auto tpl: euclidean_search(query,get<position>(i),r)) {
-                const_reference j = tuple_ns::get<0>(tpl);
-                const double_d& dx = tuple_ns::get<1>(tpl);
+                const_reference j = detail::get_impl<0>(tpl);
+                const double_d& dx = detail::get_impl<1>(tpl);
                 count++;
             }
             get<neighbours_aboria>(i) = count;

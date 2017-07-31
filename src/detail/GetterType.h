@@ -425,9 +425,21 @@ struct getter_type_base<true, MplVector, std::tuple<Types*...>>{
         data.swap(other.data);
     }
 
-    const tuple_type & get_tuple() const { return data; }
     CUDA_HOST_DEVICE
-    tuple_type & get_tuple() { return data; }
+    const tuple_type & get_tuple() const { 
+        #if defined(__CUDA_ARCH__)
+        ERROR_CUDA("Cannot use `getter_type` with `std::tuple` in device code");
+        #endif
+        return data; 
+    }
+
+    CUDA_HOST_DEVICE
+    tuple_type & get_tuple() { 
+        #if defined(__CUDA_ARCH__)
+        ERROR_CUDA("Cannot use `getter_type` with `std::tuple` in device code");
+        #endif
+        return data; 
+    }
 
     
     bool operator==(const getter_type_base& other) const {

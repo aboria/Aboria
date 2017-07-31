@@ -24,12 +24,17 @@
     #define __aboria_hd_warning_disable__ \
     #pragma hd_warning_disable
 
+    #define ABORIA_HOST_DEVICE_IGNORE_WARN \
+        #pragma hd_warning_disable \
+        __host__ __device__
+
     // if compiling with cuda compiler use cuda's tuple and iterator_facade
     namespace tuple_ns = thrust;
     namespace iterator_facade_ns = thrust;
 #else
     #define CUDA_HOST_DEVICE 
     #define __aboria_hd_warning_disable__
+    #define ABORIA_HOST_DEVICE_IGNORE_WARN
     
     #include <boost/iterator/iterator_facade.hpp>
 

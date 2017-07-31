@@ -198,9 +198,8 @@ struct is_thrust_zip_iterator<zip_iterator<thrust::tuple<T...>,M>> {
     typedef std::true_type type;
 };
 
+ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
-__aboria_hd_warning_disable__ 
-CUDA_HOST_DEVICE
 typename std::tuple_element<I,std::tuple<T...>>::type const &
 get_impl(const std::tuple<T...>& arg)
 {
@@ -212,9 +211,8 @@ get_impl(const std::tuple<T...>& arg)
 #endif
 }
 
+ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
-__aboria_hd_warning_disable__ 
-CUDA_HOST_DEVICE
 typename std::tuple_element<I,std::tuple<T...>>::type &
 get_impl(std::tuple<T...>& arg)
 {
@@ -226,9 +224,8 @@ get_impl(std::tuple<T...>& arg)
 #endif
 }
 
+ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
-__aboria_hd_warning_disable__ 
-CUDA_HOST_DEVICE
 typename std::tuple_element<I,std::tuple<T...>>::type &
 get_impl(std::tuple<T...>&& arg)
 {

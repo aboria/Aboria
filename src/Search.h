@@ -92,13 +92,13 @@ class search_iterator {
     particle_iterator m_current_particle;
 
 public:
-    typedef const tuple_ns::tuple<p_reference,const double_d&>* pointer;
+    typedef const typename Traits::template tuple<p_reference,const double_d&>* pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const tuple_ns::tuple<p_reference,const double_d&> reference;
-    typedef const tuple_ns::tuple<p_reference,const double_d&> value_type;
+    typedef const typename Traits::template tuple<p_reference,const double_d&> reference;
+    typedef const typename Traits::template tuple<p_reference,const double_d&> value_type;
 	typedef std::ptrdiff_t difference_type;
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     static iterator_range<periodic_iterator_type> get_periodic_range(const bool_d is_periodic) {
         int_d start,end;
         for (int i = 0; i < dimension; ++i) {
@@ -110,12 +110,18 @@ public:
                 periodic_iterator_type());
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     search_iterator():
         m_valid(false)
     {}
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    search_iterator(const search_iterator&) = default;
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    search_iterator(search_iterator&&) = default;
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     search_iterator(const Query &query,
                     const double_d &r,
                     const double max_distance):
@@ -133,6 +139,10 @@ public:
     {
 
 #if defined(__CUDA_ARCH__)
+        CHECK_CUDA((!std::is_same<typename Traits::template vector<double>,
+                                  std::vector<double>>::value),
+                   "Cannot use std::vector in device code");
+
         LOG_CUDA(3,"\tconstructor (search_iterator)");
 #else
         LOG(3,"\tconstructor (search_iterator with query pt = "<<m_r<<", and m_current_point = "<<m_current_point<<")");
@@ -161,27 +171,30 @@ public:
 
 #endif
     }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    search_iterator& operator=(const search_iterator&) = default;
     
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator *() const {
         return dereference();
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator ->() {
         return dereference();
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     search_iterator& operator++() {
         increment();
         return *this;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     search_iterator operator++(int) {
         search_iterator tmp(*this);
         operator++();
         return tmp;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     size_t operator-(search_iterator start) const {
         size_t count = 0;
         while (start != *this) {
@@ -190,20 +203,18 @@ public:
         }
         return count;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator==(const search_iterator& rhs) {
         return equal(rhs);
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator!=(const search_iterator& rhs){
         return !operator==(rhs);
     }
 
  private:
-    friend class boost::iterator_core_access;
 
-
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool equal(search_iterator const& other) const {
         return m_valid ? 
                     m_current_particle == other.m_current_particle
@@ -212,7 +223,7 @@ public:
     }
 
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool get_valid_bucket() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_valid_bucket:"); 
@@ -236,7 +247,7 @@ public:
         return true;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool get_valid_candidate() {
         while (m_current_particle == m_particle_range.end()) {
 #ifndef __CUDA_ARCH__
@@ -252,7 +263,7 @@ public:
         return true;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool go_to_next_candidate() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tgo_to_next_candidate (search_iterator):"); 
@@ -263,7 +274,7 @@ public:
 
     
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool check_candidate() {
         //const double_d& p = get<position>(*m_current_particle) + m_particle_range.get_transpose();
         const double_d& p = get<position>(*m_current_particle); 
@@ -284,7 +295,7 @@ public:
         return !outside;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     void increment() {
 #ifndef __CUDA_ARCH__
         LOG(3,"\tincrement (search_iterator):"); 
@@ -303,7 +314,7 @@ public:
     }
 
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference dereference() const
     { return reference(*m_current_particle,m_dx); }
 
@@ -326,6 +337,7 @@ get_buckets_near_point(const double_d &position, const double max_distance, deta
 
 template<typename Query,
          typename SearchIterator = search_iterator<Query,-1>>
+CUDA_HOST_DEVICE
 iterator_range<SearchIterator> 
 chebyshev_search(const Query& query, 
            const typename Query::double_d& centre,
@@ -338,6 +350,7 @@ chebyshev_search(const Query& query,
 
 template<typename Query,
          typename SearchIterator = search_iterator<Query,1>>
+CUDA_HOST_DEVICE
 iterator_range<SearchIterator> 
 manhatten_search(const Query& query, 
            const typename Query::double_d& centre,
@@ -348,6 +361,7 @@ manhatten_search(const Query& query,
             );
 }
 
+ABORIA_HOST_DEVICE_IGNORE_WARN
 template<typename Query,
          typename SearchIterator = search_iterator<Query,2>>
 iterator_range<SearchIterator> 
@@ -360,6 +374,7 @@ euclidean_search(const Query& query,
             );
 }
 
+ABORIA_HOST_DEVICE_IGNORE_WARN
 template<int LNormNumber,
          typename Query,
          typename SearchIterator = search_iterator<Query,LNormNumber>>

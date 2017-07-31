@@ -493,38 +493,44 @@ struct bucket_search_serial_query {
     int *m_buckets_begin;
     int *m_linked_list_begin;
 
-    inline
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bucket_search_serial_query():
         m_periodic(),
         m_particles_begin(),
         m_buckets_begin()
-    {}
+    {
+    #if defined(__CUDA_ARCH__)
+        CHECK_CUDA((!std::is_same<typename Traits::template vector<double>,
+                                  std::vector<double>>::value),
+                   "Cannot use std::vector in device code");
+    #endif
+    }
+
 
     /*
      * functions for trees
      */
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     static bool is_leaf_node(const value_type& bucket) {
         return true;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     static bool is_tree() {
         return false;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     child_iterator get_children() const {
         return child_iterator(int_d(0),m_end_bucket+1);
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     child_iterator get_children(const child_iterator& ci) const {
         return child_iterator();
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const box_type get_bounds(const child_iterator& ci) const {
         box_type bounds;
         bounds.bmin = (*ci)*m_bucket_side_length + m_bounds.bmin;
@@ -533,23 +539,25 @@ struct bucket_search_serial_query {
     }
     
     // dodgy hack cause nullptr cannot be converted to pointer
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     static const pointer get_child1(const pointer& bucket) {
         CHECK(false,"this should not be called")
 	    return pointer(-1);
     }
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     static const pointer get_child2(const pointer& bucket) {
         CHECK(false,"this should not be called")
 	    return pointer(-1);
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const box_type& get_bounds() const { return m_bounds; }
-    CUDA_HOST_DEVICE
+    
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const bool_d& get_periodic() const { return m_periodic; }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range<particle_iterator> 
     get_bucket_particles(const reference bucket) const {
 #ifndef __CUDA_ARCH__
@@ -568,7 +576,7 @@ struct bucket_search_serial_query {
                 particle_iterator());
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     detail::bbox<dimension> get_bucket_bbox(const reference bucket) const {
         return detail::bbox<dimension>(
                 bucket*m_bucket_side_length + m_bounds.bmin,
@@ -576,7 +584,7 @@ struct bucket_search_serial_query {
                 );
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     box_type get_root_bucket_bounds(reference bucket) const {
         box_type bounds;
         bounds.bmin = bucket*m_bucket_side_length + m_bounds.bmin;
@@ -584,28 +592,28 @@ struct bucket_search_serial_query {
         return bounds;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     void get_bucket(const double_d &position, pointer& bucket, box_type& bounds) const {
         bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
         bounds.bmin = bucket*m_bucket_side_length + m_bounds.bmin;
         bounds.bmax = (bucket+1)*m_bucket_side_length + m_bounds.bmin;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     size_t get_bucket_index(const reference bucket) const {
         return m_point_to_bucket_index.collapse_index_vector(bucket);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
-    CUDA_HOST_DEVICE
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
         return get_buckets_near_point(position,double_d(max_distance));
     }
      
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
-    CUDA_HOST_DEVICE
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
@@ -648,14 +656,14 @@ struct bucket_search_serial_query {
     }
 
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
         return iterator_range<all_iterator>(
                 all_iterator(),
                 all_iterator());
     }
     
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range<all_iterator> get_subtree() const {
         return iterator_range<all_iterator>(
                 all_iterator(int_d(0),m_end_bucket+1),
@@ -663,18 +671,23 @@ struct bucket_search_serial_query {
                 );
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     size_t number_of_buckets() const {
         return (m_end_bucket+1).prod();
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     size_t number_of_particles() const {
         return (m_particles_end-m_particles_begin);
     }
 
-    CUDA_HOST_DEVICE
-    raw_pointer get_particles_begin() const {
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    const raw_pointer& get_particles_begin() const {
+        return m_particles_begin;
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    raw_pointer& get_particles_begin() {
         return m_particles_begin;
     }
 

@@ -61,33 +61,39 @@ struct iterator_range_with_transpose {
     typedef typename traits_type::double_d double_d;
     IteratorType m_begin;
     IteratorType m_end;
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range_with_transpose()
     {}
     /*
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range_with_transpose(IteratorType&& begin, IteratorType&& end, const double_d& transpose):
         m_begin(std::move(begin)),m_end(std::move(end)),m_transpose(transpose) 
     {}
     */
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range_with_transpose(const IteratorType& begin, const IteratorType& end, const double_d &transpose):
         m_begin(begin),m_end(end),m_transpose(transpose) 
     {}
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range_with_transpose(const IteratorType& begin, const IteratorType& end):
         m_begin(begin),m_end(end),m_transpose(0) 
     {}
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const IteratorType &begin() const { return m_begin; }
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const IteratorType &end() const { return m_end; }
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     IteratorType &begin() { return m_begin; }
-    CUDA_HOST_DEVICE
+    
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     IteratorType &end() { return m_end; }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const double_d& get_transpose() { return m_transpose; }
     double_d m_transpose;
 
@@ -98,24 +104,40 @@ struct iterator_range{
     typedef IteratorType iterator;
     IteratorType m_begin;
     IteratorType m_end;
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range()
     {}
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    iterator_range(const iterator_range& arg) = default;
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    iterator_range(iterator_range&& arg) = default;
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    iterator_range& operator=(const iterator_range& ) = default;
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range(const IteratorType& begin, const IteratorType& end):
         m_begin(begin),m_end(end)
     {}
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const IteratorType &begin() const { return m_begin; }
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     const IteratorType &end() const { return m_end; }
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     IteratorType &begin() { return m_begin; }
-    CUDA_HOST_DEVICE
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     IteratorType &end() { return m_end; }
 };
 
 template <typename IteratorType>
+CUDA_HOST_DEVICE
 iterator_range<IteratorType> make_iterator_range(IteratorType&& begin, IteratorType&& end) {
     return iterator_range<IteratorType>(begin,end);
 }
@@ -277,50 +299,50 @@ public:
     typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     ranges_iterator() {}
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     ranges_iterator(const p_pointer& begin):
         m_current_p(begin)
     {}
 
         
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator *() const {
         return dereference();
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator ->() const {
         return dereference();
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     ranges_iterator& operator++() {
         increment();
         return *this;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     ranges_iterator operator++(int) {
         ranges_iterator tmp(*this);
         operator++();
         return tmp;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     size_t operator-(ranges_iterator start) const {
         return get_by_index<0>(m_current_p) 
                 - get_by_index<0>(start.m_current_p);
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator==(const ranges_iterator& rhs) const {
         return equal(rhs);
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator!=(const ranges_iterator& rhs) const {
         return !operator==(rhs);
     }
@@ -328,17 +350,17 @@ public:
 private:
     friend class boost::iterator_core_access;
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool equal(ranges_iterator const& other) const {
         return m_current_p == other.m_current_p;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference dereference() const { 
         return *m_current_p; 
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     void increment() {
         ++m_current_p;
     }
@@ -365,15 +387,20 @@ public:
     typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     linked_list_iterator(): 
         m_current_index(detail::get_empty_id()) {
+#if defined(__CUDA_ARCH__)
+            CHECK_CUDA((!std::is_same<typename Traits::template vector<double>,
+                                      std::vector<double>>::value),
+                       "Cannot use std::vector in device code");
+#endif
     }
 
    
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     linked_list_iterator(
             const int index,
             const p_pointer& particles_begin,
@@ -383,14 +410,14 @@ public:
         m_linked_list_begin(linked_list_begin)
     {}
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     linked_list_iterator(const linked_list_iterator& other):
         m_current_index(other.m_current_index),
         m_particles_begin(other.m_particles_begin),
         m_linked_list_begin(other.m_linked_list_begin)
     {}
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator=(const linked_list_iterator& other) {
         m_current_index = other.m_current_index;
         if (get_by_index<0>(m_particles_begin) != 
@@ -400,26 +427,26 @@ public:
         m_linked_list_begin = other.m_linked_list_begin;
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator *() const {
         return dereference();
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator ->() {
         return dereference();
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     linked_list_iterator& operator++() {
         increment();
         return *this;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     linked_list_iterator operator++(int) {
         linked_list_iterator tmp(*this);
         operator++();
         return tmp;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     size_t operator-(linked_list_iterator start) const {
         size_t count = 0;
         while (start != *this) {
@@ -428,11 +455,11 @@ public:
         }
         return count;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator==(const linked_list_iterator& rhs) const {
         return equal(rhs);
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator!=(const linked_list_iterator& rhs) const {
         return !operator==(rhs);
     }
@@ -440,7 +467,7 @@ public:
  private:
     friend class boost::iterator_core_access;
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool increment() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tincrement (linked_list_iterator):"); 
@@ -462,13 +489,13 @@ public:
         }
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool equal(linked_list_iterator const& other) const {
         return m_current_index == other.m_current_index;
     }
 
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference dereference() const
     { return *(m_particles_begin + m_current_index); }
 
@@ -497,13 +524,13 @@ public:
     typedef const p_reference value_type;
 	typedef std::ptrdiff_t difference_type;
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     index_vector_iterator() 
     {}
        
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     index_vector_iterator(
             Iterator begin,
             const p_pointer& particles_begin):
@@ -512,26 +539,26 @@ public:
     {}
 
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator *() const {
         return dereference();
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference operator ->() {
         return dereference();
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator& operator++() {
         increment();
         return *this;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator operator++(int) {
         iterator tmp(*this);
         operator++();
         return tmp;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     size_t operator-(iterator start) const {
         size_t count = 0;
         while (start != *this) {
@@ -540,11 +567,11 @@ public:
         }
         return count;
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator==(const iterator& rhs) const {
         return equal(rhs);
     }
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     inline bool operator!=(const iterator& rhs) const {
         return !operator==(rhs);
     }
@@ -552,7 +579,7 @@ public:
  private:
     friend class boost::iterator_core_access;
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     void increment() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tincrement (index_vector_iterator):"); 
@@ -563,13 +590,13 @@ public:
 #endif
     }
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     bool equal(iterator const& other) const {
         return m_current_index == other.m_current_index;
     }
 
 
-    CUDA_HOST_DEVICE
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     reference dereference() const
     { return *(m_particles_begin + *m_current_index); }
 
