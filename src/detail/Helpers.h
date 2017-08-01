@@ -200,7 +200,6 @@ typedef std::tuple<
 #ifdef __aboria_have_thrust__
 template <typename ... T>
 struct zip_helper<thrust::tuple<T ...>> {
-    //typedef std::false_type is_thrust;
     typedef thrust::tuple<T...> tuple_iterator_type; 
     typedef thrust::tuple<typename thrust::iterator_traits<T>::value_type ...> tuple_value_type; 
     typedef thrust::tuple<typename thrust::iterator_traits<T>::reference ...> tuple_reference; 

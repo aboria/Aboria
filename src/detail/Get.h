@@ -168,11 +168,13 @@ struct is_thrust_getter_type {
     typedef std::false_type type;
 };
 
+#ifdef __aboria_have_thrust__
 template <typename M, typename ... T>
 struct is_thrust_getter_type<getter_type<thrust::tuple<T...>,M>> {
     const static bool value = true;
     typedef std::true_type type;
 };
+#endif
 
 template <typename T>
 struct is_std_zip_iterator {
@@ -192,11 +194,13 @@ struct is_thrust_zip_iterator {
     typedef std::false_type type;
 };
 
+#ifdef __aboria_have_thrust__
 template <typename M, typename ... T>
 struct is_thrust_zip_iterator<zip_iterator<thrust::tuple<T...>,M>> {
     const static bool value = true;
     typedef std::true_type type;
 };
+#endif
 
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>

@@ -140,12 +140,8 @@ UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
 template<typename T1, typename T2>
 void sort_by_key(T1 start_keys,
         T1 end_keys,
-        T2 start_data) {
-
-#ifdef __aboria_use_thrust_algorithms__
-    thrust::sort_by_key(start_keys,end_keys,start_data);
-#else
-    typedef zip_iterator<tuple_ns::tuple<T1,T2>,mpl::vector<>> pair_zip_type;
+        T2 start_data,std::true_type) {
+    typedef zip_iterator<std::tuple<T1,T2>,mpl::vector<>> pair_zip_type;
     typedef typename pair_zip_type::reference reference;
     typedef typename pair_zip_type::value_type value_type;
 
@@ -153,7 +149,27 @@ void sort_by_key(T1 start_keys,
             pair_zip_type(start_keys,start_data),
             pair_zip_type(end_keys,start_data+std::distance(start_keys,end_keys)),
             detail::iter_comp<value_type>());
+}
+
+#ifdef __aboria_have_thrust__
+template<typename T1, typename T2>
+void sort_by_key(T1 start_keys,
+        T1 end_keys,
+        T2 start_data,std::false_type) {
+    thrust::sort_by_key(start_keys,end_keys,start_data);
+}
 #endif
+
+//TODO: only works for random access iterators
+template<typename T1, typename T2>
+void sort_by_key(T1 start_keys,
+        T1 end_keys,
+        T2 start_data) {
+    //TODO: how to check its generically a std iterator as opposed to a thrust::iterator
+    sort_by_key(start_keys,end_keys,start_data,
+            typename std::is_same<
+            typename std::iterator_traits<T1>::iterator_category,
+            std::random_access_iterator_tag>::type());
 }
 
 template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
