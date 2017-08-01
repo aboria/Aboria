@@ -82,11 +82,13 @@ struct getter_helper<thrust::tuple<T ...>> {
     typedef make_index_sequence<thrust::tuple_size<tuple_type>::value> index_type;
 
     template<std::size_t... I>
+    CUDA_HOST_DEVICE
     static tuple_reference make_reference(tuple_type& tuple, detail::index_sequence<I...>) {
         return thrust::tie(thrust::get<I>(tuple)...);
     }
 
     template<std::size_t... I>
+    CUDA_HOST_DEVICE
     static tuple_reference raw_reference_cast(const tuple_device_reference& tuple, 
                                               detail::index_sequence<I...>) {
         return tuple_reference(thrust::raw_reference_cast(thrust::get<I>(tuple))...);

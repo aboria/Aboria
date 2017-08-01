@@ -91,7 +91,7 @@ class bucket_search_parallel:
 
 
 public:
-    bucket_search_parallel():m_size_calculated_with_n(0),base_type() {}
+    bucket_search_parallel():m_size_calculated_with_n(std::numeric_limits<size_t>::max()),base_type() {}
     static constexpr bool cheap_copy_and_delete_at_end() {
         return false;
     }

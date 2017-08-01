@@ -120,7 +120,7 @@ struct resize_lambda {
     void operator()(Reference i) const {
         Aboria::get<alive>(i) = true;
 
-        const size_t index = Aboria::iterator_to_raw_pointer(&Aboria::get<id>(i))-start_id_pointer;
+        const size_t index = &Aboria::get<id>(i)-start_id_pointer;
         Aboria::get<id>(i) = index + next_id;
 
         generator_type& gen = Aboria::get<generator>(i);

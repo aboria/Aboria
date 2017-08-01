@@ -62,7 +62,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CHECK_CUDA(condition, message) \
 		if (! (condition)) { \
             printf("Assertion %s failed in %s line %d message %s\n",#condition,__FILE__,__LINE__,message); \
-            raise(SIGTRAP); \
+            assert(false); \
         }
 
 
@@ -73,7 +73,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define ERROR_CUDA(message) \
             printf("%s\n",message); \
-            raise(SIGTRAP);
+            assert(false);
 
 
 

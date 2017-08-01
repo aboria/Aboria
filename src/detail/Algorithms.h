@@ -13,6 +13,13 @@ namespace Aboria {
 
 namespace detail {
 
+template <typename T>
+struct  is_std_iterator: 
+    std::is_same<
+            typename std::iterator_traits<T>::iterator_category,
+            std::random_access_iterator_tag
+    > {};
+
 // reorders v such that v_new[i] == v[order[i]]
 template< typename order_iterator, typename value_iterator >
 void reorder_destructive( order_iterator order_begin, order_iterator order_end, value_iterator v )  {
@@ -166,11 +173,31 @@ void sort_by_key(T1 start_keys,
         T1 end_keys,
         T2 start_data) {
     //TODO: how to check its generically a std iterator as opposed to a thrust::iterator
-    sort_by_key(start_keys,end_keys,start_data,
-            typename std::is_same<
-            typename std::iterator_traits<T1>::iterator_category,
-            std::random_access_iterator_tag>::type());
+    sort_by_key(start_keys,end_keys,start_data,typename is_std_iterator<T1>::type());
 }
+
+template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
+void lower_bound(
+        ForwardIterator first,
+        ForwardIterator last,
+        InputIterator values_first,
+        InputIterator values_last,
+        OutputIterator result, std::true_type) {
+    std::transform(values_first,values_last,result,
+            detail::lower_bound_impl<ForwardIterator>(first,last));
+}
+
+#ifdef __aboria_have_thrust__
+template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
+void lower_bound(
+        ForwardIterator first,
+        ForwardIterator last,
+        InputIterator values_first,
+        InputIterator values_last,
+        OutputIterator result, std::false_type) {
+    thrust::lower_bound(first,last,values_first,values_last,result);
+}
+#endif
 
 template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
 void lower_bound(
@@ -180,13 +207,35 @@ void lower_bound(
         InputIterator values_last,
         OutputIterator result) {
 
-#ifdef __aboria_use_thrust_algorithms__
-    thrust::lower_bound(first,last,values_first,values_last,result);
-#else
-    std::transform(values_first,values_last,result,
-            detail::lower_bound_impl<ForwardIterator>(first,last));
-#endif
+    lower_bound(first,last,values_first,values_last,result,
+            typename is_std_iterator<ForwardIterator>::type());
 }
+
+template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
+void upper_bound(
+        ForwardIterator first,
+        ForwardIterator last,
+        InputIterator values_first,
+        InputIterator values_last,
+        OutputIterator result, std::true_type) {
+
+    std::transform(values_first,values_last,result,
+            detail::upper_bound_impl<ForwardIterator>(first,last));
+}
+
+#ifdef __aboria_have_thrust__
+template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
+void upper_bound(
+        ForwardIterator first,
+        ForwardIterator last,
+        InputIterator values_first,
+        InputIterator values_last,
+        OutputIterator result, std::false_type) {
+    thrust::upper_bound(first,last,values_first,values_last,result);
+}
+#endif
+
+
 
 template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
 void upper_bound(
@@ -196,12 +245,8 @@ void upper_bound(
         InputIterator values_last,
         OutputIterator result) {
 
-#ifdef __aboria_use_thrust_algorithms__
-    thrust::upper_bound(first,last,values_first,values_last,result);
-#else
-    std::transform(values_first,values_last,result,
-            detail::upper_bound_impl<ForwardIterator>(first,last));
-#endif
+    upper_bound(first,last,values_first,values_last,result,
+            typename is_std_iterator<ForwardIterator>::type());
 }
 
 template< class InputIt, class T, class BinaryOperation >

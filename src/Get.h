@@ -543,7 +543,7 @@ struct zip_pointer<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>, MplVector
     using return_type = typename detail::getter_helper<tuple_type>::template return_type<elem_by_type<T>::index>;
 
     typedef getter_type<typename detail::zip_helper<tuple_type>::tuple_reference,
-            mpl_vector_type,
+            mpl_vector_type
             > reference;
     typedef typename detail::zip_helper<tuple_type>::difference_type difference_type;
     typedef typename detail::zip_helper<tuple_type>::index_type index_type;
@@ -832,6 +832,9 @@ private:
     }
 
     difference_type distance_to(zip_iterator const& other) const { 
+        #if defined(__CUDA_ARCH__)
+        ERROR_CUDA("Cannot use `zip_iterator` in device code");
+        #endif
         return detail::get_impl<0>(other.iter) 
              - detail::get_impl<0>(iter);
     }
@@ -900,19 +903,23 @@ private:
 
     typedef typename detail::zip_helper<iterator_tuple_type>::index_type index_type;
 
+    CUDA_HOST_DEVICE
     void increment() { 
         detail::zip_helper<iterator_tuple_type>::increment_impl(iter,index_type()); 
     }
     
+    CUDA_HOST_DEVICE
     void decrement() { 
         detail::zip_helper<iterator_tuple_type>::decrement_impl(iter,index_type()); 
     }
 
+    CUDA_HOST_DEVICE
     bool equal(zip_iterator const& other) const { 
         return detail::get_impl<0>(other.iter) 
             == detail::get_impl<0>(iter);
     }
 
+    CUDA_HOST_DEVICE
     reference dereference() const { 
         return reference(
                 detail::zip_helper<iterator_tuple_type>::make_reference(
@@ -920,11 +927,16 @@ private:
                 ); 
     }
 
+    CUDA_HOST_DEVICE
     difference_type distance_to(zip_iterator const& other) const { 
+        #if defined(__CUDA_ARCH__)
+        ERROR_CUDA("Cannot use `zip_iterator` in device code");
+        #endif
         return thrust::get<0>(other.iter) 
              - thrust::get<0>(iter);
     }
 
+    CUDA_HOST_DEVICE
     void advance(difference_type n) { 
         detail::zip_helper<iterator_tuple_type>::advance_impl(iter,n,index_type()); 
     }
@@ -1036,7 +1048,7 @@ template<unsigned int N, typename ValueType>
 CUDA_HOST_DEVICE
 typename detail::getter_helper<typename ValueType::tuple_type>::template return_type<N>::type &
 get_by_index(ValueType&& arg) {
-    return tuple_ns::get<N>(arg.get_tuple());        
+    return detail::get_impl<N>(arg.get_tuple());
 }
 
 }
