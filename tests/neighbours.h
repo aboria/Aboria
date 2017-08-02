@@ -548,39 +548,40 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
     template<template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
-    void helper_d_test_list_random() {
+    void helper_d_test_list_random(bool test_push_back=true) {
         helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,false);
         helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,false);
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,false);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,false);
-        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,true);
-        helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,true);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,true,false);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,false,false);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true,false);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false,false);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true,true);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false,true);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true,false);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false,false);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true,true);
-        helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false,true);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,true,false);
         helper_d_random<2,VectorType,SearchMethod>(1000,0.2,1,false,false);
         helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,true,false);
         helper_d_random<3,VectorType,SearchMethod>(1000,0.2,100,false,false);
         helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,true,false);
         helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,false,false);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,true,true);
-        helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,false,true);
         helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,true,false);
         helper_d_random<3,VectorType,SearchMethod>(1000,0.2,1,false,false);
         helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,true,false);
         helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,false,false);
 
-       
+        if (test_push_back) {
+            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
+            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
+            helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,true);
+            helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,true);
+            helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true,true);
+            helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,false,true);
+            helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,true,true);
+            helper_d_random<2,VectorType,SearchMethod>(1000,0.5,10,false,true);
+            helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,true,true);
+            helper_d_random<3,VectorType,SearchMethod>(1000,0.2,10,false,true);
+        }
     }
 
     void test_std_vector_bucket_search_serial(void) {
@@ -607,10 +608,8 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_std_vector_octtree(void) {
-#if not defined(__CUDACC__)
         helper_d_test_list_random<std::vector,octtree>();
         helper_d_test_list_regular<std::vector,octtree>();
-#endif
     }
 
     void test_thrust_vector_bucket_search_serial(void) {
@@ -624,6 +623,13 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 #if defined(__CUDACC__)
         helper_d_test_list_regular<thrust::device_vector,bucket_search_parallel>();
         helper_d_test_list_random<thrust::device_vector,bucket_search_parallel>();
+#endif
+    }
+
+void test_thrust_vector_octtree(void) {
+#if defined(__CUDACC__)
+        helper_d_test_list_regular<thrust::device_vector,octtree>();
+        helper_d_test_list_random<thrust::device_vector,octtree>();
 #endif
     }
 

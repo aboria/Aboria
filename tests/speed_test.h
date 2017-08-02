@@ -366,7 +366,7 @@ public:
                     if (index+N<N3) tripletList.push_back(triplet_type(index,index+N,invh2));
                     if (index>=N*N) tripletList.push_back(triplet_type(index,index-N*N,invh2));
                     if (index+N*N<N3) tripletList.push_back(triplet_type(index,index+N*N,invh2));
-                    s(index) = std::exp((double3(i*h,j*h,k*h)-double3(0.5,0.5,0.5)).squaredNorm());
+                    s(index) = std::exp((vdouble3(i*h,j*h,k*h)-vdouble3(0.5,0.5,0.5)).squaredNorm());
                 }
             }
         }
@@ -390,9 +390,9 @@ public:
        	nodes_type nodes;
 
         const double h = 1.0/N; 
-        double3 min(-h/2);
-        double3 max(1+h/2);
-        double3 periodic(false);
+        vdouble3 min(-h/2);
+        vdouble3 max(1+h/2);
+        vdouble3 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
@@ -401,8 +401,8 @@ public:
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 for (size_t k=0; k<N; ++k) {
-                    get<position>(p) = double3(i*h,j*h,k*h);
-                    get<scalar>(p) = std::exp((get<position>(p)-double3(0.5,0.5,0.5)).squaredNorm());
+                    get<position>(p) = vdouble3(i*h,j*h,k*h);
+                    get<scalar>(p) = std::exp((get<position>(p)-vdouble3(0.5,0.5,0.5)).squaredNorm());
        	            nodes.push_back(p);
                 }
             }
@@ -435,9 +435,9 @@ public:
        	nodes_type nodes;
 
         const double h = 1.0/N; 
-        double3 min(-h/2);
-        double3 max(1+h/2);
-        double3 periodic(false);
+        vdouble3 min(-h/2);
+        vdouble3 max(1+h/2);
+        vdouble3 periodic(false);
         Eigen::VectorXd s(N*N*N);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
@@ -447,8 +447,8 @@ public:
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 for (size_t k=0; k<N; ++k) {
-                    get<position>(p) = double3(i*h,j*h,k*h);
-                    get<scalar>(p) = std::exp((get<position>(p)-double3(0.5,0.5,0.5)).squaredNorm());
+                    get<position>(p) = vdouble3(i*h,j*h,k*h);
+                    get<scalar>(p) = std::exp((get<position>(p)-vdouble3(0.5,0.5,0.5)).squaredNorm());
        	            nodes.push_back(p);
                 }
             }
@@ -458,7 +458,7 @@ public:
 
         auto A = create_sparse_operator(nodes,nodes, 
                 htol,
-                [](const double3 &dx,
+                [](const vdouble3 &dx,
                     nodes_type::const_reference a,
                     nodes_type::const_reference b) {
                     if (get<id>(a)==get<id>(b)) {
@@ -492,9 +492,9 @@ public:
        	nodes_type nodes(N*N);
 
         const double h = 1.0/N; 
-        double2 min(-h/2);
-        double2 max(1+h/2);
-        double2 periodic(false);
+        vdouble2 min(-h/2);
+        vdouble2 max(1+h/2);
+        vdouble2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
@@ -502,7 +502,7 @@ public:
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 const size_t index = i*N + j;
-                get<position>(nodes)[index] = double2(i*h,j*h);
+                get<position>(nodes)[index] = vdouble2(i*h,j*h);
                 get<a_var>(nodes)[index] = double_d(1.5);
                 get<b_var>(nodes)[index] = double_d(2.5);
             }
@@ -568,9 +568,9 @@ public:
 
         //<-
         const double h = 1.0/N; 
-        double2 min(-h/2);
-        double2 max(1+h/2);
-        double2 periodic(false);
+        vdouble2 min(-h/2);
+        vdouble2 max(1+h/2);
+        vdouble2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
@@ -644,9 +644,9 @@ public:
        	nodes_type nodes(N*N);
 
         const double h = 1.0/N; 
-        double2 min(-h/2);
-        double2 max(1+h/2);
-        double2 periodic(false);
+        vdouble2 min(-h/2);
+        vdouble2 max(1+h/2);
+        vdouble2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
@@ -655,7 +655,7 @@ public:
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 const size_t index = i*N + j;
-                get<position>(nodes)[index] = double2(i*h,j*h);
+                get<position>(nodes)[index] = vdouble2(i*h,j*h);
                 s[index] = double_d(1.5);
                 get<kernel_constant>(nodes)[index] = double_d(0.1);
             }
@@ -664,7 +664,7 @@ public:
         nodes.init_neighbour_search(min,max,h,periodic);
 
         auto A = create_dense_operator(nodes,nodes, 
-                [](const double2 &dx,
+                [](const vdouble2 &dx,
                     typename nodes_type::const_reference a,
                     typename nodes_type::const_reference b) {
                     return std::sqrt(dx.squaredNorm()+
@@ -708,9 +708,9 @@ public:
         std::cout << "multiquadric_eigen: N = "<<N<<" with "<<Eigen::nbThreads()<<" threads"<<std::endl;
 
         const double h = 1.0/N; 
-        double2 min(-h/2);
-        double2 max(1+h/2);
-        double2 periodic(false);
+        vdouble2 min(-h/2);
+        vdouble2 max(1+h/2);
+        vdouble2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
@@ -730,11 +730,11 @@ public:
         for (size_t i=0; i<N; ++i) {
             for (size_t j=0; j<N; ++j) {
                 const size_t index = i*N + j;
-                const double2 r = double2(i*h,j*h);
+                const vdouble2 r = vdouble2(i*h,j*h);
                 for (size_t ii=0; ii<N; ++ii) {
                     for (size_t jj=0; jj<N; ++jj) {
-                        const double2 r2 = double2(ii*h,jj*h);
-                        const double2 dx = r2-r;
+                        const vdouble2 r2 = vdouble2(ii*h,jj*h);
+                        const vdouble2 dx = r2-r;
                         const size_t index2 = ii*N + jj;
                         A(index,index2) = std::sqrt(dx.dot(dx)+c[index2]*c[index2]);
                     }
@@ -761,15 +761,15 @@ public:
 
         const double r = radius;
 
-        ABORIA_VARIABLE(a_var,double3,"a")
+        ABORIA_VARIABLE(a_var,vdouble3,"a")
     	typedef Particles<std::tuple<a_var>,3,std::vector,SearchMethod> nodes_type;
         typedef position_d<3> position;
        	nodes_type nodes(N*N*N);
 
         const double h = 1.0/N; 
-        double3 min(-h/2);
-        double3 max(1+h/2);
-        double3 periodic(false);
+        vdouble3 min(-h/2);
+        vdouble3 max(1+h/2);
+        vdouble3 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;
@@ -778,7 +778,7 @@ public:
             for (size_t j=0; j<N; ++j) {
                 for (size_t k=0; k<N; ++k) {
                     const size_t index = i*N*N + j*N + k;
-                    get<position>(nodes)[index] = double3(i*h,j*h,k*h);
+                    get<position>(nodes)[index] = vdouble3(i*h,j*h,k*h);
                 }
             }
         }
@@ -790,7 +790,7 @@ public:
         Label<0,nodes_type> i(nodes);
         Label<1,nodes_type> j(nodes);
         auto dx = create_dx(i,j);
-        Accumulate<std::plus<double3> > sum;
+        Accumulate<std::plus<vdouble3> > sum;
         Accumulate<std::plus<int> > sumi;
 
         //[linear_spring
@@ -847,9 +847,9 @@ public:
        	nodes_type nodes(N*N*N);
 
         const double h = 1.0/N; 
-        double2 min(-h/2);
-        double2 max(1+h/2);
-        double2 periodic(false);
+        vdouble2 min(-h/2);
+        vdouble2 max(1+h/2);
+        vdouble2 periodic(false);
         const double htol = 1.01*h;
         const double invh2 = 1.0/(h*h);
         const double delta_t = 0.1;

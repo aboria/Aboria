@@ -68,24 +68,24 @@ public:
 		const double dt = 0.1;
 		const double timesteps = 100;
 
-		spheres.push_back(double3(0,0,0));
+		spheres.push_back(vdouble3(0,0,0));
 		get<radius>(spheres[0]) = 1.0;
-		spheres.push_back(double3(5,0,0));
+		spheres.push_back(vdouble3(5,0,0));
 		get<radius>(spheres[1]) = 2.0;
-		spheres.push_back(double3(0,-5,0));
+		spheres.push_back(vdouble3(0,-5,0));
 		get<radius>(spheres[2]) = 1.5;
-		spheres.push_back(double3(0,0,5));
+		spheres.push_back(vdouble3(0,0,5));
 		get<radius>(spheres[3]) = 1.0;
 
-    	spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(true,true,true));
+    	spheres.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(true,true,true));
 
 		points_type points;
 		std::uniform_real_distribution<double> uni(-L,L);
 		for (int i = 0; i < 1000; ++i) {
-			points.push_back(double3(uni(generator),uni(generator),uni(generator)));
+			points.push_back(vdouble3(uni(generator),uni(generator),uni(generator)));
 		}
 
-    	points.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(true,true,true));
+    	points.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(true,true,true));
 
         Symbol<position> p;
         Symbol<id> id_;
@@ -100,7 +100,7 @@ public:
 		Normal N;
 		VectorSymbolic<double,3> vector;		
         AccumulateWithinDistance<std::bit_or<bool> > any(2);
-        AccumulateWithinDistance<std::plus<double3> > sum(2);
+        AccumulateWithinDistance<std::plus<vdouble3> > sum(2);
 
 		/*
 		 * Kill any points within spheres
@@ -112,10 +112,10 @@ public:
 		 */
 		for(auto i: points) {
 			TS_ASSERT_EQUALS(get<alive>(i), true);
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,0)).norm(), 1.0);
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(5,0,0)).norm(), 2.0);
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,-5,0)).norm(), 1.5);
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,5)).norm(), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(0,0,0)).norm(), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(5,0,0)).norm(), 2.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(0,-5,0)).norm(), 1.5);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(0,0,5)).norm(), 1.0);
 		}
 
 		/*
@@ -127,53 +127,53 @@ public:
                                     ,-2*(r[b_s]/norm(dx)-1)*dx
                                     ,0));
             /*
-            const double3 pos = get<position>(points[0]);
-            if (((pos - double3(0,0,0)).norm() < 1.0) || 
-                ((pos - double3(5,0,0)).norm() < 2.0) ||
-                ((pos - double3(0,-5,0)).norm() < 1.5)||
-                ((pos - double3(0,0,5)).norm() < 1.0)) {
+            const vdouble3 pos = get<position>(points[0]);
+            if (((pos - vdouble3(0,0,0)).norm() < 1.0) || 
+                ((pos - vdouble3(5,0,0)).norm() < 2.0) ||
+                ((pos - vdouble3(0,-5,0)).norm() < 1.5)||
+                ((pos - vdouble3(0,0,5)).norm() < 1.0)) {
                 std::cout << "BOUNCE" << std::endl;
                 std::cout << "after step "<<get<position>(points[0])<<std::endl;
-                if ((pos - double3(0,0,0)).norm() < 1.0) {
-                    std::cout << "dx "<<pos-double3(0,0,0)<<std::endl;
-                    std::cout << "|dx| "<<(pos-double3(0,0,0)).norm()<<std::endl;
+                if ((pos - vdouble3(0,0,0)).norm() < 1.0) {
+                    std::cout << "dx "<<pos-vdouble3(0,0,0)<<std::endl;
+                    std::cout << "|dx| "<<(pos-vdouble3(0,0,0)).norm()<<std::endl;
                 }
-                if ((pos - double3(5,0,0)).norm() < 2.0) {
-                    std::cout << "dx "<<pos-double3(5,0,0)<<std::endl;
-                    std::cout << "|dx| "<<(pos-double3(5,0,0)).norm()<<std::endl;
+                if ((pos - vdouble3(5,0,0)).norm() < 2.0) {
+                    std::cout << "dx "<<pos-vdouble3(5,0,0)<<std::endl;
+                    std::cout << "|dx| "<<(pos-vdouble3(5,0,0)).norm()<<std::endl;
                 }
-                if ((pos - double3(0,-5,0)).norm() < 1.5) {
-                    std::cout << "dx "<<pos-double3(0,-5,0)<<std::endl;
-                    std::cout << "|dx| "<<(pos-double3(0,-5,0)).norm()<<std::endl;
+                if ((pos - vdouble3(0,-5,0)).norm() < 1.5) {
+                    std::cout << "dx "<<pos-vdouble3(0,-5,0)<<std::endl;
+                    std::cout << "|dx| "<<(pos-vdouble3(0,-5,0)).norm()<<std::endl;
                 }
-                if ((pos - double3(0,0,5)).norm() < 1.0) {
-                    std::cout << "dx "<<pos-double3(0,0,5)<<std::endl;
-                    std::cout << "|dx| "<<(pos-double3(0,0,5)).norm()<<std::endl;
+                if ((pos - vdouble3(0,0,5)).norm() < 1.0) {
+                    std::cout << "dx "<<pos-vdouble3(0,0,5)<<std::endl;
+                    std::cout << "|dx| "<<(pos-vdouble3(0,0,5)).norm()<<std::endl;
                 }
                 p[a_p] += sum(b_s, norm(dx) < r[b_s],
                     -2*(r[b_s]/norm(dx)-1)*dx );
                 std::cout << "after bounce "<<get<position>(points[0])<<std::endl;
-                const double3 pos2 = get<position>(points[0]);
-                if (((pos2 - double3(0,0,0)).norm() < 1.0) || 
-                ((pos2 - double3(5,0,0)).norm() < 2.0) ||
-                ((pos2 - double3(0,-5,0)).norm() < 1.5)||
-                ((pos2 - double3(0,0,5)).norm() < 1.0)) {
+                const vdouble3 pos2 = get<position>(points[0]);
+                if (((pos2 - vdouble3(0,0,0)).norm() < 1.0) || 
+                ((pos2 - vdouble3(5,0,0)).norm() < 2.0) ||
+                ((pos2 - vdouble3(0,-5,0)).norm() < 1.5)||
+                ((pos2 - vdouble3(0,0,5)).norm() < 1.0)) {
                     std::cout << "STILL IN" << std::endl;
-                    if ((pos2 - double3(0,0,0)).norm() < 1.0) {
-                        std::cout << "dx "<<pos2-double3(0,0,0)<<std::endl;
-                        std::cout << "|dx| "<<(pos2-double3(0,0,0)).norm()<<std::endl;
+                    if ((pos2 - vdouble3(0,0,0)).norm() < 1.0) {
+                        std::cout << "dx "<<pos2-vdouble3(0,0,0)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-vdouble3(0,0,0)).norm()<<std::endl;
                     }
-                    if ((pos2 - double3(5,0,0)).norm() < 2.0) {
-                        std::cout << "dx "<<pos2-double3(5,0,0)<<std::endl;
-                        std::cout << "|dx| "<<(pos2-double3(5,0,0)).norm()<<std::endl;
+                    if ((pos2 - vdouble3(5,0,0)).norm() < 2.0) {
+                        std::cout << "dx "<<pos2-vdouble3(5,0,0)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-vdouble3(5,0,0)).norm()<<std::endl;
                     }
-                    if ((pos2 - double3(0,-5,0)).norm() < 1.5) {
-                        std::cout << "dx "<<pos2-double3(0,-5,0)<<std::endl;
-                        std::cout << "|dx| "<<(pos2-double3(0,-5,0)).norm()<<std::endl;
+                    if ((pos2 - vdouble3(0,-5,0)).norm() < 1.5) {
+                        std::cout << "dx "<<pos2-vdouble3(0,-5,0)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-vdouble3(0,-5,0)).norm()<<std::endl;
                     }
-                    if ((pos2 - double3(0,0,5)).norm() < 1.0) {
-                        std::cout << "dx "<<pos2-double3(0,0,5)<<std::endl;
-                        std::cout << "|dx| "<<(pos2-double3(0,0,5)).norm()<<std::endl;
+                    if ((pos2 - vdouble3(0,0,5)).norm() < 1.0) {
+                        std::cout << "dx "<<pos2-vdouble3(0,0,5)<<std::endl;
+                        std::cout << "|dx| "<<(pos2-vdouble3(0,0,5)).norm()<<std::endl;
                     }
                 }
 
@@ -186,10 +186,10 @@ public:
 		 * Check still no points within spheres
 		 */
 		for(auto i: points) {
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,0)).norm(), 1.0);
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(5,0,0)).norm(), 2.0);
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,-5,0)).norm(), 1.5);
-			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - double3(0,0,5)).norm(), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(0,0,0)).norm(), 1.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(5,0,0)).norm(), 2.0);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(0,-5,0)).norm(), 1.5);
+			TS_ASSERT_RELATION(std::greater<double>, (get<position>(i) - vdouble3(0,0,5)).norm(), 1.0);
 		}
 	}
 

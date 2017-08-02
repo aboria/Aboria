@@ -128,7 +128,7 @@ containing $N=100$ particles with a single additional variable $a$.
         std::default_random_engine gen; 
         std::uniform_real_distribution<double> uniform(0,1);
         for (int i=0; i<N; ++i) {
-            get<position>(particles)[i] = double3(uniform(gen),uniform(gen),uniform(gen));
+            get<position>(particles)[i] = vdouble3(uniform(gen),uniform(gen),uniform(gen));
             get<a>(particles)[i] = uniform(gen);
         }
 /*`
@@ -278,8 +278,8 @@ using three spatial dimensions, so we need to set up a domain  from $(0,0,0)$ to
 
 */
 
-        double3 min(0);
-        double3 max(1);
+        vdouble3 min(0);
+        vdouble3 max(1);
         bool3 periodic(false);
     	particles.init_neighbour_search(min,max,periodic);
 
@@ -478,7 +478,7 @@ row particles.
          */
         particle_type particles2(N);
         for (int i=0; i<N; ++i) {
-            get<position>(particles2)[i] = double3(uniform(gen),uniform(gen),uniform(gen));
+            get<position>(particles2)[i] = vdouble3(uniform(gen),uniform(gen),uniform(gen));
         }
 
         /*
@@ -681,20 +681,20 @@ the result in `m`.
        	ParticlesType particles;
 
        	double diameter = 0.1;
-        double3 min(-1);
-        double3 max(1);
-        double3 periodic(false);
+        vdouble3 min(-1);
+        vdouble3 max(1);
+        vdouble3 periodic(false);
         
         double s_init1 = 1.0;
         double s_init2 = 2.0;
         ParticlesType::value_type p;
-        get<position>(p) = double3(0,0,0);
+        get<position>(p) = vdouble3(0,0,0);
         get<scalar1>(p) = s_init1;
         get<scalar2>(p) = s_init2;
        	particles.push_back(p);
-        get<position>(p) = double3(diameter*0.9,0,0);
+        get<position>(p) = vdouble3(diameter*0.9,0,0);
        	particles.push_back(p);
-        get<position>(p) = double3(diameter*1.8,0,0);
+        get<position>(p) = vdouble3(diameter*1.8,0,0);
        	particles.push_back(p);
 
         const size_t n = 3;
@@ -800,26 +800,26 @@ the result in `m`.
        	ParticlesType particles,augment;
 
        	double diameter = 0.1;
-        double3 min(-1);
-        double3 max(1);
-        double3 periodic(false);
+        vdouble3 min(-1);
+        vdouble3 max(1);
+        vdouble3 periodic(false);
         
         ParticlesType::value_type p;
-        get<position>(p) = double3(0,0,0);
+        get<position>(p) = vdouble3(0,0,0);
         get<scalar1>(p) = 1;
         get<scalar2>(p) = 0.1;
        	particles.push_back(p);
-        get<position>(p) = double3(diameter*0.9,0,0);
+        get<position>(p) = vdouble3(diameter*0.9,0,0);
         get<scalar1>(p) = 2;
         get<scalar2>(p) = 0.2;
        	particles.push_back(p);
-        get<position>(p) = double3(diameter*1.8,0,0);
+        get<position>(p) = vdouble3(diameter*1.8,0,0);
         get<scalar1>(p) = 3;
         get<scalar2>(p) = 0.3;
        	particles.push_back(p);
         get<scalar1>(p) = 0;
         get<scalar2>(p) = 0;
-        get<position>(p) = double3(-diameter*1.8,0,0);
+        get<position>(p) = vdouble3(-diameter*1.8,0,0);
         augment.push_back(p);
 
 

@@ -79,7 +79,7 @@ public:
        	const double c = 0.5;
         const int max_iter = 100;
         const int restart = 100;
-        double2 periodic(false);
+        vdouble2 periodic(false);
         
         const int nx = 7;
         constexpr int N = (nx+1)*(nx+1);
@@ -87,7 +87,7 @@ public:
         typename ParticlesType::value_type p;
         for (int i=0; i<=nx; ++i) {
             for (int j=0; j<=nx; ++j) {
-                get<position>(p) = double2(i*delta,j*delta);
+                get<position>(p) = vdouble2(i*delta,j*delta);
                 if ((i==0)||(i==nx)||(j==0)||(j==nx)) {
                     get<boundary>(p) = true;
                 } else {

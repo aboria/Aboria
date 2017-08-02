@@ -69,7 +69,7 @@ public:
          * Create a 2d particle container with one additional variable
          * "velocity", represented by a 2d double vector
          */
-        ABORIA_VARIABLE(velocity,double2,"velocity")
+        ABORIA_VARIABLE(velocity,vdouble2,"velocity")
 //<-
         typedef Particles<std::tuple<velocity>,2,std::vector,SearchMethod> container_type;
 //->
@@ -98,7 +98,7 @@ public:
          * initiate neighbour search on a periodic 2d domain of side length L
          * set average number of particles per cell to 1
          */
-        particles.init_neighbour_search(double2(0,0),double2(L,L),bool2(true,true));
+        particles.init_neighbour_search(vdouble2(0,0),vdouble2(L,L),bool2(true,true));
 
         /*
          * create N particles, ensuring that they do not overlap, according 
@@ -117,14 +117,14 @@ public:
              * set a random direction, and initialise velocity
              */
             const double theta = uni(generator)*2*PI;
-            get<velocity>(p) = v0*double2(cos(theta),sin(theta));
+            get<velocity>(p) = v0*vdouble2(cos(theta),sin(theta));
 
             /*
              * randomly choose positions within the domain until one is 
              * found with no other particles within a range equal to diameter
              */
             while (free_position == false) {
-                get<position>(p) = double2(uni(generator)*L,uni(generator)*L);
+                get<position>(p) = vdouble2(uni(generator)*L,uni(generator)*L);
                 free_position = true;
 
                 /*
@@ -140,7 +140,7 @@ public:
                      *         from query point
                      *  e.g.
                      *
-                     *  const double2& dx = std::get<1>(tpl);
+                     *  const vdouble2& dx = std::get<1>(tpl);
                      *  const typename container_type::value_type& j = std::get<0>(tpl);
                      */
                     free_position = false;
@@ -168,7 +168,7 @@ public:
         /*
          * sum is a symbolic function that sums a sequence of 2d vectors
          */
-        AccumulateWithinDistance<std::plus<double2> > sum(diameter);
+        AccumulateWithinDistance<std::plus<vdouble2> > sum(diameter);
         
         /*
          * perform MD timestepping

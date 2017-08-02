@@ -86,6 +86,12 @@ public:
         return false;
     }
 
+    struct classify_point;
+    struct child_index_to_tag_mask;
+    struct classify_node;
+    struct write_nodes;
+    struct make_leaf;
+
 private:
 
     void set_domain_impl() {
@@ -210,15 +216,12 @@ private:
                                         this->m_particles_begin);
         }
     }
+    
+    
 private:
     void build_tree();
 
-    struct classify_point;
-    struct child_index_to_tag_mask;
-    struct classify_node;
-    struct write_nodes;
-    struct make_leaf;
-
+    
     int max_points;
     int m_max_level;
 
@@ -527,11 +530,15 @@ public:
     typedef const int& reference;
 	typedef std::ptrdiff_t difference_type;
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     octtree_child_iterator():
         m_high(1<<D),
         m_index(nullptr)
     {}
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     octtree_child_iterator(const int* start, const box_type& bounds):
         m_high(0),
         m_index(start),
@@ -543,6 +550,8 @@ public:
         }
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     void go_to(const double_d& position) {
         int new_high = 0;
         for (int i = 0; i < D; ++i) {
@@ -561,14 +570,20 @@ public:
         m_high = new_high;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     int get_child_number() const {
         return m_high;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     bool is_high(const size_t i) const {
         return m_high & (1<<(D-1-i));
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     box_type get_bounds() const {
         box_type ret = m_bounds;
         for (int i = 0; i < D; ++i) {
@@ -581,62 +596,78 @@ public:
         return ret;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     reference operator ->() const {
         return dereference();
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     octtree_child_iterator& operator++() {
         increment();
         return *this;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     octtree_child_iterator operator++(int) {
         octtree_child_iterator tmp(*this);
         operator++();
         return tmp;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     inline bool operator==(const octtree_child_iterator& rhs) const {
         return equal(rhs);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     inline bool operator!=(const octtree_child_iterator& rhs) const {
         return !operator==(rhs);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     inline bool operator==(const bool rhs) const {
         return equal(rhs);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     inline bool operator!=(const bool rhs) const {
         return !operator==(rhs);
     }
 
 private:
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     bool equal(octtree_child_iterator const& other) const {
         return m_index == other.m_index;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     bool equal(const bool other) const {
         return (m_high<(1<<D))==other;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     reference dereference() const { 
         return *m_index; 
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     void increment() {
         do {
@@ -677,44 +708,67 @@ struct octtree_query {
     vint2* m_leaves_begin;
     int* m_nodes_begin;
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     const box_type& get_bounds() const { return m_bounds; }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     const bool_d& get_periodic() const { return m_periodic; }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     static bool is_leaf_node(reference bucket) {
         return detail::is_leaf(bucket);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     static bool is_tree() {
         return true;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     child_iterator get_children() const {
         return child_iterator(m_nodes_begin, m_bounds);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     child_iterator get_children(reference bucket, const box_type& bounds) const {
         CHECK(&bucket == m_nodes_begin, "bucket should be a root bucket");
         return child_iterator(m_nodes_begin, m_bounds);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     child_iterator get_children(const child_iterator& ci) const {
         ASSERT(*ci >= 0, "ERROR: bucket is a leaf!");
         return child_iterator((m_nodes_begin + *ci), ci.get_bounds());
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     static const box_type get_bounds(const child_iterator& ci) {
         return ci.get_bounds();
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     static const box_type get_bounds(const query_iterator& qi) {
         return qi.get_bounds();
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     static const box_type get_bounds(const all_iterator& ai) {
         return ai.get_bounds();
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     iterator_range<particle_iterator> 
+    CUDA_HOST_DEVICE
     get_bucket_particles(reference bucket) const {
         ASSERT(detail::is_leaf(bucket), "ERROR: bucket is not a leaf!");
         const int leaf_idx = detail::get_leaf_offset(bucket);
@@ -727,14 +781,14 @@ struct octtree_query {
                         particle_iterator(m_particles_begin + particle_idxs[1]));
     }
 
-    
-
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     box_type get_root_bucket_bounds(reference bucket) {
         return get_bounds();
     }
 
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     void get_bucket(const double_d &position, pointer& bucket, box_type& bounds) const {
         child_iterator i = get_children();
@@ -749,16 +803,21 @@ struct octtree_query {
         bounds = i.get_bounds();
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     size_t get_bucket_index(reference bucket) const {
         return &bucket - m_nodes_begin;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     size_t number_of_buckets() const {
         return m_number_of_nodes;
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
+    CUDA_HOST_DEVICE
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
@@ -770,7 +829,9 @@ struct octtree_query {
                 );
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
+    CUDA_HOST_DEVICE
     iterator_range<query_iterator> 
     get_buckets_near_point(const double_d &position, const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
@@ -782,24 +843,44 @@ struct octtree_query {
                 );
     }
 
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     iterator_range<root_iterator> get_root_buckets() const {
         return iterator_range<root_iterator>(m_nodes_begin, m_nodes_begin+1);
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
         return iterator_range<all_iterator>(all_iterator(get_children(ci),this),all_iterator());
     }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree() const {
         return iterator_range<all_iterator>(all_iterator(get_children(),this),all_iterator());
     }
 
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     size_t number_of_particles() const {
         return m_number_of_particles;
     }
 
-    raw_pointer get_particles_begin() const {
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    const raw_pointer& get_particles_begin() const {
         return m_particles_begin;
     }
+
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    raw_pointer& get_particles_begin() {
+        return m_particles_begin;
+    }
+
 
 
 };

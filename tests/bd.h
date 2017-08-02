@@ -68,24 +68,24 @@ public:
         const double dt = 0.01;
         const double timesteps = 1000;
 
-        spheres.push_back(double3(0,0,0));
+        spheres.push_back(vdouble3(0,0,0));
         get<radius>(spheres[0]) = 1.0;
-        spheres.push_back(double3(5,0,0));
+        spheres.push_back(vdouble3(5,0,0));
         get<radius>(spheres[1]) = 2.0;
-        spheres.push_back(double3(0,-5,0));
+        spheres.push_back(vdouble3(0,-5,0));
         get<radius>(spheres[2]) = 1.5;
-        spheres.push_back(double3(0,0,5));
+        spheres.push_back(vdouble3(0,0,5));
         get<radius>(spheres[3]) = 1.0;
 
         points_type points;
         std::uniform_real_distribution<double> uni(-L+L/5,L-L/5);
         for (int i = 0; i < 1000; ++i) {
-            points.push_back(double3(uni(generator),uni(generator),uni(generator)));
+            points.push_back(vdouble3(uni(generator),uni(generator),uni(generator)));
         }
 
 
-        points.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(true,true,true));
-        spheres.init_neighbour_search(double3(-L,-L,-L),double3(L,L,L),bool3(false,false,false));
+        points.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(true,true,true));
+        spheres.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(false,false,false));
 
         Symbol<position> p;
         Symbol<radius> r;
@@ -98,7 +98,7 @@ public:
         Normal N;
         VectorSymbolic<double,3> vector;      
         AccumulateWithinDistance<std::bit_or<bool> > any(4);
-        AccumulateWithinDistance<std::plus<double3> > sum(4);
+        AccumulateWithinDistance<std::plus<vdouble3> > sum(4);
 
         int count_before=0;
         for(auto point: points) {

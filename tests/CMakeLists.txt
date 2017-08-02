@@ -170,6 +170,7 @@ set(NeighboursTest
 set(NeighboursTestCuda
     test_thrust_vector_bucket_search_serial
     test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_octtree
     )
 
 

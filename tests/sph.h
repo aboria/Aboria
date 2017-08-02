@@ -165,11 +165,11 @@ public:
 //->
 //=int main() {
         ABORIA_VARIABLE(kernel_radius,double,"kernel radius");
-        ABORIA_VARIABLE(velocity,double3,"velocity");
-        ABORIA_VARIABLE(velocity_tmp,double3,"temp velocity");
+        ABORIA_VARIABLE(velocity,vdouble3,"velocity");
+        ABORIA_VARIABLE(velocity_tmp,vdouble3,"temp velocity");
         ABORIA_VARIABLE(varh_omega,double,"varh omega");
         ABORIA_VARIABLE(density,double,"density");
-        ABORIA_VARIABLE(total_force,double3,"total force");
+        ABORIA_VARIABLE(total_force,vdouble3,"total force");
         ABORIA_VARIABLE(is_fixed,uint8_t,"fixed boundary");
         ABORIA_VARIABLE(pressure_div_density2,double,"pressure div density2");
 
@@ -217,21 +217,21 @@ public:
         const double time_damping = dt*500;
         double t = 0;
 
-        const double3 low(0,0,-3.0*psep);
-        const double3 high(L,L,L);
+        const vdouble3 low(0,0,-3.0*psep);
+        const vdouble3 high(L,L,L);
         const bool3 periodic(true,true,false);
 
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < nx; j++) {
                 for (int k = 0; k < nx+3; k++) {
                     typename sph_type::value_type p;
-                    get<position>(p) = low + double3((i+0.5)*psep,(j+0.5)*psep,(k+0.5)*psep);
+                    get<position>(p) = low + vdouble3((i+0.5)*psep,(j+0.5)*psep,(k+0.5)*psep);
                     get<kernel_radius>(p) = hfac*psep;
-                    get<velocity>(p) = double3(0,0,0);
-                    get<velocity_tmp>(p) = double3(0,0,0);
+                    get<velocity>(p) = vdouble3(0,0,0);
+                    get<velocity_tmp>(p) = vdouble3(0,0,0);
                     get<varh_omega>(p) = 1.0;
                     get<density>(p) = dens;
-                    get<total_force>(p) = double3(0,0,0);
+                    get<total_force>(p) = vdouble3(0,0,0);
                     get<is_fixed>(p) = get<position>(p)[2]<0;
                     sph.push_back(p);
                 }
@@ -243,7 +243,7 @@ public:
 
 
         auto dx = create_dx(a,b);
-        AccumulateWithinDistance<std::plus<double3> > sum_vect(2*hfac*psep);
+        AccumulateWithinDistance<std::plus<vdouble3> > sum_vect(2*hfac*psep);
         AccumulateWithinDistance<std::plus<double> > sum(2*hfac*psep);
         Accumulate<Aboria::max<double> > max;
         max.set_init(0);
@@ -304,7 +304,7 @@ public:
                 /*
                  * acceleration due to gravity
                  */
-                dvdt[a] = double3(0,0,-9.81);
+                dvdt[a] = vdouble3(0,0,-9.81);
 
                 /*
                  * acceleration on SPH calculation

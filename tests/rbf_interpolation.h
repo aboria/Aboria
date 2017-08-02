@@ -129,9 +129,9 @@ public:
        	ParticlesType test;
 
        	const double c = 0.5;
-        double2 min(0);
-        double2 max(1);
-        double2 periodic(false);
+        vdouble2 min(0);
+        vdouble2 max(1);
+        vdouble2 periodic(false);
 
         
         const int N = 1000;
@@ -145,12 +145,12 @@ public:
         std::default_random_engine generator;
         std::uniform_real_distribution<double> distribution(0.0,1.0);
         for (int i=0; i<N; ++i) {
-            get<position>(p) = double2(distribution(generator),
+            get<position>(p) = vdouble2(distribution(generator),
                                        distribution(generator));
             get<constant2>(p) = std::pow(c,2);  
             knots.push_back(p);
 
-            get<position>(p) = double2(distribution(generator),
+            get<position>(p) = vdouble2(distribution(generator),
                                        distribution(generator));
             get<constant2>(p) = std::pow(c,2);  
             test.push_back(p);
@@ -273,9 +273,9 @@ void helper_compact(void) {
        	ParticlesType test;
 
         const double hfac = 4.0;
-        double2 min(0);
-        double2 max(1);
-        double2 periodic(false);
+        vdouble2 min(0);
+        vdouble2 max(1);
+        vdouble2 periodic(false);
         
         const int N = 1000;
         
@@ -294,11 +294,11 @@ void helper_compact(void) {
         std::default_random_engine generator(123);
         std::uniform_real_distribution<double> distribution(0.0,1.0);
         for (int i=0; i<N; ++i) {
-            get<position>(p) = double2(distribution(generator),
+            get<position>(p) = vdouble2(distribution(generator),
                                        distribution(generator));
             knots.push_back(p);
 
-            get<position>(p) = double2(distribution(generator),
+            get<position>(p) = vdouble2(distribution(generator),
                                        distribution(generator));
             test.push_back(p);
         }
@@ -465,9 +465,9 @@ template<template <typename> class SearchMethod>
 
        	const double c = 3.0;
         const double c2 = std::pow(c,2);
-        double2 min(0);
-        double2 max(1);
-        double2 periodic(false);
+        vdouble2 min(0);
+        vdouble2 max(1);
+        vdouble2 periodic(false);
 
         const int N = 10000;
 
@@ -485,11 +485,11 @@ template<template <typename> class SearchMethod>
         std::default_random_engine generator;
         std::uniform_real_distribution<double> distribution(0.0,1.0);
         for (int i=0; i<N; ++i) {
-            get<position>(p) = double2(distribution(generator),
+            get<position>(p) = vdouble2(distribution(generator),
                                        distribution(generator));
             knots.push_back(p);
 
-            get<position>(p) = double2(distribution(generator),
+            get<position>(p) = vdouble2(distribution(generator),
                                        distribution(generator));
             test.push_back(p);
         }
@@ -498,9 +498,9 @@ template<template <typename> class SearchMethod>
 
         augment.push_back(p);
 
-        auto kernel = [&](const double2& dx,
-                         const double2& a,
-                         const double2& b) {
+        auto kernel = [&](const vdouble2& dx,
+                         const vdouble2& a,
+                         const vdouble2& b) {
                             return std::exp(-dx.squaredNorm()*c2);
                         };
 
@@ -561,7 +561,7 @@ template<template <typename> class SearchMethod>
         scale = 0;
         vector_type phi_test = Wtest*gamma;
         for (int i=0; i<test.size(); ++i) {
-            const double2 p = get<position>(test)[i]; 
+            const vdouble2 p = get<position>(test)[i]; 
             const double eval_value = phi_test[i];
             const double truth = funct(p[0],p[1]);
             rms_error += std::pow(eval_value-truth,2);

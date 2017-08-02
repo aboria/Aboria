@@ -67,8 +67,8 @@ public:
          */
         ABORIA_VARIABLE(radius,double,"radius")
         ABORIA_VARIABLE(mass,double,"mass")
-        ABORIA_VARIABLE(velocity,double3,"velocity")
-        ABORIA_VARIABLE(acceleration,double3,"acceleration")
+        ABORIA_VARIABLE(velocity,vdouble3,"velocity")
+        ABORIA_VARIABLE(acceleration,vdouble3,"acceleration")
 
         /* 
          * create particle container
@@ -105,8 +105,8 @@ public:
          * an average of 2 particles within each cell
          */
         dem.init_neighbour_search(
-                double3(0,0,-dem_diameter),
-                double3(L/3,L/3,L+dem_diameter),
+                vdouble3(0,0,-dem_diameter),
+                vdouble3(L/3,L/3,L+dem_diameter),
                 bool3(true,true,false),2);
 
         /*
@@ -120,7 +120,7 @@ public:
 
             get<radius>(p) = 0.25*(uni(generator)+1)*dem_diameter;
             while (free_position == false) {
-                get<position>(p) = double3(
+                get<position>(p) = vdouble3(
                                     uni(generator)*L/3,
                                     uni(generator)*L/3,
                                     uni(generator)*(L-dem_diameter)+dem_diameter/2
@@ -136,7 +136,7 @@ public:
                      *  (1) -> relative position of neighbouring particle
                      *         from query point
                      */
-                    const double3& dx = tuple_ns::get<1>(tpl);
+                    const vdouble3& dx = tuple_ns::get<1>(tpl);
                     const dem_type::value_type& j = tuple_ns::get<0>(tpl);
                     if (dx.norm() < get<radius>(j) + get<radius>(p)) {
                         free_position = false;
@@ -169,7 +169,7 @@ public:
          * sum is a symbolic function that sums a sequence of 3d vectors
          * over neighbouring particles within "dem_diameter"
          */
-        AccumulateWithinDistance<std::plus<double3> > sum(dem_diameter);
+        AccumulateWithinDistance<std::plus<vdouble3> > sum(dem_diameter);
 
         /*
          * vector creates a new double vector of dimension 3
@@ -196,10 +196,10 @@ public:
                                 ,0))
                     
                         // spring force between particles and bottom wall
-                        + if_else(r[a]-p[a][2] > 0, dem_k*(r[a]-p[a][2]), 0.0)*double3(0,0,1) 
+                        + if_else(r[a]-p[a][2] > 0, dem_k*(r[a]-p[a][2]), 0.0)*vdouble3(0,0,1) 
 
                         // gravity force
-                        + double3(0,0,-9.81)*m[a]
+                        + vdouble3(0,0,-9.81)*m[a]
 
                         )/m[a];
 
