@@ -26,7 +26,6 @@
 
     #define ABORIA_HOST_DEVICE_IGNORE_WARN \
         #pragma hd_warning_disable \
-        __host__ __device__
 
     // if compiling with cuda compiler use cuda's tuple and iterator_facade
     namespace tuple_ns = thrust;

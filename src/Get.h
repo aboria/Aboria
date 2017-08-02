@@ -203,7 +203,16 @@ struct getter_type<std::tuple<Types...>,MplVector>{
  * TODO: api is not good, consider doing an iterator_facade type thing
  */
 #ifdef __aboria_have_thrust__ 
-template <typename MplVector, typename TT1, typename TT2, typename TT3, typename TT4, typename TT5, typename TT6, typename TT7, typename TT8, typename TT9> 
+template <typename MplVector, typename TT1, 
+                              typename TT2, 
+                              typename TT3, 
+                              typename TT4, 
+                              typename TT5, 
+                              typename TT6, 
+                              typename TT7, 
+                              typename TT8, 
+                              typename TT9
+                              > 
 struct getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>, MplVector>{
     typedef thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9> tuple_type;
     typedef MplVector mpl_vector_type;
@@ -1021,6 +1030,34 @@ get(ValueType& arg) {
     //return arg.template get<T>();
 }
 
+/*
+template<typename T, typename VariableList, typename ... Types>
+CUDA_HOST_DEVICE
+typename getter_type<typename std::tuple<Types...>,VariableList>::template return_type<T>::type & 
+get(getter_type<typename std::tuple<Types...>,VariableList>& arg) {
+    return std::get<getter_type<typename std::tuple<Types...>,VariableList>::template elem_by_type<T>::index>(arg.get_tuple());
+}
+
+template<typename T, typename VariableList, typename T0,
+                                            typename T1,
+                                            typename T2,
+                                            typename T3,
+                                            typename T4,
+                                            typename T5,
+                                            typename T6,
+                                            typename T7,
+                                            typename T8,
+                                            typename T9
+                                            >
+CUDA_HOST_DEVICE
+typename getter_type<typename thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9>,VariableList>::template return_type<T>::type & 
+get(getter_type<typename thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9>,VariableList>& arg) {
+    return thrust::get<getter_type<typename thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9>,VariableList>::template elem_by_type<T>::index>(arg.get_tuple());
+}
+*/
+
+
+/*
 template<typename T, typename ValueType>
 CUDA_HOST_DEVICE
 typename ValueType::template return_type<T>::type & 
@@ -1029,6 +1066,7 @@ get(ValueType&& arg) {
     return detail::get_impl<ValueType::template elem_by_type<T>::index>(arg.get_tuple());
     //return arg.template get<T>();
 }
+*/
 
 template<unsigned int N, typename ValueType>
 CUDA_HOST_DEVICE

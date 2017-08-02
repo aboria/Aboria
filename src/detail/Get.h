@@ -204,6 +204,7 @@ struct is_thrust_zip_iterator<zip_iterator<thrust::tuple<T...>,M>> {
 
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
+CUDA_HOST_DEVICE
 typename std::tuple_element<I,std::tuple<T...>>::type const &
 get_impl(const std::tuple<T...>& arg)
 {
@@ -217,6 +218,7 @@ get_impl(const std::tuple<T...>& arg)
 
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
+CUDA_HOST_DEVICE
 typename std::tuple_element<I,std::tuple<T...>>::type &
 get_impl(std::tuple<T...>& arg)
 {
@@ -230,6 +232,7 @@ get_impl(std::tuple<T...>& arg)
 
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
+CUDA_HOST_DEVICE
 typename std::tuple_element<I,std::tuple<T...>>::type &
 get_impl(std::tuple<T...>&& arg)
 {
@@ -246,7 +249,7 @@ get_impl(std::tuple<T...>&& arg)
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
 typename thrust::tuple_element<I,thrust::tuple<T...>>::type const &
-get_impl(const thrust::tuple<T...> arg) {
+get_impl(const thrust::tuple<T...>& arg) {
     return thrust::get<I>(arg);
 }
 
@@ -275,9 +278,11 @@ template<size_t I, typename T0,
                    typename T5, 
                    typename T6, 
                    typename T7, 
-                   typename T8, 
-                   typename T9>
-typename thrust::tuple_element<I,thrust::tuple< T0, T1, T2, T3, T4, T5, T6, T7, T8, T9 >>::type const &
+                   typename T8,
+                   typename T9
+                   >
+CUDA_HOST_DEVICE
+typename thrust::tuple_element<I,thrust::tuple< T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>>::type const &
 get_impl(const thrust::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>& arg) {
     return thrust::get<I>(arg);
 }
@@ -292,8 +297,10 @@ template<size_t I, typename T0,
                    typename T6, 
                    typename T7, 
                    typename T8, 
-                   typename T9>
-typename thrust::tuple_element<I,thrust::tuple< T0, T1, T2, T3, T4, T5, T6, T7, T8, T9 >>::type &
+                   typename T9 
+                   >
+CUDA_HOST_DEVICE
+typename thrust::tuple_element<I,thrust::tuple< T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>>::type &
 get_impl(thrust::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>& arg) {
     return thrust::get<I>(arg);
 }
@@ -307,9 +314,11 @@ template<size_t I, typename T0,
                    typename T5, 
                    typename T6, 
                    typename T7, 
-                   typename T8, 
-                   typename T9>
-typename thrust::tuple_element<I,thrust::tuple< T0, T1, T2, T3, T4, T5, T6, T7, T8, T9 >>::type &
+                   typename T8,
+                   typename T9
+                   >
+CUDA_HOST_DEVICE
+typename thrust::tuple_element<I,thrust::tuple< T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>>::type &
 get_impl(thrust::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>&& arg) {
     return thrust::get<I>(arg);
 }

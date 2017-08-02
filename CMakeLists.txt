@@ -64,6 +64,9 @@ if (Aboria_USE_THRUST)
     -ftemplate-backtrace-limit=0
     #-gencode arch=compute_20,code=sm_20
     )
+    if (CMAKE_BUILD_TYPE STREQUAL Debug)
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)
+    endif()
 endif()
 
 option(Aboria_USE_EIGEN "Use Eigen Linear Algebra library" OFF)
