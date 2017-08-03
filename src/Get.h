@@ -951,7 +951,7 @@ private:
     }
 
     iterator_tuple_type iter;
-    friend class detail::zip_helper<iterator_tuple_type>::iterator_core_access;
+    friend typename detail::zip_helper<iterator_tuple_type>::iterator_core_access;
 };
 #endif
 
