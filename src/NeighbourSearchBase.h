@@ -773,7 +773,7 @@ public:
 
     CUDA_HOST_DEVICE
     inline void push_stack(const child_iterator& it) {
-        ASSERT_CUDA(m_stack_size < m_stack_max_size, "did not allocate enough memory for stack")
+        ASSERT_CUDA(m_stack_size < m_stack_max_size);
         m_stack[m_stack_size++] = it;
     }
 
@@ -794,7 +794,7 @@ public:
 
     CUDA_HOST_DEVICE
     inline void pop_stack() {
-        ASSERT_CUDA(m_stack_size != 0, "cannot pop as stack is empty");
+        ASSERT_CUDA(m_stack_size != 0);
         --m_stack_size;
     }
 
@@ -1006,7 +1006,7 @@ public:
 
     CUDA_HOST_DEVICE
     inline void push_stack(const child_iterator& it) {
-        ASSERT_CUDA(m_stack_size < m_stack_max_size, "did not allocate enough memory for stack")
+        ASSERT_CUDA(m_stack_size < m_stack_max_size);
         m_stack[m_stack_size++] = it;
     }
 
@@ -1027,7 +1027,7 @@ public:
 
     CUDA_HOST_DEVICE
     inline void pop_stack() {
-        ASSERT_CUDA(m_stack_size != 0, "cannot pop as stack is empty");
+        ASSERT_CUDA(m_stack_size != 0);
         --m_stack_size;
     }
 

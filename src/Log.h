@@ -51,8 +51,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                       << " line " << __LINE__ << ": " << message << std::endl; \
         raise(SIGTRAP); \
     } 
-#define ASSERT_CUDA(condition, message) \
-    assert(condition,message);
+#define ASSERT_CUDA(condition) \
+    assert(condition);
 
 #endif
 
