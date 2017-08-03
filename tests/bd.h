@@ -84,8 +84,8 @@ public:
         }
 
 
-        points.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(true,true,true));
-        spheres.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(false,false,false));
+        points.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),vbool3(true,true,true));
+        spheres.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),vbool3(false,false,false));
 
         Symbol<position> p;
         Symbol<radius> r;

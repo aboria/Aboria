@@ -37,11 +37,6 @@ constexpr double get_max<double>() {
 #endif
 
 
-template <typename T>
-struct plus {
-    T operator()(const T& t1, const T& t2) { return t1+t2; }
-};
-
 template<unsigned int D>
 struct bbox {
     typedef Vector<double,D> double_d;
@@ -490,8 +485,8 @@ void print_leaves(const Vector &leaves)
   for (int i = 0 ; i < leaves.size() ; ++i)
   {
     std::cout << std::setw(7) << i << " : [ ";
-    std::cout << std::setw(4) << leaves[i][0] << "    ";
-    std::cout << std::setw(4) << leaves[i][1] << "   ]\n";
+    std::cout << std::setw(4) << static_cast<vint2>(leaves[i])[0] << "    ";
+    std::cout << std::setw(4) << static_cast<vint2>(leaves[i])[1] << "   ]\n";
   }
 }
 

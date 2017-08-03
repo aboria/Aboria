@@ -856,6 +856,7 @@ namespace nanoflann
 
 		size_t m_size; //!< Number of current poins in the dataset
         size_t m_number_of_nodes;
+        unsigned m_number_of_levels;
 		size_t m_size_at_index_build; //!< Number of points in the dataset when the index was built
 		int dim;  //!< Dimensionality of each data point
 
@@ -925,7 +926,7 @@ namespace nanoflann
 		 * @param params Basically, the maximum leaf node size
 		 */
 		KDTreeSingleIndexAdaptor(const int dimensionality, const DatasetAdaptor& inputData, const KDTreeSingleIndexAdaptorParams& params = KDTreeSingleIndexAdaptorParams() ) :
-			dataset(inputData), index_params(params), root_node(NULL), distance(inputData), m_number_of_nodes(0)
+			dataset(inputData), index_params(params), root_node(NULL), distance(inputData), m_number_of_nodes(0),m_number_of_levels(0)
 		{
 			m_size = dataset.kdtree_get_point_count();
 			m_size_at_index_build = m_size;
@@ -957,6 +958,7 @@ namespace nanoflann
 			pool.free_all();
 			root_node=NULL;
             m_number_of_nodes = 0;
+            m_number_of_levels = 0;
 			m_size_at_index_build = 0;
 		}
 
@@ -972,14 +974,17 @@ namespace nanoflann
 			if(m_size == 0) return;
 			computeBoundingBox(root_bbox);
             assert(vind.size()==m_size);
-			root_node = divideTree(0, m_size, root_bbox );   // construct the tree
+			root_node = divideTree(0, m_size, root_bbox, 0);   // construct the tree
 		}
 
 		/** Returns number of points in dataset  */
 		size_t size_points() const { return m_size; }
 
-        /** Returns number of points in dataset  */
+        /** Returns number of nodes in dataset  */
 		size_t size_nodes() const { return m_number_of_nodes; }
+
+        /** Returns number of levels in dataset  */
+		unsigned size_levels() const { return m_number_of_levels; }
 
 		/** Returns the length of each point in the dataset */
 		size_t veclen() const {
@@ -1180,7 +1185,7 @@ namespace nanoflann
 		 * @param left index of the first vector
 		 * @param right index of the last vector
 		 */
-		NodePtr divideTree(const IndexType left, const IndexType right, BoundingBox& bbox)
+		NodePtr divideTree(const IndexType left, const IndexType right, BoundingBox& bbox, unsigned level)
 		{
             assert(vind.size()==m_size);
 
@@ -1192,6 +1197,8 @@ namespace nanoflann
 				node->child1 = node->child2 = NULL;    /* Mark as leaf node. */
 				node->node_type.lr.left = left;
 				node->node_type.lr.right = right;
+
+                m_number_of_levels = ++level;
 
 				// compute bounding-box of leaf points
                 /*
@@ -1217,11 +1224,11 @@ namespace nanoflann
 
 				BoundingBox left_bbox(bbox);
 				left_bbox[cutfeat].high = cutval;
-				node->child1 = divideTree(left, left+idx, left_bbox);
+				node->child1 = divideTree(left, left+idx, left_bbox, ++level);
 
 				BoundingBox right_bbox(bbox);
 				right_bbox[cutfeat].low = cutval;
-				node->child2 = divideTree(left+idx, right, right_bbox);
+				node->child2 = divideTree(left+idx, right, right_bbox, ++level);
 
 				node->node_type.sub.divlow = left_bbox[cutfeat].high;
 				node->node_type.sub.divhigh = right_bbox[cutfeat].low;
@@ -1234,6 +1241,7 @@ namespace nanoflann
 
             //INSERT
             node->bbox = bbox;
+
 
 			return node;
 		}

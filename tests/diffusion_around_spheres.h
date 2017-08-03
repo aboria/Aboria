@@ -77,7 +77,7 @@ public:
 		spheres.push_back(vdouble3(0,0,5));
 		get<radius>(spheres[3]) = 1.0;
 
-    	spheres.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(true,true,true));
+    	spheres.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),vbool3(true,true,true));
 
 		points_type points;
 		std::uniform_real_distribution<double> uni(-L,L);
@@ -85,7 +85,7 @@ public:
 			points.push_back(vdouble3(uni(generator),uni(generator),uni(generator)));
 		}
 
-    	points.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),bool3(true,true,true));
+    	points.init_neighbour_search(vdouble3(-L,-L,-L),vdouble3(L,L,L),vbool3(true,true,true));
 
         Symbol<position> p;
         Symbol<id> id_;

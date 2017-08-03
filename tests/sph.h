@@ -219,7 +219,7 @@ public:
 
         const vdouble3 low(0,0,-3.0*psep);
         const vdouble3 high(L,L,L);
-        const bool3 periodic(true,true,false);
+        const vbool3 periodic(true,true,false);
 
         for (int i = 0; i < nx; i++) {
             for (int j = 0; j < nx; j++) {

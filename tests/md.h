@@ -98,7 +98,7 @@ public:
          * initiate neighbour search on a periodic 2d domain of side length L
          * set average number of particles per cell to 1
          */
-        particles.init_neighbour_search(vdouble2(0,0),vdouble2(L,L),bool2(true,true));
+        particles.init_neighbour_search(vdouble2(0,0),vdouble2(L,L),vbool2(true,true));
 
         /*
          * create N particles, ensuring that they do not overlap, according 

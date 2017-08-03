@@ -97,6 +97,9 @@ static const thrust::detail::functional::placeholder<0>::type _1;
 static const thrust::detail::functional::placeholder<1>::type _2;
 static const thrust::detail::functional::placeholder<2>::type _3;
 
+template <typename T>
+using plus = thrust::plus<T>;
+
 using thrust::make_transform_iterator;
 using thrust::make_zip_iterator;
 using thrust::make_tuple;
@@ -118,6 +121,9 @@ using transform_iterator = boost::transform_iterator<UnaryFunction, Iterator>;
 const boost::lambda::placeholder1_type _1;
 const boost::lambda::placeholder2_type _2;
 const boost::lambda::placeholder3_type _3;
+
+template <typename T>
+using plus = std::plus<T>;
 
 using boost::make_transform_iterator;
 using boost::make_zip_iterator;

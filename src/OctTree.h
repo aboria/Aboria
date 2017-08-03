@@ -131,6 +131,7 @@ private:
         }
 #endif
 
+        this->m_query.m_number_of_levels = m_number_of_levels;
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
@@ -158,6 +159,7 @@ private:
         sort_by_tags();
         build_tree();
 
+        this->m_query.m_number_of_levels = m_number_of_levels;
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
@@ -173,6 +175,7 @@ private:
         m_tags.resize(n);
         build_tree();
 
+        this->m_query.m_number_of_levels = m_number_of_levels;
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
@@ -192,6 +195,7 @@ private:
         sort_by_tags();
         build_tree();
 
+        this->m_query.m_number_of_levels = m_number_of_levels;
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
@@ -224,6 +228,7 @@ private:
     
     int max_points;
     int m_max_level;
+    unsigned m_number_of_levels;
 
     vector_int m_tags;
     vector_int m_indices;
@@ -319,7 +324,7 @@ void octtree<traits>::build_tree() {
                 nodes_on_this_level.begin(), 
                 detail::is_a<detail::NODE>(), 
                 0, 
-                std::plus<int>());
+                detail::plus<int>());
 
         // Enumerate leaves at this level
         detail::transform_exclusive_scan(child_node_kind.begin(), 
@@ -327,7 +332,7 @@ void octtree<traits>::build_tree() {
                 leaves_on_this_level.begin(), 
                 detail::is_a<detail::LEAF>(), 
                 0, 
-                std::plus<int>());
+                detail::plus<int>());
 
         int num_nodes_on_this_level = nodes_on_this_level.back() + (child_node_kind.back() == detail::NODE ? 1 : 0);
         int num_leaves_on_this_level = leaves_on_this_level.back() + (child_node_kind.back() == detail::LEAF ? 1 : 0);
@@ -396,6 +401,7 @@ void octtree<traits>::build_tree() {
                 active_nodes.begin(),
                 detail::is_a<detail::NODE>());
 
+        m_number_of_levels = level;
     }
 
 
@@ -704,6 +710,7 @@ struct octtree_query {
     raw_pointer m_particles_begin;
     size_t m_number_of_nodes;
     size_t m_number_of_particles;
+    unsigned m_number_of_levels;
 
     vint2* m_leaves_begin;
     int* m_nodes_begin;
@@ -824,7 +831,8 @@ struct octtree_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(get_children(),position,double_d(max_distance),this),
+                query_iterator(get_children(),position,double_d(max_distance),
+                               m_number_of_levels,this),
                 query_iterator()
                 );
     }
@@ -838,7 +846,8 @@ struct octtree_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(get_children(),position,max_distance,this),
+                query_iterator(get_children(),position,max_distance,
+                               m_number_of_levels,this),
                 query_iterator()
                 );
     }
@@ -853,13 +862,17 @@ struct octtree_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
-        return iterator_range<all_iterator>(all_iterator(get_children(ci),this),all_iterator());
+        return iterator_range<all_iterator>(all_iterator(get_children(ci),
+                                            m_number_of_levels,this),
+                                            all_iterator());
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     iterator_range<all_iterator> get_subtree() const {
-        return iterator_range<all_iterator>(all_iterator(get_children(),this),all_iterator());
+        return iterator_range<all_iterator>(all_iterator(get_children(),
+                                                m_number_of_levels,this),
+                                            all_iterator());
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -870,17 +883,21 @@ struct octtree_query {
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
+    unsigned number_of_levels() const {
+        return m_number_of_levels;
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     const raw_pointer& get_particles_begin() const {
         return m_particles_begin;
     }
-
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     raw_pointer& get_particles_begin() {
         return m_particles_begin;
     }
-
 
 
 };

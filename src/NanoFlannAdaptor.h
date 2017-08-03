@@ -242,6 +242,7 @@ private:
         this->m_query.m_dummy_root.node_type.sub.divhigh = this->m_query.m_bounds.bmin[0];
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
+        this->m_query.m_number_of_levels = m_kd_tree.size_levels();
         this->m_query.m_number_of_particles = this->m_particles_end
                                              -this->m_particles_begin;
 
@@ -422,6 +423,7 @@ struct nanoflann_adaptor_query {
     raw_pointer m_particles_begin;
     size_t m_number_of_buckets;
     size_t m_number_of_particles;
+    size_t m_number_of_levels;
 
     value_type* m_root;
     value_type m_dummy_root;
@@ -563,7 +565,8 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(get_children(),position,double_d(max_distance),this),
+                query_iterator(get_children(),position,double_d(max_distance),
+                               m_number_of_levels,this),
                 query_iterator()
                 );
     }
@@ -575,7 +578,8 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator>(
-                query_iterator(get_children(),position,max_distance,this),
+                query_iterator(get_children(),position,max_distance,
+                               m_number_of_levels,this),
                 query_iterator()
                 );
     }
@@ -585,11 +589,15 @@ struct nanoflann_adaptor_query {
     }
 
     iterator_range<all_iterator> get_subtree(const child_iterator& ci) const {
-        return iterator_range<all_iterator>(all_iterator(get_children(ci),this),all_iterator());
+        return iterator_range<all_iterator>(all_iterator(get_children(ci),
+                                            m_number_of_levels,this),
+                                            all_iterator());
     }
 
     iterator_range<all_iterator> get_subtree() const {
-        return iterator_range<all_iterator>(all_iterator(get_children(),this),all_iterator());
+        return iterator_range<all_iterator>(all_iterator(get_children(),
+                                            m_number_of_levels,this),
+                                            all_iterator());
     }
 
     size_t number_of_particles() const {
@@ -598,6 +606,10 @@ struct nanoflann_adaptor_query {
 
     raw_pointer get_particles_begin() const {
         return m_particles_begin;
+    }
+
+    unsigned number_of_levels() const {
+        return m_number_of_levels;
     }
 
 
