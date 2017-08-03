@@ -716,10 +716,43 @@ public:
         }
     }
 
+    
+    CUDA_HOST_DEVICE
+    depth_first_iterator(const iterator& copy):
+        m_stack(new child_iterator[copy.m_stack_max_size]),
+        m_stack_size(copy.m_stack_size),
+        m_stack_max_size(copy.m_stack_max_size),
+        m_query(copy.m_query)
+
+    {
+        for (int i = 0; i < m_stack_size; ++i) {
+            m_stack[i] = copy.m_stack[i];
+        }
+    }
+
     ~depth_first_iterator() {
         if (m_stack_max_size != 0) {
             delete[] m_stack;
         }
+    }
+
+    CUDA_HOST_DEVICE
+    iterator& operator=(const iterator& copy) {
+        if (copy.m_stack_max_size > m_stack_max_size) {
+            if (m_stack_max_size != 0) {
+                delete[] m_stack;
+            }
+            m_stack = new child_iterator[copy.m_stack_max_size];
+            m_stack_max_size = copy.m_stack_max_size;
+        }
+
+        m_stack_size = copy.m_stack_size;
+        for (int i = 0; i < m_stack_size; ++i) {
+            m_stack[i] = copy.m_stack[i];
+        }
+
+        m_query = copy.m_query;
+        return *this;
     }
 
 
