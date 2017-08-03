@@ -115,7 +115,7 @@ namespace detail {
                 return proto::value(proto::child_c<0>(expr))( 
                         // need to const_cast this cause everything is
                         // normally held as a const &. Could cause problems???
-                        const_cast<generator_type&>(get<random>(
+                        const_cast<generator_type&>(get<generator>(
                                 fusion::at_key<label_type>(ctx.m_labels)
                                 ))
                         );

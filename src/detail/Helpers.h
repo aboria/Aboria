@@ -3,6 +3,7 @@
 
 
 #include <boost/iterator/iterator_facade.hpp>
+#include "boost/mpl/contains.hpp"
 
 namespace Aboria {
 namespace detail {

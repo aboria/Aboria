@@ -58,7 +58,7 @@ public:
         Label<1,ParticlesType> b(particles);
         auto dx = create_dx(a,b);
         Accumulate<std::plus<double> > sum;
-        Accumulate<std::plus<double3> > sumv;
+        Accumulate<std::plus<vdouble3> > sumv;
 
         static_assert(decltype(detail::alias_check(s,a,sum(b,s[b])))::value,
                 "should be aliased");
@@ -69,7 +69,7 @@ public:
         static_assert(decltype(detail::alias_check(r,a,sumv(b,r[b])))::value,
                 "should be aliased");
 
-        static_assert(decltype(detail::alias_check(r,a,sumv(b,double3(1,2,3) + dx)))::value,
+        static_assert(decltype(detail::alias_check(r,a,sumv(b,vdouble3(1,2,3) + dx)))::value,
                 "should be aliased");
 
         static_assert(!decltype(detail::alias_check(s,a,sum(b,s[a])))::value,

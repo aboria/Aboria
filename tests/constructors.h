@@ -55,7 +55,7 @@ public:
 
     template<template <typename,typename> class V>
     void helper_OneVect3d(void) {
-        ABORIA_VARIABLE(vector,double3,"vector")
+        ABORIA_VARIABLE(vector,vdouble3,"vector")
         typedef std::tuple<vector> variables_type;
     	Particles<variables_type,3,V> test;
     }
@@ -81,7 +81,7 @@ public:
 
     template<template <typename,typename> class V>
     void helper_Multiple(void) {
-        ABORIA_VARIABLE(vector,double3,"vector")
+        ABORIA_VARIABLE(vector,vdouble3,"vector")
         ABORIA_VARIABLE(var1,double,"var1")
         ABORIA_VARIABLE(var2,int,"var2")
         ABORIA_VARIABLE(var3,unsigned int,"var3")

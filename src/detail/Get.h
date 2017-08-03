@@ -205,7 +205,7 @@ struct is_thrust_zip_iterator<zip_iterator<thrust::tuple<T...>,M>> {
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
 CUDA_HOST_DEVICE
-typename std::tuple_element<I,std::tuple<T...>>::type const &
+const typename std::tuple_element<I,std::tuple<T...>>::type &
 get_impl(const std::tuple<T...>& arg)
 {
 #if defined(__CUDA_ARCH__)
@@ -233,7 +233,7 @@ get_impl(std::tuple<T...>& arg)
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
 CUDA_HOST_DEVICE
-typename std::tuple_element<I,std::tuple<T...>>::type &
+typename std::tuple_element<I,std::tuple<T...>>::type &&
 get_impl(std::tuple<T...>&& arg)
 {
 #if defined(__CUDA_ARCH__)

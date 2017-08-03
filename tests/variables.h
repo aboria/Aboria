@@ -75,23 +75,23 @@ public:
     template<template <typename,typename> class V>
     void helperVector(void) {
 
-        ABORIA_VARIABLE(a,double3,"a")
-        ABORIA_VARIABLE(b,int3,"b")
+        ABORIA_VARIABLE(a,vdouble3,"a")
+        ABORIA_VARIABLE(b,vint3,"b")
 
         typename Particles<std::tuple<a,b>,3,V>::value_type p;
 
-        get<a>(p) = double3(1.1,1.2,1.3);
-        get<b>(p) = double3(1,2,3);
+        get<a>(p) = vdouble3(1.1,1.2,1.3);
+        get<b>(p) = vdouble3(1,2,3);
 
         std::cout << "get<a>(p) = " << get<a>(p) <<std::endl;
-        TS_ASSERT((get<a>(p)==double3(1.1,1.2,1.3)).all());
-        TS_ASSERT((get<b>(p)==int3(1,2,3)).all());
+        TS_ASSERT((get<a>(p)==vdouble3(1.1,1.2,1.3)).all());
+        TS_ASSERT((get<b>(p)==vint3(1,2,3)).all());
 
-        get<a>(p) = double3(2.1,2.2,2.3);
-        get<b>(p) = int3(2,3,4);
+        get<a>(p) = vdouble3(2.1,2.2,2.3);
+        get<b>(p) = vint3(2,3,4);
 
-        TS_ASSERT((get<a>(p)==double3(2.1,2.2,2.3)).all());
-        TS_ASSERT((get<b>(p)==int3(2,3,4)).all());
+        TS_ASSERT((get<a>(p)==vdouble3(2.1,2.2,2.3)).all());
+        TS_ASSERT((get<b>(p)==vint3(2,3,4)).all());
     }
 
     void test_std_vector(void) {

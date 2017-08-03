@@ -111,7 +111,7 @@ void test_getting_started(void) {
      * additional variable "velocity", represented 
      * by a 2d double vector
      */
-    ABORIA_VARIABLE(velocity,double2,"velocity")
+    ABORIA_VARIABLE(velocity,vdouble2,"velocity")
     typedef Particles<std::tuple<velocity>,2> container_type;
     typedef typename container_type::position position;
 
@@ -127,8 +127,8 @@ void test_getting_started(void) {
         /*
          * set a random position, and initialise velocity
          */
-        get<position>(particles)[i] = double2(uni(gen),uni(gen));
-        get<velocity>(particles)[i] = double2(0,0);
+        get<position>(particles)[i] = vdouble2(uni(gen),uni(gen));
+        get<velocity>(particles)[i] = vdouble2(0,0);
     }
 
     /*
