@@ -280,7 +280,7 @@ using three spatial dimensions, so we need to set up a domain  from $(0,0,0)$ to
 
         vdouble3 min(0);
         vdouble3 max(1);
-        bool3 periodic(false);
+        vbool3 periodic(false);
     	particles.init_neighbour_search(min,max,periodic);
 
 /*`

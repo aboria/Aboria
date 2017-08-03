@@ -55,16 +55,16 @@ public:
 #ifdef HAVE_EIGEN
 //->
 //=int main() {
-        auto u_sol= [](const double2& x) { 
-            return double2(20*x[0]*std::pow(x[1],3),5*std::pow(x[0],4)-5*std::pow(x[1],4));
+        auto u_sol= [](const vdouble2& x) { 
+            return vdouble2(20*x[0]*std::pow(x[1],3),5*std::pow(x[0],4)-5*std::pow(x[1],4));
         };
 
-        auto p_sol = [](const double2& x) { 
+        auto p_sol = [](const vdouble2& x) { 
             return 60*std::pow(x[0],2)*x[1] - 20*std::pow(x[1],3);
         };
 
-        auto grad_p_sol = [](const double2& x) { 
-            return double2(120*x[0]*x[1] , 60*std::pow(x[0],2) - 60*std::pow(x[1],2));
+        auto grad_p_sol = [](const vdouble2& x) { 
+            return vdouble2(120*x[0]*x[1] , 60*std::pow(x[0],2) - 60*std::pow(x[1],2));
         };
 
 
@@ -85,9 +85,9 @@ public:
         const double mu = 1;
        	const double h = 10.0;
         const double invh = 1.0/h;
-        double2 periodic(false);
-        double2 low(-0.5);
-        double2 high(1.5);
+        vdouble2 periodic(false);
+        vdouble2 low(-0.5);
+        vdouble2 high(1.5);
         
         const int nx = 16;
         constexpr int N = (nx+1)*(nx+1);
@@ -95,7 +95,7 @@ public:
         typename particles_type::value_type p;
         for (int i=0; i<=nx; ++i) {
             for (int j=0; j<=nx; ++j) {
-                get<position>(p) = double2(i*delta,j*delta);
+                get<position>(p) = vdouble2(i*delta,j*delta);
                 if ((i==0)||(i==nx)||(j==0)||(j==nx)) {
                     get<boundary>(p) = true;
                 } else {
@@ -108,29 +108,29 @@ public:
         knots.init_neighbour_search(low,high,periodic);
         std::cout << "total number of knots = "<<knots.size()<<std::endl;
         
-        auto kernel_x = [&](const double2& dx) {
+        auto kernel_x = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             return -26.0*dx[0]*std::pow(invh,2)*std::pow(r-1.0,9)*(5.0 + 3.0*r*(15.0 + r*(53.0+77.0*r))); 
         };
-        auto kernel_y = [&](const double2& dx) {
+        auto kernel_y = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             return -26.0*dx[1]*std::pow(invh,2)*std::pow(r-1.0,9)*(5.0 + 3.0*r*(15.0 + r*(53.0+77.0*r))); 
         };
-        auto kernel_xx = [&](const double2& dx) {
+        auto kernel_xx = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             return 26.0*std::pow(invh,2)*std::pow(r-1.0,8)*((-1.0 + r)*(5.0+3.0*r*(15.0+r*(53.0+77.0*r))) 
                                         + 132.0*(1.0+r*(8.0+21.0*r))*dx[0]*dx[0]*invh*invh); 
         };
-        auto kernel_yy = [&](const double2& dx) {
+        auto kernel_yy = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             return 26.0*std::pow(invh,2)*std::pow(r-1.0,8)*((-1.0 + r)*(5.0+3.0*r*(15.0+r*(53.0+77.0*r))) 
                                         + 132.0*(1.0+r*(8.0+21.0*r))*dx[1]*dx[1]*invh*invh); 
         };
-        auto kernel_xy = [&](const double2& dx) {
+        auto kernel_xy = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             return 3432.0*dx[0]*dx[1]*std::pow(invh,4)*std::pow(r-1.0,8)*(1.0 + r*(8.0 + 21.0*r)); 
         };
-        auto laplace_xx = [&](const double2& dx) {
+        auto laplace_xx = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             const double r2 = r*r;
             const double r3 = r2*r;
@@ -138,7 +138,7 @@ public:
             return 6864.0*std::pow(invh,4)*std::pow(r-1.0,6)*(2.0+12.0*r-3.0*r2-158.0*r3+147.0*r4
                                     +30.0*(-3.0+r*(-18.0+49.0*r))*dx[0]*dx[0]*invh*invh);
         };
-        auto laplace_yy = [&](const double2& dx) {
+        auto laplace_yy = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             const double r2 = r*r;
             const double r3 = r2*r;
@@ -146,11 +146,11 @@ public:
             return 6864.0*std::pow(invh,4)*std::pow(r-1.0,6)*(2.0+12.0*r-3.0*r2-158.0*r3+147.0*r4
                                     +30.0*(-3.0+r*(-18.0+49.0*r))*dx[1]*dx[1]*invh*invh);
         };
-        auto laplace_xy = [&](const double2& dx) {
+        auto laplace_xy = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             return 205920.0*dx[0]*dx[1]*std::pow(invh,6)*std::pow(r-1.0,6)*(-3.0+r*(-18.0+49.0*r));
         };
-        auto laplace2_xx = [&](const double2& dx) {
+        auto laplace2_xx = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             const double r2 = r*r;
             const double r3 = r2*r;
@@ -158,7 +158,7 @@ public:
             return 2471040.0*std::pow(invh,6)*std::pow(r-1.0,4)*(-1.0-4.0*r+46.0*r2-90.0*r3+49.0*r4
                                 +14.0*(8.0+r*(-31.0+28.0*r))*dx[0]*dx[0]*invh*invh);
         };
-        auto laplace2_yy = [&](const double2& dx) {
+        auto laplace2_yy = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             const double r2 = r*r;
             const double r3 = r2*r;
@@ -166,7 +166,7 @@ public:
             return 2471040.0*std::pow(invh,6)*std::pow(r-1.0,4)*(-1.0-4.0*r+46.0*r2-90.0*r3+49.0*r4
                                 +14.0*(8.0+r*(-31.0+28.0*r))*dx[1]*dx[1]*invh*invh);
         };
-        auto laplace2_xy = [&](const double2& dx) {
+        auto laplace2_xy = [&](const vdouble2& dx) {
             const double r = dx.norm()*invh;
             return 34594560.0*dx[0]*dx[1]*std::pow(invh,8)*std::pow(r-1.0,4)*(8.0+r*(-31.0+28.0*r));
         };
@@ -174,7 +174,7 @@ public:
         const double search_radius = h;
 
         auto A11 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(i)) {
@@ -193,7 +193,7 @@ public:
                });
 
         auto A12 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(i)) {
@@ -212,7 +212,7 @@ public:
                });
 
         auto A22 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(i)) {
@@ -238,7 +238,7 @@ public:
         vector_type source(2*N), alpha(2*N);
         for (int i=0; i<N; ++i) {
             if (get<boundary>(knots[i])) {
-                const double2& velocity_solution = u_sol(get<position>(knots[i]));
+                const vdouble2& velocity_solution = u_sol(get<position>(knots[i]));
                 source[i] = velocity_solution[0];
                 source[i+N] = velocity_solution[1];
             } else {
@@ -271,7 +271,7 @@ public:
 
         // evaluate solution
         auto B11 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(j)) {
@@ -282,7 +282,7 @@ public:
                });
 
         auto B12 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(j)) {
@@ -293,7 +293,7 @@ public:
                });
 
         auto B22 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(j)) {
@@ -304,7 +304,7 @@ public:
                });
 
         auto B31 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(j)) {
@@ -315,7 +315,7 @@ public:
                });
 
         auto B32 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(j)) {
@@ -326,7 +326,7 @@ public:
                });
 
         auto B42 = create_sparse_operator(knots,knots,search_radius,
-                [&](const double2& dx,
+                [&](const vdouble2& dx,
                     const_reference i,
                     const_reference j) {
                     if (get<boundary>(j)) {
@@ -346,15 +346,15 @@ public:
         prx = B31*alpha.head(N) + B32*alpha.tail(N);
         pry = B32*alpha.head(N) + B42*alpha.tail(N);
 
-        double2 L2(0);
-        double2 scale(0);
+        vdouble2 L2(0);
+        vdouble2 scale(0);
         for (int i=0; i<N; ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
-            const double2& velocity_solution = u_sol(get<position>(knots[i]));
-            const double2& pressure_solution = grad_p_sol(get<position>(knots[i]));
-            L2[0] += (double2(u[i],v[i])-velocity_solution).squaredNorm();
-            L2[1] += (double2(prx[i],pry[i])-pressure_solution).squaredNorm();
+            const vdouble2& velocity_solution = u_sol(get<position>(knots[i]));
+            const vdouble2& pressure_solution = grad_p_sol(get<position>(knots[i]));
+            L2[0] += (vdouble2(u[i],v[i])-velocity_solution).squaredNorm();
+            L2[1] += (vdouble2(prx[i],pry[i])-pressure_solution).squaredNorm();
             scale[0] += velocity_solution.squaredNorm();
             scale[1] += pressure_solution.squaredNorm();
         }

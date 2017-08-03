@@ -1059,7 +1059,7 @@ get(getter_type<typename thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9>,VariableList>
 
 template<typename T, typename ValueType>
 CUDA_HOST_DEVICE
-typename ValueType::template return_type<T>::type && 
+typename ValueType::template return_type<T>::type & 
 get(ValueType&& arg) {
     //std::cout << "get reference" << std::endl;
     return detail::get_impl<ValueType::template elem_by_type<T>::index>(arg.get_tuple());
