@@ -536,33 +536,30 @@ public:
     typedef const int& reference;
 	typedef std::ptrdiff_t difference_type;
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     octtree_child_iterator():
         m_high(1<<D),
         m_index(nullptr)
     {}
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     octtree_child_iterator(const int* start, const box_type& bounds):
         m_high(0),
         m_index(start),
         m_bounds(bounds)
     {
-        ASSERT(start != nullptr, "start pointer should not be null");
+        ASSERT_CUDA(start != nullptr);
         if (detail::is_empty(*m_index)) {
             increment();
         }
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     void go_to(const double_d& position) {
         int new_high = 0;
         for (int i = 0; i < D; ++i) {
-            ASSERT(position[i] < m_bounds.bmax[i],"position out of bounds");
-            ASSERT(position[i] >= m_bounds.bmin[i],"position out of bounds");
+            ASSERT_CUDA(position[i] < m_bounds.bmax[i]);
+            ASSERT_CUDA(position[i] >= m_bounds.bmin[i]);
             const double mid = 0.5*(m_bounds.bmax[i]+m_bounds.bmin[i]);
   
             // Push the bit into the result as we build it
@@ -576,19 +573,16 @@ public:
         m_high = new_high;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     int get_child_number() const {
         return m_high;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     bool is_high(const size_t i) const {
         return m_high & (1<<(D-1-i));
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     box_type get_bounds() const {
         box_type ret = m_bounds;
@@ -602,26 +596,22 @@ public:
         return ret;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     reference operator ->() const {
         return dereference();
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     octtree_child_iterator& operator++() {
         increment();
         return *this;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     octtree_child_iterator operator++(int) {
         octtree_child_iterator tmp(*this);
@@ -629,25 +619,21 @@ public:
         return tmp;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     inline bool operator==(const octtree_child_iterator& rhs) const {
         return equal(rhs);
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     inline bool operator!=(const octtree_child_iterator& rhs) const {
         return !operator==(rhs);
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     inline bool operator==(const bool rhs) const {
         return equal(rhs);
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     inline bool operator!=(const bool rhs) const {
         return !operator==(rhs);
@@ -655,25 +641,21 @@ public:
 
 private:
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     bool equal(octtree_child_iterator const& other) const {
         return m_index == other.m_index;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     bool equal(const bool other) const {
         return (m_high<(1<<D))==other;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     reference dereference() const { 
         return *m_index; 
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     void increment() {
         do {

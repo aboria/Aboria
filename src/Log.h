@@ -43,7 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef NDEBUG
 #define ASSERT(condition, message) 
-#define ASSERT_CUDA(condition, message) 
+#define ASSERT_CUDA(condition) 
 #else
 #define ASSERT(condition, message) \
     if (! (condition)) { \
