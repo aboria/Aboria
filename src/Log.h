@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef NDEBUG
 #define ASSERT(condition, message) 
+#define ASSERT_CUDA(condition, message) 
 #else
 #define ASSERT(condition, message) \
     if (! (condition)) { \
@@ -50,6 +51,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
                       << " line " << __LINE__ << ": " << message << std::endl; \
         raise(SIGTRAP); \
     } 
+#define ASSERT_CUDA(condition, message) \
+    assert(condition,message);
+
 #endif
 
 #define CHECK(condition, message) \
