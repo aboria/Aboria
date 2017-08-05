@@ -143,26 +143,26 @@ namespace detail {
         struct result;
 
         template<typename This>
-        struct result<This(const fusion::nil_&)>:
+        struct result<This(const fusion::nil&)>:
             fusion::result_of::as_list<dummy_type> 
         {};
 
 
         template<typename This, typename T, typename = typename
-            std::enable_if<!std::is_same<T,fusion::nil_>::value>::type>
+            std::enable_if<!std::is_same<T,fusion::nil>::value>::type>
         struct result<This(T)> {
             typedef T type;
         };
 
         template<typename This>
-        typename result<add_dummy_if_empty(const fusion::nil_& state)>::type
-        operator()(const fusion::nil_& state) {
+        typename result<add_dummy_if_empty(const fusion::nil& state)>::type
+        operator()(const fusion::nil& state) {
             return fusion::make_list(dummy());
             //return typename result<add_dummy_if_empty(const T&)>::type();
         }
 
         template<typename This, typename T, typename = typename
-            std::enable_if<!std::is_same<T,fusion::nil_>::value>::type>
+            std::enable_if<!std::is_same<T,fusion::nil>::value>::type>
         typename result<add_dummy_if_empty(const T&)>::type
         operator()(const T& state) {
             return state;
@@ -396,7 +396,7 @@ namespace detail {
     namespace result_of {
         template <typename Expr>
         struct get_labels {
-            typedef typename boost::result_of<Aboria::detail::get_labels(Expr,fusion::nil_)>::type get_labels_result;
+            typedef typename boost::result_of<Aboria::detail::get_labels(Expr,fusion::nil)>::type get_labels_result;
             typedef typename std::remove_reference<get_labels_result>::type type;
         };
 

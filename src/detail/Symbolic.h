@@ -87,7 +87,7 @@ namespace Aboria {
         struct GeometryExpr;
 
         // forward declare here so we can use the nice eval functions defined in Symbolic.h....
-        template<typename labels_type=fusion::nil_, typename dx_type=fusion::nil_>
+        template<typename labels_type=fusion::nil, typename dx_type=fusion::nil>
         struct EvalCtx;
     }
 }

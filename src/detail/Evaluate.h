@@ -117,7 +117,7 @@ check_valid_assign_expr(const LabelType& label, ExprRHS const & expr) {
     typedef typename std::remove_cv<
         typename std::remove_reference<rhs_label_type_ref>::type>::type rhs_label_type;
 
-    const rhs_label_type& rhs_label = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil_()));
+    const rhs_label_type& rhs_label = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil()));
     static_assert(std::is_same<rhs_label_type,LabelType>::value,
             "Labels on LHS and RHS of assign expression do not match");
     particles_type& particles = label.get_particles();
