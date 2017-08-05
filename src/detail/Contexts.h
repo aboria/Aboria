@@ -59,7 +59,7 @@ namespace detail {
         //BOOST_MPL_ASSERT_MSG(dx_size_type::value==dx_size,DX_SIZE_NOT_CONSISTENT_WITH_LABELS_SIZE,(dx_size,dx_size_type));
         static_assert(dx_size_type::value==dx_size,"dx size not consitent with labels_size");
         
-        EvalCtx(labels_type labels=fusion::nil_(), dx_type dx=fusion::nil())
+        EvalCtx(labels_type labels=fusion::nil(), dx_type dx=fusion::nil())
             : m_labels(labels),m_dx(dx)
         {}
 
