@@ -1198,7 +1198,7 @@ namespace nanoflann
 				node->node_type.lr.left = left;
 				node->node_type.lr.right = right;
 
-                m_number_of_levels = ++level;
+                m_number_of_levels = std::max(m_number_of_levels,++level);
 
 				// compute bounding-box of leaf points
                 /*
