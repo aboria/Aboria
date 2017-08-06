@@ -167,6 +167,23 @@ private:
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
+    iterator_range<vector_unsigned_int::const_iterator>
+    update_order_impl() {
+        set_domain_impl();
+        const size_t n = this->m_particles_end - this->m_particles_begin;
+        m_bucket_indices.resize(n);
+        if (n > 0) {
+            build_bucket_indices(
+                    get<position>(this->m_particles_begin),
+                    get<position>(this->m_particles_end),m_bucket_indices.begin());
+            sort_by_bucket_index();
+        }
+        return iterator_range<vector_unsigned_int::const_iterator>(
+                                                m_indices.begin(),
+                                                m_indices.end());
+    }
+
+
     void add_points_at_end_impl(const size_t dist) {
         const bool embed_all = set_domain_impl();
         auto start_adding = embed_all?this->m_particles_begin:
@@ -269,7 +286,6 @@ private:
             detail::sort_by_key(m_bucket_indices.begin(),
                                 m_bucket_indices.end(),
                                 m_indices.begin());
-            detail::reorder_destructive(m_indices.begin(), m_indices.end(), this->m_particles_begin);
         }
     }
 

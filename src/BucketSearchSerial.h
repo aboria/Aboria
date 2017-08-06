@@ -99,8 +99,13 @@ class bucket_search_serial:
 
 public:
     bucket_search_serial():m_size_calculated_with_n(0),base_type() {}
+
     static constexpr bool cheap_copy_and_delete_at_end() {
         return true;
+    }
+
+    static constexpr bool ordered() {
+        return false;
     }
 
 private:
@@ -246,6 +251,13 @@ private:
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
+    }
+
+    std::pair<vector_unsigned_int::const_iterator,
+              vector_unsigned_int::const_iterator>
+    update_order_impl() {
+        return std::pair<vector_unsigned_int::const_iterator,
+                         vector_unsigned_int::const_iterator>();
     }
 
 

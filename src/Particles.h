@@ -471,20 +471,24 @@ public:
     /// \see erase(iterator)
     iterator erase (iterator first, iterator last) {
         iterator return_iterator = last;
-        if (last != first) {
-            for(iterator i=first;i!=last-1;i++) {
-                erase(i,false);
-            }
-            return_iterator = erase(last-1,false);
-            if (searchable) {
-                if (search.cheap_copy_and_delete_at_end()) {
-                    search.delete_points_at_end(begin(),end());
-                } else {
-                    search.embed_points(begin(),end());
-                }
-            }
+
+        const size_t n = last-first;
+        const size_t n_after_range = end()-last;
+
+        if (n_after_range > n) {
+            detail::copy(last,last+n,first);
+            detail::copy(last+n,end(),last);
+        } else {
+            detail::copy(last,end(),first);
         }
-        return return_iterator;
+        
+        resize(size()-n);
+        
+        if (searchable) {
+            search.delete_points_at_end(begin(),end());
+        }
+        
+        return end()-n_after_range; 
     }
 
     /// insert a particle \p val into the container at \p position
@@ -616,26 +620,39 @@ public:
     /// information if true (default=true)
     void delete_particles(const bool update_neighbour_search = true) {
         LOG(2,"Particle: delete_particles: update_neighbour_search = "<<update_neighbour_search);
-        for (int index = 0; index < size(); ++index) {
-            iterator i = begin() + index;
-            while (Aboria::get<alive>(*i) == false) {
-                LOG(3,"Particle: delete_particles: deleting particle "<<get<id>(*i)<<" with position "<<get<position>(*i));
-                if ((index < size()-1) && (size() > 1)) {
-                    *i = *(end()-1);
-                    if (searchable && update_neighbour_search && search.cheap_copy_and_delete_at_end()) {
+
+        const bool update_search = searchable && update_neighbour_search;
+        const bool do_serial_delete = update_search && 
+                                      running_in_serial() && 
+                                      search.cheap_copy_and_delete_at_end();
+
+        if (do_serial_delete) {
+            for (int index = 0; index < size(); ++index) {
+                iterator i = begin() + index;
+                while (Aboria::get<alive>(*i) == false) {
+                    LOG(3,"Particle: delete_particles: deleting particle "<<get<id>(*i)<<" with position "<<get<position>(*i));
+                    if ((index < size()-1) && (size() > 1)) {
+                        *i = *(end()-1);
                         search.copy_points(end()-1,i);
+                        pop_back(false);
+                        i = begin() + index;
+                    } else {
+                        pop_back(false);
+                        break;
                     }
-                    pop_back(false);
-                    i = begin() + index;
-                } else {
-                    pop_back(false);
-                    break;
                 }
+                LOG(4,"Particle: delete_particles: after deleting: iterator has particle "<<get<id>(*i)<<" with position "<<get<position>(*i)<<" and alive "<< bool(get<alive>(*i)));
             }
-            LOG(4,"Particle: delete_particles: after deleting: iterator has particle "<<get<id>(*i)<<" with position "<<get<position>(*i)<<" and alive "<< bool(get<alive>(*i)));
+        } else {
+            iterator first_dead = detail::partition(begin(),end(),detail::is_alive());
+            erase(first_dead,end(),false);
         }
-        if (searchable && update_neighbour_search) {
-            if (search.cheap_copy_and_delete_at_end()) {
+
+        if (update_search) {
+            if (search.ordered()) {
+                reorder(search.update_order(begin(),end()));
+            }
+            if (do_serial_delete) {
                 search.delete_points_at_end(begin(),end());
             } else {
                 search.embed_points(begin(),end());
@@ -643,13 +660,20 @@ public:
         }
     }
 
-    // Need to be mark as device to enable get functions being device/host
-    CUDA_HOST_DEVICE
-    const typename data_type::tuple_type & get_tuple() const { return data.get_tuple(); }
+    
+
 
     // Need to be mark as device to enable get functions being device/host
     CUDA_HOST_DEVICE
-    typename data_type::tuple_type & get_tuple() { return data.get_tuple(); }
+    const typename data_type::tuple_type & get_tuple() const { 
+        return data.get_tuple(); 
+    }
+
+    // Need to be mark as device to enable get functions being device/host
+    CUDA_HOST_DEVICE
+    typename data_type::tuple_type & get_tuple() { 
+        return data.get_tuple(); 
+    }
 
     /*
 private:
@@ -784,6 +808,30 @@ public:
 #endif
 
 private:
+    typedef traits_type::vector_unsigned_int vector_unsigned_int;
+
+    bool running_in_serial() {
+#ifdef HAVE_OPENMP
+        const int num_threads = omp_get_num_threads();
+#else
+        const int num_threads = 1;
+#endif
+        return num_threads==1 &&
+                    !std::is_same<vector_unsigned_int,
+                                  thrust::device_vector<unsigned int>>::value;
+
+    }
+
+    // sort the particles by order (i.e. a scatter)
+    void reorder(const iterator_range<vector_unsigned_int::const_iterator>& order) {
+        ASSERT(order.size() == size());
+        if (size() > 0) {
+            detail::gather(order.begin(),order.end(),
+                           traits_type::begin(data),
+                           traits_type::begin(other_data));
+            data.swap(other_data);
+        }
+    }
 
     template <class InputIterator>
     iterator insert_dispatch (iterator position, InputIterator first, InputIterator last, 
@@ -829,6 +877,7 @@ private:
 
 
     data_type data;
+    data_type other_data;
     int next_id;
     bool searchable;
     uint32_t seed;
