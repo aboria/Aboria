@@ -445,21 +445,18 @@ public:
     /// NOTE: This will potentially reorder the particles
     /// if neighbourhood searching is on, then this is updated
     iterator erase (iterator i, bool update_neighbour_search = true) {
+        const size_t i_position = i-start();
         if (i != end()-1) {
             *i = *(end()-1);
-            if (search.cheap_copy_and_delete_at_end() && searchable) {
-                search.copy_points(end()-1,i);
-            }
             traits_type::pop_back(data);
         } else {
             traits_type::pop_back(data);
             i = end();
         }
+
         if (searchable && update_neighbour_search) {
-            if (search.cheap_copy_and_delete_at_end()) {
-                search.delete_points_at_end(begin(),end());
-            } else {
-                search.embed_points(begin(),end());
+            if (search.delete_points(begin(),end(),i_position,1)) {
+                reorder(search.m_order().begin(),search.m_order().end());
             }
         }
         return i;
@@ -472,20 +469,23 @@ public:
     iterator erase (iterator first, iterator last) {
         iterator return_iterator = last;
 
+        const size_t n_before_range = first-begin();
         const size_t n = last-first;
         const size_t n_after_range = end()-last;
 
-        if (n_after_range > n) {
-            detail::copy(last,last+n,first);
-            detail::copy(last+n,end(),last);
+        if (n_after_range > n && !search.ordered()) {
+            // move elements at end to deleted region
+            detail::copy(end()-n,end(),first);
+            traits_type::resize(data,size()-n);         
         } else {
-            detail::copy(last,end(),first);
+            // order is maintained
+            traits_type::erase(data,n_before_range,n);
         }
         
-        resize(size()-n);
-        
         if (searchable) {
-            search.delete_points_at_end(begin(),end());
+            if (search.delete_points(begin(),end(),n_before_range,n)) {
+                reorder(search.m_order().begin(),search.m_order().end());
+            }
         }
         
         return end()-n_after_range; 
@@ -624,7 +624,8 @@ public:
         const bool update_search = searchable && update_neighbour_search;
         const bool do_serial_delete = update_search && 
                                       running_in_serial() && 
-                                      search.cheap_copy_and_delete_at_end();
+                                      !search.ordered();
+        const size_t old_size = size();
 
         if (do_serial_delete) {
             for (int index = 0; index < size(); ++index) {
@@ -648,14 +649,13 @@ public:
             erase(first_dead,end(),false);
         }
 
+        const size_t new_size = size();
+
         if (update_search) {
-            if (search.ordered()) {
-                reorder(search.update_order(begin(),end()));
-            }
             if (do_serial_delete) {
-                search.delete_points_at_end(begin(),end());
+                reorder(search.delete_points(begin(),end(),new_size,old_size-new_size));
             } else {
-                search.embed_points(begin(),end());
+                reorder(search.embed_points(begin(),end()));
             }
         }
     }

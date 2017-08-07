@@ -100,10 +100,6 @@ class bucket_search_serial:
 public:
     bucket_search_serial():m_size_calculated_with_n(0),base_type() {}
 
-    static constexpr bool cheap_copy_and_delete_at_end() {
-        return true;
-    }
-
     static constexpr bool ordered() {
         return false;
     }
@@ -193,8 +189,10 @@ private:
     }
 
 
-    void embed_points_impl() {
-        set_domain_impl(); 
+    void embed_points_impl(const bool call_set_domain=true) {
+        if (call_set_domain) {
+            set_domain_impl(); 
+        }
         const size_t n = this->m_particles_end - this->m_particles_begin;
 
         /*
@@ -310,45 +308,50 @@ private:
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
 
-    void delete_points_at_end_impl(const size_t dist) {
-        set_domain_impl(); 
-        const size_t n = this->m_particles_end - this->m_particles_begin;
-        ASSERT(m_linked_list.size()-n == dist, "m_linked_list not consistent with dist");
-        ASSERT(m_linked_list_reverse.size()-n == dist, "m_linked_list_reverse not consistent with dist");
-        ASSERT(m_dirty_buckets.size()-n == dist, "m_dirty_buckets not consistent with dist");
-        const size_t oldn = m_linked_list.size();
-        for (size_t i = n; i<oldn; ++i) {
-            if (m_dirty_buckets[i] == detail::get_empty_id()) continue;
-            const int celli = m_dirty_buckets[i];
+    bool delete_points_impl(const size_t i, const size_t n) {
+        const bool resize_buckets = set_domain_impl();
+        if (resize_buckets) {
+            // buckets all changed, so start from scratch
+            embed_points_impl(false);
+        } else {
+            // only redo buckets that changed
+            // we know that the particle ds has copied from the end to fill the empty gap
+            // so rearrange linked lists appropriatelly
+            // TODO
+            const size_t n = this->m_particles_end - this->m_particles_begin;
+            const size_t oldn = m_linked_list.size();
+            for (size_t i = n; i<oldn; ++i) {
+                if (m_dirty_buckets[i] == detail::get_empty_id()) continue;
+                const int celli = m_dirty_buckets[i];
 
-            //get first backwards index < n
-            int backwardsi = i;
-            while (backwardsi >= n) {
-                backwardsi = m_linked_list_reverse[backwardsi];
-                if (backwardsi == detail::get_empty_id()) break;
-            }
+                //get first backwards index < n
+                int backwardsi = i;
+                while (backwardsi >= n) {
+                    backwardsi = m_linked_list_reverse[backwardsi];
+                    if (backwardsi == detail::get_empty_id()) break;
+                }
 
-            //get first forward index < n
-            int forwardi = i;
-            while (forwardi >= n) {
-                forwardi = m_linked_list[forwardi];
-                if (forwardi == detail::get_empty_id()) break;
-            }
+                //get first forward index < n
+                int forwardi = i;
+                while (forwardi >= n) {
+                    forwardi = m_linked_list[forwardi];
+                    if (forwardi == detail::get_empty_id()) break;
+                }
 
-            if (forwardi != detail::get_empty_id()) {
-                m_linked_list_reverse[forwardi] = backwardsi;
+                if (forwardi != detail::get_empty_id()) {
+                    m_linked_list_reverse[forwardi] = backwardsi;
+                }
+                if (backwardsi != detail::get_empty_id()) {
+                    m_linked_list[backwardsi] = forwardi;
+                } else if (forwardi != detail::get_empty_id()) {
+                    m_buckets[celli] = forwardi;
+                } else {
+                    m_buckets[celli] = detail::get_empty_id();
+                }
             }
-            if (backwardsi != detail::get_empty_id()) {
-                m_linked_list[backwardsi] = forwardi;
-            } else if (forwardi != detail::get_empty_id()) {
-                m_buckets[celli] = forwardi;
-            } else {
-                m_buckets[celli] = detail::get_empty_id();
-            }
-        }
-        m_linked_list.resize(n);
-        m_linked_list_reverse.resize(n);
-        m_dirty_buckets.resize(n);
+            m_linked_list.resize(n);
+            m_linked_list_reverse.resize(n);
+            m_dirty_buckets.resize(n);
 
 
         //check_data_structure();

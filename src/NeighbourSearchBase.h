@@ -181,7 +181,7 @@ public:
         set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),10,false); 
     };
 
-    static constexpr bool cheap_copy_and_delete_at_end() {
+    static constexpr bool ordered() {
         return true;
     }
 
@@ -232,6 +232,12 @@ public:
         cast().update_iterator_impl();
     }
 
+    iterator_range<vector_unsigned_int::const_iterator>
+    get_order(iterator begin, iterator end) {
+	    LOG(2,"neighbour_search_base: get order");
+        return cast().get_order_impl(begin,end);
+    }
+
     void add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
                            const iterator &end) {
@@ -264,20 +270,22 @@ public:
     }
 
 
-    void delete_points_at_end(const iterator &begin, 
-                           const iterator &end) {
-        ASSERT(end-begin <= m_particles_end-m_particles_begin, "prior number of particles embedded into domain is not consistent with distance between begin and start_adding");
+    bool delete_points(iterator begin, iterator end,
+                                             const size_t i, const size_t n) {
 
-        const size_t oldn = m_particles_end-m_particles_begin;
-        m_particles_begin = begin;
-        m_particles_end = end;
-
+        const size_t new_size = end-begin;
+        const size_t old_size = m_particles_end-m_particles_begin;
+        ASSERT(new_size == old_size - n, "new and old iterators not consistent with number of particles being deleted");
+        ASSERT(i < old_size && i+n < old_size, "trying to delete particles not in range")
         ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-        const size_t dist = oldn-(end-begin);
-        if (dist > 0) {
-            LOG(2,"neighbour_search_base: delete_points_at_end: deleting "<<dist<<" points. Total number = "<<end-begin);
-            cast().delete_points_at_end_impl(dist);
+        update_iterators(begin,end);
+
+        if (n > 0) {
+            LOG(2,"neighbour_search_base: delete_points_at_end: deleting "<<n<<" points.");
+            return cast().delete_points_impl(n_before_range,n);
+        } else {
+            return false;
         }
     }
 
@@ -293,6 +301,7 @@ public:
 protected:
     iterator m_particles_begin;
     iterator m_particles_end;
+    vector_unsigned_int m_order;
     bool_d m_periodic;
     detail::bbox<Traits::dimension> m_bounds;
     unsigned int m_n_particles_in_leaf; 

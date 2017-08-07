@@ -92,9 +92,12 @@ class bucket_search_parallel:
 
 public:
     bucket_search_parallel():m_size_calculated_with_n(std::numeric_limits<size_t>::max()),base_type() {}
-    static constexpr bool cheap_copy_and_delete_at_end() {
-        return false;
+
+    static constexpr bool ordered() {
+        return true;
     }
+
+    struct delete_points_lambda;
 
 private:
 
@@ -151,8 +154,10 @@ private:
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
-    void embed_points_impl() {
-        set_domain_impl();
+    void embed_points_impl(const bool call_set_domain=true) {
+        if (call_set_domain) {
+            set_domain_impl();
+        }
         const size_t n = this->m_particles_end - this->m_particles_begin;
         m_bucket_indices.resize(n);
         if (n > 0) {
@@ -168,14 +173,15 @@ private:
     }
 
     iterator_range<vector_unsigned_int::const_iterator>
-    update_order_impl() {
+    get_order_impl(iterator begin, iterator end) {
         set_domain_impl();
-        const size_t n = this->m_particles_end - this->m_particles_begin;
+        const size_t n = begin - end;
         m_bucket_indices.resize(n);
         if (n > 0) {
             build_bucket_indices(
-                    get<position>(this->m_particles_begin),
-                    get<position>(this->m_particles_end),m_bucket_indices.begin());
+                    get<position>(begin),
+                    get<position>(end),
+                    m_bucket_indices.begin());
             sort_by_bucket_index();
         }
         return iterator_range<vector_unsigned_int::const_iterator>(
@@ -212,33 +218,52 @@ private:
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
-    void delete_points_at_end_impl(const size_t dist) {
-        set_domain_impl();
-        const size_t n = this->m_particles_end - this->m_particles_begin;
-        ASSERT(m_bucket_indices.size()-n == dist,"m_bucket_indices size not consistent with dist argument");
-        const size_t oldn = m_bucket_indices.size();
-        m_bucket_indices.resize(n);
+    bool delete_points_impl(const size_t i, const size_t n) {
+        const bool resize_buckets = set_domain_impl();
+        if (resize_buckets) {
+            // buckets all changed, so start from scratch
+            embed_points_impl(false);
+            return true;
+        } else {
+            // only redo buckets that changed
+            const size_t start_bucket = m_bucket_indices[i];
+            const size_t end_bucket = m_bucket_indices[i+n]+1;
 
-        build_buckets();
+            m_bucket_indices.erase(m_bucket_indices.begin()+i,
+                                   m_bucket_indices.begin()+i+n);
+            
+            //set begins in deleted range to i
+            detail::fill(m_buckets_begin.begin()+start_bucket,
+                         m_buckets_begin.begin()+end_bucket,
+                         i);
+            
+            //set ends in deleted range to i
+            detail::fill(m_buckets_end.begin()+start_bucket,
+                         m_buckets_end.begin()+end_bucket,
+                         i);
 
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+            //minus n from begins after deleted range
+            detail::transform(m_buckets_begin.begin()+end_bucket,
+                              m_buckets_begin.end(),
+                              m_buckets_begin.begin()+end_bucket,
+                              detail::_1 - n);
+
+            //minus n from ends after deleted range
+            detail::transform(m_buckets_end.begin()+end_bucket,
+                              m_buckets_end.end(),
+                              m_buckets_end.begin()+end_bucket,
+                              detail::_1 - n);
+
+            return false;
+        }
+        
+
     }
 
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
-        auto positions_from = get<position>(copy_from_iterator);
-        auto positions_to = get<position>(copy_to_iterator);
-
-        const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
-        const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
-
-        build_bucket_indices(positions_from,positions_from+1,
-               m_bucket_indices.begin() + fromi);
-        build_bucket_indices(positions_to,positions_to+1,
-               m_bucket_indices.begin() + toi);
-        sort_by_bucket_index();
-        build_buckets();
+        ERROR("data structure depends on particle ordering, cannot copy");
     }
+
 
     const bucket_search_parallel_query<Traits>& get_query_impl() const {
         return m_query;
