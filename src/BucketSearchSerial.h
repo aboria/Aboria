@@ -104,6 +104,8 @@ public:
         return false;
     }
 
+    struct delete_points_lambda;
+
 private:
     bool set_domain_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
@@ -308,7 +310,93 @@ private:
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
 
-    bool delete_points_impl(const size_t i, const size_t n) {
+    //TODO: do same as delete points and consider a range?
+    void copy_points_serial(const size_t start_index_deleted, const size_t start_index_copied,
+                            const size_t n_copied) {
+
+        for (size_t i = 0; i < n_copied; ++i) {
+            const int toi = start_index_deleted + i;
+            const int fromi = start_index_copied + i;
+            ASSERT(toi != fromi,"toi and fromi are the same");
+
+            // unlink old toi pointers
+            const int toi_back = m_linked_list_reverse[toi];
+            const int toi_forward = m_linked_list[toi];
+            ASSERT(toi_back == detail::get_empty_id() ||
+                    (toi_back < m_linked_list_reverse.size() && toi_back >= 0),
+                    "invalid index of "<<toi_back <<". Note linked list reverse size is "
+                    << m_linked_list_reverse.size());
+            ASSERT(toi_forward == detail::get_empty_id() ||
+                    (toi_forward < m_linked_list_reverse.size() && toi_forward >= 0),
+                    "invalid index of "<<toi_back <<". Note linked list reverse size is "
+                    << m_linked_list_reverse.size());
+            if (toi_back != detail::get_empty_id()) {
+                m_linked_list[toi_back] = toi_forward;
+            } else {
+                m_buckets[m_dirty_buckets[toi]] = toi_forward;
+            }
+            if (toi_forward != detail::get_empty_id()) {
+                m_linked_list_reverse[toi_forward] = toi_back;
+            }
+
+            // setup fromi <-> toi 
+            const int forwardi = m_linked_list[fromi];
+            const int bucketi = m_dirty_buckets[fromi];
+            ASSERT(toi < m_linked_list.size(),"invalid index");
+            ASSERT(bucketi < m_buckets.size() && bucketi >= 0,"invalid index");
+            ASSERT(fromi < m_linked_list_reverse.size(),"invalid index");
+            ASSERT(forwardi == detail::get_empty_id() ||
+                    (forwardi < m_linked_list_reverse.size() && forwardi>= 0),
+                    "invalid index of "<<forwardi<<". Note linked list reverse size is "
+                    << m_linked_list_reverse.size());
+
+            m_linked_list[toi] = forwardi;
+            m_linked_list_reverse[toi] = fromi;
+            m_linked_list[fromi] = toi;
+            if (forwardi != detail::get_empty_id()) { //check this
+                m_linked_list_reverse[forwardi] = toi; 
+            }
+            m_dirty_buckets[toi] = bucketi;
+        }
+
+        //check_data_structure();
+    }
+
+    void delete_points_serial(const size_t start_index_deleted, const size_t end_index_deleted) {
+        for (size_t i = start_index_deleted; i < end_index_deleted; ++i) {
+            if (m_dirty_buckets[i] == detail::get_empty_id()) continue;
+            const int celli = m_dirty_buckets[i];
+
+            //get first backwards index not in range
+            int backwardsi = i;
+            while (backwardsi >= start_index_deleted && backwardsi < end_index_deleted) {
+                backwardsi = m_linked_list_reverse[backwardsi];
+                if (backwardsi == detail::get_empty_id()) break;
+            }
+
+            //get first forward index not in range
+            int forwardi = i;
+            while (forwardi >= start_index_deleted && forwardi < end_index_deleted) {
+                forwardi = m_linked_list[forwardi];
+                if (forwardi == detail::get_empty_id()) break;
+            }
+
+            if (forwardi != detail::get_empty_id()) {
+                m_linked_list_reverse[forwardi] = backwardsi;
+            }
+            if (backwardsi != detail::get_empty_id()) {
+                m_linked_list[backwardsi] = forwardi;
+            } else if (forwardi != detail::get_empty_id()) {
+                m_buckets[celli] = forwardi;
+            } else {
+                m_buckets[celli] = detail::get_empty_id();
+            }
+        }
+    }
+
+    
+
+    bool delete_points_impl(const size_t start_index_deleted, const size_t n_deleted) {
         const bool resize_buckets = set_domain_impl();
         if (resize_buckets) {
             // buckets all changed, so start from scratch
@@ -317,48 +405,60 @@ private:
             // only redo buckets that changed
             // we know that the particle ds has copied from the end to fill the empty gap
             // so rearrange linked lists appropriatelly
-            // TODO
-            const size_t n = this->m_particles_end - this->m_particles_begin;
             const size_t oldn = m_linked_list.size();
-            for (size_t i = n; i<oldn; ++i) {
-                if (m_dirty_buckets[i] == detail::get_empty_id()) continue;
-                const int celli = m_dirty_buckets[i];
+            const size_t newn = oldn - n_deleted;
+            const size_t n_after_deleted = oldn - start_index_deleted - n_deleted;
+            const size_t n_copied = n_after_deleted < n_deleted ?
+                                        n_after_deleted_range : n_deleted;
+            const size_t start_index_copied = n_after_deleted < n_deleted ?
+                                     start_index_deleted + n_deleted : oldn - n_deleted
+            const size_t end_index_deleted = start_index_deleted + n_deleted;
+            const size_t end_index_copied = start_index_copied + n_copied;
+            
+            if (n_deleted + n_copied < n_particles_in_leaf 
+                    && detail::concurrent_processes() == 1) {
+                // if running in serial and number of particles is small,
+                // then just loop over changed particles and alter links accordingly
+                delete_points_serial(start_index_deleted,end_index_deleted);
+                copy_points_serial(start_index_deleted,start_index_copied,n_copied);
+            } else {
+                // else, find changed buckets and loop over them, altering
+                // links accordingly
+                m_deleted_buckets.resize(n_deleted);
+                detail::copy(m_dirty_buckets.begin()+start_index_deleted,
+                             m_dirty_buckets.begin()+end_index_deleted,
+                             m_deleted_buckets.begin());
+                detail::sort(m_deleted_buckets.begin(),m_deleted_buckets.end());
+                detail::for_each(m_deleted_buckets.begin(),
+                                 detail::unique(m_deleted_buckets.begin(),
+                                                m_deleted_buckets.end()),
+                                 delete_points_lambda);
 
-                //get first backwards index < n
-                int backwardsi = i;
-                while (backwardsi >= n) {
-                    backwardsi = m_linked_list_reverse[backwardsi];
-                    if (backwardsi == detail::get_empty_id()) break;
-                }
 
-                //get first forward index < n
-                int forwardi = i;
-                while (forwardi >= n) {
-                    forwardi = m_linked_list[forwardi];
-                    if (forwardi == detail::get_empty_id()) break;
-                }
-
-                if (forwardi != detail::get_empty_id()) {
-                    m_linked_list_reverse[forwardi] = backwardsi;
-                }
-                if (backwardsi != detail::get_empty_id()) {
-                    m_linked_list[backwardsi] = forwardi;
-                } else if (forwardi != detail::get_empty_id()) {
-                    m_buckets[celli] = forwardi;
-                } else {
-                    m_buckets[celli] = detail::get_empty_id();
-                }
+                m_copied_buckets.resize(n_copied);
+                detail::copy(m_dirty_buckets.begin()+start_index_copied,
+                             m_dirty_buckets.begin()+end_index_copied,
+                             m_copied_buckets.begin());
+                detail::sort(m_copied_buckets.begin(),m_copied_buckets.end());
+                detail::for_each(m_copied_buckets.begin(),
+                                 detail::unique(m_copied_buckets.begin(),
+                                                m_copied_buckets.end()),
+                                 copy_points_lambda);
             }
-            m_linked_list.resize(n);
-            m_linked_list_reverse.resize(n);
-            m_dirty_buckets.resize(n);
 
+            // resize lists
+            m_linked_list.resize(newn);
+            m_linked_list_reverse.resize(newn);
+            m_dirty_buckets.resize(newn);
 
-        //check_data_structure();
+            //check_data_structure();
 
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
-        this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
+            this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+            this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+            this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
+        }
+
+        return false;
     }
 
     void update_point(iterator update_iterator) {
@@ -413,54 +513,6 @@ private:
         }
     }
 
-
-    void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
-        const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
-        const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
-        ASSERT(toi != fromi,"toi and fromi are the same");
-
-        // unlink old toi pointers
-        const int toi_back = m_linked_list_reverse[toi];
-        const int toi_forward = m_linked_list[toi];
-        ASSERT(toi_back == detail::get_empty_id() ||
-            (toi_back < m_linked_list_reverse.size() && toi_back >= 0),
-            "invalid index of "<<toi_back <<". Note linked list reverse size is "
-            << m_linked_list_reverse.size());
-        ASSERT(toi_forward == detail::get_empty_id() ||
-            (toi_forward < m_linked_list_reverse.size() && toi_forward >= 0),
-            "invalid index of "<<toi_back <<". Note linked list reverse size is "
-            << m_linked_list_reverse.size());
-        if (toi_back != detail::get_empty_id()) {
-            m_linked_list[toi_back] = toi_forward;
-        } else {
-            m_buckets[m_dirty_buckets[toi]] = toi_forward;
-        }
-        if (toi_forward != detail::get_empty_id()) {
-            m_linked_list_reverse[toi_forward] = toi_back;
-        }
-
-        // setup fromi <-> toi 
-        const int forwardi = m_linked_list[fromi];
-        const int bucketi = m_dirty_buckets[fromi];
-        ASSERT(toi < m_linked_list.size(),"invalid index");
-        ASSERT(bucketi < m_buckets.size() && bucketi >= 0,"invalid index");
-        ASSERT(fromi < m_linked_list_reverse.size(),"invalid index");
-        ASSERT(forwardi == detail::get_empty_id() ||
-            (forwardi < m_linked_list_reverse.size() && forwardi>= 0),
-            "invalid index of "<<forwardi<<". Note linked list reverse size is "
-            << m_linked_list_reverse.size());
-
-        m_linked_list[toi] = forwardi;
-        m_linked_list_reverse[toi] = fromi;
-        m_linked_list[fromi] = toi;
-        if (forwardi != detail::get_empty_id()) { //check this
-            m_linked_list_reverse[forwardi] = toi; 
-        }
-        m_dirty_buckets[toi] = bucketi;
-
-        //check_data_structure();
-    }
-
     const bucket_search_serial_query<Traits>& get_query_impl() const {
         return m_query;
     }
@@ -469,6 +521,8 @@ private:
     vector_int m_linked_list;
     vector_int m_linked_list_reverse;
     vector_int m_dirty_buckets;
+    vector_int m_deleted_buckets;
+    vector_int m_copied_buckets;
     bucket_search_serial_query<Traits> m_query;
     bool m_use_dirty_cells;
 
@@ -478,6 +532,92 @@ private:
     detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
 
 };
+
+struct bucket_search_serial::delete_points_lambda {
+    vector_unsigned_int &m_linked_list;
+    vector_unsigned_int &m_linked_list_reverse;
+    vector_unsigned_int &m_buckets;
+
+    delete_points_lambda(vector_unsigned_int& m_linked_list,
+                         vector_unsigned_int& m_linked_list_reverse,
+                         vector_unsigned_int& m_buckets):
+        m_linked_list(m_linked_list),
+        m_linked_list_reverse(m_linked_list_reverse),
+        m_buckets(m_buckets)
+    {}
+
+    void operator()(const int celli) {
+        // go through linked list
+        int i_minus_1 = detail::get_empty_id();
+        int i = m_buckets[celli];
+        while (i != detail::get_empty_id()) {
+            // unlink each contiguous deleted range
+            if (i >= start_index_deleted && i < end_index_deleted) {
+                //get first forward index not in range
+                do {
+                    i = m_linked_list[i];
+                } while (i != detail::get_empty_id() && 
+                         i >= start_index_deleted 
+                         && i < end_index_deleted);
+
+                //update links
+                if (i_minus_1 != detail::get_empty_id()) {
+                    m_linked_list[i_minus_1] = i;
+                } else if (i != detail::get_empty_id()) {
+                    m_buckets[celli] = i;
+                } else {
+                    m_buckets[celli] = detail::get_empty_id();
+                }
+                if (i != detail::get_empty_id()) {
+                    m_linked_list_reverse[i] = i_minus_1;
+                } else {
+                    break;
+                }
+            } 
+            i_minus_1 = i;
+            i = m_linked_list[i];
+        }
+    }
+}
+
+struct bucket_search_serial::copy_points_lambda {
+    vector_unsigned_int &m_linked_list;
+    vector_unsigned_int &m_linked_list_reverse;
+    vector_unsigned_int &m_buckets;
+
+    copy_points_lambda(vector_unsigned_int& m_linked_list,
+                         vector_unsigned_int& m_linked_list_reverse,
+                         vector_unsigned_int& m_buckets):
+        m_linked_list(m_linked_list),
+        m_linked_list_reverse(m_linked_list_reverse),
+        m_buckets(m_buckets)
+    {}
+
+    void operator()(const int celli) {
+        // go through linked list
+        int i_minus_1 = detail::get_empty_id();
+        int i = m_buckets[celli];
+        while (i != detail::get_empty_id()) {
+            // update each copied index
+            if (i >= start_index_copied && i < end_index_copied) {
+                int i_plus_1 = m_linked_list[i];
+                i = i - start_index_copied + start_index_deleted;
+                if (i_plus_1 != detail::get_empty_id()) {
+                    m_linked_list_reverse[i_plus_1] = i;
+                }
+                if (i_minus_1 != detail::get_empty_id()) {
+                    m_linked_list[i_minus_1] = i;
+                } else {
+                    m_buckets[celli] = i;
+                }
+                m_linked_list[i] = i_plus_1;
+                m_linked_list_reverse[i] = i_minus_1;
+            }
+            i_minus_1 = i;
+            i = m_linked_list[i];
+        }
+    }
+}
 
 // assume that query functions, are only called from device code
 // TODO: most of this code shared with bucket_search_parallel_query, need to combine them

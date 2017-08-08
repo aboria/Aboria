@@ -211,7 +211,7 @@ public:
     /// \param begin_iterator an iterator to the beginning of the set of points
     /// \param end_iterator an iterator to the end of the set of points
     /// \see embed_points_incremental() 
-    void embed_points(iterator begin, iterator end) {
+    bool embed_points(iterator begin, iterator end) {
         m_particles_begin = begin;
         m_particles_end = end;
 
@@ -220,8 +220,7 @@ public:
         const size_t n = m_particles_end - m_particles_begin;
 	    LOG(2,"neighbour_search_base: embed_points: embedding "<<n<<" points");
 
-        cast().embed_points_impl();
-
+        return cast().embed_points_impl();
     }
 
     void update_iterators(iterator begin, iterator end) {
@@ -238,7 +237,7 @@ public:
         return cast().get_order_impl(begin,end);
     }
 
-    void add_points_at_end(const iterator &begin, 
+    bool add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
                            const iterator &end) {
         ASSERT(start_adding-begin == m_particles_end-m_particles_begin, "prior number of particles embedded into domain is not consistent with distance between begin and start_adding");
@@ -251,12 +250,13 @@ public:
         const size_t dist = end - start_adding;
         if (dist > 0) {
             LOG(2,"neighbour_search_base: add_points_at_end: embedding "<<dist<<" new points. Total number = "<<end-begin);
-            cast().add_points_at_end_impl(dist);
+            const bool ret = cast().add_points_at_end_impl(dist);
             LOG(2,"neighbour_search_base: add_points_at_end: done.");
+            return ret;
 
+        } else {
+            return false;
         }
-        ASSERT(m_particles_begin==begin, "did not update m_particles_begin correctly");
-        ASSERT(m_particles_end==end, "did not update m_particles_end correctly");
     }
 
     void copy_points(iterator copy_from_iterator, iterator copy_to_iterator) {

@@ -307,7 +307,11 @@ public:
         searchable(false),
         seed(0)
     {
-        if (searchable) search.embed_points(begin(),end());
+        if (searchable) {
+            if (search.embed_points(begin(),end())) {
+                reorder(search.m_order().begin(),search.m_order().end());
+            }
+        }
     }
 
     
@@ -347,7 +351,9 @@ public:
         }
         if (get<alive>(i)) {
             if (searchable && update_neighbour_search) {
-                search.add_points_at_end(begin(),end()-1,end());
+                if (search.add_points_at_end(begin(),end()-1,end())) {
+                    reorder(search.m_order().begin(),search.m_order().end());
+                }
             }
         } else {
             LOG(2,"WARNING: particle you tried to push back with r = "<<Aboria::get<position>(i)<<" is outside the domain and has been removed");
@@ -380,7 +386,9 @@ public:
             this->push_back(i,false);
         }
         if (searchable) {
-            search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end());
+            if (search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end())) {
+                reorder(search.m_order().begin(),search.m_order().end());
+            }
         }
     }
 
@@ -534,8 +542,13 @@ public:
     void init_neighbour_search(const double_d& low, const double_d& high, const bool_d& periodic,
                                 const unsigned int n_particles_in_leaf=10) {
         search.set_domain(low,high,periodic,n_particles_in_leaf);
+
         enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
-        search.embed_points(begin(),end());
+
+        if (search.embed_points(begin(),end())) {
+            reorder(search.m_order().begin(),search.m_order().end());
+        }
+
         searchable = true;
     }
 
@@ -653,9 +666,13 @@ public:
 
         if (update_search) {
             if (do_serial_delete) {
-                reorder(search.delete_points(begin(),end(),new_size,old_size-new_size));
+                if (search.delete_points(begin(),end(),new_size,old_size-new_size)) {
+                    reorder(search.m_order().begin(),search.m_order().end());
+                }
             } else {
-                reorder(search.embed_points(begin(),end()));
+                if (search.embed_points(begin(),end())) {
+                    reorder(search.m_order().begin(),search.m_order().end());
+                }
             }
         }
     }
@@ -871,7 +888,9 @@ private:
         }
 
         if (remove_deleted_particles || (periodic==true).any()) {
-            search.embed_points(begin(),end());
+            if (search.embed_points(begin(),end())) {
+                reorder(search.m_order().begin(),search.m_order().end());
+            }
         }
     }
 

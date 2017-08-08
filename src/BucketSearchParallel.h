@@ -190,7 +190,7 @@ private:
     }
 
 
-    void add_points_at_end_impl(const size_t dist) {
+    bool add_points_at_end_impl(const size_t dist) {
         const bool embed_all = set_domain_impl();
         auto start_adding = embed_all?this->m_particles_begin:
                                       (this->m_particles_end-dist);
@@ -259,11 +259,6 @@ private:
         
 
     }
-
-    void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
-        ERROR("data structure depends on particle ordering, cannot copy");
-    }
-
 
     const bucket_search_parallel_query<Traits>& get_query_impl() const {
         return m_query;
