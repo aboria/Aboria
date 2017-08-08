@@ -105,6 +105,7 @@ public:
     }
 
     struct delete_points_lambda;
+    struct insert_lambda;
 
 private:
     bool set_domain_impl() {
@@ -135,6 +136,12 @@ private:
             LOG(2,"\tnumber of buckets = "<<m_size<<" (total="<<m_size.prod()<<")");
 
             m_buckets.assign(m_size.prod(), detail::get_empty_id());
+
+            if (detail::concurrent_processes()==1) { 
+                m_buckets_begin.resize(m_size.prod());
+                m_buckets_end.resize(m_size.prod());
+            }
+
             //TODO: should always be true?
             m_use_dirty_cells = true;
 
@@ -191,7 +198,7 @@ private:
     }
 
 
-    void embed_points_impl(const bool call_set_domain=true) {
+    bool embed_points_impl(const bool call_set_domain=true) {
         if (call_set_domain) {
             set_domain_impl(); 
         }
@@ -200,33 +207,62 @@ private:
         /*
          * clear head of linked lists (m_buckets)
          */
-        if (m_use_dirty_cells) {
-            //TODO: wont ever be true??
-            if (m_dirty_buckets.size()<m_buckets.size()) {
-                for (int i: m_dirty_buckets) {
-                    m_buckets[i] = detail::get_empty_id();
-                }
-            } else {
-                m_buckets.assign(m_buckets.size(), detail::get_empty_id());
+        if (m_dirty_buckets.size()<m_buckets.size() && detail::concurrent_processes()==1) {
+            for (int i: m_dirty_buckets) {
+                m_buckets[i] = detail::get_empty_id();
             }
+        } else {
+            m_buckets.assign(m_buckets.size(), detail::get_empty_id());
         }
-        m_use_dirty_cells = true;
 
         m_linked_list.assign(n, detail::get_empty_id());
         m_linked_list_reverse.assign(n, detail::get_empty_id());
-        m_dirty_buckets.assign(n,detail::get_empty_id());
-        for (size_t i=0; i<n; ++i) {
-            const double_d& r = get<position>(this->m_particles_begin)[i];
-            const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-            ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
-            const int bucket_entry = m_buckets[bucketi];
+        //m_dirty_buckets.assign(n,detail::get_empty_id());
 
-            // Insert into own bucket
-            m_buckets[bucketi] = i;
-            m_dirty_buckets[i] = bucketi;
-            m_linked_list[i] = bucket_entry;
-            m_linked_list_reverse[i] = detail::get_empty_id();
-            if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+        if (detail::concurrent_processes()==1) { //TODO: could also use mutexes for >1 & non-thrust
+            for (size_t i=0; i<n; ++i) {
+                const double_d& r = get<position>(this->m_particles_begin)[i];
+                const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+                ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
+                const int bucket_entry = m_buckets[bucketi];
+
+                // Insert into own bucket
+                m_buckets[bucketi] = i;
+                m_dirty_buckets[i] = bucketi;
+                m_linked_list[i] = bucket_entry;
+                m_linked_list_reverse[i] = detail::get_empty_id();
+                if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+            }
+        } else {
+            detail::transform(get<position>(this->m_particles_begin),
+                              get<position>(this->m_particles_end),
+                              m_dirty_buckets.begin(),
+                              m_point_to_bucket_index);
+            this->m_order.resize(m_bucket_indices.size());
+            detail::sequence(this->m_order.begin(), this->m_order.end());
+            detail::sort_by_key(m_dirty_buckets.begin(),
+                                m_dirty_buckets.end(),
+                                this->m_order.begin());
+            // find the beginning of each bucket's list of points
+            detail::counting_iterator<unsigned int> search_begin(0);
+            detail::lower_bound(m_bucket_indices.begin(),
+                    m_bucket_indices.end(),
+                    search_begin,
+                    search_begin + m_size.prod(),
+                    m_bucket_begin.begin());
+
+            // find the end of each bucket's list of points
+            detail::upper_bound(m_bucket_indices.begin(),
+                    m_bucket_indices.end(),
+                    search_begin,
+                    search_begin + m_size.prod(),
+                    m_bucket_end.begin());
+
+            // insert points in each bucket
+            detail::tabulate(m_buckets.begin(),m_buckets.end(),
+                             insert_points_lambda(m_buckets,m_buckets_begin,m_buckets_end,
+                                                  m_linked_list,m_linked_list_reverse,
+                                                  this->m_order));
         }
 
 #ifndef __CUDA_ARCH__
@@ -251,17 +287,11 @@ private:
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
+
+        return false;
     }
 
-    std::pair<vector_unsigned_int::const_iterator,
-              vector_unsigned_int::const_iterator>
-    update_order_impl() {
-        return std::pair<vector_unsigned_int::const_iterator,
-                         vector_unsigned_int::const_iterator>();
-    }
-
-
-    void add_points_at_end_impl(const size_t dist) {
+    bool add_points_at_end_impl(const size_t dist) {
         const bool embed_all = set_domain_impl(); 
         const size_t n = this->m_particles_end - this->m_particles_begin;
         const size_t start_adding = embed_all?0:(n-dist);
@@ -618,6 +648,45 @@ struct bucket_search_serial::copy_points_lambda {
         }
     }
 }
+
+struct bucket_search_serial::insert_points_lambda {
+    vector_unsigned_int &m_buckets;
+    vector_unsigned_int &m_buckets_begin;
+    vector_unsigned_int &m_buckets_end;
+    vector_unsigned_int &m_linked_list;
+    vector_unsigned_int &m_linked_list_reverse;
+    vector_unsigned_int &m_order;
+
+    insert_points_lambda(vector_unsigned_int& m_buckets,
+                         vector_unsigned_int& m_buckets_begin,
+                         vector_unsigned_int& m_buckets_end,
+                         vector_unsigned_int &m_linked_list,
+                         vector_unsigned_int &m_linked_list_reverse,
+                         vector_unsigned_int &m_order
+                         ):
+        m_buckets(m_buckets),
+        m_buckets_begin(m_buckets_begin),
+        m_buckets_end(m_buckets_end),
+        m_linked_list(m_linked_list),
+        m_linked_list_reverse(m_linked_list_reverse),
+        m_order(m_order),
+    {}
+
+    void operator()(const int celli) {
+        const size_t begin = m_buckets_begin[celli];
+        const size_t end = m_buckets_end[celli];
+        if (end-begin > 0) {
+            m_buckets[celli] = begin;
+            for (int i = begin; i < end-1; ++i) {
+                const int index = m_order[i];
+                const int next_index = m_order[i+1];
+                m_linked_list[index] = next_index; 
+                m_linked_list_reverse[next_index] = index;
+            }
+        }
+    }
+}
+
 
 // assume that query functions, are only called from device code
 // TODO: most of this code shared with bucket_search_parallel_query, need to combine them

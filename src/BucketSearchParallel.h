@@ -154,7 +154,7 @@ private:
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
-    void embed_points_impl(const bool call_set_domain=true) {
+    bool embed_points_impl(const bool call_set_domain=true) {
         if (call_set_domain) {
             set_domain_impl();
         }
@@ -170,25 +170,9 @@ private:
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
-    }
 
-    iterator_range<vector_unsigned_int::const_iterator>
-    get_order_impl(iterator begin, iterator end) {
-        set_domain_impl();
-        const size_t n = begin - end;
-        m_bucket_indices.resize(n);
-        if (n > 0) {
-            build_bucket_indices(
-                    get<position>(begin),
-                    get<position>(end),
-                    m_bucket_indices.begin());
-            sort_by_bucket_index();
-        }
-        return iterator_range<vector_unsigned_int::const_iterator>(
-                                                m_indices.begin(),
-                                                m_indices.end());
+        return true;
     }
-
 
     bool add_points_at_end_impl(const size_t dist) {
         const bool embed_all = set_domain_impl();
@@ -216,6 +200,8 @@ private:
 
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+
+        return true;
     }
 
     bool delete_points_impl(const size_t i, const size_t n) {
@@ -301,11 +287,11 @@ private:
     void sort_by_bucket_index() {
         // sort the points by their bucket index
         if (m_bucket_indices.size() > 0) {
-            m_indices.resize(m_bucket_indices.size());
-            detail::sequence(m_indices.begin(), m_indices.end());
+            this->m_order.resize(m_bucket_indices.size());
+            detail::sequence(this->m_order.begin(), this->m_order.end());
             detail::sort_by_key(m_bucket_indices.begin(),
                                 m_bucket_indices.end(),
-                                m_indices.begin());
+                                this->m_order.begin());
         }
     }
 
@@ -317,7 +303,6 @@ private:
     vector_unsigned_int m_bucket_begin;
     vector_unsigned_int m_bucket_end;
     vector_unsigned_int m_bucket_indices;
-    vector_unsigned_int m_indices;
     bucket_search_parallel_query<Traits> m_query;
 
     double_d m_bucket_side_length;
