@@ -219,25 +219,25 @@ private:
                                    m_bucket_indices.begin()+i+n);
             
             //set begins in deleted range to i
-            detail::fill(m_buckets_begin.begin()+start_bucket,
-                         m_buckets_begin.begin()+end_bucket,
+            detail::fill(m_bucket_begin.begin()+start_bucket,
+                         m_bucket_begin.begin()+end_bucket,
                          i);
             
             //set ends in deleted range to i
-            detail::fill(m_buckets_end.begin()+start_bucket,
-                         m_buckets_end.begin()+end_bucket,
+            detail::fill(m_bucket_end.begin()+start_bucket,
+                         m_bucket_end.begin()+end_bucket,
                          i);
 
             //minus n from begins after deleted range
-            detail::transform(m_buckets_begin.begin()+end_bucket,
-                              m_buckets_begin.end(),
-                              m_buckets_begin.begin()+end_bucket,
+            detail::transform(m_bucket_begin.begin()+end_bucket,
+                              m_bucket_begin.end(),
+                              m_bucket_begin.begin()+end_bucket,
                               detail::_1 - n);
 
             //minus n from ends after deleted range
-            detail::transform(m_buckets_end.begin()+end_bucket,
-                              m_buckets_end.end(),
-                              m_buckets_end.begin()+end_bucket,
+            detail::transform(m_bucket_end.begin()+end_bucket,
+                              m_bucket_end.end(),
+                              m_bucket_end.begin()+end_bucket,
                               detail::_1 - n);
 
             return false;

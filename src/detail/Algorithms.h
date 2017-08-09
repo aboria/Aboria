@@ -168,7 +168,22 @@ using boost::make_tuple;
 //}
 #endif
 
+template< class ForwardIt, class T >
+void fill( ForwardIt first, ForwardIt last, const T& value, std::true_type ) {
+    std::fill(first,last,value);
+}
 
+#ifdef __aboria_have_thrust__
+template< class ForwardIt, class T >
+void fill( ForwardIt first, ForwardIt last, const T& value, std::false_type ) {
+    thrust::fill(first,last,value);
+}
+#endif
+
+template< class ForwardIt, class T >
+void fill( ForwardIt first, ForwardIt last, const T& value) {
+    fill(first,last,value,typename is_std_iterator<ForwardIt>::type());
+}
 
 template< class InputIt, class UnaryFunction >
 #ifdef __aboria_use_thrust_algorithms__
@@ -425,6 +440,23 @@ void tabulate (
     tabulate(first,last,unary_op, typename is_std_iterator<ForwardIterator>::type());
 }
 
+template< class ForwardIt, class UnaryPredicate >
+ForwardIt partition( ForwardIt first, ForwardIt last, UnaryPredicate p,std::true_type ) {
+    std::partition(first,last,p);
+}
+
+#ifdef __aboria_have_thrust__
+template< class ForwardIt, class UnaryPredicate >
+ForwardIt partition( ForwardIt first, ForwardIt last, UnaryPredicate p,std::false_type) {
+    thrust::partition(first,last,p);
+}
+#endif
+
+template< class ForwardIt, class UnaryPredicate >
+ForwardIt partition( ForwardIt first, ForwardIt last, UnaryPredicate p) {
+    partition(first,last,p,typename is_std_iterator<ForwardIt>::type());
+}
+
 template< class ForwardIt >
 ForwardIt unique( ForwardIt first, ForwardIt last, std::true_type ) {
     return std::unique(first,last);
@@ -497,24 +529,7 @@ OutputIterator transform_exclusive_scan(
             typename is_std_iterator<InputIterator>::type());
 }
 
-template<typename InputIterator1, typename InputIterator2, 
-    typename InputIterator3, typename RandomAccessIterator , typename Predicate >
-void scatter_if(
-        InputIterator1 first, InputIterator1 last,
-        InputIterator2 map, InputIterator3 stencil,
-        RandomAccessIterator output, Predicate pred) {
 
-#ifdef __aboria_use_thrust_algorithms__
-    thrust::scatter_if(first,last,map,stencil,output,pred);
-#else
-    const size_t n = last-first;
-    for (int i=0; i<n; ++i) {
-        if (pred(stencil[i])) {
-            output[map[i]] = first[i];
-        }
-    }
-#endif
-}
 
 template<typename InputIterator1, typename InputIterator2, 
     typename InputIterator3, typename RandomAccessIterator , typename Predicate >
@@ -530,6 +545,62 @@ void scatter_if(
         }
     }
 }
+
+#ifdef __aboria_have_thrust__
+template<typename InputIterator1, typename InputIterator2, 
+    typename InputIterator3, typename RandomAccessIterator , typename Predicate >
+void scatter_if(
+        InputIterator1 first, InputIterator1 last,
+        InputIterator2 map, InputIterator3 stencil,
+        RandomAccessIterator output, Predicate pred, std::false_type) {
+
+    thrust::scatter_if(first,last,map,stencil,output,pred);
+}
+#endif
+
+template<typename InputIterator1, typename InputIterator2, 
+    typename InputIterator3, typename RandomAccessIterator , typename Predicate >
+void scatter_if(
+        InputIterator1 first, InputIterator1 last,
+        InputIterator2 map, InputIterator3 stencil,
+        RandomAccessIterator output, Predicate pred) {
+
+    scatter_if(first,last,map,stencil,output,pred, typename is_std_iterator<InputIterator1>::type());
+}
+
+template<typename InputIterator , typename RandomAccessIterator , typename OutputIterator>
+OutputIterator gather(InputIterator map_first, InputIterator map_last, 
+                      RandomAccessIterator input_first, OutputIterator result, std::true_type) {
+    std::transform(map_first,map_last,result, 
+            [&input_first](typename InputIterator::value_type const &i){
+                return input_first[i];
+            });
+}
+
+#ifdef __aboria_have_thrust__
+template<typename InputIterator , typename RandomAccessIterator , typename OutputIterator>
+OutputIterator gather(InputIterator map_first, InputIterator map_last, 
+                      RandomAccessIterator input_first, OutputIterator result, std::false_type) {
+    thrust::gather(map_first,map_last,input_first,result);
+}
+#endif
+
+template<typename InputIterator , typename RandomAccessIterator , typename OutputIterator>
+OutputIterator gather(InputIterator map_first, InputIterator map_last, 
+                      RandomAccessIterator input_first, OutputIterator result) {
+    gather(map_first,map_last,input_first,result, typename is_std_iterator<RandomAccessIterator>::type());
+}
+
+template<typename InputIterator1, typename InputIterator2, 
+    typename OutputIterator, typename Predicate>
+OutputIterator copy_if(
+        InputIterator1 first, InputIterator1 last, 
+        InputIterator2 stencil, OutputIterator result, Predicate pred, std::true_type) {
+
+    return std::copy_if(first,last,stencil,result,pred);
+}
+
+
 
 #ifdef __aboria_have_thrust__
 template<typename InputIterator1, typename InputIterator2, 

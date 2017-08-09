@@ -143,6 +143,16 @@ struct set_seed_lambda {
     }
 };
 
+template <typename ConstReference>
+struct is_alive {
+    CUDA_HOST_DEVICE
+    bool operator()(ConstReference i) const {
+        return Aboria::get<alive>(i);
+    }
+};
+
+
+
 }
     /*
 #ifdef HAVE_THUST
@@ -309,7 +319,7 @@ public:
     {
         if (searchable) {
             if (search.embed_points(begin(),end())) {
-                reorder(search.m_order().begin(),search.m_order().end());
+                reorder(search.get_order().begin(),search.get_order().end());
             }
         }
     }
@@ -352,7 +362,7 @@ public:
         if (get<alive>(i)) {
             if (searchable && update_neighbour_search) {
                 if (search.add_points_at_end(begin(),end()-1,end())) {
-                    reorder(search.m_order().begin(),search.m_order().end());
+                    reorder(search.get_order().begin(),search.get_order().end());
                 }
             }
         } else {
@@ -387,7 +397,7 @@ public:
         }
         if (searchable) {
             if (search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end())) {
-                reorder(search.m_order().begin(),search.m_order().end());
+                reorder(search.get_order().begin(),search.get_order().end());
             }
         }
     }
@@ -472,7 +482,7 @@ public:
             
         if (searchable && update_neighbour_search) {
             if (search.delete_points(begin(),end(),i_position,1)) {
-                reorder(search.m_order().begin(),search.m_order().end());
+                reorder(search.get_order().begin(),search.get_order().end());
             }
         }
         return i;
@@ -482,7 +492,7 @@ public:
     /// erase the particles between the iterators \p first
     /// and \p last
     /// \see erase(iterator)
-    iterator erase (iterator first, iterator last) {
+    iterator erase (iterator first, iterator last, bool update_neighbour_search = true) {
         iterator return_iterator = last;
 
         const size_t n_before_range = first-begin();
@@ -498,9 +508,9 @@ public:
             traits_type::erase(data,first,last);
         }
         
-        if (searchable) {
+        if (searchable && update_neighbour_search) {
             if (search.delete_points(begin(),end(),n_before_range,n)) {
-                reorder(search.m_order().begin(),search.m_order().end());
+                reorder(search.get_order().begin(),search.get_order().end());
             }
         }
         
@@ -554,7 +564,7 @@ public:
         enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
 
         if (search.embed_points(begin(),end())) {
-            reorder(search.m_order().begin(),search.m_order().end());
+            reorder(search.get_order().begin(),search.get_order().end());
         }
 
         searchable = true;
@@ -666,7 +676,7 @@ public:
                 LOG(4,"Particle: delete_particles: after deleting: iterator has particle "<<get<id>(*i)<<" with position "<<get<position>(*i)<<" and alive "<< bool(get<alive>(*i)));
             }
         } else {
-            iterator first_dead = detail::partition(begin(),end(),detail::is_alive());
+            iterator first_dead = detail::partition(begin(),end(),detail::is_alive<raw_const_reference>());
             erase(first_dead,end(),false);
         }
 
@@ -675,11 +685,11 @@ public:
         if (update_search) {
             if (do_serial_delete) {
                 if (search.delete_points(begin(),end(),new_size,old_size-new_size)) {
-                    reorder(search.m_order().begin(),search.m_order().end());
+                    reorder(search.get_order().begin(),search.get_order().end());
                 }
             } else {
                 if (search.embed_points(begin(),end())) {
-                    reorder(search.m_order().begin(),search.m_order().end());
+                    reorder(search.get_order().begin(),search.get_order().end());
                 }
             }
         }
@@ -837,10 +847,11 @@ private:
 
 
     // sort the particles by order (i.e. a scatter)
-    void reorder(const iterator_range<typename vector_unsigned_int::const_iterator>& order) {
-        ASSERT(order.size() == size(),"order vector not same size as particle vector");
+    void reorder(const typename vector_unsigned_int::const_iterator& begin, 
+                 const typename vector_unsigned_int::const_iterator& end) {
+        ASSERT(end-begin== size(),"order vector not same size as particle vector");
         if (size() > 0) {
-            detail::gather(order.begin(),order.end(),
+            detail::gather(begin,end,
                            traits_type::begin(data),
                            traits_type::begin(other_data));
             data.swap(other_data);
@@ -886,7 +897,7 @@ private:
 
         if (remove_deleted_particles || (periodic==true).any()) {
             if (search.embed_points(begin(),end())) {
-                reorder(search.m_order().begin(),search.m_order().end());
+                reorder(search.get_order().begin(),search.get_order().end());
             }
         }
     }

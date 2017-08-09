@@ -287,6 +287,10 @@ public:
         return cast().get_query_impl();
     }
 
+    const vector_unsigned_int& get_order() const {
+        return m_order;
+    }
+
     const double_d& get_min() const { return m_bounds.bmin; }
     const double_d& get_max() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
