@@ -453,15 +453,23 @@ public:
     /// NOTE: This will potentially reorder the particles
     /// if neighbourhood searching is on, then this is updated
     iterator erase (iterator i, bool update_neighbour_search = true) {
-        const size_t i_position = i-start();
-        if (i != end()-1) {
-            *i = *(end()-1);
-            traits_type::pop_back(data);
-        } else {
+        const size_t i_position = i-begin();
+
+        if (i_position == size()-1) {
+            // just pop off back element
             traits_type::pop_back(data);
             i = end();
+        } else {
+            if (search.ordered()) {
+                // have to maintain order and move everthing...
+                traits_type::erase(data,i);
+            } else {
+                // copy end element to i and pop off end element
+                *i = *(end()-1);
+                traits_type::pop_back(data);
+            }
         }
-
+            
         if (searchable && update_neighbour_search) {
             if (search.delete_points(begin(),end(),i_position,1)) {
                 reorder(search.m_order().begin(),search.m_order().end());
@@ -487,7 +495,7 @@ public:
             traits_type::resize(data,size()-n);         
         } else {
             // order is maintained
-            traits_type::erase(data,n_before_range,n);
+            traits_type::erase(data,first,last);
         }
         
         if (searchable) {
@@ -636,7 +644,7 @@ public:
 
         const bool update_search = searchable && update_neighbour_search;
         const bool do_serial_delete = update_search && 
-                                      running_in_serial() && 
+                                      detail::concurrent_processes<traits_type>()==1 && 
                                       !search.ordered();
         const size_t old_size = size();
 
@@ -825,23 +833,12 @@ public:
 #endif
 
 private:
-    typedef traits_type::vector_unsigned_int vector_unsigned_int;
+    typedef typename traits_type::vector_unsigned_int vector_unsigned_int;
 
-    bool running_in_serial() {
-#ifdef HAVE_OPENMP
-        const int num_threads = omp_get_num_threads();
-#else
-        const int num_threads = 1;
-#endif
-        return num_threads==1 &&
-                    !std::is_same<vector_unsigned_int,
-                                  thrust::device_vector<unsigned int>>::value;
-
-    }
 
     // sort the particles by order (i.e. a scatter)
-    void reorder(const iterator_range<vector_unsigned_int::const_iterator>& order) {
-        ASSERT(order.size() == size());
+    void reorder(const iterator_range<typename vector_unsigned_int::const_iterator>& order) {
+        ASSERT(order.size() == size(),"order vector not same size as particle vector");
         if (size() > 0) {
             detail::gather(order.begin(),order.end(),
                            traits_type::begin(data),

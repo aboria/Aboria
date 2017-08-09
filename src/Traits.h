@@ -250,6 +250,20 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     }
 
     template<std::size_t... I>
+    static iterator erase_impl(data_type& data, iterator position,  detail::index_sequence<I...>) {
+        return iterator(
+                get_by_index<I>(data).erase(get_by_index<I>(position))...
+                );
+    }
+
+    template<std::size_t... I>
+    static iterator erase_impl(data_type& data, iterator first, iterator last, detail::index_sequence<I...>) {
+        return iterator(
+                get_by_index<I>(data).erase(get_by_index<I>(first),get_by_index<I>(last))...
+                );
+    }
+
+    template<std::size_t... I>
     static iterator insert_impl(data_type& data, iterator position, const value_type& val, detail::index_sequence<I...>) {
         return iterator(
                 get_by_index<I>(data).insert(get_by_index<I>(position),get_by_index<I>(val))...
@@ -325,6 +339,16 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     template<typename Indices = detail::make_index_sequence<N>>
     static void pop_back(data_type& data) {
         pop_back_impl(data, Indices());
+    }
+
+    template<typename Indices = detail::make_index_sequence<N>>
+    static iterator erase(data_type& data, iterator pos) {
+        return erase_impl(data, pos, Indices());
+    }
+
+    template<typename Indices = detail::make_index_sequence<N>>
+    static iterator erase(data_type& data, iterator first, iterator last) {
+        return erase_impl(data, first, last, Indices());
     }
 
     template<typename Indices = detail::make_index_sequence<N>>

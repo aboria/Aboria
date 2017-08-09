@@ -266,9 +266,6 @@ set(H2Test
 
 
 
-
-
-
 message("-- Adding test suites:")
 foreach(test_suite ${test_suites})
     if (Aboria_THRUST_TEST_DEVICE_VECTOR)
@@ -283,6 +280,17 @@ foreach(test_suite ${test_suites})
     foreach(test_name ${${test_suite}})
         add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
     endforeach()
+
+    if (Aboria_USE_OPENMP)
+        foreach(test_name ${${test_suite}})
+            add_test(NAME ${test_suite}__Parallel:__${test_name} 
+                     COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
+            set_test_properties(${test_suite}:__${test_name} 
+                PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=1")
+            set_test_properties(${test_suite}__Parallel:__${test_name} 
+                PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=3")
+        endforeach()
+    endif()
     foreach(test_name ${${test_suite}Cuda})
         if (Aboria_THRUST_TEST_DEVICE_VECTOR)
             add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite}_cuda ${test_suite} ${test_name})

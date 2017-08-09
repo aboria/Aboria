@@ -168,8 +168,7 @@ public:
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::iterator iterator;
-
-
+    typedef typename Traits::vector_unsigned_int vector_unsigned_int;
 
     const Derived& cast() const { return static_cast<const Derived&>(*this); }
     Derived& cast() { return static_cast<Derived&>(*this); }
@@ -231,12 +230,6 @@ public:
         cast().update_iterator_impl();
     }
 
-    iterator_range<vector_unsigned_int::const_iterator>
-    get_order(iterator begin, iterator end) {
-	    LOG(2,"neighbour_search_base: get order");
-        return cast().get_order_impl(begin,end);
-    }
-
     bool add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
                            const iterator &end) {
@@ -283,7 +276,7 @@ public:
 
         if (n > 0) {
             LOG(2,"neighbour_search_base: delete_points_at_end: deleting "<<n<<" points.");
-            return cast().delete_points_impl(n_before_range,n);
+            return cast().delete_points_impl(i,n);
         } else {
             return false;
         }

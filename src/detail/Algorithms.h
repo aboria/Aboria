@@ -16,6 +16,9 @@ size_t concurrent_processes() {
 #ifdef __aboria_have_thrust__
     if (std::is_same<Traits::vector_unsigned_int,
                      thrust::device_vector<unsigned int>>::value) {
+        // if using GPU just return "lots"
+        return 9999;
+        /*
         int deviceCount, device;
         struct cudaDeviceProp properties;
         cudaError_t cudaResultCode = cudaGetDeviceCount(&deviceCount);
@@ -23,26 +26,22 @@ size_t concurrent_processes() {
             deviceCount = 0;
         ASSERT(deviceCount > 0, "trying to use device vector without a device");
         cudaGetDeviceProperties(&properties, 0);
-        if (properties.major != 9999) { /* 9999 means emulation only */
+        if (properties.major != 9999) { // 9999 means emulation only
             return properties.multiProcessorCount*properties.maxThreadsPerMultiProcessor;
         } else {
             //TODO: what should return here?
             return 123;
         }
-    } else {
-    #ifdef HAVE_OPENMP
-        return omp_get_max_threads();
-    #else
-        return 1;
-    #endif
+        */
     }
-#else
-    #ifdef HAVE_OPENMP
+#endif
+#ifdef HAVE_OPENMP
     return omp_get_max_threads();
-    #else
+#else
     return 1;
-    #endif
+#endif
 }
+
 
 template <typename T>
 struct  is_std_iterator: 
@@ -182,6 +181,23 @@ UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
 }
 
 template<typename T1, typename T2>
+void sort(T1 start, T1 end, std::true_type) {
+    std::sort(start,end);
+}
+
+#ifdef __aboria_have_thrust__
+template<typename T1, typename T2>
+void sort(T1 start, T1 end, std::false_type) {
+    thrust::sort(start,end);
+}
+#endif
+
+template<typename T1, typename T2>
+void sort(T1 start, T1 end) {
+    sort(start,end,typename is_std_iterator<T1>::type());
+}
+
+template<typename T1, typename T2>
 void sort_by_key(T1 start_keys,
         T1 end_keys,
         T2 start_data,std::true_type) {
@@ -290,82 +306,185 @@ template< class InputIt, class T, class BinaryOperation >
 T reduce( 
     InputIt first, 
     InputIt last, T init,
-    BinaryOperation op ) {
+    BinaryOperation op, std::true_type) {
 
-#ifdef __aboria_use_thrust_algorithms__
-    return thrust::reduce(first,last,init,op);
-#else
     return std::accumulate(first,last,init,op);
-#endif
 }
+
+#ifdef __aboria_have_thrust__
+template< class InputIt, class T, class BinaryOperation >
+T reduce( 
+    InputIt first, 
+    InputIt last, T init,
+    BinaryOperation op, std::false_type) {
+
+    return thrust::reduce(first,last,init,op);
+}
+#endif
+
+template< class InputIt, class T, class BinaryOperation >
+T reduce( 
+    InputIt first, 
+    InputIt last, T init,
+    BinaryOperation op) {
+
+    reduce(first,last,init,op,typename is_std_iterator<InputIt>::type());
+}
+ 
+template <class InputIterator, class OutputIterator, class UnaryOperation>
+OutputIterator transform (
+        InputIterator first, InputIterator last,
+        OutputIterator result, UnaryOperation op, std::true_type) {
+    return std::transform(first,last,result,op);
+}
+
+#ifdef __aboria_have_thrust__
+template <class InputIterator, class OutputIterator, class UnaryOperation>
+OutputIterator transform (
+        InputIterator first, InputIterator last,
+        OutputIterator result, UnaryOperation op, std::false_type) {
+    return thrust::transform(first,last,result,op);
+}
+#endif
 
 template <class InputIterator, class OutputIterator, class UnaryOperation>
 OutputIterator transform (
         InputIterator first, InputIterator last,
         OutputIterator result, UnaryOperation op) {
-
-
-#ifdef __aboria_use_thrust_algorithms__
-    return thrust::transform(first,last,result,op);
-#else
-    return std::transform(first,last,result,op);
-#endif
+    return transform(first,last,result,op,typename is_std_iterator<InputIterator>::type());
 }
 
-
 template <class ForwardIterator>
-void sequence (ForwardIterator first, ForwardIterator last) {
-#ifdef __aboria_use_thrust_algorithms__
-    thrust::sequence(first,last);
-#else
+void sequence (ForwardIterator first, ForwardIterator last, std::true_type) {
     counting_iterator<unsigned int> count(0);
     std::transform(first,last,count,first,
         [](const typename std::iterator_traits<ForwardIterator>::reference, const unsigned int i) {
             return i;
         });
-#endif
 }
 
 template <class ForwardIterator, typename T>
-void sequence (ForwardIterator first, ForwardIterator last, T init) {
-#ifdef __aboria_use_thrust_algorithms__
-    thrust::sequence(first,last,init);
-#else
+void sequence (ForwardIterator first, ForwardIterator last, T init, std::true_type) {
     counting_iterator<unsigned int> count(init);
     std::transform(first,last,count,first,
         [](const typename std::iterator_traits<ForwardIterator>::reference, const unsigned int i) {
             return i;
         });
+}
+
+#ifdef __aboria_have_thrust__
+template <class ForwardIterator>
+void sequence (ForwardIterator first, ForwardIterator last, std::false_type) {
+    thrust::sequence(first,last);
+}
+
+template <class ForwardIterator, typename T>
+void sequence (ForwardIterator first, ForwardIterator last, T init, std::false_type) {
+    thrust::sequence(first,last,init);
+}
 #endif
+
+template <class ForwardIterator>
+void sequence (ForwardIterator first, ForwardIterator last) {
+    sequence(first,last, typename is_std_iterator<ForwardIterator>::type());
+}
+
+template <class ForwardIterator, typename T>
+void sequence (ForwardIterator first, ForwardIterator last, T init) {
+    sequence(first,last,init, typename is_std_iterator<ForwardIterator>::type());
 }
 
 template<typename ForwardIterator , typename UnaryOperation >
 void tabulate (
         ForwardIterator first,
         ForwardIterator last,
-        UnaryOperation  unary_op) {	
+        UnaryOperation  unary_op, std::true_type) {	
 
-
-#ifdef __aboria_use_thrust_algorithms__
-    thrust::tabulate(first,last,unary_op);
-#else
     counting_iterator<unsigned int> count(0);
     std::transform(first,last,count,first,
         [&unary_op](const typename std::iterator_traits<ForwardIterator>::reference, const unsigned int i) {
             return unary_op(i);
         });
+}
+
+#ifdef __aboria_have_thrust__
+template<typename ForwardIterator , typename UnaryOperation >
+void tabulate (
+        ForwardIterator first,
+        ForwardIterator last,
+        UnaryOperation  unary_op, std::false_type) {	
+    thrust::tabulate(first,last,unary_op);
+}
 #endif
 
+template<typename ForwardIterator , typename UnaryOperation >
+void tabulate (
+        ForwardIterator first,
+        ForwardIterator last,
+        UnaryOperation  unary_op) {	
+    tabulate(first,last,unary_op, typename is_std_iterator<ForwardIterator>::type());
+}
+
+template< class ForwardIt >
+ForwardIt unique( ForwardIt first, ForwardIt last, std::true_type ) {
+    return std::unique(first,last);
+}
+
+#ifdef __aboria_have_thrust__
+template< class ForwardIt >
+ForwardIt unique( ForwardIt first, ForwardIt last, std::false_type ) {
+    return trust::unique(first,last);
+}
+#endif
+
+template< class ForwardIt >
+ForwardIt unique( ForwardIt first, ForwardIt last ) {
+    return unique(first,last,typename is_std_iterator<ForwardIt>::type());
 }
 
 template<typename InputIterator , typename OutputIterator >
-OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result) {
-#ifdef __aboria_use_thrust_algorithms__
-    return thrust::copy(first,last,result);
-#else
+OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result, std::true_type) {
     return std::copy(first,last,result);
-#endif
 }
+
+#ifdef __aboria_have_thrust__
+template<typename InputIterator , typename OutputIterator >
+OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result, std::false_type) {
+    return thrust::copy(first,last,result);
+}
+#endif
+
+template<typename InputIterator , typename OutputIterator >
+OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result) {
+    return copy(first,last,result, typename is_std_iterator<InputIterator>::type());
+}
+
+template<typename InputIterator, typename OutputIterator, typename UnaryFunction, 
+    typename T, typename AssociativeOperator>
+OutputIterator transform_exclusive_scan(
+    InputIterator first, InputIterator last,
+    OutputIterator result,
+    UnaryFunction unary_op, T init, AssociativeOperator binary_op, std::true_type) {
+
+    const size_t n = last-first;
+    result[0] = init;
+    for (int i=1; i<n; ++i) {
+        result[i] = binary_op(result[i-1],unary_op(first[i-1]));
+    }
+    return result + n;
+}
+
+#ifdef __aboria_have_thrust__
+template<typename InputIterator, typename OutputIterator, typename UnaryFunction, 
+    typename T, typename AssociativeOperator>
+OutputIterator transform_exclusive_scan(
+    InputIterator first, InputIterator last,
+    OutputIterator result,
+    UnaryFunction unary_op, T init, AssociativeOperator binary_op, std::false_type) {
+
+    return thrust::transform_exclusive_scan(first,last,result,unary_op,init,binary_op);
+}
+#endif
 
 template<typename InputIterator, typename OutputIterator, typename UnaryFunction, 
     typename T, typename AssociativeOperator>
@@ -374,18 +493,9 @@ OutputIterator transform_exclusive_scan(
     OutputIterator result,
     UnaryFunction unary_op, T init, AssociativeOperator binary_op) {
 
-#ifdef __aboria_use_thrust_algorithms__
-    return thrust::transform_exclusive_scan(first,last,result,unary_op,init,binary_op);
-#else
-    const size_t n = last-first;
-    result[0] = init;
-    for (int i=1; i<n; ++i) {
-        result[i] = binary_op(result[i-1],unary_op(first[i-1]));
-    }
-    return result + n;
-#endif
+    return transform_exclusive_scan(first,last,result,unary_op,init,binary_op, 
+            typename is_std_iterator<InputIterator>::type());
 }
-
 
 template<typename InputIterator1, typename InputIterator2, 
     typename InputIterator3, typename RandomAccessIterator , typename Predicate >
@@ -407,23 +517,39 @@ void scatter_if(
 }
 
 template<typename InputIterator1, typename InputIterator2, 
+    typename InputIterator3, typename RandomAccessIterator , typename Predicate >
+void scatter_if(
+        InputIterator1 first, InputIterator1 last,
+        InputIterator2 map, InputIterator3 stencil,
+        RandomAccessIterator output, Predicate pred, std::true_type) {
+
+    const size_t n = last-first;
+    for (int i=0; i<n; ++i) {
+        if (pred(stencil[i])) {
+            output[map[i]] = first[i];
+        }
+    }
+}
+
+#ifdef __aboria_have_thrust__
+template<typename InputIterator1, typename InputIterator2, 
+    typename OutputIterator, typename Predicate>
+OutputIterator copy_if(
+        InputIterator1 first, InputIterator1 last, 
+        InputIterator2 stencil, OutputIterator result, Predicate pred, std::false_type) {
+
+    return thrust::copy_if(first,last,stencil,result,pred);
+}
+#endif
+
+template<typename InputIterator1, typename InputIterator2, 
     typename OutputIterator, typename Predicate>
 OutputIterator copy_if(
         InputIterator1 first, InputIterator1 last, 
         InputIterator2 stencil, OutputIterator result, Predicate pred) {
 
-#ifdef __aboria_use_thrust_algorithms__
-    return thrust::copy_if(first,last,stencil,result,pred);
-#else
-    const size_t n = last-first;
-    for (int i=0; i<n; ++i) {
-        if (pred(stencil[i])) {
-            *result = first[i];
-            ++result;
-        }
-    }
-    return result;
-#endif
+    return copy_if(first,last,stencil,result,pred,
+                            typename is_std_iterator<InputIterator1>::type());
 }
 
 }
