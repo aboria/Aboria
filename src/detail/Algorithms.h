@@ -7,11 +7,42 @@
 #include "Traits.h"
 #include <algorithm>
 
-
-
 namespace Aboria {
 
 namespace detail {
+
+template <typename Traits>
+size_t concurrent_processes() {
+#ifdef __aboria_have_thrust__
+    if (std::is_same<Traits::vector_unsigned_int,
+                     thrust::device_vector<unsigned int>>::value) {
+        int deviceCount, device;
+        struct cudaDeviceProp properties;
+        cudaError_t cudaResultCode = cudaGetDeviceCount(&deviceCount);
+        if (cudaResultCode != cudaSuccess)
+            deviceCount = 0;
+        ASSERT(deviceCount > 0, "trying to use device vector without a device");
+        cudaGetDeviceProperties(&properties, 0);
+        if (properties.major != 9999) { /* 9999 means emulation only */
+            return properties.multiProcessorCount*properties.maxThreadsPerMultiProcessor;
+        } else {
+            //TODO: what should return here?
+            return 123;
+        }
+    } else {
+    #ifdef HAVE_OPENMP
+        return omp_get_max_threads();
+    #else
+        return 1;
+    #endif
+    }
+#else
+    #ifdef HAVE_OPENMP
+    return omp_get_max_threads();
+    #else
+    return 1;
+    #endif
+}
 
 template <typename T>
 struct  is_std_iterator: 
@@ -284,12 +315,23 @@ OutputIterator transform (
 
 template <class ForwardIterator>
 void sequence (ForwardIterator first, ForwardIterator last) {
-
-
 #ifdef __aboria_use_thrust_algorithms__
     thrust::sequence(first,last);
 #else
     counting_iterator<unsigned int> count(0);
+    std::transform(first,last,count,first,
+        [](const typename std::iterator_traits<ForwardIterator>::reference, const unsigned int i) {
+            return i;
+        });
+#endif
+}
+
+template <class ForwardIterator, typename T>
+void sequence (ForwardIterator first, ForwardIterator last, T init) {
+#ifdef __aboria_use_thrust_algorithms__
+    thrust::sequence(first,last,init);
+#else
+    counting_iterator<unsigned int> count(init);
     std::transform(first,last,count,first,
         [](const typename std::iterator_traits<ForwardIterator>::reference, const unsigned int i) {
             return i;
