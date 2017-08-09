@@ -98,7 +98,7 @@ class bucket_search_serial:
     friend base_type;
 
 public:
-    bucket_search_serial():m_size_calculated_with_n(0),base_type() {}
+    bucket_search_serial():m_size_calculated_with_n(std::numeric_limits<size_t>::max()),base_type() {}
 
     static constexpr bool ordered() {
         return false;
@@ -138,7 +138,7 @@ private:
 
             m_buckets.assign(m_size.prod(), detail::get_empty_id());
 
-            if (detail::concurrent_processes<Traits>()==1) { 
+            if (detail::concurrent_processes<Traits>()!=1) { 
                 m_buckets_begin.resize(m_size.prod());
                 m_buckets_end.resize(m_size.prod());
             }
@@ -208,7 +208,8 @@ private:
         /*
          * clear head of linked lists (m_buckets)
          */
-        if (m_dirty_buckets.size()<m_buckets.size() && detail::concurrent_processes<Traits>()==1) {
+        if (m_dirty_buckets.size() < static_cast<float>(m_buckets.size())
+                                    / detail::concurrent_processes<Traits>()) {
             for (int i: m_dirty_buckets) {
                 m_buckets[i] = detail::get_empty_id();
             }
@@ -222,7 +223,8 @@ private:
         this->m_order.resize(n);
 
         //TODO: could also use mutexes for >1 & non-thrust
-        if (detail::concurrent_processes<Traits>()==1) { 
+        // always do serial if there are lots of buckets and only a few particles
+        if (n==0 || detail::concurrent_processes<Traits>()==1) { 
             insert_points_serial(0);
         } else {
             insert_points_parallel(0);
@@ -273,9 +275,11 @@ private:
         this->m_order.resize(n);
 
         //TODO: could also use mutexes for >1 & non-thrust
-        if (detail::concurrent_processes<Traits>()==1) { 
+        if (n==0 || detail::concurrent_processes<Traits>()==1) { 
+            std::cout << "serial" << std::endl;
             insert_points_serial(start_adding);     
         } else {
+            std::cout << "parallel" << std::endl;
             insert_points_parallel(start_adding);     
         }
 
@@ -299,6 +303,8 @@ private:
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
+
+        return false;
     }
 
     bool delete_points_impl(const size_t start_index_deleted, const size_t n_deleted) {
@@ -322,7 +328,7 @@ private:
         const size_t end_index_deleted = start_index_deleted + n_deleted;
         const size_t end_index_copied = start_index_copied + n_copied;
         
-        if (n_deleted + n_copied < this->n_particles_in_leaf 
+        if (n_deleted + n_copied < this->m_n_particles_in_leaf 
                 && detail::concurrent_processes<Traits>() == 1) {
             // if running in serial and number of particles is small,
             // then just loop over changed particles and alter links accordingly
@@ -538,7 +544,9 @@ private:
                           get<position>(this->m_particles_end),
                           m_dirty_buckets.begin()+start_index,
                           m_point_to_bucket_index);
-        detail::sequence(this->m_order.begin()+start_index, this->m_order.end(),start_index);
+        // this->m_order might not have been set if previous calls went to
+        // the serial insert_points
+        detail::sequence(this->m_order.begin(), this->m_order.end());
         detail::sort_by_key(m_dirty_buckets.begin(),
                             m_dirty_buckets.end(),
                             this->m_order.begin());
@@ -559,7 +567,7 @@ private:
 
         // insert points in each bucket
         detail::tabulate(m_buckets.begin(),m_buckets.end(),
-                         insert_points_lambda(iterator_to_raw_pointer(m_buckets.begin()),
+                         insert_points_lambda(
                                               iterator_to_raw_pointer(m_buckets_begin.begin()),
                                               iterator_to_raw_pointer(m_buckets_end.begin()),
                                               iterator_to_raw_pointer(m_linked_list.begin()),
@@ -645,17 +653,17 @@ private:
 
 template <typename Traits>
 struct bucket_search_serial<Traits>::delete_points_lambda {
-    unsigned int *m_linked_list;
-    unsigned int *m_linked_list_reverse;
-    unsigned int *m_buckets;
+    int *m_linked_list;
+    int *m_linked_list_reverse;
+    int *m_buckets;
     size_t start_index_deleted;
     size_t end_index_deleted;
 
     delete_points_lambda(size_t start_index_deleted,
                          size_t end_index_deleted,
-                         unsigned int* m_linked_list,
-                         unsigned int* m_linked_list_reverse,
-                         unsigned int* m_buckets):
+                         int* m_linked_list,
+                         int* m_linked_list_reverse,
+                         int* m_buckets):
         m_linked_list(m_linked_list),
         m_linked_list_reverse(m_linked_list_reverse),
         m_buckets(m_buckets),
@@ -699,9 +707,9 @@ struct bucket_search_serial<Traits>::delete_points_lambda {
 
 template <typename Traits>
 struct bucket_search_serial<Traits>::copy_points_lambda {
-    unsigned int* m_linked_list;
-    unsigned int* m_linked_list_reverse;
-    unsigned int* m_buckets;
+    int* m_linked_list;
+    int* m_linked_list_reverse;
+    int* m_buckets;
     size_t start_index_deleted;
     size_t start_index_copied;
     size_t end_index_copied;
@@ -709,9 +717,9 @@ struct bucket_search_serial<Traits>::copy_points_lambda {
     copy_points_lambda(size_t start_index_deleted,
                        size_t start_index_copied,
                        size_t end_index_copied,
-                       unsigned int* m_linked_list,
-                       unsigned int* m_linked_list_reverse,
-                       unsigned int* m_buckets):
+                       int* m_linked_list,
+                       int* m_linked_list_reverse,
+                       int* m_buckets):
         start_index_deleted(start_index_deleted),
         start_index_copied(start_index_copied),
         end_index_copied(end_index_copied),
@@ -748,21 +756,19 @@ struct bucket_search_serial<Traits>::copy_points_lambda {
 
 template <typename Traits>
 struct bucket_search_serial<Traits>::insert_points_lambda {
-    unsigned int* m_buckets;
-    unsigned int* m_buckets_begin;
-    unsigned int* m_buckets_end;
-    unsigned int* m_linked_list;
-    unsigned int* m_linked_list_reverse;
-    unsigned int* m_order;
+    int* m_buckets_begin;
+    int* m_buckets_end;
+    int* m_linked_list;
+    int* m_linked_list_reverse;
+    int* m_order;
 
-    insert_points_lambda(unsigned int* m_buckets,
-                         unsigned int* m_buckets_begin,
-                         unsigned int* m_buckets_end,
-                         unsigned int* m_linked_list,
-                         unsigned int* m_linked_list_reverse,
-                         unsigned int* m_order
+    insert_points_lambda(
+                         int* m_buckets_begin,
+                         int* m_buckets_end,
+                         int* m_linked_list,
+                         int* m_linked_list_reverse,
+                         int* m_order
                          ):
-        m_buckets(m_buckets),
         m_buckets_begin(m_buckets_begin),
         m_buckets_end(m_buckets_end),
         m_linked_list(m_linked_list),
@@ -770,17 +776,19 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
         m_order(m_order)
     {}
 
-    void operator()(const int celli) {
+    int operator()(const int celli) {
         const size_t begin = m_buckets_begin[celli];
         const size_t end = m_buckets_end[celli];
         if (end-begin > 0) {
-            m_buckets[celli] = begin;
             for (int i = begin; i < end-1; ++i) {
                 const int index = m_order[i];
                 const int next_index = m_order[i+1];
                 m_linked_list[index] = next_index; 
                 m_linked_list_reverse[next_index] = index;
             }
+            return begin;
+        } else {
+            return detail::get_empty_id();
         }
     }
 };

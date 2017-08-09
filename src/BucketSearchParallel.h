@@ -246,6 +246,21 @@ private:
 
     }
 
+    void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
+        auto positions_from = get<position>(copy_from_iterator);
+        auto positions_to = get<position>(copy_to_iterator);
+
+        const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
+        const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
+
+        build_bucket_indices(positions_from,positions_from+1,
+               m_bucket_indices.begin() + fromi);
+        build_bucket_indices(positions_to,positions_to+1,
+               m_bucket_indices.begin() + toi);
+        sort_by_bucket_index();
+        build_buckets();
+    }
+
     const bucket_search_parallel_query<Traits>& get_query_impl() const {
         return m_query;
     }

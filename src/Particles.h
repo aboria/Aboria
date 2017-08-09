@@ -844,13 +844,16 @@ public:
 
 private:
     typedef typename traits_type::vector_unsigned_int vector_unsigned_int;
+    typedef typename traits_type::vector_int vector_int;
 
 
     // sort the particles by order (i.e. a scatter)
-    void reorder(const typename vector_unsigned_int::const_iterator& begin, 
-                 const typename vector_unsigned_int::const_iterator& end) {
+    void reorder(const typename vector_int::const_iterator& begin, 
+                 const typename vector_int::const_iterator& end) {
         ASSERT(end-begin== size(),"order vector not same size as particle vector");
-        if (size() > 0) {
+        const size_t n = size();
+        if (n > 0) {
+            traits_type::resize(other_data,n);         
             detail::gather(begin,end,
                            traits_type::begin(data),
                            traits_type::begin(other_data));

@@ -280,6 +280,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
     	auto tpl = euclidean_search(test.get_query(),vdouble3(1.1*radius,0,0),radius);
     	TS_ASSERT_EQUALS(std::distance(tpl.begin(),tpl.end()),1);
+
     	typename Test_type::const_reference pfound = detail::get_impl<0>(*tpl.begin());
     	TS_ASSERT_EQUALS(get<id>(pfound),get<id>(test[1]));
 
@@ -585,10 +586,9 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_std_vector_bucket_search_serial(void) {
-        helper_d_test_list_random<std::vector,bucket_search_serial>();
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
-       
+        helper_d_test_list_random<std::vector,bucket_search_serial>();
         helper_d_test_list_regular<std::vector,bucket_search_serial>();
     }
 

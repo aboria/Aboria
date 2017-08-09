@@ -169,6 +169,7 @@ public:
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::iterator iterator;
     typedef typename Traits::vector_unsigned_int vector_unsigned_int;
+    typedef typename Traits::vector_int vector_int;
 
     const Derived& cast() const { return static_cast<const Derived&>(*this); }
     Derived& cast() { return static_cast<Derived&>(*this); }
@@ -287,7 +288,7 @@ public:
         return cast().get_query_impl();
     }
 
-    const vector_unsigned_int& get_order() const {
+    const vector_int& get_order() const {
         return m_order;
     }
 
@@ -298,7 +299,7 @@ public:
 protected:
     iterator m_particles_begin;
     iterator m_particles_end;
-    vector_unsigned_int m_order;
+    vector_int m_order;
     bool_d m_periodic;
     detail::bbox<Traits::dimension> m_bounds;
     unsigned int m_n_particles_in_leaf; 

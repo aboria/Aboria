@@ -122,8 +122,8 @@ public:
     //~nanoflann_adaptor() {}
 
 
-    static constexpr bool cheap_copy_and_delete_at_end() {
-        return false;
+    static constexpr bool ordered() {
+        return true;
     }
 
     // Must return the number of data points
@@ -225,7 +225,7 @@ private:
     }
 
 
-    void embed_points_impl() {
+    bool embed_points_impl() {
 	    m_kd_tree.buildIndex();
 
         detail::reorder_destructive(
@@ -247,15 +247,17 @@ private:
                                              -this->m_particles_begin;
 
         print_tree(m_kd_tree.get_root_node());
+
+        return true;
     }
 
 
-    void add_points_at_end_impl(const size_t dist) {
-        embed_points_impl();
+    bool add_points_at_end_impl(const size_t dist) {
+        return embed_points_impl();
     }
 
-    void delete_points_at_end_impl(const size_t dist) {
-        embed_points_impl();
+    bool delete_points_impl(const size_t start_index, const size_t n) {
+        return embed_points_impl();
     }
 
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {

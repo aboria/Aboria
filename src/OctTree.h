@@ -82,8 +82,8 @@ class octtree:
 public:
     octtree():base_type(),m_max_level(32/dimension - 2) {}
 
-    static constexpr bool cheap_copy_and_delete_at_end() {
-        return false;
+    static constexpr bool ordered() {
+        return true;
     }
 
     struct classify_point;
@@ -104,7 +104,7 @@ private:
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
     }
 
-    void embed_points_impl() {
+    bool embed_points_impl() {
         const size_t num_points  = this->m_particles_end - this->m_particles_begin;
 
         m_tags.resize(num_points);
@@ -138,10 +138,11 @@ private:
         this->m_query.m_number_of_nodes = m_nodes.size();
         this->m_query.m_number_of_particles = this->m_particles_end
                                              -this->m_particles_begin;
+        return true;
 
     }
 
-    void add_points_at_end_impl(const size_t dist) {
+    bool add_points_at_end_impl(const size_t dist) {
         const size_t num_points  = this->m_particles_end - this->m_particles_begin;
         auto start_adding_particles = this->m_particles_end-dist;
         m_tags.resize(num_points);
@@ -166,13 +167,15 @@ private:
         this->m_query.m_number_of_nodes = m_nodes.size();
         this->m_query.m_number_of_particles = this->m_particles_end
                                              -this->m_particles_begin;
+
+        return true;
     }
 
 
-    void delete_points_at_end_impl(const size_t dist) {
-        const size_t n = this->m_particles_end - this->m_particles_begin;
+    bool delete_points_impl(const size_t start_index, const size_t n) {
+        const size_t nparticles = this->m_particles_end - this->m_particles_begin;
 
-        m_tags.resize(n);
+        m_tags.resize(nparticles);
         build_tree();
 
         this->m_query.m_number_of_levels = m_number_of_levels;
@@ -182,6 +185,8 @@ private:
         this->m_query.m_number_of_nodes = m_nodes.size();
         this->m_query.m_number_of_particles = this->m_particles_end
                                              -this->m_particles_begin;
+
+        return true;
     }
      
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
@@ -212,11 +217,11 @@ private:
          * 4. Sort according to classification    *
          ******************************************/
         if (m_tags.size() > 0) {
-            m_indices.resize(m_tags.size());
-            detail::sequence(m_indices.begin(), m_indices.end());
-            detail::sort_by_key(m_tags.begin(), m_tags.end(), m_indices.begin());
-            detail::reorder_destructive(m_indices.begin(), 
-                                        m_indices.end(), 
+            this->m_order.resize(m_tags.size());
+            detail::sequence(this->m_order.begin(), this->m_order.end());
+            detail::sort_by_key(m_tags.begin(), m_tags.end(), this->m_order.begin());
+            detail::reorder_destructive(this->m_order.begin(), 
+                                        this->m_order.end(), 
                                         this->m_particles_begin);
         }
     }
@@ -231,7 +236,6 @@ private:
     unsigned m_number_of_levels;
 
     vector_int m_tags;
-    vector_int m_indices;
     vector_int m_nodes;
     vector_int2 m_leaves;
 
@@ -295,8 +299,6 @@ void octtree<traits>::build_tree() {
         // Mark each child as either empty, a node, or a leaf
         vector_int child_node_kind(children.size(), 0);
         detail::transform(
-                //TODO: boost make_zip_iterator does not work with std::tuple, so
-                //have to use the boost make_tuple here
                 detail::make_zip_iterator(
                     detail::make_tuple(
                         lower_bounds.begin(), upper_bounds.begin()

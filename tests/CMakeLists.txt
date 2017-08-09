@@ -285,9 +285,9 @@ foreach(test_suite ${test_suites})
         foreach(test_name ${${test_suite}})
             add_test(NAME ${test_suite}__Parallel:__${test_name} 
                      COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
-            set_test_properties(${test_suite}:__${test_name} 
+            set_tests_properties(${test_suite}:__${test_name} 
                 PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=1")
-            set_test_properties(${test_suite}__Parallel:__${test_name} 
+            set_tests_properties(${test_suite}__Parallel:__${test_name} 
                 PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=3")
         endforeach()
     endif()
