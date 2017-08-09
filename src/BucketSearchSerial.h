@@ -349,6 +349,53 @@ private:
         return false;
     }
 
+    void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
+        const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
+        const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
+        ASSERT(toi != fromi,"toi and fromi are the same");
+
+        // unlink old toi pointers
+        const int toi_back = m_linked_list_reverse[toi];
+        const int toi_forward = m_linked_list[toi];
+        ASSERT(toi_back == detail::get_empty_id() ||
+            (toi_back < m_linked_list_reverse.size() && toi_back >= 0),
+            "invalid index of "<<toi_back <<". Note linked list reverse size is "
+            << m_linked_list_reverse.size());
+        ASSERT(toi_forward == detail::get_empty_id() ||
+            (toi_forward < m_linked_list_reverse.size() && toi_forward >= 0),
+            "invalid index of "<<toi_back <<". Note linked list reverse size is "
+            << m_linked_list_reverse.size());
+        if (toi_back != detail::get_empty_id()) {
+            m_linked_list[toi_back] = toi_forward;
+        } else {
+            m_buckets[m_dirty_buckets[toi]] = toi_forward;
+        }
+        if (toi_forward != detail::get_empty_id()) {
+            m_linked_list_reverse[toi_forward] = toi_back;
+        }
+
+        // setup fromi <-> toi 
+        const int forwardi = m_linked_list[fromi];
+        const int bucketi = m_dirty_buckets[fromi];
+        ASSERT(toi < m_linked_list.size(),"invalid index");
+        ASSERT(bucketi < m_buckets.size() && bucketi >= 0,"invalid index");
+        ASSERT(fromi < m_linked_list_reverse.size(),"invalid index");
+        ASSERT(forwardi == detail::get_empty_id() ||
+            (forwardi < m_linked_list_reverse.size() && forwardi>= 0),
+            "invalid index of "<<forwardi<<". Note linked list reverse size is "
+            << m_linked_list_reverse.size());
+
+        m_linked_list[toi] = forwardi;
+        m_linked_list_reverse[toi] = fromi;
+        m_linked_list[fromi] = toi;
+        if (forwardi != detail::get_empty_id()) { //check this
+            m_linked_list_reverse[forwardi] = toi; 
+        }
+        m_dirty_buckets[toi] = bucketi;
+
+        //check_data_structure();
+    }
+
     //TODO: do same as delete points and consider a range?
     void copy_points_serial(const size_t start_index_deleted, const size_t start_index_copied,
                             const size_t n_copied) {
