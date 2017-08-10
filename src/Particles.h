@@ -476,6 +476,7 @@ public:
             } else {
                 // copy end element to i and pop off end element
                 *i = *(end()-1);
+                search.copy_points(end()-1,i);
                 traits_type::pop_back(data);
             }
         }
@@ -665,7 +666,7 @@ public:
                     LOG(3,"Particle: delete_particles: deleting particle "<<get<id>(*i)<<" with position "<<get<position>(*i));
                     if ((index < size()-1) && (size() > 1)) {
                         *i = *(end()-1);
-                        search.copy_points(end()-1,i);
+                        search.move_point(end()-1,i);
                         pop_back(false);
                         i = begin() + index;
                     } else {
@@ -682,15 +683,9 @@ public:
 
         const size_t new_size = size();
 
-        if (update_search) {
-            if (do_serial_delete) {
-                if (search.delete_points(begin(),end(),new_size,old_size-new_size)) {
-                    reorder(search.get_order().begin(),search.get_order().end());
-                }
-            } else {
-                if (search.embed_points(begin(),end())) {
-                    reorder(search.get_order().begin(),search.get_order().end());
-                }
+        if (update_search && !do_serial_delete) {
+            if (search.embed_points(begin(),end())) {
+                reorder(search.get_order().begin(),search.get_order().end());
             }
         }
     }
