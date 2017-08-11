@@ -351,11 +351,17 @@ private:
         const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
         const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
         ASSERT(toi != fromi,"toi and fromi are the same");
-        copy_points_per_particle(toi,fromi,1);
+        if (m_serial) {
+            copy_points_per_particle(toi,fromi,1);
+        } else {
+            copy_points_per_bucket(toi,fromi,1);
+        }
+
         //check_data_structure();
     }
 
-    void copy_points_per_particle(const size_t start_index_deleted, const size_t start_index_copied,
+    void copy_points_per_particle(const size_t start_index_deleted, 
+                            const size_t start_index_copied,
                             const size_t n_copied) {
 
         for (int fromi = start_index_copied; fromi < start_index_copied+n_copied; ++fromi) {

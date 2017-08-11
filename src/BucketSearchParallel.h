@@ -105,7 +105,7 @@ private:
     bool set_domain_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
         if (n < 0.5*m_size_calculated_with_n || n > 2*m_size_calculated_with_n) {
-            LOG(2,"bucket_search_serial: recalculating bucket size");
+            LOG(2,"bucket_search_parallel: recalculating bucket size");
             m_size_calculated_with_n = n;
             if (this->m_n_particles_in_leaf > n) {
                 m_size = unsigned_int_d(1);
@@ -192,8 +192,13 @@ private:
 
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
-            for (int i = 0; i<m_bucket_indices.size(); ++i) {
-                LOG(4,"\tp = "<<get<position>(*(this->m_particles_begin+i))<<" index = "<<m_bucket_indices[i]<<". m_bucket_begin[index] = "<<m_bucket_begin[m_bucket_indices[i]]<<". m_bucket_end[index] = "<<m_bucket_end[m_bucket_indices[i]]);
+            LOG(4,"bucket_search_parallel data structure:");
+            for (int ii = 0; ii<m_bucket_indices.size(); ++ii) {
+                const size_t i = this->m_order[ii];
+                LOG(4,"\tp = "<<get<position>(*(this->m_particles_begin+i))<<
+                        " index = "<<m_bucket_indices[ii]<<
+                        ". m_bucket_begin[index] = "<<m_bucket_begin[m_bucket_indices[ii]]<<
+                        ". m_bucket_end[index] = "<<m_bucket_end[m_bucket_indices[ii]]);
             }
         }
 #endif
@@ -212,15 +217,15 @@ private:
             return true;
         } else {
             // only redo buckets that changed
-            const size_t start_bucket = m_bucket_indices[i];
-            const size_t end_bucket = m_bucket_indices[i+n]+1;
+            const size_t start_bucket = m_bucket_indices[i-1];
+            const size_t end_bucket = m_bucket_indices[i+n];
 
             m_bucket_indices.erase(m_bucket_indices.begin()+i,
                                    m_bucket_indices.begin()+i+n);
             
             //set begins in deleted range to i
-            detail::fill(m_bucket_begin.begin()+start_bucket,
-                         m_bucket_begin.begin()+end_bucket,
+            detail::fill(m_bucket_begin.begin()+start_bucket+1,
+                         m_bucket_begin.begin()+end_bucket+1,
                          i);
             
             //set ends in deleted range to i
@@ -229,9 +234,9 @@ private:
                          i);
 
             //minus n from begins after deleted range
-            detail::transform(m_bucket_begin.begin()+end_bucket,
+            detail::transform(m_bucket_begin.begin()+end_bucket+1,
                               m_bucket_begin.end(),
-                              m_bucket_begin.begin()+end_bucket,
+                              m_bucket_begin.begin()+end_bucket+1,
                               detail::_1 - n);
 
             //minus n from ends after deleted range

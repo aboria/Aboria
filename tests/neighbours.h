@@ -509,6 +509,15 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     	    particles.init_neighbour_search(min,max,periodic,neighbour_n);
         }
 
+        // randomly delete a few particles
+        std::uniform_int_distribution<int> uniform_int_N(0, N-1);
+        get<alive>(particles)[uniform_int_N(gen)] = false;
+        particles.delete_particles();
+
+        std::uniform_int_distribution<int> uniform_int_N_minus_1(0, N-2);
+        particles.erase(particles.begin()+uniform_int_N_minus_1(gen));
+        
+
         // brute force search
         auto t0 = Clock::now();
         Aboria::detail::for_each(particles.begin(),particles.end(),
@@ -550,8 +559,15 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     template<template <typename,typename> class VectorType,
              template <typename> class SearchMethod>
     void helper_d_test_list_random(bool test_push_back=true) {
+        
         helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,false);
         helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,false);
+
+        if (test_push_back) {
+            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
+            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
+        }
+
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,false);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,false);
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,100,true,false);
@@ -572,8 +588,6 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         helper_d_random<4,VectorType,SearchMethod>(1000,0.2,10,false,false);
 
         if (test_push_back) {
-            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
-            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
             helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,true);
             helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,false,true);
             helper_d_random<2,VectorType,SearchMethod>(1000,0.1,10,true,true);
@@ -586,18 +600,18 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_std_vector_bucket_search_serial(void) {
+        helper_d_test_list_random<std::vector,bucket_search_serial>();
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
-        helper_d_test_list_random<std::vector,bucket_search_serial>();
         helper_d_test_list_regular<std::vector,bucket_search_serial>();
     }
 
     void test_std_vector_bucket_search_parallel(void) {
+        helper_d_test_list_random<std::vector,bucket_search_parallel>();
         helper_single_particle<std::vector,bucket_search_parallel>();
         helper_two_particles<std::vector,bucket_search_parallel>();
 
         helper_d_test_list_regular<std::vector,bucket_search_parallel>();
-        helper_d_test_list_random<std::vector,bucket_search_parallel>();
     }
 
     void test_std_vector_nanoflann_adaptor(void) {

@@ -268,15 +268,12 @@ public:
                                              const size_t i, const size_t n) {
 
         const size_t new_size = end-begin;
-        const size_t old_size = m_particles_end-m_particles_begin;
-        ASSERT(new_size == old_size - n, "new and old iterators not consistent with number of particles being deleted");
-        ASSERT(i < old_size && i+n < old_size, "trying to delete particles not in range")
         ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
         update_iterators(begin,end);
 
         if (n > 0) {
-            LOG(2,"neighbour_search_base: delete_points_at_end: deleting "<<n<<" points.");
+            LOG(2,"neighbour_search_base: delete_points: deleting points "<<i<<" to "<<i+n-1);
             return cast().delete_points_impl(i,n);
         } else {
             return false;

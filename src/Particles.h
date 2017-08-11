@@ -678,7 +678,7 @@ public:
             }
         } else {
             iterator first_dead = detail::partition(begin(),end(),detail::is_alive<raw_const_reference>());
-            erase(first_dead,end(),false);
+            traits_type::erase(data,first_dead,end());
         }
 
         const size_t new_size = size();
@@ -843,16 +843,17 @@ private:
 
 
     // sort the particles by order (i.e. a scatter)
-    void reorder(const typename vector_int::const_iterator& begin, 
-                 const typename vector_int::const_iterator& end) {
-        ASSERT(end-begin== size(),"order vector not same size as particle vector");
+    void reorder(const typename vector_int::const_iterator& order_begin, 
+                 const typename vector_int::const_iterator& order_end) {
+        ASSERT(order_end-order_begin== size(),"order vector not same size as particle vector");
         const size_t n = size();
         if (n > 0) {
             traits_type::resize(other_data,n);         
-            detail::gather(begin,end,
+            detail::gather(order_begin,order_end,
                            traits_type::begin(data),
                            traits_type::begin(other_data));
             data.swap(other_data);
+            search.update_iterators(begin(),end());
         }
     }
 
