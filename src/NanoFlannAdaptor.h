@@ -72,7 +72,8 @@ using nanoflann_kd_tree_type =
         nanoflann::KDTreeSingleIndexAdaptor<
             nanoflann::L_inf_Adaptor<double, nanoflann_adaptor<Traits> > ,
             nanoflann_adaptor<Traits>,
-            Traits::dimension 
+            Traits::dimension,
+            int
         >;
 
 }
@@ -228,11 +229,7 @@ private:
     bool embed_points_impl() {
 	    m_kd_tree.buildIndex();
 
-        detail::reorder_destructive(
-                m_kd_tree.get_vind().begin(), 
-                m_kd_tree.get_vind().end(), 
-                this->m_particles_begin);
-
+        std::swap(this->m_order,m_kd_tree.get_vind());
 
         this->m_query.m_root = m_kd_tree.get_root_node();
         this->m_query.m_dummy_root.child1 = this->m_query.m_root;

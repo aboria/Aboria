@@ -666,7 +666,7 @@ public:
                     LOG(3,"Particle: delete_particles: deleting particle "<<get<id>(*i)<<" with position "<<get<position>(*i));
                     if ((index < size()-1) && (size() > 1)) {
                         *i = *(end()-1);
-                        search.move_point(end()-1,i);
+                        search.copy_points(end()-1,i);
                         pop_back(false);
                         i = begin() + index;
                     } else {
