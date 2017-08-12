@@ -270,7 +270,8 @@ public:
         const size_t new_size = end-begin;
         ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-        update_iterators(begin,end);
+        m_particles_begin = begin;
+        m_particles_end = end;
 
         if (n > 0) {
             LOG(2,"neighbour_search_base: delete_points: deleting points "<<i<<" to "<<i+n-1);

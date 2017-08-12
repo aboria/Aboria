@@ -533,6 +533,10 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         t1 = Clock::now();
         std::chrono::duration<double> dt_aboria = t1 - t0;
         for (int i = 0; i < particles.size(); ++i) {
+            if (int(get<neighbours_brute>(particles)[i]) !=
+                             int(get<neighbours_aboria>(particles)[i])) {
+                std::cout << "error in finding neighbours for p = " <<get<position>(particles)[i]<<" over radius "<<r<< std::endl;
+            }
             TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                              int(get<neighbours_aboria>(particles)[i]));
         }

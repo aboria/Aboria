@@ -198,6 +198,42 @@ private:
     void update_iterator_impl() {
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+        int n = this->m_particles_end-this->m_particles_begin;
+        ASSERT(n <= m_linked_list.size(),"particle size should not be greater than linked list size");
+        // any resizing should be due to "copy_points"
+        if (n < m_linked_list.size()) {
+            LOG(3,"bucket_search_serial: resizing arrays in update_iterator")
+            const bool resize_buckets = set_domain_impl();
+            if (resize_buckets) {
+                // buckets all changed, so start from scratch
+                LOG(3,"bucket_search_serial: re_embed points")
+                embed_points_impl(false);
+            } else {
+                m_linked_list.resize(n);
+                if (m_serial) m_linked_list_reverse.resize(n);
+                m_dirty_buckets.resize(n);
+                this->m_query.m_linked_list_begin = iterator_to_raw_pointer(
+                        this->m_linked_list.begin());
+            }
+        }
+        #ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            LOG(4,"\tbuckets:");
+            for (int i = 0; i<m_buckets.size(); ++i) {
+                if (m_buckets[i] != detail::get_empty_id()) {
+                    LOG(4,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
+                }
+            }
+            LOG(4,"\tend buckets");
+            LOG(4,"\tlinked list:");
+            for (int i = 0; i<m_linked_list.size(); ++i) {
+                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_query.m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+            }
+            LOG(4,"\tend linked list:");
+        }
+        #endif
+
+
         //check_data_structure();
     }
 
@@ -320,8 +356,7 @@ private:
         const size_t end_index_deleted = start_index_deleted + n_deleted;
         const size_t end_index_copied = start_index_copied + n_copied;
         
-        if (n_deleted + n_copied < this->m_n_particles_in_leaf 
-                && m_serial ) {
+        if (m_serial ) {
             // if running in serial and number of particles is small,
             // then just loop over changed particles and alter links accordingly
             copy_points_per_particle(start_index_deleted,start_index_copied,n_copied);
@@ -364,6 +399,9 @@ private:
                             const size_t start_index_copied,
                             const size_t n_copied) {
 
+        LOG(3,"bucket_search_serial: copy_points_per_particle: start_index_deleted = "<<start_index_deleted<<
+                "start_index_copied = "<<start_index_copied<<
+                "n_copied = "<<n_copied);
         for (int fromi = start_index_copied; fromi < start_index_copied+n_copied; ++fromi) {
             const int toi = start_index_deleted + fromi - start_index_copied;
             ASSERT(toi != fromi,"toi and fromi are the same");
@@ -393,7 +431,6 @@ private:
             // setup links to fromi point to toi 
             const int forwardi = m_linked_list[fromi];
             const int backwardsi = m_linked_list_reverse[fromi];
-                const int bucketi = m_dirty_buckets[fromi];
             if (forwardi != detail::get_empty_id()) { //check this
                 m_linked_list_reverse[forwardi] = toi;
             }
@@ -402,12 +439,50 @@ private:
             } else {
                 m_buckets[m_dirty_buckets[fromi]] = toi;
             }
+            m_linked_list[toi] = forwardi;
+            m_linked_list_reverse[toi] = backwardsi;
         }
+
+        #ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            LOG(4,"\tbuckets:");
+            for (int i = 0; i<m_buckets.size(); ++i) {
+                if (m_buckets[i] != detail::get_empty_id()) {
+                    LOG(4,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
+                }
+            }
+            LOG(4,"\tend buckets");
+            LOG(4,"\tlinked list:");
+            for (int i = 0; i<m_linked_list.size(); ++i) {
+                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+            }
+            LOG(4,"\tend linked list:");
+        }
+        #endif
 
     }
 
     void copy_points_per_bucket(const size_t start_index_deleted,
                             const size_t start_index_copied, const size_t n_copied) {
+        LOG(3,"bucket_search_serial: copy_points_per_bucket: start_index_deleted = "<<start_index_deleted<<
+                "start_index_copied = "<<start_index_copied<<
+                "n_copied = "<<n_copied);
+
+        m_deleted_buckets.resize(n_copied);
+        detail::copy(m_dirty_buckets.begin()+start_index_deleted,
+                     m_dirty_buckets.begin()+start_index_deleted+n_copied,
+                     m_deleted_buckets.begin());
+        detail::sort(m_deleted_buckets.begin(),m_deleted_buckets.end());
+        detail::for_each(m_deleted_buckets.begin(),
+                         detail::unique(m_deleted_buckets.begin(),
+                                        m_deleted_buckets.end()),
+                         delete_points_in_bucket_lambda(start_index_deleted,
+                                            start_index_deleted+n_copied,
+                                            iterator_to_raw_pointer(m_linked_list.begin()),
+                                            iterator_to_raw_pointer(m_buckets.begin())
+                                            ));
+
+
         m_copied_buckets.resize(n_copied);
         detail::copy(m_dirty_buckets.begin()+start_index_copied,
                      m_dirty_buckets.begin()+start_index_copied+n_copied,
@@ -421,6 +496,23 @@ private:
                                             iterator_to_raw_pointer(m_linked_list.begin()),
                                             iterator_to_raw_pointer(m_buckets.begin())
                                             ));
+        #ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            LOG(4,"\tbuckets:");
+            for (int i = 0; i<m_buckets.size(); ++i) {
+                if (m_buckets[i] != detail::get_empty_id()) {
+                    LOG(4,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
+                }
+            }
+            LOG(4,"\tend buckets");
+            LOG(4,"\tlinked list:");
+            for (int i = 0; i<m_linked_list.size(); ++i) {
+                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+            }
+            LOG(4,"\tend linked list:");
+        }
+        #endif
+
     }
 
     void insert_points(const size_t start_adding, const size_t stop_adding) {

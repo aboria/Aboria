@@ -476,7 +476,6 @@ public:
             } else {
                 // copy end element to i and pop off end element
                 *i = *(end()-1);
-                search.copy_points(end()-1,i);
                 traits_type::pop_back(data);
             }
         }
@@ -666,7 +665,7 @@ public:
                     LOG(3,"Particle: delete_particles: deleting particle "<<get<id>(*i)<<" with position "<<get<position>(*i));
                     if ((index < size()-1) && (size() > 1)) {
                         *i = *(end()-1);
-                        search.copy_points(end()-1,i);
+                        if (update_search) search.copy_points(end()-1,i);
                         pop_back(false);
                         i = begin() + index;
                     } else {
@@ -683,9 +682,13 @@ public:
 
         const size_t new_size = size();
 
-        if (update_search && !do_serial_delete) {
-            if (search.embed_points(begin(),end())) {
-                reorder(search.get_order().begin(),search.get_order().end());
+        if (update_search) {
+            if (do_serial_delete) {
+                search.update_iterators(begin(),end());
+            } else {
+                if (search.embed_points(begin(),end())) {
+                    reorder(search.get_order().begin(),search.get_order().end());
+                }
             }
         }
     }
@@ -846,6 +849,7 @@ private:
     void reorder(const typename vector_int::const_iterator& order_begin, 
                  const typename vector_int::const_iterator& order_end) {
         ASSERT(order_end-order_begin== size(),"order vector not same size as particle vector");
+        LOG(2,"reordering particles");
         const size_t n = size();
         if (n > 0) {
             traits_type::resize(other_data,n);         
