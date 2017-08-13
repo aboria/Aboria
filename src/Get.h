@@ -720,7 +720,7 @@ typename std::enable_if<
 swap(getter_type<tuple_type,mpl_vector_type> x,
      getter_type<tuple_type2,mpl_vector_type>& y) {
     x.swap_via_tie(y.data,
-                detail::make_index_sequence<tuple_ns::tuple_size<tuple_type2>::value>());
+                detail::getter_helper<tuple_type2>::index_type());
 }
 
 template <typename tuple_type, typename tuple_type2, typename mpl_vector_type> 
@@ -731,7 +731,7 @@ typename std::enable_if<
 swap(getter_type<tuple_type,mpl_vector_type>& x,
      getter_type<tuple_type2,mpl_vector_type> y) {
     y.swap_via_tie(x.data,
-                detail::make_index_sequence<tuple_ns::tuple_size<tuple_type2>::value>());
+                detail::getter_helper<tuple_type2>::index_type());
 
 }
 

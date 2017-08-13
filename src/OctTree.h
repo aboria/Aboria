@@ -175,7 +175,7 @@ private:
     bool delete_points_impl(const size_t start_index, const size_t n) {
         const size_t nparticles = this->m_particles_end - this->m_particles_begin;
 
-        m_tags.resize(nparticles);
+        m_tags.erase(m_tags.begin()+start_index,m_tags.begin()+start_index+n);
         build_tree();
 
         this->m_query.m_number_of_levels = m_number_of_levels;

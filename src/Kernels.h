@@ -646,8 +646,8 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
-                    const_position_reference dx = tuple_ns::get<1>(pairj);
-                    const_col_reference bj = tuple_ns::get<0>(pairj);
+                    const_position_reference dx = detail::get_impl<1>(pairj);
+                    const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     const_cast< MatrixType& >(matrix)(i,j) = this->m_function(dx,ai,bj);
                 }
@@ -672,8 +672,8 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
-                    const_position_reference dx = tuple_ns::get<1>(pairj);
-                    const_col_reference bj = tuple_ns::get<0>(pairj);
+                    const_position_reference dx = detail::get_impl<1>(pairj);
+                    const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     triplets.push_back(Triplet(i+startI,j+startJ,this->m_function(dx,ai,bj)));
                 }
@@ -698,8 +698,8 @@ namespace Aboria {
                 Scalar sum(0);
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
-                    const_position_reference dx = tuple_ns::get<1>(pairj);
-                    const_col_reference bj = tuple_ns::get<0>(pairj);
+                    const_position_reference dx = detail::get_impl<1>(pairj);
+                    const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     sum += this->m_function(dx,ai,bj)*rhs[j];
                 }

@@ -275,7 +275,9 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
             }
             LOG(4,"\tend linked list:");
         }
@@ -321,7 +323,9 @@ private:
             }
             LOG(4,"\tend buckets");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
             }
         }
 #endif
@@ -359,11 +363,11 @@ private:
         if (m_serial ) {
             // if running in serial and number of particles is small,
             // then just loop over changed particles and alter links accordingly
-            copy_points_per_particle(start_index_deleted,start_index_copied,n_copied);
+            copy_points_per_particle(start_index_deleted,start_index_copied,n_copied,n_deleted);
         } else {
             // else, find changed buckets and loop over them, altering
             // links accordingly
-            copy_points_per_bucket(start_index_deleted,start_index_copied,n_copied);
+            copy_points_per_bucket(start_index_deleted,start_index_copied,n_copied,n_deleted);
         }
 
         // resize lists
@@ -387,9 +391,9 @@ private:
         const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
         ASSERT(toi != fromi,"toi and fromi are the same");
         if (m_serial) {
-            copy_points_per_particle(toi,fromi,1);
+            copy_points_per_particle(toi,fromi,1,1);
         } else {
-            copy_points_per_bucket(toi,fromi,1);
+            copy_points_per_bucket(toi,fromi,1,1);
         }
 
         //check_data_structure();
@@ -397,16 +401,15 @@ private:
 
     void copy_points_per_particle(const size_t start_index_deleted, 
                             const size_t start_index_copied,
-                            const size_t n_copied) {
+                            const size_t n_copied,
+                            const size_t n_deleted) {
 
         LOG(3,"bucket_search_serial: copy_points_per_particle: start_index_deleted = "<<start_index_deleted<<
                 "start_index_copied = "<<start_index_copied<<
                 "n_copied = "<<n_copied);
-        for (int fromi = start_index_copied; fromi < start_index_copied+n_copied; ++fromi) {
-            const int toi = start_index_deleted + fromi - start_index_copied;
-            ASSERT(toi != fromi,"toi and fromi are the same");
+        // unlink old toi pointers
+        for (int toi = start_index_deleted; toi < start_index_deleted+n_deleted; ++toi) {
 
-            // unlink old toi pointers
             const int toi_back = m_linked_list_reverse[toi];
             const int toi_forward = m_linked_list[toi];
             ASSERT(toi_back == detail::get_empty_id() ||
@@ -425,10 +428,14 @@ private:
             if (toi_forward != detail::get_empty_id()) {
                 m_linked_list_reverse[toi_forward] = toi_back;
             }
-            m_dirty_buckets[toi] = m_dirty_buckets[fromi];
+        }
 
 
-            // setup links to fromi point to toi 
+        // setup links to fromi point to toi 
+        for (int fromi = start_index_copied; fromi < start_index_copied+n_copied; ++fromi) {
+            const int toi = start_index_deleted + fromi - start_index_copied;
+            ASSERT(toi != fromi,"toi and fromi are the same");
+            
             const int forwardi = m_linked_list[fromi];
             const int backwardsi = m_linked_list_reverse[fromi];
             if (forwardi != detail::get_empty_id()) { //check this
@@ -441,6 +448,7 @@ private:
             }
             m_linked_list[toi] = forwardi;
             m_linked_list_reverse[toi] = backwardsi;
+            m_dirty_buckets[toi] = m_dirty_buckets[fromi];
         }
 
         #ifndef __CUDA_ARCH__
@@ -463,21 +471,24 @@ private:
     }
 
     void copy_points_per_bucket(const size_t start_index_deleted,
-                            const size_t start_index_copied, const size_t n_copied) {
+                            const size_t start_index_copied, 
+                            const size_t n_copied,
+                            const size_t n_deleted) {
         LOG(3,"bucket_search_serial: copy_points_per_bucket: start_index_deleted = "<<start_index_deleted<<
                 "start_index_copied = "<<start_index_copied<<
-                "n_copied = "<<n_copied);
+                "n_copied = "<<n_copied<<
+                "n_deleted= "<<n_deleted);
 
-        m_deleted_buckets.resize(n_copied);
+        m_deleted_buckets.resize(n_deleted);
         detail::copy(m_dirty_buckets.begin()+start_index_deleted,
-                     m_dirty_buckets.begin()+start_index_deleted+n_copied,
+                     m_dirty_buckets.begin()+start_index_deleted+n_deleted,
                      m_deleted_buckets.begin());
         detail::sort(m_deleted_buckets.begin(),m_deleted_buckets.end());
         detail::for_each(m_deleted_buckets.begin(),
                          detail::unique(m_deleted_buckets.begin(),
                                         m_deleted_buckets.end()),
                          delete_points_in_bucket_lambda(start_index_deleted,
-                                            start_index_deleted+n_copied,
+                                            start_index_deleted+n_deleted,
                                             iterator_to_raw_pointer(m_linked_list.begin()),
                                             iterator_to_raw_pointer(m_buckets.begin())
                                             ));

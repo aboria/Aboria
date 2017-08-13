@@ -48,11 +48,7 @@ if (Aboria_USE_THRUST)
 
     add_definitions(-D__aboria_have_thrust__)
 
-    option(Aboria_THRUST_USE_ALGORITHMS "Use CUDA Thrust library algorithms" ON)
-    option(Aboria_THRUST_TEST_DEVICE_VECTOR "Turn on tests using thrust::device_vector" OFF)
-    if (Aboria_THRUST_USE_ALGORITHMS)
-        add_definitions(-D__aboria_use_thrust_algorithms__)
-    endif()
+    option(Aboria_THRUST_TEST_NVCC "Turn on tests using nvcc" OFF)
     #http://stackoverflow.com/questions/34996295/trying-to-get-cuda-7-5-to-work-with-gcc-5-x
 
     add_definitions(-D_MWAITXINTRIN_H_INCLUDED)

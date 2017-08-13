@@ -366,7 +366,9 @@ public:
                 }
             }
         } else {
-            LOG(2,"WARNING: particle you tried to push back with r = "<<Aboria::get<position>(i)<<" is outside the domain and has been removed");
+            LOG(2,"WARNING: particle you tried to push back with r = "<<
+                    static_cast<const double_d&>(Aboria::get<position>(i)) <<
+                    " is outside the domain and has been removed");
             pop_back(false);
             search.update_iterators(begin(),end());
         }

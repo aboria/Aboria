@@ -165,6 +165,9 @@ set(NeighboursTest
     test_std_vector_bucket_search_parallel
     test_std_vector_nanoflann_adaptor
     test_std_vector_octtree
+    test_thrust_vector_bucket_search_serial
+    test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_octtree
     test_documentation
     )
 set(NeighboursTestCuda
@@ -268,10 +271,10 @@ set(H2Test
 
 message("-- Adding test suites:")
 foreach(test_suite ${test_suites})
-    if (Aboria_THRUST_TEST_DEVICE_VECTOR)
+    if (Aboria_THRUST_TEST_NVCC)
         #aboria_cxx_test(tests_cuda tests_cuda.cu ${test_files})
-        aboria_cxx_test(${test_suite}_cuda ${test_suite}.cu ${${test_suite}File})
-        target_link_libraries(${test_suite}_cuda ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBRARIES})
+        aboria_cxx_test(${test_suite}_nvcc ${test_suite}.cu ${${test_suite}File})
+        target_link_libraries(${test_suite}_nvcc ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBRARIES})
     endif()
 
     aboria_cxx_test(${test_suite} ${test_suite}.cpp ${${test_suite}File})
@@ -283,17 +286,17 @@ foreach(test_suite ${test_suites})
 
     if (Aboria_USE_OPENMP)
         foreach(test_name ${${test_suite}})
-            add_test(NAME ${test_suite}__Parallel:__${test_name} 
+            add_test(NAME ${test_suite}__OpenMP:__${test_name} 
                      COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
             set_tests_properties(${test_suite}:__${test_name} 
                 PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=1")
-            set_tests_properties(${test_suite}__Parallel:__${test_name} 
+            set_tests_properties(${test_suite}__OpenMP:__${test_name} 
                 PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=3")
         endforeach()
     endif()
     foreach(test_name ${${test_suite}Cuda})
-        if (Aboria_THRUST_TEST_DEVICE_VECTOR)
-            add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite}_cuda ${test_suite} ${test_name})
+        if (Aboria_THRUST_TEST_NVCC)
+            add_test(NAME ${test_suite}__NVCC:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite}_nvcc ${test_suite} ${test_name})
         endif()
     endforeach()
 endforeach()

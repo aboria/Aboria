@@ -631,21 +631,21 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_thrust_vector_bucket_search_serial(void) {
-#if defined(__CUDACC__)
+#if defined(__aboria_have_thrust__)
         helper_d_test_list_regular<thrust::device_vector,bucket_search_serial>();
         helper_d_test_list_random<thrust::device_vector,bucket_search_serial>();
 #endif
     }
 
     void test_thrust_vector_bucket_search_parallel(void) {
-#if defined(__CUDACC__)
+#if defined(__aboria_have_thrust__)
         helper_d_test_list_regular<thrust::device_vector,bucket_search_parallel>();
         helper_d_test_list_random<thrust::device_vector,bucket_search_parallel>();
 #endif
     }
 
 void test_thrust_vector_octtree(void) {
-#if defined(__CUDACC__)
+#if defined(__aboria_have_thrust__)
         helper_d_test_list_regular<thrust::device_vector,octtree>();
         helper_d_test_list_random<thrust::device_vector,octtree>();
 #endif

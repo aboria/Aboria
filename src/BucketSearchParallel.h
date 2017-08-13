@@ -168,6 +168,22 @@ private:
         }
         build_buckets();
 
+        #ifndef __CUDA_ARCH__
+        if (4 <= ABORIA_LOG_LEVEL) { 
+            LOG(4,"\tbuckets:");
+            for (int i = 0; i<m_bucket_begin.size(); ++i) {
+                LOG(4,"\ti = "<<i<<" bucket contents = "<<m_bucket_begin[i]<<" to "<<m_bucket_end[i]);
+            }
+            LOG(4,"\tend buckets");
+            LOG(4,"\tparticles:");
+            for (int i = 0; i<m_bucket_indices.size(); ++i) {
+                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" bucket = "<<m_bucket_indices[i]);
+            }
+            LOG(4,"\tend particles:");
+        }
+        #endif
+
+
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
 
@@ -245,8 +261,30 @@ private:
                               m_bucket_end.begin()+end_bucket,
                               detail::_1 - n);
 
+             this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+            this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+
+
+            #ifndef __CUDA_ARCH__
+            if (4 <= ABORIA_LOG_LEVEL) { 
+                LOG(4,"\tbuckets:");
+                for (int i = 0; i<m_bucket_begin.size(); ++i) {
+                    LOG(4,"\ti = "<<i<<" bucket contents = "<<m_bucket_begin[i]<<" to "<<m_bucket_end[i]);
+                }
+                LOG(4,"\tend buckets");
+                LOG(4,"\tparticles:");
+                for (int i = 0; i<m_bucket_indices.size(); ++i) {
+                    LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" bucket = "<<m_bucket_indices[i]);
+                }
+                LOG(4,"\tend particles:");
+            }
+            #endif
+
+       
+
             return false;
         }
+        
         
 
     }

@@ -43,12 +43,41 @@ struct Traits {};
 template <>
 struct Traits<std::vector>: public default_traits {};
 
-#if defined(__CUDACC__)
+#ifdef __aboria_have_thrust__
 template <>
 struct Traits<thrust::device_vector>: public default_traits {
     template <typename T>
     struct vector_type {
         typedef thrust::device_vector<T> type;
+    };
+    template <typename T1=thrust::null_type,
+              typename T2=thrust::null_type,
+              typename T3=thrust::null_type,
+              typename T4=thrust::null_type,
+              typename T5=thrust::null_type,
+              typename T6=thrust::null_type,
+              typename T7=thrust::null_type,
+              typename T8=thrust::null_type,
+              typename T9=thrust::null_type
+              >
+    struct tuple_type {
+        typedef thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9> type;
+    };
+    template< std::size_t I, class T >
+    struct tuple_element {
+        typedef thrust::tuple_element<I,T> type;
+    };
+    template< class T >
+    struct tuple_size {
+        typedef thrust::tuple_size<T> type;
+    };
+};
+
+template <>
+struct Traits<thrust::host_vector>: public default_traits {
+    template <typename T>
+    struct vector_type {
+        typedef thrust::host_vector<T> type;
     };
     template <typename T1=thrust::null_type,
               typename T2=thrust::null_type,

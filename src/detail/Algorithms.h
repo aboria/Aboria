@@ -14,10 +14,15 @@ namespace detail {
 template <typename Traits>
 size_t concurrent_processes() {
 #ifdef __aboria_have_thrust__
-    if (std::is_same<Traits::vector_unsigned_int,
+    if (std::is_same<typename Traits::vector_unsigned_int,
                      thrust::device_vector<unsigned int>>::value) {
         // if using GPU just return "lots"
+#if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
         return 9999;
+#else
+        return omp_get_max_threads();
+#endif
+
         /*
         int deviceCount, device;
         struct cudaDeviceProp properties;
@@ -34,6 +39,8 @@ size_t concurrent_processes() {
         }
         */
     }
+    
+     
 #endif
 #ifdef HAVE_OPENMP
     return omp_get_max_threads();
@@ -465,7 +472,7 @@ ForwardIt unique( ForwardIt first, ForwardIt last, std::true_type ) {
 #ifdef __aboria_have_thrust__
 template< class ForwardIt >
 ForwardIt unique( ForwardIt first, ForwardIt last, std::false_type ) {
-    return trust::unique(first,last);
+    return thrust::unique(first,last);
 }
 #endif
 

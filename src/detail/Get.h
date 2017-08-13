@@ -14,7 +14,7 @@
 #include "Log.h"
 
 
-#if defined(__CUDACC__)
+#if __aboria_have_thrust__
 namespace thrust {
     template <>
     struct iterator_traits<thrust::null_type> {
@@ -23,16 +23,25 @@ namespace thrust {
         typedef thrust::null_type pointer;
     };
 
+    template <typename mpl_vector_type, typename tuple_type>
+    struct iterator_system<Aboria::zip_iterator<tuple_type,mpl_vector_type>> {
+    };
+
     template <typename mpl_vector_type, typename T0, typename ... T>
-    struct iterator_system<Aboria::zip_iterator<tuple_ns::tuple<T0,T...>,mpl_vector_type>> {
+    struct iterator_system<Aboria::zip_iterator<std::tuple<T0,T...>,mpl_vector_type>> {
         typedef typename iterator_system<T0>::type type;
     };
+
+    template <typename mpl_vector_type, typename T0, typename ... T>
+    struct iterator_system<Aboria::zip_iterator<thrust::tuple<T0,T...>,mpl_vector_type>> {
+        typedef typename iterator_system<T0>::type type;
+    };
+
 
 template <typename TUPLE, typename mpl_vector_type> 
 struct getter_type;
 
 // what follows is a copy of thrust's detail/raw_reference_cast.h for Aboria's getter type
-/*
 namespace detail {
 
 // specialize is_unwrappable
@@ -48,10 +57,10 @@ namespace raw_reference_detail
 // recurse on tuples
 template <typename mpl_vector_type, typename ... T> 
 struct raw_reference_tuple_helper<
-    Aboria::getter_type<tuple_ns::tuple<T ...>,mpl_vector_type>
+    Aboria::getter_type<thrust::tuple<T ...>,mpl_vector_type>
     > {
   typedef Aboria::getter_type<
-        tuple_ns::tuple<typename raw_reference_tuple_helper<T>::type ...>
+        thrust::tuple<typename raw_reference_tuple_helper<T>::type ...>
         ,mpl_vector_type> type;
 };
 
@@ -131,14 +140,13 @@ typename detail::enable_if_unwrappable<
 >::type
 raw_reference_cast(Aboria::getter_type<TUPLE,mpl_vector_type> t)
 {
-  thrust::detail:aboria_addition::raw_reference_caster f;
+  thrust::detail::aboria_addition::raw_reference_caster f;
 
   // note that we pass raw_reference_tuple_helper, not raw_reference as the unary metafunction
   // the different way that raw_reference_tuple_helper unwraps tuples is important
   return thrust::detail::tuple_host_device_transform<detail::raw_reference_detail::raw_reference_tuple_helper>(t, f);
 } // end raw_reference_cast
 
-*/
 
 } //namespace thrust
 #endif
@@ -417,8 +425,13 @@ single_iterator_to_raw_pointer(const Iterator& arg, thrust::random_access_device
 template <typename Iterator>
 typename std::iterator_traits<Iterator>::value_type*
 iterator_to_raw_pointer(const Iterator& arg, std::false_type) {
-    return single_iterator_to_raw_pointer(arg, 
-            typename std::iterator_traits<Iterator>::iterator_category());
+#ifdef __aboria_have_thrust__
+    return thrust::raw_pointer_cast(&*arg);
+#else
+    return &*arg;
+#endif
+    //return single_iterator_to_raw_pointer(arg, 
+    //        typename std::iterator_traits<Iterator>::iterator_category());
 }
 
 
