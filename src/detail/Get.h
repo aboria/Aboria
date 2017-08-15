@@ -32,17 +32,54 @@ namespace thrust {
         typedef typename iterator_system<T0>::type type;
     };
 
-    template <typename mpl_vector_type, typename T0, typename ... T>
-    struct iterator_system<Aboria::zip_iterator<thrust::tuple<T0,T...>,mpl_vector_type>> {
+    template <typename mpl_vector_type, typename T0, 
+                                        typename T1,
+                                        typename T2,
+                                        typename T3,
+                                        typename T4,
+                                        typename T5,
+                                        typename T6,
+                                        typename T7,
+                                        typename T8,
+                                        typename T9>
+    struct iterator_system<Aboria::zip_iterator<thrust::tuple<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9>,mpl_vector_type>> {
         typedef typename iterator_system<T0>::type type;
     };
 
 
+    /*
 template <typename TUPLE, typename mpl_vector_type> 
 struct getter_type;
+*/
 
 // what follows is a copy of thrust's detail/raw_reference_cast.h for Aboria's getter type
 namespace detail {
+
+// specialize is_tuple_of_iterator_references to for getter_type to device_reference
+template<typename T1, typename T2, typename T3,
+         typename T4, typename T5, typename T6,
+         typename T7, typename T8, typename T9,
+         typename T10, typename MplVector>
+  struct is_tuple_of_iterator_references<
+    Aboria::getter_type<
+     thrust::tuple<
+      // this seems dangerous, matches values as well, swap to something like below?
+      T1,T2,T3,T4,T5,T6,T7,T8,T9,T10>, MplVector>
+      /*
+      thrust::device_reference<T1>,
+      thrust::device_reference<T2>,
+      thrust::device_reference<T3>,
+      thrust::device_reference<T4>,
+      thrust::device_reference<T5>,
+      thrust::device_reference<T6>,
+      thrust::device_reference<T7>,
+      thrust::device_reference<T8>,
+      thrust::device_reference<T9>,
+      thrust::device_reference<T10>>, MplVector>
+      */
+  >
+    : thrust::detail::true_type
+{};
 
 // specialize is_unwrappable
 template <typename TUPLE, typename mpl_vector_type> 
@@ -55,12 +92,31 @@ namespace raw_reference_detail
 
 
 // recurse on tuples
-template <typename mpl_vector_type, typename ... T> 
+template <typename mpl_vector_type, typename T0, 
+                                    typename T1,
+                                    typename T2,
+                                    typename T3,
+                                    typename T4,
+                                    typename T5,
+                                    typename T6,
+                                    typename T7,
+                                    typename T8,
+                                    typename T9> 
 struct raw_reference_tuple_helper<
-    Aboria::getter_type<thrust::tuple<T ...>,mpl_vector_type>
+    Aboria::getter_type<thrust::tuple<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9>,mpl_vector_type>
     > {
   typedef Aboria::getter_type<
-        thrust::tuple<typename raw_reference_tuple_helper<T>::type ...>
+        thrust::tuple<typename raw_reference_tuple_helper<T0>::type,
+                      typename raw_reference_tuple_helper<T1>::type, 
+                      typename raw_reference_tuple_helper<T2>::type, 
+                      typename raw_reference_tuple_helper<T3>::type, 
+                      typename raw_reference_tuple_helper<T4>::type, 
+                      typename raw_reference_tuple_helper<T5>::type, 
+                      typename raw_reference_tuple_helper<T6>::type, 
+                      typename raw_reference_tuple_helper<T7>::type, 
+                      typename raw_reference_tuple_helper<T8>::type, 
+                      typename raw_reference_tuple_helper<T9>::type
+                      >
         ,mpl_vector_type> type;
 };
 

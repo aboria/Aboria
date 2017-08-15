@@ -462,7 +462,9 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
             }
             LOG(4,"\tend linked list:");
         }
@@ -518,7 +520,9 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
             }
             LOG(4,"\tend linked list:");
         }
@@ -542,9 +546,9 @@ private:
                 if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
             }
         } else {
-            detail::counting_iterator<unsigned int> count(start_adding);
-            detail::for_each(get<position>(this->m_particles_begin)+start_adding,
-                             get<position>(this->m_particles_end),
+            detail::counting_iterator<unsigned int> count(0);
+            detail::for_each(count + start_adding,
+                             count + stop_adding, 
                 insert_points_lambda(iterator_to_raw_pointer(
                                             get<position>(this->m_particles_begin)),
                                      m_point_to_bucket_index,
@@ -656,9 +660,8 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
 
     // implements a lock-free linked list using atomic cas
     CUDA_HOST_DEVICE
-    void operator()(const double_d& r) {
-        const size_t i = &r-m_positions;
-        const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+    void operator()(const unsigned int i) {
+        const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(m_positions[i]);
 
         //try inserting at head of the list
         #if defined(__CUDA_ARCH__)

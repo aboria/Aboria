@@ -177,7 +177,9 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tparticles:");
             for (int i = 0; i<m_bucket_indices.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" bucket = "<<m_bucket_indices[i]);
+                LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " bucket = "<<m_bucket_indices[i]);
             }
             LOG(4,"\tend particles:");
         }
@@ -211,7 +213,8 @@ private:
             LOG(4,"bucket_search_parallel data structure:");
             for (int ii = 0; ii<m_bucket_indices.size(); ++ii) {
                 const size_t i = this->m_order[ii];
-                LOG(4,"\tp = "<<get<position>(*(this->m_particles_begin+i))<<
+                LOG(4,"\tp = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                         " index = "<<m_bucket_indices[ii]<<
                         ". m_bucket_begin[index] = "<<m_bucket_begin[m_bucket_indices[ii]]<<
                         ". m_bucket_end[index] = "<<m_bucket_end[m_bucket_indices[ii]]);
@@ -253,13 +256,13 @@ private:
             detail::transform(m_bucket_begin.begin()+end_bucket+1,
                               m_bucket_begin.end(),
                               m_bucket_begin.begin()+end_bucket+1,
-                              detail::_1 - n);
+                              std::bind2nd(std::minus<int>(),n));
 
             //minus n from ends after deleted range
             detail::transform(m_bucket_end.begin()+end_bucket,
                               m_bucket_end.end(),
                               m_bucket_end.begin()+end_bucket,
-                              detail::_1 - n);
+                              std::bind2nd(std::minus<int>(),n));
 
              this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
             this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
@@ -274,7 +277,9 @@ private:
                 LOG(4,"\tend buckets");
                 LOG(4,"\tparticles:");
                 for (int i = 0; i<m_bucket_indices.size(); ++i) {
-                    LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_particles_begin+i))<<" bucket = "<<m_bucket_indices[i]);
+                    LOG(4,"\ti = "<<i<<" p = "<<
+                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                         " bucket = "<<m_bucket_indices[i]);
                 }
                 LOG(4,"\tend particles:");
             }
