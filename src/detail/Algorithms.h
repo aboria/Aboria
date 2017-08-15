@@ -128,6 +128,9 @@ template <typename T>
 using uniform_real_distribution = thrust::uniform_real_distribution<T>;
 
 template <typename T>
+using uniform_int_distribution = thrust::uniform_int_distribution<T>;
+
+template <typename T>
 using normal_distribution = thrust::normal_distribution<T>;
 
 
@@ -145,6 +148,9 @@ using counting_iterator = boost::counting_iterator<T>;
 
 template <typename T>
 using uniform_real_distribution = std::uniform_real_distribution<T>;
+
+template <typename T>
+using uniform_int_distribution = std::uniform_int_distribution<T>;
 
 template <typename T>
 using normal_distribution = std::normal_distribution<T>;

@@ -357,8 +357,6 @@ private:
                                 n_after_deleted : n_deleted;
         const size_t start_index_copied = n_after_deleted < n_deleted ?
                                  start_index_deleted + n_deleted : oldn - n_deleted;
-        const size_t end_index_deleted = start_index_deleted + n_deleted;
-        const size_t end_index_copied = start_index_copied + n_copied;
         
         if (m_serial ) {
             // if running in serial and number of particles is small,

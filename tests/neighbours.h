@@ -510,11 +510,11 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         }
 
         // randomly delete a few particles
-        std::uniform_int_distribution<int> uniform_int_N(0, N-1);
+        detail::uniform_int_distribution<int> uniform_int_N(0, N-1);
         get<alive>(particles)[uniform_int_N(gen)] = false;
         particles.delete_particles();
 
-        std::uniform_int_distribution<int> uniform_int_N_minus_1(0, N-2);
+        detail::uniform_int_distribution<int> uniform_int_N_minus_1(0, N-2);
         particles.erase(particles.begin()+uniform_int_N_minus_1(gen));
         
 

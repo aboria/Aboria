@@ -5,6 +5,19 @@
 #include <boost/iterator/iterator_facade.hpp>
 #include "boost/mpl/contains.hpp"
 
+namespace thrust {
+namespace detail {
+
+template <>
+struct pointer_traits<thrust::null_type> {
+    typedef null_type raw_pointer;
+};
+
+}
+}
+
+
+
 namespace Aboria {
 namespace detail {
 
@@ -142,8 +155,11 @@ struct zip_helper<std::tuple<T ...>> {
     typedef std::tuple<typename std::iterator_traits<T>::value_type ...> tuple_value_type; 
     typedef std::tuple<typename std::iterator_traits<T>::reference ...> tuple_reference; 
     typedef std::tuple<typename std::iterator_traits<T>::pointer...> tuple_pointer; 
+    typedef tuple_pointer tuple_raw_pointer;
+    typedef tuple_reference tuple_raw_reference;
 
 
+    /*
 typedef std::tuple<
         typename detail::remove_pointer_or_reference_for_null_type<
             typename std::iterator_traits<T>::value_type*>::type...
@@ -154,6 +170,7 @@ typedef std::tuple<
         typename detail::remove_pointer_or_reference_for_null_type<
             typename std::iterator_traits<T>::value_type&>::type...
         > tuple_raw_reference; 
+    */
     typedef typename std::tuple<T...> iterator_tuple_type;
 
     template <unsigned int N>
@@ -209,13 +226,18 @@ struct zip_helper<thrust::tuple<T ...>> {
     typedef thrust::tuple<typename thrust::iterator_traits<T>::pointer...> tuple_pointer; 
 
     typedef thrust::tuple<
-        typename detail::remove_pointer_or_reference_for_null_type<
-            typename thrust::iterator_traits<T>::value_type*>::type...
+        typename thrust::detail::pointer_traits<
+            typename thrust::iterator_traits<T>::pointer
+            >::raw_pointer...
         > tuple_raw_pointer; 
+
+
     typedef thrust::tuple<
-        typename detail::remove_pointer_or_reference_for_null_type<
-            typename thrust::iterator_traits<T>::value_type&>::type...
+        typename thrust::detail::raw_reference<
+            typename thrust::iterator_traits<T>::reference
+            >::type...
         > tuple_raw_reference; 
+
     typedef typename thrust::tuple<T...> iterator_tuple_type;
 
     template <unsigned int N>

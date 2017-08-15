@@ -22,6 +22,7 @@ namespace thrust {
         typedef thrust::null_type reference;
         typedef thrust::null_type pointer;
     };
+   
 
     template <typename mpl_vector_type, typename tuple_type>
     struct iterator_system<Aboria::zip_iterator<tuple_type,mpl_vector_type>> {
@@ -54,6 +55,14 @@ struct getter_type;
 
 // what follows is a copy of thrust's detail/raw_reference_cast.h for Aboria's getter type
 namespace detail {
+
+    /*
+template <>
+struct pointer_traits<thrust::null_type> {
+    typedef null_type raw_pointer;
+};
+*/
+
 
 // specialize is_tuple_of_iterator_references to for getter_type to device_reference
 template<typename T1, typename T2, typename T3,
