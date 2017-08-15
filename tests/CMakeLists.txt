@@ -151,13 +151,16 @@ set(OperatorsTest
     )
 
 set(ConstructorsTestFile constructors.h)
+
 set(ConstructorsTest
     test_std_vector
     )
-
-set(ConstructorsTestCuda
+if (Aboria_USE_THRUST)
+    list(APPEND ConstructorsTest
     test_thrust_vector
     )
+endif()
+
 
 set(NeighboursTestFile neighbours.h)
 set(NeighboursTest
@@ -165,16 +168,15 @@ set(NeighboursTest
     test_std_vector_bucket_search_parallel
     test_std_vector_nanoflann_adaptor
     test_std_vector_octtree
-    test_thrust_vector_bucket_search_serial
-    test_thrust_vector_bucket_search_parallel
-    test_thrust_vector_octtree
     test_documentation
     )
-set(NeighboursTestCuda
+if (Aboria_USE_THRUST)
+    list(APPEND NeighboursTest
     test_thrust_vector_bucket_search_serial
     test_thrust_vector_bucket_search_parallel
     test_thrust_vector_octtree
     )
+endif()
 
 
 set(ParticleContainerTestFile particle_container.h)
@@ -183,10 +185,13 @@ set(ParticleContainerTest
     test_std_vector_bucket_search_parallel
     test_documentation
     )
-
-set(ParticleContainerTestCuda
+if (Aboria_USE_THRUST)
+    list(APPEND ParticleContainerTest 
     test_thrust_vector_bucket_search_parallel
     )
+endif()
+
+
 
 set(BDTestFile bd.h)
 set(BDTest

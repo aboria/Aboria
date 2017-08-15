@@ -15,6 +15,32 @@ set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wno-deprecated -std=c++11
 #list(APPEND CMAKE_CXX_FLAGS "-Wno-deprecated -std=c++11 -ftemplate-backtrace-limit=0")
 #set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} "-Wno-deprecated -std=c++11"")
 
+option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
+if (Aboria_USE_THRUST)
+    set(Aboria_USE_OPENMP ON CACHE BOOL "Use OpenMP for shared memory parallism" FORCE)
+    find_package(Thrust REQUIRED)
+    find_package(CUDA REQUIRED)
+
+    add_definitions(-D__aboria_have_thrust__)
+
+    option(Aboria_THRUST_TEST_NVCC "Turn on tests using nvcc" OFF)
+    #http://stackoverflow.com/questions/34996295/trying-to-get-cuda-7-5-to-work-with-gcc-5-x
+
+    add_definitions(-D_MWAITXINTRIN_H_INCLUDED)
+    set(
+    CUDA_NVCC_FLAGS
+    ${CUDA_NVCC_FLAGS};
+    --expt-relaxed-constexpr
+    --keep
+    -ftemplate-backtrace-limit=0
+    #-gencode arch=compute_20,code=sm_20
+    )
+    if (CMAKE_BUILD_TYPE STREQUAL Debug)
+        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)
+    endif()
+endif()
+
+
 option(Aboria_USE_OPENMP "Use OpenMP for shared memory parallism" OFF)
 if (Aboria_USE_OPENMP)
     find_package(OpenMP REQUIRED)
@@ -41,29 +67,6 @@ if (Aboria_USE_GPERFTOOLS)
 endif()
 
 
-option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
-if (Aboria_USE_THRUST)
-    find_package(Thrust REQUIRED)
-    find_package(CUDA REQUIRED)
-
-    add_definitions(-D__aboria_have_thrust__)
-
-    option(Aboria_THRUST_TEST_NVCC "Turn on tests using nvcc" OFF)
-    #http://stackoverflow.com/questions/34996295/trying-to-get-cuda-7-5-to-work-with-gcc-5-x
-
-    add_definitions(-D_MWAITXINTRIN_H_INCLUDED)
-    set(
-    CUDA_NVCC_FLAGS
-    ${CUDA_NVCC_FLAGS};
-    --expt-relaxed-constexpr
-    --keep
-    -ftemplate-backtrace-limit=0
-    #-gencode arch=compute_20,code=sm_20
-    )
-    if (CMAKE_BUILD_TYPE STREQUAL Debug)
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)
-    endif()
-endif()
 
 option(Aboria_USE_EIGEN "Use Eigen Linear Algebra library" OFF)
 if (Aboria_USE_EIGEN)
