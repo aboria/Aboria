@@ -96,7 +96,7 @@ endif()
 
 include_directories(src)
 include_directories(third-party)
-include_directories(SYSTEM ${CXXTEST_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS})
+include_directories(SYSTEM ${CXXTEST_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} ${THRUST_INCLUDE_DIR})
 
 enable_testing()
 if (CXXTEST_FOUND)
