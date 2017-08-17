@@ -364,6 +364,17 @@ struct getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>, MplVector
         return *this;
     }
 
+    template <typename T, typename Tag>
+    CUDA_HOST_DEVICE
+    getter_type& operator=(
+            const thrust::reference<
+                getter_type<T, mpl_vector_type>,
+                thrust::pointer<getter_type<T,mpl_vector_type>,Tag>
+                >& other) {
+        data = getter_type<T,mpl_vector_type>(other).data;
+        return *this;
+    }
+
     template <typename T1, typename T2> 
     CUDA_HOST_DEVICE
     bool operator==( const getter_type<T1,T2>& other) {

@@ -11,43 +11,48 @@ namespace Aboria {
 
 namespace detail {
 
-template <typename Traits>
-size_t concurrent_processes() {
+// TODO: this is a complicated mass of preprocessor, can I improve?
 #ifdef __aboria_have_thrust__
-    if (std::is_same<typename Traits::vector_unsigned_int,
-                     thrust::device_vector<unsigned int>>::value) {
+template <typename Traits>
+size_t concurrent_processes(
+        typename std::enable_if<
+            std::is_same<typename Traits::vector_unsigned_int,
+                         thrust::device_vector<unsigned int>>::value
+                         >::type* = 0) {
         // if using GPU just return "lots"
 #if THRUST_DEVICE_SYSTEM == THRUST_DEVICE_SYSTEM_CUDA
-        return 9999;
+    return 9999;
 #else
-        return omp_get_max_threads();
+    return omp_get_max_threads();
 #endif
-
-        /*
-        int deviceCount, device;
-        struct cudaDeviceProp properties;
-        cudaError_t cudaResultCode = cudaGetDeviceCount(&deviceCount);
-        if (cudaResultCode != cudaSuccess)
-            deviceCount = 0;
-        ASSERT(deviceCount > 0, "trying to use device vector without a device");
-        cudaGetDeviceProperties(&properties, 0);
-        if (properties.major != 9999) { // 9999 means emulation only
-            return properties.multiProcessorCount*properties.maxThreadsPerMultiProcessor;
-        } else {
-            //TODO: what should return here?
-            return 123;
-        }
-        */
-    }
-    
      
-#endif
+}
+
+template <typename Traits>
+size_t concurrent_processes(
+        typename std::enable_if<
+            !std::is_same<typename Traits::vector_unsigned_int,
+                         thrust::device_vector<unsigned int>>::value
+                         >::type* = 0) {
 #ifdef HAVE_OPENMP
     return omp_get_max_threads();
 #else
     return 1;
 #endif
 }
+
+#else // no thrust
+
+template <typename Traits>
+size_t concurrent_processes() {
+#ifdef HAVE_OPENMP
+    return omp_get_max_threads();
+#else
+    return 1;
+#endif
+}
+
+#endif 
 
 
 template <typename T>

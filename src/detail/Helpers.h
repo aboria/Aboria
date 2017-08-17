@@ -4,14 +4,23 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include "boost/mpl/contains.hpp"
+#include <thrust/iterator/iterator_traits.h>
 
 namespace thrust {
+    template <>
+    struct iterator_traits<thrust::null_type> {
+        typedef thrust::null_type value_type;
+        typedef thrust::null_type reference;
+        typedef thrust::null_type pointer;
+    };
+   
+
 namespace detail {
 
-template <>
-struct pointer_traits<thrust::null_type> {
-    typedef null_type raw_pointer;
-};
+    template <>
+    struct pointer_traits<thrust::null_type> {
+        typedef null_type raw_pointer;
+    };
 
 }
 }
@@ -67,10 +76,19 @@ struct get_elem_by_index {
 };
 
 
+
+
 template<typename tuple_type>
 struct getter_helper {};
 
 #ifdef __aboria_have_thrust__
+
+template<typename T>
+struct is_thrust_device_reference : std::false_type { };
+
+template<typename T>
+struct is_thrust_device_reference<thrust::device_reference<T>> : std::true_type { };
+
 template <typename ... T>
 struct getter_helper<thrust::tuple<T ...>> {
     typedef typename thrust::tuple<T...> tuple_type; 
@@ -88,6 +106,22 @@ struct getter_helper<thrust::tuple<T ...>> {
                         thrust::device_reference<   
                             typename std::remove_reference<T>::type>
                             >::type ...> tuple_device_reference; 
+
+    /* not needed anymore
+    typedef typename thrust::tuple<
+                    typename std::conditional<
+                        std::is_same<T,thrust::null_type>::value,
+                        T,
+                        typename std::conditional<
+                            is_thrust_device_reference<T>::value,
+                            typename T::value_type,
+                            typename std::decay<T>::type
+                        >::type
+                    >::type ...> tuple_value_type;
+                    */
+                        
+
+
     template <unsigned int N>
     using return_type = thrust::tuple_element<N,tuple_type>;
     typedef typename thrust::tuple_element<0,tuple_type>::type first_type; 
@@ -115,6 +149,9 @@ template <typename ... T>
 struct getter_helper<std::tuple<T ...>> {
     typedef typename std::tuple<T...> tuple_type; 
     typedef typename std::tuple<T& ...> tuple_reference; 
+    typedef typename std::tuple<
+                        typename std::decay<T>::type ...> tuple_value_type; 
+
     template <unsigned int N>
     using return_type = std::tuple_element<N,tuple_type>;
     typedef typename std::tuple_element<0,tuple_type>::type first_type; 
@@ -218,27 +255,143 @@ typedef std::tuple<
 
 
 #ifdef __aboria_have_thrust__
-template <typename ... T>
-struct zip_helper<thrust::tuple<T ...>> {
-    typedef thrust::tuple<T...> tuple_iterator_type; 
-    typedef thrust::tuple<typename thrust::iterator_traits<T>::value_type ...> tuple_value_type; 
-    typedef thrust::tuple<typename thrust::iterator_traits<T>::reference ...> tuple_reference; 
-    typedef thrust::tuple<typename thrust::iterator_traits<T>::pointer...> tuple_pointer; 
+template <typename T0,
+          typename T1,
+          typename T2,
+          typename T3,
+          typename T4,
+          typename T5,
+          typename T6,
+          typename T7,
+          typename T8,
+          typename T9
+          >
+struct zip_helper<thrust::tuple<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9>> {
+    typedef thrust::tuple<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9> tuple_iterator_type; 
+    typedef thrust::tuple<
+        typename thrust::iterator_traits<T0>::value_type, 
+        typename thrust::iterator_traits<T1>::value_type, 
+        typename thrust::iterator_traits<T2>::value_type, 
+        typename thrust::iterator_traits<T3>::value_type, 
+        typename thrust::iterator_traits<T4>::value_type, 
+        typename thrust::iterator_traits<T5>::value_type, 
+        typename thrust::iterator_traits<T6>::value_type, 
+        typename thrust::iterator_traits<T7>::value_type, 
+        typename thrust::iterator_traits<T8>::value_type, 
+        typename thrust::iterator_traits<T9>::value_type 
+        > tuple_value_type; 
+    typedef thrust::tuple<
+        typename thrust::iterator_traits<T0>::reference, 
+        typename thrust::iterator_traits<T1>::reference, 
+        typename thrust::iterator_traits<T2>::reference, 
+        typename thrust::iterator_traits<T3>::reference, 
+        typename thrust::iterator_traits<T4>::reference, 
+        typename thrust::iterator_traits<T5>::reference, 
+        typename thrust::iterator_traits<T6>::reference, 
+        typename thrust::iterator_traits<T7>::reference, 
+        typename thrust::iterator_traits<T8>::reference, 
+        typename thrust::iterator_traits<T9>::reference 
+        > tuple_reference; 
+    typedef thrust::tuple<
+        typename thrust::iterator_traits<T0>::pointer, 
+        typename thrust::iterator_traits<T1>::pointer, 
+        typename thrust::iterator_traits<T2>::pointer, 
+        typename thrust::iterator_traits<T3>::pointer, 
+        typename thrust::iterator_traits<T4>::pointer, 
+        typename thrust::iterator_traits<T5>::pointer, 
+        typename thrust::iterator_traits<T6>::pointer, 
+        typename thrust::iterator_traits<T7>::pointer, 
+        typename thrust::iterator_traits<T8>::pointer, 
+        typename thrust::iterator_traits<T9>::pointer 
+        > tuple_pointer; 
 
     typedef thrust::tuple<
-        typename thrust::detail::pointer_traits<
-            typename thrust::iterator_traits<T>::pointer
-            >::raw_pointer...
-        > tuple_raw_pointer; 
-
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T0>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T1>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T2>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T3>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T4>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T5>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T6>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T7>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T8>::value_type*
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::iterator_traits<T9>::value_type*
+            >::type
+                > tuple_raw_pointer; 
 
     typedef thrust::tuple<
-        typename thrust::detail::raw_reference<
-            typename thrust::iterator_traits<T>::reference
-            >::type...
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T0>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T1>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T2>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T3>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T4>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T5>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T6>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T7>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T8>::reference
+                >::type
+            >::type,
+        typename remove_pointer_or_reference_for_null_type< 
+            typename thrust::detail::raw_reference<
+                typename thrust::iterator_traits<T9>::reference
+                >::type
+            >::type
         > tuple_raw_reference; 
 
-    typedef typename thrust::tuple<T...> iterator_tuple_type;
+    typedef tuple_iterator_type iterator_tuple_type;
 
     template <unsigned int N>
     using tuple_element = thrust::tuple_element<N,iterator_tuple_type>;

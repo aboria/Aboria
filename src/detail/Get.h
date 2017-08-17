@@ -16,14 +16,6 @@
 
 #if __aboria_have_thrust__
 namespace thrust {
-    template <>
-    struct iterator_traits<thrust::null_type> {
-        typedef thrust::null_type value_type;
-        typedef thrust::null_type reference;
-        typedef thrust::null_type pointer;
-    };
-   
-
     template <typename mpl_vector_type, typename tuple_type>
     struct iterator_system<Aboria::zip_iterator<tuple_type,mpl_vector_type>> {
     };
