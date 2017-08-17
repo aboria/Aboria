@@ -4,6 +4,8 @@
 
 #include <boost/iterator/iterator_facade.hpp>
 #include "boost/mpl/contains.hpp"
+
+#ifdef __aboria_have_thrust__
 #include <thrust/iterator/iterator_traits.h>
 
 namespace thrust {
@@ -24,6 +26,7 @@ namespace detail {
 
 }
 }
+#endif
 
 
 

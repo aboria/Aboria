@@ -227,7 +227,16 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<get<position>(*(this->m_query.m_particles_begin+i))<<" contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                if (m_serial) {
+                    LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                } else {
+                     LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]);
+
+                }
             }
             LOG(4,"\tend linked list:");
         }
@@ -275,9 +284,16 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<
+                if (m_serial) {
+                    LOG(4,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                         " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                } else {
+                     LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]);
+
+                }
             }
             LOG(4,"\tend linked list:");
         }
@@ -323,9 +339,16 @@ private:
             }
             LOG(4,"\tend buckets");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<
+                if (m_serial) {
+                    LOG(4,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                         " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                } else {
+                     LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]);
+
+                }
             }
         }
 #endif
@@ -460,9 +483,16 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<
+                if (m_serial) {
+                    LOG(4,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                         " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                } else {
+                     LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]);
+
+                }
             }
             LOG(4,"\tend linked list:");
         }
@@ -518,9 +548,16 @@ private:
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
             for (int i = 0; i<m_linked_list.size(); ++i) {
-                LOG(4,"\ti = "<<i<<" p = "<<
+                if (m_serial) {
+                    LOG(4,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                         " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                } else {
+                     LOG(4,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]);
+
+                }
             }
             LOG(4,"\tend linked list:");
         }
