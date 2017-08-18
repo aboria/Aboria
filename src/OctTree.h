@@ -186,7 +186,7 @@ private:
         this->m_query.m_number_of_particles = this->m_particles_end
                                              -this->m_particles_begin;
 
-        return true;
+        return false;
     }
      
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
