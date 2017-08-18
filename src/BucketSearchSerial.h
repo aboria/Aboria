@@ -380,6 +380,7 @@ private:
                                 n_after_deleted : n_deleted;
         const size_t start_index_copied = n_after_deleted < n_deleted ?
                                  start_index_deleted + n_deleted : oldn - n_deleted;
+        LOG(4, "bucket_search_serial:delete_points_impl: oldn = "<<oldn<<" newn = "<<newn<<" n_after_deleted = "<<n_after_deleted<<" n_copied = "<<n_copied<<" start_index_copied = "<<start_index_copied<<" start_index_deleted = "<<start_index_deleted);
         
         if (m_serial ) {
             // if running in serial and number of particles is small,
@@ -410,11 +411,10 @@ private:
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
         const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
         const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
-        ASSERT(toi != fromi,"toi and fromi are the same");
         if (m_serial) {
-            copy_points_per_particle(toi,fromi,1,1);
+            copy_points_per_particle(toi,fromi,toi!=fromi,1);
         } else {
-            copy_points_per_bucket(toi,fromi,1,1);
+            copy_points_per_bucket(toi,fromi,toi!=fromi,1);
         }
 
         //check_data_structure();
@@ -451,12 +451,11 @@ private:
             }
         }
 
-
         // setup links to fromi point to toi 
         for (int fromi = start_index_copied; fromi < start_index_copied+n_copied; ++fromi) {
             const int toi = start_index_deleted + fromi - start_index_copied;
             ASSERT(toi != fromi,"toi and fromi are the same");
-            
+
             const int forwardi = m_linked_list[fromi];
             const int backwardsi = m_linked_list_reverse[fromi];
             if (forwardi != detail::get_empty_id()) { //check this

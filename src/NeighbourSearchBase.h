@@ -259,7 +259,6 @@ public:
                 (m_particles_end-copy_to_iterator>0),"invalid copy to iterator");
         ASSERT((copy_from_iterator-m_particles_begin>=0) && 
                 (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
-        if (copy_to_iterator==copy_from_iterator) return;
         cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
     }
 

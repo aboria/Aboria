@@ -667,9 +667,9 @@ public:
                     LOG(3,"Particle: delete_particles: deleting particle "<<
                             get<id>(*i)<<" with position "<<
                             static_cast<const double_d&>(get<position>(*i)));
+                    if (update_search) search.copy_points(end()-1,i);
                     if ((index < size()-1) && (size() > 1)) {
                         *i = *(end()-1);
-                        if (update_search) search.copy_points(end()-1,i);
                         pop_back(false);
                         i = begin() + index;
                     } else {
