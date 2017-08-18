@@ -509,14 +509,20 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     	    particles.init_neighbour_search(min,max,periodic,neighbour_n);
         }
 
-        // randomly delete a few particles
+        // delete random particle
         detail::uniform_int_distribution<int> uniform_int_N(0, N-1);
         get<alive>(particles)[uniform_int_N(gen)] = false;
+
+        // delete first particle
+        get<alive>(particles)[0] = false;
         particles.delete_particles();
 
-        detail::uniform_int_distribution<int> uniform_int_N_minus_1(0, N-2);
+        // delete random particle
+        detail::uniform_int_distribution<int> uniform_int_N_minus_1(0, N-3);
         particles.erase(particles.begin()+uniform_int_N_minus_1(gen));
         
+        // delete last particle
+        particles.erase(particles.begin()+particles.size()-1);
 
         // brute force search
         auto t0 = Clock::now();
@@ -566,12 +572,12 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
              template <typename> class SearchMethod>
     void helper_d_test_list_random(bool test_push_back=true) {
         
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,false);
-        helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,false);
+        helper_d_random<1,VectorType,SearchMethod>(14,0.1,1,false,false);
+        helper_d_random<1,VectorType,SearchMethod>(14,0.1,1,true,false);
 
         if (test_push_back) {
-            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,false,true);
-            helper_d_random<1,VectorType,SearchMethod>(10,0.1,1,true,true);
+            helper_d_random<1,VectorType,SearchMethod>(14,0.1,1,false,true);
+            helper_d_random<1,VectorType,SearchMethod>(14,0.1,1,true,true);
         }
 
         helper_d_random<1,VectorType,SearchMethod>(1000,0.1,10,true,false);

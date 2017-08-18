@@ -75,7 +75,7 @@ namespace Aboria {
 template <unsigned int NI, unsigned int NJ, typename Blocks>
 class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks>> {
 
-        typedef typename tuple_ns::tuple_element<0,Blocks>::type first_block_type;
+        typedef typename std::tuple_element<0,Blocks>::type first_block_type;
     public:
 
         // Expose some compile-time information to Eigen:
@@ -153,12 +153,12 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
         }
 
         template <unsigned int I, unsigned int J>
-        const typename tuple_ns::tuple_element<I*NJ+J,Blocks>::type& 
+        const typename std::tuple_element<I*NJ+J,Blocks>::type& 
         get_kernel() const {
-            return tuple_ns::get<I*NJ+J>(m_blocks);
+            return std::get<I*NJ+J>(m_blocks);
         }
 
-        const typename tuple_ns::tuple_element<0,Blocks>::type& 
+        const typename std::tuple_element<0,Blocks>::type& 
         get_first_kernel() const {
             return get_kernel<0,0>();
         }
@@ -193,12 +193,12 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
 
         template<std::size_t... I>
         Index rows_impl(detail::index_sequence<I...>) const {
-            return detail::sum(tuple_ns::get<I*NJ>(m_blocks).rows()...);
+            return detail::sum(std::get<I*NJ>(m_blocks).rows()...);
         }
 
         template<std::size_t... J>
         Index cols_impl(detail::index_sequence<J...>) const {
-            return detail::sum(tuple_ns::get<J>(m_blocks).cols()...);
+            return detail::sum(std::get<J>(m_blocks).cols()...);
         }
 
         template <int I>
@@ -208,7 +208,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
 
         template <int I>
         Index size_col() const {
-            return tuple_ns::get<I>(m_blocks).cols();
+            return std::get<I>(m_blocks).cols();
         }
 
         template <int I>
@@ -218,7 +218,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
 
         template <int I>
         Index size_row() const {
-            return tuple_ns::get<I*NJ>(m_blocks).rows();
+            return std::get<I*NJ>(m_blocks).rows();
         }
 
         template <typename block_type>
@@ -235,7 +235,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
                      (j>=start_col<I%NJ>())&&(j<start_col<I%NJ+1>()))?
                         (coeff_impl_block(i-start_row<I/NJ>(),
                                           j-start_col<I%NJ>(),
-                                          tuple_ns::get<I>(m_blocks))):
+                                          std::get<I>(m_blocks))):
                         (0.0)...
                     );
         }
@@ -260,7 +260,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
             int dummy[] = { 0, (
                     assemble_block_impl(
                         start_row<I/NJ>(),start_col<I%NJ>(),
-                        triplets,tuple_ns::get<I>(m_blocks)),void(),0)... };
+                        triplets,std::get<I>(m_blocks)),void(),0)... };
             static_cast<void>(dummy);
         }
 
@@ -272,7 +272,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
                         matrix.block(start_row<I/NJ>(),start_col<I%NJ>()
                         ,start_row<I/NJ+1>()-start_row<I/NJ>()
                         ,start_col<I%NJ+1>()-start_col<I%NJ>())
-                        ,tuple_ns::get<I>(m_blocks)),void(),0)... };
+                        ,std::get<I>(m_blocks)),void(),0)... };
             static_cast<void>(dummy);
         }
 
@@ -298,13 +298,13 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
 /// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelDense<RowParticles,ColParticles,F>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_dense_operator(const RowParticles& row_particles,
                                const ColParticles& col_particles,
                                const F& function) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles,function)
                     )
                 );
@@ -328,13 +328,13 @@ Operator create_dense_operator(const RowParticles& row_particles,
 /// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelMatrix<RowParticles,ColParticles,F>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_matrix_operator(const RowParticles& row_particles,
                                const ColParticles& col_particles,
                                const F& function) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles,function)
                     )
                 );
@@ -362,14 +362,14 @@ Operator create_matrix_operator(const RowParticles& row_particles,
 /// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelChebyshev<RowParticles,ColParticles,F>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_chebyshev_operator(const RowParticles& row_particles,
                                const ColParticles& col_particles,
                                const unsigned int n,
                                const F& function) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles,n,function)
                     )
                 );
@@ -396,13 +396,13 @@ Operator create_chebyshev_operator(const RowParticles& row_particles,
 /// \tparam F The type of the function object
 template<unsigned int N, typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelFMM<RowParticles,ColParticles,F,N>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_fmm_operator(const RowParticles& row_particles,
                                const ColParticles& col_particles,
                                const F& function) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles,function)
                     )
                 );
@@ -430,13 +430,13 @@ Operator create_fmm_operator(const RowParticles& row_particles,
 /// \tparam F The type of the function object
 template<unsigned int N, typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelH2<RowParticles,ColParticles,F,N>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_h2_operator(const RowParticles& row_particles,
                                const ColParticles& col_particles,
                                const F& function) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles,function)
                     )
                 );
@@ -461,12 +461,12 @@ template<typename OldKernel, typename RowParticles,
                                   typename OldKernel::col_particles_type,
                                   typename OldKernel::position_function_type,
                                   OldKernel::expansion_N>,
-         typename NewOperator=MatrixReplacement<1,1,tuple_ns::tuple<NewKernel>>
+         typename NewOperator=MatrixReplacement<1,1,std::tuple<NewKernel>>
                 >
 NewOperator create_h2_operator(const OldKernel& h2_kernel,
                             const RowParticles& row_particles) {
         return NewOperator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     NewKernel(h2_kernel,row_particles)
                     )
                 );
@@ -497,7 +497,7 @@ NewOperator create_h2_operator(const OldKernel& h2_kernel,
 /// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename FRadius, typename F,
          typename Kernel=KernelSparse<RowParticles,ColParticles,FRadius,F>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>,
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>,
          typename = typename std::enable_if<!std::is_arithmetic<FRadius>::value>::type
                 >
 Operator create_sparse_operator(const RowParticles& row_particles,
@@ -505,7 +505,7 @@ Operator create_sparse_operator(const RowParticles& row_particles,
                                 const FRadius& radius_function,
                                 const F& function) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles,radius_function,function)
                     )
                 );
@@ -535,14 +535,14 @@ Operator create_sparse_operator(const RowParticles& row_particles,
 /// \tparam F The type of the function object
 template<typename RowParticles, typename ColParticles, typename F,
          typename Kernel=KernelSparseConst<RowParticles,ColParticles,F>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_sparse_operator(const RowParticles& row_particles,
                                 const ColParticles& col_particles,
                                 const double radius,
                                 const F& function) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles,radius,function)
                     )
                 );
@@ -564,12 +564,12 @@ Operator create_sparse_operator(const RowParticles& row_particles,
 /// \tparam ColParticles The type of the column particle set
 template<typename RowParticles, typename ColParticles,
          typename Kernel=KernelZero<RowParticles,ColParticles>,
-         typename Operator=MatrixReplacement<1,1,tuple_ns::tuple<Kernel>>
+         typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_zero_operator(const RowParticles& row_particles,
                                const ColParticles& col_particles) {
         return Operator(
-                tuple_ns::make_tuple(
+                std::make_tuple(
                     Kernel(row_particles,col_particles)
                     )
                 );
@@ -580,10 +580,10 @@ Operator create_zero_operator(const RowParticles& row_particles,
 /// creates a matrix-free linear block operator for use with Eigen
 ///
 template <unsigned int NI, unsigned int NJ, typename ... T>
-MatrixReplacement<NI,NJ,tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...>>
+MatrixReplacement<NI,NJ,std::tuple<typename std::tuple_element<0,T>::type...>>
 create_block_operator(const MatrixReplacement<1,1,T>&... operators) {
-    typedef tuple_ns::tuple<typename tuple_ns::tuple_element<0,T>::type...> tuple_type;
-    return MatrixReplacement<NI,NJ,tuple_type>(tuple_type(tuple_ns::get<0>(operators.m_blocks)...));
+    typedef std::tuple<typename std::tuple_element<0,T>::type...> tuple_type;
+    return MatrixReplacement<NI,NJ,tuple_type>(tuple_type(std::get<0>(operators.m_blocks)...));
 }
 
 

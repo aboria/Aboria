@@ -256,7 +256,7 @@ class RASMPreconditioner {
     void analyze_impl(const MatrixReplacement<NI,NJ,Blocks>& mat, 
                         detail::index_sequence<I...>) {
         int dummy[] = { 0, 
-          (analyze_impl_block(mat.template start_row<I>(),tuple_ns::get<I*NJ+I>(mat.m_blocks)),0)... 
+          (analyze_impl_block(mat.template start_row<I>(),std::get<I*NJ+I>(mat.m_blocks)),0)... 
             };
         static_cast<void>(dummy);
     }
