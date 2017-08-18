@@ -489,6 +489,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         std::cout << "random test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<" push_back_construction = "<<push_back_construction<<"):" << std::endl;
 
         unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+        std::cout << "seed is "<< seed1 << std::endl;
         particles.set_seed(seed1);
         generator_type gen(seed1); 
         detail::uniform_real_distribution<float> uniform(-1.0, 1.0);
