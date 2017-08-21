@@ -40,6 +40,7 @@ if (Aboria_RUN_TESTS)
         BDTest
         SPHTest
         MDTest
+        MDLevel1Test
         DiffusionAroundSpheres
         RbfInterpolationTest
         RbfPdeTest
@@ -215,6 +216,21 @@ set(MDTest
     test_nanoflann_adaptor
     test_octtree
     )
+
+set(MDLevel1TestFile md_level1.h)
+set(MDLevel1Test "")
+if (Aboria_USE_THRUST)
+    list(APPEND MDLevel1Test
+    test_std_vector_bucket_search_serial
+    test_std_vector_bucket_search_parallel
+    test_std_vector_octtree
+    test_thrust_vector_bucket_search_serial
+    test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_octtree
+    )
+endif()
+
+
  
 set(RbfInterpolationTestFile rbf_interpolation.h)
 set(RbfInterpolationTest 
@@ -299,7 +315,7 @@ foreach(test_suite ${test_suites})
                 PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=3")
         endforeach()
     endif()
-    foreach(test_name ${${test_suite}Cuda})
+    foreach(test_name ${${test_suite}})
         if (Aboria_THRUST_TEST_NVCC)
             add_test(NAME ${test_suite}__NVCC:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite}_nvcc ${test_suite} ${test_name})
         endif()

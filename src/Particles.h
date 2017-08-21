@@ -337,8 +337,10 @@ public:
         size_t old_n = this->size();
         traits_type::resize(data,n);         
         if (n > old_n) {
-            const size_t *start_id_pointer = iterator_to_raw_pointer(get<id>(data).begin() + old_n); 
-            detail::for_each(begin()+old_n, end(), detail::resize_lambda<raw_reference>(seed,next_id,start_id_pointer));
+            const size_t *start_id_pointer = 
+                iterator_to_raw_pointer(get<id>(data).begin() + old_n); 
+            detail::for_each(begin()+old_n, end(), 
+                detail::resize_lambda<raw_reference>(seed,next_id,start_id_pointer));
             next_id += n-old_n;
         }
     }
@@ -561,6 +563,8 @@ public:
     /// is periodic (true) or not (false)
     void init_neighbour_search(const double_d& low, const double_d& high, const bool_d& periodic,
                                 const unsigned int n_particles_in_leaf=10) {
+        LOG(2, "Particles:init_neighbour_search: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" n_particles_in_leaf = "<<n_particles_in_leaf);
+
         search.set_domain(low,high,periodic,n_particles_in_leaf);
 
         enforce_domain(search.get_min(),search.get_max(),search.get_periodic());

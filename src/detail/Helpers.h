@@ -435,6 +435,7 @@ struct zip_helper<thrust::tuple<T0,T1,T2,T3,T4,T5,T6,T7,T8,T9>> {
     }
 
     template <std::size_t... I>
+    CUDA_HOST_DEVICE
     static tuple_raw_pointer make_raw_pointer(const tuple_iterator_type& arg, 
             index_sequence<I...>) {
         return tuple_raw_pointer(

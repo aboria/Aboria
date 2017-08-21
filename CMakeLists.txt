@@ -34,6 +34,8 @@ if (Aboria_USE_THRUST)
     --keep
     -ftemplate-backtrace-limit=0
     #-gencode arch=compute_20,code=sm_20
+    #(kepler)
+    -gencode arch=compute_35,code=sm_35 
     )
     if (CMAKE_BUILD_TYPE STREQUAL Debug)
         set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)

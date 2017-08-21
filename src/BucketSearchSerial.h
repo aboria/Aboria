@@ -569,7 +569,7 @@ private:
             for (size_t i = start_adding; i<stop_adding; ++i) {
                 const double_d& r = get<position>(this->m_particles_begin)[i];
                 const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-                ASSERT(bucketi < m_buckets.size() && bucketi >= 0, "bucket index out of range");
+                ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
                 const int bucket_entry = m_buckets[bucketi];
 
                 // Insert into own cell
@@ -697,14 +697,14 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
     void operator()(const unsigned int i) {
         const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(m_positions[i]);
 
+        //printf("insert_points_lambda: i = %d, bucketi = %d",i,bucketi);
+
         //try inserting at head of the list
         #if defined(__CUDA_ARCH__)
-        bool success;
         int next;
         do {
             next = m_buckets[bucketi];
-            success = atomicCAS(m_buckets + bucketi, next, i);
-        } while (!success);
+        } while (atomicCAS(m_buckets + bucketi, next, i) != i);
         #else
         int next = m_buckets[bucketi];
         while (!__atomic_compare_exchange_n(m_buckets + bucketi, &next, i, 

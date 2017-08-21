@@ -896,26 +896,23 @@ public:
         typedef const typename detail::zip_helper<iterator_tuple_type>::template tuple_element<N>::type type;
     };
 
+    CUDA_HOST_DEVICE
     zip_iterator() {}
 
+    CUDA_HOST_DEVICE
     explicit zip_iterator(iterator_tuple_type iter) : iter(iter) {}
 
     template <typename ...T>
+    CUDA_HOST_DEVICE
     explicit zip_iterator(T... args) : iter(args...) {}
 
     CUDA_HOST_DEVICE
     const iterator_tuple_type & get_tuple() const { 
-        #if defined(__CUDA_ARCH__)
-        ERROR_CUDA("Cannot use `zip_iterator` in device code");
-        #endif
         return iter; 
     }
 
     CUDA_HOST_DEVICE
     iterator_tuple_type & get_tuple() { 
-        #if defined(__CUDA_ARCH__)
-        ERROR_CUDA("Cannot use `zip_iterator` in device code");
-        #endif
         return iter; 
     }
 
@@ -949,9 +946,6 @@ private:
 
     CUDA_HOST_DEVICE
     difference_type distance_to(zip_iterator const& other) const { 
-        #if defined(__CUDA_ARCH__)
-        ERROR_CUDA("Cannot use `zip_iterator` in device code");
-        #endif
         return thrust::get<0>(other.iter) 
              - thrust::get<0>(iter);
     }

@@ -737,7 +737,7 @@ struct octtree_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     child_iterator get_children(const child_iterator& ci) const {
-        ASSERT(*ci >= 0, "ERROR: bucket is a leaf!");
+        ASSERT_CUDA(*ci >= 0);
         return child_iterator((m_nodes_begin + *ci), ci.get_bounds());
     }
 
@@ -763,7 +763,7 @@ struct octtree_query {
     iterator_range<particle_iterator> 
     CUDA_HOST_DEVICE
     get_bucket_particles(reference bucket) const {
-        ASSERT(detail::is_leaf(bucket), "ERROR: bucket is not a leaf!");
+        ASSERT_CUDA(detail::is_leaf(bucket));
         const int leaf_idx = detail::get_leaf_offset(bucket);
         const vint2& particle_idxs = m_leaves_begin[leaf_idx];
 #ifndef __CUDA_ARCH__

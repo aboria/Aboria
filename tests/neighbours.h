@@ -505,7 +505,9 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
             }
         } else {
             particles.resize(N);
-            detail::for_each(std::begin(particles),std::end(particles),set_random_position<D,typename particles_type::raw_reference>(-1.0,1.0));
+            detail::for_each(std::begin(particles),std::end(particles),
+                set_random_position
+                    <D,typename particles_type::raw_reference>(-1.0,1.0));
             
     	    particles.init_neighbour_search(min,max,periodic,neighbour_n);
         }
