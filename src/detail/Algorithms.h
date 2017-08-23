@@ -196,14 +196,22 @@ void fill( ForwardIt first, ForwardIt last, const T& value) {
     fill(first,last,value,typename is_std_iterator<ForwardIt>::type());
 }
 
-template< class InputIt, class UnaryFunction >
-#ifdef __aboria_use_thrust_algorithms__
-InputIt for_each( InputIt first, InputIt last, UnaryFunction f ) {
-    return thrust::for_each(first,last,f);
-#else
-UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f ) {
+template< class InputIt, class UnaryFunction>
+UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f, std::true_type) {
     return std::for_each(first,last,f);
+}
+
+#ifdef __aboria_have_thrust__
+template< class InputIt, class UnaryFunction>
+UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f, std::false_type) {
+    thrust::for_each(first,last,f);
+    return f;
+}
 #endif
+
+template< class InputIt, class UnaryFunction>
+UnaryFunction for_each( InputIt first, InputIt last, UnaryFunction f) {
+    return for_each(first,last,f,typename is_std_iterator<InputIt>::type());
 }
 
 template<typename RandomIt>

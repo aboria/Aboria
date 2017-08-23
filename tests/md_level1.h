@@ -71,7 +71,7 @@ public:
 #else
             std::uniform_real_distribution<double> uni(0,1);
 #endif
-            generator_type& gen = thrust::raw_reference_cast(get<generator>(i));
+            generator_type& gen = get<generator>(i);
             get<position>(i) = vdouble2(uni(gen),uni(gen));
         }
     };
@@ -102,7 +102,7 @@ public:
                 }
             }
             get<velocity>(i) += dt*force_sum/mass;
-            get<position>(i) += dt*thrust::raw_reference_cast(get<velocity>(i));
+            get<position>(i) += dt*get<velocity>(i);
         }
     };
 
@@ -173,6 +173,7 @@ public:
             for (int i = 0; i < timesteps_per_out; i++) {
                 thrust::for_each(particles.begin(),particles.end(),
                         timestep_lambda<query_type>(particles.get_query(),diameter,k,dt,mass));
+                particles.update_positions();
             }
         }
         std::cout << std::endl;

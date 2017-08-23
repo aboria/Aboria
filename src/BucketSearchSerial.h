@@ -588,7 +588,8 @@ private:
                                      m_point_to_bucket_index,
                                      iterator_to_raw_pointer(m_buckets.begin()),
                                      iterator_to_raw_pointer(m_dirty_buckets.begin()),
-                                     iterator_to_raw_pointer(m_linked_list.begin())));
+                                     iterator_to_raw_pointer(m_linked_list.begin())),
+                typename detail::is_std_iterator<typename vector_int::iterator>::type());
         }
     }
 

@@ -99,6 +99,7 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     static iterator_range<periodic_iterator_type> get_periodic_range(const bool_d is_periodic) {
         int_d start,end;
         for (int i = 0; i < dimension; ++i) {
@@ -111,17 +112,21 @@ public:
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     search_iterator():
         m_valid(false)
     {}
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     search_iterator(const search_iterator&) = default;
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     search_iterator(search_iterator&&) = default;
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     search_iterator(const Query &query,
                     const double_d &r,
                     const double max_distance):
@@ -173,28 +178,34 @@ public:
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     search_iterator& operator=(const search_iterator&) = default;
     
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     reference operator *() const {
         return dereference();
     }
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     reference operator ->() {
         return dereference();
     }
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     search_iterator& operator++() {
         increment();
         return *this;
     }
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     search_iterator operator++(int) {
         search_iterator tmp(*this);
         operator++();
         return tmp;
     }
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     size_t operator-(search_iterator start) const {
         size_t count = 0;
         while (start != *this) {
@@ -204,10 +215,12 @@ public:
         return count;
     }
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     inline bool operator==(const search_iterator& rhs) {
         return equal(rhs);
     }
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     inline bool operator!=(const search_iterator& rhs){
         return !operator==(rhs);
     }
@@ -215,6 +228,7 @@ public:
  private:
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     bool equal(search_iterator const& other) const {
         return m_valid ? 
                     m_current_particle == other.m_current_particle
@@ -224,6 +238,7 @@ public:
 
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     bool get_valid_bucket() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_valid_bucket:"); 
@@ -248,6 +263,7 @@ public:
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     bool get_valid_candidate() {
         while (m_current_particle == m_particle_range.end()) {
 #ifndef __CUDA_ARCH__
@@ -264,6 +280,7 @@ public:
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     bool go_to_next_candidate() {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tgo_to_next_candidate (search_iterator):"); 
@@ -275,6 +292,7 @@ public:
     
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     bool check_candidate() {
         //const double_d& p = get<position>(*m_current_particle) + m_particle_range.get_transpose();
         const double_d& p = get<position>(*m_current_particle); 
@@ -296,6 +314,7 @@ public:
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     void increment() {
 #ifndef __CUDA_ARCH__
         LOG(3,"\tincrement (search_iterator):"); 
@@ -315,6 +334,7 @@ public:
 
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     reference dereference() const
     { return reference(*m_current_particle,m_dx); }
 
@@ -361,9 +381,9 @@ manhatten_search(const Query& query,
             );
 }
 
-ABORIA_HOST_DEVICE_IGNORE_WARN
 template<typename Query,
          typename SearchIterator = search_iterator<Query,2>>
+CUDA_HOST_DEVICE
 iterator_range<SearchIterator> 
 euclidean_search(const Query& query, 
            const typename Query::double_d& centre,
@@ -374,10 +394,10 @@ euclidean_search(const Query& query,
             );
 }
 
-ABORIA_HOST_DEVICE_IGNORE_WARN
 template<int LNormNumber,
          typename Query,
          typename SearchIterator = search_iterator<Query,LNormNumber>>
+CUDA_HOST_DEVICE
 iterator_range<SearchIterator> 
 distance_search(const Query& query, 
            const typename Query::double_d& centre,
