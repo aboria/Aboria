@@ -580,7 +580,14 @@ private:
                 if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
             }
         } else {
+#if defined(__CUDACC__)
+            typedef typename thrust::detail::iterator_category_to_system<
+                typename vector_int::iterator::iterator_category
+                >::type system;
+            detail::counting_iterator<unsigned int,system> count(0);
+#else
             detail::counting_iterator<unsigned int> count(0);
+#endif
             detail::for_each(count + start_adding,
                              count + stop_adding, 
                 insert_points_lambda(iterator_to_raw_pointer(

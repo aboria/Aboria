@@ -123,10 +123,7 @@ struct upper_bound_impl {
 
 #if defined(__CUDACC__)
 
-template <typename T>
-using counting_iterator = thrust::counting_iterator<T>;
-
-template <typename T>
+template <typename T, typename System=thrust::use_default>
 using counting_iterator = thrust::counting_iterator<T>;
 
 template <typename T>
