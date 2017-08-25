@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 //#include <math.h>
 #include <cmath>
 #include "CudaInclude.h"
+#include <boost/serialization/nvp.hpp>
 
 #include <iostream>
 
