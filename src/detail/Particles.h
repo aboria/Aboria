@@ -46,7 +46,7 @@ namespace detail {
 template <typename reference>
 struct write_from_tuple {
     typedef typename reference::tuple_type tuple_type;
-    typedef typename reference::mpl_type_vector mpl_type_vector;
+    typedef typename reference::mpl_vector_type mpl_type_vector;
     template <typename U>
     using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
 
@@ -119,7 +119,8 @@ struct read_into_tuple {
 template <typename reference>
 struct setup_datas_for_writing {
     typedef typename reference::tuple_type tuple_type;
-    typedef typename reference::mpl_type_vector mpl_type_vector;
+    typedef typename reference::mpl_vector_type mpl_type_vector;
+
     template <typename U>
     using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
 
