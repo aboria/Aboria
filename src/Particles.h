@@ -760,6 +760,11 @@ public:
         return stream;
     }
 
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        traits_type::serialize(data,ar,version);
+    }
+
 
 #ifdef HAVE_VTK
     

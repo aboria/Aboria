@@ -341,6 +341,11 @@ public:
 	T *data() {
 		return mem;
 	}
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        ar & BOOST_SERIALIZATION_NVP(mem);
+    }
 private:
 	T mem[N];
 };

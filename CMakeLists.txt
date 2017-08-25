@@ -52,7 +52,7 @@ if (Aboria_USE_OPENMP)
 endif()
 
 
-find_package(Boost 1.50.0 REQUIRED)
+find_package(Boost 1.50.0 REQUIRED serialization)
 
 option(Aboria_USE_VTK "Use VTK library" OFF)
 if (Aboria_USE_VTK)

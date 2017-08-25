@@ -8,6 +8,8 @@
 #include <tuple>
 #include <vector>
 #include <boost/iterator/counting_iterator.hpp>
+#include <boost/serialization/vector.hpp>
+#include <boost/serialization/nvp.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <algorithm>
 
@@ -340,6 +342,12 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
         static_cast<void>(dummy); // Avoid warning for unused variable.
     }
 
+    template<class Archive, std::size_t... I>
+    static void serialize_impl(const data_type& data, Archive &ar, const unsigned int version, detail::index_sequence<I...>) {
+        int dummy[] = { 0, (void(ar & boost::serialization::make_nvp(typename mpl::at<mpl_type_vector,mpl::int_<I>>::type().name, get_by_index<I>(data))),0)... };
+        static_cast<void>(dummy); // Avoid warning for unused variable.
+    }
+
     template<typename Indices = detail::make_index_sequence<N>>
     static iterator begin(data_type& data) {
         return begin_impl(data, Indices());
@@ -433,6 +441,11 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     template<class InputIterator, typename Indices = detail::make_index_sequence<N>>
     static void from_stream(InputIterator i, std::istream& is) {
         from_stream_impl(i, is, Indices());
+    }
+
+    template<class Archive, typename Indices = detail::make_index_sequence<N>>
+    static void serialize(const data_type& data, Archive &ar, const unsigned int version) {
+        serialize_impl(data,ar,version,Indices());
     }
 
     typedef typename position_vector_type::size_type size_type; 

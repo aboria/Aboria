@@ -37,6 +37,7 @@
 #include <iostream>
 
 #include "CudaInclude.h"
+#include <boost/serialization/nvp.hpp>
 
 #ifdef __GNUC__
     #include <stdint.h>                 // respecting the C99 standard.
@@ -330,6 +331,14 @@ public:
     {
         return 5;
     }
+
+    template<class Archive>
+    void serialize(Archive & ar, const unsigned int version) {
+        ar & BOOST_SERIALIZATION_NVP(_k);
+        ar & BOOST_SERIALIZATION_NVP(_s);
+        ar & BOOST_SERIALIZATION_NVP(_o);
+        ar & BOOST_SERIALIZATION_NVP(_o_counter);
+    }
     
 private:
     CUDA_HOST_DEVICE
@@ -400,6 +409,8 @@ private:
         }
         _s[0] += z;
     }
+
+    
     
 private:
     uint64_t _k[4];             // key

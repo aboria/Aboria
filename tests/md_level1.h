@@ -166,7 +166,6 @@ public:
              * unstructured grid file
              */
             std::cout << "." << std::flush;
-            std::cout << particles;
 #ifdef HAVE_VTK
             vtkWriteGrid("particles",io,particles.get_grid(true));
 #endif
