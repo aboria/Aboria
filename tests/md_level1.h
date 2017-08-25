@@ -56,7 +56,6 @@ using namespace Aboria;
 class MDLevel1Test : public CxxTest::TestSuite {
 public:
 
-#ifdef __aboria_have_thrust__
     ABORIA_VARIABLE(velocity,vdouble2,"velocity")
 
     template <typename Query>
@@ -64,7 +63,7 @@ public:
         typedef typename Query::traits_type::raw_reference reference;
         typedef typename Query::traits_type::position position;
 
-        __device__ __host__
+        CUDA_HOST_DEVICE
         void operator()(reference i) const {
 #if defined(__CUDACC__)
             thrust::uniform_real_distribution<double> uni(0,1);
@@ -91,7 +90,7 @@ public:
         timestep_lambda(const Query &query, double diameter, double k, double dt, double mass):
             query(query),diameter(diameter),k(k),dt(dt),mass(mass) {}
 
-        __device__ __host__
+        CUDA_HOST_DEVICE
         void operator()(reference i) const {
             vdouble2 force_sum(0,0);
             for (auto tpl: euclidean_search(query,get<position>(i),diameter)) {
@@ -148,7 +147,7 @@ public:
         /*
          * randomly set position for N particles
          */
-        thrust::for_each(particles.begin(),particles.end(),set_position_lambda<query_type>());
+        detail::for_each(particles.begin(),particles.end(),set_position_lambda<query_type>());
 
         /*
          * initiate neighbour search on a periodic 2d domain of side length L
@@ -167,36 +166,30 @@ public:
              * unstructured grid file
              */
             std::cout << "." << std::flush;
+            std::cout << particles;
 #ifdef HAVE_VTK
             vtkWriteGrid("particles",io,particles.get_grid(true));
 #endif
             for (int i = 0; i < timesteps_per_out; i++) {
-                thrust::for_each(particles.begin(),particles.end(),
+                detail::for_each(particles.begin(),particles.end(),
                         timestep_lambda<query_type>(particles.get_query(),diameter,k,dt,mass));
                 particles.update_positions();
             }
         }
         std::cout << std::endl;
     }
-#endif
 //]
 
     void test_std_vector_bucket_search_serial(void) {
-#if defined(__aboria_have_thrust__)
         helper_md<std::vector,bucket_search_serial>();
-#endif
     }
 
     void test_std_vector_bucket_search_parallel(void) {
-#if defined(__aboria_have_thrust__)
         helper_md<std::vector,bucket_search_parallel>();
-#endif
     }
 
     void test_std_vector_octtree(void) {
-#if defined(__aboria_have_thrust__)
         helper_md<std::vector,octtree>();
-#endif
     }
 
     void test_thrust_vector_bucket_search_serial(void) {

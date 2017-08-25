@@ -320,6 +320,26 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
                             )...);
     }
 
+    template<std::size_t... I>
+    static void header_to_stream_impl(std::ostream& os, detail::index_sequence<I...>) {
+        int dummy[] = { 0, (void(os << (I == 0? "" : ", ") << 
+                typename mpl::at<mpl_type_vector,mpl::int_<I>>::type().name),0)... };
+        static_cast<void>(dummy); // Avoid warning for unused variable.
+    }
+
+
+    template<class InputIterator, std::size_t... I>
+    static void to_stream_impl(InputIterator i, std::ostream& os, detail::index_sequence<I...>) {
+        int dummy[] = { 0, (void(os << (I == 0? "" : ", ") << *get_by_index<I>(i)),0)... };
+        static_cast<void>(dummy); // Avoid warning for unused variable.
+    }
+
+    template<class InputIterator, std::size_t... I>
+    static void from_stream_impl(InputIterator i, std::istream& is, detail::index_sequence<I...>) {
+        int dummy[] = { 0, (is >> get_by_index<I>(i))... };
+        static_cast<void>(dummy); // Avoid warning for unused variable.
+    }
+
     template<typename Indices = detail::make_index_sequence<N>>
     static iterator begin(data_type& data) {
         return begin_impl(data, Indices());
@@ -398,6 +418,21 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     template<class InputIterator, typename Indices = detail::make_index_sequence<N>>
     static data_type construct(InputIterator first, InputIterator last) {
         return construct_impl(first, last, Indices());
+    }
+
+    template<typename Indices = detail::make_index_sequence<N>>
+    static void header_to_stream(std::ostream& os) {
+        header_to_stream_impl(os, Indices());
+    }
+
+    template<class InputIterator, typename Indices = detail::make_index_sequence<N>>
+    static void to_stream(InputIterator i, std::ostream& os) {
+        to_stream_impl(i, os, Indices());
+    }
+
+    template<class InputIterator, typename Indices = detail::make_index_sequence<N>>
+    static void from_stream(InputIterator i, std::istream& is) {
+        from_stream_impl(i, is, Indices());
     }
 
     typedef typename position_vector_type::size_type size_type; 

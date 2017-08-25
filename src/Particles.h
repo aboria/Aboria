@@ -742,6 +742,24 @@ public:
     }
     */
 
+    friend std::ostream& operator<< (std::ostream& stream, const Particles& particles) {
+        traits_type::header_to_stream(stream);
+        stream << '\n';
+        for (const_iterator i=particles.cbegin(); i!=particles.cend(); ++i) { 
+            traits_type::to_stream(i,stream);
+            stream << '\n';
+        }
+        return stream;
+    }
+
+    friend std::istream& operator>> (std::istream& stream, Particles& particles) {
+        stream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        for (iterator i=particles.begin(); i!=particles.end(); ++i) { 
+            traits_type::from_stream(i);
+        }
+        return stream;
+    }
+
 
 #ifdef HAVE_VTK
     
