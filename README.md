@@ -38,4 +38,3 @@ website](https://martinjrobins.github.io/Aboria). If you are interested in
 contributing to Aboria, having trouble getting it working or just have a 
 question, send me an email at <martin.robinson@cs.ox.ac.uk> or create a
 GitHub issue or pull request.
-
