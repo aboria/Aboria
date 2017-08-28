@@ -53,6 +53,7 @@ endif()
 
 
 find_package(Boost 1.50.0 REQUIRED serialization)
+list(APPEND Aboria_LIBRARIES "${Boost_LIBRARIES}")
 
 option(Aboria_USE_VTK "Use VTK library" OFF)
 if (Aboria_USE_VTK)
