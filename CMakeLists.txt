@@ -24,6 +24,9 @@ if (Aboria_USE_THRUST)
     add_definitions(-D__aboria_have_thrust__)
 
     option(Aboria_THRUST_TEST_NVCC "Turn on tests using nvcc" OFF)
+    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+        option(Aboria_THRUST_TEST_CUDA_CLANG "Turn on tests using cuda clang" OFF)
+    endif()
     #http://stackoverflow.com/questions/34996295/trying-to-get-cuda-7-5-to-work-with-gcc-5-x
 
     add_definitions(-D_MWAITXINTRIN_H_INCLUDED)

@@ -1,4 +1,4 @@
-macro(aboria_cxx_test target target_file)
+macro(aboria_cxx_test target target_file use_cuda_function)
     set(_test_files "")
     set(list_var "${ARGN}")
     foreach(filename IN LISTS list_var)
@@ -13,7 +13,7 @@ macro(aboria_cxx_test target target_file)
         DEPENDS ${_test_files}
         VERBATIM
     )
-if (${target_file} MATCHES .cu$)
+if (${use_cuda_function})
     cuda_add_executable(${target} ${CPP_FULL_NAME})
 else()
     add_executable(${target} ${CPP_FULL_NAME})
@@ -294,11 +294,18 @@ message("-- Adding test suites:")
 foreach(test_suite ${test_suites})
     if (Aboria_THRUST_TEST_NVCC)
         #aboria_cxx_test(tests_cuda tests_cuda.cu ${test_files})
-        aboria_cxx_test(${test_suite}_nvcc ${test_suite}.cu ${${test_suite}File})
+        aboria_cxx_test(${test_suite}_nvcc ${test_suite}.cu ON ${${test_suite}File} )
         target_link_libraries(${test_suite}_nvcc ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBRARIES})
     endif()
 
-    aboria_cxx_test(${test_suite} ${test_suite}.cpp ${${test_suite}File})
+    if (Aboria_THRUST_TEST_CUDA_CLANG)
+        aboria_cxx_test(${test_suite}_cuda_clang ${test_suite}.cpp OFF ${${test_suite}File})
+        target_compile_options(${test_suite}_cuda_clang PRIVATE "--cuda-gpu-arch=sm_35" "-xcuda" "-pthread")
+        target_link_libraries(${test_suite}_cuda_clang ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${Aboria_LIBRARIES} cudart_static dt rt)
+    endif()
+
+
+    aboria_cxx_test(${test_suite} ${test_suite}.cpp OFF ${${test_suite}File})
     target_link_libraries(${test_suite} ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
     
     foreach(test_name ${${test_suite}})
