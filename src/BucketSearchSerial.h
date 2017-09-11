@@ -832,6 +832,8 @@ struct bucket_search_serial_query {
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
+    typedef typename Traits::reference particle_reference;
+    typedef typename Traits::const_reference particle_const_reference;
     const static unsigned int dimension = Traits::dimension;
     typedef lattice_iterator<dimension> query_iterator;
     typedef lattice_iterator<dimension> all_iterator;
@@ -852,6 +854,8 @@ struct bucket_search_serial_query {
     raw_pointer m_particles_end;
     int *m_buckets_begin;
     int *m_linked_list_begin;
+    int *m_id_map_key;
+    int *m_id_map_value;
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
@@ -867,6 +871,17 @@ struct bucket_search_serial_query {
     #endif
     }
 
+    /*
+     * functions for id mapping
+     */
+    particle_iterator find(const size_t id) const {
+        const size_t n = number_of_particles();
+        const size_t index = m_id_map_value[
+                                detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 
+                                - m_id_map_key
+                                ];
+        return m_particles_begin + index;
+    }
 
     /*
      * functions for trees

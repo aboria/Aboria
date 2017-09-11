@@ -427,9 +427,23 @@ struct nanoflann_adaptor_query {
     value_type* m_root;
     value_type m_dummy_root;
 
+    int *m_id_map_key;
+    int *m_id_map_value;
+
     const box_type& get_bounds() const { return m_bounds; }
     const bool_d& get_periodic() const { return m_periodic; }
 
+    /*
+     * functions for id mapping
+     */
+    particle_iterator find(const size_t id) const {
+        const size_t n = number_of_particles();
+        const size_t index = m_id_map_value[
+                                detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 
+                                - m_id_map_key
+                                ];
+        return m_particles_begin + index;
+    }
 
     /*
      * functions for tree_query_iterator

@@ -192,6 +192,7 @@ public:
     /// \param periodic a boolean vector indicating wether each dimension
     void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const unsigned int n_particles_in_leaf=10, const bool not_in_constructor=true) {
         LOG(2,"neighbour_search_base: set_domain:");
+        m_domain_has_been_set = not_in_constructor;
         m_bounds.bmin = min_in;
         m_bounds.bmax = max_in;
         m_periodic = periodic_in;
@@ -220,7 +221,24 @@ public:
         const size_t n = m_particles_end - m_particles_begin;
 	    LOG(2,"neighbour_search_base: embed_points: embedding "<<n<<" points");
 
-        return cast().embed_points_impl();
+        // setup id map
+        m_id_map_key.resize(n);
+        m_id_map_value.resize(n);
+        detail::copy(get<id>(m_particles_begin),get<id>(m_particles_end),
+                     m_id_map_key.begin());
+        detail::sequence(m_id_map_value.begin(),m_id_map_value.end());
+        detail::sort_by_key(m_id_map_key.begin(),m_id_map_key.end(),
+                            m_id_map_value.begin());
+
+        bool reorder = false;
+        if (m_domain_has_been_set) {
+            reorder = cast().embed_points_impl();
+        }
+
+        m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
+        m_query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+
+        return reorder;
     }
 
     void update_iterators(iterator begin, iterator end) {
@@ -242,15 +260,32 @@ public:
         ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
         const size_t dist = end - start_adding;
+        bool reorder = false;
         if (dist > 0) {
             LOG(2,"neighbour_search_base: add_points_at_end: embedding "<<dist<<" new points. Total number = "<<end-begin);
-            const bool ret = cast().add_points_at_end_impl(dist);
-            LOG(2,"neighbour_search_base: add_points_at_end: done.");
-            return ret;
 
-        } else {
-            return false;
+            // setup id map
+            const size_t n = m_particles_end-m_particles_begin;
+            m_id_map_key.resize(n);
+            m_id_map_value.resize(n);
+            auto map_key_start = m_id_map_key.end()-dist;
+            auto map_value_start = m_id_map_value.end()-dist;
+            detail::copy(get<id>(start_adding),get<id>(end),
+                         map_key_start);
+            detail::sequence(map_value_start,m_id_map_value.end(),n-dist);
+            detail::sort_by_key(map_key_start,m_id_map_key.end(),
+                                map_value_start);
+
+            if (m_domain_has_been_set) {
+                reorder = cast().add_points_at_end_impl(dist);
+            }
+            LOG(2,"neighbour_search_base: add_points_at_end: done.");
         }
+
+        m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
+        m_query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+
+        return reorder;
     }
 
     void copy_points(iterator copy_from_iterator, iterator copy_to_iterator) {
@@ -260,6 +295,10 @@ public:
         ASSERT((copy_from_iterator-m_particles_begin>=0) && 
                 (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
         cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
+
+        // setup id map
+        // copy_from id gets a new index
+        // copy_to id is marked for deletion
     }
 
 
@@ -272,12 +311,36 @@ public:
         m_particles_begin = begin;
         m_particles_end = end;
 
+        bool reorder = false;
         if (n > 0) {
             LOG(2,"neighbour_search_base: delete_points: deleting points "<<i<<" to "<<i+n-1);
-            return cast().delete_points_impl(i,n);
-        } else {
-            return false;
+            // mark all ids for deletion
+            
+            // now delete them
+            auto start_zip = detail::make_zip_iterator(
+                        detail::make_tuple(
+                            m_id_map_key.begin(), m_id_map_value.begin()
+                        ));
+            auto end_zip = detail::make_zip_iterator(
+                        detail::make_tuple(
+                            m_id_map_key.end(), m_id_map_value.end()
+                        ));
+            size_t first_dead_index = detail::partition(start_zip,end_zip,
+                        is_alive()) - start_zip;
+            m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
+                               m_id_map_key.end());
+            m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
+                                 m_id_map_value.end());
+
+            if (m_domain_has_been_set) {
+                reorder = cast().delete_points_impl(i,n);
+            }
         }
+
+        m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
+        m_query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+
+        return reorder;
     }
 
     
@@ -289,6 +352,10 @@ public:
         return m_order;
     }
 
+    const vector_int& get_id_map() const {
+        return m_id_map;
+    }
+
     const double_d& get_min() const { return m_bounds.bmin; }
     const double_d& get_max() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
@@ -297,7 +364,10 @@ protected:
     iterator m_particles_begin;
     iterator m_particles_end;
     vector_int m_order;
+    vector_int m_id_map_key;
+    vector_int m_id_map_value;
     bool_d m_periodic;
+    bool m_domain_has_been_set;
     detail::bbox<Traits::dimension> m_bounds;
     unsigned int m_n_particles_in_leaf; 
 };

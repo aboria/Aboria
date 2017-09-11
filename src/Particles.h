@@ -681,13 +681,14 @@ public:
                         break;
                     }
                 }
-                LOG(4,"Particle: delete_particles: after deleting: iterator has particle "<<
+                LOG(4,"Particle: delete_particles: now iterator has particle "<<
                         get<id>(*i)<<" with position "<<
                         static_cast<const double_d&>(get<position>(*i))<<
                         " and alive "<< bool(get<alive>(*i)));
             }
         } else {
-            iterator first_dead = detail::partition(begin(),end(),detail::is_alive<raw_const_reference>());
+            iterator first_dead = detail::partition(begin(),end(),
+                                        detail::is_alive<raw_const_reference>());
             traits_type::erase(data,first_dead,end());
         }
 
