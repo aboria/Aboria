@@ -26,6 +26,7 @@ if (Aboria_RUN_TESTS)
     set(all_test_suites
         MetafunctionsTest 
         NeighboursTest
+        IDSearchTest
         ParticleContainerTest
         SymbolicTest
         VariablesTest
@@ -179,6 +180,21 @@ if (Aboria_USE_THRUST)
     )
 endif()
 
+set(IDSearchTestFile id_search.h)
+set(IDSearchTest
+    test_std_vector_bucket_search_serial
+    test_std_vector_bucket_search_parallel
+    test_std_vector_nanoflann_adaptor
+    test_std_vector_octtree
+    test_documentation
+    )
+if (Aboria_USE_THRUST)
+    list(APPEND IDSearchTest
+    test_thrust_vector_bucket_search_serial
+    test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_octtree
+    )
+endif()
 
 set(ParticleContainerTestFile particle_container.h)
 set(ParticleContainerTest 

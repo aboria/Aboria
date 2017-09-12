@@ -174,7 +174,7 @@ public:
     const Derived& cast() const { return static_cast<const Derived&>(*this); }
     Derived& cast() { return static_cast<Derived&>(*this); }
 
-    neighbour_search_base() {
+    neighbour_search_base():m_id_map(false) {
         LOG_CUDA(2,"neighbour_search_base: constructor, setting default domain");
         const double min = std::numeric_limits<double>::min();
         const double max = std::numeric_limits<double>::max();
@@ -205,6 +205,19 @@ public:
         LOG(2,"\tperiodic = "<<m_periodic);
     }
 
+    void init_id_map() {
+        m_id_map = true;
+	    LOG(2,"neighbour_search_base: init_id_map");
+        const size_t n = m_particles_end - m_particles_begin;
+        m_id_map_key.resize(n);
+        m_id_map_value.resize(n);
+        detail::copy(get<id>(m_particles_begin),get<id>(m_particles_end),
+                     m_id_map_key.begin());
+        detail::sequence(m_id_map_value.begin(),m_id_map_value.end());
+        detail::sort_by_key(m_id_map_key.begin(),m_id_map_key.end(),
+                            m_id_map_value.begin());
+    }
+
 
     /// embed a set of points into the buckets, assigning each 3D point into the bucket
     /// that contains that point. Any points already assigned to the buckets are 
@@ -218,21 +231,14 @@ public:
 
         CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-        const size_t n = m_particles_end - m_particles_begin;
 	    LOG(2,"neighbour_search_base: embed_points: embedding "<<n<<" points");
-
-        // setup id map
-        m_id_map_key.resize(n);
-        m_id_map_value.resize(n);
-        detail::copy(get<id>(m_particles_begin),get<id>(m_particles_end),
-                     m_id_map_key.begin());
-        detail::sequence(m_id_map_value.begin(),m_id_map_value.end());
-        detail::sort_by_key(m_id_map_key.begin(),m_id_map_key.end(),
-                            m_id_map_value.begin());
 
         bool reorder = false;
         if (m_domain_has_been_set) {
             reorder = cast().embed_points_impl();
+        }
+        if (m_id_map && reorder) {
+            init_id_map();
         }
 
         m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
@@ -249,6 +255,33 @@ public:
         cast().update_iterator_impl();
     }
 
+    void end_list_of_copies(iterator begin, iterator end) {
+	    LOG(2,"neighbour_search_base: end_list_of_copies");
+        if (m_id_map) {
+            // delete id map entries marked for deletion in copy_points
+            auto start_zip = detail::make_zip_iterator(
+                    detail::make_tuple(
+                        m_id_map_key.begin(), m_id_map_value.begin()
+                        ));
+            auto end_zip = detail::make_zip_iterator(
+                    detail::make_tuple(
+                        m_id_map_key.end(), m_id_map_value.end()
+                        ));
+            size_t first_dead_index = detail::partition(start_zip,end_zip,
+                    __device__
+                    [&](const Traits::template tuple<int&,int&>& tpl) {
+                    return detail::get_impl<1>(tpl) < 0;
+                    }) - start_zip;
+
+            m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
+                    m_id_map_key.end());
+            m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
+                    m_id_map_value.end());
+        }
+
+    }
+
+
     bool add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
                            const iterator &end) {
@@ -263,21 +296,26 @@ public:
         bool reorder = false;
         if (dist > 0) {
             LOG(2,"neighbour_search_base: add_points_at_end: embedding "<<dist<<" new points. Total number = "<<end-begin);
-
-            // setup id map
-            const size_t n = m_particles_end-m_particles_begin;
-            m_id_map_key.resize(n);
-            m_id_map_value.resize(n);
-            auto map_key_start = m_id_map_key.end()-dist;
-            auto map_value_start = m_id_map_value.end()-dist;
-            detail::copy(get<id>(start_adding),get<id>(end),
-                         map_key_start);
-            detail::sequence(map_value_start,m_id_map_value.end(),n-dist);
-            detail::sort_by_key(map_key_start,m_id_map_key.end(),
-                                map_value_start);
-
             if (m_domain_has_been_set) {
                 reorder = cast().add_points_at_end_impl(dist);
+            }
+            if (m_id_map) {
+                if (reorder) {
+                    init_id_map();
+                } else {
+                    // new ids are greater than all the others, so
+                    // just sort new ones into id_map
+                    const size_t n = m_particles_end-m_particles_begin;
+                    m_id_map_key.resize(n);
+                    m_id_map_value.resize(n);
+                    auto map_key_start = m_id_map_key.end()-dist;
+                    auto map_value_start = m_id_map_value.end()-dist;
+                    detail::copy(get<id>(start_adding),get<id>(end),
+                                 map_key_start);
+                    detail::sequence(map_value_start,m_id_map_value.end(),n-dist);
+                    detail::sort_by_key(map_key_start,m_id_map_key.end(),
+                                        map_value_start);
+                }
             }
             LOG(2,"neighbour_search_base: add_points_at_end: done.");
         }
@@ -296,11 +334,19 @@ public:
                 (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
         cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
 
-        // setup id map
-        // copy_from id gets a new index
-        // copy_to id is marked for deletion
-    }
+        if (m_id_map) {
+            const size_t from_map_index = m_query.find(*get<id>(copy_from_iterator))
+                - m_particles_begin;
+            const size_t to_index = copy_to_iterator-m_particles_begin;
 
+            ASSERT(from_map_index < (m_particles_end-m_particles_end), "id not found");
+            ASSERT(m_id_map_value[map_index] == copy_from_iterator-m_particles_begin,
+                    "found index is incorrect");
+
+            // copy_from id gets a new index
+            m_id_map_value[from_map_index] = to_index;
+        }
+    }
 
     bool delete_points(iterator begin, iterator end,
                                              const size_t i, const size_t n) {
@@ -314,27 +360,60 @@ public:
         bool reorder = false;
         if (n > 0) {
             LOG(2,"neighbour_search_base: delete_points: deleting points "<<i<<" to "<<i+n-1);
-            // mark all ids for deletion
             
-            // now delete them
-            auto start_zip = detail::make_zip_iterator(
-                        detail::make_tuple(
-                            m_id_map_key.begin(), m_id_map_value.begin()
-                        ));
-            auto end_zip = detail::make_zip_iterator(
-                        detail::make_tuple(
-                            m_id_map_key.end(), m_id_map_value.end()
-                        ));
-            size_t first_dead_index = detail::partition(start_zip,end_zip,
-                        is_alive()) - start_zip;
-            m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
-                               m_id_map_key.end());
-            m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
-                                 m_id_map_value.end());
-
             if (m_domain_has_been_set) {
                 reorder = cast().delete_points_impl(i,n);
             }
+
+            if (m_id_map) {
+                if (reorder) {
+                    init_id_map();
+                } else {
+                    // mark all ids for deletion
+                    const size_t np = m_particles_end-m_particles_begin;
+                    if (n*std::log(np) < np) {
+                        // do binary search for each deleted particle to find index 
+                        // in m_id_map_key and m_id_map_value
+                        detail::for_each(get<id>(begin)+i,get<id>(begin)+i+n,
+                            __device__
+                            [&](const size_t id) {
+                                const size_t index = m_query->find(id)-m_particles_begin;
+                                ASSERT(index != n,"did not find id");
+                                m_id_map_value[index] = -1;
+                            });
+
+                    } else {
+                        // loop over all m_id_map_value to find deleted indicies
+                        detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
+                                __device__
+                                [&](int& index) {
+                                if (i <= index && index < i+n) {
+                                    index = -1;
+                                }
+                                });
+                    }
+                    
+                    // now delete them
+                    auto start_zip = detail::make_zip_iterator(
+                                detail::make_tuple(
+                                    m_id_map_key.begin(), m_id_map_value.begin()
+                                ));
+                    auto end_zip = detail::make_zip_iterator(
+                                detail::make_tuple(
+                                    m_id_map_key.end(), m_id_map_value.end()
+                                ));
+                    size_t first_dead_index = detail::partition(start_zip,end_zip,
+                                    __device__
+                                    [&](const Traits::template tuple<int&,int&>& tpl) {
+                                        return detail::get_impl<1>(tpl) < 0;
+                                    }) - start_zip;
+
+                    m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
+                                       m_id_map_key.end());
+                    m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
+                                         m_id_map_value.end());
+                }
+
         }
 
         m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
@@ -360,12 +439,14 @@ public:
     const double_d& get_max() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
 
+
 protected:
     iterator m_particles_begin;
     iterator m_particles_end;
     vector_int m_order;
     vector_int m_id_map_key;
     vector_int m_id_map_value;
+    bool m_id_map;
     bool_d m_periodic;
     bool m_domain_has_been_set;
     detail::bbox<Traits::dimension> m_bounds;

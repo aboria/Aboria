@@ -357,7 +357,7 @@ public:
         Aboria::get<generator>(i) = generator_type((seed + uint32_t(Aboria::get<id>(i))));
         Aboria::get<alive>(i) = true;
 
-        if (searchable) {
+        if (search.m_domain_has_been_set) {
             detail::enforce_domain_impl<traits_type::dimension,reference> enforcer(search.get_min(),search.get_max(),search.get_periodic());
             enforcer(i);
         }
@@ -576,6 +576,12 @@ public:
         searchable = true;
     }
 
+    void init_id_search() {
+        LOG(2, "Particles:init_id_search");
+        search.init_id_map();
+        searchable = true;
+    }
+
     const query_type& get_query() const {
         ASSERT(searchable,"init_neighbour_search not called on this particle set");
         return search.get_query();
@@ -640,7 +646,7 @@ public:
     /// neighbourhood searching
     /// \see get_neighbours()
     void update_positions() {
-        if (searchable) {
+        if (search.m_domain_has_been_set) {
             enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
         }
     }
@@ -697,6 +703,7 @@ public:
         if (update_search) {
             if (do_serial_delete) {
                 search.update_iterators(begin(),end());
+                search.end_list_of_copies(begin(),end());
             } else {
                 if (search.embed_points(begin(),end())) {
                     reorder(search.get_order().begin(),search.get_order().end());
