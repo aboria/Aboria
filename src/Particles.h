@@ -357,7 +357,7 @@ public:
         Aboria::get<generator>(i) = generator_type((seed + uint32_t(Aboria::get<id>(i))));
         Aboria::get<alive>(i) = true;
 
-        if (search.m_domain_has_been_set) {
+        if (search.domain_has_been_set()) {
             detail::enforce_domain_impl<traits_type::dimension,reference> enforcer(search.get_min(),search.get_max(),search.get_periodic());
             enforcer(i);
         }
@@ -646,7 +646,7 @@ public:
     /// neighbourhood searching
     /// \see get_neighbours()
     void update_positions() {
-        if (search.m_domain_has_been_set) {
+        if (search.domain_has_been_set()) {
             enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
         }
     }

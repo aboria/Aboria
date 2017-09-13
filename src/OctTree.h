@@ -212,6 +212,10 @@ private:
         return this->m_query;
     }
 
+    octtree_query<Traits>& get_query_impl() {
+        return m_query;
+    }
+
     void sort_by_tags() {
         /******************************************
          * 4. Sort according to classification    *
@@ -707,7 +711,7 @@ struct octtree_query {
     /*
      * functions for id mapping
      */
-    particle_iterator find(const size_t id) const {
+    raw_pointer find(const size_t id) const {
         const size_t n = number_of_particles();
         const size_t index = m_id_map_value[
                                 detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 

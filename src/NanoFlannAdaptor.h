@@ -265,6 +265,10 @@ private:
         return m_query;
     }
 
+    nanoflann_adaptor_query<Traits>& get_query_impl() {
+        return m_query;
+    }
+
 
     kd_tree_type m_kd_tree;
     nanoflann_adaptor_query<Traits> m_query;
@@ -436,7 +440,7 @@ struct nanoflann_adaptor_query {
     /*
      * functions for id mapping
      */
-    particle_iterator find(const size_t id) const {
+    raw_pointer find(const size_t id) const {
         const size_t n = number_of_particles();
         const size_t index = m_id_map_value[
                                 detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 

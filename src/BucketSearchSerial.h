@@ -656,6 +656,10 @@ private:
         return m_query;
     }
 
+    bucket_search_serial_query<Traits>& get_query_impl() {
+        return m_query;
+    }
+
     vector_int m_buckets;
     vector_int m_buckets_begin;
     vector_int m_buckets_end;
@@ -874,7 +878,7 @@ struct bucket_search_serial_query {
     /*
      * functions for id mapping
      */
-    particle_iterator find(const size_t id) const {
+    raw_pointer find(const size_t id) const {
         const size_t n = number_of_particles();
         const size_t index = m_id_map_value[
                                 detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 

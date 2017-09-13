@@ -205,18 +205,113 @@ public:
         LOG(2,"\tperiodic = "<<m_periodic);
     }
 
-    void init_id_map() {
+    size_t find_id_map(const size_t id) const {
+        const size_t n = m_particles_end-m_particles_begin;
+        return m_id_map_value[
+                                detail::lower_bound(m_id_map_key.begin(),
+                                                    m_id_map_key.begin()+n,
+                                                    id) 
+                                - m_id_map_key.begin()
+                                ];
+    }
+
+    void init_id_map(const size_t start_index=0) {
         m_id_map = true;
 	    LOG(2,"neighbour_search_base: init_id_map");
         const size_t n = m_particles_end - m_particles_begin;
         m_id_map_key.resize(n);
         m_id_map_value.resize(n);
+        
         detail::copy(get<id>(m_particles_begin),get<id>(m_particles_end),
                      m_id_map_key.begin());
         detail::sequence(m_id_map_value.begin(),m_id_map_value.end());
         detail::sort_by_key(m_id_map_key.begin(),m_id_map_key.end(),
                             m_id_map_value.begin());
     }
+
+    void update_id_map(const size_t dist) {
+	    LOG(2,"neighbour_search_base: update_id_map:"<<dist);
+        const size_t n = m_particles_end - m_particles_begin;
+        m_id_map_key.resize(n);
+        m_id_map_value.resize(n);
+
+        auto map_key_start = m_id_map_key.end()-dist;
+        auto map_value_start = m_id_map_value.end()-dist;
+        auto particles_start = m_particles_end-dist;
+
+        detail::copy(get<id>(particles_start),get<id>(m_particles_end),map_key_start);
+        detail::sequence(map_value_start,m_id_map_value.end(),n-dist);
+        detail::sort_by_key(map_key_start,m_id_map_key.end(),map_value_start);
+    }
+
+    void copy_id_map(const size_t from_id, const size_t to_id, const int to_index) {
+        const size_t from_map_index = find_id_map(from_id);
+        const size_t to_map_index = find_id_map(to_id);
+
+        ASSERT(from_map_index < (m_particles_end-m_particles_end), "id not found");
+        ASSERT(to_map_index < (m_particles_end-m_particles_end), "id not found");
+        ASSERT(m_id_map_value[to_map_index] == to_index,"found index is incorrect");
+
+        // copy_from id gets a new index
+        m_id_map_value[from_map_index] = to_index;
+        // mark to id for deletion
+        m_id_map_value[to_map_index] = -1;
+    }
+
+    void delete_marked_id_map() {
+        // now delete them
+        auto start_zip = detail::make_zip_iterator(
+                detail::make_tuple(
+                    m_id_map_key.begin(), m_id_map_value.begin()
+                    ));
+        auto end_zip = detail::make_zip_iterator(
+                detail::make_tuple(
+                    m_id_map_key.end(), m_id_map_value.end()
+                    ));
+        size_t first_dead_index = detail::partition(start_zip,end_zip,
+                CUDA_DEVICE
+                [&](typename Traits::template tuple<int&,int&> const& tpl) {
+                return detail::get_impl<1>(tpl) < 0;
+                }) - start_zip;
+
+        m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
+                m_id_map_key.end());
+        m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
+                m_id_map_value.end());
+    }
+
+
+    void delete_id_map_in_range(const size_t i, const size_t n) {
+        // mark all ids for deletion
+        const size_t np = m_particles_end-m_particles_begin;
+        if (n*std::log(np) < np) {
+            // do binary search for each deleted particle to find index 
+            // in m_id_map_key and m_id_map_value
+            const query_type& query = cast().get_query_impl();
+            detail::for_each(get<id>(m_particles_begin)+i,
+                             get<id>(m_particles_begin)+i+n,
+                    CUDA_DEVICE
+                    [&](const size_t id) {
+                    const size_t index = query.find(id)-query.get_particles_begin();
+                    ASSERT(index != n,"did not find id");
+                    m_id_map_value[index] = -1;
+                    });
+
+        } else {
+            // loop over all m_id_map_value to find deleted indicies
+            detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
+                    CUDA_DEVICE
+                    [&](int& index) {
+                    if (i <= index && index < i+n) {
+                    index = -1;
+                    }
+                    });
+        }
+
+        delete_marked_id_map();
+    }
+
+    
 
 
     /// embed a set of points into the buckets, assigning each 3D point into the bucket
@@ -231,7 +326,7 @@ public:
 
         CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
-	    LOG(2,"neighbour_search_base: embed_points: embedding "<<n<<" points");
+	    LOG(2,"neighbour_search_base: embed_points: embedding "<<end-begin<<" points");
 
         bool reorder = false;
         if (m_domain_has_been_set) {
@@ -241,8 +336,9 @@ public:
             init_id_map();
         }
 
-        m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
-        m_query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+        query_type& query = cast().get_query_impl();
+        query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
+        query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
 
         return reorder;
     }
@@ -258,29 +354,9 @@ public:
     void end_list_of_copies(iterator begin, iterator end) {
 	    LOG(2,"neighbour_search_base: end_list_of_copies");
         if (m_id_map) {
-            // delete id map entries marked for deletion in copy_points
-            auto start_zip = detail::make_zip_iterator(
-                    detail::make_tuple(
-                        m_id_map_key.begin(), m_id_map_value.begin()
-                        ));
-            auto end_zip = detail::make_zip_iterator(
-                    detail::make_tuple(
-                        m_id_map_key.end(), m_id_map_value.end()
-                        ));
-            size_t first_dead_index = detail::partition(start_zip,end_zip,
-                    __device__
-                    [&](const Traits::template tuple<int&,int&>& tpl) {
-                    return detail::get_impl<1>(tpl) < 0;
-                    }) - start_zip;
-
-            m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
-                    m_id_map_key.end());
-            m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
-                    m_id_map_value.end());
+            delete_marked_id_map();
         }
-
     }
-
 
     bool add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
@@ -303,25 +379,16 @@ public:
                 if (reorder) {
                     init_id_map();
                 } else {
-                    // new ids are greater than all the others, so
-                    // just sort new ones into id_map
-                    const size_t n = m_particles_end-m_particles_begin;
-                    m_id_map_key.resize(n);
-                    m_id_map_value.resize(n);
-                    auto map_key_start = m_id_map_key.end()-dist;
-                    auto map_value_start = m_id_map_value.end()-dist;
-                    detail::copy(get<id>(start_adding),get<id>(end),
-                                 map_key_start);
-                    detail::sequence(map_value_start,m_id_map_value.end(),n-dist);
-                    detail::sort_by_key(map_key_start,m_id_map_key.end(),
-                                        map_value_start);
+                    update_id_map(dist);
                 }
             }
             LOG(2,"neighbour_search_base: add_points_at_end: done.");
         }
 
-        m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
-        m_query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+
+        query_type& query = cast().get_query_impl();
+        query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
+        query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
 
         return reorder;
     }
@@ -332,19 +399,13 @@ public:
                 (m_particles_end-copy_to_iterator>0),"invalid copy to iterator");
         ASSERT((copy_from_iterator-m_particles_begin>=0) && 
                 (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
+        
         cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
 
         if (m_id_map) {
-            const size_t from_map_index = m_query.find(*get<id>(copy_from_iterator))
-                - m_particles_begin;
-            const size_t to_index = copy_to_iterator-m_particles_begin;
-
-            ASSERT(from_map_index < (m_particles_end-m_particles_end), "id not found");
-            ASSERT(m_id_map_value[map_index] == copy_from_iterator-m_particles_begin,
-                    "found index is incorrect");
-
-            // copy_from id gets a new index
-            m_id_map_value[from_map_index] = to_index;
+            copy_id_map(*get<id>(copy_from_iterator), 
+                        *get<id>(copy_to_iterator), 
+                        copy_to_iterator-m_particles_begin);
         }
     }
 
@@ -360,64 +421,21 @@ public:
         bool reorder = false;
         if (n > 0) {
             LOG(2,"neighbour_search_base: delete_points: deleting points "<<i<<" to "<<i+n-1);
-            
             if (m_domain_has_been_set) {
                 reorder = cast().delete_points_impl(i,n);
             }
-
             if (m_id_map) {
                 if (reorder) {
                     init_id_map();
                 } else {
-                    // mark all ids for deletion
-                    const size_t np = m_particles_end-m_particles_begin;
-                    if (n*std::log(np) < np) {
-                        // do binary search for each deleted particle to find index 
-                        // in m_id_map_key and m_id_map_value
-                        detail::for_each(get<id>(begin)+i,get<id>(begin)+i+n,
-                            __device__
-                            [&](const size_t id) {
-                                const size_t index = m_query->find(id)-m_particles_begin;
-                                ASSERT(index != n,"did not find id");
-                                m_id_map_value[index] = -1;
-                            });
-
-                    } else {
-                        // loop over all m_id_map_value to find deleted indicies
-                        detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
-                                __device__
-                                [&](int& index) {
-                                if (i <= index && index < i+n) {
-                                    index = -1;
-                                }
-                                });
-                    }
-                    
-                    // now delete them
-                    auto start_zip = detail::make_zip_iterator(
-                                detail::make_tuple(
-                                    m_id_map_key.begin(), m_id_map_value.begin()
-                                ));
-                    auto end_zip = detail::make_zip_iterator(
-                                detail::make_tuple(
-                                    m_id_map_key.end(), m_id_map_value.end()
-                                ));
-                    size_t first_dead_index = detail::partition(start_zip,end_zip,
-                                    __device__
-                                    [&](const Traits::template tuple<int&,int&>& tpl) {
-                                        return detail::get_impl<1>(tpl) < 0;
-                                    }) - start_zip;
-
-                    m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
-                                       m_id_map_key.end());
-                    m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
-                                         m_id_map_value.end());
+                    delete_id_map_in_range(i,n);
                 }
-
+            }
         }
 
-        m_query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
-        m_query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+        query_type& query = cast().get_query_impl();
+        query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
+        query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
 
         return reorder;
     }
@@ -438,7 +456,7 @@ public:
     const double_d& get_min() const { return m_bounds.bmin; }
     const double_d& get_max() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
-
+    bool domain_has_been_set() const { return m_domain_has_been_set; }
 
 protected:
     iterator m_particles_begin;
@@ -452,8 +470,6 @@ protected:
     detail::bbox<Traits::dimension> m_bounds;
     unsigned int m_n_particles_in_leaf; 
 };
-
-
 
 // assume that these iterators, and query functions, are only called from device code
 template <typename Traits>

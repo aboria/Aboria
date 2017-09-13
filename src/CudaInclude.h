@@ -24,6 +24,7 @@
 
 #if defined(__CUDACC__)
     #define CUDA_HOST_DEVICE __host__ __device__
+    #define CUDA_DEVICE __device__
 
     #if not defined(__aboria_use_thrust_algorithms__)
         #define __aboria_use_thrust_algorithms__
@@ -37,6 +38,7 @@
 
 #else
     #define CUDA_HOST_DEVICE 
+    #define CUDA_DEVICE 
     #define __aboria_hd_warning_disable__
     #define ABORIA_HOST_DEVICE_IGNORE_WARN
     

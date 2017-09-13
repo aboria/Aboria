@@ -295,6 +295,36 @@ void lower_bound(
             typename is_std_iterator<ForwardIterator>::type());
 }
 
+template<typename ForwardIterator, typename LessThanComparable>
+ForwardIterator lower_bound(
+        ForwardIterator first,
+        ForwardIterator last,
+        const LessThanComparable& value, std::true_type) {
+
+    return std::lower_bound(first,last,value);
+}
+
+#ifdef __aboria_have_thrust__
+template<typename ForwardIterator, typename LessThanComparable>
+ForwardIterator lower_bound(
+        ForwardIterator first,
+        ForwardIterator last,
+        const LessThanComparable& value, std::false_type) {
+
+    return thrust::lower_bound(first,last,value);
+}
+#endif
+
+template<typename ForwardIterator, typename LessThanComparable>
+ForwardIterator lower_bound(
+        ForwardIterator first,
+        ForwardIterator last,
+        const LessThanComparable& value) {
+
+    return lower_bound(first,last,value,
+            typename is_std_iterator<ForwardIterator>::type());
+}
+
 template<typename ForwardIterator, typename InputIterator, typename OutputIterator>
 void upper_bound(
         ForwardIterator first,
