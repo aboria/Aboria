@@ -56,11 +56,16 @@ size_t concurrent_processes() {
 
 
 template <typename T>
-struct  is_std_iterator: 
-    std::is_same<
-            typename std::iterator_traits<T>::iterator_category,
-            std::random_access_iterator_tag
-    > {};
+struct  is_std_iterator {
+#ifdef __aboria_have_thrust__
+    typedef std::integral_constant<bool,
+            !std::is_same<
+                typename std::iterator_traits<T>::iterator_category,
+                thrust::random_access_iterator_tag>::value> type;
+#else
+    typedef std::integral_constant<bool,true> type;
+#endif
+};
 
 // reorders v such that v_new[i] == v[order[i]]
 template< typename order_iterator, typename value_iterator >
@@ -501,6 +506,23 @@ ForwardIt partition( ForwardIt first, ForwardIt last, UnaryPredicate p,std::fals
 template< class ForwardIt, class UnaryPredicate >
 ForwardIt partition( ForwardIt first, ForwardIt last, UnaryPredicate p) {
     return partition(first,last,p,typename is_std_iterator<ForwardIt>::type());
+}
+
+template< class ForwardIt, class UnaryPredicate >
+ForwardIt stable_partition( ForwardIt first, ForwardIt last, UnaryPredicate p,std::true_type ) {
+    return std::stable_partition(first,last,p);
+}
+
+#ifdef __aboria_have_thrust__
+template< class ForwardIt, class UnaryPredicate >
+ForwardIt stable_partition( ForwardIt first, ForwardIt last, UnaryPredicate p,std::false_type) {
+    return thrust::stable_partition(first,last,p);
+}
+#endif
+
+template< class ForwardIt, class UnaryPredicate >
+ForwardIt stable_partition( ForwardIt first, ForwardIt last, UnaryPredicate p) {
+    return stable_partition(first,last,p,typename is_std_iterator<ForwardIt>::type());
 }
 
 template< class ForwardIt >

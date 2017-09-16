@@ -207,26 +207,35 @@ public:
 
     size_t find_id_map(const size_t id) const {
         const size_t n = m_particles_end-m_particles_begin;
-        return m_id_map_value[
-                                detail::lower_bound(m_id_map_key.begin(),
-                                                    m_id_map_key.begin()+n,
-                                                    id) 
-                                - m_id_map_key.begin()
-                                ];
+        return detail::lower_bound(m_id_map_key.begin(),
+                                   m_id_map_key.begin()+n,
+                                  id) 
+                                - m_id_map_key.begin();
     }
 
-    void init_id_map(const size_t start_index=0) {
+    void init_id_map(const bool reorder=false) {
         m_id_map = true;
 	    LOG(2,"neighbour_search_base: init_id_map");
         const size_t n = m_particles_end - m_particles_begin;
         m_id_map_key.resize(n);
         m_id_map_value.resize(n);
         
-        detail::copy(get<id>(m_particles_begin),get<id>(m_particles_end),
+        if (reorder) {
+            detail::gather(m_order.begin(),m_order.end(),
+                           get<id>(m_particles_begin),
+                           m_id_map_key.begin());
+        } else {
+            detail::copy(get<id>(m_particles_begin),get<id>(m_particles_end),
                      m_id_map_key.begin());
+
+        }
         detail::sequence(m_id_map_value.begin(),m_id_map_value.end());
         detail::sort_by_key(m_id_map_key.begin(),m_id_map_key.end(),
                             m_id_map_value.begin());
+
+        if (ABORIA_LOG_LEVEL >= 4) { 
+            print_id_map();
+        }
     }
 
     void update_id_map(const size_t dist) {
@@ -248,8 +257,10 @@ public:
         const size_t from_map_index = find_id_map(from_id);
         const size_t to_map_index = find_id_map(to_id);
 
-        ASSERT(from_map_index < (m_particles_end-m_particles_end), "id not found");
-        ASSERT(to_map_index < (m_particles_end-m_particles_end), "id not found");
+	    LOG(2,"neighbour_search_base: copy_id_map: from_id="<<from_id<<" to_id="<<to_id<<" to_index="<<to_index<<" from_map_index="<<from_map_index<<" to_map_index="<<to_map_index);
+
+        ASSERT(from_map_index < (m_particles_end-m_particles_begin), "id not found");
+        ASSERT(to_map_index < (m_particles_end-m_particles_begin), "id not found");
         ASSERT(m_id_map_value[to_map_index] == to_index,"found index is incorrect");
 
         // copy_from id gets a new index
@@ -259,19 +270,21 @@ public:
     }
 
     void delete_marked_id_map() {
+	    LOG(2,"neighbour_search_base: delete_marked_id_map");
         // now delete them
-        auto start_zip = detail::make_zip_iterator(
-                detail::make_tuple(
-                    m_id_map_key.begin(), m_id_map_value.begin()
-                    ));
-        auto end_zip = detail::make_zip_iterator(
-                detail::make_tuple(
-                    m_id_map_key.end(), m_id_map_value.end()
-                    ));
-        size_t first_dead_index = detail::partition(start_zip,end_zip,
+        // TODO: would be usefule to have an aboria `make_zip_iterator`
+        typedef zip_iterator<typename Traits::template tuple<
+                                typename vector_int::iterator, 
+                                typename vector_int::iterator>,
+                             mpl::vector<>> pair_zip_type;
+
+        auto start_zip = pair_zip_type(m_id_map_key.begin(), m_id_map_value.begin());
+        auto end_zip = pair_zip_type(m_id_map_key.end(), m_id_map_value.end());
+
+        size_t first_dead_index = detail::stable_partition(start_zip,end_zip,
                 CUDA_DEVICE
-                [&](typename Traits::template tuple<int&,int&> const& tpl) {
-                return detail::get_impl<1>(tpl) < 0;
+                [&](typename pair_zip_type::reference const& i) {
+                return detail::get_impl<1>(i.get_tuple()) >= 0;
                 }) - start_zip;
 
         m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
@@ -282,36 +295,89 @@ public:
 
 
     void delete_id_map_in_range(const size_t i, const size_t n) {
-        // mark all ids for deletion
-        const size_t np = m_particles_end-m_particles_begin;
-        if (n*std::log(np) < np) {
-            // do binary search for each deleted particle to find index 
-            // in m_id_map_key and m_id_map_value
-            const query_type& query = cast().get_query_impl();
-            detail::for_each(get<id>(m_particles_begin)+i,
-                             get<id>(m_particles_begin)+i+n,
-                    CUDA_DEVICE
-                    [&](const size_t id) {
-                    const size_t index = query.find(id)-query.get_particles_begin();
-                    ASSERT(index != n,"did not find id");
-                    m_id_map_value[index] = -1;
-                    });
+        /*
+        // TODO: would be usefule to have an aboria `make_zip_iterator`
+        typedef zip_iterator<typename Traits::template tuple<
+                                typename vector_int::iterator, 
+                                typename vector_int::iterator>,
+                             mpl::vector<>> pair_zip_type;
 
-        } else {
-            // loop over all m_id_map_value to find deleted indicies
-            detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
-                    CUDA_DEVICE
-                    [&](int& index) {
-                    if (i <= index && index < i+n) {
-                    index = -1;
+        
+        const size_t np = m_particles_end-m_particles_begin; 
+        if (n*std::log(np) < np) {
+            if (n == 1) {
+                const size_t is_map_index = find_id_map(get<
+            detail::for_each(start_zip,end_zip,
+                CUDA_DEVICE
+                [&](typename pair_zip_type::reference const& p) {
+                    size_t& index = detail::get_impl<1>(p.get_tuple());
+                    if (index < i+n) {
+                        // to be deleted
+                        index = -1;
+                    } else {
+                        // to be shifted
+                        index -= n;
                     }
-                    });
+                });
+
+        auto start_zip = pair_zip_type(m_id_map_key.begin()+i, m_id_map_value.begin()+i);
+
+        if (
+
+        if (cast().ordered()) {
+            // particles will have kept ordering when deleting, so need to shift end indices
+#if defined(__CUDACC__)
+            typedef typename thrust::detail::iterator_category_to_system<
+                typename vector_int::iterator::iterator_category
+                >::type system;
+            detail::counting_iterator<unsigned int,system> count(i);
+#else
+            detail::counting_iterator<unsigned int> count(i);
+#endif
+            const query_type& query = get_query();
+            const bool ordered = cast().ordered();
+            detail::for_each(count,count+n,
+                CUDA_DEVICE
+                [&](const unsigned int index) {
+                    const size_t id_map_index = query.find(index)-query.get_particles_begin();
+                    if (index < i+n) {
+                        // to be deleted
+                        index = -1;
+                    } else {
+                        // to be shifted
+                        index -= n;
+                    }
+                });
+        } else {
+            // just delete
+            auto end_zip = pair_zip_type(m_id_map_key.end(), m_id_map_value.end());
+            auto end_zip = pair_zip_type(m_id_map_key.begin()+(i+n), m_id_map_value.begin()+(i+n));
+            detail::for_each(start_zip,end_zip,
+                CUDA_DEVICE
+                [&](typename pair_zip_type::reference const& p) {
+                    size_t& index = detail::get_impl<1>(p.get_tuple());
+                    index = -1;
+                });
         }
 
         delete_marked_id_map();
+
+        */
     }
 
-    
+    void print_id_map() {
+        std::cout << "particle ids:\n";
+        for (auto i = m_particles_begin; i != m_particles_end; ++i) {
+            std::cout << *get<id>(i) << ',';
+        }
+        std::cout << std::endl;
+
+        std::cout << "id map (id,index):\n";
+        for (int i = 0; i < m_id_map_key.size(); ++i) {
+            std::cout << "(" << m_id_map_key[i] << "," << m_id_map_value[i] << ")\n";
+        }
+        std::cout << std::endl;
+    }
 
 
     /// embed a set of points into the buckets, assigning each 3D point into the bucket
@@ -320,7 +386,7 @@ public:
     /// \param begin_iterator an iterator to the beginning of the set of points
     /// \param end_iterator an iterator to the end of the set of points
     /// \see embed_points_incremental() 
-    bool embed_points(iterator begin, iterator end) {
+    bool embed_points(iterator begin, iterator end, bool update_id_map=false) {
         m_particles_begin = begin;
         m_particles_end = end;
 
@@ -332,8 +398,10 @@ public:
         if (m_domain_has_been_set) {
             reorder = cast().embed_points_impl();
         }
-        if (m_id_map && reorder) {
-            init_id_map();
+        if (m_id_map) {
+            if (update_id_map || reorder) {
+                init_id_map(reorder);
+            }
         }
 
         query_type& query = cast().get_query_impl();
@@ -353,8 +421,18 @@ public:
 
     void end_list_of_copies(iterator begin, iterator end) {
 	    LOG(2,"neighbour_search_base: end_list_of_copies");
+
+        update_iterators(begin,end);
+
+        if (m_domain_has_been_set) {
+            cast().end_list_of_copies_impl();
+        }
+
         if (m_id_map) {
             delete_marked_id_map();
+            if (ABORIA_LOG_LEVEL >= 4) { 
+                print_id_map();
+            }
         }
     }
 
@@ -377,7 +455,7 @@ public:
             }
             if (m_id_map) {
                 if (reorder) {
-                    init_id_map();
+                    init_id_map(reorder);
                 } else {
                     update_id_map(dist);
                 }
@@ -400,7 +478,9 @@ public:
         ASSERT((copy_from_iterator-m_particles_begin>=0) && 
                 (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
         
-        cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
+        if (m_domain_has_been_set) {
+            cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
+        }
 
         if (m_id_map) {
             copy_id_map(*get<id>(copy_from_iterator), 
@@ -425,11 +505,18 @@ public:
                 reorder = cast().delete_points_impl(i,n);
             }
             if (m_id_map) {
+                //TODO: this should be more efficient
+                init_id_map(reorder);
+                /*
                 if (reorder) {
                     init_id_map();
                 } else {
                     delete_id_map_in_range(i,n);
+                    if (ABORIA_LOG_LEVEL >= 4) { 
+                        print_id_map();
+                    }
                 }
+                */
             }
         }
 

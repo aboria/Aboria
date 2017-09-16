@@ -149,6 +149,8 @@ private:
         }
     }
 
+    void end_list_of_copies_impl() {}
+
     void update_iterator_impl() {
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
@@ -428,14 +430,19 @@ struct bucket_search_parallel_query {
     /*
      * functions for id mapping
      */
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     raw_pointer find(const size_t id) const {
         const size_t n = number_of_particles();
-        const size_t index = m_id_map_value[
-                                detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 
-                                - m_id_map_key
-                                ];
-        return m_particles_begin + index;
+        const size_t map_index = detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 
+                                - m_id_map_key;
+        if (m_id_map_key[map_index] == id) {
+            return m_particles_begin + m_id_map_value[map_index];
+        } else {
+            return m_particles_begin+n;
+        }
     }
+   
 
     /*
      * functions for trees

@@ -316,13 +316,7 @@ public:
         data(traits_type::construct(first,last)),
         searchable(false),
         seed(0)
-    {
-        if (searchable) {
-            if (search.embed_points(begin(),end())) {
-                reorder(search.get_order().begin(),search.get_order().end());
-            }
-        }
-    }
+    {}
 
     
     //
@@ -362,7 +356,7 @@ public:
             enforcer(i);
         }
         if (get<alive>(i)) {
-            if (searchable && update_neighbour_search) {
+            if (search.domain_has_been_set() && update_neighbour_search) {
                 if (search.add_points_at_end(begin(),end()-1,end())) {
                     reorder(search.get_order().begin(),search.get_order().end());
                 }
@@ -466,8 +460,12 @@ public:
     /// erase the particle pointed to by the iterator \p i.
     /// NOTE: This will potentially reorder the particles
     /// if neighbourhood searching is on, then this is updated
-    iterator erase (iterator i, bool update_neighbour_search = true) {
+    iterator erase (iterator i, const bool update_neighbour_search = true) {
         const size_t i_position = i-begin();
+
+        if (update_neighbour_search) {
+            search.before_delete_particles_range(begin(),end(),i_position,1);
+        }
 
         if (i_position == size()-1) {
             // just pop off back element
@@ -484,8 +482,8 @@ public:
             }
         }
             
-        if (searchable && update_neighbour_search) {
-            if (search.delete_points(begin(),end(),i_position,1)) {
+        if (update_neighbour_search) {
+            if (search.after_delete_particles_range(begin(),end(),i_position,1)) {
                 reorder(search.get_order().begin(),search.get_order().end());
             }
         }
@@ -496,12 +494,16 @@ public:
     /// erase the particles between the iterators \p first
     /// and \p last
     /// \see erase(iterator)
-    iterator erase (iterator first, iterator last, bool update_neighbour_search = true) {
+    iterator erase (iterator first, iterator last, const bool update_neighbour_search = true) {
         iterator return_iterator = last;
 
         const size_t n_before_range = first-begin();
         const size_t n = last-first;
         const size_t n_after_range = end()-last;
+
+        if (update_neighbour_search) {
+            search.before_delete_particles_range(begin(),end(),n_before_range,n);
+        }
 
         if (n_after_range > n && !search.ordered()) {
             // move elements at end to deleted region
@@ -512,8 +514,8 @@ public:
             traits_type::erase(data,first,last);
         }
         
-        if (searchable && update_neighbour_search) {
-            if (search.delete_points(begin(),end(),n_before_range,n)) {
+        if (update_neighbour_search) {
+            if (search.after_delete_particles_range(begin(),end(),n_before_range,n)) {
                 reorder(search.get_order().begin(),search.get_order().end());
             }
         }
@@ -567,17 +569,20 @@ public:
 
         search.set_domain(low,high,periodic,n_particles_in_leaf);
 
-        enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
+        //enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
+        
+        detail::for_each(begin(), end(),
+                detail::enforce_domain_impl<traits_type::dimension,reference>(low,high,periodic));
 
-        if (search.embed_points(begin(),end())) {
-            reorder(search.get_order().begin(),search.get_order().end());
-        }
+        // delete particles and update positions
+        delete_particles(true);
 
         searchable = true;
     }
 
     void init_id_search() {
         LOG(2, "Particles:init_id_search");
+        search.update_iterators(begin(),end());
         search.init_id_map();
         searchable = true;
     }
@@ -587,20 +592,6 @@ public:
         return search.get_query();
     }
 
-    /// set the length scale of the neighbourhood search to be equal to \p length_scale
-    /// \see init_neighbour_search()
-    ///  NOTE: this has been removed since you can now run neighbour searches
-    ///  with any radius
-    /*
-    void reset_neighbour_search(const double length_scale) {
-        search.set_domain(search.get_min(),
-                                    search.get_max(),
-                                    search.get_periodic(),
-                                    double_d(length_scale));
-        search.embed_points(begin(),end());
-        searchable = true;
-    }
-    */
 
     double_d correct_dx_for_periodicity(const double_d& uncorrected_dx) const {
         double_d dx = uncorrected_dx;
@@ -647,10 +638,19 @@ public:
     /// \see get_neighbours()
     void update_positions() {
         if (search.domain_has_been_set()) {
-            enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
+            detail::for_each(begin(), end(),
+                detail::enforce_domain_impl<traits_type::dimension,reference>(
+                    low,high,periodic));
+
+            if ((search.get_periodic()==false).any()) {
+                // delete particles and update positions
+                delete_particles(true);
+            } else {
+                // just update positions
+                search.update_positions();
+            }
         }
     }
-
 
     //
     // Particle Creation/Deletion
@@ -661,14 +661,20 @@ public:
     /// any iterators
     /// \param update_neighbour_search updates neighbourhood search
     /// information if true (default=true)
-    void delete_particles(const bool update_neighbour_search = true) {
+    void delete_particles(const bool update_positions=false) {
         LOG(2,"Particle: delete_particles: update_neighbour_search = "<<update_neighbour_search);
 
-        const bool update_search = searchable && update_neighbour_search;
-        const bool do_serial_delete = update_search && 
+        // if we don't need to update positions, and are running in serial,
+        // and the neighbour search isn't ordered, then
+        // do a serial update using copy_points
+        const bool do_serial_delete = search.domain_has_been_set() && 
+                                      !update_positions &&
                                       detail::concurrent_processes<traits_type>()==1 && 
                                       !search.ordered();
         const size_t old_size = size();
+        
+        // this allows the search ds to see which paricles will be deleted
+        search.before_delete_particles();
 
         if (do_serial_delete) {
             for (int index = 0; index < size(); ++index) {
@@ -677,7 +683,7 @@ public:
                     LOG(3,"Particle: delete_particles: deleting particle "<<
                             get<id>(*i)<<" with position "<<
                             static_cast<const double_d&>(get<position>(*i)));
-                    if (update_search) search.copy_points(end()-1,i);
+                    search.copy_points(end()-1,i);
                     if ((index < size()-1) && (size() > 1)) {
                         *i = *(end()-1);
                         pop_back(false);
@@ -700,20 +706,11 @@ public:
 
         const size_t new_size = size();
 
-        if (update_search) {
-            if (do_serial_delete) {
-                search.update_iterators(begin(),end());
-                search.end_list_of_copies(begin(),end());
-            } else {
-                if (search.embed_points(begin(),end())) {
-                    reorder(search.get_order().begin(),search.get_order().end());
-                }
-            }
+        if (search.after_delete_particles(begin(),end(),
+                    update_positions,do_serial_delete)) {
+            reorder(search.get_order().begin(),search.get_order().end());
         }
     }
-
-    
-
 
     // Need to be mark as device to enable get functions being device/host
     CUDA_HOST_DEVICE
@@ -921,31 +918,6 @@ private:
         return traits_type::insert(data,position,first,last);
     }
 
-    /// enforce a cuboidal domain. Any particles outside this domain for 
-    /// non-periodic dimensions will have alive set to false. For periodic dimensions
-    /// the particle will be placed accordingly back within the domain
-    /// \param low lower extent of the domain
-    /// \param high upper extent of the domain
-    /// \param periodic boolean 3d vector setting each dimension to be periodic (true)
-    /// or non-periodic (false)
-    /// \param remove_deleted_particles if true, removes particles with alive==false from 
-    /// the container (default = true)
-    void enforce_domain(const double_d& low, const double_d& high, const bool_d& periodic, const bool remove_deleted_particles = true) {
-        LOG(2,"Particle: enforce_domain: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" remove_deleted_particles = "<<remove_deleted_particles);
-        
-        detail::for_each(begin(), end(),
-                detail::enforce_domain_impl<traits_type::dimension,reference>(low,high,periodic));
-
-        if (remove_deleted_particles && (periodic==false).any()) {
-            delete_particles();
-        }
-
-        if (remove_deleted_particles || (periodic==true).any()) {
-            if (search.embed_points(begin(),end())) {
-                reorder(search.get_order().begin(),search.get_order().end());
-            }
-        }
-    }
 
 
     data_type data;
