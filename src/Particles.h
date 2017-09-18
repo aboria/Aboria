@@ -533,8 +533,6 @@ public:
         traits_type::insert(data,position,n,val);
     }
 
-    
-
     /// insert a range of particles pointed to by \p first and \p last at \p position 
     template <class InputIterator>
     iterator insert (iterator position, InputIterator first, InputIterator last) {
@@ -574,8 +572,16 @@ public:
         detail::for_each(begin(), end(),
                 detail::enforce_domain_impl<traits_type::dimension,reference>(low,high,periodic));
 
-        // delete particles and update positions
-        delete_particles(true);
+        if ((periodic == false).any()) {
+            // delete particles outside domain
+            iterator first_dead = detail::partition(begin(),end(),
+                    detail::is_alive<raw_const_reference>());
+            traits_type::erase(data,first_dead,end());
+        }
+
+        if (search.add_points_at_end(begin(),begin(),end())) {
+            reorder(search.get_order().begin(),search.get_order().end());
+        }
 
         searchable = true;
     }
@@ -642,6 +648,8 @@ public:
                 detail::enforce_domain_impl<traits_type::dimension,reference>(
                     low,high,periodic));
 
+            search.update_positions();
+            /*
             if ((search.get_periodic()==false).any()) {
                 // delete particles and update positions
                 delete_particles(true);
@@ -649,6 +657,7 @@ public:
                 // just update positions
                 search.update_positions();
             }
+            */
         }
     }
 
@@ -667,15 +676,19 @@ public:
         // if we don't need to update positions, and are running in serial,
         // and the neighbour search isn't ordered, then
         // do a serial update using copy_points
+        /*
         const bool do_serial_delete = search.domain_has_been_set() && 
                                       !update_positions &&
                                       detail::concurrent_processes<traits_type>()==1 && 
                                       !search.ordered();
+                                      */
         const size_t old_size = size();
         
         // this allows the search ds to see which paricles will be deleted
         search.before_delete_particles();
 
+        /*
+         * don't think I need this anymore
         if (do_serial_delete) {
             for (int index = 0; index < size(); ++index) {
                 iterator i = begin() + index;
@@ -699,15 +712,38 @@ public:
                         " and alive "<< bool(get<alive>(*i)));
             }
         } else {
-            iterator first_dead = detail::partition(begin(),end(),
-                                        detail::is_alive<raw_const_reference>());
-            traits_type::erase(data,first_dead,end());
+        */
+
+        auto fnot = [](const bool in) { return static_cast<int>(!in); };
+        detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
+                               detail::make_transform_iterator(get<alive>(cend()),fnot),
+                               m_delete_indicies.begin());
+        const int num_dead = *(m_delete_indicies.end()-1);
+        if (num_dead > 0) {
+            if (search.ordered()) {
+                detail::stable_partition(begin(),end(),
+                        [&](reference i) {
+                            return get<alive>(i);
+                        });
+            } else {
+                const vdouble* start_position = iterator_to_raw_pointer(get<position>(cbegin()));
+                const raw_pointer end_pointer = iterator_to_raw_pointer(end());
+                const size_t n = size();
+                const bool ordered = search.ordered();
+                detail::for_each(begin(),end(),
+                        [&](reference i) {
+                            if (!get<alive>(i)) {
+                                const size_t index = &get<position>(i)-start_position;
+                                if (!ordered) search.copy_points(end()-m_delete_indicies[index],index);
+                                i = *(end_pointer-m_delete_indicies[index]);
+                            }
+                    });
+            }
+            
+            traits_type::erase(data,end()-num_dead,end());
         }
 
-        const size_t new_size = size();
-
-        if (search.after_delete_particles(begin(),end(),
-                    update_positions,do_serial_delete)) {
+        if (search.after_delete_particles(begin(),end(),update_positions)) {
             reorder(search.get_order().begin(),search.get_order().end());
         }
     }

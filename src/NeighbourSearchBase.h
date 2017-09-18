@@ -380,28 +380,30 @@ public:
     }
 
 
-    /// embed a set of points into the buckets, assigning each 3D point into the bucket
-    /// that contains that point. Any points already assigned to the buckets are 
-    /// removed. 
-    /// \param begin_iterator an iterator to the beginning of the set of points
-    /// \param end_iterator an iterator to the end of the set of points
-    /// \see embed_points_incremental() 
-    bool embed_points(iterator begin, iterator end, bool update_id_map=false) {
+    // can have added new particles (so iterators might be invalid)
+    // can't have deleted particles
+    // only update id_map for new particles if derived class sets reorder, or
+    // particles have been added
+    bool update_positions(iterator begin, iterator end) {
+
+        const size_t old_n = m_particles_end-m_particles_begin;
         m_particles_begin = begin;
         m_particles_end = end;
 
-        CHECK(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
-
-	    LOG(2,"neighbour_search_base: embed_points: embedding "<<end-begin<<" points");
+	    LOG(2,"neighbour_search_base: embed_points: updating "<<end-begin<<" points");
 
         bool reorder = false;
         if (m_domain_has_been_set) {
-            reorder = cast().embed_points_impl();
+            reorder = cast().update_positions_impl();
         }
         if (m_id_map) {
-            if (update_id_map || reorder) {
+            const size_t n = end-begin;
+            if (reorder) {
                 init_id_map(reorder);
+            } else if (n > old_n) {
+                update_id_map(n-old_n);
             }
+            
         }
 
         query_type& query = cast().get_query_impl();
@@ -419,22 +421,6 @@ public:
         cast().update_iterator_impl();
     }
 
-    void end_list_of_copies(iterator begin, iterator end) {
-	    LOG(2,"neighbour_search_base: end_list_of_copies");
-
-        update_iterators(begin,end);
-
-        if (m_domain_has_been_set) {
-            cast().end_list_of_copies_impl();
-        }
-
-        if (m_id_map) {
-            delete_marked_id_map();
-            if (ABORIA_LOG_LEVEL >= 4) { 
-                print_id_map();
-            }
-        }
-    }
 
     bool add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
@@ -489,7 +475,115 @@ public:
         }
     }
 
-    bool delete_points(iterator begin, iterator end,
+    void before_delete_particles(const bool do_serial_delete) {
+        if (m_id_map && !do_serial_delete) {
+            // mark deleted particles in id_map_value
+            detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
+                CUDA_DEVICE
+                [&](int& i) {
+                    if (get<alive>(m_particles_begin)[i] == false) {
+                        i = -1;
+                    }
+                });
+
+            if (ABORIA_LOG_LEVEL >= 4) { 
+                print_id_map();
+            }
+        }
+
+    }
+
+    bool after_delete_particles(iterator begin, iterator end, 
+                const bool update_positions,const bool do_serial_delete) {
+        LOG(2,"neighbour_search_base: after_delete_particles");
+        bool reorder = false;
+        const size_t old_n = m_particles_end-m_particles_begin;
+        const size_t new_n = end-begin;
+
+        // if no particles were deleted and don't
+        // need to update positions just return
+        if ((old_n == new_n) && !update_positions) {
+            return reorder;
+        }
+
+        // update iterators
+        m_particles_begin = begin;
+        m_particles_end = end;
+
+        if (m_domain_has_been_set) {
+            if (do_serial_delete && !update_positions) {
+                reorder = cast().end_list_of_copies_impl();
+            } else {
+                reorder = cast().embed_points_impl();
+            }
+        }
+        if (m_id_map) {
+            delete_marked_id_map();
+            if (ABORIA_LOG_LEVEL >= 4) { 
+                print_id_map();
+            }
+        }
+        return reorder
+    }
+
+    void before_delete_particles_range(const size_t i, const size_t n) {
+        LOG(2,"neighbour_search_base: before_delete_particles_range");
+        if (m_id_map) {
+            // mark deleted particles in id_map_value
+            
+            typedef zip_iterator<typename Traits::template tuple<
+                                typename vector_int::iterator, 
+                                typename vector_int::iterator>,
+                             mpl::vector<>> pair_zip_type;
+
+        
+            const size_t np = m_particles_end-m_particles_begin; 
+            if (n*std::log(np) < np) {
+                detail::for_each(m_particles_begin+i,m_particles_begin+(i+n),
+                    [&](const reference& i) {
+                        const size_t map_index = find_id_map(get<alive>(i));
+                        m_id_map_value[map_index] = -1;
+                    });
+            } else {
+                detail::for_each(start_zip,end_zip,
+                    CUDA_DEVICE
+                    detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
+                    CUDA_DEVICE
+                    [&](int& i) {
+                        if (get<alive>(m_particles_begin)[i] == false) {
+                            i = -1;
+                        }
+                    });
+
+                    [&](typename pair_zip_type::reference const& p) {
+                        size_t& index = detail::get_impl<1>(p.get_tuple());
+                        if (index < i+n) {
+                            // to be deleted
+                            index = -1;
+                        } else {
+                            // to be shifted
+                            index -= n;
+                        }
+                    });
+
+        auto start_zip = pair_zip_type(m_id_map_key.begin()+i, m_id_map_value.begin()+i);
+
+            detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
+                CUDA_DEVICE
+                [&](int& i) {
+                    if (get<alive>(m_particles_begin)[i] == false) {
+                        i = -1;
+                    }
+                });
+
+            if (ABORIA_LOG_LEVEL >= 4) { 
+                print_id_map();
+            }
+        }
+
+    }
+    
+    bool after_delete_particles_range(iterator begin, iterator end,
                                              const size_t i, const size_t n) {
 
         const size_t new_size = end-begin;
