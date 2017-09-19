@@ -165,6 +165,7 @@ class neighbour_search_base {
 public:
 
     typedef QueryType query_type;
+    typedef typename Derived::copy_points_lambda copy_points_lambda;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::iterator iterator;
@@ -381,15 +382,17 @@ public:
 
 
     // can have added new particles (so iterators might be invalid)
-    // can't have deleted particles
+    // can't have less particles (erase will update search)
+    // can have alive==false particles 
     // only update id_map for new particles if derived class sets reorder, or
     // particles have been added
-    bool update_positions(iterator begin, iterator end) {
+    bool update_positions(iterator begin, iterator end, const vector_int& m_alive_sum) {
 
         const size_t old_n = m_particles_end-m_particles_begin;
         m_particles_begin = begin;
         m_particles_end = end;
 
+        ASSERT(old_n <= end-begin,"ERROR: number of particles less than embedded number");
 	    LOG(2,"neighbour_search_base: embed_points: updating "<<end-begin<<" points");
 
         bool reorder = false;
@@ -457,32 +460,21 @@ public:
         return reorder;
     }
 
-    void copy_points(iterator copy_from_iterator, iterator copy_to_iterator) {
-        LOG(4,"neighbour_search_base: copy_points: fromi = "<<copy_from_iterator-m_particles_begin<<" toi = "<<copy_to_iterator-m_particles_begin);
-        ASSERT((copy_to_iterator-m_particles_begin>=0) && 
-                (m_particles_end-copy_to_iterator>0),"invalid copy to iterator");
-        ASSERT((copy_from_iterator-m_particles_begin>=0) && 
-                (m_particles_end-copy_from_iterator>0),"invalid copy from iterator");
-        
-        if (m_domain_has_been_set) {
-            cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
-        }
+    
 
-        if (m_id_map) {
-            copy_id_map(*get<id>(copy_from_iterator), 
-                        *get<id>(copy_to_iterator), 
-                        copy_to_iterator-m_particles_begin);
-        }
-    }
-
-    void before_delete_particles(const bool do_serial_delete) {
-        if (m_id_map && !do_serial_delete) {
+    void before_delete_particles(const vector_int& delete_indicies) {
+        // if search is ordered, then possibly all indicies in the id map
+        // will change, so just reinit in after_delete_particles
+        // if search is not ordered, then need to change indicies of 
+        // the n particles to be deleted, and the n particles at the end
+        if (m_id_map && !cast().ordered()) {
             // mark deleted particles in id_map_value
             detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
                 CUDA_DEVICE
                 [&](int& i) {
                     if (get<alive>(m_particles_begin)[i] == false) {
                         i = -1;
+                        //TODO: end index
                     }
                 });
 
@@ -493,8 +485,7 @@ public:
 
     }
 
-    bool after_delete_particles(iterator begin, iterator end, 
-                const bool update_positions,const bool do_serial_delete) {
+    bool after_delete_particles(iterator begin, iterator end, const bool update_positions) {
         LOG(2,"neighbour_search_base: after_delete_particles");
         bool reorder = false;
         const size_t old_n = m_particles_end-m_particles_begin;
@@ -511,11 +502,7 @@ public:
         m_particles_end = end;
 
         if (m_domain_has_been_set) {
-            if (do_serial_delete && !update_positions) {
-                reorder = cast().end_list_of_copies_impl();
-            } else {
-                reorder = cast().embed_points_impl();
-            }
+            reorder = cast().delete_particles_impl(update_positions);
         }
         if (m_id_map) {
             delete_marked_id_map();
@@ -523,11 +510,14 @@ public:
                 print_id_map();
             }
         }
-        return reorder
+        return reorder;
     }
 
     void before_delete_particles_range(const size_t i, const size_t n) {
         LOG(2,"neighbour_search_base: before_delete_particles_range");
+        // TODO: this can be done more efficiently, see some code below
+        // but not worth it at this point
+        /*
         if (m_id_map) {
             // mark deleted particles in id_map_value
             
@@ -580,6 +570,7 @@ public:
                 print_id_map();
             }
         }
+        */
 
     }
     
@@ -596,7 +587,7 @@ public:
         if (n > 0) {
             LOG(2,"neighbour_search_base: delete_points: deleting points "<<i<<" to "<<i+n-1);
             if (m_domain_has_been_set) {
-                reorder = cast().delete_points_impl(i,n);
+                reorder = cast().delete_particles_range_impl(i,n);
             }
             if (m_id_map) {
                 //TODO: this should be more efficient
@@ -621,6 +612,9 @@ public:
         return reorder;
     }
 
+    copy_points_lambda get_copy_points_lambda() const {
+        return cast().get_copy_points_lambda();
+    }
     
     const query_type& get_query() const {
         return cast().get_query_impl();

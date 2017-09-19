@@ -597,6 +597,32 @@ OutputIterator transform_exclusive_scan(
             typename is_std_iterator<InputIterator>::type());
 }
 
+template< class InputIt, class OutputIt >
+OutputIt inclusive_scan( InputIt first, 
+                         InputIt last, OutputIt d_first, std::true_type ) {
+#if __cplusplus >= 201703L
+    // C++17 code here
+    return std::inclusive_scan(first,last,d_first);
+#else
+    return std::partial_sum(first,last,d_first);
+#endif
+
+}
+
+#ifdef __aboria_have_thrust__
+template< class InputIt, class OutputIt >
+OutputIt inclusive_scan( InputIt first, 
+                         InputIt last, OutputIt d_first, std::false_type ) {
+    return thrust::inclusive_scan(first,last,d_first);
+}
+#endif
+
+template< class InputIt, class OutputIt >
+OutputIt inclusive_scan( InputIt first, 
+                         InputIt last, OutputIt d_first ) {
+    return inclusive_scan(first,last,d_first,
+            typename is_std_iterator<InputIt>::type());
+}
 
 
 template<typename InputIterator1, typename InputIterator2, 

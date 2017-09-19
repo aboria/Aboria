@@ -306,8 +306,7 @@ public:
             search(other.search),
             next_id(other.next_id),
             searchable(other.searchable),
-            seed(other.seed),
-            id_to_index(other.id_to_index)
+            seed(other.seed)
     {}
 
     /// range-based copy-constructor. performs deep copying of all 
@@ -464,7 +463,7 @@ public:
         const size_t i_position = i-begin();
 
         if (update_neighbour_search) {
-            search.before_delete_particles_range(begin(),end(),i_position,1);
+            search.before_delete_particles_range(i_position,1);
         }
 
         if (i_position == size()-1) {
@@ -502,7 +501,7 @@ public:
         const size_t n_after_range = end()-last;
 
         if (update_neighbour_search) {
-            search.before_delete_particles_range(begin(),end(),n_before_range,n);
+            search.before_delete_particles_range(n_before_range,n);
         }
 
         if (n_after_range > n && !search.ordered()) {
@@ -642,13 +641,34 @@ public:
     /// `set<position>(particle,new_position)`) in order for accurate
     /// neighbourhood searching
     /// \see get_neighbours()
-    void update_positions() {
+    void update_positions(const bool assume_all_alive=false) {
         if (search.domain_has_been_set()) {
+
             detail::for_each(begin(), end(),
                 detail::enforce_domain_impl<traits_type::dimension,reference>(
-                    low,high,periodic));
+                    search.get_min(),search.get_max(),search.get_periodic()));
 
-            search.update_positions();
+            int num_dead = 0;
+            if (!assume_all_alive)  {
+                auto fnot = [](const bool in) { return static_cast<int>(!in); };
+                m_delete_indicies.resize(size());
+                detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
+                        detail::make_transform_iterator(get<alive>(cend()),fnot),
+                        m_delete_indicies.begin());
+                num_dead = *(m_delete_indicies.end()-1);
+            }
+
+            // if any dead, or search imposes an order, then will request a reorder
+            if (search.update_positions(num_dead,m_delete_indicies)) {
+                reorder(search.get_order().begin(),search.get_order().end());
+
+                // after this point all dead particles will be at the end
+                traits_type::erase(data,end()-num_dead,end());
+            }
+
+
+
+
             /*
             if ((search.get_periodic()==false).any()) {
                 // delete particles and update positions
@@ -671,7 +691,7 @@ public:
     /// \param update_neighbour_search updates neighbourhood search
     /// information if true (default=true)
     void delete_particles(const bool update_positions=false) {
-        LOG(2,"Particle: delete_particles: update_neighbour_search = "<<update_neighbour_search);
+        LOG(2,"Particle: delete_particles: update_positions= "<<update_positions);
 
         // if we don't need to update positions, and are running in serial,
         // and the neighbour search isn't ordered, then
@@ -684,8 +704,6 @@ public:
                                       */
         const size_t old_size = size();
         
-        // this allows the search ds to see which paricles will be deleted
-        search.before_delete_particles();
 
         /*
          * don't think I need this anymore
@@ -712,40 +730,58 @@ public:
                         " and alive "<< bool(get<alive>(*i)));
             }
         } else {
-        */
+
+
+        if (update_positions) {
+            traits_type::erase(data,
+                    detail::partition(get<alive>(begin()),get<alive>(end())),
+                    end());
+
+            if (search.after_delete_particles(begin(),end(),update_positions)) {
+                reorder(search.get_order().begin(),search.get_order().end());
+            }
+        } else {
 
         auto fnot = [](const bool in) { return static_cast<int>(!in); };
+        m_delete_indicies.resize(size());
         detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
                                detail::make_transform_iterator(get<alive>(cend()),fnot),
                                m_delete_indicies.begin());
         const int num_dead = *(m_delete_indicies.end()-1);
+
+        // this allows the search ds to see which paricles will be deleted
+
         if (num_dead > 0) {
-            if (search.ordered()) {
-                detail::stable_partition(begin(),end(),
-                        [&](reference i) {
-                            return get<alive>(i);
-                        });
-            } else {
-                const vdouble* start_position = iterator_to_raw_pointer(get<position>(cbegin()));
-                const raw_pointer end_pointer = iterator_to_raw_pointer(end());
-                const size_t n = size();
-                const bool ordered = search.ordered();
-                detail::for_each(begin(),end(),
-                        [&](reference i) {
-                            if (!get<alive>(i)) {
-                                const size_t index = &get<position>(i)-start_position;
-                                if (!ordered) search.copy_points(end()-m_delete_indicies[index],index);
-                                i = *(end_pointer-m_delete_indicies[index]);
+            search.before_delete_particles(m_delete_indicies);
+
+
+            //TODO: if num_dead > threshold do a partion copy?
+            if (search.ordered() || num_dead > threshold) {
+
+                raw_pointer& begin_this  = begin();
+                raw_pointer& begin_other = iterator_to_raw_pointer(
+                                            traits_type::begin(other_data));
+                detail::for_each(count(),count()+n,
+                        [&](int i) {
+                            if (!get<alive>(begin_this)[i]) {
+                                begin_other[m_delete_indicies[i]] = begin_this[i];
                             }
-                    });
+                        });
+                
+                data.swap(other_data);
+            } else {
+                detail::for_each(begin(),end(),search.get_copy_points_lambda());
             }
             
             traits_type::erase(data,end()-num_dead,end());
-        }
 
-        if (search.after_delete_particles(begin(),end(),update_positions)) {
-            reorder(search.get_order().begin(),search.get_order().end());
+            if (search.after_delete_particles(begin(),end(),update_positions)) {
+                reorder(search.get_order().begin(),search.get_order().end());
+            }
         }
+        }
+        */
+
     }
 
     // Need to be mark as device to enable get functions being device/host
@@ -920,12 +956,11 @@ private:
     typedef typename traits_type::vector_int vector_int;
 
 
-    // sort the particles by order (i.e. a scatter)
+    // sort the particles by order (i.e. a gather)
     void reorder(const typename vector_int::const_iterator& order_begin, 
                  const typename vector_int::const_iterator& order_end) {
-        ASSERT(order_end-order_begin== size(),"order vector not same size as particle vector");
         LOG(2,"reordering particles");
-        const size_t n = size();
+        const size_t n = order_end-order_begin;
         if (n > 0) {
             traits_type::resize(other_data,n);         
             detail::gather(order_begin,order_end,
@@ -955,14 +990,13 @@ private:
     }
 
 
-
     data_type data;
     data_type other_data;
     int next_id;
     bool searchable;
     uint32_t seed;
-    std::map<size_t,size_t> id_to_index;
     search_type search;
+    vector_int m_delete_indicies;
 
 
 #ifdef HAVE_VTK

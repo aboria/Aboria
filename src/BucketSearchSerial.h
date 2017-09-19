@@ -193,6 +193,7 @@ private:
         }
     }
 
+    /*
     void end_list_of_copies_impl() {
         int n = this->m_particles_end-this->m_particles_begin;
         ASSERT(n <= m_linked_list.size(),"particle size should not be greater than linked list size");
@@ -240,6 +241,7 @@ private:
 
 
     }
+    */
 
     void update_iterator_impl() {
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
@@ -248,28 +250,33 @@ private:
     }
 
 
-    bool embed_points_impl(const bool call_set_domain=true) {
-        if (call_set_domain) {
-            set_domain_impl(); 
-        }
+    // need to handle dead particles (do not insert into ds)
+    bool update_positions_impl(const bool call_set_domain=true) {
+        // if call_set_domain == false then set_domain_impl() has already
+        // been called, and returned true
+        const bool reset_domain = call_set_domain ? set_domain_impl() : true;
         const size_t n = this->m_particles_end - this->m_particles_begin;
 
         /*
          * clear head of linked lists (m_buckets)
          */
-        if (m_dirty_buckets.size() < static_cast<float>(m_buckets.size())
-                                    / detail::concurrent_processes<Traits>()) {
-            for (int i: m_dirty_buckets) {
-                m_buckets[i] = detail::get_empty_id();
+        if (!reset_domain) {
+            if (m_dirty_buckets.size() < static_cast<float>(m_buckets.size())
+                    / detail::concurrent_processes<Traits>()) {
+                for (int i: m_dirty_buckets) {
+                    m_buckets[i] = detail::get_empty_id();
+                }
+            } else {
+                m_buckets.assign(m_buckets.size(), detail::get_empty_id());
             }
-        } else {
-            m_buckets.assign(m_buckets.size(), detail::get_empty_id());
         }
 
         m_linked_list.assign(n, detail::get_empty_id());
+
         if (m_serial) {
             m_linked_list_reverse.assign(n, detail::get_empty_id());
         }
+
         m_dirty_buckets.resize(n);
 
         insert_points(0,n); 
@@ -311,7 +318,7 @@ private:
 
     bool add_points_at_end_impl(const size_t dist) {
         if (set_domain_impl())  {
-            embed_points_impl(false);
+            update_positions_impl(false);
             return false;
         }
 
@@ -363,11 +370,12 @@ private:
         return false;
     }
 
-    bool delete_points_impl(const size_t start_index_deleted, const size_t n_deleted) {
+
+    bool delete_particles_range_impl(const size_t start_index_deleted, const size_t n_deleted) {
         const bool resize_buckets = set_domain_impl();
         if (resize_buckets) {
             // buckets all changed, so start from scratch
-            embed_points_impl(false);
+            update_positions_impl(false);
             return false;
         }
 
@@ -409,6 +417,9 @@ private:
         return false;
     }
 
+    copy_points_lambda get_copy_points_lambda() const {
+        return copy_points_lambda();
+    }
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
         const size_t toi = std::distance(this->m_particles_begin,copy_to_iterator);
         const size_t fromi = std::distance(this->m_particles_begin,copy_from_iterator);
@@ -419,6 +430,33 @@ private:
         }
 
         //check_data_structure();
+    }
+
+
+    // called after a bunch of copy_points_impl, with deletions
+    bool delete_particles_impl(const bool update_positions) {
+        // make sure we don't have to reset the domain
+        const bool resize_buckets = set_domain_impl();
+        if (resize_buckets || update_positions) {
+            // buckets all changed, so start from scratch
+            return update_positions_impl(false);
+        }
+
+        // dont have to redo everything, just resize stuff
+        const size_t n = this->m_particles_end-this->m_particles_begin;
+        m_linked_list.resize(n);
+        if (m_serial) {
+            m_linked_list_reverse.resize(n);
+        }
+        m_dirty_buckets.resize(n);
+
+        //TODO: move these m_particles_begin to base class
+        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
+        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
+        this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
+
+        return false;
+
     }
 
     void copy_points_per_particle(const size_t start_index_deleted, 
@@ -593,6 +631,8 @@ private:
                              count + stop_adding, 
                 insert_points_lambda(iterator_to_raw_pointer(
                                             get<position>(this->m_particles_begin)),
+                                     iterator_to_raw_pointer(
+                                            get<alive>(this->m_particles_begin)),
                                      m_point_to_bucket_index,
                                      iterator_to_raw_pointer(m_buckets.begin()),
                                      iterator_to_raw_pointer(m_dirty_buckets.begin()),
@@ -686,6 +726,7 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
     typedef typename Traits::double_d double_d;
     typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
     double_d* m_positions;
+    uint8_t* m_alive;
     int* m_buckets;
     int* m_dirty_buckets;
     int* m_linked_list;
@@ -693,12 +734,14 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
 
 
     insert_points_lambda(double_d* m_positions,
+                         uint8_t* m_alive,
                          const ptobl_type& m_point_to_bucket_index, 
                          int* m_buckets,
                          int* m_dirty_buckets,
                          int* m_linked_list
                          ):
         m_positions(m_positions),
+        m_alive(m_alive),
         m_point_to_bucket_index(m_point_to_bucket_index),
         m_buckets(m_buckets),
         m_dirty_buckets(m_dirty_buckets),
@@ -708,6 +751,8 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
     // implements a lock-free linked list using atomic cas
     CUDA_HOST_DEVICE
     void operator()(const unsigned int i) {
+        if (!m_alive[i]) return;
+
         const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(m_positions[i]);
 
         //printf("insert_points_lambda: i = %d, bucketi = %d",i,bucketi);
@@ -825,6 +870,97 @@ struct bucket_search_serial<Traits>::copy_points_in_bucket_lambda {
     }
 };
 
+template <typename Traits>
+struct bucket_search_serial<Traits>::copy_points_lambda {
+    int* m_linked_list;
+    int* m_buckets;
+    raw_pointer m_particles_begin;
+    int m_n;
+
+    copy_points_lambda(size_t start_index_deleted,
+                       size_t start_index_copied,
+                       size_t end_index_copied,
+                       int* m_linked_list,
+                       int* m_buckets):
+        start_index_deleted(start_index_deleted),
+        start_index_copied(start_index_copied),
+        end_index_copied(end_index_copied),
+        m_linked_list(m_linked_list),
+        m_buckets(m_buckets)
+    {}
+
+    CUDA_HOST_DEVICE
+    void copy_points_per_particle(const size_t to, const size_t from) {
+    }
+
+    CUDA_HOST_DEVICE
+    void copy_points_per_bucket(const size_t to, const size_t from) {
+        // go through from linked list
+        int i_minus_1 = detail::get_empty_id();
+        int i = m_buckets[m_dirty_buckets[from]];
+        while (i != detail::get_empty_id()) {
+            // update each copied index
+            if (i == from) {
+                int i_plus_1 = m_linked_list[i];
+                i = i - start_index_copied + start_index_deleted;
+                if (i_minus_1 != detail::get_empty_id()) {
+                    m_linked_list[i_minus_1] = i;
+                } else {
+                    m_buckets[celli] = i;
+                }
+                m_linked_list[i] = i_plus_1;
+            }
+            i_minus_1 = i;
+            i = m_linked_list[i];
+        }
+
+        // go through to linked list
+        i_minus_1 = detail::get_empty_id();
+        i = m_buckets[m_dirty_buckets[to]];
+        while (i != detail::get_empty_id()) {
+            // delete to index
+            if (i == to) {
+                int i_plus_1 = m_linked_list[i];
+                m_linked_list[i_minus_1] = i_plus_1;
+            }
+            i_minus_1 = i;
+            i = m_linked_list[i];
+        }
+    }
+        
+
+    CUDA_HOST_DEVICE
+    void operator()(reference i) {
+        if (!get<alive>(i)) {
+            const size_t index = &get<position>(i) 
+                - get<position>(m_particles_begin);
+
+            // do search for next alive index
+            size_t delete_index = index;
+            do {
+                delete_index = m_n-m_delete_indicies[delete_index];
+                if (delete_index <= index) return;
+            } while (!get<alive>(m_particles_begin)[delete_index]);
+
+            // might not need to update search
+            if (m_update_search) {
+                if (m_serial) {
+                    copy_points_per_particle(index,delete_index);
+                } else {
+                    copy_points_per_bucket(index,delete_index);
+                }
+            }
+                
+            // copy particle info
+            i = *(m_particles_begin+delete_index);
+        }
+
+        
+    }
+};
+
+
+
 
 // assume that query functions, are only called from device code
 // TODO: most of this code shared with bucket_search_parallel_query, need to combine them
@@ -889,6 +1025,28 @@ struct bucket_search_serial_query {
             return m_particles_begin + m_id_map_value[map_index];
         } else {
             return m_particles_begin+n;
+        }
+    }
+
+    /*
+     * functions for updating search ds
+     */
+    CUDA_HOST_DEVICE
+    void copy_points(raw_pointer copy_from, raw_pointer copy_to) {
+        LOG(4,"neighbour_search_base: copy_points: fromi = "<<copy_from-m_particles_begin<<" toi = "<<copy_to-m_particles_begin);
+        ASSERT((copy_to-m_particles_begin>=0) && 
+                (m_particles_end-copy_to>0),"invalid copy to pointer");
+        ASSERT((copy_from-m_particles_begin>=0) && 
+                (m_particles_end-copy_from>0),"invalid copy from pointer");
+        
+        if (m_domain_has_been_set) {
+            cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
+        }
+
+        if (m_id_map) {
+            copy_id_map(*get<id>(copy_from_iterator), 
+                        *get<id>(copy_to_iterator), 
+                        copy_to_iterator-m_particles_begin);
         }
     }
 
