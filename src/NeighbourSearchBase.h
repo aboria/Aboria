@@ -222,7 +222,7 @@ public:
         m_id_map_value.resize(n);
         
         if (reorder) {
-            detail::gather(m_order.begin(),m_order.end(),
+            detail::gather(m_alive_indices.begin(),m_alive_indices.end(),
                            get<id>(m_particles_begin),
                            m_id_map_key.begin());
         } else {
@@ -386,14 +386,39 @@ public:
     // can have alive==false particles 
     // only update id_map for new particles if derived class sets reorder, or
     // particles have been added
-    bool update_positions(iterator begin, iterator end, const vector_int& m_alive_sum) {
+    bool update_positions(iterator begin, iterator end, const bool assume_all_alive) {
 
-        const size_t old_n = m_particles_end-m_particles_begin;
+        const size_t previous_n = m_particles_end-m_particles_begin;
         m_particles_begin = begin;
         m_particles_end = end;
+        const size_t dead_and_alive_n = end-begin;
+
+        const int num_dead = 0;
+        if (!assume_all_alive)  {
+            auto fnot = [](const bool in) { return static_cast<int>(!in); };
+            m_alive_sum.resize(size());
+            detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
+                    detail::make_transform_iterator(get<alive>(cend()),fnot),
+                    m_alive_sum.begin());
+            num_dead = *(m_delete_indicies.end()-1);
+        }
+
+        const size_t n = dead_and_alive_n - num_dead;
 
         ASSERT(old_n <= end-begin,"ERROR: number of particles less than embedded number");
 	    LOG(2,"neighbour_search_base: embed_points: updating "<<end-begin<<" points");
+
+        if (num_dead > 0) {
+            m_alive_indices.resize(n);
+            detail::tabulate(m_alive_sum.begin(),m_alive_sum.end(),
+                    [](int& index) {
+                        if (!get<alive>(begin)[index]) {
+                            m_alive_indices[index-m_alive_sum[index]] = index; 
+                        }
+                    });
+        } else {
+            detail::sequence(this->m_alive_indices.begin(), this->m_alive_indices.end());
+        } 
 
         bool reorder = false;
         if (m_domain_has_been_set) {
@@ -404,7 +429,7 @@ public:
             if (reorder) {
                 init_id_map(reorder);
             } else if (n > old_n) {
-                update_id_map(n-old_n);
+                update_id_map(num_dead,m_alive_sum);
             }
             
         }
@@ -621,7 +646,7 @@ public:
     }
 
     const vector_int& get_order() const {
-        return m_order;
+        return m_alive_indices;
     }
 
     const vector_int& get_id_map() const {
@@ -636,7 +661,7 @@ public:
 protected:
     iterator m_particles_begin;
     iterator m_particles_end;
-    vector_int m_order;
+    vector_int m_alive_indices;
     vector_int m_id_map_key;
     vector_int m_id_map_value;
     bool m_id_map;

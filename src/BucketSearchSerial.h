@@ -255,7 +255,7 @@ private:
         // if call_set_domain == false then set_domain_impl() has already
         // been called, and returned true
         const bool reset_domain = call_set_domain ? set_domain_impl() : true;
-        const size_t n = this->m_particles_end - this->m_particles_begin;
+        const size_t n = this->m_alive_indices.size();
 
         /*
          * clear head of linked lists (m_buckets)
@@ -279,7 +279,7 @@ private:
 
         m_dirty_buckets.resize(n);
 
-        insert_points(0,n); 
+        insert_points(this->m_alive_indices.begin(),this->m_alive_indices.end()); 
 
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
@@ -322,7 +322,7 @@ private:
             return false;
         }
 
-        const size_t n = this->m_particles_end - this->m_particles_begin;
+        const size_t n = this->m_alive_indices.size();
         const size_t start_adding = n-dist;
         
         ASSERT(m_linked_list.size() == start_adding, "m_linked_list not consistent with dist");
@@ -335,7 +335,7 @@ private:
         }
         m_dirty_buckets.resize(n);
 
-        insert_points(start_adding,n); 
+        insert_points(this->m_alive_indices.begin+start_adding,this->m_alive_indices.end()); 
 
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
@@ -603,9 +603,10 @@ private:
 
     }
 
-    void insert_points(const size_t start_adding, const size_t stop_adding) {
+    void insert_points(vector_int::iterator start_adding, vector_int::iterator stop_adding) {
         if (m_serial) {
-            for (size_t i = start_adding; i<stop_adding; ++i) {
+            for (auto it = start_adding; it != stop_adding; ++it) {
+                const int &i = *it;
                 const double_d& r = get<position>(this->m_particles_begin)[i];
                 const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
                 ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
@@ -619,6 +620,7 @@ private:
                 if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
             }
         } else {
+            /*
 #if defined(__CUDACC__)
             typedef typename thrust::detail::iterator_category_to_system<
                 typename vector_int::iterator::iterator_category
@@ -627,8 +629,8 @@ private:
 #else
             detail::counting_iterator<unsigned int> count(0);
 #endif
-            detail::for_each(count + start_adding,
-                             count + stop_adding, 
+*/
+            detail::for_each(start_adding,stop_adding, 
                 insert_points_lambda(iterator_to_raw_pointer(
                                             get<position>(this->m_particles_begin)),
                                      iterator_to_raw_pointer(
