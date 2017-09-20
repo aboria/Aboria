@@ -69,43 +69,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 namespace detail {
-template <unsigned int D, typename Reference>
-struct enforce_domain_impl {
-    typedef Vector<double,D> double_d;
-    typedef Vector<bool,D> bool_d;
-    typedef position_d<D> position;
-    static const unsigned int dimension = D;
-    const double_d low,high;
-    const bool_d periodic;
-
-    enforce_domain_impl(const double_d &low, const double_d &high, const bool_d &periodic):
-            low(low),high(high),periodic(periodic) {}
-
-    CUDA_HOST_DEVICE
-    void operator()(Reference i) const {
-        double_d r = Aboria::get<position>(i);
-        for (unsigned int d = 0; d < dimension; ++d) {
-            if (periodic[d]) {
-                while (r[d]<low[d]) {
-                    r[d] += (high[d]-low[d]);
-                }
-                while (r[d]>=high[d]) {
-                    r[d] -= (high[d]-low[d]);
-                }
-            } else {
-                if ((r[d]<low[d]) || (r[d]>=high[d])) {
-#ifdef __CUDA_ARCH__
-                    LOG_CUDA(2,"removing particle");
-#else
-                    LOG(2,"removing particle with r = "<<r);
-#endif
-                    Aboria::get<alive>(i) = uint8_t(false);
-                }
-            }
-        }
-        Aboria::get<position>(i) = r;
-    }
-};
 
 template <typename Reference>
 struct resize_lambda {
@@ -350,24 +313,17 @@ public:
         Aboria::get<generator>(i) = generator_type((seed + uint32_t(Aboria::get<id>(i))));
         Aboria::get<alive>(i) = true;
 
-        if (search.domain_has_been_set()) {
-            detail::enforce_domain_impl<traits_type::dimension,reference> enforcer(search.get_min(),search.get_max(),search.get_periodic());
-            enforcer(i);
-        }
-        if (get<alive>(i)) {
-            if (search.domain_has_been_set() && update_neighbour_search) {
-                if (search.add_points_at_end(begin(),end()-1,end())) {
+        if (update_neighbour_search) {
+            if (search.add_points_at_end(begin(),end()-1,end())) {
+                if (search.get_order().size() == size()-1) {
+                    // point has been rejected
+                    pop_back(false);
+                } else {
+                    // everything gets reordered
                     reorder(search.get_order().begin(),search.get_order().end());
                 }
             }
-        } else {
-            LOG(2,"WARNING: particle you tried to push back with r = "<<
-                    static_cast<const double_d&>(Aboria::get<position>(i)) <<
-                    " is outside the domain and has been removed");
-            pop_back(false);
-            search.update_iterators(begin(),end());
         }
-
     }
 
     /// set the base seed of the container. Note that the random number generator for
@@ -644,10 +600,7 @@ public:
     void update_positions(const bool assume_all_alive=false) {
         if (search.domain_has_been_set()) {
 
-            detail::for_each(begin(), end(),
-                detail::enforce_domain_impl<traits_type::dimension,reference>(
-                    search.get_min(),search.get_max(),search.get_periodic()));
-
+            
             int num_dead = 0;
             if (!assume_all_alive)  {
                 auto fnot = [](const bool in) { return static_cast<int>(!in); };
@@ -661,9 +614,6 @@ public:
             // if any dead, or search imposes an order, then will request a reorder
             if (search.update_positions(num_dead,m_delete_indicies)) {
                 reorder(search.get_order().begin(),search.get_order().end());
-
-                // after this point all dead particles will be at the end
-                traits_type::erase(data,end()-num_dead,end());
             }
         }
     }

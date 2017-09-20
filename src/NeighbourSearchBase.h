@@ -186,6 +186,45 @@ public:
         return true;
     }
 
+    template <unsigned int D, typename Reference>
+    struct enforce_domain_lambda {
+        typedef Vector<double,D> double_d;
+        typedef Vector<bool,D> bool_d;
+        typedef position_d<D> position;
+        static const unsigned int dimension = D;
+        const double_d low,high;
+        const bool_d periodic;
+
+        enforce_domain_impl(const double_d &low, const double_d &high, const bool_d &periodic):
+            low(low),high(high),periodic(periodic) {}
+
+        CUDA_HOST_DEVICE
+        void operator()(Reference i) const {
+            double_d r = Aboria::get<position>(i);
+            for (unsigned int d = 0; d < dimension; ++d) {
+                if (periodic[d]) {
+                    while (r[d]<low[d]) {
+                        r[d] += (high[d]-low[d]);
+                    }
+                    while (r[d]>=high[d]) {
+                        r[d] -= (high[d]-low[d]);
+                    }
+                } else {
+                    if ((r[d]<low[d]) || (r[d]>=high[d])) {
+#ifdef __CUDA_ARCH__
+                        LOG_CUDA(2,"removing particle");
+#else
+                        LOG(2,"removing particle with r = "<<r);
+#endif
+                        Aboria::get<alive>(i) = uint8_t(false);
+                    }
+                }
+            }
+            Aboria::get<position>(i) = r;
+        }
+    };
+
+
     /// resets the domain extents, periodicity and bucket size
     /// \param low the lower extent of the search domain
     /// \param high the upper extent of the search domain
@@ -386,57 +425,91 @@ public:
     // can have alive==false particles 
     // only update id_map for new particles if derived class sets reorder, or
     // particles have been added
-    bool update_positions(iterator begin, iterator end, const bool assume_all_alive) {
+    std::tuple<bool,int> bool update_positions(iterator begin, iterator end, 
+                          iterator update_begin, iterator update_end, 
+                          const bool delete_dead_particles=true) {
 
         const size_t previous_n = m_particles_end-m_particles_begin;
         m_particles_begin = begin;
         m_particles_end = end;
         const size_t dead_and_alive_n = end-begin;
+        const size_t update_start_index = update_begin-begin;
+        const size_t update_end_index = update_end-begin;
+        const bool update_end_point = update_end==end;
+        //const size_t update_n = update_end-update_begin;
+
+        // enforce domain
+        if (m_domain_has_been_set) {
+            detail::for_each(update_begin, update_end,
+                enforce_domain_lambda<traits_type::dimension,reference>(
+                    get_min(),get_max(),get_periodic()));
+        }
 
         const int num_dead = 0;
-        if (!assume_all_alive)  {
+        m_alive_sum.resize(dead_and_alive_n,0);
+        if (delete_dead_particles)  {
             auto fnot = [](const bool in) { return static_cast<int>(!in); };
-            m_alive_sum.resize(size());
-            detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
-                    detail::make_transform_iterator(get<alive>(cend()),fnot),
-                    m_alive_sum.begin());
-            num_dead = *(m_delete_indicies.end()-1);
+            detail::inclusive_scan(
+                    detail::make_transform_iterator(get<alive>(update_begin),fnot),
+                    detail::make_transform_iterator(get<alive>(update_end),fnot),
+                    m_alive_sum.begin()+update_start_index);
+            num_dead = *(m_alive_sum.begin()+update_end_index-1);
         }
+
+        CHECK(update_end==end || num_dead==0, 
+                "cannot delete points if not updating the end of the vector"); 
 
         const size_t n = dead_and_alive_n - num_dead;
 
         ASSERT(old_n <= end-begin,"ERROR: number of particles less than embedded number");
-	    LOG(2,"neighbour_search_base: embed_points: updating "<<end-begin<<" points");
 
-        if (num_dead > 0) {
-            m_alive_indices.resize(n);
-            detail::tabulate(m_alive_sum.begin(),m_alive_sum.end(),
-                    [](int& index) {
-                        if (!get<alive>(begin)[index]) {
-                            m_alive_indices[index-m_alive_sum[index]] = index; 
-                        }
-                    });
-        } else {
-            detail::sequence(this->m_alive_indices.begin(), this->m_alive_indices.end());
-        } 
+	    LOG(2,"neighbour_search_base: embed_points: updating "<<update_start_index-update_end_index<<" points");
 
-        bool reorder = false;
+        m_alive_indices.resize(n);
+        detail::tabulate(m_alive_sum.begin()+update_start_index,
+                         m_alive_sum.begin()+update_end_index,
+            [&](const int index) {
+                const size_t i = index+update_start_index;
+                m_alive_indices[index-m_alive_sum[i]] = i; 
+            });
+         
+
+        bool reorder = num_dead>0;
         if (m_domain_has_been_set) {
-            reorder = cast().update_positions_impl();
+            LOG(2,"neighbour_search_base: update_positions_impl:"<<dist);
+            reorder = cast().update_positions_impl(update_start_index,update_end_index);
         }
         if (m_id_map) {
-            const size_t n = end-begin;
-            if (reorder) {
-                init_id_map(reorder);
-            } else if (n > old_n) {
-                update_id_map(num_dead,m_alive_sum);
+            LOG(2,"neighbour_search_base: update_id_map:"<<dist);
+            // if size is right, no dead and no reorder than can assume that
+            // previous id map is correct
+            if (reorder || m_id_map_key.size() != n || num_dead > 0) {
+                const size_t update_map_start_index = reorder?0:update_start_index;
+                const size_t update_map_end_index = reorder?n:update_end_index;
+                m_id_map_key.resize(n);
+                m_id_map_value.resize(n);
+
+                detail::tabulate(m_alive_indices.begin()+update_map_start_index,
+                                 m_alive_indices.begin()+update_map_end_index,
+                    [&](const int index) {
+                        const size_t i = index+update_map_start_index;
+                        m_id_map_key[i] = get<id>(begin)[i];
+                        m_id_map_value[i] = m_alive_indices[i];
+                    });
+
+                detail::sort_by_key(m_id_map_key.begin()+update_map_start_index,
+                                    m_id_map_key.begin()+update_map_end_index,
+                                    m_id_map_value.begin()+update_map_start_index);
             }
+        }
             
         }
 
         query_type& query = cast().get_query_impl();
         query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
         query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+        query.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
+        query.m_particles_end = iterator_to_raw_pointer(m_particles_end);
 
         return reorder;
     }
@@ -452,13 +525,28 @@ public:
 
     bool add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
-                           const iterator &end) {
+                           const iterator &end,
+                           const bool delete_dead_particles=true) {
         ASSERT(start_adding-begin == m_particles_end-m_particles_begin, "prior number of particles embedded into domain is not consistent with distance between begin and start_adding");
+        ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
 
         m_particles_begin = begin;
         m_particles_end = end;
 
-        ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
+        // enforce domain
+        detail::for_each(start_adding, end,
+                enforce_domain_lambda<traits_type::dimension,reference>(
+                    get_min(),get_max(),get_periodic()));
+
+        const int num_dead = 0;
+        if (delete_dead_particles)  {
+            auto fnot = [](const bool in) { return static_cast<int>(!in); };
+            m_alive_sum.resize(size());
+            detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
+                    detail::make_transform_iterator(get<alive>(cend()),fnot),
+                    m_alive_sum.begin());
+            num_dead = *(m_delete_indicies.end()-1);
+        }
 
         const size_t dist = end - start_adding;
         bool reorder = false;
