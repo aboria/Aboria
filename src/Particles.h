@@ -314,15 +314,7 @@ public:
         Aboria::get<alive>(i) = true;
 
         if (update_neighbour_search) {
-            if (search.add_points_at_end(begin(),end()-1,end())) {
-                if (search.get_order().size() == size()-1) {
-                    // point has been rejected
-                    pop_back(false);
-                } else {
-                    // everything gets reordered
-                    reorder(search.get_order().begin(),search.get_order().end());
-                }
-            }
+            update_positions(end()-1,end());
         }
     }
 
@@ -348,11 +340,7 @@ public:
         for (const value_type& i: particles) {
             this->push_back(i,false);
         }
-        if (searchable) {
-            if (search.add_points_at_end(data.begin(),data.end()-particles.size(),data.end())) {
-                reorder(search.get_order().begin(),search.get_order().end());
-            }
-        }
+        update_positions(end()-particles.size(),end());
     }
 
     /// pop (delete) the particle at the end of the container 
@@ -417,7 +405,11 @@ public:
     /// if neighbourhood searching is on, then this is updated
     iterator erase (iterator i, const bool update_neighbour_search = true) {
         const size_t i_position = i-begin();
+        *get<alive>(i) = false;
+        update_positions(i,i+1);
+        return begin+i_position;
 
+        /*
         if (update_neighbour_search) {
             search.before_delete_particles_range(i_position,1);
         }
@@ -442,7 +434,7 @@ public:
                 reorder(search.get_order().begin(),search.get_order().end());
             }
         }
-        return i;
+        */
     }
 
 
@@ -450,8 +442,13 @@ public:
     /// and \p last
     /// \see erase(iterator)
     iterator erase (iterator first, iterator last, const bool update_neighbour_search = true) {
-        iterator return_iterator = last;
+        const size_t index_end = last-begin();
+        detail::fill(get<alive>(first),get<alive>(last),false);
+        update_positions(first,last);
+        return begin() + index_end;
 
+
+        /*
         const size_t n_before_range = first-begin();
         const size_t n = last-first;
         const size_t n_after_range = end()-last;
@@ -476,6 +473,7 @@ public:
         }
         
         return end()-n_after_range; 
+        */
     }
 
     /// insert a particle \p val into the container at \p position
@@ -522,21 +520,7 @@ public:
 
         search.set_domain(low,high,periodic,n_particles_in_leaf);
 
-        //enforce_domain(search.get_min(),search.get_max(),search.get_periodic());
-        
-        detail::for_each(begin(), end(),
-                detail::enforce_domain_impl<traits_type::dimension,reference>(low,high,periodic));
-
-        if ((periodic == false).any()) {
-            // delete particles outside domain
-            iterator first_dead = detail::partition(begin(),end(),
-                    detail::is_alive<raw_const_reference>());
-            traits_type::erase(data,first_dead,end());
-        }
-
-        if (search.add_points_at_end(begin(),begin(),end())) {
-            reorder(search.get_order().begin(),search.get_order().end());
-        }
+        update_positions(begin(),end());
 
         searchable = true;
     }
@@ -597,25 +581,16 @@ public:
     /// `set<position>(particle,new_position)`) in order for accurate
     /// neighbourhood searching
     /// \see get_neighbours()
-    void update_positions(const bool assume_all_alive=false) {
-        if (search.domain_has_been_set()) {
-
-            
-            int num_dead = 0;
-            if (!assume_all_alive)  {
-                auto fnot = [](const bool in) { return static_cast<int>(!in); };
-                m_delete_indicies.resize(size());
-                detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
-                        detail::make_transform_iterator(get<alive>(cend()),fnot),
-                        m_delete_indicies.begin());
-                num_dead = *(m_delete_indicies.end()-1);
-            }
-
-            // if any dead, or search imposes an order, then will request a reorder
-            if (search.update_positions(num_dead,m_delete_indicies)) {
-                reorder(search.get_order().begin(),search.get_order().end());
-            }
+    void update_positions(iterator update_begin, iterator update_end) {
+        if (search.update_positions(begin(),end(),update_begin,update_end)) {
+            reorder(update_begin,update_end,
+                    search.get_alive_indicies().begin(),
+                    search.get_alive_indicies.end());
         }
+    }
+
+    void update_positions() {
+        update_positions(begin(),end());
     }
 
     
@@ -791,18 +766,64 @@ private:
     typedef typename traits_type::vector_int vector_int;
 
 
-    // sort the particles by order (i.e. a gather)
-    void reorder(const typename vector_int::const_iterator& order_begin, 
+    // scatter the particles by order (i.e. a gather)
+    void reorder(iterator update_begin, iterator update_end, 
+                 const typename vector_int::const_iterator& order_start,
                  const typename vector_int::const_iterator& order_end) {
         LOG(2,"reordering particles");
-        const size_t n = order_end-order_begin;
-        if (n > 0) {
-            traits_type::resize(other_data,n);         
+        ASSERT(update_end==end,"if triggering a reorder, should be updating the end");
+        const size_t n_update = update_end-update_start;
+        const size_t start_update_index = update_start-begin();
+        const size_t n_alive = order_end-order_start;
+        const size_t new_n = size()-(n_update-n_alive);
+        if (n_alive > n/2) {
+            traits_type::resize(other_data,new_n);
+            // copy non-update region to other data buffer
+            std::copy(begin(),update_begin,traits_type::begin(other_data));
+            // gather update_region according to order to other data buffer
             detail::gather(order_begin,order_end,
-                           traits_type::begin(data),
-                           traits_type::begin(other_data));
+                    traits_type::begin(data),
+                    traits_type::begin(other_data));
+            // swap to using other data buffer
             data.swap(other_data);
             search.update_iterators(begin(),end());
+        } else {
+            traits_type::resize(other_data,n_alive);
+            // gather update_region to other buffer
+            detail::gather(order_start,order_end,
+                    traits_type::begin(data),
+                    traits_type::begin(other_data));
+            traits_type::resize(data,new_n);         
+            // copy other buffer back to current data buffer
+            detail::copy(traits_type::begin(other_data),
+                    traits_type::end(other_data),
+                    update_begin);
+            search.update_iterators(begin(),end());
+        }
+
+ 
+            /*
+            if (n_update > n/2) {
+                traits_type::resize(other_data,new_n);         
+                detail::scatter_if(begin(),end(),
+                        transform_iterator{my_index - alive_sum}
+                        get<alive>(begin()),
+                        traits_type::begin(other_data));
+                data.swap(other_data);
+                search.update_iterators(begin(),end());
+            } else {
+                const size_t i_update = alive_sum_start-alive_sum_begin;
+                if (other_data.size() < n_update) other_data.resize(n_update);
+                detail::scatter_if(begin()+i_update,end(),
+                        transform_iterator{my_index - alive_sum},
+                        get<alive>(begin()),
+                        traits_type::begin(other_data));
+                traits_type::resize(data,new_n);         
+                detail::copy(traits_type::begin(other_data),
+                             traits_type::begin(data)+i_update);
+                search.update_iterators(begin(),end());
+            }
+            */
         }
     }
 

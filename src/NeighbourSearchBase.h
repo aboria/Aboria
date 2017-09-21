@@ -425,16 +425,31 @@ public:
     // can have alive==false particles 
     // only update id_map for new particles if derived class sets reorder, or
     // particles have been added
-    std::tuple<bool,int> bool update_positions(iterator begin, iterator end, 
-                          iterator update_begin, iterator update_end, 
-                          const bool delete_dead_particles=true) {
+    bool
+    update_positions(iterator begin, iterator end, 
+                     iterator update_begin, iterator update_end, 
+                     const bool delete_dead_particles=true) {
+
+	    LOG(2,"neighbour_search_base: update_positions: updating "<<update_begin-update_end<<" points");
 
         const size_t previous_n = m_particles_end-m_particles_begin;
         m_particles_begin = begin;
         m_particles_end = end;
         const size_t dead_and_alive_n = end-begin;
+        CHECK(dead_and_alive_n >= previous_n,"error, particles got deleted somehow");
+
+        CHECK(!search.ordered() || (update_begin==begin && update_end==end), 
+                "ordered search data structure can only update the entire particle set");
+
+        const size_t new_n = dead_and_alive_n-previous_n;
+
+        // make sure update range covers new particles
+        CHECK(new_n == 0 || (update_end==end && update_end-update_begin>new_n),
+                "detected "<<new_n<<" new particles, which are not covered by update range");
+        
         const size_t update_start_index = update_begin-begin;
         const size_t update_end_index = update_end-begin;
+        const size_t update_n = update_end_index-update_start_index;
         const bool update_end_point = update_end==end;
         //const size_t update_n = update_end-update_begin;
 
@@ -445,64 +460,69 @@ public:
                     get_min(),get_max(),get_periodic()));
         }
 
-        const int num_dead = 0;
-        m_alive_sum.resize(dead_and_alive_n,0);
+        // m_alive_sum will hold a cummulative sum of the living
+        // num_dead holds total number of the dead
+        int num_dead = 0;
+        m_alive_sum.resize(update_n);
         if (delete_dead_particles)  {
-            auto fnot = [](const bool in) { return static_cast<int>(!in); };
-            detail::inclusive_scan(
-                    detail::make_transform_iterator(get<alive>(update_begin),fnot),
-                    detail::make_transform_iterator(get<alive>(update_end),fnot),
-                    m_alive_sum.begin()+update_start_index);
-            num_dead = *(m_alive_sum.begin()+update_end_index-1);
+            detail::exclusive_scan(
+                    get<alive>(update_begin),get<alive>(update_end),
+                    m_alive_sum.begin()+update_start_index,
+                    0);
+            num_dead = *(m_alive_sum.end()-1])+static_cast<int>(get<alive>(update_end));
+        } else {
+            detail::fill(m_alive_sum.begin(),m_alive_sum.end(),0);
         }
 
         CHECK(update_end==end || num_dead==0, 
-                "cannot delete points if not updating the end of the vector"); 
+                "cannot delete dead points if not updating the end of the vector"); 
 
-        const size_t n = dead_and_alive_n - num_dead;
+        // m_alive_indices holds particle set indicies that are alive
+        m_alive_indices.resize(update_n-num_dead);
+        detail::scatter_if(count(update_start_index),count(update_end_index), //items to scatter
+                           m_alive_sum.begin(), // map
+                           get<alive>(update_begin), // scattered if true
+                );
 
-        ASSERT(old_n <= end-begin,"ERROR: number of particles less than embedded number");
 
-	    LOG(2,"neighbour_search_base: embed_points: updating "<<update_start_index-update_end_index<<" points");
-
-        m_alive_indices.resize(n);
-        detail::tabulate(m_alive_sum.begin()+update_start_index,
-                         m_alive_sum.begin()+update_end_index,
-            [&](const int index) {
-                const size_t i = index+update_start_index;
-                m_alive_indices[index-m_alive_sum[i]] = i; 
-            });
-         
-
-        bool reorder = num_dead>0;
         if (m_domain_has_been_set) {
             LOG(2,"neighbour_search_base: update_positions_impl:"<<dist);
-            reorder = cast().update_positions_impl(update_start_index,update_end_index);
+            cast().update_positions_impl(update_start_index,update_end_index);
         }
         if (m_id_map) {
             LOG(2,"neighbour_search_base: update_id_map:"<<dist);
             // if size is right, no dead and no reorder than can assume that
             // previous id map is correct
-            if (reorder || m_id_map_key.size() != n || num_dead > 0) {
-                const size_t update_map_start_index = reorder?0:update_start_index;
-                const size_t update_map_end_index = reorder?n:update_end_index;
-                m_id_map_key.resize(n);
-                m_id_map_value.resize(n);
+            if (sort.ordered() || m_id_map_key.size() != n || num_dead > 0) {
+                m_id_map_key.resize(dead_and_alive_n-num_dead);
+                m_id_map_value.resize(dead_and_alive_n-num_dead);
 
-                detail::tabulate(m_alive_indices.begin()+update_map_start_index,
-                                 m_alive_indices.begin()+update_map_end_index,
-                    [&](const int index) {
-                        const size_t i = index+update_map_start_index;
-                        m_id_map_key[i] = get<id>(begin)[i];
-                        m_id_map_value[i] = m_alive_indices[i];
-                    });
+                // before update range
+                if (update_start_index > 0) {
+                    detail::copy(count(0),count(update_start_index),
+                                 m_id_map_value.begin());
+                    detail::transform(count(0),count(update_start_index),
+                                 m_id_map_key.begin(),
+                                 [](const int index) { return get<id>(begin)[index]; }
+                                 );
+                }
 
-                detail::sort_by_key(m_id_map_key.begin()+update_map_start_index,
-                                    m_id_map_key.begin()+update_map_end_index,
-                                    m_id_map_value.begin()+update_map_start_index);
+
+                // after update range
+                ASSERT(update_end_index == dead_and_alive_n, "if not updateing last particle then should not get here");
+
+                // update range
+                detail::copy(m_alive_indices.begin(),m_alive_indices.end(),
+                             m_id_map_value.begin()+update_start_index);
+                detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
+                             m_id_map_key.begin(),
+                             [](const int index) { 
+                                return get<id>(begin)[index]; 
+                             });
+                detail::sort_by_key(m_id_map_key.begin(),
+                                    m_id_map_key.end(),
+                                    m_id_map_value.begin());
             }
-        }
-            
         }
 
         query_type& query = cast().get_query_impl();
@@ -511,7 +531,8 @@ public:
         query.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
         query.m_particles_end = iterator_to_raw_pointer(m_particles_end);
 
-        return reorder;
+        return search.ordered() || num_dead > 0;
+            
     }
 
     void update_iterators(iterator begin, iterator end) {
@@ -733,7 +754,7 @@ public:
         return cast().get_query_impl();
     }
 
-    const vector_int& get_order() const {
+    const vector_int& get_alive_indicies() const {
         return m_alive_indices;
     }
 
@@ -749,7 +770,7 @@ public:
 protected:
     iterator m_particles_begin;
     iterator m_particles_end;
-    vector_int m_alive_indices;
+    vector_int m_alive_sum;
     vector_int m_id_map_key;
     vector_int m_id_map_value;
     bool m_id_map;
