@@ -462,14 +462,23 @@ public:
 
         // m_alive_sum will hold a cummulative sum of the living
         // num_dead holds total number of the dead
+        // num_alive_new holds total number of the living that are new particles
         int num_dead = 0;
+        int num_alive_new = new_n;
         m_alive_sum.resize(update_n);
         if (delete_dead_particles)  {
             detail::exclusive_scan(
                     get<alive>(update_begin),get<alive>(update_end),
-                    m_alive_sum.begin()+update_start_index,
+                    m_alive_sum.begin(),
                     0);
-            num_dead = *(m_alive_sum.end()-1])+static_cast<int>(get<alive>(update_end));
+            const int num_alive = *(m_alive_sum.end()-1])+static_cast<int>(get<alive>(update_end));
+            num_dead = update_n-num_alve;
+            if (update_n > new_n) {
+                const int num_alive_old = m_alive_sum[update_n-new_n+1];
+                num_alive_new = num_alive-num_alive_old;
+            } else {
+                num_alive_new = num_alive;
+            }
         } else {
             detail::fill(m_alive_sum.begin(),m_alive_sum.end(),0);
         }
@@ -487,7 +496,7 @@ public:
 
         if (m_domain_has_been_set) {
             LOG(2,"neighbour_search_base: update_positions_impl:"<<dist);
-            cast().update_positions_impl(update_start_index,update_end_index);
+            cast().update_positions_impl(update_begin,update_end,new_n);
         }
         if (m_id_map) {
             LOG(2,"neighbour_search_base: update_id_map:"<<dist);

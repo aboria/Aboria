@@ -251,35 +251,77 @@ private:
 
 
     // need to handle dead particles (do not insert into ds)
-    bool update_positions_impl(const bool call_set_domain=true) {
+    void update_positions_impl(iterator update_begin, iterator update_end,
+                               const int new_n,
+                               const bool call_set_domain=true) {
         // if call_set_domain == false then set_domain_impl() has already
         // been called, and returned true
         const bool reset_domain = call_set_domain ? set_domain_impl() : true;
-        const size_t n = this->m_alive_indices.size();
+        const size_t n_update = this->m_alive_indices.size();
+        const size_t n = this->m_particles_end-this->m_particles_begin;
 
-        /*
-         * clear head of linked lists (m_buckets)
-         */
-        if (!reset_domain) {
-            if (m_dirty_buckets.size() < static_cast<float>(m_buckets.size())
-                    / detail::concurrent_processes<Traits>()) {
-                for (int i: m_dirty_buckets) {
-                    m_buckets[i] = detail::get_empty_id();
+        if (n_update == n || reset_domain) {
+            // updating everthing so clear out entire ds
+            if (!reset_domain) {
+                if (m_dirty_buckets.size() < static_cast<float>(m_buckets.size())
+                        / detail::concurrent_processes<Traits>()) {
+                    for (int i: m_dirty_buckets) {
+                        m_buckets[i] = detail::get_empty_id();
+                    }
+                } else {
+                    m_buckets.assign(m_buckets.size(), detail::get_empty_id());
+                }
+            }
+            m_linked_list.assign(n, detail::get_empty_id());
+            if (m_serial) {
+                m_linked_list_reverse.assign(n, detail::get_empty_id());
+            }
+            m_dirty_buckets.resize(n);
+        } else {
+            // only updating some so only clear out indices in update range
+            const int start_index_deleted = update_begin-this->m_particles_begin;
+            const int end_index_deleted = update_end-this->m_particles_begin-new_n;
+            const int n_deleted = end_index_deleted-start_index_deleted;
+            if (m_serial) {
+                for (int toi = start_index_deleted; toi < end_index_deleted; ++toi) {
+                    const int toi_back = m_linked_list_reverse[toi];
+                    const int toi_forward = m_linked_list[toi];
+                    ASSERT(toi_back == detail::get_empty_id() ||
+                            (toi_back < m_linked_list_reverse.size() && toi_back >= 0),
+                            "invalid index of "<<toi_back <<". Note linked list reverse size is "
+                            << m_linked_list_reverse.size());
+                    ASSERT(toi_forward == detail::get_empty_id() ||
+                            (toi_forward < m_linked_list_reverse.size() && toi_forward >= 0),
+                            "invalid index of "<<toi_back <<". Note linked list reverse size is "
+                            << m_linked_list_reverse.size());
+                    if (toi_back != detail::get_empty_id()) {
+                        m_linked_list[toi_back] = toi_forward;
+                    } else {
+                        m_buckets[m_dirty_buckets[toi]] = toi_forward;
+                    }
+                    if (toi_forward != detail::get_empty_id()) {
+                        m_linked_list_reverse[toi_forward] = toi_back;
+                    }
                 }
             } else {
-                m_buckets.assign(m_buckets.size(), detail::get_empty_id());
+                m_deleted_buckets.resize(end_index_deleted-start_index_deleted);
+                detail::copy(m_dirty_buckets.begin()+start_index_deleted,
+                        m_dirty_buckets.begin()+end_index_deleted,
+                        m_deleted_buckets.begin());
+                detail::sort(m_deleted_buckets.begin(),m_deleted_buckets.end());
+                detail::for_each(m_deleted_buckets.begin(),
+                        detail::unique(m_deleted_buckets.begin(),
+                            m_deleted_buckets.end()),
+                        delete_points_in_bucket_lambda(start_index_deleted,
+                                                       end_index_deleted,
+                            iterator_to_raw_pointer(m_linked_list.begin()),
+                            iterator_to_raw_pointer(m_buckets.begin())
+                            ));
             }
         }
 
-        m_linked_list.assign(n, detail::get_empty_id());
-
-        if (m_serial) {
-            m_linked_list_reverse.assign(n, detail::get_empty_id());
-        }
-
-        m_dirty_buckets.resize(n);
-
-        insert_points(this->m_alive_indices.begin(),this->m_alive_indices.end()); 
+        // then insert points that are still alive
+        insert_points(this->m_alive_indices.begin(), this->m_alive_indices.end()); 
 
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
@@ -309,13 +351,50 @@ private:
 
         //check_data_structure();
 
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
-
-        return false;
     }
 
+    void insert_points(vector_int::iterator start_adding, vector_int::iterator stop_adding) {
+        if (m_serial) {
+            for (auto it = start_adding; it != stop_adding; ++it) {
+                const int &i = *it;
+                const double_d& r = get<position>(this->m_particles_begin)[i];
+                const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+                ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
+                const int bucket_entry = m_buckets[bucketi];
+
+                // Insert into own cell
+                m_buckets[bucketi] = i;
+                m_dirty_buckets[i] = bucketi;
+                m_linked_list[i] = bucket_entry;
+                m_linked_list_reverse[i] = detail::get_empty_id();
+                if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+            }
+        } else {
+            /*
+#if defined(__CUDACC__)
+            typedef typename thrust::detail::iterator_category_to_system<
+                typename vector_int::iterator::iterator_category
+                >::type system;
+            detail::counting_iterator<unsigned int,system> count(0);
+#else
+            detail::counting_iterator<unsigned int> count(0);
+#endif
+*/
+            detail::for_each(start_adding,stop_adding, 
+                insert_points_lambda(iterator_to_raw_pointer(
+                                            get<position>(this->m_particles_begin)),
+                                     iterator_to_raw_pointer(
+                                            get<alive>(this->m_particles_begin)),
+                                     m_point_to_bucket_index,
+                                     iterator_to_raw_pointer(m_buckets.begin()),
+                                     iterator_to_raw_pointer(m_dirty_buckets.begin()),
+                                     iterator_to_raw_pointer(m_linked_list.begin())),
+                typename detail::is_std_iterator<typename vector_int::iterator>::type());
+        }
+    }
+
+    /*
     bool add_points_at_end_impl(const size_t dist) {
         if (set_domain_impl())  {
             update_positions_impl(false);
@@ -603,45 +682,7 @@ private:
 
     }
 
-    void insert_points(vector_int::iterator start_adding, vector_int::iterator stop_adding) {
-        if (m_serial) {
-            for (auto it = start_adding; it != stop_adding; ++it) {
-                const int &i = *it;
-                const double_d& r = get<position>(this->m_particles_begin)[i];
-                const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-                ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
-                const int bucket_entry = m_buckets[bucketi];
-
-                // Insert into own cell
-                m_buckets[bucketi] = i;
-                m_dirty_buckets[i] = bucketi;
-                m_linked_list[i] = bucket_entry;
-                m_linked_list_reverse[i] = detail::get_empty_id();
-                if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
-            }
-        } else {
-            /*
-#if defined(__CUDACC__)
-            typedef typename thrust::detail::iterator_category_to_system<
-                typename vector_int::iterator::iterator_category
-                >::type system;
-            detail::counting_iterator<unsigned int,system> count(0);
-#else
-            detail::counting_iterator<unsigned int> count(0);
-#endif
-*/
-            detail::for_each(start_adding,stop_adding, 
-                insert_points_lambda(iterator_to_raw_pointer(
-                                            get<position>(this->m_particles_begin)),
-                                     iterator_to_raw_pointer(
-                                            get<alive>(this->m_particles_begin)),
-                                     m_point_to_bucket_index,
-                                     iterator_to_raw_pointer(m_buckets.begin()),
-                                     iterator_to_raw_pointer(m_dirty_buckets.begin()),
-                                     iterator_to_raw_pointer(m_linked_list.begin())),
-                typename detail::is_std_iterator<typename vector_int::iterator>::type());
-        }
-    }
+    
 
     void update_point(iterator update_iterator) {
         const size_t i = std::distance(this->m_particles_begin,update_iterator);
@@ -694,6 +735,7 @@ private:
             m_buckets[celli] = forwardi;
         }
     }
+    */
 
     const bucket_search_serial_query<Traits>& get_query_impl() const {
         return m_query;
