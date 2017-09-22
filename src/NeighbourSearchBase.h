@@ -463,9 +463,9 @@ public:
         
         const size_t update_start_index = update_begin-begin;
         const size_t update_end_index = update_end-begin;
-        const size_t update_n = update_end_index-update_start_index;
         const bool update_end_point = update_end==end;
-        //const size_t update_n = update_end-update_begin;
+        const size_t update_n = update_end_index-update_start_index;
+        if (update_n == 0) return false;
 
         // enforce domain
         if (m_domain_has_been_set) {
@@ -488,14 +488,16 @@ public:
             const int num_alive = *(m_alive_sum.end()-1)+        
                                   static_cast<int>(*get<alive>(update_end-1));
             num_dead = update_n-num_alive;
+            /*
             if (update_n > new_n) {
                 const int num_alive_old = m_alive_sum[update_n-new_n+1];
                 num_alive_new = num_alive-num_alive_old;
             } else {
                 num_alive_new = num_alive;
             }
+            */
         } else {
-            detail::fill(m_alive_sum.begin(),m_alive_sum.end(),0);
+            detail::sequence(m_alive_sum.begin(),m_alive_sum.end());
         }
 
         CHECK(update_end==end || num_dead==0, 
@@ -533,7 +535,7 @@ public:
             LOG(2,"neighbour_search_base: update_id_map:");
             // if no new particles, no dead, no reorder, or no init than can assume that
             // previous id map is correct
-            if (cast().ordered() || new_n > 0 || num_dead > 0 || m_id_map_key.size() == 0) {
+            if (cast().ordered() || new_n > 0 || num_dead > 0 || m_id_map_key.size()==0) {
                 m_id_map_key.resize(dead_and_alive_n-num_dead);
                 m_id_map_value.resize(dead_and_alive_n-num_dead);
 

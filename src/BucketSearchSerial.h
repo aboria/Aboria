@@ -319,6 +319,12 @@ private:
                             iterator_to_raw_pointer(m_buckets.begin())
                             ));
             }
+            // increase capacity of linked list vectors
+            m_linked_list.resize(n, detail::get_empty_id());
+            if (m_serial) {
+                m_linked_list_reverse.resize(n, detail::get_empty_id());
+            }
+            m_dirty_buckets.resize(n);
         }
 
         // then insert points that are still alive
