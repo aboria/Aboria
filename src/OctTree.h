@@ -107,23 +107,46 @@ private:
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
     }
 
-    bool embed_points_impl() {
-        const size_t num_points  = this->m_particles_end - this->m_particles_begin;
+    void update_positions_impl(iterator update_begin, iterator update_end,
+                               const int new_n,
+                               const bool call_set_domain=true) {
+        ASSERT(update_begin==this->m_particles_begin && update_end==this->m_particles_end,"error should be update all");
+
+        const size_t num_points  = this->m_alive_indices.size();
 
         m_tags.resize(num_points);
+        if (m_tags.size() > 0) {
+            /******************************************
+             * 3. Classify points                     *
+             ******************************************/
+            if (update_end-update_begin == num_points) {
+                // m_alive_indicies is just a sequential list of indices
+                // (i.e. no dead)
+                detail::transform(
+                    get<position>(this->m_particles_begin)+this->m_alive_indices[0], 
+                    get<position>(this->m_particles_begin)+this->m_alive_indices[0]+num_points, 
+                    m_tags.begin(), 
+                    classify_point(this->m_bounds, m_max_level));
 
-        /******************************************
-         * 3. Classify points                     *
-         ******************************************/
+            } else {
+                // m_alive_indicies contains all alive indicies
+                detail::transform(
+                    detail::make_permutation_iterator(
+                        get<position>(this->m_particles_begin), 
+                        this->m_alive_indices.begin()),
+                    detail::make_permutation_iterator(
+                        get<position>(this->m_particles_begin), 
+                        this->m_alive_indices.end()),
+                    m_tags.begin(), 
+                    classify_point(this->m_bounds, m_max_level));
+            }
 
-        detail::transform(get<position>(this->m_particles_begin), 
-                get<position>(this->m_particles_end), 
-                m_tags.begin(), 
-                classify_point(this->m_bounds, m_max_level));
-
-        // Now that we have the geometric information, we can sort the
-        // points accordingly.
-        sort_by_tags();
+            /******************************************
+             * 4. Sort according to classification    *
+             ******************************************/
+            detail::sort_by_key(m_tags.begin(), m_tags.end(), 
+                                this->m_alive_indices.begin());
+        }
         
         build_tree();
 
@@ -135,25 +158,19 @@ private:
 #endif
 
         this->m_query.m_number_of_levels = m_number_of_levels;
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
         this->m_query.m_number_of_nodes = m_nodes.size();
-        this->m_query.m_number_of_particles = this->m_particles_end
-                                             -this->m_particles_begin;
-        return true;
-
     }
 
+    /*
     bool add_points_at_end_impl(const size_t dist) {
         const size_t num_points  = this->m_particles_end - this->m_particles_begin;
         auto start_adding_particles = this->m_particles_end-dist;
         m_tags.resize(num_points);
         auto start_adding_tags = this->m_tags.end()-dist;
 
-        /******************************************
-         * 3. Classify new points                 *
-         ******************************************/
+        //3. Classify new points                 
         detail::transform(get<position>(start_adding_particles), 
                 get<position>(this->m_particles_end), 
                 start_adding_tags, 
@@ -210,6 +227,7 @@ private:
         this->m_query.m_number_of_nodes = m_nodes.size();
 
     }
+    */
 
     const octtree_query<Traits>& get_query_impl() const {
         return this->m_query;
@@ -219,19 +237,16 @@ private:
         return m_query;
     }
 
+    /*
     void sort_by_tags() {
-        /******************************************
-         * 4. Sort according to classification    *
-         ******************************************/
         if (m_tags.size() > 0) {
-            this->m_order.resize(m_tags.size());
-            detail::sequence(this->m_order.begin(), this->m_order.end());
-            detail::sort_by_key(m_tags.begin(), m_tags.end(), this->m_order.begin());
-            detail::reorder_destructive(this->m_order.begin(), 
-                                        this->m_order.end(), 
-                                        this->m_particles_begin);
+            //this->m_order.resize(m_tags.size());
+            //detail::sequence(this->m_order.begin(), this->m_order.end());
+            detail::sort_by_key(m_tags.begin(), m_tags.end(), 
+                                this->m_alive_indices.begin());
         }
     }
+*/
     
     
 private:
@@ -701,8 +716,8 @@ struct octtree_query {
     bool_d m_periodic;
     box_type m_bounds;
     raw_pointer m_particles_begin;
+    raw_pointer m_particles_end;
     size_t m_number_of_nodes;
-    size_t m_number_of_particles;
     unsigned m_number_of_levels;
 
     vint2* m_leaves_begin;
@@ -890,7 +905,7 @@ struct octtree_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     size_t number_of_particles() const {
-        return m_number_of_particles;
+        return m_particles_end-m_particles_begin;
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN

@@ -6,6 +6,7 @@
 #include "Get.h"
 #include "Traits.h"
 #include <algorithm>
+#include <boost/iterator/permutation_iterator.hpp>
 
 namespace Aboria {
 
@@ -145,6 +146,7 @@ template <typename T>
 using plus = thrust::plus<T>;
 
 using thrust::make_transform_iterator;
+using thrust::make_permutation_iterator;
 using thrust::make_zip_iterator;
 using thrust::make_tuple;
 
@@ -165,10 +167,14 @@ using normal_distribution = std::normal_distribution<T>;
 template <class UnaryFunction, class Iterator>
 using transform_iterator = boost::transform_iterator<UnaryFunction, Iterator>;
 
+template <class ElementIterator, class IndexIterator>
+using permutation_iterator = boost::permutation_iterator<ElementIterator, IndexIterator>;
+
 template <typename T>
 using plus = std::plus<T>;
 
 using boost::make_transform_iterator;
+using boost::make_permutation_iterator;
 using boost::make_zip_iterator;
 using boost::make_tuple;
 
@@ -624,6 +630,38 @@ OutputIt inclusive_scan( InputIt first,
             typename is_std_iterator<InputIt>::type());
 }
 
+template< class InputIt, class OutputIt, class T >
+OutputIt exclusive_scan( InputIt first, 
+                         InputIt last, OutputIt d_first, T init, std::true_type ) {
+#if __cplusplus >= 201703L
+    // C++17 code here
+    return std::exclusive_scan(first,last,d_first);
+#else
+    if (first != last) {
+        *d_first++ = init;
+        for (; first != last-1; ++first,++d_first) {
+            *d_first = *(d_first-1) + *first;
+        }
+    }
+    return d_first;
+#endif
+}
+
+#ifdef __aboria_have_thrust__
+template< class InputIt, class OutputIt, class T >
+OutputIt exclusive_scan( InputIt first, 
+                         InputIt last, OutputIt d_first, T init, std::false_type ) {
+    return thrust::exclusive_scan(first,last,d_first);
+}
+#endif
+
+template< class InputIt, class OutputIt, class T >
+OutputIt exclusive_scan( InputIt first, 
+                         InputIt last, OutputIt d_first, T init ) {
+    return exclusive_scan(first,last,d_first,init,
+            typename is_std_iterator<InputIt>::type());
+}
+
 
 template<typename InputIterator1, typename InputIterator2, 
     typename InputIterator3, typename RandomAccessIterator , typename Predicate >
@@ -660,6 +698,43 @@ void scatter_if(
         RandomAccessIterator output, Predicate pred) {
 
     scatter_if(first,last,map,stencil,output,pred, typename is_std_iterator<RandomAccessIterator>::type());
+}
+
+template<typename InputIterator1, typename InputIterator2, 
+    typename InputIterator3, typename RandomAccessIterator >
+void scatter_if(
+        InputIterator1 first, InputIterator1 last,
+        InputIterator2 map, InputIterator3 stencil,
+        RandomAccessIterator output, std::true_type) {
+
+    const size_t n = last-first;
+    for (int i=0; i<n; ++i) {
+        if (stencil[i]) {
+            output[map[i]] = first[i];
+        }
+    }
+}
+
+#ifdef __aboria_have_thrust__
+template<typename InputIterator1, typename InputIterator2, 
+    typename InputIterator3, typename RandomAccessIterator >
+void scatter_if(
+        InputIterator1 first, InputIterator1 last,
+        InputIterator2 map, InputIterator3 stencil,
+        RandomAccessIterator output, std::false_type) {
+
+    thrust::scatter_if(first,last,map,stencil,output);
+}
+#endif
+
+template<typename InputIterator1, typename InputIterator2, 
+    typename InputIterator3, typename RandomAccessIterator >
+void scatter_if(
+        InputIterator1 first, InputIterator1 last,
+        InputIterator2 map, InputIterator3 stencil,
+        RandomAccessIterator output) {
+
+    scatter_if(first,last,map,stencil,output,typename is_std_iterator<RandomAccessIterator>::type());
 }
 
 template<typename InputIterator , typename RandomAccessIterator , typename OutputIterator>

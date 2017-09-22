@@ -165,12 +165,13 @@ class neighbour_search_base {
 public:
 
     typedef QueryType query_type;
-    typedef typename Derived::copy_points_lambda copy_points_lambda;
     typedef typename Traits::double_d double_d;
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::iterator iterator;
     typedef typename Traits::vector_unsigned_int vector_unsigned_int;
     typedef typename Traits::vector_int vector_int;
+    typedef typename Traits::reference reference;
+    typedef typename Traits::raw_reference raw_reference;
 
     const Derived& cast() const { return static_cast<const Derived&>(*this); }
     Derived& cast() { return static_cast<Derived&>(*this); }
@@ -195,7 +196,7 @@ public:
         const double_d low,high;
         const bool_d periodic;
 
-        enforce_domain_impl(const double_d &low, const double_d &high, const bool_d &periodic):
+        enforce_domain_lambda(const double_d &low, const double_d &high, const bool_d &periodic):
             low(low),high(high),periodic(periodic) {}
 
         CUDA_HOST_DEVICE
@@ -430,6 +431,8 @@ public:
                      iterator update_begin, iterator update_end, 
                      const bool delete_dead_particles=true) {
 
+        if (!m_domain_has_been_set && !m_id_map) return false;
+
 	    LOG(2,"neighbour_search_base: update_positions: updating "<<update_begin-update_end<<" points");
 
         const size_t previous_n = m_particles_end-m_particles_begin;
@@ -438,7 +441,7 @@ public:
         const size_t dead_and_alive_n = end-begin;
         CHECK(dead_and_alive_n >= previous_n,"error, particles got deleted somehow");
 
-        CHECK(!search.ordered() || (update_begin==begin && update_end==end), 
+        CHECK(!cast().ordered() || (update_begin==begin && update_end==end), 
                 "ordered search data structure can only update the entire particle set");
 
         const size_t new_n = dead_and_alive_n-previous_n;
@@ -456,7 +459,7 @@ public:
         // enforce domain
         if (m_domain_has_been_set) {
             detail::for_each(update_begin, update_end,
-                enforce_domain_lambda<traits_type::dimension,reference>(
+                enforce_domain_lambda<Traits::dimension,raw_reference>(
                     get_min(),get_max(),get_periodic()));
         }
 
@@ -471,8 +474,9 @@ public:
                     get<alive>(update_begin),get<alive>(update_end),
                     m_alive_sum.begin(),
                     0);
-            const int num_alive = *(m_alive_sum.end()-1])+static_cast<int>(get<alive>(update_end));
-            num_dead = update_n-num_alve;
+            const int num_alive = *(m_alive_sum.end()-1)+        
+                                  static_cast<int>(*get<alive>(update_end));
+            num_dead = update_n-num_alive;
             if (update_n > new_n) {
                 const int num_alive_old = m_alive_sum[update_n-new_n+1];
                 num_alive_new = num_alive-num_alive_old;
@@ -488,32 +492,45 @@ public:
 
         // m_alive_indices holds particle set indicies that are alive
         m_alive_indices.resize(update_n-num_dead);
-        detail::scatter_if(count(update_start_index),count(update_end_index), //items to scatter
+
+#if defined(__CUDACC__)
+        typedef typename thrust::detail::iterator_category_to_system<
+            typename vector_int::iterator::iterator_category
+            >::type system;
+        detail::counting_iterator<unsigned int,system> count_start(update_start_index);
+        detail::counting_iterator<unsigned int,system> count_end(update_end_index);
+#else
+        detail::counting_iterator<unsigned int> count_start(update_start_index);
+        detail::counting_iterator<unsigned int> count_end(update_end_index);
+#endif
+
+        // scatter alive indicies to m_alive_indicies
+        detail::scatter_if(count_start,count_end, //items to scatter
                            m_alive_sum.begin(), // map
                            get<alive>(update_begin), // scattered if true
+                           m_alive_indices.begin()
                 );
 
 
         if (m_domain_has_been_set) {
-            LOG(2,"neighbour_search_base: update_positions_impl:"<<dist);
+            LOG(2,"neighbour_search_base: update_positions_impl:");
             cast().update_positions_impl(update_begin,update_end,new_n);
         }
         if (m_id_map) {
-            LOG(2,"neighbour_search_base: update_id_map:"<<dist);
-            // if size is right, no dead and no reorder than can assume that
+            LOG(2,"neighbour_search_base: update_id_map:");
+            // if no new particles, no dead and no reorder than can assume that
             // previous id map is correct
-            if (sort.ordered() || m_id_map_key.size() != n || num_dead > 0) {
+            if (cast().ordered() || new_n > 0 || num_dead > 0) {
                 m_id_map_key.resize(dead_and_alive_n-num_dead);
                 m_id_map_value.resize(dead_and_alive_n-num_dead);
 
                 // before update range
                 if (update_start_index > 0) {
-                    detail::copy(count(0),count(update_start_index),
-                                 m_id_map_value.begin());
-                    detail::transform(count(0),count(update_start_index),
-                                 m_id_map_key.begin(),
-                                 [](const int index) { return get<id>(begin)[index]; }
-                                 );
+                    detail::sequence(m_id_map_value.begin(),
+                                     m_id_map_value.begin()+update_start_index);
+                    detail::copy(get<id>(begin),
+                                 get<id>(begin)+update_start_index,
+                                 m_id_map_key.begin());
                 }
 
 
@@ -525,7 +542,7 @@ public:
                              m_id_map_value.begin()+update_start_index);
                 detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
                              m_id_map_key.begin(),
-                             [](const int index) { 
+                             [&](const int index) { 
                                 return get<id>(begin)[index]; 
                              });
                 detail::sort_by_key(m_id_map_key.begin(),
@@ -540,7 +557,7 @@ public:
         query.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
         query.m_particles_end = iterator_to_raw_pointer(m_particles_end);
 
-        return search.ordered() || num_dead > 0;
+        return cast().ordered() || num_dead > 0;
             
     }
 
@@ -553,6 +570,7 @@ public:
     }
 
 
+    /*
     bool add_points_at_end(const iterator &begin, 
                            const iterator &start_adding, 
                            const iterator &end,
@@ -565,7 +583,7 @@ public:
 
         // enforce domain
         detail::for_each(start_adding, end,
-                enforce_domain_lambda<traits_type::dimension,reference>(
+                enforce_domain_lambda<Traits::dimension,reference>(
                     get_min(),get_max(),get_periodic()));
 
         const int num_dead = 0;
@@ -660,7 +678,6 @@ public:
         LOG(2,"neighbour_search_base: before_delete_particles_range");
         // TODO: this can be done more efficiently, see some code below
         // but not worth it at this point
-        /*
         if (m_id_map) {
             // mark deleted particles in id_map_value
             
@@ -713,7 +730,6 @@ public:
                 print_id_map();
             }
         }
-        */
 
     }
     
@@ -735,7 +751,6 @@ public:
             if (m_id_map) {
                 //TODO: this should be more efficient
                 init_id_map(reorder);
-                /*
                 if (reorder) {
                     init_id_map();
                 } else {
@@ -744,7 +759,6 @@ public:
                         print_id_map();
                     }
                 }
-                */
             }
         }
 
@@ -758,6 +772,7 @@ public:
     copy_points_lambda get_copy_points_lambda() const {
         return cast().get_copy_points_lambda();
     }
+    */
     
     const query_type& get_query() const {
         return cast().get_query_impl();
@@ -780,6 +795,7 @@ protected:
     iterator m_particles_begin;
     iterator m_particles_end;
     vector_int m_alive_sum;
+    vector_int m_alive_indices;
     vector_int m_id_map_key;
     vector_int m_id_map_value;
     bool m_id_map;

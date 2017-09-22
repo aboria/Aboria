@@ -257,7 +257,8 @@ private:
         // if call_set_domain == false then set_domain_impl() has already
         // been called, and returned true
         const bool reset_domain = call_set_domain ? set_domain_impl() : true;
-        const size_t n_update = this->m_alive_indices.size();
+        const size_t n_update = update_end-update_begin;
+        const size_t n_alive = this->m_alive_indices.size();
         const size_t n = this->m_particles_end-this->m_particles_begin;
 
         if (n_update == n || reset_domain) {
@@ -321,7 +322,7 @@ private:
         }
 
         // then insert points that are still alive
-        insert_points(this->m_alive_indices.begin(), this->m_alive_indices.end()); 
+        insert_points(this->m_alive_indices.begin(),this->m_alive_indices.end(),n_update==n_alive); 
 
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
@@ -354,43 +355,80 @@ private:
         this->m_query.m_linked_list_begin = iterator_to_raw_pointer(this->m_linked_list.begin());
     }
 
-    void insert_points(vector_int::iterator start_adding, vector_int::iterator stop_adding) {
-        if (m_serial) {
-            for (auto it = start_adding; it != stop_adding; ++it) {
-                const int &i = *it;
-                const double_d& r = get<position>(this->m_particles_begin)[i];
-                const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-                ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
-                const int bucket_entry = m_buckets[bucketi];
+    void insert_points(typename vector_int::iterator start_adding, 
+                       typename vector_int::iterator stop_adding,
+                       const bool indices_sequential) {
+        if (m_serial) { // running in serial
+            if (indices_sequential) {
+                const int start = start_adding[0];
+                const int stop = start_adding[0] + stop_adding-start_adding;
+                for (int i = start; i < stop; ++i) {
+                    const double_d& r = get<position>(this->m_particles_begin)[i];
+                    const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+                    ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
+                    const int bucket_entry = m_buckets[bucketi];
 
-                // Insert into own cell
-                m_buckets[bucketi] = i;
-                m_dirty_buckets[i] = bucketi;
-                m_linked_list[i] = bucket_entry;
-                m_linked_list_reverse[i] = detail::get_empty_id();
-                if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+                    // Insert into own cell
+                    m_buckets[bucketi] = i;
+                    m_dirty_buckets[i] = bucketi;
+                    m_linked_list[i] = bucket_entry;
+                    m_linked_list_reverse[i] = detail::get_empty_id();
+                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+                }
+            } else {
+                for (auto it = start_adding; it != stop_adding; ++it) {
+                    const int &i = *it;
+                    const double_d& r = get<position>(this->m_particles_begin)[i];
+                    const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+                    ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
+                    const int bucket_entry = m_buckets[bucketi];
+
+                    // Insert into own cell
+                    m_buckets[bucketi] = i;
+                    m_dirty_buckets[i] = bucketi;
+                    m_linked_list[i] = bucket_entry;
+                    m_linked_list_reverse[i] = detail::get_empty_id();
+                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+                }
             }
-        } else {
-            /*
+        } else { // running in parallel
+            if (indices_sequential) {
 #if defined(__CUDACC__)
-            typedef typename thrust::detail::iterator_category_to_system<
-                typename vector_int::iterator::iterator_category
-                >::type system;
-            detail::counting_iterator<unsigned int,system> count(0);
+                typedef typename thrust::detail::iterator_category_to_system<
+                    typename vector_int::iterator::iterator_category
+                    >::type system;
+                detail::counting_iterator<unsigned int,system> start(start_adding[0]);
+                detail::counting_iterator<unsigned int,system> stop(start_adding[0]
+                        +stop_adding-start_adding);
 #else
-            detail::counting_iterator<unsigned int> count(0);
+                detail::counting_iterator<unsigned int> start(start_adding[0]);
+                detail::counting_iterator<unsigned int> stop(start_adding[0]
+                        +stop_adding-start_adding);
 #endif
-*/
-            detail::for_each(start_adding,stop_adding, 
-                insert_points_lambda(iterator_to_raw_pointer(
-                                            get<position>(this->m_particles_begin)),
-                                     iterator_to_raw_pointer(
-                                            get<alive>(this->m_particles_begin)),
-                                     m_point_to_bucket_index,
-                                     iterator_to_raw_pointer(m_buckets.begin()),
-                                     iterator_to_raw_pointer(m_dirty_buckets.begin()),
-                                     iterator_to_raw_pointer(m_linked_list.begin())),
+                detail::for_each(start,stop, 
+                    insert_points_lambda(
+                         iterator_to_raw_pointer(
+                                get<position>(this->m_particles_begin)),
+                         iterator_to_raw_pointer(
+                                get<alive>(this->m_particles_begin)),
+                         m_point_to_bucket_index,
+                         iterator_to_raw_pointer(m_buckets.begin()),
+                         iterator_to_raw_pointer(m_dirty_buckets.begin()),
+                         iterator_to_raw_pointer(m_linked_list.begin())),
                 typename detail::is_std_iterator<typename vector_int::iterator>::type());
+            } else {
+                detail::for_each(start_adding,stop_adding, 
+                    insert_points_lambda(
+                         iterator_to_raw_pointer(
+                                get<position>(this->m_particles_begin)),
+                         iterator_to_raw_pointer(
+                                get<alive>(this->m_particles_begin)),
+                         m_point_to_bucket_index,
+                         iterator_to_raw_pointer(m_buckets.begin()),
+                         iterator_to_raw_pointer(m_dirty_buckets.begin()),
+                         iterator_to_raw_pointer(m_linked_list.begin())),
+                typename detail::is_std_iterator<typename vector_int::iterator>::type());
+            }
         }
     }
 
@@ -795,7 +833,7 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
     // implements a lock-free linked list using atomic cas
     CUDA_HOST_DEVICE
     void operator()(const unsigned int i) {
-        if (!m_alive[i]) return;
+        //if (!m_alive[i]) return;
 
         const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(m_positions[i]);
 
@@ -914,6 +952,7 @@ struct bucket_search_serial<Traits>::copy_points_in_bucket_lambda {
     }
 };
 
+/*
 template <typename Traits>
 struct bucket_search_serial<Traits>::copy_points_lambda {
     int* m_linked_list;
@@ -1002,8 +1041,7 @@ struct bucket_search_serial<Traits>::copy_points_lambda {
         
     }
 };
-
-
+*/
 
 
 // assume that query functions, are only called from device code
@@ -1075,6 +1113,7 @@ struct bucket_search_serial_query {
     /*
      * functions for updating search ds
      */
+    /*
     CUDA_HOST_DEVICE
     void copy_points(raw_pointer copy_from, raw_pointer copy_to) {
         LOG(4,"neighbour_search_base: copy_points: fromi = "<<copy_from-m_particles_begin<<" toi = "<<copy_to-m_particles_begin);
@@ -1093,6 +1132,7 @@ struct bucket_search_serial_query {
                         copy_to_iterator-m_particles_begin);
         }
     }
+    */
 
     /*
      * functions for trees

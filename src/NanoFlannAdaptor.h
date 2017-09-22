@@ -129,7 +129,7 @@ public:
 
     // Must return the number of data points
 	inline size_t kdtree_get_point_count() const { 
-        return std::distance(this->m_particles_begin,this->m_particles_end);
+        return this->m_alive_indices.size();
     }
 
 	// Returns the distance between the vector "p1[0:size-1]" 
@@ -227,11 +227,14 @@ private:
 #endif
     }
 
+    void update_positions_impl(iterator update_begin, iterator update_end,
+                               const int new_n,
+                               const bool call_set_domain=true) {
+        ASSERT(update_begin==this->m_particles_begin && update_end==this->m_particles_end,"error should be update all");
 
-    bool embed_points_impl() {
-	    m_kd_tree.buildIndex();
+	    m_kd_tree.buildIndex(this->m_alive_indices.begin());
 
-        std::swap(this->m_order,m_kd_tree.get_vind());
+        //std::swap(this->m_order,m_kd_tree.get_vind());
 
         this->m_query.m_root = m_kd_tree.get_root_node();
         this->m_query.m_dummy_root.child1 = this->m_query.m_root;
@@ -239,18 +242,15 @@ private:
         this->m_query.m_dummy_root.node_type.sub.divfeat = 0;
         this->m_query.m_dummy_root.node_type.sub.divlow = this->m_query.m_bounds.bmin[0];
         this->m_query.m_dummy_root.node_type.sub.divhigh = this->m_query.m_bounds.bmin[0];
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
         this->m_query.m_number_of_levels = m_kd_tree.size_levels();
-        this->m_query.m_number_of_particles = this->m_particles_end
-                                             -this->m_particles_begin;
 
         print_tree(m_kd_tree.get_root_node());
 
-        return true;
     }
 
 
+    /*
     bool add_points_at_end_impl(const size_t dist) {
         return embed_points_impl();
     }
@@ -262,6 +262,7 @@ private:
     void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator) {
         embed_points_impl();
     }
+    */
 
     const nanoflann_adaptor_query<Traits>& get_query_impl() const {
         return m_query;
@@ -426,8 +427,8 @@ struct nanoflann_adaptor_query {
     bool_d m_periodic;
     detail::bbox<dimension> m_bounds;
     raw_pointer m_particles_begin;
+    raw_pointer m_particles_end;
     size_t m_number_of_buckets;
-    size_t m_number_of_particles;
     size_t m_number_of_levels;
 
     value_type* m_root;
@@ -625,7 +626,7 @@ struct nanoflann_adaptor_query {
     }
 
     size_t number_of_particles() const {
-        return m_number_of_particles;
+        return m_particles_end-m_particles_begin;
     }
 
     raw_pointer get_particles_begin() const {

@@ -407,7 +407,7 @@ public:
         const size_t i_position = i-begin();
         *get<alive>(i) = false;
         update_positions(i,i+1);
-        return begin+i_position;
+        return begin()+i_position;
 
         /*
         if (update_neighbour_search) {
@@ -585,7 +585,7 @@ public:
         if (search.update_positions(begin(),end(),update_begin,update_end)) {
             reorder(update_begin,update_end,
                     search.get_alive_indicies().begin(),
-                    search.get_alive_indicies.end());
+                    search.get_alive_indicies().end());
         }
     }
 
@@ -771,17 +771,17 @@ private:
                  const typename vector_int::const_iterator& order_start,
                  const typename vector_int::const_iterator& order_end) {
         LOG(2,"reordering particles");
-        ASSERT(update_end==end,"if triggering a reorder, should be updating the end");
-        const size_t n_update = update_end-update_start;
-        const size_t start_update_index = update_start-begin();
+        ASSERT(update_end==end(),"if triggering a reorder, should be updating the end");
+        const size_t n_update = update_end-update_begin;
         const size_t n_alive = order_end-order_start;
-        const size_t new_n = size()-(n_update-n_alive);
-        if (n_alive > n/2) {
+        const size_t old_n = size();
+        const size_t new_n = old_n-(n_update-n_alive);
+        if (n_alive > old_n/2) {
             traits_type::resize(other_data,new_n);
             // copy non-update region to other data buffer
             std::copy(begin(),update_begin,traits_type::begin(other_data));
             // gather update_region according to order to other data buffer
-            detail::gather(order_begin,order_end,
+            detail::gather(order_start,order_end,
                     traits_type::begin(data),
                     traits_type::begin(other_data));
             // swap to using other data buffer
@@ -824,7 +824,6 @@ private:
                 search.update_iterators(begin(),end());
             }
             */
-        }
     }
 
     template <class InputIterator>

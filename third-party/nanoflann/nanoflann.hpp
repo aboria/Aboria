@@ -842,7 +842,7 @@ namespace nanoflann
 		/**
 		 *  Array of indices to vectors in the dataset.
 		 */
-		std::vector<IndexType> vind;
+		typename std::vector<IndexType>::iterator vind_begin;
 
 		size_t m_leaf_max_size;
 
@@ -933,9 +933,6 @@ namespace nanoflann
 			dim = dimensionality;
 			if (DIM>0) dim=DIM;
 			m_leaf_max_size = params.leaf_max_size;
-
-			// Create a permutable array of indices to the input vectors.
-			init_vind();
 		}
 
 		/** Standard destructor */
@@ -945,9 +942,6 @@ namespace nanoflann
             return root_node;
         }
 
-        std::vector<IndexType>& get_vind() {
-            return vind;
-        }
 
         void set_leaf_max_size(const size_t size) { m_leaf_max_size = size; }
         size_t get_leaf_max_size() { return m_leaf_max_size; }
@@ -965,15 +959,14 @@ namespace nanoflann
 		/**
 		 * Builds the index
 		 */
-		void buildIndex()
+		void buildIndex(typename std::vector<IndexType>::iterator indicies)
 		{
-			init_vind();
-            assert(vind.size()==m_size);
+			m_size = dataset.kdtree_get_point_count();
+            vind_begin = indicies;
 			freeIndex();
 			m_size_at_index_build = m_size;
 			if(m_size == 0) return;
 			computeBoundingBox(root_bbox);
-            assert(vind.size()==m_size);
 			root_node = divideTree(0, m_size, root_bbox, 0);   // construct the tree
 		}
 
@@ -1114,6 +1107,7 @@ namespace nanoflann
 
 	private:
 		/** Make sure the auxiliary list \a vind has the same size than the current dataset, and re-generate if size has changed. */
+        /*
 		void init_vind()
 		{
 			// Create a permutable array of indices to the input vectors.
@@ -1121,6 +1115,7 @@ namespace nanoflann
 			if (vind.size()!=m_size) vind.resize(m_size);
 			for (size_t i = 0; i < m_size; i++) vind[i] = i;
 		}
+        */
 
 		/// Helper accessor to the dataset points:
 		inline ElementType dataset_get(size_t idx, int component) const {
@@ -1187,7 +1182,6 @@ namespace nanoflann
 		 */
 		NodePtr divideTree(const IndexType left, const IndexType right, BoundingBox& bbox, unsigned level)
 		{
-            assert(vind.size()==m_size);
 
 			NodePtr node = pool.allocate<Node>(); // allocate memory
             node->index = m_number_of_nodes++;
@@ -1203,13 +1197,13 @@ namespace nanoflann
 				// compute bounding-box of leaf points
                 /*
 				for (int i=0; i<(DIM>0 ? DIM : dim); ++i) {
-					bbox[i].low = dataset_get(vind[left],i);
-					bbox[i].high = dataset_get(vind[left],i);
+					bbox[i].low = dataset_get(vind_begin[left],i);
+					bbox[i].high = dataset_get(vind_begin[left],i);
 				}
 				for (IndexType k=left+1; k<right; ++k) {
 					for (int i=0; i<(DIM>0 ? DIM : dim); ++i) {
-						if (bbox[i].low>dataset_get(vind[k],i)) bbox[i].low=dataset_get(vind[k],i);
-						if (bbox[i].high<dataset_get(vind[k],i)) bbox[i].high=dataset_get(vind[k],i);
+						if (bbox[i].low>dataset_get(vind_begin[k],i)) bbox[i].low=dataset_get(vind_begin[k],i);
+						if (bbox[i].high<dataset_get(vind_begin[k],i)) bbox[i].high=dataset_get(vind_begin[k],i);
 					}
 				}
                 */
@@ -1218,7 +1212,7 @@ namespace nanoflann
 				IndexType idx;
 				int cutfeat;
 				DistanceType cutval;
-				middleSplit_(&vind[0]+left, right-left, idx, cutfeat, cutval, bbox);
+				middleSplit_(&vind_begin[0]+left, right-left, idx, cutfeat, cutval, bbox);
 
 				node->node_type.sub.divfeat = cutfeat;
 
@@ -1370,10 +1364,10 @@ namespace nanoflann
 				//count_leaf += (node->lr.right-node->lr.left);  // Removed since was neither used nor returned to the user.
 				DistanceType worst_dist = result_set.worstDist();
 				for (IndexType i=node->node_type.lr.left; i<node->node_type.lr.right; ++i) {
-					const IndexType index = vind[i];// reorder... : i;
+					const IndexType index = vind_begin[i];// reorder... : i;
 					DistanceType dist = distance(vec, index, (DIM>0 ? DIM : dim));
 					if (dist<worst_dist) {
-						result_set.addPoint(dist,vind[i]);
+						result_set.addPoint(dist,vind_begin[i]);
 					}
 				}
 				return;
@@ -1472,7 +1466,7 @@ namespace nanoflann
 			save_value(stream, dim);
 			save_value(stream, root_bbox);
 			save_value(stream, m_leaf_max_size);
-			save_value(stream, vind);
+			save_value(stream, vind_begin);
 			save_tree(stream, root_node);
 		}
 
@@ -1486,7 +1480,7 @@ namespace nanoflann
 			load_value(stream, dim);
 			load_value(stream, root_bbox);
 			load_value(stream, m_leaf_max_size);
-			load_value(stream, vind);
+			load_value(stream, vind_begin);
 			load_tree(stream, root_node);
 		}
 

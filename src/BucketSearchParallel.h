@@ -103,7 +103,7 @@ private:
 
 
     bool set_domain_impl() {
-        const size_t n = this->m_particles_end - this->m_particles_begin;
+        const size_t n = this->m_alive_indices.size();
         if (n < 0.5*m_size_calculated_with_n || n > 2*m_size_calculated_with_n) {
             LOG(2,"bucket_search_parallel: recalculating bucket size");
             m_size_calculated_with_n = n;
@@ -149,26 +149,66 @@ private:
         }
     }
 
-    void end_list_of_copies_impl() {}
 
     void update_iterator_impl() {
         this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
         this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
-    bool embed_points_impl(const bool call_set_domain=true) {
+    void update_positions_impl(iterator update_begin, iterator update_end,
+                               const int new_n,
+                               const bool call_set_domain=true) {
+        ASSERT(update_begin==this->m_particles_begin && update_end==this->m_particles_end,"error should be update all");
+
         if (call_set_domain) {
             set_domain_impl();
         }
-        const size_t n = this->m_particles_end - this->m_particles_begin;
+
+        const size_t n = this->m_alive_indices.size();
         m_bucket_indices.resize(n);
         if (n > 0) {
-            build_bucket_indices(
-                    get<position>(this->m_particles_begin),
-                    get<position>(this->m_particles_end),m_bucket_indices.begin());
-            sort_by_bucket_index();
+            // transform the points to their bucket indices
+            if (update_end-update_begin == n) {
+                // m_alive_indicies is just a sequential list of indices
+                // (i.e. no dead)
+                detail::transform(
+                    get<position>(this->m_particles_begin)+this->m_alive_indices[0], 
+                    get<position>(this->m_particles_begin)+this->m_alive_indices[0]+n, 
+                    m_bucket_indices.begin(),
+                    m_point_to_bucket_index);
+            } else {
+                // m_alive_indicies contains all alive indicies
+                detail::transform(
+                    detail::make_permutation_iterator(
+                        get<position>(this->m_particles_begin), 
+                        this->m_alive_indices.begin()),
+                    detail::make_permutation_iterator(
+                        get<position>(this->m_particles_begin), 
+                        this->m_alive_indices.end()),
+                    m_bucket_indices.begin(),
+                    m_point_to_bucket_index);
+            }
+
+            // sort the points by their bucket index
+            detail::sort_by_key(m_bucket_indices.begin(),
+                                m_bucket_indices.end(),
+                                this->m_alive_indices.begin());
         }
-        build_buckets();
+
+        // find the beginning of each bucket's list of points
+        detail::counting_iterator<unsigned int> search_begin(0);
+        detail::lower_bound(m_bucket_indices.begin(),
+                m_bucket_indices.end(),
+                search_begin,
+                search_begin + m_size.prod(),
+                m_bucket_begin.begin());
+
+        // find the end of each bucket's list of points
+        detail::upper_bound(m_bucket_indices.begin(),
+                m_bucket_indices.end(),
+                search_begin,
+                search_begin + m_size.prod(),
+                m_bucket_end.begin());
 
         #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
@@ -186,14 +226,9 @@ private:
             LOG(4,"\tend particles:");
         }
         #endif
-
-
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
-
-        return true;
     }
 
+    /*
     bool add_points_at_end_impl(const size_t dist) {
         const bool embed_all = set_domain_impl();
         auto start_adding = embed_all?this->m_particles_begin:
@@ -311,6 +346,7 @@ private:
         build_buckets();
     }
 
+    */
     const bucket_search_parallel_query<Traits>& get_query_impl() const {
         return m_query;
     }
@@ -320,13 +356,13 @@ private:
     }
 
 
-
     /*
     const bucket_search_parallel_query<Traits>& get_query() const {
         return m_query;
     }
     */
     
+    /*
     void build_buckets() {
         // find the beginning of each bucket's list of points
         detail::counting_iterator<unsigned int> search_begin(0);
@@ -365,6 +401,7 @@ private:
                                 this->m_order.begin());
         }
     }
+    */
 
  
 
