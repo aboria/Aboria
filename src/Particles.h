@@ -406,7 +406,7 @@ public:
     iterator erase (iterator i, const bool update_neighbour_search = true) {
         const size_t i_position = i-begin();
         *get<alive>(i) = false;
-        update_positions(i,i+1);
+        update_positions(i,end());
         return begin()+i_position;
 
         /*
@@ -444,7 +444,7 @@ public:
     iterator erase (iterator first, iterator last, const bool update_neighbour_search = true) {
         const size_t index_end = last-begin();
         detail::fill(get<alive>(first),get<alive>(last),false);
-        update_positions(first,last);
+        update_positions(first,end());
         return begin() + index_end;
 
 
@@ -519,7 +519,6 @@ public:
         LOG(2, "Particles:init_neighbour_search: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" n_particles_in_leaf = "<<n_particles_in_leaf);
 
         search.set_domain(low,high,periodic,n_particles_in_leaf);
-
         update_positions(begin(),end());
 
         searchable = true;
@@ -527,8 +526,8 @@ public:
 
     void init_id_search() {
         LOG(2, "Particles:init_id_search");
-        search.update_iterators(begin(),end());
         search.init_id_map();
+        update_positions(begin(),end());
         searchable = true;
     }
 
@@ -766,11 +765,11 @@ private:
     typedef typename traits_type::vector_int vector_int;
 
 
-    // scatter the particles by order (i.e. a gather)
+    // gather the given update range using the order given 
     void reorder(iterator update_begin, iterator update_end, 
                  const typename vector_int::const_iterator& order_start,
                  const typename vector_int::const_iterator& order_end) {
-        LOG(2,"reordering particles");
+        LOG(2,"Particles: reordering particles");
         ASSERT(update_end==end(),"if triggering a reorder, should be updating the end");
         const size_t n_update = update_end-update_begin;
         const size_t n_alive = order_end-order_start;
@@ -783,7 +782,7 @@ private:
             // gather update_region according to order to other data buffer
             detail::gather(order_start,order_end,
                     traits_type::begin(data),
-                    traits_type::begin(other_data));
+                    traits_type::begin(other_data)+(update_begin-begin()));
             // swap to using other data buffer
             data.swap(other_data);
             search.update_iterators(begin(),end());

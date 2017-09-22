@@ -254,6 +254,13 @@ public:
                                 - m_id_map_key.begin();
     }
 
+    void init_id_map() {
+        m_id_map = true;
+        m_id_map_key.clear();
+        m_id_map_value.clear();
+    }
+
+    /*
     void init_id_map(const bool reorder=false) {
         m_id_map = true;
 	    LOG(2,"neighbour_search_base: init_id_map");
@@ -336,7 +343,6 @@ public:
 
 
     void delete_id_map_in_range(const size_t i, const size_t n) {
-        /*
         // TODO: would be usefule to have an aboria `make_zip_iterator`
         typedef zip_iterator<typename Traits::template tuple<
                                 typename vector_int::iterator, 
@@ -403,13 +409,18 @@ public:
 
         delete_marked_id_map();
 
-        */
     }
-
+        */
     void print_id_map() {
         std::cout << "particle ids:\n";
         for (auto i = m_particles_begin; i != m_particles_end; ++i) {
             std::cout << *get<id>(i) << ',';
+        }
+        std::cout << std::endl;
+
+        std::cout << "alive indices:\n";
+        for (auto i = m_alive_indices.begin(); i != m_alive_indices.end(); ++i) {
+            std::cout << *i << ',';
         }
         std::cout << std::endl;
 
@@ -433,7 +444,7 @@ public:
 
         if (!m_domain_has_been_set && !m_id_map) return false;
 
-	    LOG(2,"neighbour_search_base: update_positions: updating "<<update_begin-update_end<<" points");
+	    LOG(2,"neighbour_search_base: update_positions: updating "<<update_end-update_begin<<" points");
 
         const size_t previous_n = m_particles_end-m_particles_begin;
         m_particles_begin = begin;
@@ -447,7 +458,7 @@ public:
         const size_t new_n = dead_and_alive_n-previous_n;
 
         // make sure update range covers new particles
-        CHECK(new_n == 0 || (update_end==end && update_end-update_begin>new_n),
+        CHECK(new_n == 0 || (update_end==end && update_end-update_begin>=new_n),
                 "detected "<<new_n<<" new particles, which are not covered by update range");
         
         const size_t update_start_index = update_begin-begin;
@@ -475,7 +486,7 @@ public:
                     m_alive_sum.begin(),
                     0);
             const int num_alive = *(m_alive_sum.end()-1)+        
-                                  static_cast<int>(*get<alive>(update_end));
+                                  static_cast<int>(*get<alive>(update_end-1));
             num_dead = update_n-num_alive;
             if (update_n > new_n) {
                 const int num_alive_old = m_alive_sum[update_n-new_n+1];
@@ -489,6 +500,8 @@ public:
 
         CHECK(update_end==end || num_dead==0, 
                 "cannot delete dead points if not updating the end of the vector"); 
+
+	    LOG(2,"neighbour_search_base: update_positions: found "<<num_dead<<" dead points, and "<<new_n<<" new points");
 
         // m_alive_indices holds particle set indicies that are alive
         m_alive_indices.resize(update_n-num_dead);
@@ -518,9 +531,9 @@ public:
         }
         if (m_id_map) {
             LOG(2,"neighbour_search_base: update_id_map:");
-            // if no new particles, no dead and no reorder than can assume that
+            // if no new particles, no dead, no reorder, or no init than can assume that
             // previous id map is correct
-            if (cast().ordered() || new_n > 0 || num_dead > 0) {
+            if (cast().ordered() || new_n > 0 || num_dead > 0 || m_id_map_key.size() == 0) {
                 m_id_map_key.resize(dead_and_alive_n-num_dead);
                 m_id_map_value.resize(dead_and_alive_n-num_dead);
 
@@ -538,16 +551,24 @@ public:
                 ASSERT(update_end_index == dead_and_alive_n, "if not updateing last particle then should not get here");
 
                 // update range
-                detail::copy(m_alive_indices.begin(),m_alive_indices.end(),
-                             m_id_map_value.begin()+update_start_index);
                 detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
-                             m_id_map_key.begin(),
+                             m_id_map_value.begin()+update_start_index,
+                             [&](const int index) { 
+                                const int index_into_update = index - update_start_index;
+                                const int num_dead_before_index = index_into_update - 
+                                            m_alive_sum[index_into_update];
+                                return index - num_dead_before_index; 
+                             });
+                detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
+                             m_id_map_key.begin()+update_start_index,
                              [&](const int index) { 
                                 return get<id>(begin)[index]; 
                              });
                 detail::sort_by_key(m_id_map_key.begin(),
                                     m_id_map_key.end(),
                                     m_id_map_value.begin());
+
+                print_id_map();
             }
         }
 
