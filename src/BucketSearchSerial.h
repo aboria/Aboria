@@ -108,7 +108,8 @@ public:
     }
 
     struct delete_points_in_bucket_lambda;
-    struct insert_points_lambda;
+    struct insert_points_lambda_sequential;
+    struct insert_points_lambda_non_sequential;
     struct copy_points_in_bucket_lambda;
 
 private:
@@ -252,14 +253,15 @@ private:
 
     // need to handle dead particles (do not insert into ds)
     void update_positions_impl(iterator update_begin, iterator update_end,
-                               const int new_n,
+                               const int num_new_particles_added,
                                const bool call_set_domain=true) {
         // if call_set_domain == false then set_domain_impl() has already
         // been called, and returned true
         const bool reset_domain = call_set_domain ? set_domain_impl() : true;
         const size_t n_update = update_end-update_begin;
         const size_t n_alive = this->m_alive_indices.size();
-        const size_t n = this->m_particles_end-this->m_particles_begin;
+        const size_t n_dead_in_update = n_update-n_alive;
+        const size_t n = this->m_particles_end-this->m_particles_begin-n_dead_in_update;
 
         if (n_update == n || reset_domain) {
             // updating everthing so clear out entire ds
@@ -281,7 +283,7 @@ private:
         } else {
             // only updating some so only clear out indices in update range
             const int start_index_deleted = update_begin-this->m_particles_begin;
-            const int end_index_deleted = update_end-this->m_particles_begin-new_n;
+            const int end_index_deleted = update_end-this->m_particles_begin-num_new_particles_added;
             const int n_deleted = end_index_deleted-start_index_deleted;
             if (m_serial) {
                 for (int toi = start_index_deleted; toi < end_index_deleted; ++toi) {
@@ -364,76 +366,75 @@ private:
     void insert_points(typename vector_int::iterator start_adding, 
                        typename vector_int::iterator stop_adding,
                        const bool indices_sequential) {
+        const int start = start_adding[0];
         if (m_serial) { // running in serial
             if (indices_sequential) {
-                const int start = start_adding[0];
-                const int stop = start_adding[0] + stop_adding-start_adding;
-                for (int i = start; i < stop; ++i) {
-                    const double_d& r = get<position>(this->m_particles_begin)[i];
+                for (int i = 0; i < this->m_alive_indices.size(); ++i) {
+                    // use actual index to insert into ds
+                    const int new_index = i+start;
+                    const double_d& r = get<position>(this->m_particles_begin)
+                                            [new_index];
                     const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
                     ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
                     const int bucket_entry = m_buckets[bucketi];
 
                     // Insert into own cell
-                    m_buckets[bucketi] = i;
-                    m_dirty_buckets[i] = bucketi;
-                    m_linked_list[i] = bucket_entry;
-                    m_linked_list_reverse[i] = detail::get_empty_id();
-                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+                    m_buckets[bucketi] = new_index;
+                    m_dirty_buckets[new_index] = bucketi;
+                    m_linked_list[new_index] = bucket_entry;
+                    m_linked_list_reverse[new_index] = detail::get_empty_id();
+                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
                 }
             } else {
-                for (auto it = start_adding; it != stop_adding; ++it) {
-                    const int &i = *it;
-                    const double_d& r = get<position>(this->m_particles_begin)[i];
+                for (int i = 0; i < this->m_alive_indices.size(); ++i) {
+                    // use actual index to insert into ds
+                    const int new_index = i+start;
+                    // use m_alive_index to get position
+                    const double_d& r = get<position>(this->m_particles_begin)[this->m_alive_indices[i]];
                     const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
                     ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
                     const int bucket_entry = m_buckets[bucketi];
 
                     // Insert into own cell
-                    m_buckets[bucketi] = i;
-                    m_dirty_buckets[i] = bucketi;
-                    m_linked_list[i] = bucket_entry;
-                    m_linked_list_reverse[i] = detail::get_empty_id();
-                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = i;
+                    m_buckets[bucketi] = new_index;
+                    m_dirty_buckets[new_index] = bucketi;
+                    m_linked_list[new_index] = bucket_entry;
+                    m_linked_list_reverse[new_index] = detail::get_empty_id();
+                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
                 }
             }
         } else { // running in parallel
-            if (indices_sequential) {
 #if defined(__CUDACC__)
-                typedef typename thrust::detail::iterator_category_to_system<
-                    typename vector_int::iterator::iterator_category
-                    >::type system;
-                detail::counting_iterator<unsigned int,system> start(start_adding[0]);
-                detail::counting_iterator<unsigned int,system> stop(start_adding[0]
-                        +stop_adding-start_adding);
+            typedef typename thrust::detail::iterator_category_to_system<
+                typename vector_int::iterator::iterator_category
+                >::type system;
+            detail::counting_iterator<int,system> count(0);
 #else
-                detail::counting_iterator<unsigned int> start(start_adding[0]);
-                detail::counting_iterator<unsigned int> stop(start_adding[0]
-                        +stop_adding-start_adding);
+            detail::counting_iterator<int> count(0);
 #endif
-                detail::for_each(start,stop, 
-                    insert_points_lambda(
+            if (indices_sequential) {
+
+                detail::for_each(count,count+this->m_alive_indices.size(),
+                    insert_points_lambda_sequential(
                          iterator_to_raw_pointer(
                                 get<position>(this->m_particles_begin)),
-                         iterator_to_raw_pointer(
-                                get<alive>(this->m_particles_begin)),
+                         iterator_to_raw_pointer(this->m_alive_indices.begin()),
                          m_point_to_bucket_index,
                          iterator_to_raw_pointer(m_buckets.begin()),
                          iterator_to_raw_pointer(m_dirty_buckets.begin()),
-                         iterator_to_raw_pointer(m_linked_list.begin())),
-                typename detail::is_std_iterator<typename vector_int::iterator>::type());
+                         iterator_to_raw_pointer(m_linked_list.begin()),
+                         start));
             } else {
-                detail::for_each(start_adding,stop_adding, 
-                    insert_points_lambda(
+                detail::for_each(count,count+this->m_alive_indices.size(),
+                    insert_points_lambda_non_sequential(
                          iterator_to_raw_pointer(
                                 get<position>(this->m_particles_begin)),
-                         iterator_to_raw_pointer(
-                                get<alive>(this->m_particles_begin)),
+                         iterator_to_raw_pointer(this->m_alive_indices.begin()),
                          m_point_to_bucket_index,
                          iterator_to_raw_pointer(m_buckets.begin()),
                          iterator_to_raw_pointer(m_dirty_buckets.begin()),
-                         iterator_to_raw_pointer(m_linked_list.begin())),
-                typename detail::is_std_iterator<typename vector_int::iterator>::type());
+                         iterator_to_raw_pointer(m_linked_list.begin()),
+                         start));
             }
         }
     }
@@ -810,38 +811,42 @@ private:
 
 
 template <typename Traits>
-struct bucket_search_serial<Traits>::insert_points_lambda {
+struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential {
     typedef typename Traits::double_d double_d;
     typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
     double_d* m_positions;
-    uint8_t* m_alive;
+    int* m_alive_indices;
     int* m_buckets;
     int* m_dirty_buckets;
     int* m_linked_list;
+    int start;
     ptobl_type m_point_to_bucket_index;
 
 
-    insert_points_lambda(double_d* m_positions,
-                         uint8_t* m_alive,
+    insert_points_lambda_non_sequential(double_d* m_positions,
+                         int* m_alive_indices,
                          const ptobl_type& m_point_to_bucket_index, 
                          int* m_buckets,
                          int* m_dirty_buckets,
-                         int* m_linked_list
+                         int* m_linked_list,
+                         int start
                          ):
         m_positions(m_positions),
-        m_alive(m_alive),
+        m_alive_indices(m_alive_indices),
         m_point_to_bucket_index(m_point_to_bucket_index),
         m_buckets(m_buckets),
         m_dirty_buckets(m_dirty_buckets),
-        m_linked_list(m_linked_list)
+        m_linked_list(m_linked_list),
+        start(start)
     {}
 
     // implements a lock-free linked list using atomic cas
     CUDA_HOST_DEVICE
-    void operator()(const unsigned int i) {
+    void operator()(const int i) {
         //if (!m_alive[i]) return;
 
-        const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(m_positions[i]);
+        const int new_index = i+start;
+        const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(m_positions[m_alive_indices[i]]);
 
         //printf("insert_points_lambda: i = %d, bucketi = %d",i,bucketi);
 
@@ -850,21 +855,84 @@ struct bucket_search_serial<Traits>::insert_points_lambda {
         int next;
         do {
             next = m_buckets[bucketi];
-        } while (atomicCAS(m_buckets + bucketi, next, i) != i);
+        } while (atomicCAS(m_buckets + bucketi, next, new_index) != new_index);
         #else
         int next = m_buckets[bucketi];
-        while (!__atomic_compare_exchange_n(m_buckets + bucketi, &next, i, 
+        while (!__atomic_compare_exchange_n(m_buckets + bucketi, &next, new_index, 
                                     true, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
         #endif
 
         //successful
-        m_dirty_buckets[i] = bucketi;
-        m_linked_list[i] = next;
+        m_dirty_buckets[new_index] = bucketi;
+        m_linked_list[new_index] = next;
 
         //m_linked_list_reverse[i] = detail::get_empty_id();
         //if (next != detail::get_empty_id()) m_linked_list_reverse[next] = i;
     }
 };
+
+template <typename Traits>
+struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
+    typedef typename Traits::double_d double_d;
+    typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
+    double_d* m_positions;
+    int* m_alive_indices;
+    int* m_buckets;
+    int* m_dirty_buckets;
+    int* m_linked_list;
+    int start;
+    ptobl_type m_point_to_bucket_index;
+
+
+    insert_points_lambda_sequential(double_d* m_positions,
+                         int* m_alive_indices,
+                         const ptobl_type& m_point_to_bucket_index, 
+                         int* m_buckets,
+                         int* m_dirty_buckets,
+                         int* m_linked_list,
+                         int start
+                         ):
+        m_positions(m_positions),
+        m_alive_indices(m_alive_indices),
+        m_point_to_bucket_index(m_point_to_bucket_index),
+        m_buckets(m_buckets),
+        m_dirty_buckets(m_dirty_buckets),
+        m_linked_list(m_linked_list),
+        start(start)
+    {}
+
+    // implements a lock-free linked list using atomic cas
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+        //if (!m_alive[i]) return;
+
+        const int new_index = i+start;
+        const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(m_positions[new_index]);
+
+        //printf("insert_points_lambda: i = %d, bucketi = %d",i,bucketi);
+
+        //try inserting at head of the list
+        #if defined(__CUDA_ARCH__)
+        int next;
+        do {
+            next = m_buckets[bucketi];
+        } while (atomicCAS(m_buckets + bucketi, next, new_index) != new_index);
+        #else
+        int next = m_buckets[bucketi];
+        while (!__atomic_compare_exchange_n(m_buckets + bucketi, &next, new_index, 
+                                    true, __ATOMIC_RELAXED, __ATOMIC_RELAXED));
+        #endif
+
+        //successful
+        m_dirty_buckets[new_index] = bucketi;
+        m_linked_list[new_index] = next;
+
+        //m_linked_list_reverse[i] = detail::get_empty_id();
+        //if (next != detail::get_empty_id()) m_linked_list_reverse[next] = i;
+    }
+};
+
+
 
 
 template <typename Traits>
