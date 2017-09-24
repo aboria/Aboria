@@ -262,6 +262,7 @@ private:
         const size_t n_alive = this->m_alive_indices.size();
         const size_t n_dead_in_update = n_update-n_alive;
         const size_t n = this->m_particles_end-this->m_particles_begin-n_dead_in_update;
+        LOG(2,"BucketSearchSerial: update_positions, n_update = "<<n_update<<" n_alive = "<<n_alive<<" n = "<<n);
 
         if (n_update == n || reset_domain) {
             // updating everthing so clear out entire ds
@@ -330,7 +331,9 @@ private:
         }
 
         // then insert points that are still alive
-        insert_points(this->m_alive_indices.begin(),this->m_alive_indices.end(),n_update==n_alive); 
+        insert_points(this->m_alive_indices.begin(),this->m_alive_indices.end(),
+                      update_begin-this->m_particles_begin,
+                      n_update==n_alive); 
 
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
@@ -365,8 +368,8 @@ private:
 
     void insert_points(typename vector_int::iterator start_adding, 
                        typename vector_int::iterator stop_adding,
+                       const int start,
                        const bool indices_sequential) {
-        const int start = start_adding[0];
         if (m_serial) { // running in serial
             if (indices_sequential) {
                 for (int i = 0; i < this->m_alive_indices.size(); ++i) {
@@ -376,6 +379,9 @@ private:
                                             [new_index];
                     const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
                     ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
+                    //TODO: update bucket_entry with **new** index (minus the dead)
+                    // note: how, it is a new bucket entry, or and old one!!!!
+                    // pre-loop through bucket entries????
                     const int bucket_entry = m_buckets[bucketi];
 
                     // Insert into own cell
