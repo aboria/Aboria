@@ -90,7 +90,7 @@ void evaluate_nonlinear(ExprRHS const & expr, LabelType &label) {
     }
 
     if (boost::is_same<VariableType,alive>::value) {
-        particles.delete_particles();
+        particles.update_positions();
     }
 
 }

@@ -118,7 +118,19 @@ public:
     nanoflann_adaptor():
         base_type(), 
         m_kd_tree(dimension,*this) 
-    {}
+    {
+        //init an empty tree
+        std::vector<int> empty;
+	    m_kd_tree.buildIndex(empty.begin());
+        this->m_query.m_root = m_kd_tree.get_root_node();
+        this->m_query.m_dummy_root.child1 = this->m_query.m_root;
+        this->m_query.m_dummy_root.child2 = this->m_query.m_root;
+        this->m_query.m_dummy_root.node_type.sub.divfeat = 0;
+        this->m_query.m_dummy_root.node_type.sub.divlow = this->m_query.m_bounds.bmin[0];
+        this->m_query.m_dummy_root.node_type.sub.divhigh = this->m_query.m_bounds.bmin[0];
+        this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
+        this->m_query.m_number_of_levels = m_kd_tree.size_levels();
+    }
 
     //~nanoflann_adaptor() {}
 

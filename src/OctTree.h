@@ -80,7 +80,16 @@ class octtree:
 
 
 public:
-    octtree():base_type(),m_max_level(32/dimension - 2) {}
+    octtree():base_type(),m_max_level(32/dimension - 2) {
+
+        // need to init a tree with 1 level (for 0 particles) in case
+        // someone does a query on an empty data structure
+        build_tree(); 
+        this->m_query.m_number_of_levels = m_number_of_levels;
+        this->m_query.m_nodes_begin = iterator_to_raw_pointer(this->m_nodes.begin());
+        this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
+        this->m_query.m_number_of_nodes = m_nodes.size();
+    }
 
     static constexpr bool ordered() {
         return true;
@@ -110,7 +119,6 @@ private:
         this->m_query.m_bounds = this->m_bounds;
     }
 
-    void end_list_of_copies_impl() {}
 
     void update_iterator_impl() {
     }
