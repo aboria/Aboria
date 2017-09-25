@@ -99,6 +99,27 @@ public:
 
     struct delete_points_lambda;
 
+
+    void print_data_structure() const {
+         #ifndef __CUDA_ARCH__
+            LOG(1,"\tbuckets:");
+            for (int i = 0; i<m_bucket_begin.size(); ++i) {
+                LOG(1,"\ti = "<<i<<" bucket contents = "<<m_bucket_begin[i]<<" to "<<m_bucket_end[i]);
+            }
+            LOG(1,"\tend buckets");
+            LOG(1,"\tparticles:");
+            for (int i = 0; i<m_bucket_indices.size(); ++i) {
+                LOG(1,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " bucket = "<<m_bucket_indices[i]);
+            }
+            LOG(1,"\tend particles:");
+        #endif
+
+
+    }
+
+
 private:
 
 
@@ -151,8 +172,6 @@ private:
 
 
     void update_iterator_impl() {
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
     }
 
     void update_positions_impl(iterator update_begin, iterator update_end,

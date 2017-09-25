@@ -112,6 +112,34 @@ public:
     struct insert_points_lambda_non_sequential;
     struct copy_points_in_bucket_lambda;
 
+    void print_data_structure() const {
+        #ifndef __CUDA_ARCH__
+            LOG(1,"\tbuckets:");
+            for (int i = 0; i<m_buckets.size(); ++i) {
+                if (m_buckets[i] != detail::get_empty_id()) {
+                    LOG(1,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
+                }
+            }
+            LOG(1,"\tend buckets");
+            LOG(1,"\tlinked list:");
+            for (int i = 0; i<m_linked_list.size(); ++i) {
+                if (m_serial) {
+                    LOG(1,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]<<". reverse = "<<m_linked_list_reverse[i]);
+                } else {
+                     LOG(1,"\ti = "<<i<<" p = "<<
+                        static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
+                        " contents = "<<m_linked_list[i]);
+
+                }
+            }
+            LOG(1,"\tend linked list:");
+#endif
+    }
+
+
+
 private:
     bool set_domain_impl() {
         const size_t n = this->m_particles_end - this->m_particles_begin;
@@ -245,8 +273,6 @@ private:
     */
 
     void update_iterator_impl() {
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
-        this->m_query.m_particles_end = iterator_to_raw_pointer(this->m_particles_end);
         //check_data_structure();
     }
 
@@ -261,10 +287,13 @@ private:
         const size_t n_update = update_end-update_begin;
         const size_t n_alive = this->m_alive_indices.size();
         const size_t n_dead_in_update = n_update-n_alive;
-        const size_t n = this->m_particles_end-this->m_particles_begin-n_dead_in_update;
+        const size_t n_all = this->m_particles_end-this->m_particles_begin;
+        const size_t n = n_all-n_dead_in_update;
+        const int update_begin_index = update_begin-this->m_particles_begin;
+
         LOG(2,"BucketSearchSerial: update_positions, n_update = "<<n_update<<" n_alive = "<<n_alive<<" n = "<<n);
 
-        if (n_update == n || reset_domain) {
+        if (n_update == n_all || reset_domain) {
             // updating everthing so clear out entire ds
             if (!reset_domain) {
                 if (m_dirty_buckets.size() < static_cast<float>(m_buckets.size())
@@ -330,11 +359,15 @@ private:
             m_dirty_buckets.resize(n);
         }
 
-        // then insert points that are still alive
-        insert_points(this->m_alive_indices.begin(),this->m_alive_indices.end(),
-                      update_begin-this->m_particles_begin,
-                      n_update==n_alive); 
-
+        if (reset_domain) {
+            // resetting domain so need to insert all particles
+            insert_points(0,update_begin_index);
+        }
+        // then insert points that are still alive within update range
+        insert_points(this->m_alive_indices.begin(),
+                      this->m_alive_indices.end(),
+                      update_begin_index); 
+        
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
             LOG(4,"\tbuckets:");
@@ -368,46 +401,24 @@ private:
 
     void insert_points(typename vector_int::iterator start_adding, 
                        typename vector_int::iterator stop_adding,
-                       const int start,
-                       const bool indices_sequential) {
+                       const int start) {
+        const int n = stop_adding-start_adding;
         if (m_serial) { // running in serial
-            if (indices_sequential) {
-                for (int i = 0; i < this->m_alive_indices.size(); ++i) {
-                    // use actual index to insert into ds
-                    const int new_index = i+start;
-                    const double_d& r = get<position>(this->m_particles_begin)
-                                            [new_index];
-                    const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-                    ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
-                    //TODO: update bucket_entry with **new** index (minus the dead)
-                    // note: how, it is a new bucket entry, or and old one!!!!
-                    // pre-loop through bucket entries????
-                    const int bucket_entry = m_buckets[bucketi];
+            for (int i = 0; i < n; ++i) {
+                // use actual index to insert into ds
+                const int new_index = i+start;
+                // use m_alive_index to get position
+                const double_d& r = get<position>(this->m_particles_begin)[start_adding[i]];
+                const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+                ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
+                const int bucket_entry = m_buckets[bucketi];
 
-                    // Insert into own cell
-                    m_buckets[bucketi] = new_index;
-                    m_dirty_buckets[new_index] = bucketi;
-                    m_linked_list[new_index] = bucket_entry;
-                    m_linked_list_reverse[new_index] = detail::get_empty_id();
-                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
-                }
-            } else {
-                for (int i = 0; i < this->m_alive_indices.size(); ++i) {
-                    // use actual index to insert into ds
-                    const int new_index = i+start;
-                    // use m_alive_index to get position
-                    const double_d& r = get<position>(this->m_particles_begin)[this->m_alive_indices[i]];
-                    const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-                    ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
-                    const int bucket_entry = m_buckets[bucketi];
-
-                    // Insert into own cell
-                    m_buckets[bucketi] = new_index;
-                    m_dirty_buckets[new_index] = bucketi;
-                    m_linked_list[new_index] = bucket_entry;
-                    m_linked_list_reverse[new_index] = detail::get_empty_id();
-                    if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
-                }
+                // Insert into own cell
+                m_buckets[bucketi] = new_index;
+                m_dirty_buckets[new_index] = bucketi;
+                m_linked_list[new_index] = bucket_entry;
+                m_linked_list_reverse[new_index] = detail::get_empty_id();
+                if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
             }
         } else { // running in parallel
 #if defined(__CUDACC__)
@@ -418,30 +429,60 @@ private:
 #else
             detail::counting_iterator<int> count(0);
 #endif
-            if (indices_sequential) {
-
-                detail::for_each(count,count+this->m_alive_indices.size(),
-                    insert_points_lambda_sequential(
-                         iterator_to_raw_pointer(
-                                get<position>(this->m_particles_begin)),
-                         iterator_to_raw_pointer(this->m_alive_indices.begin()),
-                         m_point_to_bucket_index,
-                         iterator_to_raw_pointer(m_buckets.begin()),
-                         iterator_to_raw_pointer(m_dirty_buckets.begin()),
-                         iterator_to_raw_pointer(m_linked_list.begin()),
-                         start));
-            } else {
-                detail::for_each(count,count+this->m_alive_indices.size(),
+            detail::for_each(count,count+n,
                     insert_points_lambda_non_sequential(
-                         iterator_to_raw_pointer(
-                                get<position>(this->m_particles_begin)),
-                         iterator_to_raw_pointer(this->m_alive_indices.begin()),
-                         m_point_to_bucket_index,
-                         iterator_to_raw_pointer(m_buckets.begin()),
-                         iterator_to_raw_pointer(m_dirty_buckets.begin()),
-                         iterator_to_raw_pointer(m_linked_list.begin()),
-                         start));
+                        iterator_to_raw_pointer(
+                            get<position>(this->m_particles_begin)),
+                        iterator_to_raw_pointer(start_adding),
+                        m_point_to_bucket_index,
+                        iterator_to_raw_pointer(m_buckets.begin()),
+                        iterator_to_raw_pointer(m_dirty_buckets.begin()),
+                        iterator_to_raw_pointer(m_linked_list.begin()),
+                        start));
+        }
+    }
+
+
+    void insert_points(const int start,const int n) {
+        if (m_serial) { // running in serial
+            for (int i = 0; i < n; ++i) {
+                // use actual index to insert into ds
+                const int new_index = i+start;
+                const double_d& r = get<position>(this->m_particles_begin)
+                    [new_index];
+                const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+                ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
+                //TODO: update bucket_entry with **new** index (minus the dead)
+                // note: how, it is a new bucket entry, or and old one!!!!
+                // pre-loop through bucket entries????
+                const int bucket_entry = m_buckets[bucketi];
+
+                // Insert into own cell
+                m_buckets[bucketi] = new_index;
+                m_dirty_buckets[new_index] = bucketi;
+                m_linked_list[new_index] = bucket_entry;
+                m_linked_list_reverse[new_index] = detail::get_empty_id();
+                if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
             }
+        } else { // running in parallel
+#if defined(__CUDACC__)
+            typedef typename thrust::detail::iterator_category_to_system<
+                typename vector_int::iterator::iterator_category
+                >::type system;
+            detail::counting_iterator<int,system> count(0);
+#else
+            detail::counting_iterator<int> count(0);
+#endif
+
+            detail::for_each(count,count+n,
+                    insert_points_lambda_sequential(
+                        iterator_to_raw_pointer(
+                            get<position>(this->m_particles_begin)),
+                        m_point_to_bucket_index,
+                        iterator_to_raw_pointer(m_buckets.begin()),
+                        iterator_to_raw_pointer(m_dirty_buckets.begin()),
+                        iterator_to_raw_pointer(m_linked_list.begin()),
+                        start));
         }
     }
 
@@ -882,7 +923,6 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
     typedef typename Traits::double_d double_d;
     typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
     double_d* m_positions;
-    int* m_alive_indices;
     int* m_buckets;
     int* m_dirty_buckets;
     int* m_linked_list;
@@ -891,7 +931,6 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
 
 
     insert_points_lambda_sequential(double_d* m_positions,
-                         int* m_alive_indices,
                          const ptobl_type& m_point_to_bucket_index, 
                          int* m_buckets,
                          int* m_dirty_buckets,
@@ -899,7 +938,6 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
                          int start
                          ):
         m_positions(m_positions),
-        m_alive_indices(m_alive_indices),
         m_point_to_bucket_index(m_point_to_bucket_index),
         m_buckets(m_buckets),
         m_dirty_buckets(m_dirty_buckets),

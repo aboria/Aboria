@@ -314,9 +314,18 @@ public:
         Aboria::get<alive>(i) = true;
 
         if (update_neighbour_search) {
-            update_positions(end()-1,end());
+            if (search.ordered()) {
+                update_positions(begin(),end());
+            } else {
+                update_positions(end()-1,end());
+            }
         }
     }
+
+    void print_data_structure() const {
+        search.print_data_structure();
+    }
+
 
     /// set the base seed of the container. Note that the random number generator for
     /// each particle is set to \p value plus the particle's id
@@ -406,7 +415,11 @@ public:
     iterator erase (iterator i, const bool update_neighbour_search = true) {
         const size_t i_position = i-begin();
         *get<alive>(i) = false;
-        update_positions(i,end());
+        if (search.ordered()) {
+            update_positions(begin(),end());
+        } else {
+            update_positions(i,end());
+        }
         return begin()+i_position;
 
         /*
@@ -444,7 +457,11 @@ public:
     iterator erase (iterator first, iterator last, const bool update_neighbour_search = true) {
         const size_t index_end = last-begin();
         detail::fill(get<alive>(first),get<alive>(last),false);
-        update_positions(first,end());
+        if (search.ordered()) {
+            update_positions(begin(),end());
+        } else {
+            update_positions(first,end());
+        }
         return begin() + index_end;
 
 
@@ -573,6 +590,10 @@ public:
     /// \see init_neighbour_search()
     const bool_d& get_periodic() const {
         return search.get_periodic();
+    }
+
+    bool is_ordered() const {
+        return search.ordered();
     }
 
     /// Update the neighbourhood search data. This function must be

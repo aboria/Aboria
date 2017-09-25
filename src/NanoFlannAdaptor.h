@@ -164,6 +164,11 @@ public:
         }
 	    return true;
     }
+    void print_data_structure() const {
+        print_tree(m_kd_tree.get_root_node());
+    }
+
+
 
 private:
     void set_domain_impl() {
@@ -178,10 +183,10 @@ private:
     void end_list_of_copies_impl() {}
 
     void update_iterator_impl() {
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
     }
 
-    void print_tree(const node_type* nodes) {
+
+    void print_tree(const node_type* nodes) const {
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
             std::vector<const node_type*> new_nodes;
@@ -191,7 +196,7 @@ private:
 #endif
     }
 
-    void print_level(std::vector<const node_type*> &nodes) {
+    void print_level(std::vector<const node_type*> &nodes) const {
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
             std::vector<const node_type*> new_nodes;
@@ -452,7 +457,7 @@ struct nanoflann_adaptor_query {
         if (m_id_map_key[map_index] == id) {
             return m_particles_begin + m_id_map_value[map_index];
         } else {
-            return m_particles_begin+n;
+            return m_particles_begin + n;
         }
     }
     

@@ -553,6 +553,7 @@ public:
                 ASSERT(update_end_index == dead_and_alive_n, "if not updateing last particle then should not get here");
 
                 // update range
+                /*
                 detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
                              m_id_map_value.begin()+update_start_index,
                              [&](const int index) { 
@@ -561,6 +562,10 @@ public:
                                             m_alive_sum[index_into_update];
                                 return index - num_dead_before_index; 
                              });
+                             */
+                detail::sequence(m_id_map_value.begin()+update_start_index,
+                                 m_id_map_value.end(),
+                                 update_start_index);
                 detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
                              m_id_map_key.begin()+update_start_index,
                              [&](const int index) { 
@@ -569,8 +574,11 @@ public:
                 detail::sort_by_key(m_id_map_key.begin(),
                                     m_id_map_key.end(),
                                     m_id_map_value.begin());
-
-                //print_id_map();
+#ifndef __CUDA_ARCH__
+                if (4 <= ABORIA_LOG_LEVEL) { 
+                    print_id_map();
+                }
+#endif
             }
         }
 
@@ -587,7 +595,9 @@ public:
     void update_iterators(iterator begin, iterator end) {
         m_particles_begin = begin;
         m_particles_end = end;
-
+        query_type& query = cast().get_query_impl();
+        query.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
+        query.m_particles_end = iterator_to_raw_pointer(m_particles_end);
 	    LOG(2,"neighbour_search_base: update iterators");
         cast().update_iterator_impl();
     }

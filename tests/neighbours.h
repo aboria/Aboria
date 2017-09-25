@@ -518,11 +518,12 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
         // delete first particle
         get<alive>(particles)[0] = false;
-        particles.delete_particles();
+        particles.update_positions();
 
         // delete random particle
         detail::uniform_int_distribution<int> uniform_int_N_minus_1(0, N-3);
-        particles.erase(particles.begin()+uniform_int_N_minus_1(gen));
+        const int random_index = uniform_int_N_minus_1(gen);
+        particles.erase(particles.begin()+random_index);
         
         // delete last particle
         particles.erase(particles.begin()+particles.size()-1);
@@ -547,6 +548,11 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
                 std::cout << "error in finding neighbours for p = " <<
                     static_cast<const double_d&>(get<position>(particles)[i])<<
                     " over radius "<<r<< std::endl;
+                particles.print_data_structure();
+
+                TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                             int(get<neighbours_aboria>(particles)[i]));
+                return;
             }
             TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                              int(get<neighbours_aboria>(particles)[i]));

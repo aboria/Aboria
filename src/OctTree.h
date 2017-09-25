@@ -92,6 +92,15 @@ public:
     struct write_nodes;
     struct make_leaf;
 
+    void print_data_structure() const {
+#ifndef __CUDA_ARCH__
+        detail::print_nodes(m_nodes,dimension);
+        detail::print_leaves(m_leaves);
+#endif
+    }
+
+
+
 private:
 
     void set_domain_impl() {
@@ -104,7 +113,6 @@ private:
     void end_list_of_copies_impl() {}
 
     void update_iterator_impl() {
-        this->m_query.m_particles_begin = iterator_to_raw_pointer(this->m_particles_begin);
     }
 
     void update_positions_impl(iterator update_begin, iterator update_end,
@@ -162,6 +170,8 @@ private:
         this->m_query.m_leaves_begin= iterator_to_raw_pointer(this->m_leaves.begin());
         this->m_query.m_number_of_nodes = m_nodes.size();
     }
+
+
 
     /*
     bool add_points_at_end_impl(const size_t dist) {
