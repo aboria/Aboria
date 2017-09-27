@@ -442,7 +442,7 @@ public:
                      iterator update_begin, iterator update_end, 
                      const bool delete_dead_particles=true) {
 
-        if (!m_domain_has_been_set && !m_id_map) return false;
+        //if (!m_domain_has_been_set && !m_id_map) return false;
 
 	    LOG(2,"neighbour_search_base: update_positions: updating "<<update_end-update_begin<<" points");
 
