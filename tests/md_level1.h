@@ -58,6 +58,7 @@ public:
 
     ABORIA_VARIABLE(velocity,vdouble2,"velocity")
 
+        /*
     template <typename Query>
     struct set_position_lambda {
         typedef typename Query::traits_type::raw_reference reference;
@@ -93,17 +94,22 @@ public:
         CUDA_HOST_DEVICE
         void operator()(reference i) const {
             vdouble2 force_sum(0,0);
+            std::cout << "id = "<<get<id>(i)<<" old position = "<<get<position>(i)<< std::endl;
             for (auto tpl: euclidean_search(query,get<position>(i),diameter)) {
                 const vdouble2& dx = detail::get_impl<1>(tpl);
                 const_reference j = detail::get_impl<0>(tpl);
-                if (get<id>(i) != get<id>(j)) {
-                    force_sum -= k*(diameter/dx.norm()-1)*dx;
+                const double r = dx.norm();
+                std::cout << "id = "<<get<id>(i)<<" dx = "<<dx<< " r = "<<r<<std::endl;
+                if (r != 0) {
+                    force_sum -= k*(diameter/r-1)*dx;
                 }
             }
             get<velocity>(i) += dt*force_sum/mass;
             get<position>(i) += dt*get<velocity>(i);
+            std::cout << "id = "<<get<id>(i)<<" new position = "<<get<position>(i)<< std::endl;
         }
     };
+    */
 
     template<template <typename,typename> class Vector,template <typename> class SearchMethod>
     void helper_md(void) {
@@ -123,15 +129,18 @@ public:
         typedef typename container_type::position position;
         typedef typename container_type::query_type query_type;
         typedef typename container_type::reference reference;
+        typedef typename container_type::const_reference const_reference;
+        typedef typename container_type::raw_reference raw_reference;
+        typedef typename container_type::raw_const_reference raw_const_reference;
 
         /*
          * set parameters for the MD simulation
          */
-        const int timesteps = 3000;
+        const int timesteps = 300;
         const int nout = 200;
         const int timesteps_per_out = timesteps/nout;
         const double L = 31.0/1000.0;
-        const int N = 30;
+        const int N = 2000;
         const double diameter = 0.0022;
         const double k = 1.0e01;
         const double dens = 1160.0;
@@ -147,7 +156,17 @@ public:
         /*
          * randomly set position for N particles
          */
-        detail::for_each(particles.begin(),particles.end(),set_position_lambda<query_type>());
+        detail::for_each(particles.begin(),particles.end(),
+                [](raw_reference i) {
+#if defined(__CUDACC__)
+                thrust::uniform_real_distribution<double> uni(0,1);
+#else
+                std::uniform_real_distribution<double> uni(0,1);
+#endif
+                generator_type& gen = get<generator>(i);
+                get<position>(i) = vdouble2(uni(gen),uni(gen));
+                get<velocity>(i) = vdouble2(0,0);
+                });
 
         /*
          * initiate neighbour search on a periodic 2d domain of side length L
@@ -170,8 +189,26 @@ public:
             vtkWriteGrid("particles",io,particles.get_grid(true));
 #endif
             for (int i = 0; i < timesteps_per_out; i++) {
+                const query_type& query = particles.get_query();
                 detail::for_each(particles.begin(),particles.end(),
-                        timestep_lambda<query_type>(particles.get_query(),diameter,k,dt,mass));
+                    [&](raw_reference i) {
+                    vdouble2 force_sum(0,0);
+                    for (auto tpl: euclidean_search(query,get<position>(i),diameter)) {
+                        const vdouble2& dx = detail::get_impl<1>(tpl);
+                        raw_const_reference j = detail::get_impl<0>(tpl);
+                        const double r = dx.norm();
+                        if (r != 0) {
+                            force_sum -= k*(diameter/r-1)*dx;
+                        }
+                    }
+                    get<velocity>(i) += dt*force_sum/mass;
+                    });
+
+                detail::for_each(particles.begin(),particles.end(),
+                    [&](raw_reference i) {
+                        get<position>(i) += dt*get<velocity>(i);
+                    });
+
                 particles.update_positions();
             }
         }

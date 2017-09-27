@@ -60,9 +60,10 @@ template <typename T>
 struct  is_std_iterator {
 #ifdef __aboria_have_thrust__
     typedef std::integral_constant<bool,
-            !std::is_same<
+            std::is_same<
                 typename std::iterator_traits<T>::iterator_category,
-                thrust::random_access_iterator_tag>::value> type;
+                std::random_access_iterator_tag>::value> type;
+    //typedef std::integral_constant<bool,false> type;
 #else
     typedef std::integral_constant<bool,true> type;
 #endif

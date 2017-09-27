@@ -290,6 +290,7 @@ private:
         const size_t n_all = this->m_particles_end-this->m_particles_begin;
         const size_t n = n_all-n_dead_in_update;
         const int update_begin_index = update_begin-this->m_particles_begin;
+        const int update_end_index = update_end-this->m_particles_begin;
 
         LOG(2,"BucketSearchSerial: update_positions, n_update = "<<n_update<<" n_alive = "<<n_alive<<" n = "<<n);
 
@@ -364,9 +365,13 @@ private:
             insert_points(0,update_begin_index);
         }
         // then insert points that are still alive within update range
-        insert_points(this->m_alive_indices.begin(),
+        if (n_dead_in_update == 0) {
+            insert_points(update_begin_index,n_update);
+        } else {
+            insert_points(this->m_alive_indices.begin(),
                       this->m_alive_indices.end(),
                       update_begin_index); 
+        }
         
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
@@ -403,8 +408,18 @@ private:
                        typename vector_int::iterator stop_adding,
                        const int start) {
         const int n = stop_adding-start_adding;
+#if defined(__CUDACC__)
+        typedef typename thrust::detail::iterator_category_to_system<
+            typename vector_int::iterator::iterator_category
+            >::type system;
+        detail::counting_iterator<int,system> count(0);
+#else
+        detail::counting_iterator<int> count(0);
+#endif
+
         if (m_serial) { // running in serial
-            for (int i = 0; i < n; ++i) {
+            detail::for_each(count,count+n,
+                    [&](const int i) {
                 // use actual index to insert into ds
                 const int new_index = i+start;
                 // use m_alive_index to get position
@@ -419,16 +434,8 @@ private:
                 m_linked_list[new_index] = bucket_entry;
                 m_linked_list_reverse[new_index] = detail::get_empty_id();
                 if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
-            }
+                });
         } else { // running in parallel
-#if defined(__CUDACC__)
-            typedef typename thrust::detail::iterator_category_to_system<
-                typename vector_int::iterator::iterator_category
-                >::type system;
-            detail::counting_iterator<int,system> count(0);
-#else
-            detail::counting_iterator<int> count(0);
-#endif
             detail::for_each(count,count+n,
                     insert_points_lambda_non_sequential(
                         iterator_to_raw_pointer(
@@ -444,13 +451,24 @@ private:
 
 
     void insert_points(const int start,const int n) {
+#if defined(__CUDACC__)
+        typedef typename thrust::detail::iterator_category_to_system<
+            typename vector_int::iterator::iterator_category
+            >::type system;
+        detail::counting_iterator<int,system> count(0);
+#else
+        detail::counting_iterator<int> count(0);
+#endif
+
         if (m_serial) { // running in serial
-            for (int i = 0; i < n; ++i) {
+            detail::for_each(count,count+n,
+                    [&](const int i) {
                 // use actual index to insert into ds
                 const int new_index = i+start;
                 const double_d& r = get<position>(this->m_particles_begin)
                     [new_index];
                 const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+                //std::cout << "inserting particle in index "<<new_index<<" at "<<r << " into bucket "<<bucketi<<std::endl;
                 ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
                 //TODO: update bucket_entry with **new** index (minus the dead)
                 // note: how, it is a new bucket entry, or and old one!!!!
@@ -463,16 +481,8 @@ private:
                 m_linked_list[new_index] = bucket_entry;
                 m_linked_list_reverse[new_index] = detail::get_empty_id();
                 if (bucket_entry != detail::get_empty_id()) m_linked_list_reverse[bucket_entry] = new_index;
-            }
+            });
         } else { // running in parallel
-#if defined(__CUDACC__)
-            typedef typename thrust::detail::iterator_category_to_system<
-                typename vector_int::iterator::iterator_category
-                >::type system;
-            detail::counting_iterator<int,system> count(0);
-#else
-            detail::counting_iterator<int> count(0);
-#endif
 
             detail::for_each(count,count+n,
                     insert_points_lambda_sequential(

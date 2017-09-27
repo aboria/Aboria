@@ -43,10 +43,16 @@ namespace Aboria {
 namespace detail {
 
 #ifdef HAVE_VTK
+
 template <typename reference>
-struct write_from_tuple {
-    typedef typename reference::tuple_type tuple_type;
-    typedef typename reference::mpl_vector_type mpl_type_vector;
+struct write_from_tuple {};
+
+
+template <typename MplVector, typename ... Types> 
+struct write_from_tuple<getter_type<std::tuple<Types...>,MplVector>> {
+    typedef std::tuple<Types...> tuple_type;
+    typedef MplVector mpl_type_vector;
+
     template <typename U>
     using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
 
@@ -74,11 +80,76 @@ struct write_from_tuple {
         datas[i]->SetValue(index,seed);
     }
 
+template< typename U >
+    typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,uint32_t> >::type
+    operator()(U i) {
+        datas[i]->SetValue(index,std::get<U::value>(write_from));
+    }
+
     tuple_type write_from;
     int index;
     uint32_t seed;
     vtkSmartPointer<vtkFloatArray>* datas;
 };
+
+#ifdef __aboria_have_thrust__ 
+template <typename MplVector, typename TT1, 
+                              typename TT2, 
+                              typename TT3, 
+                              typename TT4, 
+                              typename TT5, 
+                              typename TT6, 
+                              typename TT7, 
+                              typename TT8, 
+                              typename TT9
+                              > 
+struct write_from_tuple<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>,MplVector>> {
+    typedef thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9> tuple_type;
+    typedef MplVector mpl_type_vector;
+
+    template <typename U>
+    using non_ref_tuple_element = typename std::remove_reference<
+                                  typename thrust::detail::raw_reference<
+                                  typename thrust::tuple_element<U::value,tuple_type>::type>::type>::type;
+
+    write_from_tuple(tuple_type write_from, int index, vtkSmartPointer<vtkFloatArray>* datas, const uint32_t &seed):
+        write_from(write_from),index(index),datas(datas),seed(seed){}
+
+    template< typename U > 
+    typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        datas[i]->SetValue(index,thrust::get<U::value>(write_from));
+    }
+
+    template< typename U >
+    typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        Vector<float,non_ref_tuple_element<U>::size> tmp = 
+            static_cast<Vector<double,non_ref_tuple_element<U>::size>>(
+                            thrust::get<U::value>(write_from));
+        datas[i]->SetTuple(index,tmp.data());
+    }
+
+    template< typename U >
+    typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,generator_type> >::type
+    operator()(U i) {
+        //TODO: not sure what to write here, default to original seed
+        //seed + uint32_t(Aboria::get<id>(i)
+        datas[i]->SetValue(index,seed);
+    }
+
+template< typename U >
+    typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,uint32_t> >::type
+    operator()(U i) {
+        datas[i]->SetValue(index,thrust::get<U::value>(write_from));
+    }
+
+    tuple_type write_from;
+    int index;
+    uint32_t seed;
+    vtkSmartPointer<vtkFloatArray>* datas;
+};
+#endif
 
 template <typename reference>
 struct read_into_tuple {
@@ -117,9 +188,12 @@ struct read_into_tuple {
 
 
 template <typename reference>
-struct setup_datas_for_writing {
-    typedef typename reference::tuple_type tuple_type;
-    typedef typename reference::mpl_vector_type mpl_type_vector;
+struct setup_datas_for_writing {};
+
+template <typename MplVector, typename ... Types> 
+struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
+    typedef std::tuple<Types...> tuple_type;
+    typedef MplVector mpl_type_vector;
 
     template <typename U>
     using non_ref_tuple_element = typename std::remove_reference<typename std::tuple_element<U::value,tuple_type>::type>::type;
@@ -164,6 +238,71 @@ struct setup_datas_for_writing {
     vtkSmartPointer<vtkFloatArray>* datas;
     vtkUnstructuredGrid *grid;
 };
+
+#ifdef __aboria_have_thrust__
+template <typename MplVector, typename TT1, 
+                              typename TT2, 
+                              typename TT3, 
+                              typename TT4, 
+                              typename TT5, 
+                              typename TT6, 
+                              typename TT7, 
+                              typename TT8, 
+                              typename TT9
+                              > 
+struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>,MplVector>> {
+    typedef thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9> tuple_type;
+    typedef MplVector mpl_type_vector;
+
+    template <typename U>
+    using non_ref_tuple_element = typename std::remove_reference<
+                                  typename thrust::detail::raw_reference<
+                                  typename thrust::tuple_element<U::value,tuple_type>::type>::type>::type;
+
+
+
+    setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
+        n(n),datas(datas),grid(grid){}
+
+    template< typename U > 
+    typename boost::enable_if<mpl::not_<is_vector<non_ref_tuple_element<U>>>>::type
+    operator()(U i) {
+        typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
+        const char *name = variable_type().name;
+        datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
+        if (!datas[i]) {
+            datas[i] = vtkSmartPointer<vtkFloatArray>::New();
+            datas[i]->SetName(name);
+            grid->GetPointData()->AddArray(datas[i]);
+        }
+        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
+        datas[i]->SetNumberOfComponents(1);
+        datas[i]->SetNumberOfTuples(n);
+    }
+
+    template< typename U > 
+    typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
+        const char *name = variable_type().name;
+        datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
+        if (!datas[i]) {
+            datas[i] = vtkSmartPointer<vtkFloatArray>::New();
+            datas[i]->SetName(name);
+            grid->GetPointData()->AddArray(datas[i]);
+        }
+        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
+        datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
+        datas[i]->SetNumberOfTuples(n);
+    }
+
+    size_t n;
+    vtkSmartPointer<vtkFloatArray>* datas;
+    vtkUnstructuredGrid *grid;
+};
+#endif
+
+
 
 template <typename reference>
 struct setup_datas_for_reading {

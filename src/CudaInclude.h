@@ -15,6 +15,7 @@
     #include <thrust/gather.h>
     #include <thrust/binary_search.h>
     #include <thrust/iterator/iterator_facade.h>
+    #include <thrust/iterator/iterator_categories.h>
     #include <thrust/sequence.h>
     #include <thrust/transform_scan.h>
     #include <thrust/random.h>
