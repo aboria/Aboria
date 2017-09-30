@@ -157,7 +157,7 @@ public:
          * randomly set position for N particles
          */
         detail::for_each(particles.begin(),particles.end(),
-                [] __host__ __device__ (raw_reference i) {
+                [] CUDA_HOST_DEVICE (raw_reference i) {
 #if defined(__CUDACC__)
                 thrust::uniform_real_distribution<double> uni(0,1);
 #else
@@ -191,7 +191,7 @@ public:
             for (int i = 0; i < timesteps_per_out; i++) {
                 const query_type& query = particles.get_query();
                 detail::for_each(particles.begin(),particles.end(),
-                    [=]  __device__ __host__ (raw_reference i) {
+                    [=]  CUDA_HOST_DEVICE (raw_reference i) {
                     vdouble2 force_sum(0,0);
                     for (auto tpl: euclidean_search(query,get<position>(i),diameter)) {
                         const vdouble2& dx = detail::get_impl<1>(tpl);
@@ -205,7 +205,7 @@ public:
                     });
 
                 detail::for_each(particles.begin(),particles.end(),
-                    [=] __device__ __host__ (raw_reference i) {
+                    [=] CUDA_HOST_DEVICE (raw_reference i) {
                         get<position>(i) += dt*get<velocity>(i);
                     });
 
