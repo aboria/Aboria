@@ -550,7 +550,6 @@ struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential_serial 
         // use m_alive_index to get position
         const double_d& r = m_positions[m_alive_indices[i]];
         const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
-        ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
         const int bucket_entry = m_buckets[bucketi];
 
         // Insert into own cell
@@ -600,7 +599,6 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential_serial {
         const double_d& r = m_positions[new_index];
         const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
         //std::cout << "inserting particle in index "<<new_index<<" at "<<r << " into bucket "<<bucketi<<std::endl;
-        ASSERT(bucketi < m_buckets.size(), "bucket index out of range");
         const int bucket_entry = m_buckets[bucketi];
 
         // Insert into own cell
