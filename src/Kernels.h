@@ -523,7 +523,7 @@ namespace Aboria {
                                             base_type(row_particles,
                                                   col_particles,
                                                   F(function)) {
-        };
+        }
 
         template <typename OldH2Kernel>
         KernelH2(const OldH2Kernel& h2_kernel, const RowParticles& row_particles): 
@@ -532,7 +532,7 @@ namespace Aboria {
                        base_type(row_particles,
                                  h2_kernel.get_col_particles(),
                                  F(h2_kernel.get_position_function())) {
-        };
+        }
 
         const h2_matrix_type& get_h2_matrix() const {
             return m_h2_matrix;

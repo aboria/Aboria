@@ -34,7 +34,8 @@ if (Aboria_USE_THRUST)
     CUDA_NVCC_FLAGS
     ${CUDA_NVCC_FLAGS};
     --expt-relaxed-constexpr
-    --keep
+    #--keep
+    --expt-extended-lambda
     -ftemplate-backtrace-limit=0
     #-gencode arch=compute_20,code=sm_20
     #(kepler)

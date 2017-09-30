@@ -478,7 +478,6 @@ public:
         // num_dead holds total number of the dead
         // num_alive_new holds total number of the living that are new particles
         int num_dead = 0;
-        int num_alive_new = new_n;
         m_alive_sum.resize(update_n);
         if (delete_dead_particles)  {
             detail::exclusive_scan(
@@ -566,10 +565,11 @@ public:
                 detail::sequence(m_id_map_value.begin()+update_start_index,
                                  m_id_map_value.end(),
                                  update_start_index);
+                auto raw_id = iterator_to_raw_pointer(get<id>(begin));
                 detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
                              m_id_map_key.begin()+update_start_index,
-                             [&](const int index) { 
-                                return get<id>(begin)[index]; 
+                             [=] CUDA_HOST_DEVICE (const int index) { 
+                                return raw_id[index]; 
                              });
                 detail::sort_by_key(m_id_map_key.begin(),
                                     m_id_map_key.end(),
