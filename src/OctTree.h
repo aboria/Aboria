@@ -95,6 +95,8 @@ public:
         return true;
     }
 
+
+    void build_tree();
     struct classify_point;
     struct child_index_to_tag_mask;
     struct classify_node;
@@ -268,7 +270,6 @@ private:
     
     
 private:
-    void build_tree();
 
     
     int max_points;
@@ -325,12 +326,14 @@ void octtree<traits>::build_tree() {
 
         int length = (1 << (m_max_level - level) * dimension) - 1;
 
+        // error here....
+        auto plus_length = [=] CUDA_HOST_DEVICE (const int i) { return i+length; };
         detail::upper_bound(m_tags.begin(),
                 m_tags.end(),
-                detail::make_transform_iterator(children.begin(), 
-                    std::bind2nd(std::plus<int>(), length)),
-                detail::make_transform_iterator(children.end(),
-                    std::bind2nd(std::plus<int>(), length)),
+                detail::make_transform_iterator(children.begin(),plus_length), 
+                    //std::bind2nd(std::plus<int>(), length)),
+                detail::make_transform_iterator(children.end(),plus_length),
+                    //std::bind2nd(std::plus<int>(), length)),
                 upper_bounds.begin());
 
 
