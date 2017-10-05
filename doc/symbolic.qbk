@@ -84,10 +84,10 @@ p[a] = p[a] + 1;
 Or we can use a flag variable `flag`, along with its symbol `f`, so define two 
 sets of particles within the same container and only change the particle 
 position if `get<flag>(particle) == true`. Recall that we can't use boolean 
-flags so we can instead use a `uint_8` datatype. For example
+flags so we can instead use a `uint8_t` datatype. For example
 
 ``
-ABORIA_VARIABLE(flag,uint_8,"my flag");
+ABORIA_VARIABLE(flag,uint8_t,"my flag");
 
 // create particle container and set flags and positions here
 

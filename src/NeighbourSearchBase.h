@@ -484,7 +484,7 @@ public:
                     get<alive>(update_begin),get<alive>(update_end),
                     m_alive_sum.begin(),
                     0);
-            const int num_alive = *(m_alive_sum.end()-1)+        
+            const int num_alive = m_alive_sum.back() +        
                                   static_cast<int>(*get<alive>(update_end-1));
             num_dead = update_n-num_alive;
             /*
@@ -1443,12 +1443,12 @@ public:
                   const bool ordered=false
                   ):
         m_query_point(query_point),
-        m_stack(new child_iterator[tree_depth]),
         m_stack_max_size(tree_depth),
         m_stack_size(0),
         m_inv_max_distance(1.0/max_distance),
         m_query(query)
     {
+        m_stack = new child_iterator[tree_depth];
         if (start != false) {
             push_stack(start);
             go_to_next_leaf();
@@ -1473,21 +1473,23 @@ public:
     tree_query_iterator(const iterator& copy):
         m_query_point(copy.m_query_point),
         m_inv_max_distance(copy.m_inv_max_distance),
-        m_stack(new child_iterator[copy.m_stack_max_size]),
         m_stack_size(copy.m_stack_size),
         m_stack_max_size(copy.m_stack_max_size),
         m_query(copy.m_query)
 
     {
-        for (int i = 0; i < m_stack_size; ++i) {
-            m_stack[i] = copy.m_stack[i];
+        if (m_stack_max_size > 0) {
+            m_stack = new child_iterator[copy.m_stack_max_size];
+            for (int i = 0; i < m_stack_size; ++i) {
+                m_stack[i] = copy.m_stack[i];
+            }
         }
         //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
     }
 
     CUDA_HOST_DEVICE
     ~tree_query_iterator() {
-        if (m_stack_max_size != 0) {
+        if (m_stack_max_size > 0) {
             delete[] m_stack;
         }
     }

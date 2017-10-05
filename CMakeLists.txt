@@ -35,15 +35,19 @@ if (Aboria_USE_THRUST)
     ${CUDA_NVCC_FLAGS};
     --expt-relaxed-constexpr
     #--keep
+    #-lineinfo
     --expt-extended-lambda
     -ftemplate-backtrace-limit=0
     #-gencode arch=compute_20,code=sm_20
     #(kepler)
+    #-gencode arch=compute_30,code=sm_30 
     -gencode arch=compute_35,code=sm_35 
+    #-gencode arch=compute_52,code=sm_32 
+    #-gencode arch=compute_50,code=compute_50
     )
-    if (CMAKE_BUILD_TYPE STREQUAL Debug)
-        set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)
-    endif()
+#   if (CMAKE_BUILD_TYPE STREQUAL Debug)
+#       set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)
+#   endif()
 endif()
 
 
