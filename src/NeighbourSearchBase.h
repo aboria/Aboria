@@ -1229,8 +1229,8 @@ public:
 
     CUDA_HOST_DEVICE
     depth_first_iterator():
-        m_stack_size(0),
-        m_stack_max_size(0)
+        m_stack_size(0)
+        //m_stack_max_size(0)
     {}
        
     /// this constructor is used to start the iterator at the head of a bucket 
@@ -1241,9 +1241,9 @@ public:
                         const Query *query
                   ):
         m_query(query),
-        m_stack_size(0),
-        m_stack_max_size(tree_depth),
-        m_stack(new child_iterator[tree_depth])
+        m_stack_size(0)
+        //m_stack_max_size(tree_depth),
+        //m_stack(new child_iterator[tree_depth])
     {
         if (start_node != false) {
             push_stack(start_node);
@@ -1259,7 +1259,7 @@ public:
     depth_first_iterator(const iterator& copy):
         m_stack(new child_iterator[copy.m_stack_max_size]),
         m_stack_size(copy.m_stack_size),
-        m_stack_max_size(copy.m_stack_max_size),
+        //m_stack_max_size(copy.m_stack_max_size),
         m_query(copy.m_query)
 
     {
@@ -1269,20 +1269,20 @@ public:
     }
 
     ~depth_first_iterator() {
-        if (m_stack_max_size != 0) {
-            delete[] m_stack;
-        }
+        //if (m_stack_max_size != 0) {
+        //    delete[] m_stack;
+        //}
     }
 
     CUDA_HOST_DEVICE
     iterator& operator=(const iterator& copy) {
-        if (copy.m_stack_max_size > m_stack_max_size) {
-            if (m_stack_max_size != 0) {
-                delete[] m_stack;
-            }
-            m_stack = new child_iterator[copy.m_stack_max_size];
-            m_stack_max_size = copy.m_stack_max_size;
-        }
+        //if (copy.m_stack_max_size > m_stack_max_size) {
+        //    if (m_stack_max_size != 0) {
+        //        delete[] m_stack;
+        //    }
+        //    m_stack = new child_iterator[copy.m_stack_max_size];
+        //    m_stack_max_size = copy.m_stack_max_size;
+        //}
 
         m_stack_size = copy.m_stack_size;
         for (int i = 0; i < m_stack_size; ++i) {
@@ -1404,10 +1404,10 @@ public:
     { return *top_stack(); }
 
 
-    child_iterator *m_stack;
+    const static unsigned m_stack_max_size = 32/dimension - 2;
+    child_iterator m_stack[m_stack_max_size];
     unsigned m_stack_size;
     const Query *m_query;
-    const unsigned m_stack_max_size;
 };
 
 template <typename Query, int LNormNumber>
@@ -1428,7 +1428,7 @@ public:
 
     CUDA_HOST_DEVICE
     tree_query_iterator():
-        m_stack_max_size(0),
+        //m_stack_max_size(0),
         m_stack_size(0)
     {}
        
@@ -1443,12 +1443,13 @@ public:
                   const bool ordered=false
                   ):
         m_query_point(query_point),
-        m_stack_max_size(tree_depth),
+        //m_stack_max_size(tree_depth),
         m_stack_size(0),
         m_inv_max_distance(1.0/max_distance),
         m_query(query)
     {
-        m_stack = new child_iterator[tree_depth];
+        ASSERT(tree_depth <= m_stack_max_size,"tree is deeper than max stack available");
+        //m_stack = new child_iterator[tree_depth];
         if (start != false) {
             push_stack(start);
             go_to_next_leaf();
@@ -1474,24 +1475,24 @@ public:
         m_query_point(copy.m_query_point),
         m_inv_max_distance(copy.m_inv_max_distance),
         m_stack_size(copy.m_stack_size),
-        m_stack_max_size(copy.m_stack_max_size),
+        //m_stack_max_size(copy.m_stack_max_size),
         m_query(copy.m_query)
 
     {
-        if (m_stack_max_size > 0) {
-            m_stack = new child_iterator[copy.m_stack_max_size];
+        //if (m_stack_max_size > 0) {
+            //m_stack = new child_iterator[copy.m_stack_max_size];
             for (int i = 0; i < m_stack_size; ++i) {
                 m_stack[i] = copy.m_stack[i];
             }
-        }
+        //}
         //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
     }
 
     CUDA_HOST_DEVICE
     ~tree_query_iterator() {
-        if (m_stack_max_size > 0) {
-            delete[] m_stack;
-        }
+        //if (m_stack_max_size > 0) {
+        //    delete[] m_stack;
+        //}
     }
 
     CUDA_HOST_DEVICE
@@ -1504,13 +1505,13 @@ public:
         m_query_point = copy.m_query_point;
         m_inv_max_distance = copy.m_inv_max_distance;
 
-        if (copy.m_stack_max_size > m_stack_max_size) {
-            if (m_stack_max_size != 0) {
-                delete[] m_stack;
-            }
-            m_stack = new child_iterator[copy.m_stack_max_size];
-            m_stack_max_size = copy.m_stack_max_size;
-        }
+        //if (copy.m_stack_max_size > m_stack_max_size) {
+        //    if (m_stack_max_size != 0) {
+        //        delete[] m_stack;
+        //    }
+        //    m_stack = new child_iterator[copy.m_stack_max_size];
+        //    m_stack_max_size = copy.m_stack_max_size;
+        //}
 
         m_stack_size = copy.m_stack_size;
         for (int i = 0; i < m_stack_size; ++i) {
@@ -1717,9 +1718,9 @@ public:
     { return *top_stack(); }
 
 
-    child_iterator *m_stack;
     unsigned m_stack_size;
-    unsigned m_stack_max_size;
+    const static unsigned m_stack_max_size = 32/dimension - 2;
+    child_iterator m_stack[m_stack_max_size];
     double_d m_query_point;
     double_d m_inv_max_distance;
     const Query *m_query;
