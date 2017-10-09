@@ -228,11 +228,11 @@ public:
         helper_md<std::vector,octtree>();
     }
 
-    void test_thrust_vector_bucket_search_serial(void) {
-#if defined(__aboria_have_thrust__)
-        helper_md<thrust::device_vector,bucket_search_serial>();
-#endif
-    }
+    //void test_thrust_vector_bucket_search_serial(void) {
+//#if //defined(__aboria_have_thrust__)
+    //    helper_md<thrust::device_vector,bucket_search_serial>();
+//#end//if
+    //}
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__aboria_have_thrust__)

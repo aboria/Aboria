@@ -647,12 +647,12 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         helper_d_test_list_regular<std::vector,octtree>();
     }
 
-    void test_thrust_vector_bucket_search_serial(void) {
-#if defined(__aboria_have_thrust__)
-        helper_d_test_list_regular<thrust::device_vector,bucket_search_serial>();
-        helper_d_test_list_random<thrust::device_vector,bucket_search_serial>();
-#endif
-    }
+    //void test_thrust_vector_bucket_search_serial(void) {
+//#if //defined(__aboria_have_thrust__)
+    //    helper_d_test_list_regular<thrust::device_vector,bucket_search_serial>();
+    //    helper_d_test_list_random<thrust::device_vector,bucket_search_serial>();
+//#end//if
+    //}
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__aboria_have_thrust__)

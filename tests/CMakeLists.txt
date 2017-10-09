@@ -174,7 +174,6 @@ set(NeighboursTest
     )
 if (Aboria_USE_THRUST)
     list(APPEND NeighboursTest
-    test_thrust_vector_bucket_search_serial
     test_thrust_vector_bucket_search_parallel
     test_thrust_vector_octtree
     )
@@ -240,7 +239,6 @@ if (Aboria_USE_THRUST)
     test_std_vector_bucket_search_serial
     test_std_vector_bucket_search_parallel
     test_std_vector_octtree
-    test_thrust_vector_bucket_search_serial
     test_thrust_vector_bucket_search_parallel
     test_thrust_vector_octtree
     )

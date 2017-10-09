@@ -1211,6 +1211,88 @@ public:
     p_pointer m_particles_begin;
 };
 
+template<class T, std::size_t N>
+class static_vector
+{
+    // properly aligned uninitialized storage for N T's
+    typename std::aligned_storage<sizeof(T), alignof(T)>::type data[N];
+    size_t m_size = 0;
+ 
+public:
+    CUDA_HOST_DEVICE
+    void push_back (const T& val) {
+        ASSERT_CUDA(m_size < N);
+        new(data+m_size) T(val);
+        ++m_size;
+    }
+
+    CUDA_HOST_DEVICE
+    void push_back (T&& val) {
+        ASSERT_CUDA(m_size < N);
+        new(data+m_size) T(val);
+        ++m_size;
+    }
+
+    // Create an object in aligned storage
+    CUDA_HOST_DEVICE
+    template<typename ...Args> void emplace_back(Args&&... args) {
+        ASSERT_CUDA(m_size < N);
+        new(data+m_size) T(std::forward<Args>(args)...);
+        ++m_size;
+    }
+
+    CUDA_HOST_DEVICE
+    void resize (size_t n) {
+        m_size = n;
+    }
+
+    CUDA_HOST_DEVICE
+    size_t size () const {
+        return m_size;
+    }
+
+    CUDA_HOST_DEVICE
+    bool empty() const {
+        return m_size==0;
+    }
+
+    CUDA_HOST_DEVICE
+    void pop_back() {
+        --m_size;
+        reinterpret_cast<T*>(data+m_size)->~T();
+    }
+
+    CUDA_HOST_DEVICE
+    T& back() {
+        return *reinterpret_cast<T*>(data+m_size-1);
+    }
+
+    CUDA_HOST_DEVICE
+    const T& back() const {
+        return *reinterpret_cast<const T*>(data+m_size-1);
+    }
+
+    // Access an object in aligned storage
+    CUDA_HOST_DEVICE
+    const T& operator[](std::size_t pos) const {
+        return *reinterpret_cast<const T*>(data+pos);
+    }
+
+    CUDA_HOST_DEVICE
+    T& operator[](std::size_t pos) {
+        return *reinterpret_cast<T*>(data+pos);
+    }
+ 
+    // Delete objects from aligned storage
+    CUDA_HOST_DEVICE
+    ~static_vector() {
+        for(std::size_t pos = 0; pos < m_size; ++pos) {
+            reinterpret_cast<T*>(data+pos)->~T();
+        }
+    }
+
+};
+
 template <typename Query>
 class depth_first_iterator {
     typedef depth_first_iterator<Query> iterator;
@@ -1228,10 +1310,7 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    depth_first_iterator():
-        m_stack_size(0)
-        //m_stack_max_size(0)
-    {}
+    depth_first_iterator() {}
        
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
@@ -1240,13 +1319,11 @@ public:
                         const unsigned tree_depth,
                         const Query *query
                   ):
-        m_query(query),
-        m_stack_size(0)
-        //m_stack_max_size(tree_depth),
-        //m_stack(new child_iterator[tree_depth])
+        m_query(query)
     {
+        ASSERT_CUDA(tree_depth <= m_stack_max_size);
         if (start_node != false) {
-            push_stack(start_node);
+            m_stack.push_back(start_node);
         } else {
 #ifndef __CUDA_ARCH__
             LOG(3,"\tdepth_first_iterator (constructor): start is false, no children to search.");
@@ -1257,35 +1334,20 @@ public:
     
     CUDA_HOST_DEVICE
     depth_first_iterator(const iterator& copy):
-        m_stack(new child_iterator[copy.m_stack_max_size]),
-        m_stack_size(copy.m_stack_size),
-        //m_stack_max_size(copy.m_stack_max_size),
         m_query(copy.m_query)
-
     {
-        for (int i = 0; i < m_stack_size; ++i) {
-            m_stack[i] = copy.m_stack[i];
+        for (int i = 0; i < copy.m_stack.size(); ++i) {
+            m_stack.push_back(copy.m_stack[i]);
         }
     }
 
     ~depth_first_iterator() {
-        //if (m_stack_max_size != 0) {
-        //    delete[] m_stack;
-        //}
     }
 
     CUDA_HOST_DEVICE
     iterator& operator=(const iterator& copy) {
-        //if (copy.m_stack_max_size > m_stack_max_size) {
-        //    if (m_stack_max_size != 0) {
-        //        delete[] m_stack;
-        //    }
-        //    m_stack = new child_iterator[copy.m_stack_max_size];
-        //    m_stack_max_size = copy.m_stack_max_size;
-        //}
-
-        m_stack_size = copy.m_stack_size;
-        for (int i = 0; i < m_stack_size; ++i) {
+        m_stack.resize(copy.m_stack.size());
+        for (int i = 0; i < copy.m_stack.size(); ++i) {
             m_stack[i] = copy.m_stack[i];
         }
 
@@ -1295,11 +1357,11 @@ public:
 
 
     box_type get_bounds() const {
-        return top_stack().get_bounds();
+        return m_stack.back().get_bounds();
     }
 
     const child_iterator& get_child_iterator() const {
-        return top_stack();
+        return m_stack.back();
     }
 
     CUDA_HOST_DEVICE
@@ -1342,47 +1404,22 @@ public:
  private:
     friend class boost::iterator_core_access;
 
-    CUDA_HOST_DEVICE
-    inline void push_stack(const child_iterator& it) {
-        ASSERT_CUDA(m_stack_size < m_stack_max_size);
-        m_stack[m_stack_size++] = it;
-    }
-
-    CUDA_HOST_DEVICE
-    inline child_iterator& top_stack() {
-        return m_stack[m_stack_size-1];
-    }
-
-    CUDA_HOST_DEVICE
-    inline const child_iterator& top_stack() const {
-        return m_stack[m_stack_size-1];
-    }
-
-    CUDA_HOST_DEVICE
-    inline bool empty_stack() const {
-        return m_stack_size==0;
-    }
-
-    CUDA_HOST_DEVICE
-    inline void pop_stack() {
-        ASSERT_CUDA(m_stack_size != 0);
-        --m_stack_size;
-    }
+    
 
     CUDA_HOST_DEVICE
     void increment() {
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (depth_first_iterator): depth = "<<m_stack_size<<" top child number "<<top_stack().get_child_number()); 
+        LOG(4,"\tincrement (depth_first_iterator): depth = "<<m_stack.size()<<" top child number "<<m_stack.back().get_child_number()); 
 #endif
-        if (m_query->is_leaf_node(*top_stack())) {
-            ++top_stack();
-            while (!empty_stack() && top_stack() == false) {
+        if (m_query->is_leaf_node(*m_stack.back())) {
+            ++m_stack.back();
+            while (!m_stack.empty() && m_stack.back() == false) {
                 LOG(4,"\tpop stack (depth_first_iterator):"); 
-                pop_stack();
+                m_stack.pop_back();
             }
         } else {
             LOG(4,"\tpush stack (depth_first_iterator):"); 
-            push_stack(m_query->get_children(top_stack()++));
+            m_stack.push_back(m_query->get_children(m_stack.back()++));
         }
 
 #ifndef __CUDA_ARCH__
@@ -1392,21 +1429,20 @@ public:
 
     CUDA_HOST_DEVICE
     bool equal(iterator const& other) const {
-        if (empty_stack() || other.empty_stack()) {
-            return empty_stack() == other.empty_stack();
+        if (m_stack.empty() || other.m_stack.empty()) {
+            return m_stack.empty() == other.m_stack.empty();
         } else {
-            return top_stack() == other.top_stack();
+            return m_stack.back() == other.m_stack.back();
         }
     }
 
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return *top_stack(); }
+    { return *m_stack.back(); }
 
 
     const static unsigned m_stack_max_size = 32/dimension - 2;
-    child_iterator m_stack[m_stack_max_size];
-    unsigned m_stack_size;
+    static_vector<child_iterator,m_stack_max_size> m_stack;
     const Query *m_query;
 };
 
@@ -1427,10 +1463,7 @@ public:
 	typedef std::ptrdiff_t difference_type;
 
     CUDA_HOST_DEVICE
-    tree_query_iterator():
-        //m_stack_max_size(0),
-        m_stack_size(0)
-    {}
+    tree_query_iterator() {}
        
     /// this constructor is used to start the iterator at the head of a bucket 
     /// list
@@ -1443,15 +1476,12 @@ public:
                   const bool ordered=false
                   ):
         m_query_point(query_point),
-        //m_stack_max_size(tree_depth),
-        m_stack_size(0),
         m_inv_max_distance(1.0/max_distance),
         m_query(query)
     {
-        ASSERT(tree_depth <= m_stack_max_size,"tree is deeper than max stack available");
-        //m_stack = new child_iterator[tree_depth];
+        ASSERT_CUDA(tree_depth <= m_stack_max_size);
         if (start != false) {
-            push_stack(start);
+            m_stack.push_back(start);
             go_to_next_leaf();
         } else {
 #ifndef __CUDA_ARCH__
@@ -1459,13 +1489,13 @@ public:
 #endif
         }
 
-        if (empty_stack()) {
+        if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
             LOG(3,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain or no children to search.");
 #endif
         } else {
 #ifndef __CUDA_ARCH__
-            LOG(3,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"):  found bbox = "<<m_query->get_bounds(top_stack()));
+            LOG(3,"\tocttree_query_iterator (constructor) with query pt = "<<m_query_point<<"):  found bbox = "<<m_query->get_bounds(m_stack.back()));
 #endif
         }
     }
@@ -1474,30 +1504,21 @@ public:
     tree_query_iterator(const iterator& copy):
         m_query_point(copy.m_query_point),
         m_inv_max_distance(copy.m_inv_max_distance),
-        m_stack_size(copy.m_stack_size),
-        //m_stack_max_size(copy.m_stack_max_size),
         m_query(copy.m_query)
 
     {
-        //if (m_stack_max_size > 0) {
-            //m_stack = new child_iterator[copy.m_stack_max_size];
-            for (int i = 0; i < m_stack_size; ++i) {
-                m_stack[i] = copy.m_stack[i];
-            }
-        //}
-        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
+        for (int i = 0; i < copy.m_stack.size(); ++i) {
+            m_stack.push_back(copy.m_stack[i]);
+        }
     }
 
     CUDA_HOST_DEVICE
     ~tree_query_iterator() {
-        //if (m_stack_max_size > 0) {
-        //    delete[] m_stack;
-        //}
     }
 
     CUDA_HOST_DEVICE
     box_type get_bounds() const {
-        return top_stack().get_bounds();
+        return m_stack.back().get_bounds();
     }
 
     CUDA_HOST_DEVICE
@@ -1505,22 +1526,13 @@ public:
         m_query_point = copy.m_query_point;
         m_inv_max_distance = copy.m_inv_max_distance;
 
-        //if (copy.m_stack_max_size > m_stack_max_size) {
-        //    if (m_stack_max_size != 0) {
-        //        delete[] m_stack;
-        //    }
-        //    m_stack = new child_iterator[copy.m_stack_max_size];
-        //    m_stack_max_size = copy.m_stack_max_size;
-        //}
-
-        m_stack_size = copy.m_stack_size;
-        for (int i = 0; i < m_stack_size; ++i) {
+        m_stack.resize(copy.m_stack.size());
+        for (int i = 0; i < copy.m_stack.size(); ++i) {
             m_stack[i] = copy.m_stack[i];
         }
 
         m_query = copy.m_query;
         return *this;
-        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
     }
 
     /*
@@ -1530,7 +1542,6 @@ public:
         return *this;
     }
     */
-
 
     CUDA_HOST_DEVICE
     reference operator *() const {
@@ -1578,32 +1589,6 @@ public:
  private:
     friend class boost::iterator_core_access;
 
-    CUDA_HOST_DEVICE
-    inline void push_stack(const child_iterator& it) {
-        ASSERT_CUDA(m_stack_size < m_stack_max_size);
-        m_stack[m_stack_size++] = it;
-    }
-
-    CUDA_HOST_DEVICE
-    inline child_iterator& top_stack() {
-        return m_stack[m_stack_size-1];
-    }
-
-    CUDA_HOST_DEVICE
-    inline const child_iterator& top_stack() const {
-        return m_stack[m_stack_size-1];
-    }
-
-    CUDA_HOST_DEVICE
-    inline bool empty_stack() const {
-        return m_stack_size==0;
-    }
-
-    CUDA_HOST_DEVICE
-    inline void pop_stack() {
-        ASSERT_CUDA(m_stack_size != 0);
-        --m_stack_size;
-    }
 
     CUDA_HOST_DEVICE
     bool child_is_within_query(const child_iterator& node) {
@@ -1627,16 +1612,16 @@ public:
 
     CUDA_HOST_DEVICE
     void increment_stack() {
-        while (!empty_stack()) {
-            ++top_stack();
+        while (!m_stack.empty()) {
+            ++m_stack.back();
 #ifndef __CUDA_ARCH__
-            LOG(4,"\tincrement stack with child "<<top_stack().get_child_number());
+            LOG(4,"\tincrement stack with child "<<m_stack.back().get_child_number());
 #endif
-            if (top_stack() == false) {
+            if (m_stack.back() == false) {
 #ifndef __CUDA_ARCH__
                 LOG(4,"\tincrement_stack: pop");
 #endif
-                pop_stack();
+                m_stack.pop_back();
             } else {
                 break;
             }
@@ -1646,9 +1631,9 @@ public:
 
     CUDA_HOST_DEVICE
     void go_to_next_leaf() {
-        bool exit = empty_stack();
+        bool exit = m_stack.empty();
         while (!exit) {
-            child_iterator& node = top_stack();
+            child_iterator& node = m_stack.back();
 #ifndef __CUDA_ARCH__
             LOG(3,"\tgo_to_next_leaf with child "<<node.get_child_number()<<" with bounds "<<node.get_bounds());
 #endif
@@ -1662,19 +1647,19 @@ public:
 #ifndef __CUDA_ARCH__
                     LOG(4,"\tdive down");
 #endif
-                    push_stack(m_query->get_children(node));
+                    m_stack.push_back(m_query->get_children(node));
                 }
             } else { // not in this one, so go to next child, or go up if no more children
 #ifndef __CUDA_ARCH__
                 LOG(4,"\tthis child is NOT within query, so going to next child");
 #endif
                 increment_stack();
-                exit = empty_stack();
+                exit = m_stack.empty();
             }
         }
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
-            if (empty_stack()) {
+            if (m_stack.empty()) {
                 LOG(4,"\tgo_to_next_leaf: stack empty, finishing");
             } else {
                 LOG(4,"\tgo_to_next_leaf: found leaf, finishing");
@@ -1692,35 +1677,35 @@ public:
         increment_stack();
         go_to_next_leaf();
 
-        if (empty_stack()) {
+        if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
             LOG(3,"\tend increment (octree_query_iterator): no more nodes"); 
 #endif
         } else {
 #ifndef __CUDA_ARCH__
-            LOG(3,"\tend increment (octree_query_iterator): looking in bbox "<<m_query->get_bounds(top_stack())); 
+            LOG(3,"\tend increment (octree_query_iterator): looking in bbox "<<m_query->get_bounds(m_stack.back())); 
 #endif
         }
     }
     
     CUDA_HOST_DEVICE
     bool equal(iterator const& other) const {
-        if (empty_stack() || other.empty_stack()) {
-            return empty_stack() == other.empty_stack();
+        if (m_stack.empty() || other.m_stack.empty()) {
+            return m_stack.empty() == other.m_stack.empty();
         } else {
-            return top_stack() == other.top_stack();
+            return m_stack.back() == other.m_stack.back();
         }
     }
 
 
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return *top_stack(); }
+    { return *m_stack.back(); }
 
 
-    unsigned m_stack_size;
+    //unsigned m_stack_size;
     const static unsigned m_stack_max_size = 32/dimension - 2;
-    child_iterator m_stack[m_stack_max_size];
+    static_vector<child_iterator,m_stack_max_size> m_stack;
     double_d m_query_point;
     double_d m_inv_max_distance;
     const Query *m_query;
