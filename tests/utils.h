@@ -98,6 +98,7 @@ public:
         typedef typename ParticlesType::position position;
         ParticlesType particles1(N);
         ParticlesType particles2(N);
+        const double error_aim = 0.01;
 
         for (int i=0; i<N; i++) {
             for (int d=0; d<D; ++d) {
@@ -133,7 +134,7 @@ public:
             Eigen::Matrix<double,Eigen::Dynamic,N> V(k,N);
 
             Eigen::Matrix<double,N,N> fixed_mat_copy = fixed_mat;
-            size_t est_k = detail::adaptive_cross_approximation_full(fixed_mat_copy,k,0.01,U,V);
+            size_t est_k = detail::adaptive_cross_approximation_full(fixed_mat_copy,k,error_aim,U,V);
 
             // check accuracy
             double rms_error_full_fixed = 0;
@@ -150,7 +151,7 @@ public:
             std::cout << "fixed-ACA (full): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_full_fixed/rms_error_scale)<<std::endl;
 
             Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> dyn_mat_copy = dyn_mat;
-            est_k = detail::adaptive_cross_approximation_full(dyn_mat_copy,k,0.01,U,V);
+            est_k = detail::adaptive_cross_approximation_full(dyn_mat_copy,k,error_aim,U,V);
             
             // check accuracy
             double rms_error_full_dyn = 0;
@@ -166,7 +167,7 @@ public:
 
             std::cout << "dyn-ACA (full): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_full_dyn/rms_error_scale)<<std::endl;
 
-            est_k = detail::adaptive_cross_approximation_partial(fixed_mat,k,0.01,U,V);
+            est_k = detail::adaptive_cross_approximation_partial(fixed_mat,k,error_aim,U,V);
 
             // check accuracy
             double rms_error_partial_fixed = 0;
@@ -182,7 +183,7 @@ public:
 
             std::cout << "fixed-ACA (partial): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_partial_fixed/rms_error_scale)<<std::endl;
 
-            est_k = detail::adaptive_cross_approximation_partial(dyn_mat,k,0.01,U,V);
+            est_k = detail::adaptive_cross_approximation_partial(dyn_mat,k,error_aim,U,V);
             
             // check accuracy
             double rms_error_partial_dyn = 0;
@@ -198,7 +199,7 @@ public:
 
             std::cout << "dyn-ACA (partial): k = "<<k<<" est_k = "<<est_k<<" rms error = "<<std::sqrt(rms_error_partial_dyn/rms_error_scale)<<std::endl;
             
-            est_k = detail::adaptive_cross_approximation_partial(kernel,k,0.01,U,V);
+            est_k = detail::adaptive_cross_approximation_partial(kernel,k,error_aim,U,V);
 
             // check accuracy
             double rms_error_kernel = 0;
@@ -247,11 +248,11 @@ public:
             std::cout << "dyn-RSVD: k = "<<k<<" rms error = "<<std::sqrt(rms_error_svd_dyn/rms_error_scale)<<std::endl;
             std::cout << "--------------------" << std::endl;
             if (k == 9) {
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_fixed/rms_error_scale),0.01);
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_dyn/rms_error_scale),0.01);
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_fixed/rms_error_scale),0.001);
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_dyn/rms_error_scale),0.001);
-                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_kernel/rms_error_scale),0.001);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_fixed/rms_error_scale),error_aim);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_full_dyn/rms_error_scale),error_aim);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_fixed/rms_error_scale),error_aim);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_partial_dyn/rms_error_scale),error_aim);
+                TS_ASSERT_LESS_THAN(std::sqrt(rms_error_kernel/rms_error_scale),error_aim);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_svd_fixed/rms_error_scale),0.001);
                 TS_ASSERT_LESS_THAN(std::sqrt(rms_error_svd_dyn/rms_error_scale),0.001);
             }
