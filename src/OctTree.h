@@ -712,6 +712,7 @@ private:
 template <typename Traits>
 struct octtree_query {
     const static unsigned int dimension = Traits::dimension;
+    const static unsigned int m_max_tree_depth = 32/dimension - 2;
 
     typedef Traits traits_type;
     typedef typename Traits::raw_pointer raw_pointer;

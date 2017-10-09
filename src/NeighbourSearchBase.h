@@ -1440,8 +1440,8 @@ public:
     reference dereference() const
     { return *m_stack.back(); }
 
-
-    const static unsigned m_stack_max_size = 32/dimension - 2;
+    
+    const static unsigned m_stack_max_size = Query::m_max_tree_depth;
     static_vector<child_iterator,m_stack_max_size> m_stack;
     const Query *m_query;
 };
@@ -1704,7 +1704,7 @@ public:
 
 
     //unsigned m_stack_size;
-    const static unsigned m_stack_max_size = 32/dimension - 2;
+    const static unsigned m_stack_max_size = Query::m_max_tree_depth;
     static_vector<child_iterator,m_stack_max_size> m_stack;
     double_d m_query_point;
     double_d m_inv_max_distance;
