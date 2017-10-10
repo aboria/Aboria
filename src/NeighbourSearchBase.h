@@ -2637,7 +2637,11 @@ public:
         m_query(query),
         m_valid(true)
     {
-        reset_min_and_index(); 
+        if (outside_domain(query_type,max_distance)) {
+            m_valid = false;
+        } else {
+            reset_min_and_index(); 
+        }
     }
 
     CUDA_HOST_DEVICE
@@ -2742,29 +2746,63 @@ private:
         }
     }
 
+    CUDA_HOST_DEVICE
+    bool outside_domain(const double_d& position,const double_d& max_distance) {
+        value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
+        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
+        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
+
+        bool no_buckets = false;
+        for (int i=0; i<dimension; i++) {
+            if (start[i] > m_query->m_end_bucket[i]) {
+                no_buckets = true;
+            }
+            if (end[i] < 0) {
+                no_buckets = true;
+            }
+        }
+        return no_buckets;
+    } 
+
 
     CUDA_HOST_DEVICE
     void increment() {
         for (int i=D-1; i>=0; --i) {
+
+            double distance = 0;
+
             // increment or decrement index depending on the current
             // quadrant
-            m_index[i] += ith_quadrant_bit(i) ? 1: -1;
-
-            // calculate current distance from query_point
-            double distance = 0;
-            for (int j = 0; j < D; ++j) {
-                const double dist = 
-                    m_query->m_point_to_bucket_index.get_dist_by_quadrant(
-                            m_query_point[i],m_index[i],j,ith_quadrant_bit(i));
-                ASSERT_CUDA(dist > 0);
-                accum = detail::distance_helper<LNormNumber>::
-                    accumulate_norm(accum,dist*m_inv_max_distance[j]); 
+            // AHHHHHHHH, no good, is the iterator currently outside domain or in!!!!
+            bool potential_bucket = true;
+            if (ith_quadrant_bit(i)) {
+                ++m_index[i];
+                potential_bucket = m_index[i] <= m_query->m_end_bucket[i];
+            } else {
+                --m_index[i];
+                potential_bucket = m_index[i] >= 0;
             }
 
-            // if inside distance break out of loop
-            if (distance < 1) break;
+            // if index is outside domain don't bother calcing
+            // distance
+            if (potential_bucket) { 
+                double accum = 0;
+                for (int j = 0; j < D; ++j) {
+                    const double dist = 
+                        m_query->m_point_to_bucket_index.get_dist_by_quadrant(
+                                m_query_point[i],m_index[i],j,ith_quadrant_bit(i));
+                    ASSERT_CUDA(dist > 0);
+                    accum = detail::distance_helper<LNormNumber>::
+                        accumulate_norm(accum,dist*m_inv_max_distance[j]); 
+                }
 
-            // must be outside distance, so reset index back to min
+                potential_bucket = accum <= 1.0;
+            }
+
+            // if bucket is still good break out of loop
+            if (potential_bucket) break;
+
+            // must be outside distance or outside domain, so reset index back to min
             m_index[i] = m_min[i];
 
             // if gone through all dimensions, move to next quadrant

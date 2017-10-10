@@ -617,7 +617,14 @@ struct bucket_search_parallel_query {
     CUDA_HOST_DEVICE
     iterator_range<query_iterator<LNormNumber>> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
-        return get_buckets_near_point(position,double_d(max_distance));
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
+#endif
+        return iterator_range<query_iterator<LNormNumber>>(
+                            query_iterator<LNormNumber>(position,double_d(max_distance),this),
+                            query_iterator<LNormNumber>());
+
+
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -628,40 +635,9 @@ struct bucket_search_parallel_query {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
- 
-        value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
-        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
-        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
-
-        bool no_buckets = false;
-        for (int i=0; i<Traits::dimension; i++) {
-            if (start[i] < 0) {
-                start[i] = 0;
-            } else if (start[i] > m_end_bucket[i]) {
-                no_buckets = true;
-                start[i] = m_end_bucket[i];
-            }
-            if (end[i] < 0) {
-                no_buckets = true;
-                end[i] = 0;
-            } else if (end[i] > m_end_bucket[i]) {
-                end[i] = m_end_bucket[i];
-            }
-        }
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
-#endif
-        if (no_buckets) {
-            return iterator_range<query_iterator<LNormNumber>>(
-                    query_iterator<LNormNumber>()
-                   ,query_iterator<LNormNumber>()
-                    );
-        } else {
-            return iterator_range<query_iterator<LNormNumber>>(
-                    query_iterator<LNormNumber>(start,end+1)
-                   ,query_iterator<LNormNumber>()
-                    );
-        }
+        return iterator_range<query_iterator<LNormNumber>>(
+                            query_iterator<LNormNumber>(position,max_distance,this),
+                            query_iterator<LNormNumber>())    
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
