@@ -450,12 +450,13 @@ struct bucket_search_parallel_query {
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     const static unsigned int dimension = Traits::dimension;
-    typedef lattice_iterator<dimension> query_iterator;
+    template <int LNormNumber>
+    using query_iterator = lattice_iterator_within_distance<bucket_search_serial_query,LNormNumber>;
     typedef lattice_iterator<dimension> all_iterator;
     typedef lattice_iterator<dimension> child_iterator;
-    typedef typename query_iterator::reference reference;
-    typedef typename query_iterator::pointer pointer;
-    typedef typename query_iterator::value_type value_type;
+    typedef typename query_iterator<2>::reference reference;
+    typedef typename query_iterator<2>::pointer pointer;
+    typedef typename query_iterator<2>::value_type value_type;
     typedef ranges_iterator<Traits> particle_iterator;
     typedef detail::bbox<dimension> box_type;
 
@@ -614,7 +615,7 @@ struct bucket_search_parallel_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
     CUDA_HOST_DEVICE
-    iterator_range<query_iterator> 
+    iterator_range<query_iterator<LNormNumber>> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
         return get_buckets_near_point(position,double_d(max_distance));
     }
@@ -622,7 +623,7 @@ struct bucket_search_parallel_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
     CUDA_HOST_DEVICE
-    iterator_range<query_iterator> 
+    iterator_range<query_iterator<LNormNumber>> 
     get_buckets_near_point(const double_d &position, const double_d& max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
@@ -651,14 +652,14 @@ struct bucket_search_parallel_query {
         LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end);
 #endif
         if (no_buckets) {
-            return iterator_range<query_iterator>(
-                    query_iterator()
-                   ,query_iterator()
+            return iterator_range<query_iterator<LNormNumber>>(
+                    query_iterator<LNormNumber>()
+                   ,query_iterator<LNormNumber>()
                     );
         } else {
-            return iterator_range<query_iterator>(
-                    query_iterator(start,end+1)
-                   ,query_iterator()
+            return iterator_range<query_iterator<LNormNumber>>(
+                    query_iterator<LNormNumber>(start,end+1)
+                   ,query_iterator<LNormNumber>()
                     );
         }
     }

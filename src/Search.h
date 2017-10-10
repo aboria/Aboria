@@ -64,7 +64,7 @@ template <typename Query, int LNormNumber>
 class search_iterator {
 
     typedef typename Query::particle_iterator particle_iterator;
-    typedef typename Query::query_iterator query_iterator;
+    typedef typename Query::query_iterator<LNormNumber> query_iterator;
     typedef typename Query::traits_type Traits;
     static const unsigned int dimension = Traits::dimension;
 

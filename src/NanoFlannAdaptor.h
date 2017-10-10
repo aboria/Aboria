@@ -435,7 +435,8 @@ struct nanoflann_adaptor_query {
     typedef typename Traits::bool_d bool_d;
     typedef typename Traits::int_d int_d;
     typedef typename Traits::unsigned_int_d unsigned_int_d;
-    typedef tree_query_iterator<nanoflann_adaptor_query,-1> query_iterator;
+    template <int LNormNumber>
+    using query_iterator = tree_query_iterator<nanoflann_adaptor_query,LNormNumber>;
     typedef value_type* root_iterator;
     typedef depth_first_iterator<nanoflann_adaptor_query> all_iterator;
     typedef nanoflann_child_iterator<Traits> child_iterator;
@@ -529,7 +530,8 @@ struct nanoflann_adaptor_query {
         return ci.get_bounds();
     }
 
-    static const box_type get_bounds(const query_iterator& qi) {
+    template <int LNormNumber>
+    static const box_type get_bounds(const query_iterator<LNormNumber>& qi) {
         return qi.get_bounds();
     }
 
@@ -601,29 +603,29 @@ struct nanoflann_adaptor_query {
         return m_number_of_buckets;
     }
 
-    template <int LNormNumber=-1>
-    iterator_range<query_iterator> 
+    template <int LNormNumber>
+    iterator_range<query_iterator<LNormNumber>> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
-        return iterator_range<query_iterator>(
-                query_iterator(get_children(),position,double_d(max_distance),
+        return iterator_range<query_iterator<LNormNumber>>(
+                query_iterator<LNormNumber>(get_children(),position,double_d(max_distance),
                                m_number_of_levels,this),
-                query_iterator()
+                query_iterator<LNormNumber>()
                 );
     }
 
-    template <int LNormNumber=-1>
-    iterator_range<query_iterator> 
+    template <int LNormNumber>
+    iterator_range<query_iterator<LNormNumber>> 
     get_buckets_near_point(const double_d &position, const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
-        return iterator_range<query_iterator>(
-                query_iterator(get_children(),position,max_distance,
+        return iterator_range<query_iterator<LNormNumber>>(
+                query_iterator<LNormNumber>(get_children(),position,max_distance,
                                m_number_of_levels,this),
-                query_iterator()
+                query_iterator<LNormNumber>()
                 );
     }
 

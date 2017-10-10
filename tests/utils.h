@@ -75,6 +75,50 @@ public:
 
     }
 
+
+    void test_point_to_bucket_indicies(void) {
+        const unsigned int D = 3;
+        vdouble3 min(0,0,0);
+        vdouble3 max(1,1,1);
+        detail::bbox<D> bounds(min,max);
+        vint3 size(5,5,5);
+        vdouble3 side_length = (max-min)/size;
+        detail::point_to_bucket_index<3> ptob(size,side_length,bounds);
+
+        vint3 point_bucket_index_true(2,2,2);
+        vint3 point_bucket_index = ptob.find_bucket_index_vector(vdouble(0.5,0.5,0.5));
+        for (int i = 0; i < 3; ++i) {
+            TS_ASSERT_EQUALS(point_bucket_index_true[i],point_bucket_index[i]);
+        }
+
+        int index_true = 2*5*5 + 2*5 + 2;
+        int index  = ptob(vdouble(0.5,0.5,0.5));
+        TS_ASSERT_EQUALS(index_true,index);
+
+        int index2_true = 2;
+        int index2 = ptob.get_min_index_by_quadrant(0.5-1e-5,0,true);
+        TS_ASSERT_EQUALS(index2_true,index2);
+
+        int index3_true = 3;
+        int index3 = ptob.get_min_index_by_quadrant(0.5+1e-5,0,true);
+        TS_ASSERT_EQUALS(index3_true,index3);
+
+        int index4_true = 1;
+        int index4 = ptob.get_min_index_by_quadrant(0.5-1e-5,0,false);
+        TS_ASSERT_EQUALS(index4_true,index4);
+
+        int index5_true = 2;
+        int index5 = ptob.get_min_index_by_quadrant(0.5+1e-5,0,false);
+        TS_ASSERT_EQUALS(index5_true,index5);
+
+        double dist1 = ptob.get_dist_by_quadrant(0.5,3,0,true);
+        TS_ASSERT_LESS_THAN(std::abs(dist1-side_length[i]/2),1e-10);
+
+        double dist2 = ptob.get_dist_by_quadrant(0.5,1,0,false);
+        TS_ASSERT_LESS_THAN(std::abs(dist2-side_length[i]/2),1e-10);
+
+    }
+
     void test_low_rank(void) {
 #ifdef HAVE_EIGEN
         const unsigned int D = 2;

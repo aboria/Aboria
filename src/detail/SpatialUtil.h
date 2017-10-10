@@ -18,6 +18,13 @@ constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
       return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
 }
 
+CUDA_HOST_DEVICE
+constexpr int ipow(int base, int exp, int result = 1) {
+      return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
+}
+
+
+
 template <typename T>
 CUDA_HOST_DEVICE
 constexpr T get_max() {
@@ -223,6 +230,18 @@ struct point_to_bucket_index {
     CUDA_HOST_DEVICE
     int find_max_bucket_point(const int_d &vindex) const {
         return (vindex + 1)*m_bucket_side_length + m_bounds.bmin;
+    }
+
+    int get_min_index_by_quadrant(const double r, const int i, const bool up) const {
+        return floor((r-m_bounds.bmin[i])/m_bucket_side_length[i] + (up?0.5:-0.5));
+    }
+
+    int get_dist_by_quadrant(const double r, const int index, const int i, const bool up) const {
+        if (up) {
+            return floor(index*m_bucket_side_length[i] + m_bounds.bmin[i]) - r;
+        } else {
+            return r - ceil(index*m_bucket_side_length[i] + m_bounds.bmin[i]);
+        }
     }
  
 };

@@ -2555,6 +2555,236 @@ private:
 
 
 
+template <typename Query, int LNormNumber>
+class lattice_iterator_within_distance {
+    typedef lattice_iterator_within_distance<Query,LNormNumber> iterator;
+    static const unsigned int dimension = Query::dimension;
+    typedef Vector<double,dimension> double_d;
+    typedef Vector<int,dimension> int_d;
+
+    // make a proxy int_d in case you ever
+    // want to get a pointer object to the
+    // reference (which are both of the
+    // same type)
+    struct proxy_int_d: public int_d {
+        CUDA_HOST_DEVICE
+        proxy_int_d():
+            int_d() 
+        {}
+
+        CUDA_HOST_DEVICE
+        proxy_int_d(const int_d& arg):
+            int_d(arg) 
+        {}
+
+        CUDA_HOST_DEVICE
+        proxy_int_d& operator&() {
+            return *this;
+        }
+        
+        CUDA_HOST_DEVICE
+        const proxy_int_d& operator&() const {
+            return *this;
+        }
+
+        CUDA_HOST_DEVICE
+        const proxy_int_d& operator*() const {
+            return *this;
+        }
+
+        CUDA_HOST_DEVICE
+        proxy_int_d& operator*() {
+            return *this;
+        }
+
+        CUDA_HOST_DEVICE
+        const proxy_int_d* operator->() const {
+            return this;
+        }
+
+        CUDA_HOST_DEVICE
+        proxy_int_d* operator->() {
+            return this;
+        }
+    };
+
+    double_d m_query_point;
+    double_d m_inv_max_distance;
+    int m_quadrant; 
+    Query *m_query;
+    bool m_valid;
+    int_d m_min;
+    proxy_int_d m_index;
+public:
+    typedef proxy_int_d pointer;
+	typedef std::random_access_iterator_tag iterator_category;
+    typedef const proxy_int_d& reference;
+    typedef proxy_int_d value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_within_distance():
+        m_valid(false)
+    {}
+
+    CUDA_HOST_DEVICE
+    lattice_iterator_within_distance(const double_d& query_point,
+                     const double_d& max_distance,
+                     const Query* query):
+        m_query_point(query_point),
+        m_inv_max_distance(1.0/max_distance),
+        m_quadrant(0),
+        m_query(query),
+        m_valid(true)
+    {
+        reset_min_and_index(); 
+    }
+
+    CUDA_HOST_DEVICE
+    explicit operator size_t() const {
+        return m_query->m_point_to_bucket_index.collapse_index_vector(m_index);
+    }
+
+    CUDA_HOST_DEVICE
+    const lattice_iterator& get_child_iterator() const {
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    reference operator ->() const {
+        return dereference();
+    }
+
+    CUDA_HOST_DEVICE
+    iterator& operator++() {
+        increment();
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    iterator operator++(int) {
+        iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+
+    CUDA_HOST_DEVICE
+    size_t operator-(const iterator& start) const {
+        int distance = 0;
+        iterator tmp = start;
+        while (tmp != *this) {
+            ++distance;
+            ++tmp;
+        }
+        return distance;
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator==(const iterator& rhs) const {
+        return equal(rhs);
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator==(const bool rhs) const {
+        return equal(rhs);
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const iterator& rhs) const {
+        return !operator==(rhs);
+    }
+
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const bool rhs) const {
+        return !operator==(rhs);
+    }
+
+private:
+    CUDA_HOST_DEVICE
+    bool equal(iterator const& other) const {
+        if (!other.m_valid) return !m_valid;
+        if (!m_valid) return !other.m_valid;
+        for (size_t i = 0; i < D; ++i) {
+           if (m_index[i] != other.m_index[i]) {
+               return false;
+           }
+        }
+        return true;
+    }
+
+    CUDA_HOST_DEVICE
+    bool equal(const bool other) const {
+        return m_valid==other;
+    }
+
+    CUDA_HOST_DEVICE
+    reference dereference() const { 
+        return m_index; 
+    }
+
+
+    CUDA_HOST_DEVICE
+    bool ith_quadrant_bit(const int i) const {
+        return (1 == (m_quadrant >> i) & 1);
+    }
+
+    CUDA_HOST_DEVICE
+    void reset_min_and_index() {
+        for (int i = 0; i < dimension; ++i) {
+            m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
+                    m_query_point[i],i,ith_quadrant_bit(i));
+            m_index[i] = m_min[i];
+        }
+    }
+
+
+    CUDA_HOST_DEVICE
+    void increment() {
+        for (int i=D-1; i>=0; --i) {
+            // increment or decrement index depending on the current
+            // quadrant
+            m_index[i] += ith_quadrant_bit(i) ? 1: -1;
+
+            // calculate current distance from query_point
+            double distance = 0;
+            for (int j = 0; j < D; ++j) {
+                const double dist = 
+                    m_query->m_point_to_bucket_index.get_dist_by_quadrant(
+                            m_query_point[i],m_index[i],j,ith_quadrant_bit(i));
+                ASSERT_CUDA(dist > 0);
+                accum = detail::distance_helper<LNormNumber>::
+                    accumulate_norm(accum,dist*m_inv_max_distance[j]); 
+            }
+
+            // if inside distance break out of loop
+            if (distance < 1) break;
+
+            // must be outside distance, so reset index back to min
+            m_index[i] = m_min[i];
+
+            // if gone through all dimensions, move to next quadrant
+            if (i == 0) {
+                if (m_quadrant < (1<<dimension)) {
+                    ++m_quadrant;
+                    reset_min_and_index();
+                } else {
+                    // if gone through all quadrants, iterator
+                    // is now invalid
+                    m_valid = false;
+                }
+            }
+        }
+    }
+
+};
+
+
+
 
 }
 

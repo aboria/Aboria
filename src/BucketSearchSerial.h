@@ -933,12 +933,13 @@ struct bucket_search_serial_query {
     typedef typename Traits::reference particle_reference;
     typedef typename Traits::const_reference particle_const_reference;
     const static unsigned int dimension = Traits::dimension;
-    typedef lattice_iterator<dimension> query_iterator;
+    template <int LNormNumber>
+    using query_iterator = lattice_iterator_within_distance<bucket_search_serial_query,LNormNumber>;
     typedef lattice_iterator<dimension> all_iterator;
     typedef lattice_iterator<dimension> child_iterator;
-    typedef typename query_iterator::reference reference;
-    typedef typename query_iterator::pointer pointer;
-    typedef typename query_iterator::value_type value_type;
+    typedef typename query_iterator<2>::reference reference;
+    typedef typename query_iterator<2>::pointer pointer;
+    typedef typename query_iterator<2>::value_type value_type;
     typedef linked_list_iterator<Traits> particle_iterator;
     typedef detail::bbox<dimension> box_type;
 
@@ -1123,20 +1124,26 @@ struct bucket_search_serial_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
     CUDA_HOST_DEVICE
-    iterator_range<query_iterator> 
+    iterator_range<query_iterator<LNormNumber>> 
     get_buckets_near_point(const double_d &position, const double max_distance) const {
-        return get_buckets_near_point(position,double_d(max_distance));
+        return iterator_range<query_iterator<LNormNumber>>(
+                            query_iterator<LNormNumber>(position,double_d(max_distance),this),
+                            query_iterator<LNormNumber>());
     }
      
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     template <int LNormNumber=-1>
     CUDA_HOST_DEVICE
-    iterator_range<query_iterator> 
+    iterator_range<query_iterator<LNormNumber>> 
     get_buckets_near_point(const double_d &position, const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance = "<<max_distance);
 #endif
+        return iterator_range<query_iterator<LNormNumber>>(
+                            query_iterator<LNormNumber>(position,double_d(max_distance),this),
+                            query_iterator<LNormNumber>());
+
      
         value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
         int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
@@ -1161,14 +1168,18 @@ struct bucket_search_serial_query {
         LOG(4,"\tget_buckets_near_point: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end<<" no_buckets = "<<no_buckets);
 #endif
         if (no_buckets) {
-            return iterator_range<query_iterator>(
-                    query_iterator()
-                    ,query_iterator()
+            return iterator_range<query_iterator<LNormNumber>>(
+                    query_iterator<LNormNumber>()
+                    ,query_iterator<LNormNumber>()
                     );
+ice_iterator_within_distance(const double_d& query_point,
+                     const double_d& max_distance,
+                     const Query* query):
+        m
         } else {
-            return iterator_range<query_iterator>(
-                    query_iterator(start,end+1)
-                    ,query_iterator()
+            return iterator_range<query_iterator<LNormNumber>>(
+                    query_iterator<LNormNumber>(start,end+1)
+                    ,query_iterator<LNormNumber>()
                     );
         }
     }
