@@ -18,11 +18,6 @@ constexpr int64_t ipow(int64_t base, int exp, int64_t result = 1) {
       return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
 }
 
-CUDA_HOST_DEVICE
-constexpr int ipow(int base, int exp, int result = 1) {
-      return exp < 1 ? result : ipow(base*base, exp/2, (exp % 2) ? result*base : result);
-}
-
 
 
 template <typename T>
@@ -233,14 +228,28 @@ struct point_to_bucket_index {
     }
 
     int get_min_index_by_quadrant(const double r, const int i, const bool up) const {
-        return floor((r-m_bounds.bmin[i])/m_bucket_side_length[i] + (up?0.5:-0.5));
+        return std::floor((r-m_bounds.bmin[i])/m_bucket_side_length[i] + (up?0.5:-0.5));
     }
 
-    int get_dist_by_quadrant(const double r, const int index, const int i, const bool up) const {
+    double get_dist_to_bucket(const double r, const int my_index, const int target_index, const int i) const {
+        if (my_index < target_index) {
+            // compare point to lower edge of bucket, return a positive distance
+            return my_index*m_bucket_side_length[i] + m_bounds.bmin[i] - r;
+        } else if (my_index > target_index) {
+            // compare point to upper edge of bucket, return a positive distance
+            return r - (my_index+1)*m_bucket_side_length[i] + m_bounds.bmin[i];
+        } else 
+            // same index, return 0.0
+            return 0.0;
+    }
+
+    double get_dist_by_quadrant(const double r, const int index, const int i, const bool up) const {
         if (up) {
-            return floor(index*m_bucket_side_length[i] + m_bounds.bmin[i]) - r;
+            // compare point to lower edge of bucket, return a positive distance
+            return index*m_bucket_side_length[i] + m_bounds.bmin[i] - r;
         } else {
-            return r - ceil(index*m_bucket_side_length[i] + m_bounds.bmin[i]);
+            // compare point to upper edge of bucket, return a positive distance
+            return r - (index+1)*m_bucket_side_length[i] + m_bounds.bmin[i];
         }
     }
  

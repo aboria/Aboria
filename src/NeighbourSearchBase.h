@@ -602,210 +602,6 @@ public:
         cast().update_iterator_impl();
     }
 
-
-    /*
-    bool add_points_at_end(const iterator &begin, 
-                           const iterator &start_adding, 
-                           const iterator &end,
-                           const bool delete_dead_particles=true) {
-        ASSERT(start_adding-begin == m_particles_end-m_particles_begin, "prior number of particles embedded into domain is not consistent with distance between begin and start_adding");
-        ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
-
-        m_particles_begin = begin;
-        m_particles_end = end;
-
-        // enforce domain
-        detail::for_each(start_adding, end,
-                enforce_domain_lambda<Traits::dimension,reference>(
-                    get_min(),get_max(),get_periodic()));
-
-        const int num_dead = 0;
-        if (delete_dead_particles)  {
-            auto fnot = [](const bool in) { return static_cast<int>(!in); };
-            m_alive_sum.resize(size());
-            detail::inclusive_scan(detail::make_transform_iterator(get<alive>(cbegin()),fnot),
-                    detail::make_transform_iterator(get<alive>(cend()),fnot),
-                    m_alive_sum.begin());
-            num_dead = *(m_delete_indicies.end()-1);
-        }
-
-        const size_t dist = end - start_adding;
-        bool reorder = false;
-        if (dist > 0) {
-            LOG(2,"neighbour_search_base: add_points_at_end: embedding "<<dist<<" new points. Total number = "<<end-begin);
-            if (m_domain_has_been_set) {
-                reorder = cast().add_points_at_end_impl(dist);
-            }
-            if (m_id_map) {
-                if (reorder) {
-                    init_id_map(reorder);
-                } else {
-                    update_id_map(dist);
-                }
-            }
-            LOG(2,"neighbour_search_base: add_points_at_end: done.");
-        }
-
-
-        query_type& query = cast().get_query_impl();
-        query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
-        query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
-
-        return reorder;
-    }
-
-    
-
-    void before_delete_particles(const vector_int& delete_indicies) {
-        // if search is ordered, then possibly all indicies in the id map
-        // will change, so just reinit in after_delete_particles
-        // if search is not ordered, then need to change indicies of 
-        // the n particles to be deleted, and the n particles at the end
-        if (m_id_map && !cast().ordered()) {
-            // mark deleted particles in id_map_value
-            detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
-                CUDA_DEVICE
-                [&](int& i) {
-                    if (get<alive>(m_particles_begin)[i] == false) {
-                        i = -1;
-                        //TODO: end index
-                    }
-                });
-
-            if (ABORIA_LOG_LEVEL >= 4) { 
-                print_id_map();
-            }
-        }
-
-    }
-
-    bool after_delete_particles(iterator begin, iterator end, const bool update_positions) {
-        LOG(2,"neighbour_search_base: after_delete_particles");
-        bool reorder = false;
-        const size_t old_n = m_particles_end-m_particles_begin;
-        const size_t new_n = end-begin;
-
-        // if no particles were deleted and don't
-        // need to update positions just return
-        if ((old_n == new_n) && !update_positions) {
-            return reorder;
-        }
-
-        // update iterators
-        m_particles_begin = begin;
-        m_particles_end = end;
-
-        if (m_domain_has_been_set) {
-            reorder = cast().delete_particles_impl(update_positions);
-        }
-        if (m_id_map) {
-            delete_marked_id_map();
-            if (ABORIA_LOG_LEVEL >= 4) { 
-                print_id_map();
-            }
-        }
-        return reorder;
-    }
-
-    void before_delete_particles_range(const size_t i, const size_t n) {
-        LOG(2,"neighbour_search_base: before_delete_particles_range");
-        // TODO: this can be done more efficiently, see some code below
-        // but not worth it at this point
-        if (m_id_map) {
-            // mark deleted particles in id_map_value
-            
-            typedef zip_iterator<typename Traits::template tuple<
-                                typename vector_int::iterator, 
-                                typename vector_int::iterator>,
-                             mpl::vector<>> pair_zip_type;
-
-        
-            const size_t np = m_particles_end-m_particles_begin; 
-            if (n*std::log(np) < np) {
-                detail::for_each(m_particles_begin+i,m_particles_begin+(i+n),
-                    [&](const reference& i) {
-                        const size_t map_index = find_id_map(get<alive>(i));
-                        m_id_map_value[map_index] = -1;
-                    });
-            } else {
-                detail::for_each(start_zip,end_zip,
-                    CUDA_DEVICE
-                    detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
-                    CUDA_DEVICE
-                    [&](int& i) {
-                        if (get<alive>(m_particles_begin)[i] == false) {
-                            i = -1;
-                        }
-                    });
-
-                    [&](typename pair_zip_type::reference const& p) {
-                        size_t& index = detail::get_impl<1>(p.get_tuple());
-                        if (index < i+n) {
-                            // to be deleted
-                            index = -1;
-                        } else {
-                            // to be shifted
-                            index -= n;
-                        }
-                    });
-
-        auto start_zip = pair_zip_type(m_id_map_key.begin()+i, m_id_map_value.begin()+i);
-
-            detail::for_each(m_id_map_value.begin(),m_id_map_value.end(),
-                CUDA_DEVICE
-                [&](int& i) {
-                    if (get<alive>(m_particles_begin)[i] == false) {
-                        i = -1;
-                    }
-                });
-
-            if (ABORIA_LOG_LEVEL >= 4) { 
-                print_id_map();
-            }
-        }
-
-    }
-    
-    bool after_delete_particles_range(iterator begin, iterator end,
-                                             const size_t i, const size_t n) {
-
-        const size_t new_size = end-begin;
-        ASSERT(!m_bounds.is_empty(), "trying to embed particles into an empty domain. use the function `set_domain` to setup the spatial domain first.");
-
-        m_particles_begin = begin;
-        m_particles_end = end;
-
-        bool reorder = false;
-        if (n > 0) {
-            LOG(2,"neighbour_search_base: delete_points: deleting points "<<i<<" to "<<i+n-1);
-            if (m_domain_has_been_set) {
-                reorder = cast().delete_particles_range_impl(i,n);
-            }
-            if (m_id_map) {
-                //TODO: this should be more efficient
-                init_id_map(reorder);
-                if (reorder) {
-                    init_id_map();
-                } else {
-                    delete_id_map_in_range(i,n);
-                    if (ABORIA_LOG_LEVEL >= 4) { 
-                        print_id_map();
-                    }
-                }
-            }
-        }
-
-        query_type& query = cast().get_query_impl();
-        query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
-        query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
-
-        return reorder;
-    }
-
-    copy_points_lambda get_copy_points_lambda() const {
-        return cast().get_copy_points_lambda();
-    }
-    */
     
     const query_type& get_query() const {
         return cast().get_query_impl();
@@ -1712,584 +1508,6 @@ public:
 };
 
 
-
-
-/*
-template <typename Query, int LNormNumber>
-class tree_query_iterator {
-    typedef tree_query_iterator<Query,LNormNumber> iterator;
-    static const unsigned int dimension = Query::dimension;
-    typedef Vector<double,dimension> double_d;
-    typedef Vector<int,dimension> int_d;
-
-public:
-    typedef typename Query::value_type const value_type;
-    typedef const value_type* pointer;
-	typedef std::forward_iterator_tag iterator_category;
-    typedef const value_type& reference;
-	typedef std::ptrdiff_t difference_type;
-
-    CUDA_HOST_DEVICE
-    tree_query_iterator():
-        m_node(nullptr)
-    {}
-       
-    /// this constructor is used to start the iterator at the head of a bucket 
-    /// list
-    CUDA_HOST_DEVICE
-    tree_query_iterator(const value_type* start_node,
-                  const double_d& query_point,
-                  const double max_distance,
-                  const Query *query
-                  ):
-
-        m_query_point(query_point),
-        m_max_distance2(
-                detail::distance_helper<LNormNumber>
-                        ::get_value_to_accumulate(max_distance)),
-        m_dists(0),
-        m_query(query),
-        m_node(nullptr)
-    {
-        //m_stack.reserve(m_query->get_max_levels());
-        if (start_node == nullptr) {
-                LOG(4,"\ttree_query_iterator (constructor) empty tree, returning default iterator");
-        } else {
-            double accum = 0;
-            for (int i = 0; i < dimension; ++i) {
-                const double val = m_query_point[i];
-                if (val < m_query->get_bounds_low()[i]) {
-                    m_dists[i] = val - m_query->get_bounds_low()[i];
-                } else if (m_query_point[i] > m_query->get_bounds_high()[i]) {
-                    m_dists[i] = val - m_query->get_bounds_high()[i];
-                }
-                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
-            }
-            if (accum <= m_max_distance2) {
-                LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): searching root node");
-                m_node = start_node;
-                go_to_next_leaf();
-            } else {
-                LOG(4,"\ttree_query_iterator (constructor) with query pt = "<<m_query_point<<"): search region outside domain");
-            }
-        }
-    }
-
-
-    tree_query_iterator(const iterator& copy):
-        m_query_point(copy.m_query_point),
-        m_max_distance2(copy.m_max_distance2),
-        m_node(copy.m_node),
-        m_dists(copy.m_dists)
-    {
-        m_stack = copy.m_stack;
-        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
-    }
-
-    iterator& operator=(const iterator& copy) {
-        m_query_point = copy.m_query_point;
-        m_max_distance2 = copy.m_max_distance2;
-        m_node=copy.m_node;
-        m_dists=copy.m_dists;
-        m_stack = copy.m_stack;
-        return *this;
-        //std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
-    }
-
-    iterator& operator=(const tree_depth_first_iterator<Query>& copy) {
-        m_node=copy.m_node;
-#ifndef NDEBUG
-        const double_d low = copy.m_query->get_bounds_low(*m_node);
-        const double_d high = copy.m_query->get_bounds_high(*m_node);
-        ASSERT((low <= m_query_point).all() && (high > m_query_point).all(),"query point not in depth_first_iterator")
-#endif
-        std::copy(copy.m_stack.begin(),copy.m_stack.end(),m_stack.begin()); 
-        return *this;
-    }
-
-    
-    CUDA_HOST_DEVICE
-    reference operator *() const {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    reference operator ->() {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    iterator& operator++() {
-        increment();
-        return *this;
-    }
-    CUDA_HOST_DEVICE
-    iterator operator++(int) {
-        iterator tmp(*this);
-        operator++();
-        return tmp;
-    }
-    CUDA_HOST_DEVICE
-    size_t operator-(iterator start) const {
-        size_t count = 0;
-        while (start != *this) {
-            start++;
-            count++;
-        }
-        return count;
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator==(const iterator& rhs) const {
-        return equal(rhs);
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator!=(const iterator& rhs) const {
-        return !operator==(rhs);
-    }
-
- private:
-    friend class boost::iterator_core_access;
-
-    void go_to_next_leaf() {
-        while(!m_query->is_leaf_node(*m_node)) {
-            ASSERT(m_query->get_child1(m_node) != NULL,"no child1");
-            ASSERT(m_query->get_child2(m_node) != NULL,"no child2");
-            // Which child branch should be taken first?
-            const size_t idx = m_query->get_dimension_index(*m_node);
-            const double val = m_query_point[idx];
-            const double diff_cut_high = val - m_query->get_cut_high(*m_node);
-            const double diff_cut_low = val - m_query->get_cut_low(*m_node);
-
-            pointer bestChild;
-            pointer otherChild;
-            double cut_dist,bound_dist;
-
-
-            LOG(4,"\ttree_query_iterator (go_to_next_leaf) with query pt = "<<m_query_point<<"): idx = "<<idx<<" cut_high = "<<m_query->get_cut_high(*m_node)<<" cut_low = "<<m_query->get_cut_low(*m_node));
-            
-            if ((diff_cut_low+diff_cut_high)<0) {
-                LOG(4,"\ttree_query_iterator (go_to_next_leaf) low child is best");
-                bestChild = m_query->get_child1(m_node);
-                otherChild = m_query->get_child2(m_node);
-                cut_dist = diff_cut_high;
-                //bound_dist = val - m_query->get_bounds_high(*m_node);
-            } else {
-                LOG(4,"\ttree_query_iterator (go_to_next_leaf) high child is best");
-                bestChild = m_query->get_child2(m_node);
-                otherChild = m_query->get_child1(m_node);
-                cut_dist = diff_cut_low;
-                //bound_dist = val - m_query->get_bounds_low(*m_node);
-            }
-            
-            // if other child possible save it to stack for later
-            double save_dist = m_dists[idx];
-            m_dists[idx] = cut_dist;
-
-            // calculate norm of m_dists 
-            double accum = 0;
-            for (int i = 0; i < dimension; ++i) {
-                accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,m_dists[i]); 
-            }
-            if (accum <= m_max_distance2) {
-                LOG(4,"\ttree_query_iterator (go_to_next_leaf) push other child for later");
-                m_stack.push(std::make_pair(otherChild,m_dists));
-            }
-
-            // restore m_dists and move to bestChild
-            m_dists[idx] = save_dist;
-            m_node = bestChild;
-        }
-        LOG(4,"\ttree_query_iterator (go_to_next_leaf) found a leaf node");
-    }
-    
-    void pop_new_child_from_stack() {
-        std::tie(m_node,m_dists) = m_stack.top();
-        m_stack.pop();
-    }
-
-    CUDA_HOST_DEVICE
-    void increment() {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (tree_iterator):"); 
-#endif
-        if (m_stack.empty()) {
-            m_node = nullptr;
-        } else {
-            pop_new_child_from_stack();
-            go_to_next_leaf();
-        }
-
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (tree_iterator): m_node = "<<m_node); 
-#endif
-    }
-
-    CUDA_HOST_DEVICE
-    bool equal(iterator const& other) const {
-        return m_node == other.m_node;
-    }
-
-
-    CUDA_HOST_DEVICE
-    reference dereference() const
-    { return *m_node; }
-
-
-    std::stack<std::pair<pointer,double_d>> m_stack;
-    double_d m_query_point;
-    double m_max_distance2;
-    const value_type* m_node;
-    double_d m_dists;
-    const Query *m_query;
-};
-*/
-
-
-
-/*
-template <typename Query>
-class tree_theta_iterator {
-    typedef tree_theta_iterator<Query> iterator;
-    static const unsigned int dimension = Query::dimension;
-    typedef Vector<double,dimension> double_d;
-    typedef Vector<int,dimension> int_d;
-    typedef Query::reference node_reference;
-    typedef Query::pointer node_pointer;
-    typedef Query::value_type node_value_type;
-
-public:
-    typedef const node_pointer pointer;
-	typedef std::forward_iterator_tag iterator_category;
-    typedef const node_reference reference;
-    typedef const node_value_type value_type;
-	typedef std::ptrdiff_t difference_type;
-
-    CUDA_HOST_DEVICE
-    tree_theta_iterator():
-        m_node(nullptr)
-    {}
-
-    tree_theta_iterator(const node_pointer node,
-                        const Query *query,
-                        const std::stack<const node_pointer>& stack):
-        m_node(node),
-        m_query(query),
-        m_stack(stack),
-        m_centre(0.5*(m_query->get_bounds_low(m_node) 
-                      + m_query->get_bounds_high(m_node))),
-        m_r2((m_query->get_bounds_high(m_node) - m_centre).squaredNorm()),
-        m_r(std::sqrt(m_r2))
-        m_theta2(std::pow(0.5,2))
-    {}
-       
-    tree_theta_iterator(const tree_depth_first_iterator<Query> copy):
-        tree_theta_iterator(copy.m_node,copy.m_query,copy.m_stack)
-    {}
-
-
-    tree_theta_iterator(const iterator& copy):
-        m_query_point(copy.m_query_point),
-        m_max_distance2(copy.m_max_distance2),
-        m_node(copy.m_node),
-        m_dists(copy.m_dists)
-        m_stack(copy.m_stack)
-    {}
-
-    iterator& operator=(const iterator& copy) {
-        m_query_point = copy.m_query_point;
-        m_max_distance2 = copy.m_max_distance2;
-        m_node=copy.m_node;
-        m_dists=copy.m_dists;
-        m_stack = copy.m_stack;
-        return *this;
-    }
-
-    CUDA_HOST_DEVICE
-    reference operator *() const {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    reference operator ->() {
-        return dereference();
-    }
-    CUDA_HOST_DEVICE
-    iterator& operator++() {
-        increment();
-        return *this;
-    }
-    CUDA_HOST_DEVICE
-    iterator operator++(int) {
-        iterator tmp(*this);
-        operator++();
-        return tmp;
-    }
-    CUDA_HOST_DEVICE
-    size_t operator-(iterator start) const {
-        size_t count = 0;
-        while (start != *this) {
-            start++;
-            count++;
-        }
-        return count;
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator==(const iterator& rhs) const {
-        return equal(rhs);
-    }
-    CUDA_HOST_DEVICE
-    inline bool operator!=(const iterator& rhs) const {
-        return !operator==(rhs);
-    }
-
- private:
-
-    bool theta_condition(const node_reference& node) {
-        double_d other_size = m_query->get_bounds_low(node)-m_query->get_bounds_low(node);
-        double d = 0.5*(other_high + other_low - m_low - m_high).norm(); 
-        double other_r2 = 0.25*(other_high-other_low).squaredNorm();
-        if (other_r2 < m_r2) {
-            const double other_r = std::sqrt(other_r2);
-            return m_r2 > m_theta2*std::pow(d-other_r,2);
-        } else {
-            return other_r2 < m_theta2*std::pow(d-m_r,2);
-        }
-    }
-
-    void go_to_next_node() {
-        m_theta_condition = true;
-        while(!m_query->is_leaf_node(*m_node) && m_theta_condition) {
-            ASSERT(m_query->get_child1(m_node) != NULL,"no child1");
-            ASSERT(m_query->get_child2(m_node) != NULL,"no child2");
-            node_pointer child1 = m_query->get_child1(m_node);
-            node_pointer child2 = m_query->get_child1(m_node);
-            if (theta_condition(child1)) {
-                m_stack.push(child2);
-                m_node = child1;
-            } else if (theta_condition(child2)) {
-                m_node = child2;
-            } else {
-                pop_new_child_from_stack();
-            }
-
-            bool child1_theta = theta_condition(child1);
-            bool child2_theta = theta_condition(child2);
-            if (child1_theta && child2_theta) {
-                m_node = child1;
-                //keep going
-            } else if (child1_theta) {
-                m_stack.push(child1);
-                m_node = child2;
-                m_theta_condition = false;
-                //return
-            } else if (child2_theta) {
-                m_stack.push(child2);
-                m_node = child1;
-                m_theta_condition = false;
-                //return
-            } else {
-                CHECK(false,"should not get here!");
-            }
-
-        }
-        LOG(4,"\ttree_interaction_iterator (go_to_next_leaf) found a candidate node. m_theta_condition = "<<m_theta_condition);
-    }
-    
-    // returns true if the new node satisfies the theta condition 
-    void pop_new_child_from_stack() {
-        m_node = m_stack.top();
-        m_stack.pop();
-    }
-
-    CUDA_HOST_DEVICE
-    void increment() {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tincrement (tree_interaction_iterator):"); 
-#endif
-        if (m_stack.empty()) {
-            m_node = nullptr;
-        } else {
-            do {
-                pop_new_child_from_stack();
-            } while (!theta_condition(m_node));
-            go_to_next_leaf();
-        }
-
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tend increment (tree_interaction_iterator): m_node = "<<m_node); 
-#endif
-    }
-
-    CUDA_HOST_DEVICE
-    bool equal(iterator const& other) const {
-        return m_node == other.m_node;
-    }
-
-
-    CUDA_HOST_DEVICE
-    reference dereference() const
-    { return reference(*m_node,m_theta); }
-
-
-    std::stack<pointer> m_stack;
-    double_d m_low;
-    double_d m_high;
-    double m_r2;
-    double m_r;
-    bool m_theta_condition;
-    double m_theta2;
-    const value_type* m_node;
-    const Query *m_query;
-};
-*/
-
-
-/*
-// assume that these iterators, and query functions, can be called from device code
-template <unsigned int D,unsigned int LNormNumber>
-class lattice_query_iterator {
-    typedef lattice_query_iterator<D,LNormNumber> iterator;
-    typedef Vector<double,D> double_d;
-    typedef Vector<int,D> int_d;
-
-    int_d m_min;
-    int_d m_max;
-    int_d m_index;
-    double_d m_index_point;
-    double_d m_query_point;
-    int_d m_query_index;
-    double m_max_distance2;
-    double_d m_box_size;
-    bool m_check_distance;
-public:
-    typedef const int_d* pointer;
-	typedef std::forward_iterator_tag iterator_category;
-    typedef const int_d& reference;
-    typedef const int_d value_type;
-	typedef std::ptrdiff_t difference_type;
-
-    CUDA_HOST_DEVICE
-    lattice_query_iterator(
-                     const int_d& min,
-                     const int_d& max,
-                     const int_d& start,
-                     const double_d& start_point,
-                     const double_d& query_point,
-                     const int_d& query_index,
-                     const double max_distance,
-                     const double_d& box_size):
-        m_min(min),
-        m_max(max),
-        m_index(start),
-        m_index_point(start_point),
-        m_query_point(query_point),
-        m_query_index(query_index),
-        m_max_distance2(
-                detail::distance_helper<LNormNumber>
-                        ::get_value_to_accumulate(max_distance)),
-        m_box_size(box_size),
-        m_check_distance(true)
-    {
-        if (distance_helper<LNormNumber>::norm(m_index_point)<m_max_distance2) {
-            increment();
-        } 
-    }
-
-
-    CUDA_HOST_DEVICE
-    reference operator *() const {
-        return dereference();
-    }
-
-    CUDA_HOST_DEVICE
-    reference operator ->() const {
-        return dereference();
-    }
-
-    CUDA_HOST_DEVICE
-    iterator& operator++() {
-        increment();
-        return *this;
-    }
-
-    CUDA_HOST_DEVICE
-    iterator operator++(int) {
-        iterator tmp(*this);
-        operator++();
-        return tmp;
-    }
-
-
-    CUDA_HOST_DEVICE
-    size_t operator-(iterator start) const {
-        size_t count = 0;
-        while (start != *this) {
-            start++;
-            count++;
-        }
-        return count;
-    }
-
-    CUDA_HOST_DEVICE
-    inline bool operator==(const iterator& rhs) const {
-        return equal(rhs);
-    }
-
-    CUDA_HOST_DEVICE
-    inline bool operator!=(const iterator& rhs) const {
-        return !operator==(rhs);
-    }
-
-private:
-    friend class boost::iterator_core_access;
-
-    CUDA_HOST_DEVICE
-    bool equal(iterator const& other) const {
-        return (m_index == other.m_index).all();
-    }
-
-    CUDA_HOST_DEVICE
-    reference dereference() const { 
-        return m_index; 
-    }
-
-    CUDA_HOST_DEVICE
-    void increment() {
-        if (m_check_distance) {
-            double distance;
-            do  {
-                for (int i=0; i<D; i++) {
-                    ++m_index[i];
-                    if (m_index[i] == m_query_index[i]) {
-                        m_check_distance = false;
-                    } else {
-                        m_index_dist[i] += m_box_size[i];
-                    }
-                    if (m_index[i] <= m_max[i]) break;
-                    if (i != D-1) {
-                        m_index[i] = m_min[i];
-                    } 
-                }
-                if (m_index[D-1] > m_max[D-1]) {
-                    distance = 0;
-                } else {
-                    distance = distance_helper<LNormNumber>::norm(m_index_dist);
-                }
-            } while (distance > m_max_distance2);
-        } else {
-            for (int i=0; i<D; i++) {
-                if (m_index[i] == m_query_index[i]) {
-                    m_check_distance = true;
-                }
-                ++m_index[i];
-                if (m_index[i] <= m_max[i]) break;
-                if (i != D-1) {
-                    m_index[i] = m_min[i];
-                } 
-            }
-        }
-    }
-};
-
-*/
-
 template <unsigned int D>
 class lattice_iterator {
     typedef lattice_iterator<D> iterator;
@@ -2611,10 +1829,11 @@ class lattice_iterator_within_distance {
     double_d m_query_point;
     double_d m_inv_max_distance;
     int m_quadrant; 
-    Query *m_query;
+    const Query *m_query;
     bool m_valid;
     int_d m_min;
     proxy_int_d m_index;
+    int_d m_base_index;
 public:
     typedef proxy_int_d pointer;
 	typedef std::random_access_iterator_tag iterator_category;
@@ -2637,28 +1856,7 @@ public:
         m_query(query),
         m_valid(true)
     {
-        /*
-        start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
-        end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
-
-        bool no_buckets = false;
-        for (int i=0; i<Traits::dimension; i++) {
-            if (start[i] < 0) {
-                start[i] = 0;
-            } else if (start[i] > m_end_bucket[i]) {
-                no_buckets = true;
-                start[i] = m_end_bucket[i];
-            }
-            if (end[i] < 0) {
-                no_buckets = true;
-                end[i] = 0;
-            } else if (end[i] > m_end_bucket[i]) {
-                end[i] = m_end_bucket[i];
-            }
-        }
-        */
-
-        if (outside_domain(query_point,max_distance) {
+        if (outside_domain(query_point,max_distance)) {
             m_valid = false;
         } else {
             reset_min_and_index(); 
@@ -2670,10 +1868,6 @@ public:
         return m_query->m_point_to_bucket_index.collapse_index_vector(m_index);
     }
 
-    CUDA_HOST_DEVICE
-    const lattice_iterator& get_child_iterator() const {
-        return *this;
-    }
 
     CUDA_HOST_DEVICE
     reference operator *() const {
@@ -2734,7 +1928,7 @@ private:
     bool equal(iterator const& other) const {
         if (!other.m_valid) return !m_valid;
         if (!m_valid) return !other.m_valid;
-        for (size_t i = 0; i < D; ++i) {
+        for (size_t i = 0; i < dimension; ++i) {
            if (m_index[i] != other.m_index[i]) {
                return false;
            }
@@ -2760,8 +1954,10 @@ private:
 
     CUDA_HOST_DEVICE
     void reset_min_and_index() {
-        bool no_bucket = true;
-        while (m_valid && no_bucket) {
+        bool no_buckets = true;
+
+        LOG_CUDA(4,"lattice_iterator_within_distance: reset_min_and_index:begin");
+        while (m_valid && no_buckets) {
             for (int i = 0; i < dimension; ++i) {
                 m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
                         m_query_point[i],i,ith_quadrant_bit(i));
@@ -2771,22 +1967,22 @@ private:
                 if (ith_quadrant_bit(i)) {
                     if (m_min[i] < 0) {
                         m_min[i] = 0;
-                    } else if (m_min[i] > m_end_bucket[i]) {
+                    } else if (m_min[i] > m_query->m_end_bucket[i]) {
                         no_buckets = true;
-                        m_min[i] = m_end_bucket[i];
+                        m_min[i] = m_query->m_end_bucket[i];
                     }
                 } else {
                     if (m_min[i] < 0) {
                         no_buckets = true;
                         m_min[i] = 0;
-                    } else if (m_min[i] > m_end_bucket[i]) {
-                        m_min[i] = m_end_bucket[i];
+                    } else if (m_min[i] > m_query->m_end_bucket[i]) {
+                        m_min[i] = m_query->m_end_bucket[i];
                     }
                 }
             }
             if (no_buckets) {
                 ++m_quadrant;
-                if (m_quadrant < (1<<dimension)) {
+                if (m_quadrant >= (1<<dimension)) {
                     m_valid = false;
                 }
             } else {
@@ -2794,13 +1990,15 @@ private:
                 m_index = m_min;
             }
         }
+        std::cout <<"m_valid = "<<m_valid<<" m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
+        LOG_CUDA(4,"lattice_iterator_within_distance: reset_min_and_index:end");
     }
 
     CUDA_HOST_DEVICE
     bool outside_domain(const double_d& position,const double_d& max_distance) {
-        value_type bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
-        int_d start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
-        int_d end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
+        m_base_index = m_query->m_point_to_bucket_index.find_bucket_index_vector(position);
+        int_d start = m_query->m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
+        int_d end = m_query->m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
 
         bool no_buckets = false;
         for (int i=0; i<dimension; i++) {
@@ -2817,8 +2015,8 @@ private:
 
     CUDA_HOST_DEVICE
     void increment() {
-        for (int i=D-1; i>=0; --i) {
-
+        LOG_CUDA(4,"lattice_iterator_within_distance: increment :begin");
+        for (int i=dimension-1; i>=0; --i) {
             double distance = 0;
 
             // increment or decrement index depending on the current
@@ -2832,18 +2030,22 @@ private:
                 potential_bucket = m_index[i] >= 0;
             }
 
+            std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
+
             // if index is outside domain don't bother calcing
             // distance
             if (potential_bucket) { 
                 double accum = 0;
-                for (int j = 0; j < D; ++j) {
+                for (int j = 0; j < dimension; ++j) {
                     const double dist = 
                         m_query->m_point_to_bucket_index.get_dist_by_quadrant(
-                                m_query_point[j],m_index[j],j,ith_quadrant_bit(j));
-                    ASSERT_CUDA(dist > 0);
+                                m_query_point[j],m_base_index[j],m_index[j],j);
+                    ASSERT_CUDA(dist >= 0);
+                    std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<< std::endl;
                     accum = detail::distance_helper<LNormNumber>::
                         accumulate_norm(accum,dist*m_inv_max_distance[j]); 
                 }
+                std::cout <<"accum = "<<accum<< std::endl;
 
                 potential_bucket = accum <= 1.0;
             }
@@ -2866,10 +2068,10 @@ private:
                 }
             }
         }
+        LOG_CUDA(4,"lattice_iterator_within_distance: increment :end");
     }
 
 };
-
 
 
 

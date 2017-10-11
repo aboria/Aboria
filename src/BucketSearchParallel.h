@@ -451,7 +451,7 @@ struct bucket_search_parallel_query {
     typedef typename Traits::unsigned_int_d unsigned_int_d;
     const static unsigned int dimension = Traits::dimension;
     template <int LNormNumber>
-    using query_iterator = lattice_iterator_within_distance<bucket_search_serial_query,LNormNumber>;
+    using query_iterator = lattice_iterator_within_distance<bucket_search_parallel_query,LNormNumber>;
     typedef lattice_iterator<dimension> all_iterator;
     typedef lattice_iterator<dimension> child_iterator;
     typedef typename query_iterator<2>::reference reference;
@@ -637,7 +637,7 @@ struct bucket_search_parallel_query {
 #endif
         return iterator_range<query_iterator<LNormNumber>>(
                             query_iterator<LNormNumber>(position,max_distance,this),
-                            query_iterator<LNormNumber>())    
+                            query_iterator<LNormNumber>());
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
