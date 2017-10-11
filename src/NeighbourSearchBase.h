@@ -2637,7 +2637,28 @@ public:
         m_query(query),
         m_valid(true)
     {
-        if (outside_domain(query_type,max_distance)) {
+        /*
+        start = m_point_to_bucket_index.find_bucket_index_vector(position-max_distance);
+        end = m_point_to_bucket_index.find_bucket_index_vector(position+max_distance);
+
+        bool no_buckets = false;
+        for (int i=0; i<Traits::dimension; i++) {
+            if (start[i] < 0) {
+                start[i] = 0;
+            } else if (start[i] > m_end_bucket[i]) {
+                no_buckets = true;
+                start[i] = m_end_bucket[i];
+            }
+            if (end[i] < 0) {
+                no_buckets = true;
+                end[i] = 0;
+            } else if (end[i] > m_end_bucket[i]) {
+                end[i] = m_end_bucket[i];
+            }
+        }
+        */
+
+        if (outside_domain(query_point,max_distance) {
             m_valid = false;
         } else {
             reset_min_and_index(); 
@@ -2739,10 +2760,39 @@ private:
 
     CUDA_HOST_DEVICE
     void reset_min_and_index() {
-        for (int i = 0; i < dimension; ++i) {
-            m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
-                    m_query_point[i],i,ith_quadrant_bit(i));
-            m_index[i] = m_min[i];
+        bool no_bucket = true;
+        while (m_valid && no_bucket) {
+            for (int i = 0; i < dimension; ++i) {
+                m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
+                        m_query_point[i],i,ith_quadrant_bit(i));
+            }
+            no_buckets = false;
+            for (int i=0; i<dimension; i++) {
+                if (ith_quadrant_bit(i)) {
+                    if (m_min[i] < 0) {
+                        m_min[i] = 0;
+                    } else if (m_min[i] > m_end_bucket[i]) {
+                        no_buckets = true;
+                        m_min[i] = m_end_bucket[i];
+                    }
+                } else {
+                    if (m_min[i] < 0) {
+                        no_buckets = true;
+                        m_min[i] = 0;
+                    } else if (m_min[i] > m_end_bucket[i]) {
+                        m_min[i] = m_end_bucket[i];
+                    }
+                }
+            }
+            if (no_buckets) {
+                ++m_quadrant;
+                if (m_quadrant < (1<<dimension)) {
+                    m_valid = false;
+                }
+            } else {
+                // we got a non empty quadrent, lets go!
+                m_index = m_min;
+            }
         }
     }
 
@@ -2773,7 +2823,6 @@ private:
 
             // increment or decrement index depending on the current
             // quadrant
-            // AHHHHHHHH, no good, is the iterator currently outside domain or in!!!!
             bool potential_bucket = true;
             if (ith_quadrant_bit(i)) {
                 ++m_index[i];
@@ -2790,7 +2839,7 @@ private:
                 for (int j = 0; j < D; ++j) {
                     const double dist = 
                         m_query->m_point_to_bucket_index.get_dist_by_quadrant(
-                                m_query_point[i],m_index[i],j,ith_quadrant_bit(i));
+                                m_query_point[j],m_index[j],j,ith_quadrant_bit(j));
                     ASSERT_CUDA(dist > 0);
                     accum = detail::distance_helper<LNormNumber>::
                         accumulate_norm(accum,dist*m_inv_max_distance[j]); 
@@ -2807,8 +2856,8 @@ private:
 
             // if gone through all dimensions, move to next quadrant
             if (i == 0) {
+                ++m_quadrant;
                 if (m_quadrant < (1<<dimension)) {
-                    ++m_quadrant;
                     reset_min_and_index();
                 } else {
                     // if gone through all quadrants, iterator

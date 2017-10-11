@@ -33,6 +33,7 @@ if (Aboria_RUN_TESTS)
         ConstructorsTest
         OperatorsTest
         UtilsTest
+        IteratorsTest
         ChebyshevTest
         FMMTest
         DocGettingStartedTest
@@ -134,6 +135,13 @@ set(UtilsTest
     test_bucket_indicies
     test_low_rank
     )
+
+set(IteratorsTestFile iterators.h)
+set(IteratorsTest
+    test_lattice_within_distance
+    )
+
+
 
 set(SymbolicTestFile symbolic.h)
 set(SymbolicTest
