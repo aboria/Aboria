@@ -1970,15 +1970,15 @@ private:
                     m_query->m_point_to_bucket_index.get_dist_to_bucket(
                             m_query_point[j],m_base_index[j],m_min[j],j);
                 ASSERT_CUDA(dist >= 0);
-                std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<< std::endl;
+                //std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<< std::endl;
                 accum = detail::distance_helper<LNormNumber>::
                     accumulate_norm(accum,dist*m_inv_max_distance[j]); 
             }
-            std::cout <<"accum = "<<accum<< std::endl;
+            //std::cout <<"accum = "<<accum<< std::endl;
 
             no_buckets = accum > 1.0;
 
-            std::cout <<" m_min = "<<m_min<<" m_quadrant = "<<m_quadrant << std::endl;
+            //std::cout <<" m_min = "<<m_min<<" m_quadrant = "<<m_quadrant << std::endl;
 
             // if good, check that this quadrant is within domain
             if (!no_buckets) {
@@ -2011,7 +2011,7 @@ private:
                 m_index = m_min;
             }
         }
-        std::cout <<"m_valid = "<<m_valid<<" m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
+        //std::cout <<"m_valid = "<<m_valid<<" m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
         LOG_CUDA(3,"lattice_iterator_within_distance: reset_min_and_index:end");
     }
 
@@ -2051,7 +2051,7 @@ private:
                 potential_bucket = m_index[i] >= 0;
             }
 
-            std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
+            //std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
 
             // if index is outside domain don't bother calcing
             // distance
@@ -2062,11 +2062,11 @@ private:
                         m_query->m_point_to_bucket_index.get_dist_to_bucket(
                                 m_query_point[j],m_base_index[j],m_index[j],j);
                     ASSERT_CUDA(dist >= 0);
-                    std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<< std::endl;
+                    //std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<< std::endl;
                     accum = detail::distance_helper<LNormNumber>::
                         accumulate_norm(accum,dist*m_inv_max_distance[j]); 
                 }
-                std::cout <<"accum = "<<accum<< std::endl;
+                //std::cout <<"accum = "<<accum<< std::endl;
 
                 potential_bucket = accum <= 1.0;
             }

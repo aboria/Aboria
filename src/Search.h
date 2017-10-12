@@ -139,7 +139,7 @@ public:
         m_current_periodic(m_periodic.begin()),
         m_current_point(r+(*m_current_periodic)
                             *(m_query->get_bounds().bmax-m_query->get_bounds().bmin)),
-        m_bucket_range(query.get_buckets_near_point(m_current_point,max_distance)),
+        m_bucket_range(query.template get_buckets_near_point<LNormNumber>(m_current_point,max_distance)),
         m_current_bucket(m_bucket_range.begin())
     {
 
@@ -256,7 +256,7 @@ public:
             }
             m_current_point = m_r + (*m_current_periodic)*
                                 (m_query->get_bounds().bmax-m_query->get_bounds().bmin);
-            m_bucket_range = m_query->get_buckets_near_point(m_current_point,m_max_distance);
+            m_bucket_range = m_query->template get_buckets_near_point<LNormNumber>(m_current_point,m_max_distance);
             m_current_bucket = m_bucket_range.begin();
         }
         return true;
