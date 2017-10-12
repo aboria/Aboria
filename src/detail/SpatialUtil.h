@@ -228,7 +228,7 @@ struct point_to_bucket_index {
     }
 
     int get_min_index_by_quadrant(const double r, const int i, const bool up) const {
-        std::cout << "up = "<<up<<"r = "<<r<<" i = "<<i << std::endl;
+        //std::cout << "up = "<<up<<"r = "<<r<<" i = "<<i << std::endl;
         return std::floor((r + (up?0.5:-0.5)*m_bucket_side_length[i]-m_bounds.bmin[i])/m_bucket_side_length[i]);
     }
 
