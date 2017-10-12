@@ -46,7 +46,7 @@ if (Aboria_RUN_TESTS)
         DiffusionAroundSpheres
         RbfInterpolationTest
         RbfPdeTest
-        RbfStokesTest
+        #RbfStokesTest
         H2Test
         )
 

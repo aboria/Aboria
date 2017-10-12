@@ -161,6 +161,31 @@ public:
         std::cout << std::endl;
         TS_ASSERT_EQUALS(count,1);
 
+        count = 0;
+        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(-0.001,0.001),2.0)) {
+            ++count;
+            std::cout << p;
+        }
+        std::cout << std::endl;
+        TS_ASSERT_EQUALS(count,100);
+
+        count = 0;
+        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(-0.001,0.001),0.01)) {
+            ++count;
+            std::cout << p;
+        }
+        std::cout << std::endl;
+        TS_ASSERT_EQUALS(count,1);
+
+        count = 0;
+        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(1.001,1.001),0.01)) {
+            ++count;
+            std::cout << p;
+        }
+        std::cout << std::endl;
+        TS_ASSERT_EQUALS(count,1);
+
+
 
 
     }

@@ -67,7 +67,6 @@ public:
             return vdouble2(120*x[0]*x[1] , 60*std::pow(x[0],2) - 60*std::pow(x[1],2));
         };
 
-
         ABORIA_VARIABLE(velocity_u,double,"velocity u")
         ABORIA_VARIABLE(velocity_v,double,"velocity v")
         ABORIA_VARIABLE(pressure_x,double,"pressure gradient x")
