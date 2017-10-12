@@ -133,6 +133,7 @@ set(MetafunctionsTest
 set(UtilsTestFile utils.h)
 set(UtilsTest
     test_bucket_indicies
+    test_point_to_bucket_indicies
     test_low_rank
     )
 

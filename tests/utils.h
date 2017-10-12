@@ -86,13 +86,13 @@ public:
         detail::point_to_bucket_index<3> ptob(size,side_length,bounds);
 
         vint3 point_bucket_index_true(2,2,2);
-        vint3 point_bucket_index = ptob.find_bucket_index_vector(vdouble(0.5,0.5,0.5));
+        vint3 point_bucket_index = ptob.find_bucket_index_vector(vdouble3(0.5,0.5,0.5));
         for (int i = 0; i < 3; ++i) {
             TS_ASSERT_EQUALS(point_bucket_index_true[i],point_bucket_index[i]);
         }
 
         int index_true = 2*5*5 + 2*5 + 2;
-        int index  = ptob(vdouble(0.5,0.5,0.5));
+        int index  = ptob(vdouble3(0.5,0.5,0.5));
         TS_ASSERT_EQUALS(index_true,index);
 
         int index2_true = 2;
@@ -111,11 +111,6 @@ public:
         int index5 = ptob.get_min_index_by_quadrant(0.5+1e-5,0,false);
         TS_ASSERT_EQUALS(index5_true,index5);
 
-        double dist1 = ptob.get_dist_by_quadrant(0.5,3,0,true);
-        TS_ASSERT_LESS_THAN(std::abs(dist1-side_length[i]/2),1e-10);
-
-        double dist2 = ptob.get_dist_by_quadrant(0.5,1,0,false);
-        TS_ASSERT_LESS_THAN(std::abs(dist2-side_length[i]/2),1e-10);
 
     }
 
