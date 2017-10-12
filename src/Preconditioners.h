@@ -111,7 +111,7 @@ class RASMPreconditioner {
         //TODO: cant use chebyshev search function as does not yet
         //support anisotropic distance measures, need to add this then 
         //remove hack below
-        auto range = query.get_buckets_near_point(
+        auto range = query.template get_buckets_near_point<-1>(
                               0.5*(bounds.bmax-bounds.bmin)+bounds.bmin,
                               0.5*(bounds.bmax-bounds.bmin)+m_buffer);
         
