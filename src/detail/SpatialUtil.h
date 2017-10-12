@@ -228,16 +228,17 @@ struct point_to_bucket_index {
     }
 
     int get_min_index_by_quadrant(const double r, const int i, const bool up) const {
-        return std::floor((r-m_bounds.bmin[i])/m_bucket_side_length[i] + (up?0.5:-0.5));
+        std::cout << "up = "<<up<<"r = "<<r<<" i = "<<i << std::endl;
+        return std::floor((r + (up?0.5:-0.5)*m_bucket_side_length[i]-m_bounds.bmin[i])/m_bucket_side_length[i]);
     }
 
     double get_dist_to_bucket(const double r, const int my_index, const int target_index, const int i) const {
         if (my_index < target_index) {
             // compare point to lower edge of bucket, return a positive distance
-            return my_index*m_bucket_side_length[i] + m_bounds.bmin[i] - r;
+            return target_index*m_bucket_side_length[i] + m_bounds.bmin[i] - r;
         } else if (my_index > target_index) {
             // compare point to upper edge of bucket, return a positive distance
-            return r - (my_index+1)*m_bucket_side_length[i] + m_bounds.bmin[i];
+            return r - ((target_index+1)*m_bucket_side_length[i] + m_bounds.bmin[i]);
         } else 
             // same index, return 0.0
             return 0.0;
@@ -249,7 +250,7 @@ struct point_to_bucket_index {
             return index*m_bucket_side_length[i] + m_bounds.bmin[i] - r;
         } else {
             // compare point to upper edge of bucket, return a positive distance
-            return r - (index+1)*m_bucket_side_length[i] + m_bounds.bmin[i];
+            return r - ((index+1)*m_bucket_side_length[i] + m_bounds.bmin[i]);
         }
     }
  

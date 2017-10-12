@@ -1949,7 +1949,7 @@ private:
 
     CUDA_HOST_DEVICE
     bool ith_quadrant_bit(const int i) const {
-        return (1 == (m_quadrant >> i) & 1);
+        return (1 == ((m_quadrant >> i) & 1));
     }
 
     CUDA_HOST_DEVICE
@@ -1962,6 +1962,8 @@ private:
                 m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
                         m_query_point[i],i,ith_quadrant_bit(i));
             }
+
+            std::cout <<" m_min = "<<m_min<<" m_quadrant = "<<m_quadrant << std::endl;
             no_buckets = false;
             for (int i=0; i<dimension; i++) {
                 if (ith_quadrant_bit(i)) {
@@ -2038,7 +2040,7 @@ private:
                 double accum = 0;
                 for (int j = 0; j < dimension; ++j) {
                     const double dist = 
-                        m_query->m_point_to_bucket_index.get_dist_by_quadrant(
+                        m_query->m_point_to_bucket_index.get_dist_to_bucket(
                                 m_query_point[j],m_base_index[j],m_index[j],j);
                     ASSERT_CUDA(dist >= 0);
                     std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<< std::endl;
