@@ -46,13 +46,13 @@ MathJax.Hub.Config({
 </span>
 <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> RowParticles<span class="special">,</span> <span class="keyword">typename</span> ColParticles<span class="special">,</span> <span class="keyword">typename</span> F<span class="special">,</span> 
          <span class="keyword">typename</span> Kernel <span class="special">=</span> <span class="identifier">KernelChebyshev</span><span class="special">&lt;</span><span class="identifier">RowParticles</span><span class="special">,</span><span class="identifier">ColParticles</span><span class="special">,</span><span class="identifier">F</span><span class="special">&gt;</span><span class="special">,</span> 
-         <span class="keyword">typename</span> Operator <span class="special">=</span> <span class="identifier">MatrixReplacement</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">,</span><span class="identifier">tuple_ns</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">Kernel</span><span class="special">&gt;&gt;</span> <span class="special">&gt;</span> 
+         <span class="keyword">typename</span> Operator <span class="special">=</span> <span class="identifier">MatrixReplacement</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">Kernel</span><span class="special">&gt;&gt;</span> <span class="special">&gt;</span> 
   <span class="identifier">Operator</span> <span class="identifier">create_chebyshev_operator</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
                                      <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">,</span> 
                                      <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">,</span> 
                                      <span class="keyword">const</span> <span class="identifier">F</span> <span class="special">&amp;</span> function<span class="special">)</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46732835336688"></a><h2>Description</h2>
+<a name="idp46942420958848"></a><h2>Description</h2>
 <p>This function returns a <code class="computeroutput"><a class="link" href="MatrixReplacement.html" title="Class template MatrixReplacement">MatrixReplacement</a></code> object that acts like a dense linear operator (i.e. matrix) in Eigen. It uses chebyshev interpolation to speed up its application to a vector.</p>
 <p>
 

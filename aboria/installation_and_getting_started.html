@@ -106,7 +106,7 @@ MathJax.Hub.Config({
      * additional variable "velocity", represented
      * by a 2d double vector
      */</span>
-    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span><span class="identifier">double2</span><span class="special">,</span><span class="string">"velocity"</span><span class="special">)</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span><span class="identifier">vdouble2</span><span class="special">,</span><span class="string">"velocity"</span><span class="special">)</span>
     <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;,</span><span class="number">2</span><span class="special">&gt;</span> <span class="identifier">container_type</span><span class="special">;</span>
     <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">container_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
 
@@ -122,8 +122,8 @@ MathJax.Hub.Config({
         <span class="comment">/*
          * set a random position, and initialise velocity
          */</span>
-        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
-        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">);</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">);</span>
     <span class="special">}</span>
 
     <span class="comment">/*
