@@ -162,6 +162,7 @@ public:
         std::cout << "random test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" push_back_construction = "<<push_back_construction<<", set domain = "<<set_domain<<"):" << std::endl;
 
         unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+        seed1 = 4238735308;
         std::cout << "seed is "<< seed1 << std::endl;
         particles.set_seed(seed1);
         generator_type gen(seed1); 
@@ -286,19 +287,19 @@ public:
 
     void test_thrust_vector_bucket_search_serial(void) {
 #if defined(__aboria_have_thrust__)
-        helper_d_test_list_regular<thrust::device_vector,bucket_search_serial>();
+        //helper_d_test_list_random<thrust::device_vector,bucket_search_serial>();
 #endif
     }
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__aboria_have_thrust__)
-        helper_d_test_list_regular<thrust::device_vector,bucket_search_parallel>();
+        helper_d_test_list_random<thrust::device_vector,bucket_search_parallel>();
 #endif
     }
 
 void test_thrust_vector_octtree(void) {
 #if defined(__aboria_have_thrust__)
-        helper_d_test_list_regular<thrust::device_vector,octtree>();
+        helper_d_test_list_random<thrust::device_vector,octtree>();
 #endif
     }
 

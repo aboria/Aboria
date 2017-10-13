@@ -198,7 +198,7 @@ set(IDSearchTest
     )
 if (Aboria_USE_THRUST)
     list(APPEND IDSearchTest
-    test_thrust_vector_bucket_search_serial
+        #test_thrust_vector_bucket_search_serial
     test_thrust_vector_bucket_search_parallel
     test_thrust_vector_octtree
     )

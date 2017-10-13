@@ -752,14 +752,15 @@ struct octtree_query {
     CUDA_HOST_DEVICE
     raw_pointer find(const size_t id) const {
         const size_t n = number_of_particles();
-        const size_t map_index = detail::lower_bound(m_id_map_key,m_id_map_key+n,id) 
-                                - m_id_map_key;
-        if (m_id_map_key[map_index] == id) {
-            return m_particles_begin + m_id_map_value[map_index];
+        int *last = m_id_map_key+n;
+        int *first = detail::lower_bound(m_id_map_key,last,id);
+        if ((first != last) && !(id < *first)) {
+            return m_particles_begin + m_id_map_value[first-m_id_map_key];
         } else {
-            return m_particles_begin+n;
+            return m_particles_begin + n;
         }
     }
+    
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE

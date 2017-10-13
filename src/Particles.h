@@ -820,6 +820,14 @@ private:
                     update_begin);
             search.update_iterators(begin(),end());
         }
+        if (ABORIA_LOG_LEVEL >= 4) { 
+            std::cout << "particle ids:\n";
+            for (auto i = begin(); i != end(); ++i) {
+                std::cout << *get<id>(i) << ',';
+            }
+            std::cout << std::endl;
+        }
+
 
  
             /*
