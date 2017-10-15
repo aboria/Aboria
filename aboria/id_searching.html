@@ -59,14 +59,14 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_id_search</span><span class="special">();</span>
 </pre>
 <p>
-      Then we will try and find the particle with id = 2.
+      Then we will try and find the particle with id equal to 2.
     </p>
 <pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">id_2</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">().</span><span class="identifier">find</span><span class="special">(</span><span class="number">2</span><span class="special">);</span>
 <span class="identifier">assert</span><span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">id_2</span><span class="special">)</span> <span class="special">==</span> <span class="number">2</span><span class="special">);</span>
 </pre>
 <p>
       Note that each <code class="computeroutput"><span class="identifier">find</span></code> function
-      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp46313059511952-bb">Aboria::bucket_search_serial_query::find</a></code>)
+      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp46964896634512-bb">Aboria::bucket_search_serial_query::find</a></code>)
       returns an iterator to the particle set. If we try and search for an id which
       doesn't exist, then this iterator will point to the end of the particle vector
     </p>
@@ -76,7 +76,7 @@ MathJax.Hub.Config({
 <p>
       Just to be sure everything is working ok, we then randomly shuffle the particles
       again, update the altered particles, and then try to find the particle with
-      id=3
+      id 3
     </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">shuffle</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(),</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(),</span><span class="identifier">g</span><span class="special">);</span>
 <span class="identifier">particles</span><span class="special">.</span><span class="identifier">update_positions</span><span class="special">();</span>
@@ -86,7 +86,7 @@ MathJax.Hub.Config({
 <p>
       Finally, a note on performance: The id search is done by internally creating
       vectors of id and indicies ordered by id. Keeping these vectors ordered at
-      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46313061192368-bb">Aboria::Particles::update_positions</a></code>
+      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46964898314928-bb">Aboria::Particles::update_positions</a></code>
       takes O(Nlog(N)). The call to <code class="computeroutput"><span class="identifier">find</span></code>
       performs a binary search on the ordered vectors, with takes O(log(N)) time.
     </p>
