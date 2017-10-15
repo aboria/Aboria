@@ -79,7 +79,7 @@ This will create a set of particles that each have a unique id between `0` and `
 
 /*`
 
-Then we will try and find the particle with id = 2.
+Then we will try and find the particle with id equal to 2.
 
 */
 
@@ -97,7 +97,7 @@ exist, then this iterator will point to the end of the particle vector
 
 /*`
 Just to be sure everything is working ok, we then randomly shuffle the particles
-again, update the altered particles, and then try to find the particle with id=3
+again, update the altered particles, and then try to find the particle with id 3
 */
 
         std::shuffle(particles.begin(),particles.end(),g);

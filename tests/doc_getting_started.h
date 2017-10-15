@@ -79,8 +79,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     #include <Aboria.h>
     ``
 
-    If you need more detail than this, then this section will give a step-by-step guide 
-    on compiling your first Aboria program
+    The following provides a step-by-step guide on compiling your first Aboria program
 
     First clone the Aboria GitHub repository like so
 
