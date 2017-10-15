@@ -58,6 +58,58 @@ public:
 /*`
 [section ID Searching]
 
+As well as neighbourhood searching, Aboria has functionality to search by each
+particle's unique id. First, let's create a set of `N` particles and randomly rearrange their position in the vector
+
+*/
+        const size_t N = 100;
+        typedef Particles<> particle_type;
+        typedef particle_type::position position;
+        particle_type particles(N);
+        std::default_random_engine g;
+        std::shuffle(particles.begin(),particles.end(),g);
+
+/*`
+
+This will create a set of particles that each have a unique id between `0` and `N-1`
+(but their positions in the vector `particles` is randomised). Now, we are going to turn on the id search capability for `particles`
+*/
+
+        particles.init_id_search();
+
+/*`
+
+Then we will try and find the particle with id = 2.
+
+*/
+
+        auto id_2 = particles.get_query().find(2);
+        assert(get<id>(id_2) == 2);
+
+/*`
+Note that each `find` function (e.g. [memberref Aboria::bucket_search_serial_query::find]) 
+returns an iterator to the particle set. If we try and search for an id which doesn't
+exist, then this iterator will point to the end of the particle vector
+*/
+
+        auto id_2N = particles.get_query().find(2*N);
+        assert(id_2N == particles.end());
+
+/*`
+Just to be sure everything is working ok, we then randomly shuffle the particles
+again, update the altered particles, and then try to find the particle with id=3
+*/
+
+        std::shuffle(particles.begin(),particles.end(),g);
+        particles.update_positions();
+        auto id_3 = particles.get_query().find(3);
+        assert(get<id>(id_3) == 3);
+
+/*`
+Finally, a note on performance: The id search is done by internally creating 
+vectors of id and indicies ordered by id. Keeping these vectors ordered at each
+call to [memberref Aboria::Particles::update_positions] takes O(Nlog(N)). The call to `find`
+performs a binary search on the ordered vectors, with takes O(log(N)) time.
 
 [endsect]
 

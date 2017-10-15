@@ -23,6 +23,10 @@
 [import ../tests/neighbours.h]
 [neighbour_search]
 
+[/ import documentation from id_search.h]
+[import ../tests/id_search.h]
+[id_search]
+
 [/ import documentation from operators.h]
 [import ../tests/operators.h]
 [operators]
