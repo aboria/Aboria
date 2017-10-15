@@ -1,0 +1,90 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct copy_points_in_bucket_lambda</title>
+<link rel="stylesheet" href="../../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../../index.html" title="Aboria 0.5">
+<link rel="up" href="../bucket_search_serial.html#idp46535193859184" title="Description">
+<link rel="prev" href="../bucket_search_serial.html" title="Class template bucket_search_serial">
+<link rel="next" href="delete_p_idp47053088189200.html" title="Struct delete_points_in_bucket_lambda">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../bucket_search_serial.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../bucket_search_serial.html#idp46535193859184"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="delete_p_idp47053088189200.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.bucket_search_serial.copy_poi_idp47053088180112"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct copy_points_in_bucket_lambda</span></h2>
+<p>Aboria::bucket_search_serial::copy_points_in_bucket_lambda</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchSerial_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchSerial.h&gt;">/home/travis/build/martinjrobins/Aboria/src/BucketSearchSerial.h</a>&gt;
+
+</span>
+
+<span class="keyword">struct</span> <a class="link" href="copy_poi_idp47053088180112.html" title="Struct copy_points_in_bucket_lambda">copy_points_in_bucket_lambda</a> <span class="special">{</span>
+  <span class="comment">// <a class="link" href="copy_poi_idp47053088180112.html#Aboria.bucket_search_serial.copy_poi_idp47053088180112construct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="copy_poi_idp47053088180112.html#idp47053088185632-bb"><span class="identifier">copy_points_in_bucket_lambda</span></a><span class="special">(</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="copy_poi_idp47053088180112.html#idp47053088183648-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="copy_poi_idp47053088180112.html#idp47053088184016-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="keyword">int</span> <span class="special">*</span> <span class="identifier">m_linked_list</span><span class="special">;</span>
+  <span class="keyword">int</span> <span class="special">*</span> <span class="identifier">m_buckets</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <span class="identifier">start_index_deleted</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <span class="identifier">start_index_copied</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <span class="identifier">end_index_copied</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46535193981056"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idp46535193981472"></a><h3>
+<a name="Aboria.bucket_search_serial.copy_poi_idp47053088180112construct-copy-destruct"></a><code class="computeroutput">copy_points_in_bucket_lambda</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47053088185632-bb"></a><span class="identifier">copy_points_in_bucket_lambda</span><span class="special">(</span><span class="identifier">size_t</span> start_index_deleted<span class="special">,</span> 
+                             <span class="identifier">size_t</span> start_index_copied<span class="special">,</span> 
+                             <span class="identifier">size_t</span> end_index_copied<span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span> m_linked_list<span class="special">,</span> 
+                             <span class="keyword">int</span> <span class="special">*</span> m_buckets<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46535193994848"></a><h3>
+<a name="idp47053088183648-bb"></a><code class="computeroutput">copy_points_in_bucket_lambda</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47053088184016-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span> celli<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../bucket_search_serial.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../bucket_search_serial.html#idp46535193859184"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="delete_p_idp47053088189200.html"><img src="../../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
