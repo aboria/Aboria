@@ -84,7 +84,7 @@ Then we will try and find the particle with id equal to 2.
 */
 
         auto id_2 = particles.get_query().find(2);
-        assert(get<id>(id_2) == 2);
+        assert(*get<id>(id_2) == 2);
 
 /*`
 Note that each `find` function (e.g. [memberref Aboria::bucket_search_serial_query::find]) 
@@ -93,17 +93,7 @@ exist, then this iterator will point to the end of the particle vector
 */
 
         auto id_2N = particles.get_query().find(2*N);
-        assert(id_2N == particles.end());
-
-/*`
-Just to be sure everything is working ok, we then randomly shuffle the particles
-again, update the altered particles, and then try to find the particle with id 3
-*/
-
-        std::shuffle(particles.begin(),particles.end(),g);
-        particles.update_positions();
-        auto id_3 = particles.get_query().find(3);
-        assert(get<id>(id_3) == 3);
+        assert(id_2N == iterator_to_raw_pointer(particles.end()));
 
 /*`
 Finally, a note on performance: The id search is done by internally creating 
