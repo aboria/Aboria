@@ -183,6 +183,7 @@ struct point_to_bucket_index {
 
     bbox<D> m_bounds;
     double_d m_bucket_side_length;
+    double_d m_inv_bucket_side_length;
     bucket_index<D> m_bucket_index;
 
     CUDA_HOST_DEVICE
@@ -192,7 +193,10 @@ struct point_to_bucket_index {
     point_to_bucket_index(const unsigned_int_d& size, 
                           const double_d& bucket_side_length, 
                           const bbox<D> &bounds):
-        m_bucket_index(size),m_bucket_side_length(bucket_side_length),m_bounds(bounds) {}
+        m_bucket_index(size),
+        m_bucket_side_length(bucket_side_length),
+        m_inv_bucket_side_length(1.0/bucket_side_length),
+        m_bounds(bounds) {}
 
     CUDA_HOST_DEVICE
     int operator()(const double_d& v) const {
@@ -210,7 +214,7 @@ struct point_to_bucket_index {
     int_d find_bucket_index_vector(const double_d &r) const {
         // find the raster indices of p's bucket
         //std::cout << "r = "<<r<<" indexv = "<<floor((r-m_bounds.bmin)/m_bucket_side_length)<<std::endl;
-        return floor((r-m_bounds.bmin)/m_bucket_side_length).template cast<int>();
+        return floor((r-m_bounds.bmin)*m_inv_bucket_side_length).template cast<int>();
     }
 
     // hash a point in the unit square to the index of
@@ -229,7 +233,7 @@ struct point_to_bucket_index {
 
     int get_min_index_by_quadrant(const double r, const int i, const bool up) const {
         //std::cout << "up = "<<up<<"r = "<<r<<" i = "<<i << std::endl;
-        return std::floor((r + (up?0.5:-0.5)*m_bucket_side_length[i]-m_bounds.bmin[i])/m_bucket_side_length[i]);
+        return std::floor((r + (up?0.5:-0.5)*m_bucket_side_length[i]-m_bounds.bmin[i])*m_inv_bucket_side_length[i]);
     }
 
     double get_dist_to_bucket(const double r, const int my_index, const int target_index, const int i) const {
