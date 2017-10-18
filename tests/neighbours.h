@@ -144,6 +144,62 @@ For example,
 
 /*`
 
+Once you start to alter the positions of the particles, you will need to 
+update the neighbourhood data structure that is used for the search. This is 
+done using the [memberref Aboria::Particles::update_positions] function. 
+For example, to move all the particles by a random value and then update
+the data structure, you would use the following code:
+
+*/
+        for (auto& x: get<position>(particles)) {
+            x += vdouble3(uniform(gen),uniform(gen),uniform(gen));
+        }
+        particles.update_positions();
+/*`
+
+Note: if you did not call `update_positions()` after the loop, then subsequent neighbour
+searches would be incorrect
+
+The function [memberref Aboria::Particles::update_positions] can also take a pair
+of iterators corresponding to the range of particle positions you wish to update.
+For example, if you wish to only move and update a single particle, you could write
+
+*/
+        get<position>(particles)[5] = vdouble3(0.1,0,0);
+        particles.update_positions(particles.begin()+5,particles.begin()+6);
+/*`
+
+Note that this code is valid only for the default [classref Aboria::bucket_search_serial] neighbour data structure (see below), as this is (currently)
+the only data structure that does not depend on the specific ordering of the particles
+in the `particles` vector, and thus the only data structure that can update a single
+particle independently to the others. The other data structures will generate a run-time
+error in this case.
+
+You can also use `update_positions` to delete particles. Any particles with their `alive` flag set to `false` will be deleted by the `update_positions` function. For
+example, if you wish to delete all the particles with an x coordinate less than `0`
+you could write:
+
+*/
+        for (auto p: particles) {
+            if (get<position>(p)[0] < 0) {
+                get<alive>(p) = false;
+            }
+        }
+        particles.update_positions();
+
+/*` 
+
+If you wish to delete a single particle using the range version of `update_positions`, 
+then the second iterator you pass to the function must be the `end()` iterator of the
+`particles` vector. Recall that `particles` is a vector, and therefore deleting a particle at a given index in the vector neccessarily moves all the particles 
+after this index
+
+*/
+        get<alive>(particles)[5] = false;
+        particles.update_positions(particles.begin()+5,particles.end());
+
+/*`
+
 [section Cell Lists]
 
 There are two cell list data structures within Aboria. Both divide the domain into 
