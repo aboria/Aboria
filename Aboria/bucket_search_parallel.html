@@ -6,8 +6,8 @@
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.5">
 <link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/BucketSearchParallel.h&gt;">
-<link rel="prev" href="bucket_s_idp47053080855456.html" title="Struct template bucket_search_parallel_query">
-<link rel="next" href="bucket_s_idp47053088102944.html" title="Struct template bucket_search_serial_params">
+<link rel="prev" href="bucket_s_idp46811842125856.html" title="Struct template bucket_search_parallel_query">
+<link rel="next" href="bucket_s_idp46811848058768.html" title="Struct template bucket_search_serial_params">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="bucket_s_idp47053080855456.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="bucket_s_idp47053088102944.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="bucket_s_idp46811842125856.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="bucket_s_idp46811848058768.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.bucket_search_parallel"></a><div class="titlepage"></div>
@@ -48,51 +48,51 @@ MathJax.Hub.Config({
 <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// <a class="link" href="bucket_search_parallel.html#Aboria.bucket_search_parallelconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="bucket_search_parallel.html#idp47053088090768-bb"><span class="identifier">bucket_search_parallel</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="bucket_search_parallel.html#idp46811848046592-bb"><span class="identifier">bucket_search_parallel</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp47053088089408-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp47053088089808-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp46811848045232-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46811848045632-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp47053088090896-bb">public static functions</a></span>
-  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="bucket_search_parallel.html#idp47053088091296-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp46811848046720-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="bucket_search_parallel.html#idp46811848047120-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp47053088092256-bb">private member functions</a></span>
-  <span class="keyword">bool</span> <a class="link" href="bucket_search_parallel.html#idp47053088092672-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp47053088093632-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp47053088094592-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <a class="link" href="bucket_s_idp47053080855456.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="bucket_search_parallel.html#idp47053088098592-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="bucket_s_idp47053080855456.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="bucket_search_parallel.html#idp47053088100464-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="bucket_search_parallel.html#idp46811848048080-bb">private member functions</a></span>
+  <span class="keyword">bool</span> <a class="link" href="bucket_search_parallel.html#idp46811848048496-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46811848049456-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="bucket_search_parallel.html#idp46811848050416-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <a class="link" href="bucket_s_idp46811842125856.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="bucket_search_parallel.html#idp46811848054416-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="bucket_s_idp46811842125856.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="bucket_search_parallel.html#idp46811848056288-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46535192871312"></a><h2>Description</h2>
+<a name="idp46203438950160"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46535192871728"></a><h3>
+<a name="idp46203438950576"></a><h3>
 <a name="Aboria.bucket_search_parallelconstruct-copy-destruct"></a><code class="computeroutput">bucket_search_parallel</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47053088090768-bb"></a><span class="identifier">bucket_search_parallel</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46811848046592-bb"></a><span class="identifier">bucket_search_parallel</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46535192877600"></a><h3>
-<a name="idp47053088089408-bb"></a><code class="computeroutput">bucket_search_parallel</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47053088089808-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp46203438956416"></a><h3>
+<a name="idp46811848045232-bb"></a><code class="computeroutput">bucket_search_parallel</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46811848045632-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46535192884704"></a><h3>
-<a name="idp47053088090896-bb"></a><code class="computeroutput">bucket_search_parallel</code> public static functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp47053088091296-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp46203438963584"></a><h3>
+<a name="idp46811848046720-bb"></a><code class="computeroutput">bucket_search_parallel</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp46811848047120-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46535192892560"></a><h3>
-<a name="idp47053088092256-bb"></a><code class="computeroutput">bucket_search_parallel</code> private member functions</h3>
+<a name="idp46203438971504"></a><h3>
+<a name="idp46811848048080-bb"></a><code class="computeroutput">bucket_search_parallel</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47053088092672-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47053088093632-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47053088094592-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp46811848048496-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46811848049456-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46811848050416-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">int</span> new_n<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">bool</span> call_set_domain <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="bucket_s_idp47053080855456.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47053088098592-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a class="link" href="bucket_s_idp47053080855456.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47053088100464-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="bucket_s_idp46811842125856.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp46811848054416-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="bucket_s_idp46811842125856.html" title="Struct template bucket_search_parallel_query">bucket_search_parallel_query</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp46811848056288-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -103,7 +103,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="bucket_s_idp47053080855456.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="bucket_s_idp47053088102944.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="bucket_s_idp46811842125856.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.BucketSearchParallel_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="bucket_s_idp46811848058768.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

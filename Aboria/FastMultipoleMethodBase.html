@@ -48,39 +48,39 @@ MathJax.Hub.Config({
 <span class="keyword">class</span> <a class="link" href="FastMultipoleMethodBase.html" title="Class template FastMultipoleMethodBase">FastMultipoleMethodBase</a> <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// <a class="link" href="FastMultipoleMethodBase.html#Aboria.FastMultipoleMethodBaseconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="FastMultipoleMethodBase.html#idp47053088303168-bb"><span class="identifier">FastMultipoleMethodBase</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Expansions</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="FastMultipoleMethodBase.html#idp46811848258992-bb"><span class="identifier">FastMultipoleMethodBase</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">Expansions</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="FastMultipoleMethodBase.html#idp47053088292992-bb">protected member functions</a></span>
+  <span class="comment">// <a class="link" href="FastMultipoleMethodBase.html#idp46811848248816-bb">protected member functions</a></span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorType<span class="special">&gt;</span> 
     <span class="identifier">expansion_type</span> <span class="special">&amp;</span> 
-    <a class="link" href="FastMultipoleMethodBase.html#idp47053088293408-bb"><span class="identifier">calculate_dive_P2M_and_M2M</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorType</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <a class="link" href="FastMultipoleMethodBase.html#idp46811848249232-bb"><span class="identifier">calculate_dive_P2M_and_M2M</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">VectorType</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorTypeTarget<span class="special">,</span> <span class="keyword">typename</span> VectorTypeSource<span class="special">&gt;</span> 
-    <span class="keyword">void</span> <a class="link" href="FastMultipoleMethodBase.html#idp47053088296608-bb"><span class="identifier">calculate_dive_M2L_and_L2L</span></a><span class="special">(</span><span class="identifier">VectorTypeTarget</span> <span class="special">&amp;</span><span class="special">,</span> 
+    <span class="keyword">void</span> <a class="link" href="FastMultipoleMethodBase.html#idp46811848252432-bb"><span class="identifier">calculate_dive_M2L_and_L2L</span></a><span class="special">(</span><span class="identifier">VectorTypeTarget</span> <span class="special">&amp;</span><span class="special">,</span> 
                                     <span class="keyword">const</span> <span class="identifier">child_iterator_vector_type</span> <span class="special">&amp;</span><span class="special">,</span> 
                                     <span class="keyword">const</span> <span class="identifier">expansion_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span><span class="special">,</span> 
                                     <span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">,</span> 
                                     <span class="keyword">const</span> <span class="identifier">VectorTypeSource</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46535194614912"></a><h2>Description</h2>
+<a name="idp46203440693744"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46535194615328"></a><h3>
+<a name="idp46203440694160"></a><h3>
 <a name="Aboria.FastMultipoleMethodBaseconstruct-copy-destruct"></a><code class="computeroutput">FastMultipoleMethodBase</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47053088303168-bb"></a><span class="identifier">FastMultipoleMethodBase</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">,</span> 
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46811848258992-bb"></a><span class="identifier">FastMultipoleMethodBase</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">,</span> 
                         <span class="keyword">const</span> <span class="identifier">Expansions</span> <span class="special">&amp;</span> expansions<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46535194626048"></a><h3>
-<a name="idp47053088292992-bb"></a><code class="computeroutput">FastMultipoleMethodBase</code> protected member functions</h3>
+<a name="idp46203440704880"></a><h3>
+<a name="idp46811848248816-bb"></a><code class="computeroutput">FastMultipoleMethodBase</code> protected member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorType<span class="special">&gt;</span> 
   <span class="identifier">expansion_type</span> <span class="special">&amp;</span> 
-  <a name="idp47053088293408-bb"></a><span class="identifier">calculate_dive_P2M_and_M2M</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">,</span> 
+  <a name="idp46811848249232-bb"></a><span class="identifier">calculate_dive_P2M_and_M2M</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">,</span> 
                              <span class="keyword">const</span> <span class="identifier">VectorType</span> <span class="special">&amp;</span> source_vector<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> VectorTypeTarget<span class="special">,</span> <span class="keyword">typename</span> VectorTypeSource<span class="special">&gt;</span> 
-  <span class="keyword">void</span> <a name="idp47053088296608-bb"></a><span class="identifier">calculate_dive_M2L_and_L2L</span><span class="special">(</span><span class="identifier">VectorTypeTarget</span> <span class="special">&amp;</span> target_vector<span class="special">,</span> 
+  <span class="keyword">void</span> <a name="idp46811848252432-bb"></a><span class="identifier">calculate_dive_M2L_and_L2L</span><span class="special">(</span><span class="identifier">VectorTypeTarget</span> <span class="special">&amp;</span> target_vector<span class="special">,</span> 
                                   <span class="keyword">const</span> <span class="identifier">child_iterator_vector_type</span> <span class="special">&amp;</span> connected_buckets_parent<span class="special">,</span> 
                                   <span class="keyword">const</span> <span class="identifier">expansion_type</span> <span class="special">&amp;</span> g_parent<span class="special">,</span> 
                                   <span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> box_parent<span class="special">,</span> 

@@ -67,7 +67,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47053089789760-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46811849745584-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
@@ -128,6 +128,65 @@ MathJax.Hub.Config({
     <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Found a particle with dx = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">dx</span> <span class="special">&lt;&lt;</span> <span class="string">" and id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">b</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
+<p>
+      Once you start to alter the positions of the particles, you will need to update
+      the neighbourhood data structure that is used for the search. This is done
+      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46811849767456-bb">Aboria::Particles::update_positions</a></code>
+      function. For example, to move all the particles by a random value and then
+      update the data structure, you would use the following code:
+    </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">x</span><span class="special">:</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">))</span> <span class="special">{</span>
+    <span class="identifier">x</span> <span class="special">+=</span> <span class="identifier">vdouble3</span><span class="special">(</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+<span class="special">}</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">update_positions</span><span class="special">();</span>
+</pre>
+<p>
+      Note: if you did not call <code class="computeroutput"><span class="identifier">update_positions</span><span class="special">()</span></code> after the loop, then subsequent neighbour
+      searches would be incorrect
+    </p>
+<p>
+      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46811849767456-bb">Aboria::Particles::update_positions</a></code>
+      can also take a pair of iterators corresponding to the range of particle positions
+      you wish to update. For example, if you wish to only move and update a single
+      particle, you could write
+    </p>
+<pre class="programlisting"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="number">5</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble3</span><span class="special">(</span><span class="number">0.1</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">);</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">update_positions</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">()+</span><span class="number">5</span><span class="special">,</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">()+</span><span class="number">6</span><span class="special">);</span>
+</pre>
+<p>
+      Note that this code is valid only for the default <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial.html" title="Class template bucket_search_serial">Aboria::bucket_search_serial</a></code>
+      neighbour data structure (see below), as this is (currently) the only data
+      structure that does not depend on the specific ordering of the particles in
+      the <code class="computeroutput"><span class="identifier">particles</span></code> vector, and thus
+      the only data structure that can update a single particle independently to
+      the others. The other data structures will generate a run-time error in this
+      case.
+    </p>
+<p>
+      You can also use <code class="computeroutput"><span class="identifier">update_positions</span></code>
+      to delete particles. Any particles with their <code class="computeroutput"><span class="identifier">alive</span></code>
+      flag set to <code class="computeroutput"><span class="keyword">false</span></code> will be deleted
+      by the <code class="computeroutput"><span class="identifier">update_positions</span></code> function.
+      For example, if you wish to delete all the particles with an x coordinate less
+      than <code class="computeroutput"><span class="number">0</span></code> you could write:
+    </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">p</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">)</span> <span class="special">{</span>
+    <span class="keyword">if</span> <span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)[</span><span class="number">0</span><span class="special">]</span> <span class="special">&lt;</span> <span class="number">0</span><span class="special">)</span> <span class="special">{</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">update_positions</span><span class="special">();</span>
+</pre>
+<p>
+      If you wish to delete a single particle using the range version of <code class="computeroutput"><span class="identifier">update_positions</span></code>, then the second iterator
+      you pass to the function must be the <code class="computeroutput"><span class="identifier">end</span><span class="special">()</span></code> iterator of the <code class="computeroutput"><span class="identifier">particles</span></code>
+      vector. Recall that <code class="computeroutput"><span class="identifier">particles</span></code>
+      is a vector, and therefore deleting a particle at a given index in the vector
+      neccessarily moves all the particles after this index
+    </p>
+<pre class="programlisting"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="number">5</span><span class="special">]</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">update_positions</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">()+</span><span class="number">5</span><span class="special">,</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">());</span>
+</pre>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
 <a name="aboria.neighbourhood_searching.cell_lists"></a><a class="link" href="neighbourhood_searching.html#aboria.neighbourhood_searching.cell_lists" title="Cell Lists">Cell Lists</a>
@@ -173,7 +232,7 @@ MathJax.Hub.Config({
         (this hasn't been tested yet) this should speed up neighbourhood search queries
         as the particles that are local in memory are also local in space. The relevant
         classes are <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_parallel.html" title="Class template bucket_search_parallel">Aboria::bucket_search_parallel</a></code>
-        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp47053080855456.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
+        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp46811842125856.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
         and you can use this data structure like so:
       </p>
 <pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_parallel</span><span class="special">&gt;</span> <span class="identifier">particle_bs_parallel_type</span><span class="special">;</span>
@@ -193,7 +252,7 @@ MathJax.Hub.Config({
         Each level of the tree divides the cells in the parent level in half along
         a certain dimension (the dimension is chosen based on the distribution of
         particles within the cell). Any cells that contain a number of particles
-        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47053089789760-bb">Aboria::Particles::init_neighbour_search</a></code>)
+        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46811849745584-bb">Aboria::Particles::init_neighbour_search</a></code>)
         are marked as leaf cells, and are not divided on subsequent levels.
       </p>
 <p>

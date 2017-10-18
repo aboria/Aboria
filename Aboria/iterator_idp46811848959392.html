@@ -1,0 +1,109 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template iterator_range_with_transpose</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.5">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">
+<link rel="prev" href="nanoflann_child_iterator.html" title="Class template nanoflann_child_iterator">
+<link rel="next" href="iterator_range.html" title="Struct template iterator_range">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="nanoflann_child_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="iterator_range.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.iterator_idp46811848959392"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template iterator_range_with_transpose</span></h2>
+<p>Aboria::iterator_range_with_transpose</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> IteratorType<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="iterator_idp46811848959392.html" title="Struct template iterator_range_with_transpose">iterator_range_with_transpose</a> <span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">IteratorType</span>          <a name="Aboria.iterator_idp46811848959392.iterator"></a><span class="identifier">iterator</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <span class="identifier">iterator</span><span class="special">::</span><span class="identifier">traits_type</span> <a name="Aboria.iterator_idp46811848959392.traits_type"></a><span class="identifier">traits_type</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="identifier">traits_type</span><span class="special">::</span><span class="identifier">double_d</span> <a name="Aboria.iterator_idp46811848959392.double_d"></a><span class="identifier">double_d</span><span class="special">;</span>   
+
+  <span class="comment">// <a class="link" href="iterator_idp46811848959392.html#Aboria.iterator_idp46811848959392construct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="iterator_idp46811848959392.html#idp46811848970144-bb"><span class="identifier">iterator_range_with_transpose</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="iterator_idp46811848959392.html#idp46811848970272-bb"><span class="identifier">iterator_range_with_transpose</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">,</span> 
+                                <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="iterator_idp46811848959392.html#idp46811848972464-bb"><span class="identifier">iterator_range_with_transpose</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="iterator_idp46811848959392.html#idp46811848964784-bb">public member functions</a></span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_idp46811848959392.html#idp46811848965184-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_idp46811848959392.html#idp46811848966176-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_idp46811848959392.html#idp46811848967168-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_idp46811848959392.html#idp46811848968160-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="iterator_idp46811848959392.html#idp46811848969152-bb"><span class="identifier">get_transpose</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="identifier">IteratorType</span> <span class="identifier">m_begin</span><span class="special">;</span>
+  <span class="identifier">IteratorType</span> <span class="identifier">m_end</span><span class="special">;</span>
+  <span class="identifier">double_d</span> <span class="identifier">m_transpose</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46203446509008"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idp46203446509424"></a><h3>
+<a name="Aboria.iterator_idp46811848959392construct-copy-destruct"></a><code class="computeroutput">iterator_range_with_transpose</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idp46811848970144-bb"></a><span class="identifier">iterator_range_with_transpose</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp46811848970272-bb"></a><span class="identifier">iterator_range_with_transpose</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> begin<span class="special">,</span> 
+                              <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> end<span class="special">,</span> 
+                              <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> transpose<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp46811848972464-bb"></a><span class="identifier">iterator_range_with_transpose</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> begin<span class="special">,</span> 
+                              <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> end<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46203446535008"></a><h3>
+<a name="idp46811848964784-bb"></a><code class="computeroutput">iterator_range_with_transpose</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46811848965184-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46811848966176-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46811848967168-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46811848968160-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp46811848969152-bb"></a><span class="identifier">get_transpose</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="nanoflann_child_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="iterator_range.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
