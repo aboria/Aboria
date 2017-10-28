@@ -449,6 +449,14 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         }
     };
 
+    template <typename Reference>
+    struct zero_neighbours_aboria{
+        CUDA_HOST_DEVICE
+        void operator()(Reference arg) {
+            get<neighbours_aboria>(arg) = 1;
+        }
+    };
+
     template <typename ParticlesType>
     struct brute_force_check {
         typedef typename ParticlesType::raw_reference reference;
@@ -523,6 +531,84 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
             
         }
     };
+
+    template <typename QueryType>
+    struct aboria_fast_bucketsearch_check {
+        typedef typename QueryType::reference reference;
+        typedef position_d<QueryType::dimension> position;
+
+        QueryType query;
+        double r;
+        double r2;
+
+        aboria_fast_bucketsearch_check(const QueryType &query, double r):
+            query(query),r(r),r2(r*r) {}
+
+        ABORIA_HOST_DEVICE_IGNORE_WARN
+        void operator()(reference i) {
+            auto j = query.get_neighbouring_buckets(i).begin();
+            j = &i;
+            for (;j!=false;++j) {
+                if ((i == *j).all()) { // looking in the same bucket, dont double count
+                    auto range = query.get_bucket_particles(i);
+                    for (auto pi = range.begin(); pi!=range.end(); ++pi) {
+                        for (auto pj = ++pi; pj!=range.end(); ++pj) {
+                            if ((get<position>(*pi)-get<position>(*pj)).squaredNorm()
+                                    < r2) {
+                                get<neighbours_aboria>(*pi)++;
+                                get<neighbours_aboria>(*pj)++;
+                            }
+                        }
+                    }
+                } else { // looking in a different bucket
+                    for (auto pi: query.get_bucket_particles(i)) {
+                        for (auto pj: query.get_bucket_particles(*j)) {
+                            if ((get<position>(pi)-get<position>(pj)).squaredNorm()
+                                    < r2) {
+                                get<neighbours_aboria>(pi)++;
+                                get<neighbours_aboria>(pj)++;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    };
+
+    template <typename QueryType>
+    struct aboria_fast_bucketsearch_check_gb {
+        typedef typename QueryType::reference reference;
+        typedef position_d<QueryType::dimension> position;
+        typedef Vector<double,QueryType::dimension> double_d;
+        typedef Vector<int,QueryType::dimension> int_d;
+
+        QueryType query;
+        double r;
+        double r2;
+        double_d position_adjust;
+
+        aboria_fast_bucketsearch_check_gb(const QueryType &query, 
+                                       double r, const int_d& quadrant):
+            query(query),r(r),r2(r*r),
+            position_adjust(quadrant*(query.get_bounds().bmax-query.get_bounds().bmin))
+        {}
+
+        ABORIA_HOST_DEVICE_IGNORE_WARN
+        void operator()(reference i) {
+            for (auto j: query.get_neighbouring_buckets(i)) {
+                for (auto pi: query.get_bucket_particles(i)) {
+                    const double_d pos_i = get<position>(pi)+position_adjust;
+                    for (auto pj: query.get_bucket_particles(j)) {
+                        if ((pos_i-get<position>(pj)).squaredNorm() < r2) {
+                            get<neighbours_aboria>(pj)++;
+                        }
+                    }
+                }
+            }
+        }
+    };
+     
+     
                 
 
 
@@ -619,6 +705,98 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
                   <<" versus brute force = "<<dt_brute.count()<<std::endl;
     }
 
+    template<unsigned int D, 
+             template <typename,typename> class VectorType,
+             template <typename> class SearchMethod>
+    void helper_d_random_fast_bucketsearch(const int N, const double r, const bool is_periodic, const bool push_back_construction) {
+    	typedef Particles<std::tuple<neighbours_brute,neighbours_aboria>,D,VectorType,SearchMethod> particles_type;
+        typedef typename particles_type::query_type query_type;
+        typedef position_d<D> position;
+        typedef Vector<double,D> double_d;
+        typedef Vector<bool,D> bool_d;
+        typedef Vector<int,D> int_d;
+        typedef Vector<unsigned int,D> uint_d;
+    	double_d min(-1);
+    	double_d max(1);
+    	bool_d periodic(is_periodic);
+        particles_type particles;
+        const double required_bucket_size = 2*r;
+        const double required_bucket_number = N/std::pow(required_bucket_size,D);
+        double r2 = r*r;
+
+        std::cout << "random fast bucketsearch test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<" push_back_construction = "<<push_back_construction<<"):" << std::endl;
+
+        unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
+        std::cout << "seed is "<< seed1 << std::endl;
+        particles.set_seed(seed1);
+        generator_type gen(seed1); 
+        detail::uniform_real_distribution<float> uniform(-1.0, 1.0);
+
+        if (push_back_construction) {
+    	    particles.init_neighbour_search(min,max,periodic,required_bucket_number);
+            typename particles_type::value_type p;
+            for (int i=0; i<N; ++i) {
+                for (int d = 0; d < D; ++d) {
+                    get<position>(p)[d] = uniform(gen);
+                }
+                particles.push_back(p);
+            }
+        } else {
+            particles.resize(N);
+            detail::for_each(std::begin(particles),std::end(particles),
+                set_random_position
+                    <D,typename particles_type::raw_reference>(-1.0,1.0));
+            
+    	    particles.init_neighbour_search(min,max,periodic,required_bucket_number);
+        }
+
+
+        // brute force search
+        auto t0 = Clock::now();
+        Aboria::detail::for_each(particles.begin(),particles.end(),
+                brute_force_check<particles_type>(particles,min,max,r2,is_periodic));
+        auto t1 = Clock::now();
+        std::chrono::duration<double> dt_brute = t1 - t0;
+
+
+        // Aboria search
+        t0 = Clock::now();
+        detail::for_each(std::begin(particles),std::end(particles),
+                    zero_neighbours_aboria<typename particles_type::raw_reference>());
+        Aboria::detail::for_each(particles.get_query().get_subtree().begin(),
+                                 particles.get_query().get_subtree().end(),
+                aboria_fast_bucketsearch_check<query_type>(particles.get_query(),r)); 
+        if (is_periodic) {
+            for (lattice_iterator<D> it(int_d(-1),int_d(1));it!=false;++it) {
+                auto gb = particles.get_query().get_ghost_buckets(*it);
+                Aboria::detail::for_each(gb.begin(),gb.end(),
+                    aboria_fast_bucketsearch_check_gb<query_type>(particles.get_query(),r,*it)); 
+            }
+        }
+        t1 = Clock::now();
+        std::chrono::duration<double> dt_aboria = t1 - t0;
+        for (int i = 0; i < particles.size(); ++i) {
+            if (int(get<neighbours_brute>(particles)[i]) !=
+                             int(get<neighbours_aboria>(particles)[i])) {
+                std::cout << "error in finding neighbours for p = " <<
+                    static_cast<const double_d&>(get<position>(particles)[i])<<
+                    " over radius "<<r<< std::endl;
+                particles.print_data_structure();
+
+                TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                             int(get<neighbours_aboria>(particles)[i]));
+                return;
+            }
+            TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                             int(get<neighbours_aboria>(particles)[i]));
+        }
+            
+
+        std::cout << "\ttiming result: Aboria = "<<dt_aboria.count()
+                  <<" versus brute force = "<<dt_brute.count()<<std::endl;
+    }
+
+
     
 
     template<template <typename,typename> class VectorType,
@@ -676,14 +854,26 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         }
     }
 
+    template<template <typename,typename> class VectorType,
+             template <typename> class SearchMethod>
+    void helper_d_test_list_random_fast_bucketsearch(bool test_push_back=true) {
+        
+        helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(14,0.1,false,false);
+        helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(14,0.1,true,false);
+
+    }
+
     void test_std_vector_bucket_search_serial(void) {
+        helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_serial>();
         helper_d_test_list_random<std::vector,bucket_search_serial>();
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
         helper_d_test_list_regular<std::vector,bucket_search_serial>();
+
     }
 
     void test_std_vector_bucket_search_parallel(void) {
+        //helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_parallel>();
         helper_d_test_list_random<std::vector,bucket_search_parallel>();
         helper_single_particle<std::vector,bucket_search_parallel>();
         helper_two_particles<std::vector,bucket_search_parallel>();
@@ -712,6 +902,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
     void test_thrust_vector_bucket_search_parallel(void) {
 #if defined(__aboria_have_thrust__)
+        //helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_parallel>();
         helper_d_test_list_regular<thrust::device_vector,bucket_search_parallel>();
         helper_d_test_list_random<thrust::device_vector,bucket_search_parallel>();
 #endif

@@ -80,10 +80,22 @@ struct write_from_tuple<getter_type<std::tuple<Types...>,MplVector>> {
         datas[i]->SetValue(index,seed);
     }
 
-template< typename U >
+    template< typename U >
     typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,uint32_t> >::type
     operator()(U i) {
         datas[i]->SetValue(index,std::get<U::value>(write_from));
+    }
+
+
+    template< typename U >
+    typename std::enable_if<
+        !std::is_same<non_ref_tuple_element<U>,uint32_t>::value &&
+        !std::is_same<non_ref_tuple_element<U>,generator_type>::value &&
+        !is_vector<non_ref_tuple_element<U>>::value &&
+        !boost::is_arithmetic<non_ref_tuple_element<U>>::value
+        >::type
+    operator()(U i) {
+        // do nothing
     }
 
     tuple_type write_from;

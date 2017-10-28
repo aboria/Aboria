@@ -1589,6 +1589,32 @@ public:
     {}
 
     CUDA_HOST_DEVICE
+    lattice_iterator(const int_d &min, 
+                     const int_d &max,
+                     const int_d &index):
+        m_min(min),
+        m_max(max),
+        m_index(index),
+        m_size(minus(max,min)),
+        m_valid(true)
+    {}
+
+    CUDA_HOST_DEVICE
+    iterator& operator=(const iterator& copy) {
+        m_index = copy.m_index;
+        m_valid = copy.m_valid;
+        ASSERT_CUDA(m_valid?(m_index >= m_min).all()&&(m_index < m_max).all():true);
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
+    iterator& operator=(const int_d& copy) {
+        m_index = copy;
+        m_valid = (m_index >= m_min).all()&&(m_index < m_max).all();
+        return *this;
+    }
+
+    CUDA_HOST_DEVICE
     explicit operator size_t() const {
         return collapse_index_vector(m_index);
     }
