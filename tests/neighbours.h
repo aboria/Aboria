@@ -586,16 +586,17 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         double r;
         double r2;
         double_d position_adjust;
+        int_d quadrant;
 
         aboria_fast_bucketsearch_check_gb(const QueryType &query, 
                                        double r, const int_d& quadrant):
-            query(query),r(r),r2(r*r),
+            query(query),r(r),r2(r*r),quadrant(quadrant),
             position_adjust(quadrant*(query.get_bounds().bmax-query.get_bounds().bmin))
         {}
 
         ABORIA_HOST_DEVICE_IGNORE_WARN
         void operator()(reference i) {
-            for (auto j: query.get_neighbouring_buckets(i)) {
+            for (auto j: query.get_neighbouring_buckets(i,quadrant)) {
                 for (auto pi: query.get_bucket_particles(i)) {
                     const double_d pos_i = get<position>(pi)+position_adjust;
                     for (auto pj: query.get_bucket_particles(j)) {
@@ -721,10 +722,10 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     	bool_d periodic(is_periodic);
         particles_type particles;
         const double required_bucket_size = 2*r;
-        const double required_bucket_number = N/std::pow(required_bucket_size,D);
+        const double required_bucket_number = N*std::pow(required_bucket_size,D)/std::pow(2.0,D);
         double r2 = r*r;
 
-        std::cout << "random fast bucketsearch test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<" push_back_construction = "<<push_back_construction<<"):" << std::endl;
+        std::cout << "random fast bucketsearch test (D="<<D<<" periodic= "<<is_periodic<<"  N="<<N<<" r="<<r<<" required_bucket_number = "<<required_bucket_number<<" push_back_construction = "<<push_back_construction<<"):" << std::endl;
 
         unsigned seed1 = std::chrono::system_clock::now().time_since_epoch().count();
         std::cout << "seed is "<< seed1 << std::endl;
@@ -767,7 +768,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
                                  particles.get_query().get_subtree().end(),
                 aboria_fast_bucketsearch_check<query_type>(particles.get_query(),r)); 
         if (is_periodic) {
-            for (lattice_iterator<D> it(int_d(-1),int_d(1));it!=false;++it) {
+            for (lattice_iterator<D> it(int_d(-1),int_d(2));it!=false;++it) {
                 auto gb = particles.get_query().get_ghost_buckets(*it);
                 Aboria::detail::for_each(gb.begin(),gb.end(),
                     aboria_fast_bucketsearch_check_gb<query_type>(particles.get_query(),r,*it)); 
@@ -861,6 +862,41 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(14,0.1,false,false);
         helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(14,0.1,true,false);
 
+        if (test_push_back) {
+            helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(14,0.1,false,true);
+            helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(14,0.1,true,true);
+        }
+
+        helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(1000,0.1,true,false);
+        helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(1000,0.1,false,false);
+        helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(1000,0.1,true,false);
+        helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(1000,0.1,false,false);
+        helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.1,true,false);
+        helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.1,false,false);
+        helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.5,true,false);
+        helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.5,false,false);
+        helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.2,true,false);
+        helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.2,false,false);
+        helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,true,false);
+        helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,false,false);
+        helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,true,false);
+        helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,false,false);
+        helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,true,false);
+        helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,false,false);
+        helper_d_random_fast_bucketsearch<4,VectorType,SearchMethod>(1000,0.2,true,false);
+        helper_d_random_fast_bucketsearch<4,VectorType,SearchMethod>(1000,0.2,false,false);
+
+        if (test_push_back) {
+            helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(1000,0.1,true,true);
+            helper_d_random_fast_bucketsearch<1,VectorType,SearchMethod>(1000,0.1,false,true);
+            helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.1,true,true);
+            helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.1,false,true);
+            helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.5,true,true);
+            helper_d_random_fast_bucketsearch<2,VectorType,SearchMethod>(1000,0.5,false,true);
+            helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,true,true);
+            helper_d_random_fast_bucketsearch<3,VectorType,SearchMethod>(1000,0.2,false,true);
+        }
+
     }
 
     void test_std_vector_bucket_search_serial(void) {
@@ -873,7 +909,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_std_vector_bucket_search_parallel(void) {
-        //helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_parallel>();
+        helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_parallel>();
         helper_d_test_list_random<std::vector,bucket_search_parallel>();
         helper_single_particle<std::vector,bucket_search_parallel>();
         helper_two_particles<std::vector,bucket_search_parallel>();

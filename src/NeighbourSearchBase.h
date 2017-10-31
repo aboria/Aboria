@@ -697,6 +697,14 @@ public:
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
+    ranges_iterator operator+(int n) {
+        ranges_iterator tmp(*this);
+        tmp.increment(n);
+        return tmp;
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     CUDA_HOST_DEVICE
     size_t operator-(ranges_iterator start) const {
         return get_by_index<0>(m_current_p) 
@@ -736,9 +744,14 @@ private:
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
-    CUDA_HOST_DEVICE
     void increment() {
         ++m_current_p;
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    void increment(const int n) {
+        m_current_p += n;
     }
 
     p_pointer m_current_p;

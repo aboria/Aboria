@@ -1197,6 +1197,16 @@ struct bucket_search_serial_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     iterator_range<lattice_iterator<dimension>> 
+    get_neighbouring_buckets(const reference& bucket,const int_d& quadrant) const {
+        return get_neighbouring_buckets(
+                // TODO: why do I need to cast this???!?!?!?
+                (bucket+quadrant*(m_end_bucket+1)).template cast<int>()
+                );
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    iterator_range<lattice_iterator<dimension>> 
     get_ghost_buckets(const int_d& quadrant) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_ghost_buckets: "<<quadrant);
