@@ -830,6 +830,17 @@ public:
         operator++();
         return tmp;
     }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    linked_list_iterator operator+(int n) {
+        linked_list_iterator tmp(*this);
+        for (int i = 0; i < n; ++i) {
+            tmp.increment();
+        }
+        return tmp;
+    }
+
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     size_t operator-(linked_list_iterator start) const {
@@ -1792,8 +1803,12 @@ private:
 
     CUDA_HOST_DEVICE
     void increment(const int n) {
-        int collapsed_index = collapse_index_vector(m_index);
-        m_index = reassemble_index_vector(collapsed_index += n);
+        if (n==1) {
+            increment();
+        } else {
+            int collapsed_index = collapse_index_vector(m_index);
+            m_index = reassemble_index_vector(collapsed_index += n);
+        }
     }
 };
 

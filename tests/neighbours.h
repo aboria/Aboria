@@ -552,7 +552,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
                 if ((i == *j).all()) { // looking in the same bucket, dont double count
                     auto range = query.get_bucket_particles(i);
                     for (auto pi = range.begin(); pi!=range.end(); ++pi) {
-                        for (auto pj = ++pi; pj!=range.end(); ++pj) {
+                        for (auto pj = pi+1; pj!=range.end(); ++pj) {
                             if ((get<position>(*pi)-get<position>(*pj)).squaredNorm()
                                     < r2) {
                                 get<neighbours_aboria>(*pi)++;
