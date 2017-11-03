@@ -341,6 +341,160 @@ public:
     
 };
 
+template <typename Query>
+class bucket_pair_iterator {
+
+    typedef typename Query::template query_iterator<LNormNumber> query_iterator;
+    typedef typename Query::traits_type Traits;
+    static const unsigned int dimension = Traits::dimension;
+
+    typedef position_d<dimension> position;
+    typedef Vector<double,dimension> double_d;
+    typedef Vector<bool,dimension> bool_d;
+    typedef Vector<int,dimension> int_d;
+
+    bool m_valid;
+    bool m_domain_domain;
+    const Query *m_query;
+    lattice_iterator<dimension> m_periodic;
+    lattice_iterator<dimension> m_i;
+    lattice_iterator<dimension> m_j;
+
+public:
+    typedef const typename Traits::template tuple<const int_d&,const int_d&>* pointer;
+	typedef std::forward_iterator_tag iterator_category;
+    typedef const typename Traits::template tuple<const int_d&,const int_d&> reference;
+    typedef const typename Traits::template tuple<const int_d,const int_d> value_type;
+	typedef std::ptrdiff_t difference_type;
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    static lattice_iterator<dimension> get_periodic_it(const bool_d is_periodic) {
+        int_d start,end;
+        for (int i = 0; i < dimension; ++i) {
+           start[i] = is_periodic[i] ? -1 : 0;  
+           end[i] =   is_periodic[i] ?  2 : 1;  
+        }
+        lattice_iterator<dimension> it(start,end);
+        for (int i = 0; i < dimension; ++i) {
+            it[i] = 0;
+        }
+        return it;
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    bucket_pair_iterator():
+        m_valid(false)
+    {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    bucket_pair_iterator(const Query &query):
+        m_valid(true),
+        m_query(&query),
+        m_periodic(get_periodic_it(m_query->get_periodic())),
+        m_i(query.get_regular_buckets(m_periodic).begin()),
+        m_j(query.get_neighbouring_buckets(m_i,m_periodic).begin())
+    {
+        m_j = m_i+1; 
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    reference operator *() const {
+        return dereference();
+    }
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    reference operator ->() {
+        return dereference();
+    }
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    bucket_pair_iterator& operator++() {
+        increment();
+        return *this;
+    }
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    bucket_pair_iterator operator++(int) {
+        bucket_pair_iterator tmp(*this);
+        operator++();
+        return tmp;
+    }
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    size_t operator-(bucket_pair_iterator start) const {
+        size_t count = 0;
+        while (start != *this) {
+            start++;
+            count++;
+        }
+        return count;
+    }
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    inline bool operator==(const bucket_pair_iterator& rhs) {
+        return equal(rhs);
+    }
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    inline bool operator!=(const bucket_pair_iterator& rhs){
+        return !operator==(rhs);
+    }
+
+ private:
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    bool equal(bucket_pair_iterator const& other) const {
+        return m_valid ? 
+                    m_i == other.m_i && m_j == other.m_j
+                    : 
+                    !other.m_valid;
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    void increment() {
+        m_j++;
+        // end of j row
+        if (m_j == false) {
+            ++m_i;
+            if (m_i == false) {
+                m_j = m_query->get_neighbouring_buckets(m_i,m_periodic).begin();
+                if (m_domain_domain) {
+                    m_j = m_i+1;
+                }
+            } else {
+                m_domain_domain = false;
+                ++m_periodic;
+                if (m_periodic == false) {
+                    m_valid = false;
+                    return;
+                }
+                m_i = m_query->get_regular_buckets(m_periodic).begin();
+                m_j = m_query->get_neighbouring_buckets(++m_i,m_periodic).begin();
+                // domain-domain is always first, so never need m_j = m_i+1
+            }
+
+
+        }
+    }
+
+
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    reference dereference() const
+    { return reference(*m_i,*m_j); }
+
+    
+};
+
+
+
 
 /*
 template <typename query_iterator>
@@ -407,6 +561,16 @@ distance_search(const Query& query,
                 ,SearchIterator()
             );
 }
+
+
+template <typename Query,
+         typename Iterator = bucket_pair_iterator<Query>>
+CUDA_HOST_DEVICE
+iterator_range<Iterator>
+get_neighbouring_buckets(const Query& query) {
+    return iterator_range<Iterator>(Iterator(query),Iterator());
+}
+
 
 
 }

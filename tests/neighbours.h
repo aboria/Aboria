@@ -532,85 +532,63 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         }
     };
 
-    template <typename QueryType>
-    struct aboria_fast_bucketsearch_check {
-        typedef typename QueryType::reference reference;
-        typedef position_d<QueryType::dimension> position;
+    template <typename Iterator>
+    struct aboria_fast_bucketsearch_check_neighbour {
+        typedef typename Iterator::reference reference;
+        typedef position_d<Iterator::dimension> position;
 
         QueryType query;
         double r;
         double r2;
 
-        aboria_fast_bucketsearch_check(const QueryType &query, double r):
+        aboria_fast_bucketsearch_check_neighbour(
+                const QueryType &query, double r):
+            query(query),r(r),r2(r*r) {}
+
+        ABORIA_HOST_DEVICE_IGNORE_WARN
+        void operator()(reference ij) {
+            const auto& i = detail::get_impl<0>(ij);
+            const auto& j = detail::get_impl<1>(ij);
+            for (auto pi: query.get_bucket_particles(i)) {
+                for (auto pj: query.get_bucket_particles(j)) {
+                    if ((get<position>(pi)-get<position>(pj)).squaredNorm()
+                            < r2) {
+                        get<neighbours_aboria>(pi)++;
+                        get<neighbours_aboria>(pj)++;
+                    }
+                }
+            }
+        }
+    };
+
+    template <typename Iterator>
+    struct aboria_fast_bucketsearch_check_self {
+        typedef typename Iterator::reference reference;
+        typedef position_d<Iterator::dimension> position;
+
+        QueryType query;
+        double r;
+        double r2;
+
+        aboria_fast_bucketsearch_check_self(QueryType &query, double r):
             query(query),r(r),r2(r*r) {}
 
         ABORIA_HOST_DEVICE_IGNORE_WARN
         void operator()(reference i) {
-            auto j = query.get_neighbouring_buckets(i).begin();
-            j = &i;
-            for (;j!=false;++j) {
-                if ((i == *j).all()) { // looking in the same bucket, dont double count
-                    auto range = query.get_bucket_particles(i);
-                    for (auto pi = range.begin(); pi!=range.end(); ++pi) {
-                        for (auto pj = pi+1; pj!=range.end(); ++pj) {
-                            if ((get<position>(*pi)-get<position>(*pj)).squaredNorm()
-                                    < r2) {
-                                get<neighbours_aboria>(*pi)++;
-                                get<neighbours_aboria>(*pj)++;
-                            }
-                        }
-                    }
-                } else { // looking in a different bucket
-                    for (auto pi: query.get_bucket_particles(i)) {
-                        for (auto pj: query.get_bucket_particles(*j)) {
-                            if ((get<position>(pi)-get<position>(pj)).squaredNorm()
-                                    < r2) {
-                                get<neighbours_aboria>(pi)++;
-                                get<neighbours_aboria>(pj)++;
-                            }
-                        }
+            auto prangei = query.get_bucket_particles(i);
+            for (auto pi = prangei.begin(); pi!=prangei.end(); ++pi) {
+                for (auto pj = pi+1; pj!=prangei.end(); ++pj) {
+                    if ((get<position>(*pi)-get<position>(*pj)).squaredNorm()
+                            < r2) {
+                        get<neighbours_aboria>(*pi)++;
+                        get<neighbours_aboria>(*pj)++;
                     }
                 }
             }
         }
     };
 
-    template <typename QueryType>
-    struct aboria_fast_bucketsearch_check_gb {
-        typedef typename QueryType::reference reference;
-        typedef position_d<QueryType::dimension> position;
-        typedef Vector<double,QueryType::dimension> double_d;
-        typedef Vector<int,QueryType::dimension> int_d;
 
-        QueryType query;
-        double r;
-        double r2;
-        double_d position_adjust;
-        int_d quadrant;
-
-        aboria_fast_bucketsearch_check_gb(const QueryType &query, 
-                                       double r, const int_d& quadrant):
-            query(query),r(r),r2(r*r),quadrant(quadrant),
-            position_adjust(quadrant*(query.get_bounds().bmax-query.get_bounds().bmin))
-        {}
-
-        ABORIA_HOST_DEVICE_IGNORE_WARN
-        void operator()(reference i) {
-            for (auto j: query.get_neighbouring_buckets(i,quadrant)) {
-                for (auto pi: query.get_bucket_particles(i)) {
-                    const double_d pos_i = get<position>(pi)+position_adjust;
-                    for (auto pj: query.get_bucket_particles(j)) {
-                        if ((pos_i-get<position>(pj)).squaredNorm() < r2) {
-                            get<neighbours_aboria>(pj)++;
-                        }
-                    }
-                }
-            }
-        }
-    };
-     
-     
-                
 
 
     template<unsigned int D, 
@@ -762,18 +740,14 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
 
         // Aboria search
         t0 = Clock::now();
-        detail::for_each(std::begin(particles),std::end(particles),
-                    zero_neighbours_aboria<typename particles_type::raw_reference>());
-        Aboria::detail::for_each(particles.get_query().get_subtree().begin(),
-                                 particles.get_query().get_subtree().end(),
-                aboria_fast_bucketsearch_check<query_type>(particles.get_query(),r)); 
-        if (is_periodic) {
-            for (lattice_iterator<D> it(int_d(-1),int_d(2));it!=false;++it) {
-                auto gb = particles.get_query().get_ghost_buckets(*it);
-                Aboria::detail::for_each(gb.begin(),gb.end(),
-                    aboria_fast_bucketsearch_check_gb<query_type>(particles.get_query(),r,*it)); 
-            }
-        }
+        auto pair_it = get_neighbouring_buckets(particles.get_query());
+        detail::for_each(std::begin(pair_it),std::end(pair_it),
+            aboria_fast_bucketsearch_check_neighbour<query_type>(particles.get_query(),r)
+                ); 
+        auto self_it = particles.get_query().get_subtree();
+        detail::for_each(std::begin(self_it),std::end(self_it),
+            aboria_fast_bucketsearch_check_self<query_type>(particles.get_query(),r)
+                );
         t1 = Clock::now();
         std::chrono::duration<double> dt_aboria = t1 - t0;
         for (int i = 0; i < particles.size(); ++i) {
