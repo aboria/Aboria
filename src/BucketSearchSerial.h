@@ -1214,18 +1214,15 @@ struct bucket_search_serial_query {
         int_d start(0);
         int_d end(m_end_bucket);
 
-        bool no_buckets = true;
         for (int i=0; i<Traits::dimension; i++) {
             if (!m_periodic[i]) {
                 ASSERT_CUDA(quadrant[i]==0);
             } else {
                 ASSERT_CUDA(quadrant[i]<=1 && quadrant[i]>=-1);
                 if (quadrant[i] > 0) {
-                    no_buckets = false;
                     start[i] = 0;
                     end[i] = 0;
                 } else if (quadrant[i] < 0) {
-                    no_buckets = false;
                     start[i] = m_end_bucket[i];
                     end[i] = m_end_bucket[i];
                 }
@@ -1233,17 +1230,12 @@ struct bucket_search_serial_query {
         }
 
 #ifndef __CUDA_ARCH__
-        LOG(4,"\tget_ghost_buckets: looking in quadrant"<<quadrant<<". start = "<<start<<" end = "<<end<<" no_buckets = "<<no_buckets);
+        LOG(4,"\tget_ghost_buckets: looking in quadrant"<<quadrant<<". start = "<<start<<" end = "<<end);
 #endif
-        if (no_buckets) {
-            return iterator_range<lattice_iterator<dimension>>(
-                    lattice_iterator<dimension>()
-                    ,lattice_iterator<dimension>());
-        } else {
-            return iterator_range<lattice_iterator<dimension>>(
-                    lattice_iterator<dimension>(start,end+1)
-                    ,lattice_iterator<dimension>());
-        }
+        
+        return iterator_range<lattice_iterator<dimension>>(
+                lattice_iterator<dimension>(start,end+1)
+                ,lattice_iterator<dimension>());
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN

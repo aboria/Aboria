@@ -344,9 +344,8 @@ public:
 template <typename Query>
 class bucket_pair_iterator {
 
-    typedef typename Query::template query_iterator<LNormNumber> query_iterator;
     typedef typename Query::traits_type Traits;
-    static const unsigned int dimension = Traits::dimension;
+    static const unsigned int dimension = Query::dimension;
 
     typedef position_d<dimension> position;
     typedef Vector<double,dimension> double_d;
@@ -376,9 +375,7 @@ public:
            end[i] =   is_periodic[i] ?  2 : 1;  
         }
         lattice_iterator<dimension> it(start,end);
-        for (int i = 0; i < dimension; ++i) {
-            it[i] = 0;
-        }
+        it = int_d(0);
         return it;
     }
 
@@ -394,9 +391,12 @@ public:
         m_valid(true),
         m_query(&query),
         m_periodic(get_periodic_it(m_query->get_periodic())),
-        m_i(query.get_regular_buckets(m_periodic).begin()),
-        m_j(query.get_neighbouring_buckets(m_i,m_periodic).begin())
+        m_i(query.get_regular_buckets(*m_periodic).begin()),
+        m_j(query.get_neighbouring_buckets(*m_i,*m_periodic).begin())
     {
+#ifndef __CUDA_ARCH__
+        LOG(3,"\tcreating bucket_pair_iterator. m_periodic = "<<*m_periodic<<" m_i = "<<*m_i<<" m_j = "<<*m_j); 
+#endif
         m_j = m_i+1; 
     }
 
@@ -450,7 +450,7 @@ public:
     CUDA_HOST_DEVICE
     bool equal(bucket_pair_iterator const& other) const {
         return m_valid ? 
-                    m_i == other.m_i && m_j == other.m_j
+                    other.m_valid && m_i == other.m_i && m_j == other.m_j
                     : 
                     !other.m_valid;
     }
@@ -463,7 +463,7 @@ public:
         if (m_j == false) {
             ++m_i;
             if (m_i == false) {
-                m_j = m_query->get_neighbouring_buckets(m_i,m_periodic).begin();
+                m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
                 if (m_domain_domain) {
                     m_j = m_i+1;
                 }
@@ -474,8 +474,8 @@ public:
                     m_valid = false;
                     return;
                 }
-                m_i = m_query->get_regular_buckets(m_periodic).begin();
-                m_j = m_query->get_neighbouring_buckets(++m_i,m_periodic).begin();
+                m_i = m_query->get_regular_buckets(*m_periodic).begin();
+                m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
                 // domain-domain is always first, so never need m_j = m_i+1
             }
 

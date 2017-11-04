@@ -532,23 +532,25 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         }
     };
 
-    template <typename Iterator>
+    template <typename Query>
     struct aboria_fast_bucketsearch_check_neighbour {
+        typedef bucket_pair_iterator<Query> Iterator;
         typedef typename Iterator::reference reference;
-        typedef position_d<Iterator::dimension> position;
+        typedef position_d<Query::dimension> position;
 
-        QueryType query;
+        Query query;
         double r;
         double r2;
 
         aboria_fast_bucketsearch_check_neighbour(
-                const QueryType &query, double r):
+                const Query &query, double r):
             query(query),r(r),r2(r*r) {}
 
         ABORIA_HOST_DEVICE_IGNORE_WARN
         void operator()(reference ij) {
             const auto& i = detail::get_impl<0>(ij);
             const auto& j = detail::get_impl<1>(ij);
+            std::cout << "checking i = "<<i<<" j = "<<j << std::endl;
             for (auto pi: query.get_bucket_particles(i)) {
                 for (auto pj: query.get_bucket_particles(j)) {
                     if ((get<position>(pi)-get<position>(pj)).squaredNorm()
@@ -561,16 +563,17 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         }
     };
 
-    template <typename Iterator>
+    template <typename Query>
     struct aboria_fast_bucketsearch_check_self {
+        typedef lattice_iterator<Query::dimension> Iterator;
         typedef typename Iterator::reference reference;
-        typedef position_d<Iterator::dimension> position;
+        typedef position_d<Query::dimension> position;
 
-        QueryType query;
+        Query query;
         double r;
         double r2;
 
-        aboria_fast_bucketsearch_check_self(QueryType &query, double r):
+        aboria_fast_bucketsearch_check_self(const Query &query, double r):
             query(query),r(r),r2(r*r) {}
 
         ABORIA_HOST_DEVICE_IGNORE_WARN

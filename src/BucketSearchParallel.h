@@ -694,7 +694,7 @@ struct bucket_search_parallel_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     iterator_range<lattice_iterator<dimension>> 
-    get_ghost_buckets(const int_d& quadrant) const {
+    get_regular_buckets(const int_d& quadrant) const {
 #ifndef __CUDA_ARCH__
         LOG(4,"\tget_ghost_buckets: "<<quadrant);
 #endif
