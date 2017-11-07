@@ -40,6 +40,8 @@ MathJax.Hub.Config({
 </h2></div></div></div>
 <div class="toc"><dl class="toc">
 <dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.cell_lists">Cell Lists</a></span></dt>
+<dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.fast_cell_list_neighbour_search">Fast
+      Cell-list Neighbour Search</a></span></dt>
 <dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.kd_tree">Kd-Tree</a></span></dt>
 <dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.hyper_oct_tree">Hyper
       Oct-Tree</a></span></dt>
@@ -56,7 +58,8 @@ MathJax.Hub.Config({
       containing a few randomly placed particles
     </p>
 <pre class="programlisting"><span class="keyword">const</span> <span class="identifier">size_t</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
-<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;&gt;</span> <span class="identifier">particle_type</span><span class="special">;</span>
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">neighbours_count</span><span class="special">,</span><span class="keyword">int</span><span class="special">,</span><span class="string">"number of neighbours"</span><span class="special">)</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">neighbours_count</span><span class="special">&gt;&gt;</span> <span class="identifier">particle_type</span><span class="special">;</span>
 <span class="keyword">typedef</span> <span class="identifier">particle_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
 <span class="identifier">particle_type</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">default_random_engine</span> <span class="identifier">gen</span><span class="special">;</span>
@@ -67,7 +70,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71195959076048-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71084740636256-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
@@ -131,7 +134,7 @@ MathJax.Hub.Config({
 <p>
       Once you start to alter the positions of the particles, you will need to update
       the neighbourhood data structure that is used for the search. This is done
-      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71195959097920-bb">Aboria::Particles::update_positions</a></code>
+      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71084740658128-bb">Aboria::Particles::update_positions</a></code>
       function. For example, to move all the particles by a random value and then
       update the data structure, you would use the following code:
     </p>
@@ -145,7 +148,7 @@ MathJax.Hub.Config({
       searches would be incorrect
     </p>
 <p>
-      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71195959097920-bb">Aboria::Particles::update_positions</a></code>
+      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71084740658128-bb">Aboria::Particles::update_positions</a></code>
       can also take a pair of iterators corresponding to the range of particle positions
       you wish to update. For example, if you wish to only move and update a single
       particle, you could write
@@ -232,11 +235,93 @@ MathJax.Hub.Config({
         (this hasn't been tested yet) this should speed up neighbourhood search queries
         as the particles that are local in memory are also local in space. The relevant
         classes are <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_parallel.html" title="Class template bucket_search_parallel">Aboria::bucket_search_parallel</a></code>
-        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp71195951385904.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
+        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp71084731648176.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
         and you can use this data structure like so:
       </p>
 <pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_parallel</span><span class="special">&gt;</span> <span class="identifier">particle_bs_parallel_type</span><span class="special">;</span>
 </pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.neighbourhood_searching.fast_cell_list_neighbour_search"></a><a class="link" href="neighbourhood_searching.html#aboria.neighbourhood_searching.fast_cell_list_neighbour_search" title="Fast Cell-list Neighbour Search">Fast
+      Cell-list Neighbour Search</a>
+</h3></div></div></div>
+<p>
+        The two cell-list datastructures support an alternate neighbour search facility
+        that can be faster than the typical Aboria search iterators described above.
+        The key assumption of this fast search is that the regular cells have a width
+        greater than or equal to two times the search radius, and that the same search
+        (i.e. same radius) is to be performed for every single particle in the set.
+        If we want to use the same search radius <code class="computeroutput"><span class="identifier">radius</span></code>
+        as before, we can ensure this is true by setting the <code class="computeroutput"><span class="identifier">n_particles_in_leaf</span></code>
+        arguement of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71084740636256-bb">Aboria::Particles::init_neighbour_search</a></code>
+        function to $n = N\frac{(2*radius)^D}{V}$, where $N$ is the total number
+        of particles in the set, $V$ is the volume of the domain, and $D$ is the
+        number of spatial dimensions. That is,
+      </p>
+<pre class="programlisting"><span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">required_n</span> <span class="special">=</span> <span class="identifier">N</span><span class="special">*</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">radius</span><span class="special">,</span><span class="number">3</span><span class="special">)/</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="number">2.0</span><span class="special">,</span><span class="number">3</span><span class="special">);</span>
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">min</span><span class="special">,</span><span class="identifier">max</span><span class="special">,</span><span class="identifier">periodic</span><span class="special">,</span><span class="identifier">required_n</span><span class="special">);</span>
+</pre>
+<p>
+        Given this assumption, a fast neighbour search would be to simply look in
+        all the possible pairs of neighbouring cells for possible neighbouring particle
+        pairs. To enable this, Aboria provides the <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.get_neighbouring_buckets">Aboria::get_neighbouring_buckets</a></code>
+        function, which returns an iterator range containing all possible pairs of
+        neighbouring buckets. The user can then iterator over each bucket pair, looping
+        through all the particle within in bucket using either the <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp71084738973600-bb">Aboria::bucket_search_serial_query::get_bucket_particles</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp71084731648176.html#idp71084725500432-bb">Aboria::bucket_search_parallel_query::get_bucket_particles</a></code>
+        functions. For example, to count up the number of neighbours within a distance
+        of <code class="computeroutput"><span class="identifier">radius</span></code>, you might write:
+      </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">ij</span><span class="special">:</span> <span class="identifier">get_neighbouring_buckets</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">()))</span> <span class="special">{</span>
+    <span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">0</span><span class="special">&gt;(</span><span class="identifier">ij</span><span class="special">);</span> <span class="comment">// bucket i</span>
+    <span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">1</span><span class="special">&gt;(</span><span class="identifier">ij</span><span class="special">);</span> <span class="comment">// bucket j</span>
+    <span class="comment">// position offset to apply to particles in i (for periodic boundaries)</span>
+    <span class="keyword">const</span> <span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">poffset</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">2</span><span class="special">&gt;(</span><span class="identifier">ij</span><span class="special">);</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">pi</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">().</span><span class="identifier">get_bucket_particles</span><span class="special">(</span><span class="identifier">i</span><span class="special">))</span> <span class="special">{</span>
+        <span class="keyword">const</span> <span class="identifier">Vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">,</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">pi_position</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">pi</span><span class="special">)+</span><span class="identifier">poffset</span><span class="special">;</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">pj</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">().</span><span class="identifier">get_bucket_particles</span><span class="special">(</span><span class="identifier">j</span><span class="special">))</span> <span class="special">{</span>
+            <span class="keyword">if</span> <span class="special">((</span><span class="identifier">pi_position</span><span class="special">-</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">pj</span><span class="special">)).</span><span class="identifier">squaredNorm</span><span class="special">()</span>
+                    <span class="special">&lt;</span> <span class="identifier">radius</span><span class="special">)</span> <span class="special">{</span>
+                <span class="comment">// each ij bucket pair is counted once, so need to </span>
+                <span class="comment">// increment neighbour count for pi and pj</span>
+                <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">neighbours_count</span><span class="special">&gt;(</span><span class="identifier">pi</span><span class="special">)++;</span>
+                <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">neighbours_count</span><span class="special">&gt;(</span><span class="identifier">pj</span><span class="special">)++;</span>
+            <span class="special">}</span>
+        <span class="special">}</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+        The above code considers particle pairs within neighbouring buckets, but
+        not those within the same bucket. These pairs can be obtained by simply looping
+        through all the buckets in the cell-list, using the <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp71084738994640-bb">Aboria::bucket_search_serial_query::get_subtree</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp71084731648176.html#idp71084738904704-bb">Aboria::bucket_search_parallel_query::get_subtree</a></code>
+        functions.
+      </p>
+<p>
+        For example:
+      </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span><span class="special">&amp;</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">().</span><span class="identifier">get_subtree</span><span class="special">())</span> <span class="special">{</span>
+    <span class="keyword">auto</span> <span class="identifier">prangei</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">().</span><span class="identifier">get_bucket_particles</span><span class="special">(</span><span class="identifier">i</span><span class="special">);</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">pi</span> <span class="special">=</span> <span class="identifier">prangei</span><span class="special">.</span><span class="identifier">begin</span><span class="special">();</span> <span class="identifier">pi</span><span class="special">!=</span><span class="identifier">prangei</span><span class="special">.</span><span class="identifier">end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">pi</span><span class="special">)</span> <span class="special">{</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">neighbours_count</span><span class="special">&gt;(*</span><span class="identifier">pi</span><span class="special">)++;</span> <span class="comment">// self is a neighbour</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">pj</span> <span class="special">=</span> <span class="identifier">pi</span><span class="special">+</span><span class="number">1</span><span class="special">;</span> <span class="identifier">pj</span><span class="special">!=</span><span class="identifier">prangei</span><span class="special">.</span><span class="identifier">end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">pj</span><span class="special">)</span> <span class="special">{</span>
+            <span class="keyword">if</span> <span class="special">((</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(*</span><span class="identifier">pi</span><span class="special">)-</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(*</span><span class="identifier">pj</span><span class="special">)).</span><span class="identifier">squaredNorm</span><span class="special">()</span>
+                    <span class="special">&lt;</span> <span class="identifier">radius</span><span class="special">)</span> <span class="special">{</span>
+                <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">neighbours_count</span><span class="special">&gt;(*</span><span class="identifier">pi</span><span class="special">)++;</span>
+                <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">neighbours_count</span><span class="special">&gt;(*</span><span class="identifier">pj</span><span class="special">)++;</span>
+            <span class="special">}</span>
+        <span class="special">}</span>
+    <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+        After the code given above, the variable <code class="computeroutput"><span class="identifier">neighbour_count</span></code>
+        for each particle will contain the number of neighbouring particles around
+        that particle. Note that this will only be correct if the width of each cell
+        is greater than <code class="computeroutput"><span class="identifier">radius</span></code>.
+      </p>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
@@ -252,7 +337,7 @@ MathJax.Hub.Config({
         Each level of the tree divides the cells in the parent level in half along
         a certain dimension (the dimension is chosen based on the distribution of
         particles within the cell). Any cells that contain a number of particles
-        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71195959076048-bb">Aboria::Particles::init_neighbour_search</a></code>)
+        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71084740636256-bb">Aboria::Particles::init_neighbour_search</a></code>)
         are marked as leaf cells, and are not divided on subsequent levels.
       </p>
 <p>
