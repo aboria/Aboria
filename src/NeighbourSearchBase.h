@@ -1623,6 +1623,7 @@ public:
         m_valid(true)
     {}
 
+    /*
     CUDA_HOST_DEVICE
     iterator& operator=(const iterator& copy) {
         m_index = copy.m_index;
@@ -1630,6 +1631,7 @@ public:
         ASSERT_CUDA(m_valid?(m_index >= m_min).all()&&(m_index < m_max).all():true);
         return *this;
     }
+    */
 
     CUDA_HOST_DEVICE
     iterator& operator=(const int_d& copy) {

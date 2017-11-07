@@ -358,12 +358,13 @@ class bucket_pair_iterator {
     lattice_iterator<dimension> m_periodic;
     lattice_iterator<dimension> m_i;
     lattice_iterator<dimension> m_j;
+    double_d m_position_offset;
 
 public:
-    typedef const typename Traits::template tuple<const int_d&,const int_d&>* pointer;
+    typedef const typename Traits::template tuple<const int_d&,const int_d&,const double_d&>* pointer;
 	typedef std::forward_iterator_tag iterator_category;
-    typedef const typename Traits::template tuple<const int_d&,const int_d&> reference;
-    typedef const typename Traits::template tuple<const int_d,const int_d> value_type;
+    typedef const typename Traits::template tuple<const int_d&,const int_d&,const double_d&> reference;
+    typedef const typename Traits::template tuple<const int_d,const int_d,const double_d> value_type;
 	typedef std::ptrdiff_t difference_type;
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -389,15 +390,37 @@ public:
     CUDA_HOST_DEVICE
     bucket_pair_iterator(const Query &query):
         m_valid(true),
+        m_domain_domain(true),
         m_query(&query),
         m_periodic(get_periodic_it(m_query->get_periodic())),
         m_i(query.get_regular_buckets(*m_periodic).begin()),
-        m_j(query.get_neighbouring_buckets(*m_i,*m_periodic).begin())
+        m_position_offset(0)
     {
 #ifndef __CUDA_ARCH__
         LOG(3,"\tcreating bucket_pair_iterator. m_periodic = "<<*m_periodic<<" m_i = "<<*m_i<<" m_j = "<<*m_j); 
 #endif
-        m_j = m_i+1; 
+        if (m_i+1 == false) {
+#ifndef __CUDA_ARCH__
+            LOG(3,"\tbucket_pair_iterator. end of i row"); 
+#endif
+            m_domain_domain = false;
+            ++m_periodic;
+            if (m_periodic == false) {
+                m_valid = false;
+                return;
+            } else {
+                m_i = m_query->get_regular_buckets(*m_periodic).begin();
+                m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
+                m_position_offset = (*m_periodic)*
+                    (m_query->get_bounds().bmax-m_query->get_bounds().bmin);
+                // domain-domain is always first, so never need m_j = m_i+1
+            }
+        } else {
+            m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
+            m_j = *m_i;
+            ++m_j;
+        }
+
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -458,25 +481,41 @@ public:
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     void increment() {
+#ifndef __CUDA_ARCH__
+        LOG(3,"\tbucket_pair_iterator. increment"); 
+#endif
+
         m_j++;
         // end of j row
         if (m_j == false) {
+#ifndef __CUDA_ARCH__
+            LOG(3,"\tbucket_pair_iterator. end of j row"); 
+#endif
             ++m_i;
-            if (m_i == false) {
-                m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
-                if (m_domain_domain) {
-                    m_j = m_i+1;
-                }
-            } else {
+            if (m_domain_domain? m_i+1 == false : m_i == false) {
+#ifndef __CUDA_ARCH__
+                LOG(3,"\tbucket_pair_iterator. end of i row"); 
+#endif
                 m_domain_domain = false;
                 ++m_periodic;
                 if (m_periodic == false) {
                     m_valid = false;
                     return;
+                } else {
+                    m_i = m_query->get_regular_buckets(*m_periodic).begin();
+                    m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
+                    m_position_offset = (*m_periodic)*
+                                (m_query->get_bounds().bmax-m_query->get_bounds().bmin);
+                    // domain-domain is always first, so never need m_j = m_i+1
                 }
-                m_i = m_query->get_regular_buckets(*m_periodic).begin();
+            } else {
                 m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
-                // domain-domain is always first, so never need m_j = m_i+1
+                if (m_domain_domain) {
+                    m_j = *m_i;
+                    ++m_j;
+                    // we already know m_i + 1 is not false
+                }
+
             }
 
 
@@ -488,7 +527,7 @@ public:
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     reference dereference() const
-    { return reference(*m_i,*m_j); }
+    { return reference(*m_i,*m_j,m_position_offset); }
 
     
 };

@@ -537,6 +537,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         typedef bucket_pair_iterator<Query> Iterator;
         typedef typename Iterator::reference reference;
         typedef position_d<Query::dimension> position;
+        typedef Vector<double,Query::dimension> double_d;
 
         Query query;
         double r;
@@ -550,11 +551,14 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         void operator()(reference ij) {
             const auto& i = detail::get_impl<0>(ij);
             const auto& j = detail::get_impl<1>(ij);
-            std::cout << "checking i = "<<i<<" j = "<<j << std::endl;
+            const auto& poffset = detail::get_impl<2>(ij);
+            //std::cout << "checking i = "<<i<<" j = "<<j << std::endl;
             for (auto pi: query.get_bucket_particles(i)) {
+                const double_d pi_position = get<position>(pi)+poffset;
                 for (auto pj: query.get_bucket_particles(j)) {
-                    if ((get<position>(pi)-get<position>(pj)).squaredNorm()
+                    if ((pi_position-get<position>(pj)).squaredNorm()
                             < r2) {
+                        //std::cout << "particles "<< get<position>(pi)<< " and "<< get<position>(pj)<< " are neighbours"<< std::endl;
                         get<neighbours_aboria>(pi)++;
                         get<neighbours_aboria>(pj)++;
                     }
@@ -580,9 +584,11 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
         void operator()(reference i) {
             auto prangei = query.get_bucket_particles(i);
             for (auto pi = prangei.begin(); pi!=prangei.end(); ++pi) {
+                get<neighbours_aboria>(*pi)++; // self is a neighbour
                 for (auto pj = pi+1; pj!=prangei.end(); ++pj) {
                     if ((get<position>(*pi)-get<position>(*pj)).squaredNorm()
                             < r2) {
+                        //std::cout << "particles "<< get<position>(*pi)<< " and "<< get<position>(*pj)<< " are neighbours (self)"<< std::endl;
                         get<neighbours_aboria>(*pi)++;
                         get<neighbours_aboria>(*pj)++;
                     }
