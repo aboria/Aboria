@@ -176,7 +176,9 @@ endif()
 set(NeighboursTestFile neighbours.h)
 set(NeighboursTest
     test_std_vector_bucket_search_serial
+    test_std_vector_bucket_search_serial_fast_bucketsearch
     test_std_vector_bucket_search_parallel
+    test_std_vector_bucket_search_parallel_fast_bucketsearch
     test_std_vector_nanoflann_adaptor
     test_std_vector_octtree
     test_documentation

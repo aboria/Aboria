@@ -642,96 +642,10 @@ struct bucket_search_parallel_query {
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
-    iterator_range<lattice_iterator<dimension>> 
-    get_neighbouring_buckets(const reference& bucket) const {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tget_neighbouring_buckets: ");
-#endif
-        int_d start = bucket-1;
-        int_d end = bucket+1;
-
-        bool no_buckets = false;
-        for (int i=0; i<Traits::dimension; i++) {
-            if (start[i] < 0) {
-                start[i] = 0;
-            } else if (start[i] > m_end_bucket[i]) {
-                no_buckets = true;
-                start[i] = m_end_bucket[i];
-            }
-            if (end[i] < 0) {
-                no_buckets = true;
-                end[i] = 0;
-            } else if (end[i] > m_end_bucket[i]) {
-                end[i] = m_end_bucket[i];
-            }
-        }
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tget_neighbouring_buckets: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end<<" no_buckets = "<<no_buckets);
-#endif
-        if (no_buckets) {
-            return iterator_range<lattice_iterator<dimension>>(
-                    lattice_iterator<dimension>()
-                    ,lattice_iterator<dimension>()
-                    );
-        } else {
-            return iterator_range<lattice_iterator<dimension>>(
-                    lattice_iterator<dimension>(start,end+1)
-                    ,lattice_iterator<dimension>()
-                    );
-        }
+    const int_d& get_end_bucket() const {
+        return m_end_bucket;
     }
 
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    iterator_range<lattice_iterator<dimension>> 
-    get_neighbouring_buckets(const reference& bucket,const int_d& quadrant) const {
-        return get_neighbouring_buckets(
-                // TODO: why do I need to cast this???!?!?!?
-                (bucket+quadrant*(m_end_bucket+1)).template cast<int>()
-                );
-    }
-
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    iterator_range<lattice_iterator<dimension>> 
-    get_regular_buckets(const int_d& quadrant) const {
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tget_ghost_buckets: "<<quadrant);
-#endif
-        int_d start(0);
-        int_d end(m_end_bucket);
-
-        bool no_buckets = true;
-        for (int i=0; i<Traits::dimension; i++) {
-            if (!m_periodic[i]) {
-                ASSERT_CUDA(quadrant[i]==0);
-            } else {
-                ASSERT_CUDA(quadrant[i]<=1 && quadrant[i]>=-1);
-                if (quadrant[i] > 0) {
-                    no_buckets = false;
-                    start[i] = 0;
-                    end[i] = 0;
-                } else if (quadrant[i] < 0) {
-                    no_buckets = false;
-                    start[i] = m_end_bucket[i];
-                    end[i] = m_end_bucket[i];
-                }
-            }
-        }
-
-#ifndef __CUDA_ARCH__
-        LOG(4,"\tget_ghost_buckets: looking in quadrant"<<quadrant<<". start = "<<start<<" end = "<<end<<" no_buckets = "<<no_buckets);
-#endif
-        if (no_buckets) {
-            return iterator_range<lattice_iterator<dimension>>(
-                    lattice_iterator<dimension>()
-                    ,lattice_iterator<dimension>());
-        } else {
-            return iterator_range<lattice_iterator<dimension>>(
-                    lattice_iterator<dimension>(start,end+1)
-                    ,lattice_iterator<dimension>());
-        }
-    }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE

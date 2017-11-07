@@ -883,7 +883,6 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_std_vector_bucket_search_serial(void) {
-        helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_serial>();
         helper_d_test_list_random<std::vector,bucket_search_serial>();
         helper_single_particle<std::vector,bucket_search_serial>();
         helper_two_particles<std::vector,bucket_search_serial>();
@@ -892,11 +891,25 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     }
 
     void test_std_vector_bucket_search_parallel(void) {
-        helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_parallel>();
         helper_d_test_list_random<std::vector,bucket_search_parallel>();
         helper_single_particle<std::vector,bucket_search_parallel>();
         helper_two_particles<std::vector,bucket_search_parallel>();
 
+        helper_d_test_list_regular<std::vector,bucket_search_parallel>();
+    }
+
+    void test_std_vector_bucket_search_serial_fast_bucketsearch(void) {
+        helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_serial>();
+        helper_single_particle<std::vector,bucket_search_serial>();
+        helper_two_particles<std::vector,bucket_search_serial>();
+        helper_d_test_list_regular<std::vector,bucket_search_serial>();
+
+    }
+
+    void test_std_vector_bucket_search_parallel_fast_bucketsearch(void) {
+        helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_parallel>();
+        helper_single_particle<std::vector,bucket_search_parallel>();
+        helper_two_particles<std::vector,bucket_search_parallel>();
         helper_d_test_list_regular<std::vector,bucket_search_parallel>();
     }
 

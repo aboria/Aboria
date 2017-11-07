@@ -393,7 +393,7 @@ public:
         m_domain_domain(true),
         m_query(&query),
         m_periodic(get_periodic_it(m_query->get_periodic())),
-        m_i(query.get_regular_buckets(*m_periodic).begin()),
+        m_i(get_regular_buckets(query,*m_periodic)),
         m_position_offset(0)
     {
 #ifndef __CUDA_ARCH__
@@ -409,14 +409,14 @@ public:
                 m_valid = false;
                 return;
             } else {
-                m_i = m_query->get_regular_buckets(*m_periodic).begin();
-                m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
+                m_i = get_regular_buckets(*m_query,*m_periodic);
+                m_j = get_neighbouring_buckets(*m_query,*m_i,*m_periodic);
                 m_position_offset = (*m_periodic)*
                     (m_query->get_bounds().bmax-m_query->get_bounds().bmin);
                 // domain-domain is always first, so never need m_j = m_i+1
             }
         } else {
-            m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
+            m_j = get_neighbouring_buckets(*m_query,*m_i,*m_periodic);
             m_j = *m_i;
             ++m_j;
         }
@@ -502,14 +502,14 @@ public:
                     m_valid = false;
                     return;
                 } else {
-                    m_i = m_query->get_regular_buckets(*m_periodic).begin();
-                    m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
+                    m_i = get_regular_buckets(*m_query, *m_periodic);
+                    m_j = get_neighbouring_buckets(*m_query,*m_i,*m_periodic);
                     m_position_offset = (*m_periodic)*
                                 (m_query->get_bounds().bmax-m_query->get_bounds().bmin);
                     // domain-domain is always first, so never need m_j = m_i+1
                 }
             } else {
-                m_j = m_query->get_neighbouring_buckets(*m_i,*m_periodic).begin();
+                m_j = get_neighbouring_buckets(*m_query,*m_i,*m_periodic);
                 if (m_domain_domain) {
                     m_j = *m_i;
                     ++m_j;
@@ -520,6 +520,84 @@ public:
 
 
         }
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    lattice_iterator<dimension> 
+    get_neighbouring_buckets(const Query& query, const int_d& bucket) const {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_neighbouring_buckets: ");
+#endif
+        int_d start = bucket-1;
+        int_d end = bucket+1;
+
+        bool no_buckets = false;
+        for (int i=0; i<dimension; i++) {
+            if (start[i] < 0) {
+                start[i] = 0;
+            } else if (start[i] > query.get_end_bucket()[i]) {
+                no_buckets = true;
+                start[i] = query.get_end_bucket()[i];
+            }
+            if (end[i] < 0) {
+                no_buckets = true;
+                end[i] = 0;
+            } else if (end[i] > query.get_end_bucket()[i]) {
+                end[i] = query.get_end_bucket()[i];
+            }
+        }
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_neighbouring_buckets: looking in bucket "<<bucket<<". start = "<<start<<" end = "<<end<<" no_buckets = "<<no_buckets);
+#endif
+        if (no_buckets) {
+            return lattice_iterator<dimension>();
+        } else {
+            return lattice_iterator<dimension>(start,end+1);
+        }
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    lattice_iterator<dimension> 
+    get_neighbouring_buckets(const Query& query, const int_d& bucket,const int_d& quadrant) const {
+        return get_neighbouring_buckets(query,
+                //bucket+quadrant*(query.get_end_bucket()+1)
+                // TODO: why do I need to cast this???!?!?!?
+                (bucket+quadrant*(query.get_end_bucket()+1)).template cast<int>()
+                );
+    }
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    lattice_iterator<dimension> 
+    get_regular_buckets(const Query& query, const int_d& quadrant) const {
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_ghost_buckets: "<<quadrant);
+#endif
+        int_d start(0);
+        int_d end(query.get_end_bucket());
+
+        for (int i=0; i<Traits::dimension; i++) {
+            if (!query.get_periodic()[i]) {
+                ASSERT_CUDA(quadrant[i]==0);
+            } else {
+                ASSERT_CUDA(quadrant[i]<=1 && quadrant[i]>=-1);
+                if (quadrant[i] > 0) {
+                    start[i] = 0;
+                    end[i] = 0;
+                } else if (quadrant[i] < 0) {
+                    start[i] = query.get_end_bucket()[i];
+                    end[i] = query.get_end_bucket()[i];
+                }
+            }
+        }
+
+#ifndef __CUDA_ARCH__
+        LOG(4,"\tget_ghost_buckets: looking in quadrant"<<quadrant<<". start = "<<start<<" end = "<<end);
+#endif
+        
+        return lattice_iterator<dimension>(start,end+1);
     }
 
 
