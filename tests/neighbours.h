@@ -69,7 +69,8 @@ containing a few randomly placed particles
 */
 
         const size_t N = 100;
-        typedef Particles<> particle_type;
+        ABORIA_VARIABLE(neighbours_count,int,"number of neighbours")
+        typedef Particles<std::tuple<neighbours_count>> particle_type;
         typedef particle_type::position position;
         particle_type particles(N);
         std::default_random_engine gen; 
@@ -200,6 +201,9 @@ after this index
 
 /*`
 
+
+
+
 [section Cell Lists]
 
 There are two cell list data structures within Aboria. Both divide the domain into 
@@ -235,6 +239,63 @@ are also local in space. The relevant classes are [classref Aboria::bucket_searc
 
 /*`
 
+
+[endsect]
+
+
+[section Fast Cell-list Neighbour Search]
+
+The two cell-list datastructures support an alternate neighbour search facility that can be faster than the typical Aboria search iterators described above. The key assumption of this fast search is that the regular cells have a width greater than or equal to two times the search radius, and that the same search (i.e. same radius) is to be performed for every single particle in the set. If we want to use the same search radius `radius` as before, we can ensure this is true by setting the `n_particles_in_leaf` arguement of the [memberref Aboria::Particles::init_neighbour_search] function to $n = N\frac{(2*radius)^D}{V}$, where $N$ is the total number of particles in the set, $V$ is the volume of the domain, and $D$ is the number of spatial dimensions. That is,
+
+*/
+
+        const double required_n = N*std::pow(2*radius,3)/std::pow(2.0,3);
+        particles.init_neighbour_search(min,max,periodic,required_n);
+
+/*`
+Given this assumption, a fast neighbour search would be to simply look in all the possible pairs of neighbouring cells for possible neighbouring particle pairs. To enable this, Aboria provides the [funcref Aboria::get_neighbouring_buckets] function, which returns an iterator range containing all possible pairs of neighbouring buckets. The user can then iterator over each bucket pair, looping through all the particle within in bucket using either the [memberref Aboria::bucket_search_serial_query::get_bucket_particles] or [memberref Aboria::bucket_search_parallel_query::get_bucket_particles] functions. For example, to count up the number of neighbours within a distance of `radius`, you might write:
+
+*/
+        for (auto& ij: get_neighbouring_buckets(particles.get_query())) {
+            const auto& i = std::get<0>(ij); // bucket i
+            const auto& j = std::get<1>(ij); // bucket j
+            // position offset to apply to particles in i (for periodic boundaries)
+            const auto& poffset = std::get<2>(ij); 
+            for (auto pi: particles.get_query().get_bucket_particles(i)) {
+                const Vector<double,3> pi_position = get<position>(pi)+poffset;
+                for (auto pj: particles.get_query().get_bucket_particles(j)) {
+                    if ((pi_position-get<position>(pj)).squaredNorm() 
+                            < radius) {
+                        // each ij bucket pair is counted once, so need to 
+                        // increment neighbour count for pi and pj
+                        get<neighbours_count>(pi)++;
+                        get<neighbours_count>(pj)++;
+                    }
+                }
+            }
+        }
+
+/*`
+The above code considers particle pairs within neighbouring buckets, but not those within the same bucket. These pairs can be obtained by simply looping through all the buckets in the cell-list, using the [memberref Aboria::bucket_search_serial_query::get_subtree] or [memberref Aboria::bucket_search_parallel_query::get_subtree] functions.
+
+For example:
+*/
+        for (auto& i: particles.get_query().get_subtree()) {
+            auto prangei = particles.get_query().get_bucket_particles(i);
+            for (auto pi = prangei.begin(); pi!=prangei.end(); ++pi) {
+                get<neighbours_count>(*pi)++; // self is a neighbour
+                for (auto pj = pi+1; pj!=prangei.end(); ++pj) {
+                    if ((get<position>(*pi)-get<position>(*pj)).squaredNorm() 
+                            < radius) {
+                        get<neighbours_count>(*pi)++;
+                        get<neighbours_count>(*pj)++;
+                    }
+                }
+            }
+        }
+/*`
+
+After the code given above, the variable `neighbour_count` for each particle will contain the number of neighbouring particles around that particle. Note that this will only be correct if the width of each cell is greater than `radius`. 
 
 [endsect]
 
