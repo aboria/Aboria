@@ -249,7 +249,7 @@ The two cell-list datastructures support an alternate neighbour search facility 
 
 */
 
-        const double required_n = N*std::pow(2*radius,3)/std::pow(2.0,3);
+        const double required_n = N*std::pow(radius,3)/std::pow(2.0,3);
         particles.init_neighbour_search(min,max,periodic,required_n);
 
 /*`
@@ -769,7 +769,7 @@ You can create a particle set using a hyper oct-tree by setting the [classref Ab
     	double_d max(1);
     	bool_d periodic(is_periodic);
         particles_type particles;
-        const double required_bucket_size = 2*r;
+        const double required_bucket_size = r;
         const double required_bucket_number = N*std::pow(required_bucket_size,D)/std::pow(2.0,D);
         double r2 = r*r;
 

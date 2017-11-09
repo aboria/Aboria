@@ -231,7 +231,7 @@ public:
     /// \param high the upper extent of the search domain
     /// \param _max_interaction_radius the side length of each bucket
     /// \param periodic a boolean vector indicating wether each dimension
-    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const unsigned int n_particles_in_leaf=10, const bool not_in_constructor=true) {
+    void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const double n_particles_in_leaf=10, const bool not_in_constructor=true) {
         LOG(2,"neighbour_search_base: set_domain:");
         m_domain_has_been_set = not_in_constructor;
         m_bounds.bmin = min_in;
@@ -631,7 +631,7 @@ protected:
     bool_d m_periodic;
     bool m_domain_has_been_set;
     detail::bbox<Traits::dimension> m_bounds;
-    unsigned int m_n_particles_in_leaf; 
+    double m_n_particles_in_leaf; 
 };
 
 // assume that these iterators, and query functions, are only called from device code

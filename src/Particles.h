@@ -532,7 +532,7 @@ public:
     /// \param periodic a boolean 3d vector indicating whether each dimension 
     /// is periodic (true) or not (false)
     void init_neighbour_search(const double_d& low, const double_d& high, const bool_d& periodic,
-                                const unsigned int n_particles_in_leaf=10) {
+                                const double n_particles_in_leaf=10.0) {
         LOG(2, "Particles:init_neighbour_search: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" n_particles_in_leaf = "<<n_particles_in_leaf);
 
         search.set_domain(low,high,periodic,n_particles_in_leaf);

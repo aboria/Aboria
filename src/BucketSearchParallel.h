@@ -132,7 +132,7 @@ private:
                 m_size = unsigned_int_d(1);
             } else {
                 const double total_volume = (this->m_bounds.bmax-this->m_bounds.bmin).prod();
-                const double box_volume = double(this->m_n_particles_in_leaf)/double(n)*total_volume;
+                const double box_volume = this->m_n_particles_in_leaf/double(n)*total_volume;
                 const double box_side_length = std::pow(box_volume,1.0/Traits::dimension);
                 m_size = 
                     floor((this->m_bounds.bmax-this->m_bounds.bmin)/box_side_length)
