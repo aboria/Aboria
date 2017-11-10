@@ -70,7 +70,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp45941896861072-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47017355367696-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
@@ -134,7 +134,7 @@ MathJax.Hub.Config({
 <p>
       Once you start to alter the positions of the particles, you will need to update
       the neighbourhood data structure that is used for the search. This is done
-      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp45941896886176-bb">Aboria::Particles::update_positions</a></code>
+      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47017355392800-bb">Aboria::Particles::update_positions</a></code>
       function. For example, to move all the particles by a random value and then
       update the data structure, you would use the following code:
     </p>
@@ -148,7 +148,7 @@ MathJax.Hub.Config({
       searches would be incorrect
     </p>
 <p>
-      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp45941896886176-bb">Aboria::Particles::update_positions</a></code>
+      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47017355392800-bb">Aboria::Particles::update_positions</a></code>
       can also take a pair of iterators corresponding to the range of particle positions
       you wish to update. For example, if you wish to only move and update a single
       particle, you could write
@@ -235,7 +235,7 @@ MathJax.Hub.Config({
         (this hasn't been tested yet) this should speed up neighbourhood search queries
         as the particles that are local in memory are also local in space. The relevant
         classes are <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_parallel.html" title="Class template bucket_search_parallel">Aboria::bucket_search_parallel</a></code>
-        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp45941887854752.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
+        and <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp47017346355712.html" title="Struct template bucket_search_parallel_query">Aboria::bucket_search_parallel_query</a></code>,
         and you can use this data structure like so:
       </p>
 <pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span><span class="number">3</span><span class="special">,</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span><span class="identifier">bucket_search_parallel</span><span class="special">&gt;</span> <span class="identifier">particle_bs_parallel_type</span><span class="special">;</span>
@@ -254,7 +254,7 @@ MathJax.Hub.Config({
         (i.e. same radius) is to be performed for every single particle in the set.
         If we want to use the same search radius <code class="computeroutput"><span class="identifier">radius</span></code>
         as before, we can ensure this is true by setting the <code class="computeroutput"><span class="identifier">n_particles_in_leaf</span></code>
-        arguement of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp45941896861072-bb">Aboria::Particles::init_neighbour_search</a></code>
+        arguement of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47017355367696-bb">Aboria::Particles::init_neighbour_search</a></code>
         function to $n = N\frac{(2*radius)^D}{V}$, where $N$ is the total number
         of particles in the set, $V$ is the volume of the domain, and $D$ is the
         number of spatial dimensions. That is,
@@ -268,8 +268,8 @@ MathJax.Hub.Config({
         pairs. To enable this, Aboria provides the <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.get_neighbouring_buckets">Aboria::get_neighbouring_buckets</a></code>
         function, which returns an iterator range containing all possible pairs of
         neighbouring buckets. The user can then iterator over each bucket pair, looping
-        through all the particle within in bucket using either the <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp45941895192016-bb">Aboria::bucket_search_serial_query::get_bucket_particles</a></code>
-        or <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp45941887854752.html#idp45941881705104-bb">Aboria::bucket_search_parallel_query::get_bucket_particles</a></code>
+        through all the particle within in bucket using either the <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp47017353698176-bb">Aboria::bucket_search_serial_query::get_bucket_particles</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp47017346355712.html#idp47017340212448-bb">Aboria::bucket_search_parallel_query::get_bucket_particles</a></code>
         functions. For example, to count up the number of neighbours within a distance
         of <code class="computeroutput"><span class="identifier">radius</span></code>, you might write:
       </p>
@@ -295,8 +295,8 @@ MathJax.Hub.Config({
 <p>
         The above code considers particle pairs within neighbouring buckets, but
         not those within the same bucket. These pairs can be obtained by simply looping
-        through all the buckets in the cell-list, using the <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp45941895213056-bb">Aboria::bucket_search_serial_query::get_subtree</a></code>
-        or <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp45941887854752.html#idp45941895123088-bb">Aboria::bucket_search_parallel_query::get_subtree</a></code>
+        through all the buckets in the cell-list, using the <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp47017353719216-bb">Aboria::bucket_search_serial_query::get_subtree</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/bucket_s_idp47017346355712.html#idp47017353629168-bb">Aboria::bucket_search_parallel_query::get_subtree</a></code>
         functions.
       </p>
 <p>
@@ -337,7 +337,7 @@ MathJax.Hub.Config({
         Each level of the tree divides the cells in the parent level in half along
         a certain dimension (the dimension is chosen based on the distribution of
         particles within the cell). Any cells that contain a number of particles
-        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp45941896861072-bb">Aboria::Particles::init_neighbour_search</a></code>)
+        that is smaller than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47017355367696-bb">Aboria::Particles::init_neighbour_search</a></code>)
         are marked as leaf cells, and are not divided on subsequent levels.
       </p>
 <p>
