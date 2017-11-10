@@ -289,6 +289,8 @@ public:
     /// resize the continer. Note that if new particles are created, they
     /// are NOT added to the neighbour search structure, and might be outside
     /// the domain
+    ///
+    /// \param n the new size of the container
     void resize(size_type n) {
         size_t old_n = this->size();
         traits_type::resize(data,n);         
@@ -301,8 +303,13 @@ public:
         }
     }
     
-    /// push the particle \p val to the back of the container (if its within
+    /// push the particle \p val to the back of the container (if it is within
     /// the searchable domain)
+    ///
+    /// \param val the value_type to add
+    /// \param update_neighbour_search the default is to update the neighbour search
+    /// set this to false to not update
+    /// \sa update_positions()
     void push_back (const value_type& val, bool update_neighbour_search=true) {
         // add val to container
         traits_type::push_back(data,val);
@@ -322,10 +329,11 @@ public:
         }
     }
 
+    /// Print to stdout the current state of the internal neighbourhood data 
+    /// structure. Used for debugging purposes
     void print_data_structure() const {
         search.print_data_structure();
     }
-
 
     /// set the base seed of the container. Note that the random number generator for
     /// each particle is set to \p value plus the particle's id
@@ -337,7 +345,8 @@ public:
     }
 
     /// push a new particle with position \p position
-    /// to the back of the container
+    /// to the back of the container. All other variables for the new particle
+    /// are left at the defaults
     void push_back(const double_d& pos) {
         value_type i;
         Aboria::get<position>(i) = pos;
@@ -353,6 +362,9 @@ public:
     }
 
     /// pop (delete) the particle at the end of the container 
+    ///
+    /// \param update_neighbour_search by default update the neighbour data
+    /// structure. Set this to false to turn off the update
     void pop_back(bool update_neighbour_search=true) {
         erase(end()-1,update_neighbour_search);
     }
@@ -367,12 +379,6 @@ public:
         return traits_type::index(data, idx);
     }
 
-    /*
-    /// returns a const reference to the particle at position \p idx
-    const_value_type operator[](std::size_t idx) const {
-        return traits_type::index_const(data, idx);
-    }
-    */
 
     /// returns an iterator to the beginning of the container
     iterator begin() {
@@ -410,8 +416,10 @@ public:
     }
 
     /// erase the particle pointed to by the iterator \p i.
-    /// NOTE: This will potentially reorder the particles
-    /// if neighbourhood searching is on, then this is updated
+    ///
+    /// \param update_neighbour_search by default this function will update
+    /// the neighbour search data structure. Set this to false to turn off update
+    /// \sa update_positions
     iterator erase (iterator i, const bool update_neighbour_search = true) {
         const size_t i_position = i-begin();
         *get<alive>(i) = false;
@@ -422,38 +430,14 @@ public:
         }
         return begin()+i_position;
 
-        /*
-        if (update_neighbour_search) {
-            search.before_delete_particles_range(i_position,1);
-        }
-
-        if (i_position == size()-1) {
-            // just pop off back element
-            traits_type::pop_back(data);
-            i = end();
-        } else {
-            if (search.ordered()) {
-                // have to maintain order and move everthing...
-                traits_type::erase(data,i);
-            } else {
-                // copy end element to i and pop off end element
-                *i = *(end()-1);
-                traits_type::pop_back(data);
-            }
-        }
-            
-        if (update_neighbour_search) {
-            if (search.after_delete_particles_range(begin(),end(),i_position,1)) {
-                reorder(search.get_order().begin(),search.get_order().end());
-            }
-        }
-        */
     }
 
 
     /// erase the particles between the iterators \p first
     /// and \p last
     /// \see erase(iterator)
+    /// \param update_neighbour_search By default this updates the neighbourhood
+    /// data structure. Set to false to turn off this update
     iterator erase (iterator first, iterator last, const bool update_neighbour_search = true) {
         const size_t index_end = last-begin();
         detail::fill(get<alive>(first),get<alive>(last),false);
@@ -463,34 +447,6 @@ public:
             update_positions(first,end());
         }
         return begin() + index_end;
-
-
-        /*
-        const size_t n_before_range = first-begin();
-        const size_t n = last-first;
-        const size_t n_after_range = end()-last;
-
-        if (update_neighbour_search) {
-            search.before_delete_particles_range(n_before_range,n);
-        }
-
-        if (n_after_range > n && !search.ordered()) {
-            // move elements at end to deleted region
-            detail::copy(end()-n,end(),first);
-            traits_type::resize(data,size()-n);         
-        } else {
-            // order is maintained
-            traits_type::erase(data,first,last);
-        }
-        
-        if (update_neighbour_search) {
-            if (search.after_delete_particles_range(begin(),end(),n_before_range,n)) {
-                reorder(search.get_order().begin(),search.get_order().end());
-            }
-        }
-        
-        return end()-n_after_range; 
-        */
     }
 
     /// insert a particle \p val into the container at \p position
@@ -531,6 +487,9 @@ public:
     /// to each other than this length are considered neighbours
     /// \param periodic a boolean 3d vector indicating whether each dimension 
     /// is periodic (true) or not (false)
+    /// \param n_particles_in_leaf By default the neighbourhood data structure will
+    /// have either an average (cell-list) or a maximum of this number of particles 
+    /// within each bucket. Set this argument to change this number
     void init_neighbour_search(const double_d& low, const double_d& high, const bool_d& periodic,
                                 const double n_particles_in_leaf=10.0) {
         LOG(2, "Particles:init_neighbour_search: low = "<<low<<" high = "<<high<<" periodic = "<<periodic<<" n_particles_in_leaf = "<<n_particles_in_leaf);
@@ -541,6 +500,8 @@ public:
         searchable = true;
     }
 
+    /// Initialise the "search by id" functionality. This will switch on the creation
+    /// and updating of an internal data structure to enable search by id. 
     void init_id_search() {
         LOG(2, "Particles:init_id_search");
         search.init_id_map();
@@ -548,12 +509,18 @@ public:
         searchable = true;
     }
 
+    /// Returns the query_type object that can be used for neighbourhood queries.
+    /// This object is designed to be as lightweight as possible so that it can
+    /// by copied (for example to the GPU)
     const query_type& get_query() const {
         ASSERT(searchable,"init_neighbour_search not called on this particle set");
         return search.get_query();
     }
 
 
+    /// takes an vector \p uncorrected_dx that might come from the difference
+    /// between two particle positions, and returns the shortest possible dx, 
+    /// according to the periodicity of the domain
     double_d correct_dx_for_periodicity(const double_d& uncorrected_dx) const {
         double_d dx = uncorrected_dx;
         //double_d domain_width = get_max()-get_min();
@@ -592,15 +559,22 @@ public:
         return search.get_periodic();
     }
 
+    /// A neighbourhood search data structure can be ordered (i.e. the
+    /// order of the particles in the container is important) or not.
     bool is_ordered() const {
         return search.ordered();
     }
 
-    /// Update the neighbourhood search data. This function must be
-    /// called after altering the particle positions (e.g. with 
+    /// Update the neighbourhood search data for particles between
+    /// \p update_begin and \p update_end (not including \p update_end). 
+    /// 
+    /// This function must be called after altering the particle positions (e.g. with 
     /// `set<position>(particle,new_position)`) in order for accurate
-    /// neighbourhood searching
-    /// \see get_neighbours()
+    /// neighbourhood searching. This function will also delete any particles
+    /// that have their `alive` flags set to false. If any particles within
+    /// the range have `alive==false`, then the \p update_end iterator must 
+    /// be the same as that returned by end()
+    ///
     void update_positions(iterator update_begin, iterator update_end) {
         if (search.update_positions(begin(),end(),update_begin,update_end)) {
             reorder(update_begin,update_end,
@@ -608,7 +582,14 @@ public:
                     search.get_alive_indicies().end());
         }
     }
-
+    
+    /// Update the neighbourhood search data for all particles in the container
+    /// 
+    /// This function must be called after altering the particle positions (e.g. with 
+    /// `set<position>(particle,new_position)`) in order for accurate
+    /// neighbourhood searching. This function will also delete any particles
+    /// that have their `alive` flags set to false. 
+    ///
     void update_positions() {
         update_positions(begin(),end());
     }
@@ -626,29 +607,8 @@ public:
         return data.get_tuple(); 
     }
 
-    /*
-private:
-    struct set_variable {
-        set_variable(data_type &data_to_set, data_type &internal_data, int n):
-            data_to_set(data_to_set),internal_data(internal_data),n(n) {}
-        template< typename U > void operator()(U i) {
-            typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
-            const char *name = variable_type().name;
-            CHECK(n == data_to_set.get<U::value>().size(), "error, data vectors not the same size")
-            internal_data.set<U::value>(data_to_set.get<U::value>());
-        }
 
-        data_type &data_to_set;
-        data_type &internal_data;
-        int n;
-    };
-public:
-
-    void set(data_type &data_to_set) {
-        mpl::for_each<mpl::range_c<int,1,mpl::size<mpl_type_vector>::type::value> > (set_variable(data_to_set,data,data_to_set.get<0>().size()));
-    }
-    */
-
+    /// stream output for particle data
     friend std::ostream& operator<< (std::ostream& stream, const Particles& particles) {
         traits_type::header_to_stream(stream);
         stream << '\n';
@@ -659,6 +619,7 @@ public:
         return stream;
     }
 
+    /// stream input for particle data
     friend std::istream& operator>> (std::istream& stream, Particles& particles) {
         stream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
         for (iterator i=particles.begin(); i!=particles.end(); ++i) { 
@@ -667,6 +628,7 @@ public:
         return stream;
     }
 
+    /// Boost serialization support
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
         traits_type::serialize(data,ar,version);
@@ -786,7 +748,10 @@ private:
     typedef typename traits_type::vector_int vector_int;
 
 
-    // gather the given update range using the order given 
+    /// Used by update_particles(). The parameters \p update_begin and \p update_end
+    /// are the same as given to update_particles(). This function reorders particles
+    /// within this range according to the \p order_start and \p order_end range, using
+    /// a gather.
     void reorder(iterator update_begin, iterator update_end, 
                  const typename vector_int::const_iterator& order_start,
                  const typename vector_int::const_iterator& order_end) {
@@ -827,31 +792,6 @@ private:
             }
             std::cout << std::endl;
         }
-
-
- 
-            /*
-            if (n_update > n/2) {
-                traits_type::resize(other_data,new_n);         
-                detail::scatter_if(begin(),end(),
-                        transform_iterator{my_index - alive_sum}
-                        get<alive>(begin()),
-                        traits_type::begin(other_data));
-                data.swap(other_data);
-                search.update_iterators(begin(),end());
-            } else {
-                const size_t i_update = alive_sum_start-alive_sum_begin;
-                if (other_data.size() < n_update) other_data.resize(n_update);
-                detail::scatter_if(begin()+i_update,end(),
-                        transform_iterator{my_index - alive_sum},
-                        get<alive>(begin()),
-                        traits_type::begin(other_data));
-                traits_type::resize(data,new_n);         
-                detail::copy(traits_type::begin(other_data),
-                             traits_type::begin(data)+i_update);
-                search.update_iterators(begin(),end());
-            }
-            */
     }
 
     template <class InputIterator>
@@ -873,16 +813,26 @@ private:
     }
 
 
+    /// Contains the particle data, implemented as a std::tuple of Level 0 vectors
     data_type data;
-    data_type other_data;
-    int next_id;
-    bool searchable;
-    uint32_t seed;
-    search_type search;
-    vector_int m_delete_indicies;
 
+    /// A secondary buffer to copy particle data to, if needed
+    data_type other_data;
+
+    /// The next available id number
+    int next_id;
+
+    /// Has neighbour searching been enabled? \see init_neighbour_search()
+    bool searchable;
+
+    /// The base random seed for the container
+    uint32_t seed;
+
+    /// The neighbourhood search data structure
+    search_type search;
 
 #ifdef HAVE_VTK
+    /// An vtkUnstructuredGrid to store particle data in (if neccessary)
     vtkSmartPointer<vtkUnstructuredGrid> cache_grid;
 #endif
 };

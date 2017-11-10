@@ -611,8 +611,6 @@ public:
 };
 
 
-
-
 /*
 template <typename query_iterator>
 iterator_range<query_iterator> 
