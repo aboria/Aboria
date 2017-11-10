@@ -201,9 +201,6 @@ after this index
 
 /*`
 
-
-
-
 [section Cell Lists]
 
 There are two cell list data structures within Aboria. Both divide the domain into 
