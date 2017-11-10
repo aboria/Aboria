@@ -38,3 +38,6 @@ website](https://martinjrobins.github.io/Aboria). If you are interested in
 contributing to Aboria, having trouble getting it working or just have a 
 question, send me an email at <martin.robinson@cs.ox.ac.uk> or create a
 GitHub issue or pull request.
+
+
+[![Join the chat at https://gitter.im/Aboria/Lobby](https://badges.gitter.im/Aboria/Lobby.svg)](https://gitter.im/Aboria/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
