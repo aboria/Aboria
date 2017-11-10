@@ -66,7 +66,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Note that each <code class="computeroutput"><span class="identifier">find</span></code> function
-      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp46669593636912-bb">Aboria::bucket_search_serial_query::find</a></code>)
+      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp45941895182560-bb">Aboria::bucket_search_serial_query::find</a></code>)
       returns an iterator to the particle set. If we try and search for an id which
       doesn't exist, then this iterator will point to the end of the particle vector
     </p>
@@ -76,7 +76,7 @@ MathJax.Hub.Config({
 <p>
       Finally, a note on performance: The id search is done by internally creating
       vectors of id and indicies ordered by id. Keeping these vectors ordered at
-      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46669595330896-bb">Aboria::Particles::update_positions</a></code>
+      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp45941896886176-bb">Aboria::Particles::update_positions</a></code>
       takes O(Nlog(N)). The call to <code class="computeroutput"><span class="identifier">find</span></code>
       performs a binary search on the ordered vectors, with takes O(log(N)) time.
     </p>
