@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../../index.html" title="Aboria 0.5">
-<link rel="up" href="../octtree.html#idp46781822209616" title="Description">
+<link rel="up" href="../octtree.html#idp46981969468032" title="Description">
 <link rel="prev" href="classify_node.html" title="Struct classify_node">
 <link rel="next" href="make_leaf.html" title="Struct make_leaf">
 <script type="text/x-mathjax-config">
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../octtree.html#idp46781822209616"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../octtree.html#idp46981969468032"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.octtree.classify_point"></a><div class="titlepage"></div>
@@ -47,28 +47,28 @@ MathJax.Hub.Config({
 
 <span class="keyword">struct</span> <a class="link" href="classify_point.html" title="Struct classify_point">classify_point</a> <span class="special">{</span>
   <span class="comment">// <a class="link" href="classify_point.html#Aboria.octtree.classify_pointconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="classify_point.html#idp47520802877472-bb"><span class="identifier">classify_point</span></a><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="classify_point.html#idp46182481614608-bb"><span class="identifier">classify_point</span></a><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="classify_point.html#idp47520802875424-bb">public member functions</a></span>
-  <span class="keyword">int</span> <a class="link" href="classify_point.html#idp47520802875824-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="classify_point.html#idp46182481612560-bb">public member functions</a></span>
+  <span class="keyword">int</span> <a class="link" href="classify_point.html#idp46182481612960-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="emphasis"><em><span class="identifier">unspecified</span></em></span> <span class="identifier">box</span><span class="special">;</span>
   <span class="keyword">int</span> <span class="identifier">max_level</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46781822406816"></a><h2>Description</h2>
+<a name="idp46981969665216"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp46781822407232"></a><h3>
+<a name="idp46981969665632"></a><h3>
 <a name="Aboria.octtree.classify_pointconstruct-copy-destruct"></a><code class="computeroutput">classify_point</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47520802877472-bb"></a><span class="identifier">classify_point</span><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span> b<span class="special">,</span> <span class="keyword">int</span> lvl<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46182481614608-bb"></a><span class="identifier">classify_point</span><span class="special">(</span><span class="emphasis"><em><span class="identifier">unspecified</span></em></span> b<span class="special">,</span> <span class="keyword">int</span> lvl<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46781822415264"></a><h3>
-<a name="idp47520802875424-bb"></a><code class="computeroutput">classify_point</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">int</span> <a name="idp47520802875824-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> p<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp46981969673664"></a><h3>
+<a name="idp46182481612560-bb"></a><code class="computeroutput">classify_point</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">int</span> <a name="idp46182481612960-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> p<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>
@@ -78,7 +78,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../octtree.html#idp46781822209616"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../octtree.html#idp46981969468032"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
