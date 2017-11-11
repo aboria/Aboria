@@ -209,7 +209,7 @@ particles within each box is close to a given value. Each particle in the contai
 
 For example, the following diagram illustrates a cell list data structure in two dimensions, shown as a regular array of grey squares each containing zero or more particles. The user wishes to find all the particles within a given euclidean distance around the red point. To accomplish this query efficiently, Aboria would then search all the red-shaded cells for particles that fall within the red circle.
 
-[$images/neighbour/cell_lists.svg] 
+[$images/neighbour/cell_lists.svg  [width 100%]  [align center]] 
 
 The first cell list data structure supports serial insertion of particles, and parallel
 queries. The relevant classes are [classref Aboria::bucket_search_serial] and [classref Aboria::bucket_search_serial_query]. This data structure can be selected on a per-particle-set basis, by setting the fourth template argument for [classref Aboria::Particles]. I.e.
