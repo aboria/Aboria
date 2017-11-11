@@ -242,7 +242,7 @@ are also local in space. The relevant classes are [classref Aboria::bucket_searc
 
 [section Fast Cell-list Neighbour Search]
 
-The two cell-list datastructures support an alternate neighbour search facility that can be faster than the typical Aboria search iterators described above. The key assumption of this fast search is that the regular cells have a width greater than or equal to two times the search radius, and that the same search (i.e. same radius) is to be performed for every single particle in the set. If we want to use the same search radius `radius` as before, we can ensure this is true by setting the `n_particles_in_leaf` arguement of the [memberref Aboria::Particles::init_neighbour_search] function to $n = N\frac{(2*radius)^D}{V}$, where $N$ is the total number of particles in the set, $V$ is the volume of the domain, and $D$ is the number of spatial dimensions. That is,
+The two cell-list datastructures support an alternate neighbour search facility that can be faster than the typical Aboria search iterators described above. The key assumption of this fast search is that the regular cells have a width greater than or equal to two times the search radius, and that the same search (i.e. same radius) is to be performed for every single particle in the set. If we want to use the same search radius `radius` as before, we can ensure this is true by setting the `n_particles_in_leaf` argument of the [memberref Aboria::Particles::init_neighbour_search] function to $n = N\frac{(radius)^D}{V}$, where $N$ is the total number of particles in the set, $V$ is the volume of the domain, and $D$ is the number of spatial dimensions. That is,
 
 */
 
