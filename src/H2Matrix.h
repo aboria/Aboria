@@ -57,6 +57,8 @@ class H2Matrix {
         child_iterator_vector_type
         >::type connectivity_type;
     
+    typedef typename Eigen::SparseMatrix<double,Eigen::Dynamic,Eigen::Dynamic sparse_matrix_type;
+    typedef typename Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic dense_matrix_type;
     typedef typename Expansions::p_vector_type p_vector_type;
     typedef typename Expansions::m_vector_type m_vector_type;
     typedef typename Expansions::l2p_matrix_type l2p_matrix_type;
@@ -101,6 +103,7 @@ class H2Matrix {
 
     const Query* m_query;
     const ColParticles* m_col_particles;
+    const size_t m_row_size;
 
 public:
 
@@ -108,7 +111,8 @@ public:
     H2Matrix(const RowParticles &row_particles, const ColParticles &col_particles, const Expansions& expansions):
         m_query(&col_particles.get_query()),
         m_expansions(expansions),
-        m_col_particles(&col_particles)
+        m_col_particles(&col_particles),
+        m_row_size(row_particles.size())
     {
         //generate h2 matrix 
         const size_t n = m_query->number_of_buckets();
@@ -193,7 +197,8 @@ public:
         m_weak_connectivity(matrix.m_weak_connectivity),
         m_query(matrix.m_query),
         m_expansions(matrix.m_expansions),
-        m_col_particles(matrix.m_col_particles)
+        m_col_particles(matrix.m_col_particles),
+        m_row_size(row_particles.size())
     {
         const size_t n = m_query->number_of_buckets();
         const bool row_equals_col = &row_particles == m_col_particles;
@@ -261,6 +266,71 @@ public:
                 }
             }
         }
+    }
+
+    /// Convert H2 Matrix to an extended sparse matrix
+    ///
+    /// This creates an Eigen sparse matrix A that can be applied to  
+    /// by the vector $[x W g]$ to produce $[y 0 0]$, i.e. $A*[x W g]' = [y 0 0]$, 
+    /// where $x$ and $y$ are the input/output vector, i.e. $y = H2Matrix*x$, and $W$ 
+    /// and $g$ are the multipole and local coefficients respectively.
+    ///
+    /// A is given by the block matrix representation:
+    ///
+    ///Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for hierarchical 
+    ///matrices based on their extended sparse form. 
+    ///Retrieved from http://arxiv.org/abs/1412.1253
+    ///
+    ///             |P2P  0     0    L2P| |x  |   |y|
+    /// A*[x W g] = |0   M2L    L2L  -I |*|W  | = |0|
+    ///             |0   M2M-I  0     0 | |g_n|   |0|
+    ///             |P2M  -I    0     0 | |g_l|   |0|
+    ///
+    /// where $g_l$ is the $g$ vector for every leaf of the tree, and $g_n$ is the 
+    /// remaining nodes. Note M2M = L2L'.
+    ///
+    sparse_matrix_type generate_extended_sparse_representation() const {
+
+        const size_t size_x = m_col_particles.size();
+        ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,"not using compile time m size");
+        const size_t size_W = m_W.size()*m_vector_type::RowsAtCompileTime;
+        const size_t size_g = m_g.size()*m_vector_type::RowsAtCompileTime;
+        const size_t n = size_x + size_W + size_g;
+
+        sparse_matrix_type A(n,n);
+        std::vector<int> reserve(n);
+
+        // sizes for first y columns
+        for (int i = 0; i < m_col_particles.size(); ++i) {
+            // how many direct neighbours + p2m
+            reserve[i] = 
+            
+        }
+
+
+
+        // vectors used to cache values
+    mutable m_vectors_type m_W;
+    mutable m_vectors_type m_g;
+    mutable p_vectors_type m_source_vector;
+    mutable p_vectors_type m_target_vector;
+
+    l2p_matrices_type m_l2p_matrices;
+    p2m_matrices_type m_p2m_matrices;
+    l2l_matrices_type m_l2l_matrices;
+    vector_of_p2p_matrices_type m_p2p_matrices;
+    vector_of_m2l_matrices_type m_m2l_matrices;
+    vector_of_indices_type m_row_indices;
+    vector_of_indices_type m_col_indices;
+
+    connectivity_type m_strong_connectivity; 
+    connectivity_type m_weak_connectivity; 
+
+
+    }
+
+    dense_matrix_type generate_dense_representation() const {
+        
     }
 
 private:
