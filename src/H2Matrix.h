@@ -58,6 +58,7 @@ class H2Matrix {
         >::type connectivity_type;
     
     typedef typename Eigen::SparseMatrix<double,Eigen::Dynamic,Eigen::Dynamic sparse_matrix_type;
+    typedef typename Eigen::Matrix<double,Eigen::Dynamic,1> column_vector_type;
     typedef typename Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic dense_matrix_type;
     typedef typename Expansions::p_vector_type p_vector_type;
     typedef typename Expansions::m_vector_type m_vector_type;
@@ -66,6 +67,7 @@ class H2Matrix {
     typedef typename Expansions::p2p_matrix_type p2p_matrix_type;
     typedef typename Expansions::l2l_matrix_type l2l_matrix_type;
     typedef typename Expansions::m2l_matrix_type m2l_matrix_type;
+    typedef typename traits_type::template vector_type<int>::type int_vector_type;
     typedef typename traits_type::template vector_type<p_vector_type>::type p_vectors_type;
     typedef typename traits_type::template vector_type<m_vector_type>::type m_vectors_type;
     typedef typename traits_type::template vector_type<l2p_matrix_type>::type l2p_matrices_type;
@@ -96,6 +98,8 @@ class H2Matrix {
     vector_of_indices_type m_row_indices;
     vector_of_indices_type m_col_indices;
 
+    int_vector_type m_ext_indicies;
+
     connectivity_type m_strong_connectivity; 
     connectivity_type m_weak_connectivity; 
 
@@ -125,6 +129,7 @@ public:
         m_m2l_matrices.resize(n);
         m_row_indices.resize(n);
         m_col_indices.resize(n);
+        m_ext_indicies.resize(n);
         m_source_vector.resize(n);
         m_target_vector.resize(n);
         m_l2p_matrices.resize(n);
@@ -132,6 +137,8 @@ public:
         m_p2p_matrices.resize(n);
         m_strong_connectivity.resize(n);
         m_weak_connectivity.resize(n);
+
+        
 
         // setup row and column indices
         if (!row_equals_col) {
@@ -163,6 +170,13 @@ public:
             }
         }
 
+        // create a vector of column indicies for extended matrix/vector 
+        detail::transform_exclusive_scan(m_source_vector.begin(),m_source_vector.end(),
+                                        m_ext_indicies.begin(),
+                                        [](const p_vector_type& i) { return i.size(); },
+                                         0,std::plus<int>());
+
+
         // downward sweep of tree to generate matrices
         LOG(2,"\tgenerating matrices...");
         for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
@@ -185,6 +199,7 @@ public:
         m_W(matrix.m_W.size()),
         m_g(matrix.m_g.size()),
         m_source_vector(matrix.m_source_vector),
+        m_ext_indicies(matrix.m_ext_indicies),
         //m_target_vector(matrix.m_target_vector), \\going to redo
         //m_l2p_matrices(matrix.m_l2p_matrices),     \\going to redo
         m_p2m_matrices(matrix.m_p2m_matrices),
@@ -289,50 +304,273 @@ public:
     /// where $g_l$ is the $g$ vector for every leaf of the tree, and $g_n$ is the 
     /// remaining nodes. Note M2M = L2L'.
     ///
-    sparse_matrix_type generate_extended_sparse_representation() const {
+    sparse_matrix_type gen_extended_matrix() const {
 
         const size_t size_x = m_col_particles.size();
         ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,"not using compile time m size");
-        const size_t size_W = m_W.size()*m_vector_type::RowsAtCompileTime;
-        const size_t size_g = m_g.size()*m_vector_type::RowsAtCompileTime;
+        const size_t vector_size = m_vector_type::RowsAtCompileTime;
+
+        const size_t size_W = m_W.size()*vector_size;
+        const size_t size_g = m_g.size()*vector_size;
         const size_t n = size_x + size_W + size_g;
 
-        sparse_matrix_type A(n,n);
-        std::vector<int> reserve(n);
+        std::vector<int> reserve(n,0);
 
-        // sizes for first y columns
-        for (int i = 0; i < m_col_particles.size(); ++i) {
-            // how many direct neighbours + p2m
-            reserve[i] = 
-            
+        // sizes for first x columns
+        auto reserve0 = std::begin(reserve);
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            const size_t n = m_source_vector[i].size();
+            // p2m
+            std::transform(reserve0,reserve0+n,
+                    [](const int count){ return count+vector_size; });
+            // p2p
+            for (int j = 0; j < m_strong_connectivity[i].size(); ++j) {
+                std::transform(reserve0,reserve0+n,
+                    [](const int count){ return count+m_target_vector[j].size(); });
+            }
+            reserve0 += m_source_vector[i].size();
         }
 
 
 
-        // vectors used to cache values
-    mutable m_vectors_type m_W;
-    mutable m_vectors_type m_g;
-    mutable p_vectors_type m_source_vector;
-    mutable p_vectors_type m_target_vector;
+        // sizes for W columns
+        // -I
+        std::transform(reserve0,reserve0+size_W,[](const int count){ return count+1; });
+        // m2m
+        for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
+            count_m2m_rows(ci,reserve0);
+        }
+        // m2l
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                    [](const int count){ return count+vector_size; });
+            }
+        }
 
-    l2p_matrices_type m_l2p_matrices;
-    p2m_matrices_type m_p2m_matrices;
-    l2l_matrices_type m_l2l_matrices;
-    vector_of_p2p_matrices_type m_p2p_matrices;
-    vector_of_m2l_matrices_type m_m2l_matrices;
-    vector_of_indices_type m_row_indices;
-    vector_of_indices_type m_col_indices;
+        // sizes for g columns
+        reserve0 += size_W;
+        for (auto& bucket: m_query->get_subtree()) {
+            if (m_query->is_leaf_node(bucket)) { // leaf node
+                // L2P and I
+                const size_t i = m_query->get_bucket_index(bucket); 
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                    [](const int count){ return count+m_target_vector[i].size()+1; });
+            } else {
+                //L2L 
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                    [](const int count){ return count+vector_size; });
+            }
+        }
 
-    connectivity_type m_strong_connectivity; 
-    connectivity_type m_weak_connectivity; 
+        // create matrix and reserve space
+        sparse_matrix_type A(n,n);
+        A.reserve(reserve);
 
-
-    }
-
-    dense_matrix_type generate_dense_representation() const {
         
+            
+        // fill in P2P
+        size_t row_index = 0;
+        // loop over rows, filling in columns as we go
+        for (int i = 0; i < m_target_vector.size(); ++i) {
+            // loop over n particles (the n rows in this bucket)
+            for (int p = 0; p < m_target_vector[i].size(); ++p,++row_index) {
+                for (int j = 0; j < m_strong_connectivity[i].size(); ++j) {
+                    size_t source_index = m_query->get_bucket_index(*m_strong_connectivity[i][j]);
+                    // p2p - loop over number of source particles (the columns)
+                    for (int sp = 0; sp < m_source_vector[source_index].size(); ++sp) {
+                        A.insert(row_index,m_ext_indicies[source_index]+sp) = m_p2p_matrices[i][j](p,sp);
+                    }
+                }
+            }
+        }
+        // fill in P2M
+        // loop over cols this time
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            // loop over n particles (the n cols in this bucket)
+            for (int p = 0; p < m_target_vector[i].size(); ++p) {
+                // p2m - loop over size of multipoles (the rows)
+                const size_t row_index = size_x + size_W + i*vector_size;
+                for (int m = 0; m < vector_size; ++m) {
+                    A.insert(row_index + m, m_ext_indicies[i]+p) = m_p2m_matrices[i](m,p);
+                }
+                
+            }
+        }
+
+    
+        // fill in W columns
+        // m2l
+        // loop over rows
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
+                const size_t row_index = size_x + i*vector_size;
+                const size_t col_index = size_x + 
+                    m_query->get_bucket_index(*m_weak_connectivity[i][j])*vector_size;
+                for (int im = 0; im < vector_size; ++im) {
+                    for (int jm = 0; jm < vector_size; ++jm) {
+                        A.insert(row_index+im, col_index+jm) = 
+                                                    m_m2l_matrices[i][j](im,jm);
+                    }
+                }
+            }
+        }
+        // m2m - I
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            const size_t row_index = size_x + size_W + i*vector_size;
+            const size_t col_index = row_index;
+            if (m_source_vector[i].size()==0) { // leaf node
+                for (int im = 0; im < vector_size; ++im) {
+                    A.insert(row_index+im, col_index+im) = -1;
+                }
+            } else {
+                for (int im = 0; im < vector_size; ++im) {
+                    for (int jm = 0; jm < vector_size; ++jm) {
+                        if (im == jm) {
+                            A.insert(row_index+im, col_index+jm) = m_l2l_matrices[i](jm,im)-1;
+                        } else {
+                            A.insert(row_index+im, col_index+jm) = m_l2l_matrices[i](jm,im);
+                        }
+                    }
+                }
+            }
+        }
+
+    ///             |P2P  0     0    L2P| |x  |   |y|
+    /// A*[x W g] = |0   M2L    L2L  -I |*|W  | = |0|
+    ///             |0   M2M-I  0     0 | |g_n|   |0|
+    ///             |P2M  -I    0     0 | |g_l|   |0|
+    ///
+    ///             |P2P  0   C|   |x|   |y|
+    /// A*[x W g] = |0   M2L  D| * |W| = |0|
+    ///             |B   0    0|   |g|   |0|
+
+
+
+
+        // fill in g columns
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            const size_t col_index = size_x + size_W + i*vector_size;
+            if (m_source_vector[i].size()==0) { // leaf node
+                // L2P
+                size_t row_index = m_ext_indicies[i];
+                for (int p = 0; p < m_source_vector[i].size(); ++p) {
+                    for (int m = 0; m < vector_size; ++m) {
+                        A.insert(row_index+p, col_index+m) = m_l2p_matrices[i](p,m);
+                    }
+                }
+                // -I
+                row_index = size_x + i*vector_size;
+                for (int m = 0; m < vector_size; ++m) {
+                    A.insert(row_index+m, col_index+m) = -1;
+                }
+            } else { // non-leaf node
+                //L2L
+                const size_t row_index = size_x + i*vector_size;
+                for (int mi = 0; mi < vector_size; ++mi) {
+                    for (int mj = 0; mj < vector_size; ++mj) {
+                        A.insert(row_index+mi, col_index+mj) = m_l2l_matrices[i](mi,mj);
+                    }
+                }
+            }
+        }
+
+        A.makeCompressed();
+
     }
 
+    template <typename VectorTypeSource>
+    column_vector_type gen_extended_vector(const VectorTypeSource& source_vector) const {
+        const size_t size_x = source_vector.size();
+        ASSERT(size_x == m_col_particles.size(),"source vector not same size as column particles");
+        const size_t vector_size = m_vector_type::RowsAtCompileTime;
+        const size_t size_W = m_W.size()*vector_size;
+        const size_t size_g = m_g.size()*vector_size;
+        const size_t n = size_x + size_W + size_g;
+
+        column_vector_type extended_vector(n);
+
+        // x
+        for (auto& bucket: m_query->get_subtree()) {
+            if (m_query->is_leaf_node(bucket)) { // leaf node
+                const size_t index = m_query->get_bucket_index(bucket); 
+                for (int i = 0; i < m_col_indices[index].size(); ++i) {
+                    extended_vector[m_ext_indicies[index]+i] = 
+                                                source_vector[m_col_indices[index][i]];
+                }
+            }
+        }
+        
+        // zero remainder
+        for (int i = size_x; i < n; ++i) {
+            extended_vector[i] = 0;
+            
+        }
+
+        return extended_vector;
+    }
+
+    template <typename VectorTypeSource>
+    column_vector_type get_internal_state() const {
+        const size_t size_x = source_vector.size();
+        ASSERT(size_x == m_col_particles.size(),"source vector not same size as column particles");
+        const size_t vector_size = m_vector_type::RowsAtCompileTime;
+        const size_t size_W = m_W.size()*vector_size;
+        const size_t size_g = m_g.size()*vector_size;
+        const size_t n = size_x + size_W + size_g;
+
+        column_vector_type extended_vector(n);
+
+        // x
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            for (int p = 0; p < m_source_vector[i].size(); ++p) {
+                extended_vector[m_ext_indicies[i]+p] = m_source_vector[i][p]; 
+            }
+        }
+
+        // W
+        for (int i = 0; i < m_W.size(); ++i) {
+            for (int m = 0; m < vector_size; ++m) {
+                extended_vector[size_x+i*vector_size + m] = m_W[i][m];
+            }
+            
+        }
+
+        // g
+        for (int i = 0; i < m_g.size(); ++i) {
+            for (int m = 0; m < vector_size; ++m) {
+                extended_vector[size_x + size_W + i*vector_size + m] = m_g[i][m];
+            }
+        }
+
+        return extended_vector;
+    }
+
+    column_vector_type filter_extended_vector(
+            const column_vector_type& extended_vector) const {
+        const size_t size_x = m_col_particles.size();
+        const size_t vector_size = m_vector_type::RowsAtCompileTime;
+        const size_t size_W = m_W.size()*vector_size;
+        const size_t size_g = m_g.size()*vector_size;
+        const size_t n = size_x + size_W + size_g;
+
+        column_vector_type filtered_vector(size_x);
+
+        // x
+        for (auto& bucket: m_query->get_subtree()) {
+            if (m_query->is_leaf_node(bucket)) { // leaf node
+                const size_t index = m_query->get_bucket_index(bucket); 
+                for (int i = 0; i < m_row_indices[index].size(); ++i) {
+                    filtered_vector[m_row_indices[index][i]] = 
+                                            extended_vector[m_ext_indicies[index]+i];
+                }
+            }
+        }
+
+        return filtered_vector;
+    }
+
+        
 private:
     template <typename RowParticles>
     void generate_matrices(

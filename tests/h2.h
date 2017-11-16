@@ -127,6 +127,85 @@ public:
     }
 
     template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>
+    void helper_extended_matrix(size_t N) {
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+        typedef Vector<bool,D> bool_d;
+        const double tol = 1e-10;
+        // randomly generate a bunch of positions over a range 
+        const double pos_min = 0;
+        const double pos_max = 1;
+        std::uniform_real_distribution<double> U(pos_min,pos_max);
+        generator_type generator(time(NULL));
+        auto gen = std::bind(U, generator);
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+        const int num_particles_per_bucket = 50;
+
+        typedef Particles<std::tuple<source,target_manual,target_h2>,D,StorageVector,SearchMethod> ParticlesType;
+        typedef typename ParticlesType::position position;
+        ParticlesType particles(N);
+        for (int i=0; i<N; i++) {
+            for (int d=0; d<D; ++d) {
+                get<position>(particles)[i][d] = gen();
+                get<source>(particles)[i] = gen();
+            }
+        }
+        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false),num_particles_per_bucket);
+
+        // generate a source vector using a smooth cosine
+        auto source_fn = [&](const double_d &p) {
+            //return (p-double_d(0)).norm();
+            double ret=1.0;
+            const double scale = 2.0*detail::PI/(pos_max-pos_min); 
+            for (int i=0; i<D; i++) {
+                ret *= cos((p[i]-pos_min)*scale);
+            }
+            return ret/N;
+        };
+        std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
+                       std::begin(get<source>(particles)), source_fn);
+
+        const double c = 0.01;
+        auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
+            return std::sqrt(dx.squaredNorm() + c); 
+        };
+
+        auto h2_matrix = make_h2_matrix(particles,particles,
+                make_black_box_expansion<dimension,N>(kernel));
+        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
+
+        auto internal_extended_vector = h2_matrix.get_internal_state();
+        auto extended_vector = h2_matrix.gen_extended_matrix(get<source>(particles));
+
+        // check x in internal state and generated extended vector are the same
+        for (int i = 0; i < particles.size(); ++i) {
+            TS_ASSERT_DELTA(extended_vector[i],internal_extended_vector[i],1e-20);
+        }
+        // check rest of generated exteded vector is zero
+        for (int i = particles.size(); i < extended_vector.size(); ++i) {
+            TS_ASSERT_DELTA(extended_vector[i],0,1e-20);
+        }
+        
+        auto result = h2_matrix.gen_extended_matrix()*internal_extended_vector;
+
+        // check rest of result is 0
+        for (int i = particles.size(); i < result.rows(); ++i) {
+            TS_ASSERT_DELTA(result(i),0,1e-10);
+        }
+
+        // check filtered result is same as target_h2
+        auto result_filtered = h2_matrix.filter_extended_vector(result);
+        for (int i = 0; i < particles.size(); ++i) {
+            TS_ASSERT_DELTA(result_filtered(i),get<target_h2>(particles)[i],1e-10);
+        }
+
+    }
+         
+     
+
+    template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>
     void helper_fast_methods(size_t N) {
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
@@ -352,6 +431,7 @@ public:
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
     }
 #endif
+
         
     void test_fmm_matrix_operators() {
 #ifdef HAVE_EIGEN
@@ -365,10 +445,14 @@ public:
 #endif
     }
 
-    
     void test_fast_methods_bucket_search_serial(void) {
 #ifdef HAVE_EIGEN
-        const size_t N = 10000;
+        const size_t N = 100;
+        std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 1D..." << std::endl;
+        helper_extended_matrix<1,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 2D..." << std::endl;
+        helper_extended_matrix<2,std::vector,bucket_search_serial>(N);
+
         std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
