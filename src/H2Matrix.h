@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define H2_MATRIX_H_
 
 #include "detail/FastMultipoleMethod.h"
+#include <Eigen/SparseCore>
 
 namespace Aboria {
 
@@ -57,9 +58,9 @@ class H2Matrix {
         child_iterator_vector_type
         >::type connectivity_type;
     
-    typedef typename Eigen::SparseMatrix<double,Eigen::Dynamic,Eigen::Dynamic sparse_matrix_type;
+    typedef typename Eigen::SparseMatrix<double> sparse_matrix_type;
     typedef typename Eigen::Matrix<double,Eigen::Dynamic,1> column_vector_type;
-    typedef typename Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic dense_matrix_type;
+    typedef typename Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> dense_matrix_type;
     typedef typename Expansions::p_vector_type p_vector_type;
     typedef typename Expansions::m_vector_type m_vector_type;
     typedef typename Expansions::l2p_matrix_type l2p_matrix_type;
@@ -306,7 +307,7 @@ public:
     ///
     sparse_matrix_type gen_extended_matrix() const {
 
-        const size_t size_x = m_col_particles.size();
+        const size_t size_x = m_col_particles->size();
         ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,"not using compile time m size");
         const size_t vector_size = m_vector_type::RowsAtCompileTime;
 
@@ -321,12 +322,13 @@ public:
         for (int i = 0; i < m_source_vector.size(); ++i) {
             const size_t n = m_source_vector[i].size();
             // p2m
-            std::transform(reserve0,reserve0+n,
+            std::transform(reserve0,reserve0+n,reserve0,
                     [](const int count){ return count+vector_size; });
             // p2p
             for (int j = 0; j < m_strong_connectivity[i].size(); ++j) {
-                std::transform(reserve0,reserve0+n,
-                    [](const int count){ return count+m_target_vector[j].size(); });
+                const size_t target_size = m_target_vector.size();
+                std::transform(reserve0,reserve0+n,reserve0,
+                    [target_size](const int count){ return count+target_size; });
             }
             reserve0 += m_source_vector[i].size();
         }
@@ -334,16 +336,29 @@ public:
 
 
         // sizes for W columns
-        // -I
-        std::transform(reserve0,reserve0+size_W,[](const int count){ return count+1; });
-        // m2m
-        for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
-            count_m2m_rows(ci,reserve0);
+        reserve0 += size_x;
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            const size_t row_index = size_x + size_W + i*vector_size;
+            const size_t col_index = row_index;
+            if (m_source_vector[i].size()==0) { // leaf node
+                // -I
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                               reserve0+i*vector_size,
+                    [](const int count){ return count+1; });
+            } else { // non-leaf node
+                // m2m-I
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                               reserve0+i*vector_size,
+                    [](const int count){ return count+vector_size; });
+                
+            }
         }
+        
         // m2l
         for (int i = 0; i < m_source_vector.size(); ++i) {
             for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
                 std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                               reserve0+i*vector_size,
                     [](const int count){ return count+vector_size; });
             }
         }
@@ -354,20 +369,23 @@ public:
             if (m_query->is_leaf_node(bucket)) { // leaf node
                 // L2P and I
                 const size_t i = m_query->get_bucket_index(bucket); 
+                const size_t target_size = m_target_vector[i].size()+1;
                 std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
-                    [](const int count){ return count+m_target_vector[i].size()+1; });
+                               reserve0+i*vector_size,
+                    [&](const int count){ return count+target_size; });
             } else {
                 //L2L 
+                const size_t i = m_query->get_bucket_index(bucket); 
                 std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                               reserve0+i*vector_size,
                     [](const int count){ return count+vector_size; });
             }
         }
 
+        LOG(2,"creating "<<n<<"x"<<n<<" extended sparse matrix");
         // create matrix and reserve space
         sparse_matrix_type A(n,n);
         A.reserve(reserve);
-
-        
             
         // fill in P2P
         size_t row_index = 0;
@@ -436,18 +454,6 @@ public:
             }
         }
 
-    ///             |P2P  0     0    L2P| |x  |   |y|
-    /// A*[x W g] = |0   M2L    L2L  -I |*|W  | = |0|
-    ///             |0   M2M-I  0     0 | |g_n|   |0|
-    ///             |P2M  -I    0     0 | |g_l|   |0|
-    ///
-    ///             |P2P  0   C|   |x|   |y|
-    /// A*[x W g] = |0   M2L  D| * |W| = |0|
-    ///             |B   0    0|   |g|   |0|
-
-
-
-
         // fill in g columns
         for (int i = 0; i < m_source_vector.size(); ++i) {
             const size_t col_index = size_x + size_W + i*vector_size;
@@ -477,12 +483,14 @@ public:
 
         A.makeCompressed();
 
+        return A;
+
     }
 
     template <typename VectorTypeSource>
     column_vector_type gen_extended_vector(const VectorTypeSource& source_vector) const {
         const size_t size_x = source_vector.size();
-        ASSERT(size_x == m_col_particles.size(),"source vector not same size as column particles");
+        ASSERT(size_x == m_col_particles->size(),"source vector not same size as column particles");
         const size_t vector_size = m_vector_type::RowsAtCompileTime;
         const size_t size_W = m_W.size()*vector_size;
         const size_t size_g = m_g.size()*vector_size;
@@ -510,10 +518,9 @@ public:
         return extended_vector;
     }
 
-    template <typename VectorTypeSource>
     column_vector_type get_internal_state() const {
-        const size_t size_x = source_vector.size();
-        ASSERT(size_x == m_col_particles.size(),"source vector not same size as column particles");
+        const size_t size_x = m_ext_indicies.back()+m_source_vector.back().size();
+        ASSERT(size_x == m_col_particles->size(),"source vector not same size as column particles");
         const size_t vector_size = m_vector_type::RowsAtCompileTime;
         const size_t size_W = m_W.size()*vector_size;
         const size_t size_g = m_g.size()*vector_size;
@@ -548,7 +555,7 @@ public:
 
     column_vector_type filter_extended_vector(
             const column_vector_type& extended_vector) const {
-        const size_t size_x = m_col_particles.size();
+        const size_t size_x = m_col_particles->size();
         const size_t vector_size = m_vector_type::RowsAtCompileTime;
         const size_t size_W = m_W.size()*vector_size;
         const size_t size_g = m_g.size()*vector_size;

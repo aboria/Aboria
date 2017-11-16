@@ -172,12 +172,12 @@ public:
         };
 
         auto h2_matrix = make_h2_matrix(particles,particles,
-                make_black_box_expansion<dimension,N>(kernel));
+                                        make_black_box_expansion<D,2>(kernel));
         std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
         h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
 
         auto internal_extended_vector = h2_matrix.get_internal_state();
-        auto extended_vector = h2_matrix.gen_extended_matrix(get<source>(particles));
+        auto extended_vector = h2_matrix.gen_extended_vector(get<source>(particles));
 
         // check x in internal state and generated extended vector are the same
         for (int i = 0; i < particles.size(); ++i) {
