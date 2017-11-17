@@ -326,21 +326,28 @@ public:
                     [](const int count){ return count+vector_size; });
             // p2p
             for (int j = 0; j < m_strong_connectivity[i].size(); ++j) {
-                const size_t target_size = m_target_vector.size();
+                size_t index = m_query->get_bucket_index(*m_strong_connectivity[i][j]);
+                const size_t target_size = m_target_vector[index].size();
                 std::transform(reserve0,reserve0+n,reserve0,
                     [target_size](const int count){ return count+target_size; });
             }
             reserve0 += m_source_vector[i].size();
         }
 
-
-
         // sizes for W columns
-        reserve0 += size_x;
+        // m2l
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                               reserve0+i*vector_size,
+                    [](const int count){ return count+vector_size; });
+            }
+        }
+        // m2m-I or -I
         for (int i = 0; i < m_source_vector.size(); ++i) {
             const size_t row_index = size_x + size_W + i*vector_size;
             const size_t col_index = row_index;
-            if (m_source_vector[i].size()==0) { // leaf node
+            if (m_source_vector[i].size()>0) { // leaf node
                 // -I
                 std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
                                reserve0+i*vector_size,
@@ -354,25 +361,16 @@ public:
             }
         }
         
-        // m2l
-        for (int i = 0; i < m_source_vector.size(); ++i) {
-            for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
-                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
-                               reserve0+i*vector_size,
-                    [](const int count){ return count+vector_size; });
-            }
-        }
-
         // sizes for g columns
         reserve0 += size_W;
         for (auto& bucket: m_query->get_subtree()) {
             if (m_query->is_leaf_node(bucket)) { // leaf node
                 // L2P and I
                 const size_t i = m_query->get_bucket_index(bucket); 
-                const size_t target_size = m_target_vector[i].size()+1;
+                const size_t target_size = m_target_vector[i].size();
                 std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
                                reserve0+i*vector_size,
-                    [&](const int count){ return count+target_size; });
+                    [&](const int count){ return count+target_size+1; });
             } else {
                 //L2L 
                 const size_t i = m_query->get_bucket_index(bucket); 
@@ -383,6 +381,13 @@ public:
         }
 
         LOG(2,"creating "<<n<<"x"<<n<<" extended sparse matrix");
+        LOG(2,"note: vector_size = "<<vector_size);
+        LOG(2,"note: size_W is = "<<size_W);
+        LOG(2,"note: size_g is = "<<size_g);
+        for (int i = 0; i < n; ++i) {
+            LOG(2,"for column "<<i<<", reserving "<<reserve[i]<<" rows");
+        }
+
         // create matrix and reserve space
         sparse_matrix_type A(n,n);
         A.reserve(reserve);
@@ -433,11 +438,11 @@ public:
                 }
             }
         }
-        // m2m - I
+        // m2m - I or -I
         for (int i = 0; i < m_source_vector.size(); ++i) {
-            const size_t row_index = size_x + size_W + i*vector_size;
+            const size_t row_index = size_x + i*vector_size;
             const size_t col_index = row_index;
-            if (m_source_vector[i].size()==0) { // leaf node
+            if (m_source_vector[i].size() > 0) { // leaf node
                 for (int im = 0; im < vector_size; ++im) {
                     A.insert(row_index+im, col_index+im) = -1;
                 }
@@ -457,7 +462,7 @@ public:
         // fill in g columns
         for (int i = 0; i < m_source_vector.size(); ++i) {
             const size_t col_index = size_x + size_W + i*vector_size;
-            if (m_source_vector[i].size()==0) { // leaf node
+            if (m_source_vector[i].size() > 0) { // leaf node
                 // L2P
                 size_t row_index = m_ext_indicies[i];
                 for (int p = 0; p < m_source_vector[i].size(); ++p) {
@@ -482,6 +487,19 @@ public:
         }
 
         A.makeCompressed();
+
+#ifndef NDEBUG
+        for (int i = 0; i < n; ++i) {
+            size_t count = 0;
+            std::cout << "column "<<i<<": values are ";
+            for (sparse_matrix_type::InnerIterator it(A,i); it ;++it) {
+                std::cout << it.value() <<" ";
+                count++;
+            }
+            std::cout << "column end, with "<<count<<" values" << std::endl;
+            ASSERT(count == reserve[i], "reserved size and final count do not agree");
+        }
+#endif
 
         return A;
 
