@@ -381,11 +381,11 @@ public:
         }
 
         LOG(2,"creating "<<n<<"x"<<n<<" extended sparse matrix");
-        LOG(2,"note: vector_size = "<<vector_size);
-        LOG(2,"note: size_W is = "<<size_W);
-        LOG(2,"note: size_g is = "<<size_g);
+        LOG(3,"note: vector_size = "<<vector_size);
+        LOG(3,"note: size_W is = "<<size_W);
+        LOG(3,"note: size_g is = "<<size_g);
         for (int i = 0; i < n; ++i) {
-            LOG(2,"for column "<<i<<", reserving "<<reserve[i]<<" rows");
+            LOG(4,"for column "<<i<<", reserving "<<reserve[i]<<" rows");
         }
 
         // create matrix and reserve space
@@ -411,7 +411,7 @@ public:
         // loop over cols this time
         for (int i = 0; i < m_source_vector.size(); ++i) {
             // loop over n particles (the n cols in this bucket)
-            for (int p = 0; p < m_target_vector[i].size(); ++p) {
+            for (int p = 0; p < m_source_vector[i].size(); ++p) {
                 // p2m - loop over size of multipoles (the rows)
                 const size_t row_index = size_x + size_W + i*vector_size;
                 for (int m = 0; m < vector_size; ++m) {
@@ -428,20 +428,19 @@ public:
         for (int i = 0; i < m_source_vector.size(); ++i) {
             for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
                 const size_t row_index = size_x + i*vector_size;
-                const size_t col_index = size_x + 
-                    m_query->get_bucket_index(*m_weak_connectivity[i][j])*vector_size;
+                const size_t index = m_query->get_bucket_index(*m_weak_connectivity[i][j]);
+                const size_t col_index = size_x + index*vector_size;
                 for (int im = 0; im < vector_size; ++im) {
                     for (int jm = 0; jm < vector_size; ++jm) {
-                        A.insert(row_index+im, col_index+jm) = 
-                                                    m_m2l_matrices[i][j](im,jm);
+                        A.insert(row_index+im, col_index+jm) = m_m2l_matrices[index][i](im,jm);
                     }
                 }
             }
         }
         // m2m - I or -I
         for (int i = 0; i < m_source_vector.size(); ++i) {
-            const size_t row_index = size_x + i*vector_size;
-            const size_t col_index = row_index;
+            const size_t row_index = size_x + size_W + i*vector_size;
+            const size_t col_index = size_x + i*vector_size;
             if (m_source_vector[i].size() > 0) { // leaf node
                 for (int im = 0; im < vector_size; ++im) {
                     A.insert(row_index+im, col_index+im) = -1;
@@ -465,7 +464,7 @@ public:
             if (m_source_vector[i].size() > 0) { // leaf node
                 // L2P
                 size_t row_index = m_ext_indicies[i];
-                for (int p = 0; p < m_source_vector[i].size(); ++p) {
+                for (int p = 0; p < m_target_vector[i].size(); ++p) {
                     for (int m = 0; m < vector_size; ++m) {
                         A.insert(row_index+p, col_index+m) = m_l2p_matrices[i](p,m);
                     }
@@ -491,12 +490,9 @@ public:
 #ifndef NDEBUG
         for (int i = 0; i < n; ++i) {
             size_t count = 0;
-            std::cout << "column "<<i<<": values are ";
             for (sparse_matrix_type::InnerIterator it(A,i); it ;++it) {
-                std::cout << it.value() <<" ";
                 count++;
             }
-            std::cout << "column end, with "<<count<<" values" << std::endl;
             ASSERT(count == reserve[i], "reserved size and final count do not agree");
         }
 #endif
@@ -545,26 +541,33 @@ public:
         const size_t n = size_x + size_W + size_g;
 
         column_vector_type extended_vector(n);
+        LOG(2,"get_internal_state:");
 
         // x
+        LOG(4,"x");
         for (int i = 0; i < m_source_vector.size(); ++i) {
             for (int p = 0; p < m_source_vector[i].size(); ++p) {
                 extended_vector[m_ext_indicies[i]+p] = m_source_vector[i][p]; 
+                LOG(4,"row "<<m_ext_indicies[i]+p<<" value "<<extended_vector[m_ext_indicies[i]+p]);
             }
         }
 
         // W
+        LOG(4,"W");
         for (int i = 0; i < m_W.size(); ++i) {
             for (int m = 0; m < vector_size; ++m) {
                 extended_vector[size_x+i*vector_size + m] = m_W[i][m];
+                LOG(4,"row "<<size_x+i*vector_size+m<<" value "<<extended_vector[size_x+i*vector_size + m]);
             }
             
         }
 
         // g
+        LOG(4,"g");
         for (int i = 0; i < m_g.size(); ++i) {
             for (int m = 0; m < vector_size; ++m) {
                 extended_vector[size_x + size_W + i*vector_size + m] = m_g[i][m];
+                LOG(4,"row "<<size_x + size_W + i*vector_size + m<<" value "<<extended_vector[size_x + size_W + i*vector_size + m]);
             }
         }
 
