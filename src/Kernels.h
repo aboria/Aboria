@@ -94,6 +94,10 @@ namespace Aboria {
             return m_col_particles;
         }
 
+        const function_type& get_kernel_function() const {
+            return m_function;
+        }
+
         const ColParticles& get_col_particles() const {
             return m_col_particles;
         }

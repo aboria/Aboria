@@ -40,6 +40,217 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+namespace detail {
+    template<typename Function, 
+             typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
+    void apply_function_to_diagonal_blocks(Function& f, 
+                             Dest& y, 
+                             const MatrixReplacement<NI,NJ,Blocks>& lhs, 
+                             const Rhs& rhs,
+                             std::integral_constant<int,NI>) {}
+
+    template<typename Function,
+             typename Dest, unsigned int NI, unsigned int NJ, typename Blocks>
+    void apply_function_to_diagonal_blocks(Function& f, 
+                             const MatrixReplacement<NI,NJ,Blocks>& mat,
+                             std::integral_constant<int,NI>) {}
+
+
+    template<typename Function, 
+             typename Dest, 
+             unsigned int NI, 
+             unsigned int NJ, 
+             typename Blocks, 
+             typename Rhs, int I>
+    void apply_function_to_diagonal_blocks(Function& f,
+                                        Dest& x, 
+                                        const MatrixReplacement<NI,NJ,Blocks>& mat, 
+                                        const Rhs& b, std::integral_constant<int,I>) {
+        f(x.segment(mat.template start_row<I>(),mat.template size_row<I>()),
+          b.segment(mat.template start_col<I>(),mat.template size_col<I>()),
+          std::get<I*NJ+I>(mat.m_blocks));
+        apply_unpack_blocks(f,x,mat,b,std::integral_constant<int,I+1>());
+    }
+
+    template<typename Function, 
+             unsigned int NI, 
+             unsigned int NJ, 
+             typename Blocks, 
+             int I>
+    void apply_function_to_diagonal_blocks(Function& f,
+                                        const MatrixReplacement<NI,NJ,Blocks>& mat, 
+                                        std::integral_constant<int,I>) {
+        f(std::get<I*NJ+I>(mat.m_blocks));
+        apply_unpack_blocks(f,mat,std::integral_constant<int,I+1>());
+    }
+
+    template<typename Function, typename Dest,
+             unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
+    void apply_function_to_diagonal_blocks(Function& function,
+                                        Dest& x, 
+                                        const MatrixReplacement<NI,NJ,Blocks>& mat, 
+                                        const Rhs& b) {
+        apply_function_to_diagonal_blocks(function,x,mat,b,std::integral_constant<int,0>());
+    }
+
+    template<typename Function, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
+    void apply_function_to_diagonal_blocks(Function& function,
+                                        const MatrixReplacement<NI,NJ,Blocks>& mat) {
+        apply_function_to_diagonal_blocks(function,mat,std::integral_constant<int,0>());
+    }
+}
+
+template <unsigned int ReducedOrder, 
+          typename InnerPreconditioner=Eigen::IncompleteLUT<double>,
+          typename IterativeSolver=Eigen::GMRES<Eigen::SparseMatrix<double>,
+                                                InnerPreconditioner>>
+class ExtMatrixPreconditioner {
+    typedef double Scalar;
+    typedef size_t Index;
+    typedef Eigen::SparseMatrix<Scalar> sparse_matrix_type;
+    typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> vector_type;
+    typedef IterativeSolver solver_type;
+    Index m_rows;
+    Index m_cols;
+    std::vector<solver_type> m_solvers;
+    std::vector<sparse_matrix_type> m_ext_matrices;
+
+  public:
+    typedef typename vector_type::StorageIndex StorageIndex;
+    enum {
+      ColsAtCompileTime = Eigen::Dynamic,
+      MaxColsAtCompileTime = Eigen::Dynamic
+    };
+
+    ExtMatrixPreconditioner()
+    {}
+
+    template<typename MatType>
+    explicit ExtMatrixPreconditioner(const MatType& mat) {
+      compute(mat);
+    }
+
+    Index rows() const { return m_rows; }
+    Index cols() const { return m_cols; }
+
+    template<unsigned int NI, unsigned int NJ, typename Blocks>
+    ExtMatrixPreconditioner& analyzePattern(const MatrixReplacement<NI,NJ,Blocks>& mat)
+    {
+
+        LOG(2,"ExtMatrixPreconditioner: analyze pattern");
+        m_rows = mat.rows();
+        m_cols = mat.cols();
+
+        return *this;
+    }
+    
+
+    struct factorize_block {
+        std::vector<solver_type> &m_solvers; 
+        std::vector<sparse_matrix_type> &m_h2_matrices; 
+
+        factorize_block(std::vector<solver_type>& solvers,
+                        std::vector<sparse_matrix_type>& mats):
+            m_solvers(solvers),m_ext_matrices(mats) {}
+
+        template <typename Dest, typename Source, typename Block>
+        void operator()(const Block& block) {
+            m_solvers.resize(m_solvers.size()+1);
+            m_ext_matrices.resize(m_ext_matrices.size()+1);
+        }
+
+        template <typename RowParticles, typename ColParticles, typename PositionF, unsigned int N>
+        void operator()(const KernelH2<RowParticles,ColParticles,PositionF,N>& block) {
+            static const unsigned int dimension = RowParticles::dimension;
+
+            auto& kernel = block.get_first_kernel();
+            m_ext_matrices.emplace_back(
+                make_h2_matrix(kernel.get_row_particles(),kernel.get_col_particles(),
+                    make_black_box_expansion<dimension,ReducedOrder>(kernel.get_position_function()))
+                );
+            m_solvers.emplace_back(solver_type());
+            m_solvers.back().compute(m_ext_matrices.back().gen_extended_matrix());
+
+        }
+    };
+
+
+    template <unsigned int NI, unsigned int NJ, typename Blocks>
+    ExtMatrixPreconditioner& factorize(const MatrixReplacement<NI,NJ,Blocks>& mat)
+    {
+        LOG(2,"ExtMatrixPreconditioner: factorizing domain");
+
+        m_rows = mat.rows();
+        m_cols = mat.cols();
+        m_solvers.clear();
+        m_ext_matrices.clear();
+        detail::apply_function_to_diagonal_blocks(factorize_block(m_solvers,m_ext_matrices), mat);
+        ASSERT(m_solvers.size()==NI,"number of solvers not equal to block size");
+        ASSERT(m_ext_matrices.size()==NI,"number of extended matrices not equal to block size");
+        m_isInitialized = true;
+
+        return *this;
+    }
+    
+    template<typename MatType>
+    ExtMatrixPreconditioner& compute(const MatType& mat)
+    {
+        analyzePattern(mat);
+        return factorize(mat);
+    }
+
+    struct solve_block {
+        vector_type m_ext_b;
+        vector_type m_ext_x;
+        int i;
+
+        solve_block():i(0) {}
+
+        template <typename Dest, typename Source, typename Block>
+        void operator()(Eigen::VectorBlock<Dest> x, 
+                        const Eigen::VectorBlock<Source>& b, 
+                        const Block& block) {
+            // copy b to x unchanged (Identity preconditioner)
+            x = b;
+            ++i;
+        }
+
+        template <typename Dest, typename Source, typename Block, 
+                  typename RowParticles, typename ColParticles, typename PositionF, unsigned int N>
+        void operator()(Eigen::VectorBlock<Dest> x, 
+                        const Eigen::VectorBlock<Source>& b, 
+                        const KernelH2<RowParticles,ColParticles,PositionF,N>& block) {
+            m_ext_b = m_ext_matrices[i].gen_extended_vector(b);
+            m_ext_x = m_solvers[i].solve(m_ext_b);
+            x = m_ext_matrices[i].filter_extended_vector(m_ext_x);
+            ++i;
+        }
+    };
+
+    template<typename Rhs, typename Dest>
+    void _solve_impl(const Rhs& b, Dest& x) const {
+        solve_block f;
+        detail::apply_function_to_diagonal_blocks(f,x,mat,b);
+    }
+    
+
+    template<typename Rhs> 
+    inline const Eigen::Solve<ExtMatrixPreconditioner, Rhs>
+    solve(const Eigen::MatrixBase<Rhs>& b) const {
+        eigen_assert(m_rows==b.rows()
+                && "ExtMatrixPreconditioner::solve(): invalid number of rows of the right hand side matrix b");
+        eigen_assert(m_isInitialized 
+                && "ExtMatrixPreconditioner is not initialized.");
+        return Eigen::Solve<ExtMatrixPreconditioner, Rhs>(*this, b.derived());
+    }
+    
+    Eigen::ComputationInfo info() { return Eigen::Success; }
+
+  protected:
+    bool m_isInitialized;
+};
+
+
 template <template<typename> class Solver=Eigen::HouseholderQR>
 class RASMPreconditioner {
     typedef double Scalar;

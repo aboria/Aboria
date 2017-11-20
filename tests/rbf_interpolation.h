@@ -342,6 +342,7 @@ void helper_compact(void) {
         matrix_type W_matrix(N+1,N+1);
         W.assemble(W_matrix);
 
+        
         Eigen::ConjugateGradient<matrix_type, Eigen::Lower|Eigen::Upper, Eigen::DiagonalPreconditioner<double>> cg_test;
         cg_test.setMaxIterations(max_iter);
         cg_test.compute(W_matrix);
@@ -532,14 +533,15 @@ template<template <typename> class SearchMethod>
         phi[knots.size()] = 0;
 
         //Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-        Eigen::DGMRES<decltype(W)> dgmres;
+        Eigen::DGMRES<decltype(W),  ExtMatrixPreconditioner<2>> dgmres;
+        //Eigen::DGMRES<decltype(W)> dgmres;
         dgmres.setMaxIterations(max_iter);
         //dgmres.preconditioner().set_buffer_size(RASM_buffer);
         //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
         dgmres.set_restart(restart);
         dgmres.compute(W);
         gamma = dgmres.solve(phi);
-        std::cout << "DGMRES-RASM:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
+        std::cout << "DGMRES-EXT:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
 
         phi = W*gamma;
         double rms_error = 0;
