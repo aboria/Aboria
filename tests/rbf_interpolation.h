@@ -609,8 +609,8 @@ template<template <typename> class SearchMethod>
         std::cout << "-------------------------------------------\n"<<
                      "Running tests on octtree....\n" <<
                      "------------------------------------------" << std::endl;
-        helper_compact<nanoflann_adaptor>();
         helper_h2<octtree>();
+        helper_compact<nanoflann_adaptor>();
     }
 
 };

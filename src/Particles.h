@@ -320,7 +320,7 @@ public:
         Aboria::get<generator>(i) = generator_type((seed + uint32_t(Aboria::get<id>(i))));
         Aboria::get<alive>(i) = true;
 
-        if (update_neighbour_search) {
+        if (searchable && update_neighbour_search) {
             if (search.ordered()) {
                 update_positions(begin(),end());
             } else {

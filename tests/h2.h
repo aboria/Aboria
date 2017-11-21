@@ -178,17 +178,37 @@ public:
 
         auto internal_extended_vector = h2_matrix.get_internal_state();
         auto extended_vector = h2_matrix.gen_extended_vector(get<source>(particles));
+        auto col_index = h2_matrix.gen_column_map();
+        auto ext_matrix = h2_matrix.gen_extended_matrix();
+
+        Eigen::Matrix<double,Eigen::Dynamic,1> mapped_extended_vector(ext_matrix.cols());
+        for (int i = 0; i < col_index.size(); ++i) {
+            mapped_extended_vector[col_index[i]] = get<source>(particles)[i];
+        }
+        // rest are zero
+        for (int i = col_index.size(); i < ext_matrix.cols(); ++i) {
+            mapped_extended_vector[i] = 0;
+        }
 
         // check x in internal state and generated extended vector are the same
         for (int i = 0; i < particles.size(); ++i) {
             TS_ASSERT_DELTA(extended_vector[i],internal_extended_vector[i],1e-20);
+            TS_ASSERT_DELTA(mapped_extended_vector[i],internal_extended_vector[i],1e-20);
         }
         // check rest of generated exteded vector is zero
         for (int i = particles.size(); i < extended_vector.size(); ++i) {
             TS_ASSERT_DELTA(extended_vector[i],0,1e-20);
+            TS_ASSERT_DELTA(mapped_extended_vector[i],0,1e-20);
         }
         
-        Eigen::Matrix<double,Eigen::Dynamic,1> result = h2_matrix.gen_extended_matrix()*internal_extended_vector;
+        Eigen::Matrix<double,Eigen::Dynamic,1> result = ext_matrix*internal_extended_vector;
+
+
+        Eigen::Matrix<double,Eigen::Dynamic,1> mapped_result(particles.size());
+        auto row_index = h2_matrix.gen_row_map();
+        for (int i = 0; i < row_index.size(); ++i) {
+            mapped_result[i] = result[row_index[i]];
+        }
 
         // check rest of result is 0
         for (int i = particles.size(); i < result.rows(); ++i) {
@@ -199,6 +219,7 @@ public:
         auto result_filtered = h2_matrix.filter_extended_vector(result);
         for (int i = 0; i < particles.size(); ++i) {
             TS_ASSERT_DELTA(result_filtered(i),get<target_h2>(particles)[i],1e-10);
+            TS_ASSERT_DELTA(mapped_result(i),get<target_h2>(particles)[i],1e-10);
         }
 
     }

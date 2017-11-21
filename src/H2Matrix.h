@@ -60,6 +60,7 @@ class H2Matrix {
     
     typedef typename Eigen::SparseMatrix<double> sparse_matrix_type;
     typedef typename Eigen::Matrix<double,Eigen::Dynamic,1> column_vector_type;
+    typedef typename Eigen::Matrix<int,Eigen::Dynamic,1> index_vector_type;
     typedef typename Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> dense_matrix_type;
     typedef typename Expansions::p_vector_type p_vector_type;
     typedef typename Expansions::m_vector_type m_vector_type;
@@ -171,7 +172,7 @@ public:
             }
         }
 
-        // create a vector of column indicies for extended matrix/vector 
+        // create a vector of column indicies for extended column matrix/vector 
         detail::transform_exclusive_scan(m_source_vector.begin(),m_source_vector.end(),
                                         m_ext_indicies.begin(),
                                         [](const p_vector_type& i) { return i.size(); },
@@ -305,6 +306,7 @@ public:
     /// where $g_l$ is the $g$ vector for every leaf of the tree, and $g_n$ is the 
     /// remaining nodes. Note M2M = L2L'.
     ///
+    /// TODO: this will only work for rows == columns
     sparse_matrix_type gen_extended_matrix() const {
 
         const size_t size_x = m_col_particles->size();
@@ -465,8 +467,10 @@ public:
             const size_t row_index = size_x + size_W + i*vector_size;
 
             // -I
+            // TODO: ahhhhhhhhhhhhhhhh subtree range passes over empty buckets!!!!
             const size_t col_index = size_x + i*vector_size;
             for (int im = 0; im < vector_size; ++im) {
+                if (col_index+im == 15512) std::cout << "15512!!!!!!!!!!!" << std::endl;
                 A.insert(row_index+im, col_index+im) = -1;
             }
 
@@ -675,6 +679,55 @@ public:
         return A;
 
     }
+
+
+    // this function returns a vector of indicies map that correspond to a mapping 
+    // between the extended column vector e_x to the standard column particle vector x
+    //
+    // i.e. x = e_x[map]
+    index_vector_type gen_column_map() const {
+        index_vector_type map(m_col_particles->size());
+        for (int i = 0; i < m_col_indices.size(); ++i) {
+            for (int p = 0; p < m_col_indices[i].size(); ++p) {
+                map[m_col_indices[i][p]] = m_ext_indicies[i]+p;
+            }
+        }
+        return map;
+    }
+
+    // this function returns a vector of indicies map that correspond to a mapping 
+    // between the extended row vector e_b to the standard row particle vector b
+    //
+    // i.e. b = e_b[map]
+    index_vector_type gen_row_map() const {
+        index_vector_type map(m_row_size);
+        size_t index = 0;
+        for (int i = 0; i < m_row_indices.size(); ++i) {
+            for (int p = 0; p < m_row_indices[i].size(); ++p,index++) {
+                map[m_row_indices[i][p]] = index;
+            }
+        }
+        return map;
+    }
+
+    /*
+    size_t get_column_extended_vector_size() const {
+        const size_t size_x = m_col_particles.size();
+        const size_t vector_size = m_vector_type::RowsAtCompileTime;
+        const size_t size_W = m_W.size()*vector_size;
+        const size_t size_g = m_g.size()*vector_size;
+        const size_t n = size_x + size_W + size_g;
+        return n;
+    }
+    size_t get_row_extended_vector_size() const {
+        const size_t size_x = m_row_size;
+        const size_t vector_size = m_vector_type::RowsAtCompileTime;
+        const size_t size_W = m_W.size()*vector_size;
+        const size_t size_g = m_g.size()*vector_size;
+        const size_t n = size_x + size_W + size_g;
+        return n;
+    }
+    */
 
     template <typename VectorTypeSource>
     column_vector_type gen_extended_vector(const VectorTypeSource& source_vector) const {

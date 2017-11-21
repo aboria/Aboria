@@ -43,17 +43,17 @@ namespace Aboria {
 namespace detail {
     template<typename Function, 
              typename Dest, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
-    void apply_function_to_diagonal_blocks(Function& f, 
+    void apply_function_to_diagonal_blocks(Function&& f, 
                              Dest& y, 
-                             const MatrixReplacement<NI,NJ,Blocks>& lhs, 
+                             const MatrixReplacement<NI,NJ,Blocks>& mat, 
                              const Rhs& rhs,
-                             std::integral_constant<int,NI>) {}
+                             std::integral_constant<unsigned int,NI>) {}
 
     template<typename Function,
-             typename Dest, unsigned int NI, unsigned int NJ, typename Blocks>
-    void apply_function_to_diagonal_blocks(Function& f, 
+             unsigned int NI, unsigned int NJ, typename Blocks>
+    void apply_function_to_diagonal_blocks(Function&& f, 
                              const MatrixReplacement<NI,NJ,Blocks>& mat,
-                             std::integral_constant<int,NI>) {}
+                             std::integral_constant<unsigned int,NI>) {}
 
 
     template<typename Function, 
@@ -61,42 +61,43 @@ namespace detail {
              unsigned int NI, 
              unsigned int NJ, 
              typename Blocks, 
-             typename Rhs, int I>
-    void apply_function_to_diagonal_blocks(Function& f,
+             typename Rhs, 
+             unsigned int I>
+    void apply_function_to_diagonal_blocks(Function&& f,
                                         Dest& x, 
                                         const MatrixReplacement<NI,NJ,Blocks>& mat, 
-                                        const Rhs& b, std::integral_constant<int,I>) {
+                                        const Rhs& b, std::integral_constant<unsigned int,I>) {
         f(x.segment(mat.template start_row<I>(),mat.template size_row<I>()),
           b.segment(mat.template start_col<I>(),mat.template size_col<I>()),
           std::get<I*NJ+I>(mat.m_blocks));
-        apply_unpack_blocks(f,x,mat,b,std::integral_constant<int,I+1>());
+        apply_function_to_diagonal_blocks(std::forward<Function>(f),x,mat,b,std::integral_constant<unsigned int,I+1>());
     }
 
     template<typename Function, 
              unsigned int NI, 
              unsigned int NJ, 
              typename Blocks, 
-             int I>
-    void apply_function_to_diagonal_blocks(Function& f,
+             unsigned int I>
+    void apply_function_to_diagonal_blocks(Function&& f,
                                         const MatrixReplacement<NI,NJ,Blocks>& mat, 
-                                        std::integral_constant<int,I>) {
+                                        std::integral_constant<unsigned int,I>) {
         f(std::get<I*NJ+I>(mat.m_blocks));
-        apply_unpack_blocks(f,mat,std::integral_constant<int,I+1>());
+        apply_function_to_diagonal_blocks(std::forward<Function>(f),mat,std::integral_constant<unsigned int,I+1>());
     }
 
     template<typename Function, typename Dest,
              unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
-    void apply_function_to_diagonal_blocks(Function& function,
+    void apply_function_to_diagonal_blocks(Function&& function,
                                         Dest& x, 
                                         const MatrixReplacement<NI,NJ,Blocks>& mat, 
                                         const Rhs& b) {
-        apply_function_to_diagonal_blocks(function,x,mat,b,std::integral_constant<int,0>());
+        apply_function_to_diagonal_blocks(std::forward<Function>(function),x,mat,b,std::integral_constant<unsigned int,0>());
     }
 
-    template<typename Function, unsigned int NI, unsigned int NJ, typename Blocks, typename Rhs>
-    void apply_function_to_diagonal_blocks(Function& function,
+    template<typename Function, unsigned int NI, unsigned int NJ, typename Blocks>
+    void apply_function_to_diagonal_blocks(Function&& function,
                                         const MatrixReplacement<NI,NJ,Blocks>& mat) {
-        apply_function_to_diagonal_blocks(function,mat,std::integral_constant<int,0>());
+        apply_function_to_diagonal_blocks(std::forward<Function>(function),mat,std::integral_constant<unsigned int,0>());
     }
 }
 
@@ -109,11 +110,15 @@ class ExtMatrixPreconditioner {
     typedef size_t Index;
     typedef Eigen::SparseMatrix<Scalar> sparse_matrix_type;
     typedef Eigen::Matrix<Scalar,Eigen::Dynamic,1> vector_type;
+    typedef Eigen::Matrix<int,Eigen::Dynamic,1> index_vector_type;
     typedef IterativeSolver solver_type;
     Index m_rows;
     Index m_cols;
-    std::vector<solver_type> m_solvers;
-    std::vector<sparse_matrix_type> m_ext_matrices;
+    std::vector<index_vector_type> m_col_maps;
+    std::vector<size_t> m_col_sizes;
+    std::vector<size_t> m_row_sizes;
+    std::vector<index_vector_type> m_row_maps;
+    std::vector<std::shared_ptr<solver_type>> m_solvers;
 
   public:
     typedef typename vector_type::StorageIndex StorageIndex;
@@ -146,31 +151,41 @@ class ExtMatrixPreconditioner {
     
 
     struct factorize_block {
-        std::vector<solver_type> &m_solvers; 
-        std::vector<sparse_matrix_type> &m_h2_matrices; 
+        std::vector<size_t> &m_col_sizes; 
+        std::vector<size_t> &m_row_sizes; 
+        std::vector<index_vector_type> &m_col_maps; 
+        std::vector<index_vector_type> &m_row_maps; 
+        std::vector<std::shared_ptr<solver_type>> &m_solvers; 
+        int i;
 
-        factorize_block(std::vector<solver_type>& solvers,
-                        std::vector<sparse_matrix_type>& mats):
-            m_solvers(solvers),m_ext_matrices(mats) {}
+        factorize_block(std::vector<size_t>& col_sizes,
+                        std::vector<size_t>& row_sizes,
+                        std::vector<index_vector_type>& col_maps,
+                        std::vector<index_vector_type>& row_maps,
+                        std::vector<std::shared_ptr<solver_type>>& solvers):
+            m_col_sizes(col_sizes),m_row_sizes(row_sizes),m_col_maps(col_maps),m_row_maps(row_maps),m_solvers(solvers),i(0) {}
 
-        template <typename Dest, typename Source, typename Block>
+
+        template <typename Block>
         void operator()(const Block& block) {
-            m_solvers.resize(m_solvers.size()+1);
-            m_ext_matrices.resize(m_ext_matrices.size()+1);
+            m_solvers[i] = nullptr;
+            ++i;
         }
 
         template <typename RowParticles, typename ColParticles, typename PositionF, unsigned int N>
-        void operator()(const KernelH2<RowParticles,ColParticles,PositionF,N>& block) {
+        void operator()(const KernelH2<RowParticles,ColParticles,PositionF,N>& kernel) {
             static const unsigned int dimension = RowParticles::dimension;
 
-            auto& kernel = block.get_first_kernel();
-            m_ext_matrices.emplace_back(
-                make_h2_matrix(kernel.get_row_particles(),kernel.get_col_particles(),
-                    make_black_box_expansion<dimension,ReducedOrder>(kernel.get_position_function()))
-                );
-            m_solvers.emplace_back(solver_type());
-            m_solvers.back().compute(m_ext_matrices.back().gen_extended_matrix());
+            auto h2 = make_h2_matrix(kernel.get_row_particles(),kernel.get_col_particles(),
+                       make_black_box_expansion<dimension,ReducedOrder>(kernel.get_position_function()));
+            auto ext_mat = h2.gen_extended_matrix();
 
+            m_col_sizes[i] = ext_mat.cols();
+            m_row_sizes[i] = ext_mat.rows();
+            m_col_maps[i] = h2.gen_column_map();
+            m_row_maps[i] = h2.gen_row_map();
+            m_solvers[i] = std::make_shared<solver_type>(ext_mat);
+            ++i;
         }
     };
 
@@ -182,11 +197,14 @@ class ExtMatrixPreconditioner {
 
         m_rows = mat.rows();
         m_cols = mat.cols();
-        m_solvers.clear();
-        m_ext_matrices.clear();
-        detail::apply_function_to_diagonal_blocks(factorize_block(m_solvers,m_ext_matrices), mat);
-        ASSERT(m_solvers.size()==NI,"number of solvers not equal to block size");
-        ASSERT(m_ext_matrices.size()==NI,"number of extended matrices not equal to block size");
+        m_solvers.resize(NI);
+        m_col_sizes.resize(NI);
+        m_row_sizes.resize(NI);
+        m_col_maps.resize(NI);
+        m_row_maps.resize(NI);
+        detail::apply_function_to_diagonal_blocks(
+                factorize_block(m_col_sizes,m_row_sizes,m_col_maps,m_row_maps,m_solvers), 
+                mat);
         m_isInitialized = true;
 
         return *this;
@@ -199,38 +217,44 @@ class ExtMatrixPreconditioner {
         return factorize(mat);
     }
 
-    struct solve_block {
-        vector_type m_ext_b;
-        vector_type m_ext_x;
-        int i;
-
-        solve_block():i(0) {}
-
-        template <typename Dest, typename Source, typename Block>
-        void operator()(Eigen::VectorBlock<Dest> x, 
-                        const Eigen::VectorBlock<Source>& b, 
-                        const Block& block) {
-            // copy b to x unchanged (Identity preconditioner)
-            x = b;
-            ++i;
-        }
-
-        template <typename Dest, typename Source, typename Block, 
-                  typename RowParticles, typename ColParticles, typename PositionF, unsigned int N>
-        void operator()(Eigen::VectorBlock<Dest> x, 
-                        const Eigen::VectorBlock<Source>& b, 
-                        const KernelH2<RowParticles,ColParticles,PositionF,N>& block) {
-            m_ext_b = m_ext_matrices[i].gen_extended_vector(b);
-            m_ext_x = m_solvers[i].solve(m_ext_b);
-            x = m_ext_matrices[i].filter_extended_vector(m_ext_x);
-            ++i;
-        }
-    };
-
     template<typename Rhs, typename Dest>
     void _solve_impl(const Rhs& b, Dest& x) const {
-        solve_block f;
-        detail::apply_function_to_diagonal_blocks(f,x,mat,b);
+        vector_type m_ext_b;
+        vector_type m_ext_x;
+        size_t row = 0;
+        size_t col = 0;
+
+        for (int i = 0; i < m_solvers.size(); ++i) {
+            if (m_row_maps[i].size() > 0) { // only greater than zero for h2 blocks
+                // construct b
+                m_ext_b.resize(m_row_sizes[i]);
+                for (int j = 0; j < m_row_maps[i].size(); ++j) {
+                    m_ext_b[m_row_maps[i][j]] = b[row + j];
+                }
+                for (int j = m_row_maps[i].size(); j < m_row_sizes[i]; ++j) {
+                    m_ext_b[j] = 0;
+                }
+
+                m_ext_x = m_solvers[i]->solve(m_ext_b);
+
+                // filter to x
+                for (int j = 0; j < m_row_maps[i].size(); ++j) {
+                    x[col + j] = m_ext_x[m_row_maps[i][j]];
+                }
+
+                // increment row/col by number of particles (NOT size of ext vectors)
+                row += m_row_maps[i].size();
+                col += m_col_maps[i].size();
+            } else {
+                for (int j = 0; j < m_col_sizes[i]; ++j) {
+                    x[col + j] = b[row + j];
+                }
+                // increment row/col by the size of the block
+                row += m_row_sizes[i];
+                col += m_col_sizes[i];
+            }
+            
+        }
     }
     
 
