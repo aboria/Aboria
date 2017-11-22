@@ -398,12 +398,12 @@ public:
             }
         }
 
-        LOG(2,"creating "<<n<<"x"<<n<<" extended sparse matrix");
-        LOG(3,"note: vector_size = "<<vector_size);
-        LOG(3,"note: size_W is = "<<size_W);
-        LOG(3,"note: size_g is = "<<size_g);
+        LOG(2,"\tcreating "<<n<<"x"<<n<<" extended sparse matrix");
+        LOG(3,"\tnote: vector_size = "<<vector_size);
+        LOG(3,"\tnote: size_W is = "<<size_W);
+        LOG(3,"\tnote: size_g is = "<<size_g);
         for (int i = 0; i < n; ++i) {
-            LOG(4,"for column "<<i<<", reserving "<<reserve[i]<<" rows");
+            LOG(4,"\tfor column "<<i<<", reserving "<<reserve[i]<<" rows");
         }
 
         // create matrix and reserve space
@@ -467,10 +467,8 @@ public:
             const size_t row_index = size_x + size_W + i*vector_size;
 
             // -I
-            // TODO: ahhhhhhhhhhhhhhhh subtree range passes over empty buckets!!!!
             const size_t col_index = size_x + i*vector_size;
             for (int im = 0; im < vector_size; ++im) {
-                if (col_index+im == 15512) std::cout << "15512!!!!!!!!!!!" << std::endl;
                 A.insert(row_index+im, col_index+im) = -1;
             }
 
@@ -676,6 +674,7 @@ public:
 
 #endif
 
+        LOG(2,"\tdone");
         return A;
 
     }

@@ -592,9 +592,11 @@ public:
         m_bounds(bounds)
     {
         ASSERT_CUDA(start != nullptr);
-        if (detail::is_empty(*m_index)) {
-            increment();
-        }
+        // Note: big change, octree iterators now visit empty leaves (for fmm)
+        //       be careful of follow-on bugs....
+        //if (detail::is_empty(*m_index)) {
+        //    increment();
+        //}
     }
 
     CUDA_HOST_DEVICE
@@ -701,10 +703,14 @@ private:
 
     CUDA_HOST_DEVICE
     void increment() {
-        do {
-            ++m_index;
-            ++m_high;
-        } while (!equal(false) && detail::is_empty(*m_index));
+        ++m_index;
+        ++m_high;
+        // Note: big change, octree iterators now visit empty leaves (for fmm)
+        //       be careful of follow-on bugs....
+        //do {
+        //    ++m_index;
+        //    ++m_high;
+        //} while (!equal(false) && detail::is_empty(*m_index));
     }
 };
 
@@ -773,7 +779,7 @@ struct octtree_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     static bool is_leaf_node(reference bucket) {
-        return detail::is_leaf(bucket);
+        return detail::is_leaf(bucket) || detail::is_empty(bucket);
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -825,6 +831,10 @@ struct octtree_query {
     iterator_range<particle_iterator> 
     CUDA_HOST_DEVICE
     get_bucket_particles(reference bucket) const {
+        if (detail::is_empty(bucket)) {
+            return iterator_range<particle_iterator>();
+        }
+
         ASSERT_CUDA(detail::is_leaf(bucket));
         const int leaf_idx = detail::get_leaf_offset(bucket);
         const vint2& particle_idxs = m_leaves_begin[leaf_idx];
