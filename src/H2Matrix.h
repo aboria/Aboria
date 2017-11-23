@@ -372,6 +372,7 @@ public:
         
         // sizes for g columns
         reserve0 += size_W;
+
         
         // looping over columns
         for (auto bucket_it = subtree_range.begin(); 
@@ -380,7 +381,7 @@ public:
             // col is the index of the parent
             const size_t col_index = size_x + size_W + i*vector_size;
             
-            // -I
+            // L2P & -I
             const size_t target_size = m_target_vector[i].size();
             std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
                     reserve0+i*vector_size,
@@ -544,15 +545,18 @@ public:
             size_t count = 0;
             for (sparse_matrix_type::InnerIterator it(A,i); it ;++it) {
                 count++;
+                ASSERT(!std::isnan(it.value()),"entry ("<<it.row()<<","<<it.col()<<") is nan");
             }
             ASSERT(count == reserve[i], "column "<<i<<" reserved size "<<reserve[i]<<" and final count "<<count<<" do not agree");
+            ASSERT(count > 0, "column "<<i<<" has zero entries");
         }
+        /*
         row_index = 0;
         size_t col_index = 0;
-        /*
         for (int i = 0; i < m_target_vector.size(); ++i) {
             for (int pi = 0; pi < m_target_vector[i].size(); ++pi,++row_index) {
                 double sum = 0;
+                size_t count = 0;
                 col_index = 0;
                 for (int j = 0; j < m_source_vector.size(); ++j) {
                     for (int pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
@@ -560,6 +564,7 @@ public:
                             if (it.row() == row_index) {
                                 //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_source_vector[j][pj];
+                                count++;
                             }
                         }
                     }
@@ -570,6 +575,7 @@ public:
                             if (it.row() == row_index) {
                                 //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_W[j][mj];
+                                count++;
                             }
                         }
 
@@ -581,25 +587,30 @@ public:
                             if (it.row() == row_index) {
                                 //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_g[j][mj];
+                                count++;
                             }
                         }
 
                     }
                 }
                 std::cout << "X: row "<<row_index<<" sum = "<<sum<<" should be "<<m_target_vector[i][pi] << std::endl;
+                std::cout << "count is "<<count<<std::endl;
+                ASSERT(count > 0,"count == 0");
             }
         }
         row_index = size_x;
         for (int i = 0; i < m_W.size(); ++i) {
-            for (int mi = 0; mi < m_source_vector.size(); ++mi,++row_index) {
+            for (int mi = 0; mi < vector_size; ++mi,++row_index) {
                 double sum = 0;
+                size_t count = 0;
                 col_index = 0;
                 for (int j = 0; j < m_source_vector.size(); ++j) {
                     for (int pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
-                                std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
+                                //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_source_vector[j][pj];
+                                count++;
                             }
                         }
                     }
@@ -608,8 +619,9 @@ public:
                     for (int mj = 0; mj < vector_size; ++mj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
-                                std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
+                                //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_W[j][mj];
+                                count++;
                             }
                         }
 
@@ -619,27 +631,32 @@ public:
                     for (int mj = 0; mj < vector_size; ++mj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
-                                std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
+                                //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_g[j][mj];
+                                count++;
                             }
                         }
 
                     }
                 }
-                std::cout << "W: row "<<row_index<<" sum = "<<sum<<" should be "<<0 << std::endl;
+                std::cout << "W: row "<<row_index<<" sum = "<<sum<<" should be "<<0<< std::endl;
+                std::cout << "count is "<<count<<std::endl;
+                ASSERT(count > 0,"count == 0");
             }
         }
         row_index = size_x+size_W;
         for (int i = 0; i < m_g.size(); ++i) {
-            for (int mi = 0; mi < m_source_vector.size(); ++mi,++row_index) {
+            for (int mi = 0; mi < vector_size; ++mi,++row_index) {
                 double sum = 0;
+                size_t count = 0;
                 col_index = 0;
                 for (int j = 0; j < m_source_vector.size(); ++j) {
                     for (int pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
-                                std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
+                                //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_source_vector[j][pj];
+                                count++;
                             }
                         }
                     }
@@ -648,8 +665,9 @@ public:
                     for (int mj = 0; mj < vector_size; ++mj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
-                                std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
+                                //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_W[j][mj];
+                                count++;
                             }
                         }
 
@@ -659,14 +677,17 @@ public:
                     for (int mj = 0; mj < vector_size; ++mj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
-                                std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
+                                //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
                                 sum += it.value()*m_g[j][mj];
+                                count++;
                             }
                         }
 
                     }
                 }
                 std::cout << "g: row "<<row_index<<" sum = "<<sum<<" should be "<<0 << std::endl;
+                std::cout << "count is "<<count<<std::endl;
+                ASSERT(count > 0,"count == 0");
             }
         }
         */

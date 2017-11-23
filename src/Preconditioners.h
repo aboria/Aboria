@@ -114,6 +114,7 @@ class ExtMatrixPreconditioner {
     typedef IterativeSolver solver_type;
     Index m_rows;
     Index m_cols;
+    size_t m_inner_iterations;
     std::vector<index_vector_type> m_col_maps;
     std::vector<size_t> m_col_sizes;
     std::vector<size_t> m_row_sizes;
@@ -128,11 +129,11 @@ class ExtMatrixPreconditioner {
       MaxColsAtCompileTime = Eigen::Dynamic
     };
 
-    ExtMatrixPreconditioner()
+    ExtMatrixPreconditioner():m_inner_iterations(10)
     {}
 
     template<typename MatType>
-    explicit ExtMatrixPreconditioner(const MatType& mat) {
+    explicit ExtMatrixPreconditioner(const MatType& mat):m_inner_iterations(10) {
       compute(mat);
     }
 
@@ -158,6 +159,7 @@ class ExtMatrixPreconditioner {
         std::vector<index_vector_type> &m_row_maps; 
         std::vector<std::shared_ptr<solver_type>> &m_solvers; 
         std::vector<sparse_matrix_type> &m_ext_matrices; 
+        size_t m_inner_iterations;
         int i;
 
         factorize_block(std::vector<size_t>& col_sizes,
@@ -165,8 +167,9 @@ class ExtMatrixPreconditioner {
                         std::vector<index_vector_type>& col_maps,
                         std::vector<index_vector_type>& row_maps,
                         std::vector<std::shared_ptr<solver_type>>& solvers,
-                        std::vector<sparse_matrix_type> ext_matrices):
-            m_col_sizes(col_sizes),m_row_sizes(row_sizes),m_col_maps(col_maps),m_row_maps(row_maps),m_solvers(solvers),m_ext_matrices(ext_matrices),i(0) {}
+                        std::vector<sparse_matrix_type>& ext_matrices,
+                        size_t inner_iterations):
+            m_col_sizes(col_sizes),m_row_sizes(row_sizes),m_col_maps(col_maps),m_row_maps(row_maps),m_solvers(solvers),m_ext_matrices(ext_matrices),m_inner_iterations(inner_iterations),i(0) {}
 
 
         template <typename Block>
@@ -188,12 +191,13 @@ class ExtMatrixPreconditioner {
                                     kernel.get_position_function()));
             LOG(2,"ExtMatrixPreconditioner: block "<<i<<": generate extended matrix");
             m_ext_matrices[i] = h2.gen_extended_matrix();
-            m_col_sizes[i] = m_ext_matrices[i].cols(); //TODO: don't need this?
-            m_row_sizes[i] = m_ext_matrices[i].rows();
+            m_col_sizes[i] = kernel.cols();
+            m_row_sizes[i] = kernel.rows();
             m_col_maps[i] = h2.gen_column_map();
             m_row_maps[i] = h2.gen_row_map();
             LOG(2,"ExtMatrixPreconditioner: block "<<i<<": create solver");
             m_solvers[i] = std::make_shared<solver_type>(m_ext_matrices[i]);
+            m_solvers[i]->setMaxIterations(m_inner_iterations);
             LOG(2,"ExtMatrixPreconditioner: block "<<i<<": factorization complete");
             ++i;
         }
@@ -215,7 +219,7 @@ class ExtMatrixPreconditioner {
         m_row_maps.resize(NI);
         detail::apply_function_to_diagonal_blocks(
                 factorize_block(m_col_sizes,m_row_sizes,m_col_maps,m_row_maps,
-                                m_solvers,m_ext_matrices), 
+                                m_solvers,m_ext_matrices,m_inner_iterations), 
                 mat);
         m_isInitialized = true;
 
@@ -240,13 +244,16 @@ class ExtMatrixPreconditioner {
             if (m_solvers[i] != nullptr) { // solver only exists for h2 blocks
                 LOG(2,"ExtMatrixPreconditioner: block "<<i<<" solve");
                 // construct b
-                m_ext_b.resize(m_row_sizes[i]);
+                m_ext_b.resize(m_ext_matrices[i].rows());
                 for (int j = 0; j < m_row_maps[i].size(); ++j) {
                     m_ext_b[m_row_maps[i][j]] = b[row + j];
                 }
-                for (int j = m_row_maps[i].size(); j < m_row_sizes[i]; ++j) {
+                for (int j = m_row_maps[i].size(); j < m_ext_matrices[i].rows(); ++j) {
                     m_ext_b[j] = 0;
                 }
+                //for (int j = 0; j < m_ext_matrices[i].rows(); ++j) {
+                //    std::cout << "ext_b["<<j<<"] = "<< m_ext_b[j] << std::endl;
+                //}
 
                 //TODO: solve with guess?
                 m_ext_x = m_solvers[i]->solve(m_ext_b);
@@ -255,6 +262,7 @@ class ExtMatrixPreconditioner {
                 // filter to x
                 for (int j = 0; j < m_col_maps[i].size(); ++j) {
                     x[col + j] = m_ext_x[m_col_maps[i][j]];
+                    std::cout << "x["<<j<<"] = "<< x[col+j] << std::endl;
                 }
 
                 // increment row/col by number of particles (NOT size of ext vectors)

@@ -470,7 +470,7 @@ template<template <typename> class SearchMethod>
         vdouble2 max(1);
         vdouble2 periodic(false);
 
-        const int N = 10000;
+        const int N = 1000;
 
         const double RASM_size = 0.3/c;
         const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
@@ -533,21 +533,23 @@ template<template <typename> class SearchMethod>
         phi[knots.size()] = 0;
 
         //Eigen::BiCGSTAB<decltype(W), RASMPreconditioner<Eigen::HouseholderQR>> bicg;
-        Eigen::BiCGSTAB<decltype(W), ExtMatrixPreconditioner<2>> bicg;
-        bicg.setMaxIterations(max_iter);
-        bicg.compute(W);
-        gamma = bicg.solve(phi);
-        std::cout << "BiCGSTAB-EXT:#iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
+        //Eigen::BiCGSTAB<decltype(W), ExtMatrixPreconditioner<2>> bicg;
+        //bicg.preconditioner().set_buffer_size(RASM_buffer);
+        //bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        //bicg.setMaxIterations(max_iter);
+        //bicg.compute(W);
+        //gamma = bicg.solve(phi);
+        //std::cout << "BiCGSTAB-RASM:#iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
 
 
         //Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-        //Eigen::DGMRES<decltype(W),  ExtMatrixPreconditioner<2>> dgmres;
+        Eigen::DGMRES<decltype(W),  ExtMatrixPreconditioner<2>> dgmres;
         //Eigen::DGMRES<decltype(W)> dgmres;
-        //dgmres.setMaxIterations(max_iter);
-        //dgmres.set_restart(restart);
-        //dgmres.compute(W);
-        //gamma = dgmres.solve(phi);
-        //std::cout << "DGMRES-EXT:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
+        dgmres.setMaxIterations(max_iter);
+        dgmres.set_restart(restart);
+        dgmres.compute(W);
+        gamma = dgmres.solve(phi);
+        std::cout << "DGMRES-EXT:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
 
         phi = W*gamma;
         double rms_error = 0;

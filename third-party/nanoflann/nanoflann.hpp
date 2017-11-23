@@ -967,6 +967,8 @@ namespace nanoflann
 			m_size_at_index_build = m_size;
 			if(m_size == 0) return;
 			computeBoundingBox(root_bbox);
+            // ensure root node is not counted in number of nodes
+            m_number_of_nodes = -1;
 			root_node = divideTree(0, m_size, root_bbox, 0);   // construct the tree
 		}
 
@@ -1186,8 +1188,9 @@ namespace nanoflann
 			NodePtr node = pool.allocate<Node>(); // allocate memory
             node->index = m_number_of_nodes++;
 
-			/* If too few exemplars remain, then make this a leaf node. */
-			if ( (right-left) <= static_cast<IndexType>(m_leaf_max_size) ) {
+			// If too few exemplars remain, then make this a leaf node.
+            // Have to have at least one level
+			if ( (level > 0) && (right-left) <= static_cast<IndexType>(m_leaf_max_size) ) {
 				node->child1 = node->child2 = NULL;    /* Mark as leaf node. */
 				node->node_type.lr.left = left;
 				node->node_type.lr.right = right;
