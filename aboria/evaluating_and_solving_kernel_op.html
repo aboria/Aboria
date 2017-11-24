@@ -235,7 +235,7 @@ MathJax.Hub.Config({
 </table></div>
 <p>
         If we wish to perform the same operator, but using a traditional matrix,
-        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp46410873374368-bb">Aboria::MatrixReplacement::assemble</a></code>
+        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp47175177766880-bb">Aboria::MatrixReplacement::assemble</a></code>
         member function to fill in a normal Eigen matrix with the values of the kernel
         function $K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$. This might be useful if
         you wish to perform the same operation repeatedly, or in an iterative solver.
@@ -508,7 +508,7 @@ MathJax.Hub.Config({
         it assumes that the particle positions do not change.
       </p>
 <p>
-        A kernel operator which does this can be created using the <code class="computeroutput"><a class="link" href="../Aboria/create_h_idp46410873467184.html" title="Function template create_h2_operator">Aboria::create_h2_operator</a></code>
+        A kernel operator which does this can be created using the <code class="computeroutput"><a class="link" href="../Aboria/create_h_idp47175177859696.html" title="Function template create_h2_operator">Aboria::create_h2_operator</a></code>
         function
       </p>
 <pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">K_h</span> <span class="special">=</span> <span class="identifier">create_h2_operator</span><span class="special">&lt;</span><span class="identifier">n2</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">,</span><span class="identifier">particles</span><span class="special">,</span>
