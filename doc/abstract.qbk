@@ -19,7 +19,7 @@ particle-based numerical algorithms, for example Molecular Dynamics, Radial
 Basis Functions or Smoothed Particle Hydrodynamics.
 
 Aboria is distributed under a BSD 3-Clause License, see LICENCE for more 
-details.
+details. Aboria is supported by Maria Bruna's project "Sustainable software for reaction­diffusion processes of interacting particles", funded by the John Fell Fund (grant BLD10370) and the St John’s College Research Centre (grant 21138701).
 
 [endsect]
 
