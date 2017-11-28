@@ -202,6 +202,12 @@ public:
         }
         
         Eigen::Matrix<double,Eigen::Dynamic,1> result = ext_matrix*internal_extended_vector;
+        /*
+        std::ofstream myfile;
+        myfile.open ("ext_matrix.csv");
+        myfile << Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>(ext_matrix);
+        myfile.close();
+        */
 
 
         Eigen::Matrix<double,Eigen::Dynamic,1> mapped_result(particles.size());
@@ -221,6 +227,16 @@ public:
             TS_ASSERT_DELTA(result_filtered(i),get<target_h2>(particles)[i],1e-10);
             TS_ASSERT_DELTA(mapped_result(i),get<target_h2>(particles)[i],1e-10);
         }
+
+        //auto st_ext_matrix = h2_matrix.gen_stripped_extended_matrix();
+        /*
+        myfile.open ("st_ext_matrix.csv");
+        myfile << Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>(st_ext_matrix);
+        myfile.close();
+        */
+
+
+        //auto st_result = st_ext_matrix*internal_extended_vector;
 
     }
          
@@ -506,7 +522,7 @@ public:
 
     void test_fast_methods_kd_tree(void) {
 #ifdef HAVE_EIGEN
-        const size_t N = 10000;
+        const size_t N = 1000;
         std::cout << "KD_TREE: testing extended matrix 1D..." << std::endl;
         helper_extended_matrix<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing extended matrix 2D..." << std::endl;

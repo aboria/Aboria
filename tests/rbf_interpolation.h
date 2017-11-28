@@ -470,7 +470,7 @@ template<template <typename> class SearchMethod>
         vdouble2 max(1);
         vdouble2 periodic(false);
 
-        const int N = 1000;
+        const int N = 10000;
 
         const double RASM_size = 0.3/c;
         const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
@@ -524,13 +524,13 @@ template<template <typename> class SearchMethod>
         auto Wtest = create_block_operator<2,2>(Gtest, Ptest,
                                                 Pt,Zero);
 
-        vector_type phi(N+1), gamma(N+1);
+        vector_type phi(N), gamma(N);
         for (int i=0; i<knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             phi[i] = funct(x,y);
         }
-        phi[knots.size()] = 0;
+        //phi[knots.size()] = 0;
 
         //Eigen::BiCGSTAB<decltype(W), RASMPreconditioner<Eigen::HouseholderQR>> bicg;
         //Eigen::BiCGSTAB<decltype(W), ExtMatrixPreconditioner<2>> bicg;
@@ -543,15 +543,18 @@ template<template <typename> class SearchMethod>
 
 
         //Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-        Eigen::DGMRES<decltype(W),  ExtMatrixPreconditioner<2>> dgmres;
+        Eigen::DGMRES<decltype(G),  ExtMatrixPreconditioner<2>> dgmres;
         //Eigen::DGMRES<decltype(W)> dgmres;
+        //dgmres.preconditioner().set_buffer_size(RASM_buffer);
+        //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        //dgmres.preconditioner().analyzePattern(W);
         dgmres.setMaxIterations(max_iter);
         dgmres.set_restart(restart);
-        dgmres.compute(W);
+        dgmres.compute(G);
         gamma = dgmres.solve(phi);
-        std::cout << "DGMRES-EXT:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << std::endl;
+        std::cout << "DGMRES-EXT:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
-        phi = W*gamma;
+        phi = G*gamma;
         double rms_error = 0;
         double scale = 0;
         for (int i=0; i<knots.size(); ++i) {
@@ -569,7 +572,7 @@ template<template <typename> class SearchMethod>
         
         rms_error = 0;
         scale = 0;
-        vector_type phi_test = Wtest*gamma;
+        vector_type phi_test = Gtest*gamma;
         for (int i=0; i<test.size(); ++i) {
             const vdouble2 p = get<position>(test)[i]; 
             const double eval_value = phi_test[i];

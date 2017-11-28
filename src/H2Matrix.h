@@ -492,11 +492,11 @@ public:
         }
          
         // fill in g columns
-        // looping over rows
+        // looping over rows 
         // L2P
         row_index = 0;
         for (int i = 0; i < m_target_vector.size(); ++i) {
-            if (m_source_vector[i].size() > 0) { // leaf node
+            if (m_target_vector[i].size() > 0) { // leaf node
                 size_t col_index = size_x+size_W+i*vector_size;
                 for (int p = 0; p < m_target_vector[i].size(); ++p) {
                     for (int m = 0; m < vector_size; ++m) {
@@ -506,7 +506,7 @@ public:
                 row_index += m_target_vector[i].size();
             }
         }
-        
+
         // looping over columns
         for (auto bucket_it = subtree_range.begin(); 
                 bucket_it != subtree_range.end(); ++bucket_it) {
@@ -521,7 +521,7 @@ public:
             }
 
             // L2L
-            if (!m_query->is_leaf_node(*bucket_it)) { // leaf node
+            if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
                 for (child_iterator cj = 
                         m_query->get_children(bucket_it.get_child_iterator()); 
                         cj != false; ++cj) {
@@ -699,6 +699,147 @@ public:
         return A;
 
     }
+
+    /// Convert H2 Matrix to an stripped down extended sparse matrix
+    ///
+    /// This creates an Eigen sparse matrix A that can be used as a preconditioner
+    /// for the true extended sparse matrix    
+    /// 
+    /// A is given by the block matrix representation:
+    ///
+    ///Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for hierarchical 
+    ///matrices based on their extended sparse form. 
+    ///Retrieved from http://arxiv.org/abs/1412.1253
+    ///
+    ///             |I    0     0 | |x  |
+    /// A*[x W g] = |0   M2L    0 |*|W  |
+    ///             |0    0     I | |g  |
+    ///
+    /// TODO: this will only work for rows == columns
+    sparse_matrix_type gen_stripped_extended_matrix() const {
+
+        const size_t size_x = m_col_particles->size();
+        ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,"not using compile time m size");
+        const size_t vector_size = m_vector_type::RowsAtCompileTime;
+
+        const size_t size_W = m_W.size()*vector_size;
+        const size_t size_g = m_g.size()*vector_size;
+        const size_t n = size_x + size_W + size_g;
+
+        std::vector<int> reserve(n,0);
+
+        // sizes for first x columns
+        auto reserve0 = std::begin(reserve);
+        std::transform(reserve0,reserve0+size_x,
+                       reserve0,
+                    [](const int count){ return count+1; });
+
+        reserve0 += size_x; 
+
+        // sizes for W columns
+        // m2l
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            if (m_weak_connectivity[i].size() == 0) {
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                               reserve0+i*vector_size,
+                    [](const int count){ return count+1; });
+            }
+
+
+            for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
+                std::transform(reserve0+i*vector_size,reserve0+(i+1)*vector_size,
+                               reserve0+i*vector_size,
+                    [](const int count){ return count+vector_size; });
+            }
+        }
+
+        // sizes for g columns
+        reserve0 += size_W;
+
+        std::transform(reserve0,reserve0+size_g,
+                       reserve0,
+                    [](const int count){ return count+1; });
+
+
+        LOG(2,"\tcreating "<<n<<"x"<<n<<" approximate extended sparse matrix");
+        LOG(3,"\tnote: vector_size = "<<vector_size);
+        LOG(3,"\tnote: size_W is = "<<size_W);
+        LOG(3,"\tnote: size_g is = "<<size_g);
+        for (int i = 0; i < n; ++i) {
+            LOG(4,"\tfor column "<<i<<", reserving "<<reserve[i]<<" rows");
+        }
+
+        // create matrix and reserve space
+        sparse_matrix_type A(n,n);
+        A.reserve(reserve);
+            
+         // fill in x columns
+        // loop over rows
+        size_t row_index = 0;
+        for (int i = 0; i < m_target_vector.size(); ++i) {
+            for (int p = 0; p < m_target_vector[i].size(); ++p) {
+                A.insert(row_index+p, row_index+p) = 1;
+                
+            }
+            row_index += m_target_vector[i].size();
+        }
+    
+        // fill in W columns
+        // m2l
+        // loop over rows
+        for (int i = 0; i < m_source_vector.size(); ++i) {
+            const size_t row_index = size_x + i*vector_size;
+
+            if (m_weak_connectivity[i].size() == 0) {
+                for (int m = 0; m < vector_size; ++m) {
+                    A.insert(row_index+m, row_index+m) = 1;
+                }
+            }
+
+            for (int j = 0; j < m_weak_connectivity[i].size(); ++j) {
+                const size_t index = m_query->get_bucket_index(*m_weak_connectivity[i][j]);
+                const size_t col_index = size_x + index*vector_size;
+                for (int im = 0; im < vector_size; ++im) {
+                    for (int jm = 0; jm < vector_size; ++jm) {
+                        if (m_m2l_matrices[i][j](im,jm) < 1e-10) {
+                            std::cout << "tooo small!!!!! "<<m_m2l_matrices[i][j](im,jm) << std::endl;
+                        }
+                        A.insert(row_index+im, col_index+jm) = m_m2l_matrices[i][j](im,jm);
+                    }
+                }
+            }
+        }
+
+        // fill in g columns
+        // looping over rows 
+        for (int i = 0; i < m_target_vector.size(); ++i) {
+            const size_t row_index = size_x + size_W + i*vector_size;
+            for (int m = 0; m < vector_size; ++m) {
+                A.insert(row_index+m, row_index+m) = 1;
+            }
+        }
+
+        A.makeCompressed();
+
+#ifndef NDEBUG
+        for (int i = 0; i < n; ++i) {
+            size_t count = 0;
+            for (sparse_matrix_type::InnerIterator it(A,i); it ;++it) {
+                count++;
+                ASSERT(!std::isnan(it.value()),"entry ("<<it.row()<<","<<it.col()<<") is nan");
+            }
+            ASSERT(count == reserve[i], "column "<<i<<" reserved size "<<reserve[i]<<" and final count "<<count<<" do not agree");
+            ASSERT(count > 0, "column "<<i<<" has zero entries");
+        }
+
+#endif
+
+        LOG(2,"\tdone");
+        return A;
+
+    }
+
+
 
 
     // this function returns a vector of indicies map that correspond to a mapping 
