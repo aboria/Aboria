@@ -107,7 +107,7 @@ public:
         dem.init_neighbour_search(
                 vdouble3(0,0,-dem_diameter),
                 vdouble3(L/3,L/3,L+dem_diameter),
-                bool3(true,true,false),2);
+                vbool3(true,true,false),2);
 
         /*
          * create N random, non-overlaping particles with 
@@ -136,8 +136,8 @@ public:
                      *  (1) -> relative position of neighbouring particle
                      *         from query point
                      */
-                    const vdouble3& dx = tuple_ns::get<1>(tpl);
-                    const dem_type::value_type& j = tuple_ns::get<0>(tpl);
+                    const vdouble3& dx = std::get<1>(tpl);
+                    const dem_type::value_type& j = std::get<0>(tpl);
                     if (dx.norm() < get<radius>(j) + get<radius>(p)) {
                         free_position = false;
                         break;
@@ -191,7 +191,7 @@ public:
                 p[a] += v[a]*dt;
 
                 dvdt[a] = (// spring force between dem particles
-                        sum(b, if_else(id_[a]!=id_[b] 
+                        sum(b, if_else(norm(dx) < r[a] + r[b] && id_[a] != id_[b] 
                                 ,-dem_k*((r[a]+r[b])/norm(dx)-1)*dx  + dem_gamma*(v[b]-v[a])
                                 ,0))
                     

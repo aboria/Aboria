@@ -40,6 +40,7 @@ if (Aboria_RUN_TESTS)
         )
     set(notdebug_test_suites
         BDTest
+        DEMTest
         SPHTest
         MDTest
         MDLevel1Test
@@ -226,6 +227,11 @@ set(BDTest
     test_bucket_search_parallel
     test_nanoflann_adaptor
     test_octtree
+    )
+
+set(DEMTestFile dem.h)
+set(DEMTest
+    test_dem
     )
 
 set(SPHTestFile sph.h)
