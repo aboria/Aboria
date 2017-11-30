@@ -45,7 +45,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "FastMultipoleMethod.h"
-#include "H2Matrix.h"
+#include "ParH2Matrix.h"
 
 
 namespace Aboria {
@@ -508,7 +508,7 @@ namespace Aboria {
         typedef typename ColParticles::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef H2Matrix<expansions_type,ColParticles> h2_matrix_type;
+        typedef ParH2Matrix<expansions_type,ColParticles> h2_matrix_type;
 
         h2_matrix_type m_h2_matrix;
         PositionF m_position_function;

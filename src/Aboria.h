@@ -47,6 +47,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Preconditioners.h"
 #include "FastMultipoleMethod.h"
 #include "H2Matrix.h"
+#include "ParH2Matrix.h"
 
 //Level3
 #include "Symbolic.h"

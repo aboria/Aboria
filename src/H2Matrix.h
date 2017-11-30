@@ -1187,11 +1187,13 @@ private:
 };
 
 
+/*
 template <typename Expansions, typename RowParticlesType, typename ColParticlesType>
 H2Matrix<Expansions,ColParticlesType>
 make_h2_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions) {
     return H2Matrix<Expansions,ColParticlesType>(row_particles,col_particles,expansions);
 }
+*/
 
 }
 

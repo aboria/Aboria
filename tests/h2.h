@@ -252,8 +252,6 @@ public:
         const double pos_min = 0;
         const double pos_max = 1;
         std::uniform_real_distribution<double> U(pos_min,pos_max);
-        generator_type generator(time(NULL));
-        auto gen = std::bind(U, generator);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         const int num_particles_per_bucket = 50;
@@ -262,12 +260,15 @@ public:
         typedef typename ParticlesType::position position;
         ParticlesType particles(N);
 
-        for (int i=0; i<N; i++) {
+        detail::for_each(particles.begin(),particles.end(),
+                [=](typename ParticlesType::raw_reference p) { 
+            detail::uniform_real_distribution<double> U(pos_min,pos_max);
             for (int d=0; d<D; ++d) {
-                get<position>(particles)[i][d] = gen();
-                get<source>(particles)[i] = gen();
+                get<position>(p)[d] = U(get<generator>(p));
+                get<source>(p) = U(get<generator>(p));
             }
-        }
+        });
+
         particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false),num_particles_per_bucket);
 
         // generate a source vector using a smooth cosine
@@ -485,12 +486,14 @@ public:
     void test_fast_methods_bucket_search_serial(void) {
 #ifdef HAVE_EIGEN
         const size_t N = 10000;
+        /*
         std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 1D..." << std::endl;
         helper_extended_matrix<1,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 2D..." << std::endl;
         helper_extended_matrix<2,std::vector,bucket_search_serial>(N);
         std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 3D..." << std::endl;
         helper_extended_matrix<3,std::vector,bucket_search_serial>(N);
+        */
 
         std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,bucket_search_serial>(N);
@@ -501,15 +504,38 @@ public:
 #endif
     }
 
+    void test_fast_methods_bucket_search_serial_thrust(void) {
+#ifdef HAVE_EIGEN
+        const size_t N = 10000;
+        /*
+        std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 1D..." << std::endl;
+        helper_extended_matrix<1,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 2D..." << std::endl;
+        helper_extended_matrix<2,std::vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 3D..." << std::endl;
+        helper_extended_matrix<3,std::vector,bucket_search_serial>(N);
+        */
+
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
+        helper_fast_methods<1,thrust::device_vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
+        helper_fast_methods<2,thrust::device_vector,bucket_search_serial>(N);
+        std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
+        helper_fast_methods<3,thrust::device_vector,bucket_search_serial>(N);
+#endif
+    }
+
     void test_fast_methods_bucket_search_parallel(void) {
 #ifdef HAVE_EIGEN
         const size_t N = 10000;
+        /*
         std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 1D..." << std::endl;
         helper_extended_matrix<1,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 2D..." << std::endl;
         helper_extended_matrix<2,std::vector,bucket_search_parallel>(N);
         std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 3D..." << std::endl;
         helper_extended_matrix<3,std::vector,bucket_search_parallel>(N);
+        */
 
         std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,bucket_search_parallel>(N);
@@ -520,15 +546,38 @@ public:
 #endif
     }
 
+    void test_fast_methods_bucket_search_parallel_thrust(void) {
+#ifdef HAVE_EIGEN
+        const size_t N = 10000;
+        /*
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 1D..." << std::endl;
+        helper_extended_matrix<1,thrust::device_vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 2D..." << std::endl;
+        helper_extended_matrix<2,thrust::device_vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 3D..." << std::endl;
+        helper_extended_matrix<3,thrust::device_vector,bucket_search_parallel>(N);
+        */
+
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
+        helper_fast_methods<1,thrust::device_vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 2D..." << std::endl;
+        helper_fast_methods<2,thrust::device_vector,bucket_search_parallel>(N);
+        std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
+        helper_fast_methods<3,thrust::device_vector,bucket_search_parallel>(N);
+#endif
+    }
+
     void test_fast_methods_kd_tree(void) {
 #ifdef HAVE_EIGEN
-        const size_t N = 1000;
+        const size_t N = 10000;
+        /*
         std::cout << "KD_TREE: testing extended matrix 1D..." << std::endl;
         helper_extended_matrix<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing extended matrix 2D..." << std::endl;
         helper_extended_matrix<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing extended matrix 3D..." << std::endl;
         helper_extended_matrix<3,std::vector,nanoflann_adaptor>(N);
+        */
 
         std::cout << "KD_TREE: testing 1D..." << std::endl;
         helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
@@ -539,15 +588,38 @@ public:
 #endif
     }
 
+    void test_fast_methods_kd_tree_thrust(void) {
+#ifdef HAVE_EIGEN
+        const size_t N = 10000;
+        /*
+        std::cout << "KD_TREE: testing extended matrix 1D..." << std::endl;
+        helper_extended_matrix<1,thrust::device_vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing extended matrix 2D..." << std::endl;
+        helper_extended_matrix<2,thrust::device_vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing extended matrix 3D..." << std::endl;
+        helper_extended_matrix<3,thrust::device_vector,nanoflann_adaptor>(N);
+        */
+
+        std::cout << "KD_TREE: testing 1D..." << std::endl;
+        helper_fast_methods<1,thrust::device_vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 2D..." << std::endl;
+        helper_fast_methods<2,thrust::device_vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 3D..." << std::endl;
+        helper_fast_methods<3,thrust::device_vector,nanoflann_adaptor>(N);
+#endif
+    }
+
     void test_fast_methods_octtree(void) {
 #ifdef HAVE_EIGEN
         const size_t N = 10000;
+        /*
         std::cout << "OCTTREE: testing extended matrix 1D..." << std::endl;
         helper_extended_matrix<1,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing extended matrix 2D..." << std::endl;
         helper_extended_matrix<2,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing extended matrix 3D..." << std::endl;
         helper_extended_matrix<3,std::vector,octtree>(N);
+        */
 
 
         std::cout << "OCTTREE: testing 1D..." << std::endl;
@@ -556,6 +628,28 @@ public:
         helper_fast_methods<2,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,octtree>(N);
+#endif
+    }
+
+    void test_fast_methods_octtree_thrust(void) {
+#ifdef HAVE_EIGEN
+        const size_t N = 10000;
+        /*
+        std::cout << "OCTTREE: testing extended matrix 1D..." << std::endl;
+        helper_extended_matrix<1,thrust::device_vector,octtree>(N);
+        std::cout << "OCTTREE: testing extended matrix 2D..." << std::endl;
+        helper_extended_matrix<2,thrust::device_vector,octtree>(N);
+        std::cout << "OCTTREE: testing extended matrix 3D..." << std::endl;
+        helper_extended_matrix<3,thrust::device_vector,octtree>(N);
+        */
+
+
+        std::cout << "OCTTREE: testing 1D..." << std::endl;
+        helper_fast_methods<1,thrust::device_vector,octtree>(N);
+        std::cout << "OCTTREE: testing 2D..." << std::endl;
+        helper_fast_methods<2,thrust::device_vector,octtree>(N);
+        std::cout << "OCTTREE: testing 3D..." << std::endl;
+        helper_fast_methods<3,thrust::device_vector,octtree>(N);
 #endif
     }
 
