@@ -44,9 +44,6 @@ using namespace Aboria;
 class BDTest : public CxxTest::TestSuite {
 public:
 
-    typedef std::mt19937 generator_type;
-    generator_type generator;
-
     template<template <typename> class SearchMethod>
     void helper_bd(void) {
 //->
@@ -79,6 +76,7 @@ public:
 
         points_type points;
         std::uniform_real_distribution<double> uni(-L+L/5,L-L/5);
+        std::default_random_engine generator;
         for (int i = 0; i < 1000; ++i) {
             points.push_back(vdouble3(uni(generator),uni(generator),uni(generator)));
         }

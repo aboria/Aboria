@@ -56,9 +56,6 @@ using namespace Aboria;
 class MDTest : public CxxTest::TestSuite {
 public:
 
-    typedef std::mt19937 generator_type;
-    generator_type generator;
-
     template<template <typename> class SearchMethod>
     void helper_md(void) {
 //->
@@ -105,6 +102,7 @@ public:
          * to the set diameter. set the initial velocity in a random direction
          */
         std::uniform_real_distribution<double> uni(0,1);
+        std::default_random_engine generator;
         for (int i = 0; i < N; ++i) {
             bool free_position = false;
 

@@ -54,8 +54,6 @@ using namespace Aboria;
 class DEMTest : public CxxTest::TestSuite {
 public:
 
-    typedef std::mt19937 generator_type;
-    generator_type generator;
     void test_dem(void) {
 //->
 //=int main() {
@@ -114,6 +112,7 @@ public:
          * random radius between 0.5*dem_diameter and dem_diameter
          */
         std::uniform_real_distribution<double> uni(0,1);
+        std::default_random_engine generator;
         for (int i = 0; i < N; ++i) {
             bool free_position = false;
             dem_type::value_type p;
