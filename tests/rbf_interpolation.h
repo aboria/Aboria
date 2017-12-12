@@ -117,7 +117,12 @@ public:
         ABORIA_VARIABLE(interpolated,double,"interpolated value")
         ABORIA_VARIABLE(constant2,double,"c2 value")
 
+//<-
     	typedef Particles<std::tuple<alpha,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
+//->
+//=     typedef Particles<std::tuple<alpha,constant2,interpolated>,2> ParticlesType;
+
+
         typedef position_d<2> position;
         typedef typename ParticlesType::const_reference const_particle_reference;
         typedef typename position::value_type const & const_position_reference;
