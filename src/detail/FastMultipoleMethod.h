@@ -46,6 +46,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Log.h"
 #include <iostream>
 
+#ifdef HAVE_H2LIB
+extern "C" {
+#include <amatrix.h>
+#undef I
+}
+#endif
+
+
+
 namespace Aboria {
 namespace detail {
 
@@ -176,11 +185,11 @@ namespace detail {
         template <typename ParticlesType>
         static void P2M_amatrix(pamatrix matrix, 
                     const box_type& box,
-                    const size_t* indicies,
-                    const size_t indicies_size,
+                    const uint* indicies,
+                    const uint indicies_size,
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
-            resize_amatrix(matrix,ncheb,indicies_size);
+            //resize_amatrix(matrix,ncheb,indicies_size);
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
@@ -232,7 +241,7 @@ namespace detail {
         void M2M_matrix(pamatrix matrix, 
                  const box_type& target_box, 
                  const box_type& source_box) const {
-            resize_amatrix(matrix,ncheb,ncheb);
+            //resize_amatrix(matrix,ncheb,ncheb);
             for (int j=0; j<ncheb; ++j) {
                 const double_d& pj_unit_box = m_cheb_points[j];
                 const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
@@ -290,7 +299,8 @@ namespace detail {
         void M2L_amatrix(pamatrix matrix, 
                  const box_type& target_box, 
                  const box_type& source_box) const {
-            resize_amatrix(matrix,ncheb,ncheb);
+            // don't resize, already done in new_uniform
+            //resize_amatrix(matrix,ncheb,ncheb);
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -350,7 +360,7 @@ namespace detail {
         void L2L_amatrix(pamatrix matrix, 
                  const box_type& target_box, 
                  const box_type& source_box) const {
-            resize_amatrix(matrix,ncheb,ncheb);
+            //resize_amatrix(matrix,ncheb,ncheb);
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -432,12 +442,12 @@ namespace detail {
         template <typename ParticlesType>
         static void L2P_amatrix(pamatrix matrix, 
                     const box_type& box,
-                    const size_t* indicies,
-                    const size_t indicies_size,
+                    const uint* indicies,
+                    const uint indicies_size,
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
-            resize_amatrix(matrix,indicies_size,ncheb);
-            for (int i = 0; i < indicies.size(); ++i) {
+            //resize_amatrix(matrix,indicies_size,ncheb);
+            for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
                 lattice_iterator<dimension> mj(int_d(0),int_d(N));
@@ -450,17 +460,17 @@ namespace detail {
 
         template <typename RowParticlesType, typename ColParticlesType>
         void P2P_amatrix(pamatrix matrix, 
-                    const size_t* row_indicies,
-                    const size_t row_indicies_size,
-                    const size_t* col_indicies,
-                    const size_t col_indicies_size,
+                    const uint* row_indicies,
+                    const uint row_indicies_size,
+                    const uint* col_indicies,
+                    const uint col_indicies_size,
                     const RowParticlesType& row_particles,
                     const ColParticlesType& col_particles) const {
             typedef typename ColParticlesType::position position;
-            resize_amatrix(matrix,row_indicies_size,col_indicies_size);
-            for (int i = 0; i < row_indicies.size(); ++i) {
+            //resize_amatrix(matrix,row_indicies_size,col_indicies_size);
+            for (int i = 0; i < row_indicies_size; ++i) {
                 const double_d& pi = get<position>(row_particles)[row_indicies[i]];
-                for (int j = 0; j < col_indicies.size(); ++j) {
+                for (int j = 0; j < col_indicies_size; ++j) {
                     const double_d& pj = get<position>(col_particles)[col_indicies[j]];
                     setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
                 }

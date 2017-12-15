@@ -328,6 +328,7 @@ public:
     }
 
 
+    /*
     sparse_matrix_type gen_extended_matrix() const;
     sparse_matrix_type gen_stripped_extended_matrix() const;
     index_vector_type gen_column_map() const;
@@ -335,6 +336,7 @@ public:
     template <typename VectorTypeSource>
     column_vector_type gen_extended_vector(const VectorTypeSource& source_vector) const;
     column_vector_type get_internal_state() const;
+    */
 
         
 private:
@@ -577,7 +579,7 @@ make_h2_matrix(const RowParticlesType& row_particles, const ColParticlesType& co
 
 
 
-
+#if 0
     /// Convert H2 Matrix to an extended sparse matrix
     ///
     /// This creates an Eigen sparse matrix A that can be applied to  
@@ -1313,6 +1315,7 @@ sparse_matrix_type ParH2Matrix<Expansions,ColParticles>::gen_extended_matrix() c
 
         return filtered_vector;
     }
+#endif
 
 
 
