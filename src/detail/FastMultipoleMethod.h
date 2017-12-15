@@ -122,6 +122,7 @@ namespace detail {
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> p_vector_type;
         typedef Eigen::Matrix<double,ncheb,1> m_vector_type;
 #endif
+
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         static const unsigned int dimension = D;
@@ -171,6 +172,25 @@ namespace detail {
         }
 #endif
 
+#ifdef HAVE_H2LIB
+        template <typename ParticlesType>
+        static void P2M_amatrix(pamatrix matrix, 
+                    const box_type& box,
+                    const size_t* indicies,
+                    const size_t indicies_size,
+                    const ParticlesType& particles) {
+            typedef typename ParticlesType::position position;
+            resize_amatrix(matrix,ncheb,indicies_size);
+            for (int i = 0; i < indicies_size; ++i) {
+                const double_d& p = get<position>(particles)[indicies[i]];
+                detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
+                lattice_iterator<dimension> mj(int_d(0),int_d(N));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    setentry_amatrix(matrix,j,i,cheb_rn(*mj));
+                }
+            }
+        }
+#endif
 
         void M2M(expansion_type& accum, 
                  const box_type& target_box, 
@@ -203,6 +223,25 @@ namespace detail {
                 lattice_iterator<D> mi(int_d(0),int_d(N));
                 for (int i=0; i<ncheb; ++i,++mi) {
                     matrix(i,j) = cheb_rn(*mi);
+                }
+            }
+        }
+#endif
+
+#ifdef HAVE_H2LIB
+        void M2M_matrix(pamatrix matrix, 
+                 const box_type& target_box, 
+                 const box_type& source_box) const {
+            resize_amatrix(matrix,ncheb,ncheb);
+            for (int j=0; j<ncheb; ++j) {
+                const double_d& pj_unit_box = m_cheb_points[j];
+                const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                    + source_box.bmin;
+                detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
+
+                lattice_iterator<D> mi(int_d(0),int_d(N));
+                for (int i=0; i<ncheb; ++i,++mi) {
+                    setentry_amatrix(matrix,i,j,cheb_rn(*mi));
                 }
             }
         }
@@ -247,6 +286,29 @@ namespace detail {
         }
 #endif
 
+#ifdef HAVE_H2LIB
+        void M2L_amatrix(pamatrix matrix, 
+                 const box_type& target_box, 
+                 const box_type& source_box) const {
+            resize_amatrix(matrix,ncheb,ncheb);
+            for (int i=0; i<ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                                                                    + target_box.bmin;
+                for (int j=0; j<ncheb; ++j) {
+                    const double_d& pj_unit_box = m_cheb_points[j];
+                    const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                                                                    + source_box.bmin;
+                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
+                }
+            }
+
+
+        }
+#endif
+
+
+
         void L2L(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
@@ -283,6 +345,26 @@ namespace detail {
             }
         }
 #endif
+
+#ifdef HAVE_H2LIB
+        void L2L_amatrix(pamatrix matrix, 
+                 const box_type& target_box, 
+                 const box_type& source_box) const {
+            resize_amatrix(matrix,ncheb,ncheb);
+            for (int i=0; i<ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                    + target_box.bmin;
+                detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
+
+                lattice_iterator<D> mj(int_d(0),int_d(N));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    setentry_amatrix(matrix,i,j,cheb_rn(*mj));
+                }
+            }
+        }
+#endif
+
 
         static double L2P(const double_d& p,
                    const box_type& box, 
@@ -345,6 +427,49 @@ namespace detail {
             }
         }
 #endif
+
+#ifdef HAVE_H2LIB
+        template <typename ParticlesType>
+        static void L2P_amatrix(pamatrix matrix, 
+                    const box_type& box,
+                    const size_t* indicies,
+                    const size_t indicies_size,
+                    const ParticlesType& particles) {
+            typedef typename ParticlesType::position position;
+            resize_amatrix(matrix,indicies_size,ncheb);
+            for (int i = 0; i < indicies.size(); ++i) {
+                const double_d& p = get<position>(particles)[indicies[i]];
+                detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
+                lattice_iterator<dimension> mj(int_d(0),int_d(N));
+                for (int j=0; j<ncheb; ++j,++mj) {
+                    setentry_amatrix(matrix,i,j,cheb_rn(*mj));
+                }
+                
+            }
+        }
+
+        template <typename RowParticlesType, typename ColParticlesType>
+        void P2P_amatrix(pamatrix matrix, 
+                    const size_t* row_indicies,
+                    const size_t row_indicies_size,
+                    const size_t* col_indicies,
+                    const size_t col_indicies_size,
+                    const RowParticlesType& row_particles,
+                    const ColParticlesType& col_particles) const {
+            typedef typename ColParticlesType::position position;
+            resize_amatrix(matrix,row_indicies_size,col_indicies_size);
+            for (int i = 0; i < row_indicies.size(); ++i) {
+                const double_d& pi = get<position>(row_particles)[row_indicies[i]];
+                for (int j = 0; j < col_indicies.size(); ++j) {
+                    const double_d& pj = get<position>(col_particles)[col_indicies[j]];
+                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
+                }
+                
+            }
+        }
+#endif
+
+
 
     };
 

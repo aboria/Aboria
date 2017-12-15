@@ -180,7 +180,7 @@ public:
                                          0,std::plus<int>());
 
         // downward sweep of tree to generate level indicies and connectivity
-        LOG(2,"\tgenerating levels...");
+        LOG(2,"\tgenerating connectivity_type...");
         for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
             const box_type& target_box = m_query->get_bounds(ci);
             generate_levels(child_iterator_vector_type(),

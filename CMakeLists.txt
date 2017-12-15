@@ -92,6 +92,15 @@ if (Aboria_USE_EIGEN)
     endif()
 endif()
 
+option(Aboria_USE_H2LIB "Use H2Lib library" OFF)
+if (Aboria_USE_H2LIB)
+    list(APPEND Aboria_LIBRARIES "/home/mrobins/git/H2Lib/libh2.a")
+    list(APPEND Aboria_INCLUDES "/home/mrobins/git/H2Lib/Library")
+    add_definitions(-DHAVE_H2LIB)
+endif()
+
+
+
 #export compiler flags for code completion engines
 set( CMAKE_EXPORT_COMPILE_COMMANDS 1 )
 
@@ -109,7 +118,7 @@ endif()
 
 include_directories(src)
 include_directories(third-party)
-include_directories(SYSTEM ${CXXTEST_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} ${THRUST_INCLUDE_DIR})
+include_directories(SYSTEM ${CXXTEST_INCLUDES} ${Aboria_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} ${THRUST_INCLUDE_DIR})
 
 enable_testing()
 if (CXXTEST_FOUND)
