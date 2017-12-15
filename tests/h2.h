@@ -103,7 +103,7 @@ public:
         time_h2_setup = t1 - t0;
         std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
         t0 = Clock::now();
-        h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
+        h2lib_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         

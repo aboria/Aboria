@@ -78,8 +78,8 @@ public:
             for (auto ci = row_particles.get_query().get_children(); 
                     ci != false; ++ci,++i) {
                 ph2matrix child_h2 = generate_matrices(ci,cj,
-                              row_clusterbasis,row_clusterbasis->son[i],
-                              col_clusterbasis,col_clusterbasis->son[j],
+                              row_clusterbasis->son[i],
+                              col_clusterbasis->son[j],
                               row_particles,col_particles,
                               expansions);
                 ref_h2matrix(m_root_h2mat->son + i+j*m_root_h2mat->rsons,child_h2);
@@ -87,6 +87,22 @@ public:
         }
         update_h2matrix(m_root_h2mat);
     }
+
+
+    ~H2LibMatrix() {
+        /*
+        pclusterbasis row_clusterbasis = m_root_h2mat->rb;
+        pclusterbasis col_clusterbasis = m_root_h2mat->cb;
+        pcluster row_cluster = row_clusterbasis->t;
+        pcluster col_cluster = col_clusterbasis->t;
+        */
+        del_h2matrix(m_root_h2mat);
+        /*
+        del_clusterbasis(row_clusterbasis);
+        del_cluster(cluster);
+        */
+    }
+
 private:
 
     template <typename Particles, typename Expansions>
@@ -111,6 +127,12 @@ private:
 
         // TODO: do I need to set idx for non-leafs?
         t = new_cluster(0,nullptr,nsons,dim);
+        auto bbox = detail::bbox<dim>(particles.get_min(),particles.get_max());
+        // bounding box
+        for (int i = 0; i < dim; ++i) {
+            t->bmin[i] = particles.get_min()[i];
+            t->bmax[i] = particles.get_max()[i];
+        }
         cb_children.resize(nsons);
 
         // create child clusters, link them together and calculate descendents
@@ -118,7 +140,7 @@ private:
         t->desc = 1;
         for (auto ci_child = particles.get_query().get_children(); 
                 ci_child != false; ++ci_child,++i) {
-            cb_children[i] = finalise_clusterbasis(ci_child,particles,expansions);
+            cb_children[i] = finalise_clusterbasis(ci_child,bbox,particles,expansions);
             rank_sum += std::get<0>(cb_children[i])->ktree;
             if (std::get<0>(cb_children[i])->kbranch > max_rank) {
                 max_rank = std::get<0>(cb_children[i])->kbranch;
@@ -127,11 +149,7 @@ private:
             t->desc += std::get<1>(cb_children[i])->desc;
         }
 
-        // bounding box
-        for (int i = 0; i < dim; ++i) {
-            t->bmin[i] = particles.get_min()[i];
-            t->bmax[i] = particles.get_max()[i];
-        }
+        
 
         // create clusterbasis
         pclusterbasis cb;
@@ -152,28 +170,30 @@ private:
     template <typename ChildIterator, typename Particles, typename Expansions>
     std::tuple<pclusterbasis,pcluster>
     finalise_clusterbasis(const ChildIterator& ci, 
+                            const detail::bbox<Particles::dimension>& parent_bbox,
                                const Particles& particles,
                                const Expansions& expansions) {
 
-        const size_t index = particles.get_query()->get_bucket_index(*ci); 
+        const size_t index = particles.get_query().get_bucket_index(*ci); 
         const size_t dim = Particles::dimension;
         pcluster t;
-        std::vector<pclusterbasis> cb_children;
+        std::vector<std::tuple<pclusterbasis,pcluster>> cb_children;
         uint *idx;
         size_t rank_sum = 0;
         size_t max_rank = std::numeric_limits<size_t>::min();
+        const auto& bbox = particles.get_query().get_bounds(ci);
 
         // create cluster 
         size_t nsons = 0;
-        if (particles.get_query()->is_leaf_node(*ci)) { // leaf node
+        if (particles.get_query().is_leaf_node(*ci)) { // leaf node
             //get target_index
-            const auto& prange = particles.get_query()->get_bucket_particles(*ci);
+            const auto& prange = particles.get_query().get_bucket_particles(*ci);
             const size_t np = std::distance(prange.begin(),prange.end());
             idx = new uint[np];
             auto pit = prange.begin();
             for (int i = 0; i < np; ++i,++pit) {
-                const size_t pi = &(*get<Particles::position>(pit))
-                    - &get<Particles::position>(particles)[0];
+                const size_t pi = &(get<typename Particles::position>(*pit))
+                    - &get<typename Particles::position>(particles)[0];
                 idx[i] = pi;
             }
 
@@ -196,18 +216,17 @@ private:
             t->desc = 1;
             for (auto ci_child = particles.get_query().get_children(ci); 
                     ci_child != false; ++ci_child,++i) {
-                cb_children[i] = finalise_clusterbasis(ci_child,particles,expansions);
-                rank_sum += cb_children[i]->ktree;
-                if (cb_children[i]->kbranch > max_rank) {
-                    max_rank = cb_children[i]->kbranch;
+                cb_children[i] = finalise_clusterbasis(ci_child,bbox,particles,expansions);
+                rank_sum += std::get<0>(cb_children[i])->ktree;
+                if (std::get<0>(cb_children[i])->kbranch > max_rank) {
+                    max_rank = std::get<0>(cb_children[i])->kbranch;
                 }
-                t->son[i] = cb_children[i]->t;
-                t->desc += cb_children[i]->t->desc;
+                t->son[i] = std::get<1>(cb_children[i]);
+                t->desc += std::get<1>(cb_children[i])->desc;
             }
         }
 
         // bounding box
-        const auto& bbox = particles.get_query()->get_bounds(ci);
         for (int i = 0; i < dim; ++i) {
             t->bmin[i] = bbox.bmin[i];
             t->bmax[i] = bbox.bmax[i];
@@ -216,26 +235,26 @@ private:
         // create clusterbasis
         pclusterbasis cb;
 
-        if (particles.get_query()->is_leaf_node(*ci)) { // leaf node
+        if (particles.get_query().is_leaf_node(*ci)) { // leaf node
             cb = new_leaf_clusterbasis(t);
             cb->k = Expansions::ncheb;
             // create P2M amatrix
             // TODO: P2M or L2P here?
-            cb->V = new_amatrix(cb->k,t->size);
-            expansions.P2M_amatrix(cb->V,bbox,idx,particles);
+            resize_amatrix(&cb->V,cb->k,t->size);
+            expansions.P2M_amatrix(&cb->V,bbox,idx,t->size,particles);
         } else {
             cb = new_clusterbasis(t);
         }
 
         for (int i = 0; i < nsons; ++i) {
-            ref_clusterbasis(cb->son + i,cb_children[i]);
+            ref_clusterbasis(cb->son + i,std::get<0>(cb_children[i]));
         }
 
         cb->ktree = rank_sum + cb->k;
         cb->kbranch = max_rank + cb->k;
 
-        cb->E = new_amatrix(cb->k,cb->k);
-        expansions.L2L_amatrix(cb->E,bbox,ci.bounds);
+        resize_amatrix(&cb->E,cb->k,cb->k);
+        expansions.L2L_amatrix(&cb->E,bbox,parent_bbox);
 
         return std::make_tuple(cb,t);
     }
@@ -246,9 +265,7 @@ private:
     ph2matrix generate_matrices(
             const RowChildIterator& ci, 
             const ColChildIterator& cj,
-            pclusterbasis parent_ci_cb,
             pclusterbasis ci_cb,
-            pclusterbasis parent_cj_cb,
             pclusterbasis cj_cb,
             const RowParticles &row_particles,
             const ColParticles &col_particles,
@@ -284,7 +301,7 @@ private:
             // create uniform 
             h2mat->u = new_uniform(ci_cb,cj_cb);
             expansions.M2L_amatrix(
-                    h2mat->u,ci_box,cj_box);
+                    &h2mat->u->S,ci_box,cj_box);
         } else {
             // TODO: get_children should return empty range if leaf
             // non-leaf
@@ -356,7 +373,7 @@ private:
         return h2mat;
     }
 
-
+public:
 
     // target_vector += A*source_vector
     template <typename VectorTypeTarget, typename VectorTypeSource>
