@@ -59,6 +59,7 @@ class H2Test: public CxxTest::TestSuite {
     ABORIA_VARIABLE(source,double,"source");
     ABORIA_VARIABLE(target_manual,double,"target manual");
     ABORIA_VARIABLE(target_h2,double,"target h2");
+    ABORIA_VARIABLE(inverted_source,double,"inverted source h2");
 
 public:
 #ifdef HAVE_EIGEN
@@ -67,6 +68,9 @@ public:
         typedef typename ParticlesType::position position;
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
+
+        
+        
 
         // perform the operation using h2 matrix
         auto t0 = Clock::now();
@@ -103,7 +107,7 @@ public:
         time_h2_setup = t1 - t0;
         std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
         t0 = Clock::now();
-        h2lib_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
+        h2lib_matrix.matrix_vector_multiply(get<target_h2>(particles),1.0,false,get<source>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
@@ -117,6 +121,55 @@ public:
 
         std::cout << "for h2lib matrix class:" <<std::endl;
         std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
+        // invert target_manual to get the source
+        t0 = Clock::now();
+        auto h2lib_chol = h2lib_matrix.chol();
+        t1 = Clock::now();
+        time_h2_setup = t1 - t0;
+        std::copy(std::begin(get<target_manual>(particles)),
+                  std::end(get<target_manual>(particles)),
+                  std::begin(get<inverted_source>(particles)));
+        t0 = Clock::now();
+        h2lib_chol.solve(get<inverted_source>(particles));
+        t1 = Clock::now();
+        time_h2_eval = t1 - t0;
+        
+        L2_h2 = std::inner_product(
+                std::begin(get<inverted_source>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<source>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "for h2lib chol invert:" <<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
+        // invert target_manual to get the source
+        t0 = Clock::now();
+        auto h2lib_lr = h2lib_matrix.lr();
+        t1 = Clock::now();
+        time_h2_setup = t1 - t0;
+        std::copy(std::begin(get<target_manual>(particles)),
+                  std::end(get<target_manual>(particles)),
+                  std::begin(get<inverted_source>(particles)));
+        t0 = Clock::now();
+        h2lib_lr.solve(get<inverted_source>(particles));
+        t1 = Clock::now();
+        time_h2_eval = t1 - t0;
+        
+        L2_h2 = std::inner_product(
+                std::begin(get<inverted_source>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<source>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "for h2lib lr invert:" <<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
 
         if (N == 3) {
             TS_ASSERT_LESS_THAN(L2_h2/scale,1e-2);
@@ -170,7 +223,7 @@ public:
         typedef Vector<int,D> int_d;
         const int num_particles_per_bucket = 50;
 
-        typedef Particles<std::tuple<source,target_manual,target_h2>,D,StorageVector,SearchMethod> ParticlesType;
+        typedef Particles<std::tuple<source,target_manual,target_h2,inverted_source>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
         ParticlesType particles(N);
         for (int i=0; i<N; i++) {
@@ -286,7 +339,7 @@ public:
         typedef Vector<int,D> int_d;
         const int num_particles_per_bucket = 50;
 
-        typedef Particles<std::tuple<source,target_manual,target_h2>,D,StorageVector,SearchMethod> ParticlesType;
+        typedef Particles<std::tuple<source,target_manual,target_h2,inverted_source>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
         ParticlesType particles(N);
 

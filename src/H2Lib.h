@@ -40,10 +40,107 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 extern "C" {
 #include <h2matrix.h>
+#include <h2update.h>
+#include <h2arith.h>
 #undef I
 }
 
 namespace Aboria {
+
+class H2Lib_LR_Decomposition {
+    ph2matrix A;
+    ph2matrix L;
+    ph2matrix R;
+    ptruncmode tm;
+    double tol;
+
+public:
+    H2Lib_LR_Decomposition(const ph2matrix h2mat):
+        tm(new_abseucl_truncmode()),tol(1e-8) {
+
+        A = clone_h2matrix(h2mat,h2mat->rb,h2mat->cb);
+
+        pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
+        pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
+
+        pblock broot = build_from_h2matrix_block(A);
+
+        pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
+        pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
+        pclusterbasis Rrcb = build_from_cluster_clusterbasis(A->rb->t);
+        pclusterbasis Rccb = build_from_cluster_clusterbasis(A->cb->t);
+
+        L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
+        R = build_from_block_lower_h2matrix(broot,Rrcb,Rccb);
+
+        pclusteroperator Lrwf = prepare_row_clusteroperator(Lrcb, Lccb, tm);
+        pclusteroperator Lcwf = prepare_col_clusteroperator(Lrcb, Lccb, tm);
+        pclusteroperator Rrwf = prepare_row_clusteroperator(Rrcb, Rccb, tm);
+        pclusteroperator Rcwf = prepare_col_clusteroperator(Rrcb, Rccb, tm);
+
+        lrdecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, R, Rrwf, Rcwf, tm, tol);
+    }
+
+    ~H2Lib_LR_Decomposition() {
+        del_h2matrix(L);
+        del_h2matrix(R);
+        del_h2matrix(A);
+    }
+
+    template <typename VectorType>
+    void solve(VectorType& vector) {
+        pavector x = new_pointer_avector(
+                           vector.data(),
+                           vector.size());
+        lrsolve_h2matrix_avector(L,R,x);
+    }
+};
+
+class H2LibCholeskyDecomposition {
+    ph2matrix A;
+    ph2matrix L;
+    ptruncmode tm;
+    double tol;
+
+public:
+    H2LibCholeskyDecomposition(const ph2matrix h2mat):
+        tm(new_abseucl_truncmode()),tol(1e-8) {
+
+        A = clone_h2matrix(h2mat,h2mat->rb,h2mat->cb);
+
+        tolower_h2matrix(A);
+
+        pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
+        pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
+
+        pblock broot = build_from_h2matrix_block(A);
+
+        pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
+        pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
+
+        L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
+
+        pclusteroperator Lrwf = prepare_row_clusteroperator(Lrcb, Lccb, tm);
+        pclusteroperator Lcwf = prepare_col_clusteroperator(Lrcb, Lccb, tm);
+
+        choldecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, tm, tol);
+    }
+
+    ~H2LibCholeskyDecomposition() {
+        del_h2matrix(L);
+        del_h2matrix(A);
+    }
+
+    template <typename VectorType>
+    void solve(VectorType& vector) {
+        pavector x = new_pointer_avector(
+                           vector.data(),
+                           vector.size());
+        cholsolve_h2matrix_avector(L,x);
+    }
+};
+
+
 
 class H2LibMatrix {
 
@@ -61,7 +158,17 @@ public:
 
 
         pclusterbasis row_clusterbasis = create_root_clusterbasis(row_particles,expansions);
-        pclusterbasis col_clusterbasis = create_root_clusterbasis(col_particles,expansions);
+
+        const bool row_equals_col = static_cast<const void*>(&row_particles) 
+                                        == static_cast<const void*>(&col_particles);
+        pclusterbasis col_clusterbasis;
+        if (row_equals_col) {
+            //col_clusterbasis = build_from_cluster_clusterbasis(row_clusterbasis->t);
+            col_clusterbasis = clone_clusterbasis(row_clusterbasis);
+        } else {
+            col_clusterbasis = create_root_clusterbasis(col_particles,expansions);
+        }
+
 
         m_root_h2mat = new_h2matrix(row_clusterbasis,col_clusterbasis);
         m_root_h2mat->rsons = row_clusterbasis->sons;
@@ -69,6 +176,9 @@ public:
         m_root_h2mat->csons = col_clusterbasis->sons;
         if (m_root_h2mat->csons == 0) m_root_h2mat->csons = 1;
         m_root_h2mat->son = new ph2matrix[m_root_h2mat->rsons*m_root_h2mat->csons];
+        for (int i = 0; i < m_root_h2mat->rsons*m_root_h2mat->csons; ++i) {
+            m_root_h2mat->son[i] = nullptr;
+        }
 
         //loop through h2 matrix and fill that out
         size_t j = 0;
@@ -138,6 +248,7 @@ private:
         // create child clusters, link them together and calculate descendents
         size_t i = 0;
         t->desc = 1;
+        size_t np = 0;
         for (auto ci_child = particles.get_query().get_children(); 
                 ci_child != false; ++ci_child,++i) {
             cb_children[i] = finalise_clusterbasis(ci_child,bbox,particles,expansions);
@@ -145,11 +256,11 @@ private:
             if (std::get<0>(cb_children[i])->kbranch > max_rank) {
                 max_rank = std::get<0>(cb_children[i])->kbranch;
             }
+            np += std::get<1>(cb_children[i])->size;
             t->son[i] = std::get<1>(cb_children[i]);
             t->desc += std::get<1>(cb_children[i])->desc;
         }
-
-        
+        t->size = np;
 
         // create clusterbasis
         pclusterbasis cb;
@@ -214,6 +325,7 @@ private:
             // create child clusters, link them together and calculate descendents
             size_t i = 0;
             t->desc = 1;
+            size_t np = 0;
             for (auto ci_child = particles.get_query().get_children(ci); 
                     ci_child != false; ++ci_child,++i) {
                 cb_children[i] = finalise_clusterbasis(ci_child,bbox,particles,expansions);
@@ -221,9 +333,11 @@ private:
                 if (std::get<0>(cb_children[i])->kbranch > max_rank) {
                     max_rank = std::get<0>(cb_children[i])->kbranch;
                 }
+                np += std::get<1>(cb_children[i])->size;
                 t->son[i] = std::get<1>(cb_children[i]);
                 t->desc += std::get<1>(cb_children[i])->desc;
             }
+            t->size = np;
         }
 
         // bounding box
@@ -238,20 +352,24 @@ private:
         if (particles.get_query().is_leaf_node(*ci)) { // leaf node
             cb = new_leaf_clusterbasis(t);
             cb->k = Expansions::ncheb;
-            // create P2M amatrix
-            // TODO: P2M or L2P here?
-            resize_amatrix(&cb->V,cb->k,t->size);
-            expansions.P2M_amatrix(&cb->V,bbox,idx,t->size,particles);
+            cb->ktree = rank_sum + cb->k + t->size;
+            // create L2P amatrix
+            resize_amatrix(&cb->V,t->size,cb->k);
+            expansions.L2P_amatrix(&cb->V,bbox,idx,t->size,particles);
         } else {
             cb = new_clusterbasis(t);
+            cb->k = Expansions::ncheb;
+            cb->ktree = rank_sum + cb->k;
         }
 
         for (int i = 0; i < nsons; ++i) {
             ref_clusterbasis(cb->son + i,std::get<0>(cb_children[i]));
         }
 
-        cb->ktree = rank_sum + cb->k;
-        cb->kbranch = max_rank + cb->k;
+        if (max_rank < cb->k) {
+            max_rank = cb->k;
+        }
+        cb->kbranch = max_rank;
 
         resize_amatrix(&cb->E,cb->k,cb->k);
         expansions.L2L_amatrix(&cb->E,bbox,parent_bbox);
@@ -289,14 +407,7 @@ private:
         const bool cj_leaf = row_particles.get_query().is_leaf_node(*cj);
         
         // each (i,j) is non-admissible leaf, admissible leaf, or otherwise
-        if (ci_leaf && cj_leaf) {
-            //non-admissible leaf - P2P
-            h2mat->f = new_amatrix(ci_cb->t->size,cj_cb->t->size);
-            expansions.P2P_amatrix(
-                    h2mat->f,ci_cb->t->idx,ci_cb->t->size,cj_cb->t->idx,cj_cb->t->size,
-                    row_particles,col_particles);
-
-        } else if (!theta.check(cj_box.bmin,cj_box.bmax)) {
+        if (!theta.check(cj_box.bmin,cj_box.bmax)) {
             // admissible leaf - M2L
             // create uniform 
             h2mat->u = new_uniform(ci_cb,cj_cb);
@@ -306,12 +417,29 @@ private:
             // TODO: get_children should return empty range if leaf
             // non-leaf
             h2mat->rsons = ci_cb->sons;
-            if (h2mat->rsons == 0) h2mat->rsons = 1;
             h2mat->csons = cj_cb->sons;
-            if (h2mat->csons == 0) h2mat->csons = 1;
-            h2mat->son = new ph2matrix[h2mat->rsons*h2mat->csons];
-            
-            if (!ci_leaf && !cj_leaf) {
+            if (h2mat->csons == 0 && h2mat->csons == 0) {
+                h2mat->rsons = 0;
+                h2mat->csons = 0;
+                h2mat->son = nullptr;
+            } else {
+                if (h2mat->rsons == 0) h2mat->rsons = 1;
+                if (h2mat->csons == 0) h2mat->csons = 1;
+                h2mat->son = new ph2matrix[h2mat->rsons*h2mat->csons];
+                for (int i = 0; i < h2mat->rsons*h2mat->csons; ++i) {
+                    h2mat->son[i] = nullptr;
+                }
+            }
+
+            if (ci_leaf && cj_leaf) {
+                //non-admissible leaf - P2P
+                h2mat->f = new_amatrix(ci_cb->t->size,cj_cb->t->size);
+                expansions.P2P_amatrix(
+                        h2mat->f,
+                        ci_cb->t->idx,ci_cb->t->size,
+                        cj_cb->t->idx,cj_cb->t->size,
+                        row_particles,col_particles);
+            } else if (!ci_leaf && !cj_leaf) {
                 size_t j = 0;
                 for (auto cj_child = col_particles.get_query().get_children(cj); 
                         cj_child != false; ++cj_child,++j) {
@@ -375,20 +503,34 @@ private:
 
 public:
 
-    // target_vector += A*source_vector
+    const ph2matrix get_ph2matrix() const {
+        return m_root_h2mat;
+    }
+
+    H2Lib_LR_Decomposition lr() const {
+        return H2Lib_LR_Decomposition(m_root_h2mat);
+    }
+
+    H2LibCholeskyDecomposition chol() const {
+        return H2LibCholeskyDecomposition(m_root_h2mat);
+    }
+
+    // target_vector += alpha*A*source_vector or alpha*A'*source_vector
     template <typename VectorTypeTarget, typename VectorTypeSource>
     void matrix_vector_multiply(VectorTypeTarget& target_vector, 
-                          const VectorTypeSource& source_vector) const {
-        avector source_avector;
-        source_avector.v = source_vector.data();
-        source_avector.dim = source_vector.size();
-        avector target_avector;
-        target_vector.v = target_vector.data();
-        target_vector.dim = target_vector.size();
-        mvm_h2matrix_avector(1,false,m_root_h2mat,source_vector,target_vector);
+                                const double alpha, const bool h2trans,
+                                const VectorTypeSource& source_vector) const {
+        pavector source_avector = new_pointer_avector(
+                                    const_cast<double*>(source_vector.data()),
+                                    source_vector.size());
+        pavector target_avector = new_pointer_avector(
+                                    target_vector.data(),
+                                    target_vector.size());
+        mvm_h2matrix_avector(alpha,h2trans,m_root_h2mat,source_avector,target_avector);
     }
 };
 
+    
 
 template <typename Expansions, typename RowParticlesType, typename ColParticlesType>
 H2LibMatrix make_h2lib_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions) {
