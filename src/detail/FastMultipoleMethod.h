@@ -189,6 +189,8 @@ namespace detail {
                     const uint indicies_size,
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
+            ASSERT_CUDA(matrix->rows == ncheb);
+            ASSERT_CUDA(matrix->cols == indicies_size);
             //resize_amatrix(matrix,ncheb,indicies_size);
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
@@ -242,6 +244,8 @@ namespace detail {
                  const box_type& target_box, 
                  const box_type& source_box) const {
             //resize_amatrix(matrix,ncheb,ncheb);
+            ASSERT_CUDA(matrix->rows == ncheb);
+            ASSERT_CUDA(matrix->cols == ncheb);
             for (int j=0; j<ncheb; ++j) {
                 const double_d& pj_unit_box = m_cheb_points[j];
                 const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
@@ -301,6 +305,8 @@ namespace detail {
                  const box_type& source_box) const {
             // don't resize, already done in new_uniform
             //resize_amatrix(matrix,ncheb,ncheb);
+            ASSERT_CUDA(matrix->rows == ncheb);
+            ASSERT_CUDA(matrix->cols == ncheb);
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -361,6 +367,8 @@ namespace detail {
                  const box_type& target_box, 
                  const box_type& source_box) const {
             //resize_amatrix(matrix,ncheb,ncheb);
+            ASSERT_CUDA(matrix->rows == ncheb);
+            ASSERT_CUDA(matrix->cols == ncheb);
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -447,6 +455,8 @@ namespace detail {
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
             //resize_amatrix(matrix,indicies_size,ncheb);
+            ASSERT_CUDA(matrix->rows == indicies_size);
+            ASSERT_CUDA(matrix->cols == ncheb);
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
@@ -467,6 +477,8 @@ namespace detail {
                     const RowParticlesType& row_particles,
                     const ColParticlesType& col_particles) const {
             typedef typename ColParticlesType::position position;
+            ASSERT_CUDA(matrix->rows == row_indicies_size);
+            ASSERT_CUDA(matrix->cols == col_indicies_size);
             //resize_amatrix(matrix,row_indicies_size,col_indicies_size);
             for (int i = 0; i < row_indicies_size; ++i) {
                 const double_d& pi = get<position>(row_particles)[row_indicies[i]];

@@ -58,7 +58,9 @@ public:
     H2Lib_LR_Decomposition(const ph2matrix h2mat):
         tm(new_abseucl_truncmode()),tol(1e-8) {
 
-        A = clone_h2matrix(h2mat,h2mat->rb,h2mat->cb);
+        pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
+        pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
+        A = clone_h2matrix(h2mat,rbcopy,cbcopy);
 
         pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
         pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
@@ -71,12 +73,12 @@ public:
         pclusterbasis Rccb = build_from_cluster_clusterbasis(A->cb->t);
 
         L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
-        R = build_from_block_lower_h2matrix(broot,Rrcb,Rccb);
+        R = build_from_block_upper_h2matrix(broot,Rrcb,Rccb);
 
-        pclusteroperator Lrwf = prepare_row_clusteroperator(Lrcb, Lccb, tm);
-        pclusteroperator Lcwf = prepare_col_clusteroperator(Lrcb, Lccb, tm);
-        pclusteroperator Rrwf = prepare_row_clusteroperator(Rrcb, Rccb, tm);
-        pclusteroperator Rcwf = prepare_col_clusteroperator(Rrcb, Rccb, tm);
+        pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
+        pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
+        pclusteroperator Rrwf = prepare_row_clusteroperator(R->rb, R->cb, tm);
+        pclusteroperator Rcwf = prepare_col_clusteroperator(R->rb, R->cb, tm);
 
         lrdecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, R, Rrwf, Rcwf, tm, tol);
     }
@@ -108,12 +110,13 @@ public:
 
         A = clone_h2matrix(h2mat,h2mat->rb,h2mat->cb);
 
+        pblock broot = build_from_h2matrix_block(A);
+
         tolower_h2matrix(A);
 
         pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
         pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
 
-        pblock broot = build_from_h2matrix_block(A);
 
         pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
         pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
@@ -273,6 +276,7 @@ private:
 
         cb->k = Expansions::ncheb;
         cb->ktree = rank_sum + cb->k;
+        //cb->kbranch = max_rank < cb->k ? cb->k : max_rank;
         cb->kbranch = max_rank + cb->k;
 
         return cb;
@@ -309,6 +313,7 @@ private:
             }
 
             t = new_cluster(np,idx,0,dim);
+            t->desc = 1;
 
         } else {
 
@@ -350,9 +355,10 @@ private:
         pclusterbasis cb;
 
         if (particles.get_query().is_leaf_node(*ci)) { // leaf node
-            cb = new_leaf_clusterbasis(t);
+            cb = new_clusterbasis(t);
             cb->k = Expansions::ncheb;
-            cb->ktree = rank_sum + cb->k + t->size;
+            cb->ktree = cb->k + t->size;
+            cb->kbranch = cb->ktree;
             // create L2P amatrix
             resize_amatrix(&cb->V,t->size,cb->k);
             expansions.L2P_amatrix(&cb->V,bbox,idx,t->size,particles);
@@ -360,16 +366,20 @@ private:
             cb = new_clusterbasis(t);
             cb->k = Expansions::ncheb;
             cb->ktree = rank_sum + cb->k;
+            cb->kbranch = max_rank + cb->k;
+            /*
+            if (max_rank < cb->k) {
+                max_rank = cb->k;
+                cb->kbranch = cb->k;
+            } else {
+                cb->kbranch = max_rank;
+            }
+            */
         }
 
         for (int i = 0; i < nsons; ++i) {
             ref_clusterbasis(cb->son + i,std::get<0>(cb_children[i]));
         }
-
-        if (max_rank < cb->k) {
-            max_rank = cb->k;
-        }
-        cb->kbranch = max_rank;
 
         resize_amatrix(&cb->E,cb->k,cb->k);
         expansions.L2L_amatrix(&cb->E,bbox,parent_bbox);
@@ -413,12 +423,16 @@ private:
             h2mat->u = new_uniform(ci_cb,cj_cb);
             expansions.M2L_amatrix(
                     &h2mat->u->S,ci_box,cj_box);
+            h2mat->rsons = 0;
+            h2mat->csons = 0;
+            h2mat->son = NULL;
+            h2mat->f = NULL;
         } else {
             // TODO: get_children should return empty range if leaf
             // non-leaf
             h2mat->rsons = ci_cb->sons;
             h2mat->csons = cj_cb->sons;
-            if (h2mat->csons == 0 && h2mat->csons == 0) {
+            if (h2mat->rsons == 0 && h2mat->csons == 0) {
                 h2mat->rsons = 0;
                 h2mat->csons = 0;
                 h2mat->son = nullptr;
