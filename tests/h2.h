@@ -138,7 +138,7 @@ public:
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<inverted_source>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<inverted_source>(particles)), std::end(get<inverted_source>(particles)),
                 std::begin(get<source>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
@@ -162,7 +162,7 @@ public:
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<inverted_source>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<inverted_source>(particles)), std::end(get<inverted_source>(particles)),
                 std::begin(get<source>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },

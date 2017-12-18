@@ -56,7 +56,7 @@ class H2Lib_LR_Decomposition {
 
 public:
     H2Lib_LR_Decomposition(const ph2matrix h2mat):
-        tm(new_abseucl_truncmode()),tol(1e-8) {
+        tm(new_releucl_truncmode()),tol(1e-10) {
 
         pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
         pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
@@ -108,7 +108,9 @@ public:
     H2LibCholeskyDecomposition(const ph2matrix h2mat):
         tm(new_abseucl_truncmode()),tol(1e-8) {
 
-        A = clone_h2matrix(h2mat,h2mat->rb,h2mat->cb);
+        pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
+        pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
+        A = clone_h2matrix(h2mat,rbcopy,cbcopy);
 
         pblock broot = build_from_h2matrix_block(A);
 
@@ -117,14 +119,13 @@ public:
         pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
         pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
 
-
         pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
         pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
 
         L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
 
-        pclusteroperator Lrwf = prepare_row_clusteroperator(Lrcb, Lccb, tm);
-        pclusteroperator Lcwf = prepare_col_clusteroperator(Lrcb, Lccb, tm);
+        pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
+        pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
 
         choldecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, tm, tol);
     }
@@ -148,6 +149,8 @@ public:
 class H2LibMatrix {
 
     ph2matrix m_root_h2mat;
+    std::shared_ptr<uint> m_row_idx;
+    std::shared_ptr<uint> m_col_idx;
 
 public:
 
@@ -159,17 +162,30 @@ public:
         //generate h2 matrix 
         LOG(2,"H2LibMatrix: creating h2 matrix using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles");
 
-
-        pclusterbasis row_clusterbasis = create_root_clusterbasis(row_particles,expansions);
+        m_row_idx = std::shared_ptr<uint>(
+                            new uint[row_particles.size()],
+                            std::default_delete<uint[]>());
+        pclusterbasis row_clusterbasis;
+        pcluster row_t;
+        std::tie(row_clusterbasis,row_t) = create_root_clusterbasis(row_particles,expansions);
+        set_root_idx(row_t,m_row_idx.get(),row_particles);
 
         const bool row_equals_col = static_cast<const void*>(&row_particles) 
                                         == static_cast<const void*>(&col_particles);
         pclusterbasis col_clusterbasis;
+        pcluster col_t;
         if (row_equals_col) {
+            m_col_idx = m_row_idx;
             //col_clusterbasis = build_from_cluster_clusterbasis(row_clusterbasis->t);
             col_clusterbasis = clone_clusterbasis(row_clusterbasis);
+            col_t = row_t;
         } else {
-            col_clusterbasis = create_root_clusterbasis(col_particles,expansions);
+            std::tie(col_clusterbasis,col_t) = create_root_clusterbasis(col_particles,expansions);
+            m_col_idx = std::shared_ptr<uint>(
+                            new uint[col_particles.size()],
+                            std::default_delete<uint[]>());
+
+            set_root_idx(col_t,m_col_idx.get(),col_particles);
         }
 
 
@@ -218,8 +234,44 @@ public:
 
 private:
 
+    template <typename Particles>
+    void set_root_idx(pcluster t, uint* idx, const Particles& particles) {
+        t->idx = idx;
+        size_t i = 0;
+        for (auto ci_child = particles.get_query().get_children(); 
+                ci_child != false; ++ci_child,++i) {
+            set_idx(ci_child,t->son[i],idx,particles);
+            idx += t->son[i]->size;
+        }
+        ASSERT_CUDA(idx - t->idx == t->size);
+    }
+
+    template <typename ChildIterator, typename Particles>
+    void set_idx(const ChildIterator ci, pcluster t, uint* idx,const Particles& particles) {
+        t->idx = idx;
+        if (particles.get_query().is_leaf_node(*ci)) { // leaf node
+            const auto& prange = particles.get_query().get_bucket_particles(*ci);
+            auto pit = prange.begin();
+            for (int i = 0; i < t->size; ++i,++pit) {
+                const size_t pi = &(get<typename Particles::position>(*pit))
+                    - &get<typename Particles::position>(particles)[0];
+                idx[i] = pi;
+            }
+            idx += t->size;
+        } else {
+            size_t i = 0;
+            for (auto ci_child = particles.get_query().get_children(ci); 
+                      ci_child != false; ++ci_child,++i) {
+                set_idx(ci_child,t->son[i],idx,particles);
+                idx += t->son[i]->size;
+            }
+        }
+        ASSERT_CUDA(idx - t->idx == t->size);
+    }
+
+
     template <typename Particles, typename Expansions>
-    pclusterbasis create_root_clusterbasis(const Particles& particles,
+    std::tuple<pclusterbasis,pcluster> create_root_clusterbasis(const Particles& particles,
                                const Expansions& expansions) {
 
         const size_t dim = Particles::dimension;
@@ -279,7 +331,7 @@ private:
         //cb->kbranch = max_rank < cb->k ? cb->k : max_rank;
         cb->kbranch = max_rank + cb->k;
 
-        return cb;
+        return std::make_tuple(cb,t);
     }
 
     template <typename ChildIterator, typename Particles, typename Expansions>
@@ -293,7 +345,7 @@ private:
         const size_t dim = Particles::dimension;
         pcluster t;
         std::vector<std::tuple<pclusterbasis,pcluster>> cb_children;
-        uint *idx;
+        std::vector<uint> idx;
         size_t rank_sum = 0;
         size_t max_rank = std::numeric_limits<size_t>::min();
         const auto& bbox = particles.get_query().get_bounds(ci);
@@ -304,15 +356,14 @@ private:
             //get target_index
             const auto& prange = particles.get_query().get_bucket_particles(*ci);
             const size_t np = std::distance(prange.begin(),prange.end());
-            idx = new uint[np];
+            t = new_cluster(np,nullptr,0,dim);
+            idx.resize(np);
             auto pit = prange.begin();
-            for (int i = 0; i < np; ++i,++pit) {
+            for (int i = 0; i < t->size; ++i,++pit) {
                 const size_t pi = &(get<typename Particles::position>(*pit))
                     - &get<typename Particles::position>(particles)[0];
                 idx[i] = pi;
             }
-
-            t = new_cluster(np,idx,0,dim);
             t->desc = 1;
 
         } else {
@@ -361,7 +412,7 @@ private:
             cb->kbranch = cb->ktree;
             // create L2P amatrix
             resize_amatrix(&cb->V,t->size,cb->k);
-            expansions.L2P_amatrix(&cb->V,bbox,idx,t->size,particles);
+            expansions.L2P_amatrix(&cb->V,bbox,idx.data(),t->size,particles);
         } else {
             cb = new_clusterbasis(t);
             cb->k = Expansions::ncheb;
