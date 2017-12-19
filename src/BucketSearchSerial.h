@@ -1200,6 +1200,10 @@ struct bucket_search_serial_query {
         return m_particles_begin;
     }
 
+    unsigned number_of_levels() const {
+        return 2;
+    }
+
     /*
     CUDA_HOST_DEVICE
     iterator_range<theta_iterator> get_theta_buckets(const reference bucket) const {

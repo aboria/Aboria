@@ -116,7 +116,10 @@ public:
                 std::begin(get<target_manual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                [](const double t1, const double t2) { 
+                
+                //std::cout << t1 << " versus1 "<<t2<<std::endl;
+                return (t1-t2)*(t1-t2); }
                 );
 
         std::cout << "for h2lib matrix class:" <<std::endl;
@@ -129,8 +132,8 @@ public:
         auto h2lib_lr = h2lib_matrix.lr();
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_manual>(particles)),
-                  std::end(get<target_manual>(particles)),
+        std::copy(std::begin(get<target_h2>(particles)),
+                  std::end(get<target_h2>(particles)),
                   std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
         h2lib_lr.solve(get<inverted_source>(particles));
@@ -142,7 +145,10 @@ public:
                 std::begin(get<source>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                [](const double t1, const double t2) { 
+                //std::cout << t1 << " versus2 "<<t2<<std::endl;
+                return (t1-t2)*(t1-t2); 
+                }
                 );
 
         std::cout << "for h2lib lr invert:" <<std::endl;
@@ -153,8 +159,8 @@ public:
         auto h2lib_chol = h2lib_matrix.chol();
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_manual>(particles)),
-                  std::end(get<target_manual>(particles)),
+        std::copy(std::begin(get<target_h2>(particles)),
+                  std::end(get<target_h2>(particles)),
                   std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
         h2lib_chol.solve(get<inverted_source>(particles));
@@ -249,7 +255,7 @@ public:
         std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                        std::begin(get<source>(particles)), source_fn);
 
-        const double c = 0.01;
+        const double c = 0.001;
         auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
             return std::sqrt(dx.squaredNorm() + c); 
         };
@@ -369,7 +375,7 @@ public:
         std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                        std::begin(get<source>(particles)), source_fn);
 
-        const double c = 0.01;
+        const double c = 0.0001;
         auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
             return std::sqrt(dx.squaredNorm() + c); 
         };
@@ -614,7 +620,7 @@ public:
 
     void test_fast_methods_kd_tree(void) {
 #ifdef HAVE_EIGEN
-        const size_t N = 10000;
+        const size_t N = 1000;
         /*
         std::cout << "KD_TREE: testing extended matrix 1D..." << std::endl;
         helper_extended_matrix<1,std::vector,nanoflann_adaptor>(N);
@@ -637,7 +643,7 @@ public:
 
     void test_fast_methods_octtree(void) {
 #ifdef HAVE_EIGEN
-        const size_t N = 10000;
+        const size_t N = 1000;
         /*
         std::cout << "OCTTREE: testing extended matrix 1D..." << std::endl;
         helper_extended_matrix<1,std::vector,octtree>(N);

@@ -688,6 +688,10 @@ struct bucket_search_parallel_query {
         return m_particles_begin;
     }
 
+    unsigned number_of_levels() const {
+        return 2;
+    }
+
 
     /*
     ABORIA_HOST_DEVICE_IGNORE_WARN

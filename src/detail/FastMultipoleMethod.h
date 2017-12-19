@@ -49,6 +49,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef HAVE_H2LIB
 extern "C" {
 #include <amatrix.h>
+#include <cluster.h>
 #undef I
 }
 #endif
@@ -183,12 +184,17 @@ namespace detail {
 
 #ifdef HAVE_H2LIB
         template <typename ParticlesType>
-        static void P2M_amatrix(pamatrix matrix, 
-                    const box_type& box,
+        static void P2M_trans_amatrix(pamatrix matrix, 
+                    const pccluster t,
                     const uint* indicies,
                     const uint indicies_size,
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
+            box_type box;
+            for (int i = 0; i < D; ++i) {
+                box.bmin[i] = t->bmin[i];
+                box.bmax[i] = t->bmax[i];
+            }
             ASSERT_CUDA(matrix->rows == ncheb);
             ASSERT_CUDA(matrix->cols == indicies_size);
             //resize_amatrix(matrix,ncheb,indicies_size);
@@ -240,12 +246,19 @@ namespace detail {
 #endif
 
 #ifdef HAVE_H2LIB
-        void M2M_matrix(pamatrix matrix, 
-                 const box_type& target_box, 
-                 const box_type& source_box) const {
+        void M2M_amatrix(pamatrix matrix, 
+                 pccluster target_t, 
+                 pccluster source_t) const {
             //resize_amatrix(matrix,ncheb,ncheb);
             ASSERT_CUDA(matrix->rows == ncheb);
             ASSERT_CUDA(matrix->cols == ncheb);
+            box_type target_box,source_box;
+            for (int i = 0; i < D; ++i) {
+                target_box.bmin[i] = target_t->bmin[i];
+                target_box.bmax[i] = target_t->bmax[i];
+                source_box.bmin[i] = source_t->bmin[i];
+                source_box.bmax[i] = source_t->bmax[i];
+            }
             for (int j=0; j<ncheb; ++j) {
                 const double_d& pj_unit_box = m_cheb_points[j];
                 const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
@@ -301,12 +314,19 @@ namespace detail {
 
 #ifdef HAVE_H2LIB
         void M2L_amatrix(pamatrix matrix, 
-                 const box_type& target_box, 
-                 const box_type& source_box) const {
+                 pccluster target_t, 
+                 pccluster source_t) const {
             // don't resize, already done in new_uniform
             //resize_amatrix(matrix,ncheb,ncheb);
             ASSERT_CUDA(matrix->rows == ncheb);
             ASSERT_CUDA(matrix->cols == ncheb);
+            box_type target_box,source_box;
+            for (int i = 0; i < D; ++i) {
+                target_box.bmin[i] = target_t->bmin[i];
+                target_box.bmax[i] = target_t->bmax[i];
+                source_box.bmin[i] = source_t->bmin[i];
+                source_box.bmax[i] = source_t->bmax[i];
+            }
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -364,11 +384,18 @@ namespace detail {
 
 #ifdef HAVE_H2LIB
         void L2L_amatrix(pamatrix matrix, 
-                 const box_type& target_box, 
-                 const box_type& source_box) const {
+                 pccluster target_t, 
+                 pccluster source_t) const {
             //resize_amatrix(matrix,ncheb,ncheb);
             ASSERT_CUDA(matrix->rows == ncheb);
             ASSERT_CUDA(matrix->cols == ncheb);
+            box_type target_box,source_box;
+            for (int i = 0; i < D; ++i) {
+                target_box.bmin[i] = target_t->bmin[i];
+                target_box.bmax[i] = target_t->bmax[i];
+                source_box.bmin[i] = source_t->bmin[i];
+                source_box.bmax[i] = source_t->bmax[i];
+            }
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -449,7 +476,7 @@ namespace detail {
 #ifdef HAVE_H2LIB
         template <typename ParticlesType>
         static void L2P_amatrix(pamatrix matrix, 
-                    const box_type& box,
+                    const pccluster t,
                     const uint* indicies,
                     const uint indicies_size,
                     const ParticlesType& particles) {
@@ -457,6 +484,11 @@ namespace detail {
             //resize_amatrix(matrix,indicies_size,ncheb);
             ASSERT_CUDA(matrix->rows == indicies_size);
             ASSERT_CUDA(matrix->cols == ncheb);
+            box_type box;
+            for (int i = 0; i < D; ++i) {
+                box.bmin[i] = t->bmin[i];
+                box.bmax[i] = t->bmax[i];
+            }
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
