@@ -112,6 +112,7 @@ public:
 
         pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
         pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
+        ASSERT_CUDA(A->rb->t == A->cb->t);
 
         L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
 
@@ -151,10 +152,10 @@ public:
 
 class H2LibMatrix {
 
-    ph2matrix m_h2;
-    pblock m_block;
-    std::shared_ptr<uint> m_row_idx;
-    std::shared_ptr<uint> m_col_idx;
+    std::unique_ptr<h2matrix,decltype(&del_h2matrix)> m_h2;
+    std::unique_ptr<block,decltype(&del_block)> m_block;
+    std::vector<uint> m_row_idx;
+    std::vector<uint> m_col_idx;
 
 template <typename Particles,typename Expansions>
 static void
@@ -167,7 +168,7 @@ assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
     const Particles& particles = *std::get<1>(data_cast);
     pclusterbasis rb = (pclusterbasis) rbc;
 
-    const uint k = Expansions::ncheb;
+    const uint k = expansions.m_ncheb;
     if (rb->sons > 0) {
         resize_clusterbasis(rb,k);
         for (int i = 0; i < rb->sons; ++i) {
@@ -216,7 +217,9 @@ public:
     template <typename RowParticles, typename ColParticles, typename Expansions>
     H2LibMatrix(const RowParticles &row_particles, 
                 const ColParticles &col_particles, 
-                const Expansions& expansions) {
+                const Expansions& expansions):
+            m_h2(nullptr,del_h2matrix),
+            m_block(nullptr,del_block) {
 
         //generate h2 matrix 
         LOG(2,"H2LibMatrix: creating h2 matrix using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles");
@@ -227,10 +230,8 @@ public:
         //
         // Create row clusters and clusterbasis
         //
-        m_row_idx = std::shared_ptr<uint>(
-                            new uint[row_particles.size()],
-                            std::default_delete<uint[]>());
-        pcluster row_t = set_root_idx(m_row_idx.get(),row_particles);
+        m_row_idx.resize(row_particles.size());
+        pcluster row_t = set_root_idx(m_row_idx.data(),row_particles);
         pclusterbasis row_cb = build_from_cluster_clusterbasis(row_t);
         auto data_row = std::make_tuple(&expansions,&row_particles);
         iterate_parallel_clusterbasis(row_cb, 0, max_pardepth, NULL,
@@ -245,10 +246,8 @@ public:
         if (row_equals_col) {
             col_t = row_t;
         } else {
-            m_col_idx = std::shared_ptr<uint>(
-                            new uint[col_particles.size()],
-                            std::default_delete<uint[]>());
-            col_t = set_root_idx(m_col_idx.get(),col_particles);
+            m_col_idx.resize(col_particles.size());
+            col_t = set_root_idx(m_col_idx.data(),col_particles);
         }
         pclusterbasis col_cb = build_from_cluster_clusterbasis(col_t);
         auto data_col = std::make_tuple(&expansions,&col_particles);
@@ -259,7 +258,9 @@ public:
         // 
         // create h2 block
         //
-        m_block = new_block(row_t,col_t,false,row_t->sons,col_t->sons);
+        m_block = std::unique_ptr<block,decltype(&del_block)>(
+                new_block(row_t,col_t,false,row_t->sons,col_t->sons),
+                del_block);
         size_t j = 0;
         for (auto cj = col_particles.get_query().get_children(); 
                 cj != false; ++cj,++j) {
@@ -273,33 +274,26 @@ public:
                 m_block->son[i + j*row_t->sons] = child_block;
             }
         }
-        update_block(m_block);
+        update_block(m_block.get());
 
-        m_h2 = build_from_block_h2matrix(m_block,row_cb,col_cb);
-        ph2matrix* enum_h2mat = enumerate_h2matrix(m_h2);
+        m_h2 = std::unique_ptr<h2matrix,decltype(&del_h2matrix)>(
+                    build_from_block_h2matrix(m_block.get(),row_cb,col_cb),
+                    del_h2matrix);
+        ph2matrix* enum_h2mat = enumerate_h2matrix(m_h2.get());
         auto data_h2 = std::make_tuple(&expansions,&row_particles,
                                     &col_particles,enum_h2mat);
-        iterate_byrow_block(m_block, 0, 0, 0, max_pardepth, NULL,
+        iterate_byrow_block(m_block.get(), 0, 0, 0, max_pardepth, NULL,
 		      assemble_block_h2matrix<RowParticles,ColParticles,Expansions>, 
               &data_h2);
         freemem(enum_h2mat);
     }
 
-
-    ~H2LibMatrix() {
-        /*
-        pclusterbasis row_clusterbasis = m_root_h2mat->rb;
-        pclusterbasis col_clusterbasis = m_root_h2mat->cb;
-        pcluster row_cluster = row_clusterbasis->t;
-        pcluster col_cluster = col_clusterbasis->t;
-        */
-        del_h2matrix(m_h2);
-        del_block(m_block);
-        /*
-        del_clusterbasis(row_clusterbasis);
-        del_cluster(cluster);
-        */
+    void compress(const double tol) {
+        //ptruncmode tm = new_releucl_truncmode();
+        ptruncmode tm = new_blockreleucl_truncmode();
+        recompress_inplace_h2matrix(m_h2.get(),tm,tol);
     }
+
 
 private:
 
@@ -447,15 +441,15 @@ private:
 public:
 
     const ph2matrix get_ph2matrix() const {
-        return m_h2;
+        return m_h2.get();
     }
 
     H2Lib_LR_Decomposition lr() const {
-        return H2Lib_LR_Decomposition(m_h2,m_block);
+        return H2Lib_LR_Decomposition(get_ph2matrix(),m_block.get());
     }
 
     H2LibCholeskyDecomposition chol() const {
-        return H2LibCholeskyDecomposition(m_h2,m_block);
+        return H2LibCholeskyDecomposition(get_ph2matrix(),m_block.get());
     }
 
     // target_vector += alpha*A*source_vector or alpha*A'*source_vector
@@ -469,7 +463,7 @@ public:
         pavector target_avector = new_pointer_avector(
                                     target_vector.data(),
                                     target_vector.size());
-        mvm_h2matrix_avector(alpha,h2trans,m_h2,source_avector,target_avector);
+        mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
     }
 };
 

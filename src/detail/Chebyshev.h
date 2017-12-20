@@ -243,7 +243,7 @@ struct Chebyshev_Rn {
     }
 };
 
-template <unsigned int D, unsigned int N>
+template <unsigned int D, int N>
 struct ChebyshevRnSingle {
     typedef Vector<double,D> double_d;
     typedef Vector<int,D> int_d;
@@ -286,6 +286,60 @@ struct ChebyshevRnSingle {
     double operator()(const int_d &m) {
         ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
         ASSERT((m<N).all() ,"m should be less than n");
+        double ret = 1.0;
+        for (int d=0; d<D; ++d) {
+            ret *= m_Sn[m[d]][d];
+        }
+        ASSERT(!std::isnan(ret)," is nan!!!");
+        return ret;
+    }
+};
+
+template <unsigned int D>
+struct ChebyshevRn {
+    typedef Vector<double,D> double_d;
+    typedef Vector<int,D> int_d;
+    typedef std::vector<double_d> vector_double_d;
+    vector_double_d m_Sn;
+    const detail::bbox<D>& m_box;
+    ChebyshevRn(const size_t order, const detail::bbox<D>& box):
+        m_box(box),m_Sn(order) {}
+    
+    void set_position(const double_d& position) {
+
+        // if box width is zero in any direction set the shifted position
+        // to the middle of the range [-1,1] i.e. 0
+        double_d shift_position;
+        for (int i = 0; i < D; ++i) {
+            const double span = m_box.bmax[i]-m_box.bmin[i];
+            if (span > 0.0) {
+                shift_position[i] = (2*position[i]-m_box.bmin[i]-m_box.bmax[i])/span;
+            } else {
+                shift_position[i] = 0;
+            }
+        }
+
+        for (int m=0; m<m_Sn.size(); ++m) {
+            m_Sn[m] = chebyshev_Sn(shift_position,m,m_Sn.size());
+        }
+
+    }
+    
+    // NOTE: valid range of m is 0..n-1
+    double_d get_position(const int_d &m) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<m_Sn.size()).all() ,"m should be less than n");
+        double_d pos;
+        for (int d=0; d<D; ++d) {
+            pos[d] = chebyshev_node(m[d],m_Sn.size());
+        }
+        return 0.5*(pos+1)*(m_box.bmax-m_box.bmin) + m_box.bmin;
+    }
+
+    // NOTE: valid range of m is 0..n-1
+    double operator()(const int_d &m) {
+        ASSERT((m>=0).all() ,"m should be greater than or equal to 0");
+        ASSERT((m<m_Sn.size()).all() ,"m should be less than n");
         double ret = 1.0;
         for (int d=0; d<D; ++d) {
             ret *= m_Sn[m[d]][d];

@@ -118,7 +118,6 @@ namespace detail {
 
     template <unsigned int D, unsigned int N, typename Function> 
     struct BlackBoxExpansions {
-        
         typedef detail::bbox<D> box_type;
         static constexpr size_t ncheb = ipow(N,D); 
         typedef std::array<double,ncheb> expansion_type;
@@ -182,33 +181,6 @@ namespace detail {
         }
 #endif
 
-#ifdef HAVE_H2LIB
-        template <typename ParticlesType>
-        static void P2M_trans_amatrix(pamatrix matrix, 
-                    const pccluster t,
-                    const uint* indicies,
-                    const uint indicies_size,
-                    const ParticlesType& particles) {
-            typedef typename ParticlesType::position position;
-            box_type box;
-            for (int i = 0; i < D; ++i) {
-                box.bmin[i] = t->bmin[i];
-                box.bmax[i] = t->bmax[i];
-            }
-            ASSERT_CUDA(matrix->rows == ncheb);
-            ASSERT_CUDA(matrix->cols == indicies_size);
-            //resize_amatrix(matrix,ncheb,indicies_size);
-            for (int i = 0; i < indicies_size; ++i) {
-                const double_d& p = get<position>(particles)[indicies[i]];
-                detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
-                lattice_iterator<dimension> mj(int_d(0),int_d(N));
-                for (int j=0; j<ncheb; ++j,++mj) {
-                    setentry_amatrix(matrix,j,i,cheb_rn(*mj));
-                }
-            }
-        }
-#endif
-
         void M2M(expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
@@ -240,34 +212,6 @@ namespace detail {
                 lattice_iterator<D> mi(int_d(0),int_d(N));
                 for (int i=0; i<ncheb; ++i,++mi) {
                     matrix(i,j) = cheb_rn(*mi);
-                }
-            }
-        }
-#endif
-
-#ifdef HAVE_H2LIB
-        void M2M_amatrix(pamatrix matrix, 
-                 pccluster target_t, 
-                 pccluster source_t) const {
-            //resize_amatrix(matrix,ncheb,ncheb);
-            ASSERT_CUDA(matrix->rows == ncheb);
-            ASSERT_CUDA(matrix->cols == ncheb);
-            box_type target_box,source_box;
-            for (int i = 0; i < D; ++i) {
-                target_box.bmin[i] = target_t->bmin[i];
-                target_box.bmax[i] = target_t->bmax[i];
-                source_box.bmin[i] = source_t->bmin[i];
-                source_box.bmax[i] = source_t->bmax[i];
-            }
-            for (int j=0; j<ncheb; ++j) {
-                const double_d& pj_unit_box = m_cheb_points[j];
-                const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
-                    + source_box.bmin;
-                detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
-
-                lattice_iterator<D> mi(int_d(0),int_d(N));
-                for (int i=0; i<ncheb; ++i,++mi) {
-                    setentry_amatrix(matrix,i,j,cheb_rn(*mi));
                 }
             }
         }
@@ -312,37 +256,6 @@ namespace detail {
         }
 #endif
 
-#ifdef HAVE_H2LIB
-        void M2L_amatrix(pamatrix matrix, 
-                 pccluster target_t, 
-                 pccluster source_t) const {
-            // don't resize, already done in new_uniform
-            //resize_amatrix(matrix,ncheb,ncheb);
-            ASSERT_CUDA(matrix->rows == ncheb);
-            ASSERT_CUDA(matrix->cols == ncheb);
-            box_type target_box,source_box;
-            for (int i = 0; i < D; ++i) {
-                target_box.bmin[i] = target_t->bmin[i];
-                target_box.bmax[i] = target_t->bmax[i];
-                source_box.bmin[i] = source_t->bmin[i];
-                source_box.bmax[i] = source_t->bmax[i];
-            }
-            for (int i=0; i<ncheb; ++i) {
-                const double_d& pi_unit_box = m_cheb_points[i];
-                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
-                                                                    + target_box.bmin;
-                for (int j=0; j<ncheb; ++j) {
-                    const double_d& pj_unit_box = m_cheb_points[j];
-                    const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
-                                                                    + source_box.bmin;
-                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
-                }
-            }
-
-
-        }
-#endif
-
 
 
         void L2L(expansion_type& accum, 
@@ -377,34 +290,6 @@ namespace detail {
                 lattice_iterator<D> mj(int_d(0),int_d(N));
                 for (int j=0; j<ncheb; ++j,++mj) {
                     matrix(i,j) = cheb_rn(*mj);
-                }
-            }
-        }
-#endif
-
-#ifdef HAVE_H2LIB
-        void L2L_amatrix(pamatrix matrix, 
-                 pccluster target_t, 
-                 pccluster source_t) const {
-            //resize_amatrix(matrix,ncheb,ncheb);
-            ASSERT_CUDA(matrix->rows == ncheb);
-            ASSERT_CUDA(matrix->cols == ncheb);
-            box_type target_box,source_box;
-            for (int i = 0; i < D; ++i) {
-                target_box.bmin[i] = target_t->bmin[i];
-                target_box.bmax[i] = target_t->bmax[i];
-                source_box.bmin[i] = source_t->bmin[i];
-                source_box.bmax[i] = source_t->bmax[i];
-            }
-            for (int i=0; i<ncheb; ++i) {
-                const double_d& pi_unit_box = m_cheb_points[i];
-                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
-                    + target_box.bmin;
-                detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
-
-                lattice_iterator<D> mj(int_d(0),int_d(N));
-                for (int j=0; j<ncheb; ++j,++mj) {
-                    setentry_amatrix(matrix,i,j,cheb_rn(*mj));
                 }
             }
         }
@@ -473,27 +358,164 @@ namespace detail {
         }
 #endif
 
+
+
+    };
+
 #ifdef HAVE_H2LIB
+    template <unsigned int D, typename Function> 
+    struct H2LibBlackBoxExpansions {
+        typedef detail::bbox<D> box_type;
+
+        typedef Vector<double,D> double_d;
+        typedef Vector<int,D> int_d;
+        static const unsigned int dimension = D;
+        Function m_K;
+        std::vector<double_d> m_cheb_points; 
+        size_t m_order;
+        size_t m_ncheb;
+
+        H2LibBlackBoxExpansions(const size_t order, const Function &K):
+            m_K(K),m_order(order),m_ncheb(std::pow(m_order,D))
+        {
+            m_cheb_points.resize(m_ncheb);
+            //precalculate cheb_points
+            lattice_iterator<dimension> mi(int_d(0),int_d(m_order));
+            for (int i=0; i<m_cheb_points.size(); ++i,++mi) {
+                m_cheb_points[i] = detail::chebyshev_node_nd(*mi,m_order);
+            }
+        }
+
         template <typename ParticlesType>
-        static void L2P_amatrix(pamatrix matrix, 
+        void P2M_trans_amatrix(pamatrix matrix, 
                     const pccluster t,
                     const uint* indicies,
                     const uint indicies_size,
-                    const ParticlesType& particles) {
+                    const ParticlesType& particles) const {
             typedef typename ParticlesType::position position;
-            //resize_amatrix(matrix,indicies_size,ncheb);
-            ASSERT_CUDA(matrix->rows == indicies_size);
-            ASSERT_CUDA(matrix->cols == ncheb);
             box_type box;
             for (int i = 0; i < D; ++i) {
                 box.bmin[i] = t->bmin[i];
                 box.bmax[i] = t->bmax[i];
             }
+            ASSERT_CUDA(matrix->rows == m_ncheb);
+            ASSERT_CUDA(matrix->cols == indicies_size);
+            //resize_amatrix(matrix,m_ncheb,indicies_size);
+            detail::ChebyshevRn<D> cheb_rn(m_order,box);
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
-                detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
-                lattice_iterator<dimension> mj(int_d(0),int_d(N));
-                for (int j=0; j<ncheb; ++j,++mj) {
+                cheb_rn.set_position(p);
+                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
+                for (int j=0; j<m_ncheb; ++j,++mj) {
+                    setentry_amatrix(matrix,j,i,cheb_rn(*mj));
+                }
+            }
+        }
+
+        void M2M_amatrix(pamatrix matrix, 
+                 pccluster target_t, 
+                 pccluster source_t) const {
+            //resize_amatrix(matrix,m_ncheb,m_ncheb);
+            ASSERT_CUDA(matrix->rows == m_ncheb);
+            ASSERT_CUDA(matrix->cols == m_ncheb);
+            box_type target_box,source_box;
+            for (int i = 0; i < D; ++i) {
+                target_box.bmin[i] = target_t->bmin[i];
+                target_box.bmax[i] = target_t->bmax[i];
+                source_box.bmin[i] = source_t->bmin[i];
+                source_box.bmax[i] = source_t->bmax[i];
+            }
+            detail::ChebyshevRn<D> cheb_rn(m_order,target_box);
+            for (int j=0; j<m_ncheb; ++j) {
+                const double_d& pj_unit_box = m_cheb_points[j];
+                const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                    + source_box.bmin;
+                cheb_rn.set_position(pj);
+
+                lattice_iterator<D> mi(int_d(0),int_d(m_order));
+                for (int i=0; i<m_ncheb; ++i,++mi) {
+                    setentry_amatrix(matrix,i,j,cheb_rn(*mi));
+                }
+            }
+        }
+
+        void M2L_amatrix(pamatrix matrix, 
+                 pccluster target_t, 
+                 pccluster source_t) const {
+            // don't resize, already done in new_uniform
+            //resize_amatrix(matrix,m_ncheb,m_ncheb);
+            ASSERT_CUDA(matrix->rows == m_ncheb);
+            ASSERT_CUDA(matrix->cols == m_ncheb);
+            box_type target_box,source_box;
+            for (int i = 0; i < D; ++i) {
+                target_box.bmin[i] = target_t->bmin[i];
+                target_box.bmax[i] = target_t->bmax[i];
+                source_box.bmin[i] = source_t->bmin[i];
+                source_box.bmax[i] = source_t->bmax[i];
+            }
+            for (int i=0; i<m_ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                                                                    + target_box.bmin;
+                for (int j=0; j<m_ncheb; ++j) {
+                    const double_d& pj_unit_box = m_cheb_points[j];
+                    const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                                                                    + source_box.bmin;
+                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
+                }
+            }
+
+
+        }
+
+
+        void L2L_amatrix(pamatrix matrix, 
+                 pccluster target_t, 
+                 pccluster source_t) const {
+            //resize_amatrix(matrix,m_ncheb,m_ncheb);
+            ASSERT_CUDA(matrix->rows == m_ncheb);
+            ASSERT_CUDA(matrix->cols == m_ncheb);
+            box_type target_box,source_box;
+            for (int i = 0; i < D; ++i) {
+                target_box.bmin[i] = target_t->bmin[i];
+                target_box.bmax[i] = target_t->bmax[i];
+                source_box.bmin[i] = source_t->bmin[i];
+                source_box.bmax[i] = source_t->bmax[i];
+            }
+            detail::ChebyshevRn<D> cheb_rn(m_order,source_box);
+            for (int i=0; i<m_ncheb; ++i) {
+                const double_d& pi_unit_box = m_cheb_points[i];
+                const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
+                    + target_box.bmin;
+                cheb_rn.set_position(pi);
+                lattice_iterator<D> mj(int_d(0),int_d(m_order));
+                for (int j=0; j<m_ncheb; ++j,++mj) {
+                    setentry_amatrix(matrix,i,j,cheb_rn(*mj));
+                }
+            }
+        }
+
+        template <typename ParticlesType>
+        void L2P_amatrix(pamatrix matrix, 
+                    const pccluster t,
+                    const uint* indicies,
+                    const uint indicies_size,
+                    const ParticlesType& particles) const {
+            typedef typename ParticlesType::position position;
+            //resize_amatrix(matrix,indicies_size,m_ncheb);
+            ASSERT_CUDA(matrix->rows == indicies_size);
+            ASSERT_CUDA(matrix->cols == m_ncheb);
+            box_type box;
+            for (int i = 0; i < D; ++i) {
+                box.bmin[i] = t->bmin[i];
+                box.bmax[i] = t->bmax[i];
+            }
+            detail::ChebyshevRn<D> cheb_rn(m_order,box);
+            for (int i = 0; i < indicies_size; ++i) {
+                const double_d& p = get<position>(particles)[indicies[i]];
+                cheb_rn.set_position(p);
+                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
+                for (int j=0; j<m_ncheb; ++j,++mj) {
                     setentry_amatrix(matrix,i,j,cheb_rn(*mj));
                 }
                 
@@ -521,11 +543,10 @@ namespace detail {
                 
             }
         }
-#endif
-
-
 
     };
+#endif
+
 
 
 

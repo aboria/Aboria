@@ -342,6 +342,11 @@ detail::BlackBoxExpansions<D,N,Function> make_black_box_expansion(const Function
     return detail::BlackBoxExpansions<D,N,Function>(function);
 }
 
+template <unsigned int D, typename Function> 
+detail::H2LibBlackBoxExpansions<D,Function> make_h2lib_black_box_expansion(size_t order, const Function& function) {
+    return detail::H2LibBlackBoxExpansions<D,Function>(order,function);
+}
+
 template <typename Expansions, typename ColParticles>
 FastMultipoleMethod<Expansions,ColParticles>
 make_fmm(const ColParticles &col_particles, const Expansions& expansions) {

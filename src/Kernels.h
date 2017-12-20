@@ -45,7 +45,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #include "FastMultipoleMethod.h"
-#include "ParH2Matrix.h"
+#include "H2Lib.h"
 
 
 namespace Aboria {
@@ -495,7 +495,6 @@ namespace Aboria {
     };
 
     template<typename RowParticles, typename ColParticles, typename PositionF,
-        unsigned int N,
         typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
     class KernelH2: public KernelDense<RowParticles,ColParticles,F> {
         typedef KernelDense<RowParticles,ColParticles,F> base_type;
@@ -507,8 +506,8 @@ namespace Aboria {
         typedef typename base_type::const_col_reference const_col_reference;
         typedef typename ColParticles::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
-        typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef ParH2Matrix<expansions_type,ColParticles> h2_matrix_type;
+        typedef typename detail::H2LibBlackBoxExpansions<dimension,PositionF> expansions_type;
+        typedef H2LibMatrix h2_matrix_type;
 
         h2_matrix_type m_h2_matrix;
         PositionF m_position_function;
@@ -516,19 +515,22 @@ namespace Aboria {
     public:
         typedef typename base_type::Scalar Scalar;
         typedef PositionF position_function_type;
-        static const unsigned int expansion_N = N;
 
         KernelH2(const RowParticles& row_particles,
                         const ColParticles& col_particles,
                         const PositionF& function): 
-                                            m_h2_matrix(row_particles,col_particles,
-                                                        expansions_type(function)),
-                                            m_position_function(function),
-                                            base_type(row_particles,
-                                                  col_particles,
-                                                  F(function)) {
-        }
+                          m_h2_matrix(row_particles,col_particles,
+                                  expansions_type(
+                                      std::ceil(std::pow(col_particles.get_max_bucket_size(),
+                                                    1.0/dimension)),
+                                      function)),
+                          m_position_function(function),
+                          base_type(row_particles,
+                                  col_particles,
+                                  F(function)) {
+                          }
 
+        /*
         template <typename OldH2Kernel>
         KernelH2(const OldH2Kernel& h2_kernel, const RowParticles& row_particles): 
                        m_h2_matrix(h2_kernel.get_h2_matrix(),row_particles),
@@ -537,6 +539,7 @@ namespace Aboria {
                                  h2_kernel.get_col_particles(),
                                  F(h2_kernel.get_position_function())) {
         }
+        */
 
         const h2_matrix_type& get_h2_matrix() const {
             return m_h2_matrix;
@@ -552,7 +555,7 @@ namespace Aboria {
         /// accumulates the result in vector lhs
         template<typename VectorLHS,typename VectorRHS>
         void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
-            m_h2_matrix.matrix_vector_multiply(lhs,rhs);
+            m_h2_matrix.matrix_vector_multiply(lhs,1.0,false,rhs);
         }
     };
 

@@ -276,7 +276,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
             static_cast<void>(dummy);
         }
 
-        const Blocks m_blocks;
+        Blocks m_blocks;
 
 };
 
@@ -428,8 +428,8 @@ Operator create_fmm_operator(const RowParticles& row_particles,
 /// \tparam RowParticles The type of the row particle set
 /// \tparam ColParticles The type of the column particle set
 /// \tparam F The type of the function object
-template<unsigned int N, typename RowParticles, typename ColParticles, typename F,
-         typename Kernel=KernelH2<RowParticles,ColParticles,F,N>,
+template<typename RowParticles, typename ColParticles, typename F,
+         typename Kernel=KernelH2<RowParticles,ColParticles,F>,
          typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_h2_operator(const RowParticles& row_particles,
@@ -442,35 +442,6 @@ Operator create_h2_operator(const RowParticles& row_particles,
                 );
     }
 
-/// \brief creates a matrix-free linear operator by modifying an existing
-///         H2 operator to use a different set of target particles 
-///
-/// This function returns a MatrixReplacement object that acts like a 
-/// dense linear operator (i.e. matrix) in Eigen. It modifies an existing
-/// H2 hierarchical matrix to use a different set of row/target particles
-///
-/// \param h2_matrix The H2 matrix operator to be modified
-/// \param row_particles The rows of the linear operator index
-///
-/// \tparam N The number of chebyshev nodes in each dimension to use
-/// \tparam RowParticles The type of the row particle set
-/// \tparam ColParticles The type of the column particle set
-/// \tparam F The type of the function object
-template<typename OldKernel, typename RowParticles,
-         typename NewKernel=KernelH2<RowParticles,
-                                  typename OldKernel::col_particles_type,
-                                  typename OldKernel::position_function_type,
-                                  OldKernel::expansion_N>,
-         typename NewOperator=MatrixReplacement<1,1,std::tuple<NewKernel>>
-                >
-NewOperator create_h2_operator(const OldKernel& h2_kernel,
-                            const RowParticles& row_particles) {
-        return NewOperator(
-                std::make_tuple(
-                    NewKernel(h2_kernel,row_particles)
-                    )
-                );
-    }
 
 /// \brief creates a sparse matrix-free linear operator for use with Eigen
 ///

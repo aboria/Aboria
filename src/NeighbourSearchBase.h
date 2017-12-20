@@ -619,6 +619,7 @@ public:
     const double_d& get_max() const { return m_bounds.bmax; }
     const bool_d& get_periodic() const { return m_periodic; }
     bool domain_has_been_set() const { return m_domain_has_been_set; }
+    const double get_max_bucket_size() const { return m_n_particles_in_leaf; }
 
 protected:
     iterator m_particles_begin;

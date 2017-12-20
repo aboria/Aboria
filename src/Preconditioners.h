@@ -188,8 +188,8 @@ class ExtMatrixPreconditioner {
             ++i;
         }
 
-        template <typename RowParticles, typename ColParticles, typename PositionF, unsigned int N>
-        void operator()(const KernelH2<RowParticles,ColParticles,PositionF,N>& kernel) {
+        template <typename RowParticles, typename ColParticles, typename PositionF>
+        void operator()(const KernelH2<RowParticles,ColParticles,PositionF>& kernel) {
             static const unsigned int dimension = RowParticles::dimension;
 
             auto h2 = make_h2_matrix(kernel.get_row_particles(),
