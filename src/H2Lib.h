@@ -258,6 +258,15 @@ public:
         // 
         // create h2 block
         //
+        //  eta = 1.0;
+
+        double eta = 1.0;
+        m_block = std::unique_ptr<block,decltype(&del_block)>(
+                build_strict_block(row_t,col_t,&eta,admissible_max_cluster),
+                del_block);
+
+
+        /*
         m_block = std::unique_ptr<block,decltype(&del_block)>(
                 new_block(row_t,col_t,false,row_t->sons,col_t->sons),
                 del_block);
@@ -275,6 +284,7 @@ public:
             }
         }
         update_block(m_block.get());
+        */
 
         m_h2 = std::unique_ptr<h2matrix,decltype(&del_h2matrix)>(
                     build_from_block_h2matrix(m_block.get(),row_cb,col_cb),
@@ -348,8 +358,14 @@ private:
             for (auto ci_child = particles.get_query().get_children(ci); 
                       ci_child != false; ++ci_child,++i) {
                 pcluster child_t = set_idx(ci_child,idx,particles);
-                t->son[i] = child_t;
-                idx += child_t->size;
+                if (child_t->size > 0) {
+                    t->son[i] = child_t;
+                    idx += child_t->size;
+                } else {
+                    del_cluster(child_t);
+                    --i;
+                    --(t->sons);
+                }
             }
             t->size = idx - old_idx;
         }

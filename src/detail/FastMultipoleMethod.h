@@ -777,6 +777,7 @@ namespace detail {
         return sum;
     }
 
+    /*
     template <unsigned int D>
     struct theta_condition {
         typedef Vector<double,D> double_d;
@@ -801,6 +802,38 @@ namespace detail {
             } else {
                 return other_r2 > m_theta2*std::pow(d-m_r,2);
             }
+        }
+    };
+    */
+
+    template <unsigned int D>
+    struct theta_condition {
+        typedef Vector<double,D> double_d;
+        const double_d& m_low;
+        const double_d& m_high;
+        double m_max_diam; 
+        static constexpr double m_theta = 0.5;
+        static constexpr double m_theta2 = m_theta*m_theta;
+        theta_condition(const double_d& low, const double_d& high):
+            m_low(low),m_high(high),m_max_diam(std::numeric_limits<double>::min())
+        {
+            for (int i = 0; i < D; ++i) {
+                if (high[i]-low[i] > m_max_diam) m_max_diam = high[i]-low[i];
+            }
+        }
+
+        bool check(const double_d& low, const double_d& high) const {
+            double_d dist(0);
+            double max_diam = m_max_diam;
+            for (int i = 0; i < D; ++i) {
+                if (m_high[i] < low[i]) {
+                    dist[i] = low[i]-m_high[i];
+                } else if (high[i] < m_low[i]) {
+                    dist[i] = m_low[i] - high[i];
+                }
+                if (high[i]-low[i] > max_diam) max_diam = high[i]-low[i];
+            }
+            return std::pow(max_diam,2) > 4.0*dist.squaredNorm();
         }
     };
 
