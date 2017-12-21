@@ -140,6 +140,59 @@ public:
         std::cout << "for compressed h2lib matrix class:" <<std::endl;
         std::cout << "dimension = "<<dimension<<". N = "<<order<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale_target_manual)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
 
+        // create a h matrix
+        t0 = Clock::now();
+        auto hlib_matrix = make_h2lib_h_matrix(particles,particles,
+                make_h2lib_black_box_expansion<dimension>(order,kernel));
+        t1 = Clock::now();
+        time_h2_setup = t1 - t0;
+        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        t0 = Clock::now();
+        hlib_matrix.matrix_vector_multiply(get<target_h2>(particles),1.0,false,get<source>(particles));
+        t1 = Clock::now();
+        time_h2_eval = t1 - t0;
+        
+        L2_h2 = std::inner_product(
+                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<target_manual>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { 
+                
+                //std::cout << t1 << " versus1 "<<t2<<std::endl;
+                return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "for h2lib h matrix class:" <<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<order<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale_target_manual)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
+        // create a compressed h matrix
+        t0 = Clock::now();
+        auto hlib_matrix_compress = make_h2lib_h_matrix(particles,particles,
+                make_h2lib_black_box_expansion<dimension>(order,kernel));
+        hlib_matrix_compress.compress(1e-4);
+        t1 = Clock::now();
+        time_h2_setup = t1 - t0;
+        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        t0 = Clock::now();
+        hlib_matrix_compress.matrix_vector_multiply(get<target_h2>(particles),1.0,false,get<source>(particles));
+        t1 = Clock::now();
+        time_h2_eval = t1 - t0;
+        
+        L2_h2 = std::inner_product(
+                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
+                std::begin(get<target_manual>(particles)), 
+                0.0,
+                [](const double t1, const double t2) { return t1 + t2; },
+                [](const double t1, const double t2) { 
+                
+                //std::cout << t1 << " versus1 "<<t2<<std::endl;
+                return (t1-t2)*(t1-t2); }
+                );
+
+        std::cout << "for compressed h2lib h matrix class:" <<std::endl;
+        std::cout << "dimension = "<<dimension<<". N = "<<order<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale_target_manual)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+
         // invert compressed matrix
         t0 = Clock::now();
         auto h2lib_chol_compress = h2lib_matrix_compress.chol();

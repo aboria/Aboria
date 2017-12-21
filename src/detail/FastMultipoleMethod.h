@@ -464,10 +464,34 @@ namespace detail {
                     setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
                 }
             }
-
-
         }
 
+        template <typename ParticlesType>
+        void M2P_amatrix(pamatrix matrix, 
+                    const pccluster t,
+                    const uint* indicies,
+                    const uint indicies_size,
+                    const ParticlesType& particles) const {
+            typedef typename ParticlesType::position position;
+            ASSERT_CUDA(matrix->rows == indicies_size);
+            ASSERT_CUDA(matrix->cols == m_ncheb);
+            box_type box;
+            for (int i = 0; i < D; ++i) {
+                box.bmin[i] = t->bmin[i];
+                box.bmax[i] = t->bmax[i];
+            }
+            for (int i = 0; i < indicies_size; ++i) {
+                const double_d& pi = get<position>(particles)[indicies[i]];
+                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
+                for (int j=0; j<m_ncheb; ++j,++mj) {
+                    const double_d& pj_unit_box = m_cheb_points[j];
+                    const double_d pj = 0.5*(pj_unit_box+1)*(box.bmax-box.bmin) 
+                                                                    + box.bmin;
+                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
+                }
+                
+            }
+        }
 
         void L2L_amatrix(pamatrix matrix, 
                  pccluster target_t, 
@@ -517,6 +541,32 @@ namespace detail {
                 lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     setentry_amatrix(matrix,i,j,cheb_rn(*mj));
+                }
+                
+            }
+        }
+
+        template <typename ParticlesType>
+        void P2M_amatrix(pamatrix matrix, 
+                    const pccluster t,
+                    const uint* indicies,
+                    const uint indicies_size,
+                    const ParticlesType& particles) const {
+            typedef typename ParticlesType::position position;
+            ASSERT_CUDA(matrix->rows == m_ncheb);
+            ASSERT_CUDA(matrix->cols == indicies_size);
+            box_type box;
+            for (int i = 0; i < D; ++i) {
+                box.bmin[i] = t->bmin[i];
+                box.bmax[i] = t->bmax[i];
+            }
+            detail::ChebyshevRn<D> cheb_rn(m_order,box);
+            for (int i = 0; i < indicies_size; ++i) {
+                const double_d& p = get<position>(particles)[indicies[i]];
+                cheb_rn.set_position(p);
+                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
+                for (int j=0; j<m_ncheb; ++j,++mj) {
+                    setentry_amatrix(matrix,j,i,cheb_rn(*mj));
                 }
                 
             }
