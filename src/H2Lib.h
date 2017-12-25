@@ -43,6 +43,7 @@ extern "C" {
 #include <h2update.h>
 #include <h2arith.h>
 #include <harith.h>
+#include <hcoarsen.h>
 #undef I
 }
 
@@ -56,8 +57,8 @@ class H2Lib_LR_Decomposition {
     double tol;
 
 public:
-    H2Lib_LR_Decomposition(const ph2matrix h2mat, const pblock broot):
-        tm(new_releucl_truncmode()),tol(1e-10) {
+    H2Lib_LR_Decomposition(const ph2matrix h2mat, const pblock broot, const double tol):
+        tm(new_releucl_truncmode()),tol(tol) {
 
         pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
         pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
@@ -104,8 +105,8 @@ class H2LibCholeskyDecomposition {
     double tol;
 
 public:
-    H2LibCholeskyDecomposition(const ph2matrix h2mat, const pblock broot):
-        tm(new_abseucl_truncmode()),tol(1e-8) {
+    H2LibCholeskyDecomposition(const ph2matrix h2mat, const pblock broot, const double tol):
+        tm(new_abseucl_truncmode()),tol(tol) {
 
         pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
         pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
@@ -155,8 +156,8 @@ class HLib_LR_Decomposition {
     double tol;
 
 public:
-    HLib_LR_Decomposition(const phmatrix hmat):
-        tm(new_releucl_truncmode()),tol(1e-10) {
+    HLib_LR_Decomposition(const phmatrix hmat, const double tol):
+        tm(new_releucl_truncmode()),tol(tol) {
         A = clone_hmatrix(hmat);
         lrdecomp_hmatrix(A, tm, tol);
     }
@@ -180,8 +181,8 @@ class HLibCholeskyDecomposition {
     double tol;
 
 public:
-    HLibCholeskyDecomposition(const phmatrix hmat):
-        tm(new_abseucl_truncmode()),tol(1e-8) {
+    HLibCholeskyDecomposition(const phmatrix hmat, const double tol):
+        tm(new_abseucl_truncmode()),tol(tol) {
 
         A = clone_hmatrix(hmat);
         choldecomp_hmatrix(A, tm, tol);
@@ -272,7 +273,7 @@ public:
     template <typename RowParticles, typename ColParticles, typename Expansions>
     H2LibMatrix(const RowParticles &row_particles, 
                 const ColParticles &col_particles, 
-                const Expansions& expansions):
+                const Expansions& expansions,const double eta = 1.0):
             m_h2(nullptr,del_h2matrix),
             m_block(nullptr,del_block) {
 
@@ -315,9 +316,9 @@ public:
         //
         //  eta = 1.0;
 
-        double eta = 1.0;
+        double eta_copy = eta;
         m_block = std::unique_ptr<block,decltype(&del_block)>(
-                build_strict_block(row_t,col_t,&eta,admissible_max_cluster),
+                build_strict_block(row_t,col_t,&eta_copy,admissible_max_cluster),
                 del_block);
 
         m_h2 = std::unique_ptr<h2matrix,decltype(&del_h2matrix)>(
@@ -420,12 +421,12 @@ public:
         return m_h2.get();
     }
 
-    H2Lib_LR_Decomposition lr() const {
-        return H2Lib_LR_Decomposition(get_ph2matrix(),m_block.get());
+    H2Lib_LR_Decomposition lr(const double tol) const {
+        return H2Lib_LR_Decomposition(get_ph2matrix(),m_block.get(),tol);
     }
 
-    H2LibCholeskyDecomposition chol() const {
-        return H2LibCholeskyDecomposition(get_ph2matrix(),m_block.get());
+    H2LibCholeskyDecomposition chol(const double tol) const {
+        return H2LibCholeskyDecomposition(get_ph2matrix(),m_block.get(),tol);
     }
 
     // target_vector += alpha*A*source_vector or alpha*A'*source_vector
@@ -472,8 +473,6 @@ assemble_block_hmatrix(pcblock b, uint bname,
         expansions.M2P_amatrix(&h->r->B,
                 h->cc,h->cc->idx,h->cc->size,
                 col_particles);
-
-        trunc_rkmatrix(NULL, tol, h->r);
     } else if (h->f) {
         expansions.P2P_amatrix(h->f,
                 h->rc->idx,h->rc->size,
@@ -489,9 +488,10 @@ truncate_block_hmatrix(pcblock b, uint bname,
 				    void *data)
 {
     auto& data_cast = *static_cast<
-        std::tuple<tol*,phmatrix*>*>(data);
+        std::tuple<double*,phmatrix*>*>(data);
 
-    phmatrix* enum_h = std::get<3>(data_cast);
+    const double& tol= *std::get<0>(data_cast);
+    phmatrix* enum_h = std::get<1>(data_cast);
     phmatrix h = enum_h[bname];
 
     if (h->r) {
@@ -629,6 +629,8 @@ private:
         return t;
     }
     
+public:
+
     void compress(const double tol) {
         //ptruncmode tm = new_releucl_truncmode();
 
@@ -641,19 +643,16 @@ private:
         coarsen_hmatrix(m_h.get(),NULL,tol,true);
     }
 
-
-public:
-
     const phmatrix get_phmatrix() const {
         return m_h.get();
     }
 
-    HLib_LR_Decomposition lr() const {
-        return HLib_LR_Decomposition(get_phmatrix());
+    HLib_LR_Decomposition lr(const double tol) const {
+        return HLib_LR_Decomposition(get_phmatrix(),tol);
     }
 
-    HLibCholeskyDecomposition chol() const {
-        return HLibCholeskyDecomposition(get_phmatrix());
+    HLibCholeskyDecomposition chol(const double tol) const {
+        return HLibCholeskyDecomposition(get_phmatrix(),tol);
     }
 
     // target_vector += alpha*A*source_vector or alpha*A'*source_vector

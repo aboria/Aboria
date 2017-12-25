@@ -56,6 +56,40 @@ struct is_vector: std::false_type {};
 template <typename T, unsigned int N>
 struct is_vector<Vector<T,N>>: std::true_type {};
 
+template <typename T, class Enable = void>
+struct scalar {
+    typedef void type;
+};
+
+template <typename T>
+struct scalar<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+    typedef T type;
+}; 
+
+template <typename T>
+struct scalar<T, typename std::enable_if<is_vector<T>::value>::type> {
+    typedef typename T::value_type type;
+}; 
+
+template <typename T, class Enable = void>
+struct dim {
+    typedef void type;
+};
+
+template <typename T>
+struct dim<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+    static const size_t value = 1;
+}; 
+
+template <typename T>
+struct dim<T, typename std::enable_if<is_vector<T>::value>::type> {
+    static const size_t value = T::size;
+}; 
+
+
+
+
+
 /// \brief An N-dimensional vector class
 ///
 ///  Normal C++ operators ('*','/','<' etc.) operate on this vector

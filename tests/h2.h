@@ -83,6 +83,8 @@ public:
 
         std::cout << "target scale = "<<scale_target_manual<<" source scale =  "<<scale_source<<std::endl;
 
+        const double tol = 1e-5;
+
         
         // perform the operation using h2lib matrix
         const size_t order = std::ceil(std::pow(particles.get_max_bucket_size(),1.0/dimension));
@@ -117,7 +119,7 @@ public:
         t0 = Clock::now();
         auto h2lib_matrix_compress = make_h2lib_matrix(particles,particles,
                 make_h2lib_black_box_expansion<dimension>(order,kernel));
-        h2lib_matrix_compress.compress(1e-3);
+        h2lib_matrix_compress.compress(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
         std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
@@ -195,11 +197,11 @@ public:
 
         // invert compressed matrix
         t0 = Clock::now();
-        auto h2lib_chol_compress = h2lib_matrix_compress.chol();
+        auto h2lib_chol_compress = h2lib_matrix_compress.chol(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_h2>(particles)),
-                  std::end(get<target_h2>(particles)),
+        std::copy(std::begin(get<target_manual>(particles)),
+                  std::end(get<target_manual>(particles)),
                   std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
         h2lib_chol_compress.solve(get<inverted_source>(particles));
@@ -220,11 +222,11 @@ public:
 
         // invert target_manual to get the source
         t0 = Clock::now();
-        auto h2lib_lr_compress = h2lib_matrix_compress.lr();
+        auto h2lib_lr_compress = h2lib_matrix_compress.lr(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_h2>(particles)),
-                  std::end(get<target_h2>(particles)),
+        std::copy(std::begin(get<target_manual>(particles)),
+                  std::end(get<target_manual>(particles)),
                   std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
         h2lib_lr_compress.solve(get<inverted_source>(particles));
@@ -248,11 +250,11 @@ public:
 
         // invert target_manual to get the source
         t0 = Clock::now();
-        auto h2lib_chol = h2lib_matrix.chol();
+        auto h2lib_chol = h2lib_matrix.chol(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_h2>(particles)),
-                  std::end(get<target_h2>(particles)),
+        std::copy(std::begin(get<target_manual>(particles)),
+                  std::end(get<target_manual>(particles)),
                   std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
         h2lib_chol.solve(get<inverted_source>(particles));
@@ -273,11 +275,11 @@ public:
 
         // invert target_manual to get the source
         t0 = Clock::now();
-        auto h2lib_lr = h2lib_matrix.lr();
+        auto h2lib_lr = h2lib_matrix.lr(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_h2>(particles)),
-                  std::end(get<target_h2>(particles)),
+        std::copy(std::begin(get<target_manual>(particles)),
+                  std::end(get<target_manual>(particles)),
                   std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
         h2lib_lr.solve(get<inverted_source>(particles));
@@ -305,7 +307,7 @@ public:
         }
 
         t0 = Clock::now();
-        auto h2_eigen = create_h2_operator(particles,particles,kernel);
+        auto h2_eigen = create_h2_operator(particles,particles,kernel,order);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
 

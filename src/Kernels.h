@@ -50,6 +50,67 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+    namespace detail {
+
+    
+
+#ifdef HAVE_EIGEN
+    template <typename Derived, typename Element> // element is arithmetic
+    void assign_element_to_matrix(Eigen::DenseBase<Derived>& matrix,
+                                  const size_t i, const size_t j, 
+                                  const Element& element) {
+        matrix(i,j) = element;
+    };
+
+    template <typename MatrixType, typename Scalar, size_t Rows, size_t Cols>
+    void assign_element_to_matrix<MatrixType,Eigen::Matrix<Scalar,Rows,Cols>>(
+                                   Eigen::DenseBase<Derived>& matrix,
+                                   const size_t i, const size_t j, 
+                                   const Eigen::Matrix<Scalar,Rows,Cols>& element) {
+        for (int ii = 0; ii < Rows; ++ii) {
+            for (int jj = 0; jj < Cols; ++jj) {
+                matrix(i+ii,j+jj) = element(ii,jj);
+            }
+        }
+    };
+
+    template <typename MatrixType, typename Scalar, size_t Rows, size_t Cols>
+    void assign_element_to_matrix<MatrixType,Eigen::Matrix<Scalar,Rows,Cols>>(
+                                    MatrixType& matrix,const size_t i, const size_t j, 
+                                    const Scalar element) {
+        for (int ii = 0; ii < Rows; ++ii) {
+            for (int jj = 0; jj < Cols; ++jj) {
+                matrix(i+ii,j+jj) = element;
+            }
+        }
+    };
+
+    template <typename Triplet, typename Element> 
+    void assign_element_to_matrix<std::vector<Triplet>,Element>(
+                                    std::vector<Triplet>& matrix,
+                                    const size_t i, const size_t j, 
+                                    const Element& element) {
+        matrix.push_back(Triplet(i,j,element));
+        
+    };
+
+
+    template <typename Triplet, typename Scalar, size_t Rows, size_t Cols>
+    void assign_element_to_matrix<std::vector<Triplet>,Eigen::Matrix<Scalar,Rows,Cols>>(
+                                    std::vector<Triplet>& matrix,
+                                    const size_t i, const size_t j, 
+                                    const Eigen::Matrix<Scalar,Rows,Cols>& element) {
+        for (int ii = 0; ii < Rows; ++ii) {
+            for (int jj = 0; jj < Cols; ++jj) {
+                matrix.push_back(Triplet(i+ii,j+jj,element(ii,jj)));
+            }
+        }
+    };
+#endif
+
+
+
+
     template<typename RowParticles, typename ColParticles, typename F>
     class KernelBase {
     protected:
@@ -60,10 +121,23 @@ namespace Aboria {
         typedef typename position::value_type const & const_position_reference;
         typedef typename RowParticles::const_reference const_row_reference;
         typedef typename ColParticles::const_reference const_col_reference;
-    public:
+
         typedef typename std::result_of<F(const_position_reference, 
                                   const_row_reference, 
-                                  const_col_reference)>::type Scalar;
+                                  const_col_reference)>::type FunctionReturn;
+
+    public:
+
+        typedef typename std::conditional<
+                            std::is_arithmetic<FunctionReturn>::value,
+                            Eigen::Matrix<FunctionReturn,1,1>,
+                            FunctionReturn>::type Element;
+        typedef typename Element::Scalar Scalar;
+        static_assert(Element::RowsAtCompileTime >= 0,"element type rows must be fixed");
+        static_assert(Element::ColsAtCompileTime >= 0,"element type cols must be fixed");
+        static const size_t ElementRows = Element::RowsAtCompileTime;
+        static const size_t ElementCols = Element::ColsAtCompileTime;
+
         typedef RowParticles row_particles_type;
         typedef ColParticles col_particles_type;
         typedef F function_type;
@@ -103,26 +177,30 @@ namespace Aboria {
         }
 
         size_t rows() const {
-            return m_row_particles.size();
+            return m_row_particles.size()*ElementDim;
         }
 
         size_t cols() const {
-            return m_col_particles.size();
+            return m_col_particles.size()*ElementDim;
         }
 
-        Scalar eval(const_position_reference dx, 
+        Element eval(const_position_reference dx, 
                     const_row_reference a, 
                     const_col_reference b) const {
             return m_function(dx,a,b);
         }
 
         Scalar coeff(const size_t i, const size_t j) const {
-            ASSERT(i < m_row_particles.size(),"i greater than a.size()");
-            ASSERT(j < m_col_particles.size(),"j greater than b.size()");
-            const_row_reference ai = m_row_particles[i];
-            const_col_reference bj = m_col_particles[j];
+            ASSERT(i < rows(),"i greater than rows()");
+            ASSERT(j < cols(),"j greater than cols()");
+            const int pi = std::floor(static_cast<float>(i)/ElementRows);
+            const int ioffset = i - pi*ElementRows;
+            const int pj = std::floor(static_cast<float>(j)/ElementCols);
+            const int joffset = j - pj*ElementCols;
+            const_row_reference ai = m_row_particles[pi];
+            const_col_reference bj = m_col_particles[pj];
             const_position_reference dx = get<position>(bj)-get<position>(ai);
-            return eval(dx,ai,bj);
+            return eval(dx,ai,bj)(ioffset,joffset);
         }
 
         template<typename MatrixType>
@@ -164,6 +242,7 @@ namespace Aboria {
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
+        typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
 
         KernelDense(const RowParticles& row_particles,
@@ -181,6 +260,9 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
+            ASSERT(matrix.rows() == rows(),"matrix has incompatible row size");
+            ASSERT(matrix.cols() == cols(),"matrix has incompatible col size");
+
             const bool is_periodic = !a.get_periodic().any();
 
             for (size_t i=0; i<na; ++i) {
@@ -193,7 +275,10 @@ namespace Aboria {
                     } else {
                         dx = get<position>(bj)-get<position>(ai);
                     }
-                    const_cast< MatrixType& >(matrix)(i,j) = this->eval(dx,ai,bj);
+                    const_cast< MatrixType& >(matrix).block(
+                            i*ElementRows,j*ElementCols,
+                            ElementRows,  ElementCols) = 
+                                                this->eval(dx,ai,bj);
                 }
             }
         }
@@ -221,8 +306,14 @@ namespace Aboria {
                     } else {
                         dx = get<position>(bj)-get<position>(ai);
                     }
-                    triplets.push_back(Triplet(i+startI,j+startJ,
-                                this->eval(dx,ai,bj)));
+                    const Element element = this->eval(dx,ai,bj);
+                    for (int ii = 0; ii < ElementRows; ++ii) {
+                        for (int jj = 0; jj < ElementCols; ++jj) {
+                            matrix.push_back(Triplet(i*ElementRows+ii,
+                                                     j*ElementCols+jj,
+                                                     element(ii,jj)));
+                        }
+                    }
                 }
             }
         }
@@ -230,8 +321,10 @@ namespace Aboria {
         /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
         /// and particle sets \p a and \p b on a vector rhs and
         /// accumulates the result in vector lhs
-        template<typename VectorLHS,typename VectorRHS>
-        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+        template <typename DerivedLHS, typename DerivedRHS>
+        void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
+                const Eigen::DenseBase<VectorRHS> &rhs) const {
+            typedef Eigen::Matrix<Scalar,ElementRows,1> row_vector;
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
@@ -239,44 +332,66 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
+            ASSERT(lhs.size() == rows(),"lhs size is inconsistent");
+            ASSERT(rhs.size() == cols(),"rhs size is inconsistent");
+
             const bool is_periodic = !a.get_periodic().any();
 
-            const size_t parallel_size = 20;
-            if (na > parallel_size) {
-                #pragma omp parallel for
-                for (size_t i=0; i<na; ++i) {
-                    const_row_reference ai = a[i];
-                    Scalar sum(0);
-                    for (size_t j=0; j<nb; ++j) {
-                        const_col_reference bj = b[j];
-                        position_value_type dx; 
-                        if (is_periodic) { 
-                            dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                        } else {
-                            dx = get<position>(bj)-get<position>(ai);
-                        }
-                        sum += this->eval(dx,ai,bj)*rhs(j);
+            #pragma omp parallel for
+            for (size_t i=0; i<na; ++i) {
+                const_row_reference ai = a[i];
+                row_vector sum = row_vector::Zeros();
+                for (size_t j=0; j<nb; ++j) {
+                    const_col_reference bj = b[j];
+                    position_value_type dx; 
+                    if (is_periodic) { 
+                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                    } else {
+                        dx = get<position>(bj)-get<position>(ai);
                     }
-                    lhs[i] += sum;
+                    sum += this->eval(dx,ai,bj)
+                                *rhs.segment(j*ElementCols,(j+1)*ElementCols);
                 }
-            } else {
-                for (size_t i=0; i<na; ++i) {
-                    const_row_reference ai = a[i];
-                    Scalar sum(0);
-                    for (size_t j=0; j<nb; ++j) {
-                        const_col_reference bj = b[j];
-                        position_value_type dx; 
-                        if (is_periodic) { 
-                            dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                        } else {
-                            dx = get<position>(bj)-get<position>(ai);
-                        }
-                        sum += this->eval(dx,ai,bj)*rhs[j];
-                    }
-                    lhs[i] += sum;
-                }
+                lhs.segment(i*ElementRows,(i+1)*ElementRows) += sum;
             }
        }
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template <typename LHSType, typename RHSType>
+        void evaluate(std::vector<LHSType> &lhs, 
+                const std::vector<RHSType> &rhs) const {
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            const size_t na = a.size();
+            const size_t nb = b.size();
+
+            ASSERT(lhs.size() == na,"lhs size is inconsistent");
+            ASSERT(rhs.size() == nb,"rhs size is inconsistent");
+
+            const bool is_periodic = !a.get_periodic().any();
+
+            #pragma omp parallel for
+            for (size_t i=0; i<na; ++i) {
+                const_row_reference ai = a[i];
+                LHSType sum(0);
+                for (size_t j=0; j<nb; ++j) {
+                    const_col_reference bj = b[j];
+                    position_value_type dx; 
+                    if (is_periodic) { 
+                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+                    } else {
+                        dx = get<position>(bj)-get<position>(ai);
+                    }
+                    sum += this->eval(dx,ai,bj)*rhs[j];
+                }
+                lhs[i] += sum;
+            }
+       }
+
     };
 
     namespace detail {
@@ -300,7 +415,6 @@ namespace Aboria {
         };
     }
     
-#ifdef HAVE_EIGEN
     template<typename RowParticles, typename ColParticles, typename F>
     class KernelMatrix: public KernelBase<RowParticles,ColParticles,F> {
     protected:
@@ -319,6 +433,7 @@ namespace Aboria {
         matrix_type m_matrix;
     public:
         typedef typename base_type::Scalar Scalar;
+        typedef typename base_type::Element Element;
 
         KernelMatrix(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -335,7 +450,7 @@ namespace Aboria {
 
             const bool is_periodic = !a.get_periodic().any();
 
-            m_matrix.resize(a.size(),b.size());
+            m_matrix.resize(rows(),cols());
             for (size_t i=0; i<a.size(); ++i) {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<b.size(); ++j) {
@@ -347,7 +462,9 @@ namespace Aboria {
                     } else {
                         dx = get<position>(bj)-get<position>(ai);
                     }
-                    m_matrix(i,j) = this->eval(dx,ai,bj);
+                    m_matrix.block(i*ElementRows,j*ElementCols,
+                                   ElementRows,  ElementCols) = 
+                                                this->eval(dx,ai,bj);
                 }
             }
         }
@@ -364,13 +481,45 @@ namespace Aboria {
         /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
         /// and particle sets \p a and \p b on a vector rhs and
         /// accumulates the result in vector lhs
-        template<typename VectorLHS,typename VectorRHS>
-        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+        template <typename LHSType, typename RHSType>
+        void evaluate(std::vector<LHSType> &lhs, 
+                const std::vector<RHSType> &rhs) const {
+
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            const size_t na = a.size();
+            const size_t nb = b.size();
+
+            ASSERT(lhs.size() == na,"lhs size is inconsistent");
+            ASSERT(rhs.size() == nb,"rhs size is inconsistent");
+
+            const bool is_periodic = !a.get_periodic().any();
+
+            #pragma omp parallel for
+            for (size_t i=0; i<na; ++i) {
+                LHSType sum(0);
+                for (size_t j=0; j<nb; ++j) {
+                    sum += m_matrix.block(i*ElementRows,j*ElementCols,
+                                          ElementRows,  ElementCols)*rhs[j];
+                }
+                lhs[i] += sum;
+            }
+        }
+
+        /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+        /// and particle sets \p a and \p b on a vector rhs and
+        /// accumulates the result in vector lhs
+        template <typename DerivedLHS, typename DerivedRHS>
+        void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
+                const Eigen::DenseBase<VectorRHS> &rhs) const {
+            ASSERT(lhs.size() == rows(),"lhs size not consistent")
+            ASSERT(rhs.size() == cols(),"lhs size not consistent")
             lhs += m_matrix*rhs;
         }
+ 
     };
-
-
 
 
     template<typename RowParticles, typename ColParticles, typename PositionF,
@@ -401,6 +550,7 @@ namespace Aboria {
 
     public:
         typedef typename base_type::Scalar Scalar;
+        typedef typename base_type::Element Element;
 
         KernelChebyshev(const RowParticles& row_particles,
                         const ColParticles& col_particles,
@@ -419,8 +569,8 @@ namespace Aboria {
         void set_n(const unsigned int n) { 
             m_n = n; 
             m_ncheb = std::pow(n,dimension); 
-            m_W.resize(m_ncheb);
-            m_fcheb.resize(m_ncheb);
+            m_W.resize(m_ncheb*ElementCols);
+            m_fcheb.resize(m_ncheb*ElementRows);
 
             update_row_positions();
             update_col_positions();
@@ -432,25 +582,28 @@ namespace Aboria {
             row_Rn.calculate_Sn(get<position>(this->m_row_particles).begin(),N,m_n);
 
             // fill row_Rn matrix
-            m_row_Rn_matrix.resize(N,m_ncheb);
+            m_row_Rn_matrix.resize(N*ElementRows,m_ncheb*ElementRows);
             for (int i=0; i<N; ++i) {
                 lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
-                    m_row_Rn_matrix(i,j) = row_Rn(*mj,i);
+                    m_row_Rn_matrix.block(i*ElementRows,j*ElementRows,
+                                          ElementRows,  ElementRows) = row_Rn(*mj,i);
                 }
             }
         }
 
         void update_kernel_matrix() {
             // fill kernel matrix
-            m_kernel_matrix.resize(m_ncheb,m_ncheb);
+            m_kernel_matrix.resize(m_ncheb*ElementRows,m_ncheb*ElementCols);
             lattice_iterator<dimension> mi(m_start,m_end);
             for (int i=0; i<m_ncheb; ++i,++mi) {
                 const double_d pi = col_Rn.get_position(*mi);
                 lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
-                    m_kernel_matrix(i,j) = m_position_function(pi-pj,pj,pi);
+                    m_kernel_matrix.block(i*ElementRows,j*ElementCols,
+                                          ElementRows,  ElementCols) = 
+                                            m_position_function(pi-pj,pj,pi);
                 }
             }
         }
@@ -460,11 +613,13 @@ namespace Aboria {
             col_Rn.calculate_Sn(get<position>(this->m_col_particles).begin(),N,m_n);
 
             // fill row_Rn matrix
-            m_col_Rn_matrix.resize(m_ncheb,N);
+            m_col_Rn_matrix.resize(m_ncheb*ElementCols,N*ElementCols);
             for (int i=0; i<N; ++i) {
                 lattice_iterator<dimension> mi(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mi) {
-                    m_col_Rn_matrix(j,i) = col_Rn(*mi,i);
+                    m_col_Rn_matrix(j,i).block(j*ElementCols,i*ElementCols,
+                                               ElemenCols,   ElementCols) 
+                                                    = col_Rn(*mi,i);
                 }
             }
         }
@@ -472,15 +627,16 @@ namespace Aboria {
         /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
         /// and particle sets \p a and \p b on a vector rhs and
         /// accumulates the result in vector lhs
-        template<typename VectorLHS,typename VectorRHS>
-        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+        template <typename DerivedLHS, typename DerivedRHS>
+        void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
+                const Eigen::DenseBase<VectorRHS> &rhs) const {
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
 
             CHECK(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
-            ASSERT(a.size() == lhs.rows(),"lhs vector has incompatible size");
-            ASSERT(b.size() == rhs.rows(),"rhs vector has incompatible size");
+            ASSERT(rows() == lhs.rows(),"lhs vector has incompatible size");
+            ASSERT(cols() == rhs.rows(),"rhs vector has incompatible size");
 
             //First compute the weights at the Chebyshev nodes ym 
             //by anterpolation 
@@ -509,37 +665,31 @@ namespace Aboria {
         typedef typename detail::H2LibBlackBoxExpansions<dimension,PositionF> expansions_type;
         typedef H2LibMatrix h2_matrix_type;
 
+        static_cast(ElementRows==1, "only implemented for scalar elements");
+        static_cast(ElementCols==1, "only implemented for scalar elements");
+
         h2_matrix_type m_h2_matrix;
         PositionF m_position_function;
 
     public:
+        typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
         typedef PositionF position_function_type;
 
         KernelH2(const RowParticles& row_particles,
                         const ColParticles& col_particles,
-                        const PositionF& function): 
+                        const PositionF& function,
+                        const int order, 
+                        const double eta = 1.0):
                           m_h2_matrix(row_particles,col_particles,
                                   expansions_type(
-                                      std::ceil(std::pow(col_particles.get_max_bucket_size(),
-                                                    1.0/dimension)),
-                                      function)),
+                                      order,
+                                      function),eta),
                           m_position_function(function),
                           base_type(row_particles,
                                   col_particles,
                                   F(function)) {
                           }
-
-        /*
-        template <typename OldH2Kernel>
-        KernelH2(const OldH2Kernel& h2_kernel, const RowParticles& row_particles): 
-                       m_h2_matrix(h2_kernel.get_h2_matrix(),row_particles),
-                       m_position_function(h2_kernel.get_position_function()),
-                       base_type(row_particles,
-                                 h2_kernel.get_col_particles(),
-                                 F(h2_kernel.get_position_function())) {
-        }
-        */
 
         const h2_matrix_type& get_h2_matrix() const {
             return m_h2_matrix;
@@ -559,7 +709,6 @@ namespace Aboria {
         }
     };
 
-#endif
 
     template<typename RowParticles, typename ColParticles, typename PositionF,
         unsigned int N,
@@ -577,10 +726,14 @@ namespace Aboria {
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
         typedef FastMultipoleMethod<expansions_type,ColParticles> fmm_type;
 
+        static_cast(ElementRows==1, "only implemented for scalar elements");
+        static_cast(ElementCols==1, "only implemented for scalar elements");
+
         expansions_type m_expansions;
         fmm_type m_fmm;
 
     public:
+        typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
 
         KernelFMM(const RowParticles& row_particles,
@@ -613,6 +766,7 @@ namespace Aboria {
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
+        typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
 
         KernelSparse(const RowParticles& row_particles,
@@ -624,14 +778,18 @@ namespace Aboria {
                                                   function) 
         {};
 
-        Scalar coeff(const size_t i, const size_t j) const {
-            ASSERT(i < this->m_row_particles.size(),"i greater than a.size()");
-            ASSERT(j < this->m_col_particles.size(),"j greater than b.size()");
-            const_row_reference ai = this->m_row_particles[i];
-            const_col_reference bj = this->m_col_particles[j];
+        Element coeff(const size_t i, const size_t j) const {
+            const int pi = std::floor(static_cast<float>(i)/ElementRows);
+            const int ioffset = i - pi*ElementRows;
+            const int pj = std::floor(static_cast<float>(j)/ElementCols);
+            const int joffset = j - pj*ElementCols;
+            ASSERT(pi < this->m_row_particles.size(),"pi greater than a.size()");
+            ASSERT(pj < this->m_col_particles.size(),"pj greater than b.size()");
+            const_row_reference ai = this->m_row_particles[pi];
+            const_col_reference bj = this->m_col_particles[pj];
             const_position_reference dx = get<position>(bj)-get<position>(ai);
             if (dx.squaredNorm() < std::pow(m_radius_function(ai),2)) {
-                return this->m_function(dx,ai,bj);
+                return this->m_function(dx,ai,bj)(ioffset,joffset);
             } else {
                 return 0.0;
             }
@@ -653,10 +811,14 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
-                    const_position_reference dx = detail::get_impl<1>(pairj);
                     const_col_reference bj = detail::get_impl<0>(pairj);
+                    const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    const_cast< MatrixType& >(matrix)(i,j) = this->m_function(dx,ai,bj);
+                    const_cast< MatrixType& >(matrix).block(
+                            i*ElementRows,j*ElementCols,
+                            ElementRows,  ElementCols) = 
+                                                this->m_function(dx,ai,bj);
+
                 }
             }
         }
@@ -665,7 +827,6 @@ namespace Aboria {
         void assemble(std::vector<Triplet>& triplets,
                       const size_t startI=0, const size_t startJ=0
                       ) const {
-
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
@@ -679,10 +840,17 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
-                    const_position_reference dx = detail::get_impl<1>(pairj);
                     const_col_reference bj = detail::get_impl<0>(pairj);
+                    const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    triplets.push_back(Triplet(i+startI,j+startJ,this->m_function(dx,ai,bj)));
+                    const Element element = this->m_function(dx,ai,bj);
+                    for (int ii = 0; ii < ElementRows; ++ii) {
+                        for (int jj = 0; jj < ElementCols; ++jj) {
+                            triplets.push_back(Triplet(i*ElementRows+ii+startI,
+                                                       j*ElementCols+jj+startJ,
+                                                       element(ii,jj)));
+                        }
+                    }
                 }
             }
         }
@@ -690,8 +858,10 @@ namespace Aboria {
         /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
         /// and particle sets \p a and \p b on a vector rhs and
         /// accumulates the result in vector lhs
-        template<typename VectorLHS,typename VectorRHS>
-        void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
+        ///
+        template <typename LHSType, typename RHSType>
+        void evaluate(std::vector<LHSType> &lhs, 
+                const std::vector<RHSType> &rhs) const {
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
@@ -702,7 +872,7 @@ namespace Aboria {
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                Scalar sum(0);
+                LHSType sum(0);
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
                     const_position_reference dx = detail::get_impl<1>(pairj);
@@ -713,6 +883,34 @@ namespace Aboria {
                 lhs[i] += sum;
             }
        }
+
+        template <typename DerivedLHS, typename DerivedRHS>
+        void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
+                const Eigen::DenseBase<VectorRHS> &rhs) const {
+            typedef Eigen::Matrix<Scalar,ElementRows,1> row_vector;
+
+            const RowParticles& a = this->m_row_particles;
+            const ColParticles& b = this->m_col_particles;
+
+            const size_t na = a.size();
+            const size_t nb = b.size();
+
+            #pragma omp parallel for
+            for (size_t i=0; i<na; ++i) {
+                const_row_reference ai = a[i];
+                row_vector sum = row_vector::Zero();
+                const double radius = m_radius_function(ai);
+                for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
+                    const_position_reference dx = detail::get_impl<1>(pairj);
+                    const_col_reference bj = detail::get_impl<0>(pairj);
+                    const size_t j = &get<position>(bj) - get<position>(b).data();
+                    sum += this->m_function(dx,ai,bj)
+                            *rhs.segment(j*ElementCols,(j+1)*ElementCols);
+                }
+                lhs.segment(i*ElementRows,(i+1)*ElementRows) += sum;
+            }
+       }
+
     private:
         FRadius m_radius_function;
     };
@@ -741,6 +939,7 @@ namespace Aboria {
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
+        typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
 
         KernelSparseConst(const RowParticles& row_particles,
@@ -782,6 +981,7 @@ namespace Aboria {
         typedef typename base_type::const_col_reference const_col_reference;
 
     public:
+        typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
 
         KernelZero(const RowParticles& row_particles,

@@ -433,11 +433,13 @@ template<typename RowParticles, typename ColParticles, typename F,
          typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_h2_operator(const RowParticles& row_particles,
-                               const ColParticles& col_particles,
-                               const F& function) {
+                            const ColParticles& col_particles,
+                            const F& function,
+                            const int order,
+                            const double eta = 1.0) {
         return Operator(
                 std::make_tuple(
-                    Kernel(row_particles,col_particles,function)
+                    Kernel(row_particles,col_particles,function,order,eta)
                     )
                 );
     }
