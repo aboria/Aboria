@@ -50,65 +50,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-    namespace detail {
-
-    
-
-#ifdef HAVE_EIGEN
-    template <typename Derived, typename Element> // element is arithmetic
-    void assign_element_to_matrix(Eigen::DenseBase<Derived>& matrix,
-                                  const size_t i, const size_t j, 
-                                  const Element& element) {
-        matrix(i,j) = element;
-    };
-
-    template <typename MatrixType, typename Scalar, size_t Rows, size_t Cols>
-    void assign_element_to_matrix<MatrixType,Eigen::Matrix<Scalar,Rows,Cols>>(
-                                   Eigen::DenseBase<Derived>& matrix,
-                                   const size_t i, const size_t j, 
-                                   const Eigen::Matrix<Scalar,Rows,Cols>& element) {
-        for (int ii = 0; ii < Rows; ++ii) {
-            for (int jj = 0; jj < Cols; ++jj) {
-                matrix(i+ii,j+jj) = element(ii,jj);
-            }
-        }
-    };
-
-    template <typename MatrixType, typename Scalar, size_t Rows, size_t Cols>
-    void assign_element_to_matrix<MatrixType,Eigen::Matrix<Scalar,Rows,Cols>>(
-                                    MatrixType& matrix,const size_t i, const size_t j, 
-                                    const Scalar element) {
-        for (int ii = 0; ii < Rows; ++ii) {
-            for (int jj = 0; jj < Cols; ++jj) {
-                matrix(i+ii,j+jj) = element;
-            }
-        }
-    };
-
-    template <typename Triplet, typename Element> 
-    void assign_element_to_matrix<std::vector<Triplet>,Element>(
-                                    std::vector<Triplet>& matrix,
-                                    const size_t i, const size_t j, 
-                                    const Element& element) {
-        matrix.push_back(Triplet(i,j,element));
-        
-    };
-
-
-    template <typename Triplet, typename Scalar, size_t Rows, size_t Cols>
-    void assign_element_to_matrix<std::vector<Triplet>,Eigen::Matrix<Scalar,Rows,Cols>>(
-                                    std::vector<Triplet>& matrix,
-                                    const size_t i, const size_t j, 
-                                    const Eigen::Matrix<Scalar,Rows,Cols>& element) {
-        for (int ii = 0; ii < Rows; ++ii) {
-            for (int jj = 0; jj < Cols; ++jj) {
-                matrix.push_back(Triplet(i+ii,j+jj,element(ii,jj)));
-            }
-        }
-    };
-#endif
-
-
 
 
     template<typename RowParticles, typename ColParticles, typename F>
@@ -177,11 +118,11 @@ namespace Aboria {
         }
 
         size_t rows() const {
-            return m_row_particles.size()*ElementDim;
+            return m_row_particles.size()*ElementRows;
         }
 
         size_t cols() const {
-            return m_col_particles.size()*ElementDim;
+            return m_col_particles.size()*ElementCols;
         }
 
         Element eval(const_position_reference dx, 
@@ -244,6 +185,8 @@ namespace Aboria {
     public:
         typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
+        static const size_t ElementRows = base_type::ElementRows;
+        static const size_t ElementCols = base_type::ElementCols;
 
         KernelDense(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -260,8 +203,8 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
-            ASSERT(matrix.rows() == rows(),"matrix has incompatible row size");
-            ASSERT(matrix.cols() == cols(),"matrix has incompatible col size");
+            ASSERT(matrix.rows() == this->rows(),"matrix has incompatible row size");
+            ASSERT(matrix.cols() == this->cols(),"matrix has incompatible col size");
 
             const bool is_periodic = !a.get_periodic().any();
 
@@ -309,7 +252,7 @@ namespace Aboria {
                     const Element element = this->eval(dx,ai,bj);
                     for (int ii = 0; ii < ElementRows; ++ii) {
                         for (int jj = 0; jj < ElementCols; ++jj) {
-                            matrix.push_back(Triplet(i*ElementRows+ii,
+                            triplets.push_back(Triplet(i*ElementRows+ii,
                                                      j*ElementCols+jj,
                                                      element(ii,jj)));
                         }
@@ -323,7 +266,7 @@ namespace Aboria {
         /// accumulates the result in vector lhs
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
-                const Eigen::DenseBase<VectorRHS> &rhs) const {
+                const Eigen::DenseBase<DerivedRHS> &rhs) const {
             typedef Eigen::Matrix<Scalar,ElementRows,1> row_vector;
 
             const RowParticles& a = this->m_row_particles;
@@ -332,8 +275,8 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
-            ASSERT(lhs.size() == rows(),"lhs size is inconsistent");
-            ASSERT(rhs.size() == cols(),"rhs size is inconsistent");
+            ASSERT(lhs.size() == this->rows(),"lhs size is inconsistent");
+            ASSERT(rhs.size() == this->cols(),"rhs size is inconsistent");
 
             const bool is_periodic = !a.get_periodic().any();
 
@@ -434,6 +377,8 @@ namespace Aboria {
     public:
         typedef typename base_type::Scalar Scalar;
         typedef typename base_type::Element Element;
+        static const size_t ElementRows = base_type::ElementRows;
+        static const size_t ElementCols = base_type::ElementCols;
 
         KernelMatrix(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -450,7 +395,7 @@ namespace Aboria {
 
             const bool is_periodic = !a.get_periodic().any();
 
-            m_matrix.resize(rows(),cols());
+            m_matrix.resize(this->rows(),this->cols());
             for (size_t i=0; i<a.size(); ++i) {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<b.size(); ++j) {
@@ -513,9 +458,9 @@ namespace Aboria {
         /// accumulates the result in vector lhs
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
-                const Eigen::DenseBase<VectorRHS> &rhs) const {
-            ASSERT(lhs.size() == rows(),"lhs size not consistent")
-            ASSERT(rhs.size() == cols(),"lhs size not consistent")
+                const Eigen::DenseBase<DerivedRHS> &rhs) const {
+            ASSERT(lhs.size() == this->rows(),"lhs size not consistent")
+            ASSERT(rhs.size() == this->cols(),"lhs size not consistent")
             lhs += m_matrix*rhs;
         }
  
@@ -551,6 +496,8 @@ namespace Aboria {
     public:
         typedef typename base_type::Scalar Scalar;
         typedef typename base_type::Element Element;
+        static const size_t ElementRows = base_type::ElementRows;
+        static const size_t ElementCols = base_type::ElementCols;
 
         KernelChebyshev(const RowParticles& row_particles,
                         const ColParticles& col_particles,
@@ -618,7 +565,7 @@ namespace Aboria {
                 lattice_iterator<dimension> mi(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mi) {
                     m_col_Rn_matrix(j,i).block(j*ElementCols,i*ElementCols,
-                                               ElemenCols,   ElementCols) 
+                                               ElementCols,   ElementCols) 
                                                     = col_Rn(*mi,i);
                 }
             }
@@ -629,14 +576,14 @@ namespace Aboria {
         /// accumulates the result in vector lhs
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
-                const Eigen::DenseBase<VectorRHS> &rhs) const {
+                const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
 
             CHECK(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
-            ASSERT(rows() == lhs.rows(),"lhs vector has incompatible size");
-            ASSERT(cols() == rhs.rows(),"rhs vector has incompatible size");
+            ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
+            ASSERT(this->cols() == rhs.rows(),"rhs vector has incompatible size");
 
             //First compute the weights at the Chebyshev nodes ym 
             //by anterpolation 
@@ -665,15 +612,16 @@ namespace Aboria {
         typedef typename detail::H2LibBlackBoxExpansions<dimension,PositionF> expansions_type;
         typedef H2LibMatrix h2_matrix_type;
 
-        static_cast(ElementRows==1, "only implemented for scalar elements");
-        static_cast(ElementCols==1, "only implemented for scalar elements");
-
         h2_matrix_type m_h2_matrix;
         PositionF m_position_function;
 
     public:
         typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
+        static const size_t ElementRows = base_type::ElementRows;
+        static const size_t ElementCols = base_type::ElementCols;
+        static_assert(ElementRows==1, "only implemented for scalar elements");
+        static_assert(ElementCols==1, "only implemented for scalar elements");
         typedef PositionF position_function_type;
 
         KernelH2(const RowParticles& row_particles,
@@ -726,8 +674,6 @@ namespace Aboria {
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
         typedef FastMultipoleMethod<expansions_type,ColParticles> fmm_type;
 
-        static_cast(ElementRows==1, "only implemented for scalar elements");
-        static_cast(ElementCols==1, "only implemented for scalar elements");
 
         expansions_type m_expansions;
         fmm_type m_fmm;
@@ -735,6 +681,10 @@ namespace Aboria {
     public:
         typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
+        static const size_t ElementRows = base_type::ElementRows;
+        static const size_t ElementCols = base_type::ElementCols;
+        static_assert(ElementRows==1, "only implemented for scalar elements");
+        static_assert(ElementCols==1, "only implemented for scalar elements");
 
         KernelFMM(const RowParticles& row_particles,
                         const ColParticles& col_particles,
@@ -768,6 +718,8 @@ namespace Aboria {
     public:
         typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
+        static const size_t ElementRows = base_type::ElementRows;
+        static const size_t ElementCols = base_type::ElementCols;
 
         KernelSparse(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -869,6 +821,9 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
+            ASSERT(na == a.size(),"lhs vector has incompatible size");
+            ASSERT(nb == b.size(),"rhs vector has incompatible size");
+
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
@@ -886,8 +841,11 @@ namespace Aboria {
 
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
-                const Eigen::DenseBase<VectorRHS> &rhs) const {
+                const Eigen::DenseBase<DerivedRHS> &rhs) const {
             typedef Eigen::Matrix<Scalar,ElementRows,1> row_vector;
+
+            ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
+            ASSERT(this->cols() == rhs.rows(),"rhs vector has incompatible size");
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
@@ -941,6 +899,8 @@ namespace Aboria {
     public:
         typedef typename base_type::Element Element;
         typedef typename base_type::Scalar Scalar;
+        static const size_t ElementRows = base_type::ElementRows;
+        static const size_t ElementCols = base_type::ElementCols;
 
         KernelSparseConst(const RowParticles& row_particles,
                     const ColParticles& col_particles,
