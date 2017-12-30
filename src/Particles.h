@@ -783,7 +783,15 @@ private:
 #endif
 };
 
+namespace detail {
 
+    template <typename T>
+    struct is_particles: std::false_type {};
+
+    template<unsigned int D, typename Particles, typename Variable, typename Var> 
+    struct is_particles<Particles<Particles,Variable,Var,D>>: std::true_type {};
+
+}
 
 }
 

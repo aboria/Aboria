@@ -52,15 +52,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 
+    detail::integrate(a,ai,b,bi,this->m_function)
+namespace detail {
 
     template<typename RowParticles, typename ColParticles, typename F>
-    class KernelBase {
-    protected:
-        typedef typename RowParticles::position position;
-        static const unsigned int dimension = RowParticles::dimension;
+    struct kernel_helper {
+        const unsigned int dimension = RowParticles::dimension;
         typedef Vector<double,dimension> double_d;
-        typedef Vector<int,dimension> int_d;
-        typedef typename position::value_type const & const_position_reference;
+        typedef double_d const & const_position_reference;
         typedef typename RowParticles::const_reference const_row_reference;
         typedef typename ColParticles::const_reference const_col_reference;
 
@@ -68,17 +67,88 @@ namespace Aboria {
                                   const_row_reference, 
                                   const_col_reference)>::type FunctionReturn;
 
-    public:
-
         typedef typename std::conditional<
                             std::is_arithmetic<FunctionReturn>::value,
                             Eigen::Matrix<FunctionReturn,1,1>,
-                            FunctionReturn>::type Element;
-        typedef typename Element::Scalar Scalar;
-        static_assert(Element::RowsAtCompileTime >= 0,"element type rows must be fixed");
-        static_assert(Element::ColsAtCompileTime >= 0,"element type cols must be fixed");
-        static const size_t ElementRows = Element::RowsAtCompileTime;
-        static const size_t ElementCols = Element::ColsAtCompileTime;
+                            FunctionReturn>::type Block;
+
+        static_assert(Block::RowsAtCompileTime >= 0,"element type rows must be fixed");
+        static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
+    };
+
+
+    template <typename RowElements,
+              typename ColElements,
+              typename Kernel,
+              typename = std::enable_if_t<
+                            is_elements<2,RowElements>::value &&
+                            is_elements<2,ColElements>::value>
+                >
+    integrate(const RowElements& row, 
+              typename RowElements::const_reference row_ref, 
+              const ColElements& col,
+              typename ColElements::const_reference col_ref, 
+              const Kernel& kernel) {
+
+    }
+
+
+    template <typename RowElements,
+              typename ColElements,
+              typename Kernel,
+              typename = std::enable_if_t<
+                            is_particles<RowElements>::value &&
+                            is_elements<2,ColElements>::value>
+                >
+    integrate(const RowElements& row, 
+              typename RowElements::const_reference row_ref, 
+              const ColElements& col,
+              typename ColElements::const_reference col_ref, 
+              const Kernel& kernel) {
+
+    }
+
+    template <typename RowElements,
+              typename ColElements,
+              typename Kernel,
+              typename = std::enable_if_t<
+                            is_particles<RowElements>::value &&
+                            is_particles<ColElements>::value>
+                >
+    integrate(const RowElements& row, 
+              typename RowElements::const_reference row_ref, 
+              const ColElements& col,
+              typename ColElements::const_reference col_ref, 
+              const Kernel& kernel) {
+
+        position_value_type dx; 
+        if (is_periodic) { 
+            dx = col.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
+        } else {
+            dx = get<position>(bj)-get<position>(ai);
+        }
+        return kernel(dx,row_ref,col_ref);
+    }
+
+
+
+    template<typename RowParticles, typename ColParticles, typename F>
+    class KernelBase {
+    protected:
+        typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
+        static const unsigned int dimension = kernel_helper::dimension;
+        typedef Vector<double,dimension> double_d;
+        typedef Vector<int,dimension> int_d;
+        typedef typename kernel_helper::const_position_reference const_position_reference;
+        typedef typename kernel_helper::const_row_reference const_row_reference;
+        typedef typename kernel_helper::const_col_reference const_col_reference;
+
+    public:
+
+        typedef typename kernel_helper::Block Block;
+        typedef typename Block::Scalar Scalar;
+        static const size_t BlockRows = Block::RowsAtCompileTime;
+        static const size_t BlockCols = Block::ColsAtCompileTime;
 
         typedef RowParticles row_particles_type;
         typedef ColParticles col_particles_type;
@@ -96,7 +166,6 @@ namespace Aboria {
             m_row_particles(row_particles), 
             m_col_particles(col_particles)
         {};
-
 
         RowParticles& get_row_particles() {
             return m_row_particles;
@@ -119,14 +188,14 @@ namespace Aboria {
         }
 
         size_t rows() const {
-            return m_row_particles.size()*ElementRows;
+            return m_row_particles.size()*BlockRows;
         }
 
         size_t cols() const {
-            return m_col_particles.size()*ElementCols;
+            return m_col_particles.size()*BlockCols;
         }
 
-        Element eval(const_position_reference dx, 
+        Block eval(const_position_reference dx, 
                     const_row_reference a, 
                     const_col_reference b) const {
             return m_function(dx,a,b);
@@ -135,14 +204,13 @@ namespace Aboria {
         Scalar coeff(const size_t i, const size_t j) const {
             ASSERT(i < rows(),"i greater than rows()");
             ASSERT(j < cols(),"j greater than cols()");
-            const int pi = std::floor(static_cast<float>(i)/ElementRows);
-            const int ioffset = i - pi*ElementRows;
-            const int pj = std::floor(static_cast<float>(j)/ElementCols);
-            const int joffset = j - pj*ElementCols;
+            const int pi = std::floor(static_cast<float>(i)/BlockRows);
+            const int ioffset = i - pi*BlockRows;
+            const int pj = std::floor(static_cast<float>(j)/BlockCols);
+            const int joffset = j - pj*BlockCols;
             const_row_reference ai = m_row_particles[pi];
             const_col_reference bj = m_col_particles[pj];
-            const_position_reference dx = get<position>(bj)-get<position>(ai);
-            return eval(dx,ai,bj)(ioffset,joffset);
+            return integrate(m_row_particles,ai,m_col_particles,bi,this->m_function);
         }
 
         template<typename MatrixType>
@@ -184,10 +252,10 @@ namespace Aboria {
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
-        typedef typename base_type::Element Element;
+        typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
-        static const size_t ElementRows = base_type::ElementRows;
-        static const size_t ElementCols = base_type::ElementCols;
+        static const size_t BlockRows = base_type::BlockRows;
+        static const size_t BlockCols = base_type::BlockCols;
 
         KernelDense(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -213,15 +281,19 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference  bj = b[j];
+
+                    /*
                     position_value_type dx; 
                     if (is_periodic) { 
                         dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
                     } else {
                         dx = get<position>(bj)-get<position>(ai);
                     }
+                    */
                     const_cast< MatrixType& >(matrix).block(
-                            i*ElementRows,j*ElementCols,
-                            ElementRows,  ElementCols) = 
+                            i*BlockRows,j*BlockCols,
+                            BlockRows,  BlockCols) = 
+                                        detail::integrate(a,ai,b,bi,this->m_function)
                                                 this->eval(dx,ai,bj);
                 }
             }
@@ -250,11 +322,11 @@ namespace Aboria {
                     } else {
                         dx = get<position>(bj)-get<position>(ai);
                     }
-                    const Element element = this->eval(dx,ai,bj);
-                    for (int ii = 0; ii < ElementRows; ++ii) {
-                        for (int jj = 0; jj < ElementCols; ++jj) {
-                            triplets.push_back(Triplet(i*ElementRows+ii,
-                                                     j*ElementCols+jj,
+                    const Block element = this->eval(dx,ai,bj);
+                    for (int ii = 0; ii < BlockRows; ++ii) {
+                        for (int jj = 0; jj < BlockCols; ++jj) {
+                            triplets.push_back(Triplet(i*BlockRows+ii,
+                                                     j*BlockCols+jj,
                                                      element(ii,jj)));
                         }
                     }
@@ -268,7 +340,7 @@ namespace Aboria {
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
-            typedef Eigen::Matrix<Scalar,ElementRows,1> row_vector;
+            typedef Eigen::Matrix<Scalar,BlockRows,1> row_vector;
 
             const RowParticles& a = this->m_row_particles;
             const ColParticles& b = this->m_col_particles;
@@ -294,9 +366,9 @@ namespace Aboria {
                         dx = get<position>(bj)-get<position>(ai);
                     }
                     sum += this->eval(dx,ai,bj)
-                                *rhs.segment(j*ElementCols,(j+1)*ElementCols);
+                                *rhs.segment(j*BlockCols,(j+1)*BlockCols);
                 }
-                lhs.segment(i*ElementRows,(i+1)*ElementRows) += sum;
+                lhs.segment(i*BlockRows,(i+1)*BlockRows) += sum;
             }
        }
 
@@ -377,9 +449,9 @@ namespace Aboria {
         matrix_type m_matrix;
     public:
         typedef typename base_type::Scalar Scalar;
-        typedef typename base_type::Element Element;
-        static const size_t ElementRows = base_type::ElementRows;
-        static const size_t ElementCols = base_type::ElementCols;
+        typedef typename base_type::Block Block;
+        static const size_t BlockRows = base_type::BlockRows;
+        static const size_t BlockCols = base_type::BlockCols;
 
         KernelMatrix(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -408,8 +480,8 @@ namespace Aboria {
                     } else {
                         dx = get<position>(bj)-get<position>(ai);
                     }
-                    m_matrix.block(i*ElementRows,j*ElementCols,
-                                   ElementRows,  ElementCols) = 
+                    m_matrix.block(i*BlockRows,j*BlockCols,
+                                   BlockRows,  BlockCols) = 
                                                 this->eval(dx,ai,bj);
                 }
             }
@@ -447,8 +519,8 @@ namespace Aboria {
             for (size_t i=0; i<na; ++i) {
                 LHSType sum = LHSType::Zero();
                 for (size_t j=0; j<nb; ++j) {
-                    sum += m_matrix.block(i*ElementRows,j*ElementCols,
-                                          ElementRows,  ElementCols)*rhs[j];
+                    sum += m_matrix.block(i*BlockRows,j*BlockCols,
+                                          BlockRows,  BlockCols)*rhs[j];
                 }
                 lhs[i] += sum;
             }
@@ -496,9 +568,9 @@ namespace Aboria {
 
     public:
         typedef typename base_type::Scalar Scalar;
-        typedef typename base_type::Element Element;
-        static const size_t ElementRows = base_type::ElementRows;
-        static const size_t ElementCols = base_type::ElementCols;
+        typedef typename base_type::Block Block;
+        static const size_t BlockRows = base_type::BlockRows;
+        static const size_t BlockCols = base_type::BlockCols;
 
         KernelChebyshev(const RowParticles& row_particles,
                         const ColParticles& col_particles,
@@ -517,8 +589,8 @@ namespace Aboria {
         void set_n(const unsigned int n) { 
             m_n = n; 
             m_ncheb = std::pow(n,dimension); 
-            m_W.resize(m_ncheb*ElementCols);
-            m_fcheb.resize(m_ncheb*ElementRows);
+            m_W.resize(m_ncheb*BlockCols);
+            m_fcheb.resize(m_ncheb*BlockRows);
 
             update_row_positions();
             update_col_positions();
@@ -530,27 +602,27 @@ namespace Aboria {
             row_Rn.calculate_Sn(get<position>(this->m_row_particles).begin(),N,m_n);
 
             // fill row_Rn matrix
-            m_row_Rn_matrix.resize(N*ElementRows,m_ncheb*ElementRows);
+            m_row_Rn_matrix.resize(N*BlockRows,m_ncheb*BlockRows);
             for (int i=0; i<N; ++i) {
                 lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
-                    m_row_Rn_matrix.block(i*ElementRows,j*ElementRows,
-                                          ElementRows,  ElementRows) = row_Rn(*mj,i);
+                    m_row_Rn_matrix.block(i*BlockRows,j*BlockRows,
+                                          BlockRows,  BlockRows) = row_Rn(*mj,i);
                 }
             }
         }
 
         void update_kernel_matrix() {
             // fill kernel matrix
-            m_kernel_matrix.resize(m_ncheb*ElementRows,m_ncheb*ElementCols);
+            m_kernel_matrix.resize(m_ncheb*BlockRows,m_ncheb*BlockCols);
             lattice_iterator<dimension> mi(m_start,m_end);
             for (int i=0; i<m_ncheb; ++i,++mi) {
                 const double_d pi = col_Rn.get_position(*mi);
                 lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
-                    m_kernel_matrix.block(i*ElementRows,j*ElementCols,
-                                          ElementRows,  ElementCols) = 
+                    m_kernel_matrix.block(i*BlockRows,j*BlockCols,
+                                          BlockRows,  BlockCols) = 
                                             m_position_function(pi-pj,pj,pi);
                 }
             }
@@ -561,12 +633,12 @@ namespace Aboria {
             col_Rn.calculate_Sn(get<position>(this->m_col_particles).begin(),N,m_n);
 
             // fill row_Rn matrix
-            m_col_Rn_matrix.resize(m_ncheb*ElementCols,N*ElementCols);
+            m_col_Rn_matrix.resize(m_ncheb*BlockCols,N*BlockCols);
             for (int i=0; i<N; ++i) {
                 lattice_iterator<dimension> mi(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mi) {
-                    m_col_Rn_matrix(j,i).block(j*ElementCols,i*ElementCols,
-                                               ElementCols,   ElementCols) 
+                    m_col_Rn_matrix(j,i).block(j*BlockCols,i*BlockCols,
+                                               BlockCols,   BlockCols) 
                                                     = col_Rn(*mi,i);
                 }
             }
@@ -619,12 +691,12 @@ namespace Aboria {
         PositionF m_position_function;
 
     public:
-        typedef typename base_type::Element Element;
+        typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
-        static const size_t ElementRows = base_type::ElementRows;
-        static const size_t ElementCols = base_type::ElementCols;
-        static_assert(ElementRows==1, "only implemented for scalar elements");
-        static_assert(ElementCols==1, "only implemented for scalar elements");
+        static const size_t BlockRows = base_type::BlockRows;
+        static const size_t BlockCols = base_type::BlockCols;
+        static_assert(BlockRows==1, "only implemented for scalar elements");
+        static_assert(BlockCols==1, "only implemented for scalar elements");
         typedef PositionF position_function_type;
 
         KernelH2(const RowParticles& row_particles,
@@ -683,12 +755,12 @@ namespace Aboria {
         fmm_type m_fmm;
 
     public:
-        typedef typename base_type::Element Element;
+        typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
-        static const size_t ElementRows = base_type::ElementRows;
-        static const size_t ElementCols = base_type::ElementCols;
-        static_assert(ElementRows==1, "only implemented for scalar elements");
-        static_assert(ElementCols==1, "only implemented for scalar elements");
+        static const size_t BlockRows = base_type::BlockRows;
+        static const size_t BlockCols = base_type::BlockCols;
+        static_assert(BlockRows==1, "only implemented for scalar elements");
+        static_assert(BlockCols==1, "only implemented for scalar elements");
 
         KernelFMM(const RowParticles& row_particles,
                         const ColParticles& col_particles,
@@ -720,10 +792,10 @@ namespace Aboria {
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
-        typedef typename base_type::Element Element;
+        typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
-        static const size_t ElementRows = base_type::ElementRows;
-        static const size_t ElementCols = base_type::ElementCols;
+        static const size_t BlockRows = base_type::BlockRows;
+        static const size_t BlockCols = base_type::BlockCols;
 
         KernelSparse(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -734,11 +806,11 @@ namespace Aboria {
                                                   function) 
         {};
 
-        Element coeff(const size_t i, const size_t j) const {
-            const int pi = std::floor(static_cast<float>(i)/ElementRows);
-            const int ioffset = i - pi*ElementRows;
-            const int pj = std::floor(static_cast<float>(j)/ElementCols);
-            const int joffset = j - pj*ElementCols;
+        Block coeff(const size_t i, const size_t j) const {
+            const int pi = std::floor(static_cast<float>(i)/BlockRows);
+            const int ioffset = i - pi*BlockRows;
+            const int pj = std::floor(static_cast<float>(j)/BlockCols);
+            const int joffset = j - pj*BlockCols;
             ASSERT(pi < this->m_row_particles.size(),"pi greater than a.size()");
             ASSERT(pj < this->m_col_particles.size(),"pj greater than b.size()");
             const_row_reference ai = this->m_row_particles[pi];
@@ -771,8 +843,8 @@ namespace Aboria {
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     const_cast< MatrixType& >(matrix).block(
-                            i*ElementRows,j*ElementCols,
-                            ElementRows,  ElementCols) = 
+                            i*BlockRows,j*BlockCols,
+                            BlockRows,  BlockCols) = 
                                                 this->m_function(dx,ai,bj);
 
                 }
@@ -799,11 +871,11 @@ namespace Aboria {
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    const Element element = this->m_function(dx,ai,bj);
-                    for (int ii = 0; ii < ElementRows; ++ii) {
-                        for (int jj = 0; jj < ElementCols; ++jj) {
-                            triplets.push_back(Triplet(i*ElementRows+ii+startI,
-                                                       j*ElementCols+jj+startJ,
+                    const Block element = this->m_function(dx,ai,bj);
+                    for (int ii = 0; ii < BlockRows; ++ii) {
+                        for (int jj = 0; jj < BlockCols; ++jj) {
+                            triplets.push_back(Triplet(i*BlockRows+ii+startI,
+                                                       j*BlockCols+jj+startJ,
                                                        element(ii,jj)));
                         }
                     }
@@ -846,7 +918,7 @@ namespace Aboria {
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
-            typedef Eigen::Matrix<Scalar,ElementRows,1> row_vector;
+            typedef Eigen::Matrix<Scalar,BlockRows,1> row_vector;
 
             ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
             ASSERT(this->cols() == rhs.rows(),"rhs vector has incompatible size");
@@ -867,9 +939,9 @@ namespace Aboria {
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     sum += this->m_function(dx,ai,bj)
-                            *rhs.segment(j*ElementCols,(j+1)*ElementCols);
+                            *rhs.segment(j*BlockCols,(j+1)*BlockCols);
                 }
-                lhs.segment(i*ElementRows,(i+1)*ElementRows) += sum;
+                lhs.segment(i*BlockRows,(i+1)*BlockRows) += sum;
             }
        }
 
@@ -901,10 +973,10 @@ namespace Aboria {
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
-        typedef typename base_type::Element Element;
+        typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
-        static const size_t ElementRows = base_type::ElementRows;
-        static const size_t ElementCols = base_type::ElementCols;
+        static const size_t BlockRows = base_type::BlockRows;
+        static const size_t BlockCols = base_type::BlockCols;
 
         KernelSparseConst(const RowParticles& row_particles,
                     const ColParticles& col_particles,
@@ -945,7 +1017,7 @@ namespace Aboria {
         typedef typename base_type::const_col_reference const_col_reference;
 
     public:
-        typedef typename base_type::Element Element;
+        typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
 
         KernelZero(const RowParticles& row_particles,

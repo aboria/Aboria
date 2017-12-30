@@ -69,7 +69,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template<typename ParticlesType, typename VAR=std::tuple<>, unsigned int SelfD=2> 
+
+template<typename ParticlesType, typename VariableType, typename VAR=std::tuple<>, unsigned int SelfD=2> 
 class Elements {
 public:
 
@@ -247,7 +248,7 @@ public:
                 //TODO: this will not work with thrust
                 ParticlesType::raw_pointer p = m_particles->get_query().find(particle_id);
                 CHECK(p != iterator_to_raw_pointer(m_particles.end()),"particle "<<particle_id<<" does not exist");
-                get<elements>(p).clear(i);
+                get<VariableType>(p).clear(i);
             }
         }
         
@@ -272,7 +273,7 @@ public:
                 //TODO: this will not work with thrust
                 ParticlesType::raw_pointer p = m_particles->get_query().find(particle_id);
                 CHECK(p != iterator_to_raw_pointer(m_particles.end()),"particle "<<particle_id<<" does not exist");
-                get<elements>(p).push_back(i);
+                get<VariableType>(p).push_back(i);
             }
         }
     }
@@ -447,6 +448,15 @@ private:
 };
 
 
+namespace detail {
+
+    template <unsigned int D, typename T>
+    struct is_element: std::false_type {};
+
+    template<unsigned int D, typename Particles, typename Variable, typename Var> 
+    struct is_element<Element<Particles,Variable,Var,D>>: std::true_type {};
+
+}
 
 }
 
