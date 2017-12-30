@@ -68,64 +68,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
 namespace Aboria {
-namespace detail {
-
-template <typename Reference>
-struct resize_lambda {
-    uint32_t seed;
-    int next_id;
-    const size_t *start_id_pointer;
-
-    resize_lambda(const uint32_t &seed, const int &next_id, const size_t *start_id_pointer):
-            seed(seed),next_id(next_id),start_id_pointer(start_id_pointer) {}
-
-    CUDA_HOST_DEVICE
-    void operator()(Reference i) const {
-        Aboria::get<alive>(i) = true;
-
-        const size_t index = &Aboria::get<id>(i)-start_id_pointer;
-        Aboria::get<id>(i) = index + next_id;
-
-        generator_type& gen = Aboria::get<generator>(i);
-        gen.seed(seed + uint32_t(Aboria::get<id>(i)));
-
-    }
-};
-
-template <typename Reference>
-struct set_seed_lambda {
-    uint32_t seed;
-
-    set_seed_lambda(const uint32_t &seed):
-            seed(seed) {}
-
-    CUDA_HOST_DEVICE
-    void operator()(Reference i) const {
-        generator_type& gen = Aboria::get<generator>(i);
-        gen.seed(seed + uint32_t(Aboria::get<id>(i)));
-    }
-};
-
-template <typename ConstReference>
-struct is_alive {
-    CUDA_HOST_DEVICE
-    bool operator()(ConstReference i) const {
-        return Aboria::get<alive>(i);
-    }
-};
-
-
-
-}
-    /*
-#ifdef HAVE_THUST
-template <typename T, typename Alloc> 
-using default_vector = thrust::host_vector<T,Alloc>;
-#else
-template <typename T, typename Alloc> 
-using default_vector = std::vector<T,Alloc>;
-#endif
-*/
 
 /// \brief A STL-compatable container of particles in 3D space
 ///
@@ -149,7 +91,11 @@ using default_vector = std::vector<T,Alloc>;
 ///  \param TYPES a list of one or more variable types
 ///
 ///  \see #ABORIA_VARIABLE
-template<typename VAR=std::tuple<>, unsigned int D=3, template <typename,typename> class VECTOR=std::vector, template <typename> class SearchMethod=bucket_search_serial, typename TRAITS_USER=Traits<VECTOR> > 
+template<typename VAR=std::tuple<>, 
+         unsigned int DomainD=3, 
+         template <typename,typename> class VECTOR=std::vector, 
+         template <typename> class SearchMethod=bucket_search_serial, 
+         typename TRAITS_USER=Traits<VECTOR> > 
 class Particles {
 public:
 
@@ -160,7 +106,7 @@ public:
     ///
     /// The traits type used to build up the Particle container.
     /// Contains Level 0 vector class and dimension information
-    typedef TraitsCommon<VAR,D,TRAITS_USER> traits_type;
+    typedef TraitsCommon<VAR,DomainD,1,TRAITS_USER> traits_type;
 
     /// 
     /// a tuple type containing value_types for each Variable

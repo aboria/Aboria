@@ -105,13 +105,13 @@ struct Traits<thrust::host_vector>: public default_traits {
 };
 #endif
 
-template<typename ARG,unsigned int D, typename TRAITS>
+template<typename ARG,unsigned int DomainD, unsigned int SelfD, typename TRAITS>
 struct TraitsCommon {
     typedef typename ARG::ERROR_FIRST_TEMPLATE_ARGUMENT_TO_PARTICLES_MUST_BE_A_STD_TUPLE_TYPE error; 
     };
 
-template <typename traits, unsigned int D, typename ... TYPES>
-struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
+template <typename traits, unsigned int DomainD, unsigned int SelfD, typename ... TYPES>
+struct TraitsCommon<std::tuple<TYPES...>,DomainD,SelfD,traits>:public traits {
 
     template <typename ... T>
     using tuple = typename traits::template tuple_type<T...>::type;
@@ -124,15 +124,15 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
 
     //TODO: use vector below
 
-    const static unsigned int dimension = D;
-    typedef vector<Vector<double,D>> vector_double_d;
+    const static unsigned int dimension = DomainD;
+    typedef vector<Vector<double,DomainD>> vector_double_d;
     typedef typename vector_double_d::iterator vector_double_d_iterator;
     typedef typename vector_double_d::const_iterator vector_double_d_const_iterator;
-    typedef typename traits::template vector_type<Vector<int,D> >::type vector_int_d;
-    typedef typename traits::template vector_type<Vector<unsigned int,D> >::type vector_unsigned_int_d;
+    typedef typename traits::template vector_type<Vector<int,DomainD> >::type vector_int_d;
+    typedef typename traits::template vector_type<Vector<unsigned int,DomainD> >::type vector_unsigned_int_d;
     typedef typename vector_unsigned_int_d::iterator vector_unsigned_int_d_iterator;
     typedef typename vector_unsigned_int_d::const_iterator vector_unsigned_int_d_const_iterator;
-    typedef typename traits::template vector_type<Vector<bool,D> >::type vector_bool_d;
+    typedef typename traits::template vector_type<Vector<bool,DomainD> >::type vector_bool_d;
     typedef typename traits::template vector_type<int>::type vector_int;
     typedef typename traits::template vector_type<unsigned int>::type vector_unsigned_int;
     typedef typename traits::template vector_type<size_t>::type vector_size_t;
@@ -145,7 +145,9 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef Vector<unsigned int,dimension> unsigned_int_d;
     typedef Vector<bool,dimension> bool_d;
 
-    typedef position_d<dimension> position;
+    typedef std::conditional< SelfD > 1,
+            particles_d<SelfD>,
+            position_d<dimension>> position;
     typedef typename position::value_type position_value_type;
     typedef alive::value_type alive_value_type;
     typedef id::value_type id_value_type;
@@ -158,21 +160,6 @@ struct TraitsCommon<std::tuple<TYPES...>,D,traits>:public traits {
     typedef traits traits_type;
     typedef mpl::vector<position,id,alive,generator,TYPES...> mpl_type_vector;
 
-    /*
-    typedef tuple_ns::tuple<
-            typename position_vector_type::pointer,
-            typename id_vector_type::pointer,
-            typename alive_vector_type::pointer,
-            typename traits::template vector_type<typename TYPES::value_type>::type::pointer...
-            > tuple_of_pointers_type;
-
-    typedef tuple_ns::tuple<
-            typename position_vector_type::value_type*,
-            typename id_vector_type::value_type*,
-            typename alive_vector_type::value_type*,
-            typename traits::template vector_type<typename TYPES::value_type>::type::value_type*...
-            > tuple_of_raw_pointers_type;
-            */
 
     typedef tuple<
             typename position_vector_type::iterator,

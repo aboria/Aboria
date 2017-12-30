@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/preprocessor/cat.hpp>
 #include "Vector.h"
 #include "Random.h"
+#include <vector>
 
 namespace Aboria {
 
@@ -72,6 +73,8 @@ struct Variable {
 
 
 ABORIA_VARIABLE_VECTOR(position_d,double,"position")
+ABORIA_VARIABLE_VECTOR(particles_d,size_t,"particles_id")
+ABORIA_VARIABLE(elements,std::vector<size_t>,"elements_index")
 ABORIA_VARIABLE(alive,uint8_t,"is_alive")
 ABORIA_VARIABLE(id,size_t,"id")
 ABORIA_VARIABLE(generator,generator_type,"random_generator_seed")

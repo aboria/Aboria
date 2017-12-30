@@ -42,6 +42,51 @@ namespace Aboria {
 
 namespace detail {
 
+template <typename Reference>
+struct resize_lambda {
+    uint32_t seed;
+    int next_id;
+    const size_t *start_id_pointer;
+
+    resize_lambda(const uint32_t &seed, const int &next_id, const size_t *start_id_pointer):
+            seed(seed),next_id(next_id),start_id_pointer(start_id_pointer) {}
+
+    CUDA_HOST_DEVICE
+    void operator()(Reference i) const {
+        Aboria::get<alive>(i) = true;
+
+        const size_t index = &Aboria::get<id>(i)-start_id_pointer;
+        Aboria::get<id>(i) = index + next_id;
+
+        generator_type& gen = Aboria::get<generator>(i);
+        gen.seed(seed + uint32_t(Aboria::get<id>(i)));
+
+    }
+};
+
+template <typename Reference>
+struct set_seed_lambda {
+    uint32_t seed;
+
+    set_seed_lambda(const uint32_t &seed):
+            seed(seed) {}
+
+    CUDA_HOST_DEVICE
+    void operator()(Reference i) const {
+        generator_type& gen = Aboria::get<generator>(i);
+        gen.seed(seed + uint32_t(Aboria::get<id>(i)));
+    }
+};
+
+template <typename ConstReference>
+struct is_alive {
+    CUDA_HOST_DEVICE
+    bool operator()(ConstReference i) const {
+        return Aboria::get<alive>(i);
+    }
+};
+
+
 #ifdef HAVE_VTK
 
 template <typename reference>
