@@ -42,9 +42,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 //Level2
 #include "Search.h"
+
+#ifdef HAVE_EIGEN
 #include "Kernels.h"
 #include "Operators.h"
 #include "Preconditioners.h"
+#endif
 
 //Level3
 #include "Symbolic.h"

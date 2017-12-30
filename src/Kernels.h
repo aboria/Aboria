@@ -39,13 +39,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <type_traits>
 
-#ifdef HAVE_EIGEN
 #include "detail/Chebyshev.h"
 #include <Eigen/Core>
-#endif
 
 #include "FastMultipoleMethod.h"
+
+#ifdef HAVE_H2LIB
 #include "H2Lib.h"
+#endif
 
 
 namespace Aboria {
@@ -283,7 +284,7 @@ namespace Aboria {
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                row_vector sum = row_vector::Zeros();
+                row_vector sum = row_vector::Zero();
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
                     position_value_type dx; 
@@ -320,7 +321,7 @@ namespace Aboria {
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                LHSType sum(0);
+                LHSType sum = LHSType::Zero();
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
                     position_value_type dx; 
@@ -444,7 +445,7 @@ namespace Aboria {
 
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
-                LHSType sum(0);
+                LHSType sum = LHSType::Zero();
                 for (size_t j=0; j<nb; ++j) {
                     sum += m_matrix.block(i*ElementRows,j*ElementCols,
                                           ElementRows,  ElementCols)*rhs[j];
@@ -597,6 +598,8 @@ namespace Aboria {
         }
     };
 
+#ifdef HAVE_H2LIB
+
     template<typename RowParticles, typename ColParticles, typename PositionF,
         typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
     class KernelH2: public KernelDense<RowParticles,ColParticles,F> {
@@ -656,6 +659,7 @@ namespace Aboria {
             m_h2_matrix.matrix_vector_multiply(lhs,1.0,false,rhs);
         }
     };
+#endif
 
 
     template<typename RowParticles, typename ColParticles, typename PositionF,
@@ -827,7 +831,7 @@ namespace Aboria {
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                LHSType sum(0);
+                LHSType sum = LHSType::Zero();
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
                     const_position_reference dx = detail::get_impl<1>(pairj);

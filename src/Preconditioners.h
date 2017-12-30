@@ -105,6 +105,7 @@ namespace detail {
     }
 }
 
+#if 0
 template <unsigned int ReducedOrder, 
           typename InnerPreconditioner=Eigen::IncompleteLUT<double>,
           typename IterativeSolver=Eigen::DGMRES<Eigen::SparseMatrix<double>,
@@ -341,6 +342,7 @@ class ExtMatrixPreconditioner {
   protected:
     bool m_isInitialized;
 };
+#endif
 
 
 template <template<typename> class Solver=Eigen::HouseholderQR>

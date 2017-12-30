@@ -41,8 +41,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include "CudaInclude.h"
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/split_free.hpp>
+#include <boost/serialization/array.hpp>
+
 
 #include <iostream>
+
+#ifdef HAVE_EIGEN
+#include <Eigen/Core>
+#endif
 
 
 namespace Aboria {
@@ -55,6 +62,15 @@ struct is_vector: std::false_type {};
 
 template <typename T, unsigned int N>
 struct is_vector<Vector<T,N>>: std::true_type {};
+
+#ifdef HAVE_EIGEN
+template <typename T>
+struct is_eigen_vector: std::false_type {};
+
+template <typename T, int N>
+struct is_eigen_vector<Eigen::Matrix<T,N,1>>: std::true_type {};
+#endif
+
 
 template <typename T, class Enable = void>
 struct scalar {
@@ -196,6 +212,20 @@ public:
 		}
 		return *this;
 	}
+
+#ifdef HAVE_EIGEN
+    /// Eigen Vector assignment
+    ///
+    /// Assigns an eigen vector object (arg) to this vector.
+    ///
+    CUDA_HOST_DEVICE
+	Vector<T,N> &operator =(const Eigen::Matrix<T,N,1>& arg) {
+		for (int i = 0; i < N; ++i) {
+			mem[i] = arg[i];
+		}
+		return *this;
+	}
+#endif
 
     /// const Index operator
     ///
@@ -754,5 +784,109 @@ typedef Vector<bool,7> vbool7;
 #define bool7 aboria_bool7
 */
 
-}
+} // namespace Aboria
+
+#ifdef HAVE_EIGEN
+// taken from https://stackoverflow.com/a/35074759
+namespace boost { namespace serialization {
+
+template<   class Archive,
+            class S,
+            int Rows_,
+            int Cols_,
+            int Ops_,
+            int MaxRows_,
+            int MaxCols_>
+inline void serialize(Archive & ar,
+                      Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & matrix,
+                      const unsigned int version)
+{
+  int rows = matrix.rows();
+  int cols = matrix.cols();
+  ar & make_nvp("rows", rows);
+  ar & make_nvp("cols", cols);    
+  matrix.resize(rows, cols); // no-op if size does not change!
+
+  // always save/load row-major
+  for(int r = 0; r < rows; ++r)
+    for(int c = 0; c < cols; ++c)
+      ar & make_nvp("val", matrix(r,c));
+}    
+
+template<   class Archive,
+            class S,
+            int Dim_,
+            int Mode_,
+            int Options_>
+inline void serialize(Archive & ar,
+                      Eigen::Transform<S, Dim_, Mode_, Options_> & transform,
+                      const unsigned int version)
+{
+  serialize(ar, transform.matrix(), version);
+}    
+}} // namespace boost::serialization
+/*
+namespace boost{
+    namespace serialization{
+
+        template<   class Archive, 
+                    class S, 
+                    int Rows_, 
+                    int Cols_, 
+                    int Ops_, 
+                    int MaxRows_, 
+                    int MaxCols_>
+        inline void save(
+            Archive & ar, 
+            const Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & g, 
+            const unsigned int version)
+            {
+                int rows = g.rows();
+                int cols = g.cols();
+
+                ar & rows;
+                ar & cols;
+                ar & boost::serialization::make_array(g.data(), rows * cols);
+            }
+
+        template<   class Archive, 
+                    class S, 
+                    int Rows_,
+                    int Cols_,
+                    int Ops_, 
+                    int MaxRows_, 
+                    int MaxCols_>
+        inline void load(
+            Archive & ar, 
+            Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & g, 
+            const unsigned int version)
+        {
+            int rows, cols;
+            ar & rows;
+            ar & cols;
+            g.resize(rows, cols);
+            ar & boost::serialization::make_array(g.data(), rows * cols);
+        }
+
+        template<   class Archive, 
+                    class S, 
+                    int Rows_, 
+                    int Cols_, 
+                    int Ops_, 
+                    int MaxRows_, 
+                    int MaxCols_>
+        inline void serialize(
+            Archive & ar, 
+            Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & g, 
+            const unsigned int version)
+        {
+            split_free(ar, g, version);
+        }
+
+
+    } // namespace serialization
+} // namespace boost
+*/
+#endif
+
 #endif /* VECTOR_H_ */
