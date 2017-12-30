@@ -65,6 +65,17 @@ struct write_from_tuple<getter_type<std::tuple<Types...>,MplVector>> {
         datas[i]->SetValue(index,std::get<U::value>(write_from));
     }
 
+
+#ifdef HAVE_EIGEN
+    template< typename U >
+    typename boost::enable_if<is_eigen_vector<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        Eigen::Matrix<float, non_ref_tuple_element<U>::RowsAtCompileTime,1> tmp = 
+            std::get<U::value>(write_from).template cast<float>();
+        datas[i]->SetTuple(index,tmp.data());
+    }
+#endif
+
     template< typename U >
     typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
     operator()(U i) {
@@ -92,6 +103,7 @@ struct write_from_tuple<getter_type<std::tuple<Types...>,MplVector>> {
         !std::is_same<non_ref_tuple_element<U>,uint32_t>::value &&
         !std::is_same<non_ref_tuple_element<U>,generator_type>::value &&
         !is_vector<non_ref_tuple_element<U>>::value &&
+        !is_eigen_vector<non_ref_tuple_element<U>>::value &&
         !boost::is_arithmetic<non_ref_tuple_element<U>>::value
         >::type
     operator()(U i) {
@@ -142,6 +154,18 @@ struct write_from_tuple<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT
         datas[i]->SetTuple(index,tmp.data());
     }
 
+#ifdef HAVE_EIGEN
+    template< typename U >
+    typename boost::enable_if<is_eigen_vector<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        Eigen::Matrix<float, non_ref_tuple_element<U>::RowsAtCompileTime,1> tmp = 
+            static_cast<Vector<double,non_ref_tuple_element<U>::size>>(
+                    thrust::get<U::value>(write_from)).template cast<float>();
+        datas[i]->SetTuple(index,tmp.data());
+    }
+#endif
+
+
     template< typename U >
     typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,generator_type> >::type
     operator()(U i) {
@@ -186,6 +210,14 @@ struct read_into_tuple {
          datas[i]->GetTuple(index,std::get<U::value>(read_into).data());
     }
 
+#ifdef HAVE_EIGEN
+    template< typename U >
+    typename boost::enable_if<is_eigen_vector<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        datas[i]->GetTuple(index,std::get<U::value>(read_into).data());
+    }
+#endif
+
     template< typename U >
     typename boost::enable_if<boost::is_same<non_ref_tuple_element<U>,generator_type> >::type
     operator()(U i) {
@@ -214,8 +246,11 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
     setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
         n(n),datas(datas),grid(grid){}
 
-    template< typename U > 
-    typename boost::enable_if<mpl::not_<is_vector<non_ref_tuple_element<U>>>>::type
+    template< typename U >
+    typename std::enable_if<
+        !is_vector<non_ref_tuple_element<U>>::value &&
+        !is_eigen_vector<non_ref_tuple_element<U>>::value
+        >::type
     operator()(U i) {
         typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
         const char *name = variable_type().name;
@@ -245,6 +280,26 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
         datas[i]->SetNumberOfTuples(n);
     }
+
+#ifdef HAVE_EIGEN
+    template< typename U >
+    typename boost::enable_if<is_eigen_vector<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
+        const char *name = variable_type().name;
+        datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
+        if (!datas[i]) {
+            datas[i] = vtkSmartPointer<vtkFloatArray>::New();
+            datas[i]->SetName(name);
+            grid->GetPointData()->AddArray(datas[i]);
+        }
+        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
+        datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::RowsAtCompileTime);
+        datas[i]->SetNumberOfTuples(n);
+    }
+#endif
+ 
+ 
 
     size_t n;
     vtkSmartPointer<vtkFloatArray>* datas;
@@ -276,8 +331,11 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
     setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
         n(n),datas(datas),grid(grid){}
 
-    template< typename U > 
-    typename boost::enable_if<mpl::not_<is_vector<non_ref_tuple_element<U>>>>::type
+    template< typename U >
+    typename std::enable_if<
+        !is_vector<non_ref_tuple_element<U>>::value &&
+        !is_eigen_vector<non_ref_tuple_element<U>>::value
+        >::type
     operator()(U i) {
         typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
         const char *name = variable_type().name;
@@ -307,6 +365,25 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
         datas[i]->SetNumberOfTuples(n);
     }
+
+#ifdef HAVE_EIGEN
+    template< typename U >
+    typename boost::enable_if<is_eigen_vector<non_ref_tuple_element<U>>>::type
+    operator()(U i) {
+        typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
+        const char *name = variable_type().name;
+        datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
+        if (!datas[i]) {
+            datas[i] = vtkSmartPointer<vtkFloatArray>::New();
+            datas[i]->SetName(name);
+            grid->GetPointData()->AddArray(datas[i]);
+        }
+        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
+        datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::RowsAtCompileTime);
+        datas[i]->SetNumberOfTuples(n);
+    }
+#endif
+ 
 
     size_t n;
     vtkSmartPointer<vtkFloatArray>* datas;

@@ -408,6 +408,9 @@ Operator create_fmm_operator(const RowParticles& row_particles,
                 );
     }
 
+
+#ifdef HAVE_H2LIB
+
 /// \brief creates a matrix-free linear operator using the Black-Box
 ///        Fast Multipole Method (FMM) to internally create a H2
 ///        hierarchical matrix
@@ -443,6 +446,8 @@ Operator create_h2_operator(const RowParticles& row_particles,
                     )
                 );
     }
+
+#endif
 
 
 /// \brief creates a sparse matrix-free linear operator for use with Eigen

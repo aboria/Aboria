@@ -56,7 +56,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/proto/transform.hpp>
 #include <boost/proto/debug.hpp>
 #include <boost/utility/enable_if.hpp>
-#include <boost/type_traits/ice.hpp>
+//#include <boost/type_traits/ice.hpp>
 #include <boost/type_traits/is_same.hpp>
 #include <boost/utility/result_of.hpp>
 //#include <type_traits>

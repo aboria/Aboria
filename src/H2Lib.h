@@ -670,6 +670,12 @@ public:
     }
 };
 
+template <unsigned int D, typename Function> 
+detail::H2LibBlackBoxExpansions<D,Function> make_h2lib_black_box_expansion(size_t order, const Function& function) {
+    return detail::H2LibBlackBoxExpansions<D,Function>(order,function);
+}
+
+
 
 template <typename Expansions, typename RowParticlesType, typename ColParticlesType>
 HLibMatrix make_h2lib_h_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions) {
