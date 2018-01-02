@@ -43,96 +43,18 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <Eigen/Core>
 
 #include "FastMultipoleMethod.h"
+#include "detail/Kernels.h"
 
 #ifdef HAVE_H2LIB
 #include "H2Lib.h"
 #endif
 
 
+
 namespace Aboria {
 
 
-    detail::integrate(a,ai,b,bi,this->m_function)
-namespace detail {
-
-    template<typename RowParticles, typename ColParticles, typename F>
-    struct kernel_helper {
-        const unsigned int dimension = RowParticles::dimension;
-        typedef Vector<double,dimension> double_d;
-        typedef double_d const & const_position_reference;
-        typedef typename RowParticles::const_reference const_row_reference;
-        typedef typename ColParticles::const_reference const_col_reference;
-
-        typedef typename std::result_of<F(const_position_reference, 
-                                  const_row_reference, 
-                                  const_col_reference)>::type FunctionReturn;
-
-        typedef typename std::conditional<
-                            std::is_arithmetic<FunctionReturn>::value,
-                            Eigen::Matrix<FunctionReturn,1,1>,
-                            FunctionReturn>::type Block;
-
-        static_assert(Block::RowsAtCompileTime >= 0,"element type rows must be fixed");
-        static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
-    };
-
-
-    template <typename RowElements,
-              typename ColElements,
-              typename Kernel,
-              typename = std::enable_if_t<
-                            is_elements<2,RowElements>::value &&
-                            is_elements<2,ColElements>::value>
-                >
-    integrate(const RowElements& row, 
-              typename RowElements::const_reference row_ref, 
-              const ColElements& col,
-              typename ColElements::const_reference col_ref, 
-              const Kernel& kernel) {
-
-    }
-
-
-    template <typename RowElements,
-              typename ColElements,
-              typename Kernel,
-              typename = std::enable_if_t<
-                            is_particles<RowElements>::value &&
-                            is_elements<2,ColElements>::value>
-                >
-    integrate(const RowElements& row, 
-              typename RowElements::const_reference row_ref, 
-              const ColElements& col,
-              typename ColElements::const_reference col_ref, 
-              const Kernel& kernel) {
-
-    }
-
-    template <typename RowElements,
-              typename ColElements,
-              typename Kernel,
-              typename = std::enable_if_t<
-                            is_particles<RowElements>::value &&
-                            is_particles<ColElements>::value>
-                >
-    integrate(const RowElements& row, 
-              typename RowElements::const_reference row_ref, 
-              const ColElements& col,
-              typename ColElements::const_reference col_ref, 
-              const Kernel& kernel) {
-
-        position_value_type dx; 
-        if (is_periodic) { 
-            dx = col.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-        } else {
-            dx = get<position>(bj)-get<position>(ai);
-        }
-        return kernel(dx,row_ref,col_ref);
-    }
-
-
-
-    template<typename RowParticles, typename ColParticles, typename F>
+    template<typename RowElements, typename ColElements, typename F>
     class KernelBase {
     protected:
         typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
@@ -150,8 +72,8 @@ namespace detail {
         static const size_t BlockRows = Block::RowsAtCompileTime;
         static const size_t BlockCols = Block::ColsAtCompileTime;
 
-        typedef RowParticles row_particles_type;
-        typedef ColParticles col_particles_type;
+        typedef RowElements row_particles_type;
+        typedef ColElements col_particles_type;
         typedef F function_type;
         typedef size_t Index;
         enum {
@@ -159,23 +81,23 @@ namespace detail {
             RowsAtCompileTime = -1
         };
 
-        KernelBase(const RowParticles& row_particles,
-                   const ColParticles& col_particles,
+        KernelBase(const RowElements& row_particles,
+                   const ColElements& col_particles,
                    const F& function): 
             m_function(function),
             m_row_particles(row_particles), 
             m_col_particles(col_particles)
         {};
 
-        RowParticles& get_row_particles() {
+        RowElements& get_row_particles() {
             return m_row_particles;
         }
 
-        const RowParticles& get_row_particles() const {
+        const RowElements& get_row_particles() const {
             return m_row_particles;
         }
 
-        ColParticles& get_col_particles() {
+        ColElements& get_col_particles() {
             return m_col_particles;
         }
 
@@ -183,7 +105,7 @@ namespace detail {
             return m_function;
         }
 
-        const ColParticles& get_col_particles() const {
+        const ColElements& get_col_particles() const {
             return m_col_particles;
         }
 
@@ -195,10 +117,9 @@ namespace detail {
             return m_col_particles.size()*BlockCols;
         }
 
-        Block eval(const_position_reference dx, 
-                    const_row_reference a, 
-                    const_col_reference b) const {
-            return m_function(dx,a,b);
+        Block eval(const_row_reference a, 
+                   const_col_reference b) const {
+            return m_function(a,b);
         }
 
         Scalar coeff(const size_t i, const size_t j) const {
@@ -210,7 +131,7 @@ namespace detail {
             const int joffset = j - pj*BlockCols;
             const_row_reference ai = m_row_particles[pi];
             const_col_reference bj = m_col_particles[pj];
-            return integrate(m_row_particles,ai,m_col_particles,bi,this->m_function);
+            return m_function(ai,bi);
         }
 
         template<typename MatrixType>
@@ -234,15 +155,15 @@ namespace detail {
        }
 
     protected:
-        const RowParticles &m_row_particles;
-        const ColParticles &m_col_particles;
-        F m_function;
+        const RowElements &m_row_particles;
+        const ColElements &m_col_particles;
+        const F& m_function;
     };
 
-    template<typename RowParticles, typename ColParticles, typename F>
-    class KernelDense: public KernelBase<RowParticles,ColParticles,F> {
+    template<typename RowElements, typename ColElements, typename F>
+    class KernelDense: public KernelBase<RowElements,ColElements,F> {
     protected:
-        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef KernelBase<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
         static const unsigned int dimension = base_type::dimension;
         typedef typename base_type::double_d double_d;
@@ -257,8 +178,8 @@ namespace detail {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelDense(const RowParticles& row_particles,
-                    const ColParticles& col_particles,
+        KernelDense(const RowElements& row_particles,
+                    const ColElements& col_particles,
                     const F& function): base_type(row_particles,
                                                   col_particles,
                                                   function) 
@@ -267,8 +188,8 @@ namespace detail {
         template<typename MatrixType>
         void assemble(const MatrixType &matrix) const {
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
             const size_t na = a.size();
             const size_t nb = b.size();
 
@@ -281,20 +202,9 @@ namespace detail {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference  bj = b[j];
-
-                    /*
-                    position_value_type dx; 
-                    if (is_periodic) { 
-                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                    } else {
-                        dx = get<position>(bj)-get<position>(ai);
-                    }
-                    */
                     const_cast< MatrixType& >(matrix).block(
                             i*BlockRows,j*BlockCols,
-                            BlockRows,  BlockCols) = 
-                                        detail::integrate(a,ai,b,bi,this->m_function)
-                                                this->eval(dx,ai,bj);
+                            BlockRows,  BlockCols) = this->eval(ai,bi);
                 }
             }
         }
@@ -304,8 +214,8 @@ namespace detail {
                       const size_t startI=0, const size_t startJ=0
                       ) const {
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -316,13 +226,7 @@ namespace detail {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    position_value_type dx; 
-                    if (is_periodic) { 
-                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                    } else {
-                        dx = get<position>(bj)-get<position>(ai);
-                    }
-                    const Block element = this->eval(dx,ai,bj);
+                    const Block element = this->eval(ai,bj);
                     for (int ii = 0; ii < BlockRows; ++ii) {
                         for (int jj = 0; jj < BlockCols; ++jj) {
                             triplets.push_back(Triplet(i*BlockRows+ii,
@@ -342,8 +246,8 @@ namespace detail {
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
             typedef Eigen::Matrix<Scalar,BlockRows,1> row_vector;
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -359,13 +263,7 @@ namespace detail {
                 row_vector sum = row_vector::Zero();
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    position_value_type dx; 
-                    if (is_periodic) { 
-                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                    } else {
-                        dx = get<position>(bj)-get<position>(ai);
-                    }
-                    sum += this->eval(dx,ai,bj)
+                    sum += this->eval(ai,bj)
                                 *rhs.segment(j*BlockCols,(j+1)*BlockCols);
                 }
                 lhs.segment(i*BlockRows,(i+1)*BlockRows) += sum;
@@ -379,8 +277,8 @@ namespace detail {
         void evaluate(std::vector<LHSType> &lhs, 
                 const std::vector<RHSType> &rhs) const {
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -396,13 +294,7 @@ namespace detail {
                 LHSType sum = LHSType::Zero();
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    position_value_type dx; 
-                    if (is_periodic) { 
-                        dx = b.correct_dx_for_periodicity(get<position>(bj)-get<position>(ai));
-                    } else {
-                        dx = get<position>(bj)-get<position>(ai);
-                    }
-                    sum += this->eval(dx,ai,bj)*rhs[j];
+                    sum += this->eval(ai,bj)*rhs[j];
                 }
                 lhs[i] += sum;
             }
@@ -410,31 +302,10 @@ namespace detail {
 
     };
 
-    namespace detail {
-        template <typename RowParticles, typename ColParticles, typename F,
-                 typename double_d=
-                     typename RowParticles::double_d,
-                 typename const_row_reference=
-                     typename RowParticles::const_reference,
-                 typename const_col_reference=
-                     typename ColParticles::const_reference,
-                 typename position=
-                     typename RowParticles::position>
-        struct position_lambda {
-            F m_f;
-            position_lambda(const F f):m_f(f) {}
-            double operator()(const double_d& dx,
-                            const_row_reference a,
-                            const_col_reference b) const {
-                                return m_f(dx,get<position>(a),get<position>(b));
-            }
-        };
-    }
-    
-    template<typename RowParticles, typename ColParticles, typename F>
-    class KernelMatrix: public KernelBase<RowParticles,ColParticles,F> {
+    template<typename RowElements, typename ColElements, typename F>
+    class KernelMatrix: public KernelBase<RowElements,ColElements,F> {
     protected:
-        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef KernelBase<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
         static const unsigned int dimension = base_type::dimension;
         typedef typename base_type::double_d double_d;
@@ -453,8 +324,8 @@ namespace detail {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelMatrix(const RowParticles& row_particles,
-                    const ColParticles& col_particles,
+        KernelMatrix(const RowElements& row_particles,
+                    const ColElements& col_particles,
                     const F& function): base_type(row_particles,
                                                   col_particles,
                                                   function) 
@@ -463,8 +334,8 @@ namespace detail {
         };
 
         void assemble_matrix() {
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const bool is_periodic = !a.get_periodic().any();
 
@@ -473,16 +344,9 @@ namespace detail {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<b.size(); ++j) {
                     const_col_reference bj = b[j];
-                    position_value_type dx; 
-                    if (is_periodic) { 
-                        dx = b.correct_dx_for_periodicity(get<position>(bj)-
-                                                          get<position>(ai));
-                    } else {
-                        dx = get<position>(bj)-get<position>(ai);
-                    }
                     m_matrix.block(i*BlockRows,j*BlockCols,
                                    BlockRows,  BlockCols) = 
-                                                this->eval(dx,ai,bj);
+                                                this->eval(ai,bj);
                 }
             }
         }
@@ -504,8 +368,8 @@ namespace detail {
                 const std::vector<RHSType> &rhs) const {
 
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -540,10 +404,12 @@ namespace detail {
     };
 
 
-    template<typename RowParticles, typename ColParticles, typename PositionF,
-        typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
-    class KernelChebyshev: public KernelDense<RowParticles,ColParticles,F> {
-        typedef KernelDense<RowParticles,ColParticles,F> base_type;
+    template<typename RowElements, typename ColElements, typename PositionF,
+        size_t QuadratureOrder = 8,
+        typename ElementF=detail::position_lambda<RowElements,ColElements,PositionF>
+        typename F=detail::integrate_over_element<RowElements,ColElements,ElementF>>
+    class KernelChebyshev: public KernelDense<RowElements,ColElements,F> {
+        typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::int_d int_d;
@@ -572,8 +438,8 @@ namespace detail {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelChebyshev(const RowParticles& row_particles,
-                        const ColParticles& col_particles,
+        KernelChebyshev(const RowElements& row_particles,
+                        const ColElements& col_particles,
                         const unsigned int n,
                         const PositionF& function): m_n(n),
                                             m_ncheb(std::pow(n,dimension)),
@@ -598,18 +464,14 @@ namespace detail {
         }
 
         void update_row_positions() {
-            const size_t N = this->m_row_particles.size();
-            row_Rn.calculate_Sn(get<position>(this->m_row_particles).begin(),N,m_n);
-
+            integrate_chebyshev<RowElements,BlockRows> integrate(this->row_elements,m_order,
+                                            detail::bbox<dimension>(
+                                                    this->row_elements.get_min(),
+                                                    this->row_elements.get_max()));
+                                                       
             // fill row_Rn matrix
             m_row_Rn_matrix.resize(N*BlockRows,m_ncheb*BlockRows);
-            for (int i=0; i<N; ++i) {
-                lattice_iterator<dimension> mj(m_start,m_end);
-                for (int j=0; j<m_ncheb; ++j,++mj) {
-                    m_row_Rn_matrix.block(i*BlockRows,j*BlockRows,
-                                          BlockRows,  BlockRows) = row_Rn(*mj,i);
-                }
-            }
+            integrate(m_row_Rn_matrix);
         }
 
         void update_kernel_matrix() {
@@ -621,27 +483,23 @@ namespace detail {
                 lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
-                    m_kernel_matrix.block(i*BlockRows,j*BlockCols,
-                                          BlockRows,  BlockCols) = 
+                    m_kernel_matrix.block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) =
                                             m_position_function(pi-pj,pj,pi);
                 }
             }
         }
 
         void update_col_positions() {
-            const size_t N = this->m_col_particles.size();
-            col_Rn.calculate_Sn(get<position>(this->m_col_particles).begin(),N,m_n);
-
+            integrate_chebyshev<ColElements,BlockCols> integrate(this->col_elements,
+                                                                 m_order,
+                                            detail::bbox<dimension>(
+                                                    this->col_elements.get_min(),
+                                                    this->col_elements.get_max()));
+             
             // fill row_Rn matrix
             m_col_Rn_matrix.resize(m_ncheb*BlockCols,N*BlockCols);
-            for (int i=0; i<N; ++i) {
-                lattice_iterator<dimension> mi(m_start,m_end);
-                for (int j=0; j<m_ncheb; ++j,++mi) {
-                    m_col_Rn_matrix(j,i).block(j*BlockCols,i*BlockCols,
-                                               BlockCols,   BlockCols) 
-                                                    = col_Rn(*mi,i);
-                }
-            }
+            integrate(m_col_Rn_matrix.transpose());
+            
         }
 
         /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
@@ -651,8 +509,8 @@ namespace detail {
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             CHECK(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
             ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
@@ -672,17 +530,17 @@ namespace detail {
 
 #ifdef HAVE_H2LIB
 
-    template<typename RowParticles, typename ColParticles, typename PositionF,
-        typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
-    class KernelH2: public KernelDense<RowParticles,ColParticles,F> {
-        typedef KernelDense<RowParticles,ColParticles,F> base_type;
+    template<typename RowElements, typename ColElements, typename PositionF,
+        typename F=detail::position_lambda<RowElements,ColElements,PositionF>>
+    class KernelH2: public KernelDense<RowElements,ColElements,F> {
+        typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::int_d int_d;
         typedef typename base_type::const_position_reference const_position_reference;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
-        typedef typename ColParticles::query_type query_type;
+        typedef typename ColElements::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::H2LibBlackBoxExpansions<dimension,PositionF> expansions_type;
         typedef H2LibMatrix h2_matrix_type;
@@ -695,12 +553,12 @@ namespace detail {
         typedef typename base_type::Scalar Scalar;
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
-        static_assert(BlockRows==1, "only implemented for scalar elements");
-        static_assert(BlockCols==1, "only implemented for scalar elements");
+        static_assert(BlockRows==1, "only implemented for scalar kernels");
+        static_assert(BlockCols==1, "only implemented for scalar kernels");
         typedef PositionF position_function_type;
 
-        KernelH2(const RowParticles& row_particles,
-                        const ColParticles& col_particles,
+        KernelH2(const RowElements& row_particles,
+                        const ColElements& col_particles,
                         const PositionF& function,
                         const int order, 
                         const double eta = 1.0):
@@ -734,21 +592,21 @@ namespace detail {
 #endif
 
 
-    template<typename RowParticles, typename ColParticles, typename PositionF,
+    template<typename RowElements, typename ColElements, typename PositionF,
         unsigned int N,
-        typename F=detail::position_lambda<RowParticles,ColParticles,PositionF>>
-    class KernelFMM: public KernelDense<RowParticles,ColParticles,F> {
-        typedef KernelDense<RowParticles,ColParticles,F> base_type;
+        typename F=detail::position_lambda<RowElements,ColElements,PositionF>>
+    class KernelFMM: public KernelDense<RowElements,ColElements,F> {
+        typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::int_d int_d;
         typedef typename base_type::const_position_reference const_position_reference;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
-        typedef typename ColParticles::query_type query_type;
+        typedef typename ColElements::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef FastMultipoleMethod<expansions_type,ColParticles> fmm_type;
+        typedef FastMultipoleMethod<expansions_type,ColElements> fmm_type;
 
 
         expansions_type m_expansions;
@@ -759,11 +617,11 @@ namespace detail {
         typedef typename base_type::Scalar Scalar;
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
-        static_assert(BlockRows==1, "only implemented for scalar elements");
-        static_assert(BlockCols==1, "only implemented for scalar elements");
+        static_assert(BlockRows==1, "only implemented for scalar kernels");
+        static_assert(BlockCols==1, "only implemented for scalar kernels");
 
-        KernelFMM(const RowParticles& row_particles,
-                        const ColParticles& col_particles,
+        KernelFMM(const RowElements& row_particles,
+                        const ColElements& col_particles,
                         const PositionF& function): 
                                             m_expansions(function),
                                             m_fmm(col_particles,
@@ -782,23 +640,26 @@ namespace detail {
         }
     };
 
-    template<typename RowParticles, typename ColParticles, typename FRadius, typename F>
-    class KernelSparse: public KernelBase<RowParticles,ColParticles,F> {
+    template<typename RowElements, typename ColElements, typename FRadius, typename F>
+    class KernelSparse: public KernelBase<RowElements,ColElements,F> {
     protected:
-        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef KernelBase<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::const_position_reference const_position_reference;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
+        static_assert(is_particles<RowElements>::value && 
+                      is_particles<ColElements>::value,
+                      "only implemented for particle elements");
     public:
         typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelSparse(const RowParticles& row_particles,
-                    const ColParticles& col_particles,
+        KernelSparse(const RowElements& row_particles,
+                    const ColElements& col_particles,
                     const FRadius& radius_function,
                     const F& function): m_radius_function(radius_function),
                                         base_type(row_particles,
@@ -826,8 +687,8 @@ namespace detail {
         template<typename MatrixType>
         void assemble(const MatrixType &matrix) const {
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -842,9 +703,8 @@ namespace detail {
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    const_cast< MatrixType& >(matrix).block(
-                            i*BlockRows,j*BlockCols,
-                            BlockRows,  BlockCols) = 
+                    const_cast< MatrixType& >(matrix).block<BlockRows,BlockCols>(
+                            i*BlockRows,j*BlockCols) = 
                                                 this->m_function(dx,ai,bj);
 
                 }
@@ -856,8 +716,8 @@ namespace detail {
                       const size_t startI=0, const size_t startJ=0
                       ) const {
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -891,8 +751,8 @@ namespace detail {
         void evaluate(std::vector<LHSType> &lhs, 
                 const std::vector<RHSType> &rhs) const {
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -923,8 +783,8 @@ namespace detail {
             ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
             ASSERT(this->cols() == rhs.rows(),"rhs vector has incompatible size");
 
-            const RowParticles& a = this->m_row_particles;
-            const ColParticles& b = this->m_col_particles;
+            const RowElements& a = this->m_row_particles;
+            const ColElements& b = this->m_col_particles;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -950,9 +810,9 @@ namespace detail {
     };
 
     namespace detail {
-        template <typename RowParticles,
+        template <typename RowElements,
                  typename const_row_reference=
-                     typename RowParticles::const_reference>
+                     typename RowElements::const_reference>
         struct constant_radius {
             const double m_radius;
             constant_radius(const double radius):m_radius(radius)
@@ -963,10 +823,10 @@ namespace detail {
         };
     }
 
-    template<typename RowParticles, typename ColParticles, typename F,
-        typename RadiusFunction=detail::constant_radius<RowParticles>>
-    class KernelSparseConst: public KernelSparse<RowParticles,ColParticles,RadiusFunction,F> {
-        typedef KernelSparse<RowParticles,ColParticles,RadiusFunction,F> base_type;
+    template<typename RowElements, typename ColElements, typename F,
+        typename RadiusFunction=detail::constant_radius<RowElements>>
+    class KernelSparseConst: public KernelSparse<RowElements,ColElements,RadiusFunction,F> {
+        typedef KernelSparse<RowElements,ColElements,RadiusFunction,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::const_position_reference const_position_reference;
@@ -978,8 +838,8 @@ namespace detail {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelSparseConst(const RowParticles& row_particles,
-                    const ColParticles& col_particles,
+        KernelSparseConst(const RowElements& row_particles,
+                    const ColElements& col_particles,
                     const double radius,
                     const F& function): base_type(row_particles,
                                                   col_particles,
@@ -989,13 +849,13 @@ namespace detail {
     };
 
     namespace detail {
-        template <typename RowParticles, typename ColParticles,
+        template <typename RowElements, typename ColElements,
                  typename double_d=
-                     typename RowParticles::double_d,
+                     typename RowElements::double_d,
                  typename const_row_reference=
-                     typename RowParticles::const_reference,
+                     typename RowElements::const_reference,
                  typename const_col_reference=
-                     typename ColParticles::const_reference>
+                     typename ColElements::const_reference>
         struct zero_lambda {
             double operator()(const double_d& dx,
                             const_row_reference a,
@@ -1005,11 +865,11 @@ namespace detail {
         };
     }
 
-    template<typename RowParticles, typename ColParticles,
-        typename F=detail::zero_lambda<RowParticles,ColParticles>>
-    class KernelZero: public KernelBase<RowParticles,ColParticles,F> {
+    template<typename RowElements, typename ColElements,
+        typename F=detail::zero_lambda<RowElements,ColElements>>
+    class KernelZero: public KernelBase<RowElements,ColElements,F> {
 
-        typedef KernelBase<RowParticles,ColParticles,F> base_type;
+        typedef KernelBase<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::const_position_reference const_position_reference;
@@ -1020,8 +880,8 @@ namespace detail {
         typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
 
-        KernelZero(const RowParticles& row_particles,
-                    const ColParticles& col_particles): 
+        KernelZero(const RowElements& row_particles,
+                   const ColElements& col_particles): 
             base_type(row_particles,
                       col_particles,
                       F()) 

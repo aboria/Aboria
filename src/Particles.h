@@ -788,8 +788,8 @@ namespace detail {
     template <typename T>
     struct is_particles: std::false_type {};
 
-    template<unsigned int D, typename Particles, typename Variable, typename Var> 
-    struct is_particles<Particles<Particles,Variable,Var,D>>: std::true_type {};
+    template<typename Variables, unsigned int DomainD, template <typename,typename> class Vector, template <typename> class SearchMethod, typename Traits> 
+    struct is_particles<Particles<Variables,DomainD,Vector,SearchMethod,Traits>>: std::true_type {};
 
 }
 

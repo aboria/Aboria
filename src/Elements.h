@@ -79,6 +79,7 @@ public:
     typedef Elements<ParticlesType,VAR,SelfD> elements_type;
 
     typedef ParticlesType particles_type;
+    typedef VariableType variable_type;
 
     ///
     /// The traits type used to build up the Elements container.
@@ -451,10 +452,10 @@ private:
 namespace detail {
 
     template <unsigned int D, typename T>
-    struct is_element: std::false_type {};
+    struct is_elements: std::false_type {};
 
     template<unsigned int D, typename Particles, typename Variable, typename Var> 
-    struct is_element<Element<Particles,Variable,Var,D>>: std::true_type {};
+    struct is_elements<Element<Particles,Variable,Var,D>>: std::true_type {};
 
 }
 
