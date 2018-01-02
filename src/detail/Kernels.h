@@ -37,13 +37,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef DETAIL_KERNELS_H_
 #define DETAIL_KERNELS_H_
 
+#include "Elements.h"
+
 namespace Aboria {
 
 namespace detail {
 
     template<typename RowElements, typename ColElements, typename F>
     struct kernel_helper {
-        const unsigned int dimension = RowElements::dimension;
+        static const unsigned int dimension = RowElements::dimension;
         typedef Vector<double,dimension> double_d;
         typedef double_d const & const_position_reference;
         typedef typename RowElements::const_reference const_row_reference;
@@ -70,9 +72,11 @@ namespace detail {
                         is_particles<ColElements>::value>
                         >
     struct integrate_over_element {
-        typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
-        const unsigned int dimension = kernel_helper::dimension;
-        typedef kernel_helper::Block Block;
+        typedef typename detail::kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
+        static const unsigned int dimension = kernel_helper::dimension;
+        typedef Vector<double,dimension> double_d;
+        typedef typename kernel_helper::Block Block;
+        typedef typename RowElements::position position;
         typedef typename kernel_helper::const_row_reference const_row_reference;
         typedef typename kernel_helper::const_col_reference const_col_reference;
 
@@ -93,15 +97,15 @@ namespace detail {
         Block operator()(const_row_reference a,
                          const_col_reference b) const {
             double_d dx; 
-            if (is_periodic) { 
-                dx = col.correct_dx_for_periodicity(get<position>(b)-get<position>(a));
+            if (m_periodic) { 
+                dx = m_col.correct_dx_for_periodicity(get<position>(b)-get<position>(a));
             } else {
                 dx = get<position>(b)-get<position>(a);
             }
             return m_kernel(dx,a,b);
         }
 
-        Block operator()(const double_d dx,
+        Block operator()(const double_d& dx,
                          const_row_reference a,
                          const_col_reference b) const {
             return m_kernel(dx,a,b);
@@ -116,11 +120,12 @@ namespace detail {
                         >
     struct integrate_over_element {
         typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
-        const unsigned int dimension = kernel_helper::dimension;
+        static const unsigned int dimension = kernel_helper::dimension;
         typedef kernel_helper::Block Block;
         typedef typename kernel_helper::const_row_reference const_row_reference;
         typedef typename kernel_helper::const_col_reference const_col_reference;
         typedef typename ColParticles::variable_type variable_type;
+        typedef typename RowElements::position position;
         typedef typename detail::GaussLegendre<QuadratureOrder> quadrature_type;
 
         const Kernel& m_kernel;

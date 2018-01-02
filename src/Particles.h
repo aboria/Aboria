@@ -101,7 +101,7 @@ public:
 
     ///
     /// This type
-    typedef Particles<VAR,D,VECTOR,SearchMethod,TRAITS_USER> particles_type;
+    typedef Particles<VAR,DomainD,VECTOR,SearchMethod,TRAITS_USER> particles_type;
 
     ///
     /// The traits type used to build up the Particle container.
@@ -174,7 +174,7 @@ public:
 
     ///
     /// the number of spatial dimensions 
-    static const unsigned int dimension = D;
+    static const unsigned int dimension = DomainD;
 
     ///
     /// a type to store a vector of doubles with given dimension
@@ -626,7 +626,7 @@ public:
         int j = 0;
 
         double write_point[3];
-        const unsigned int max_d = std::min(3u,D);
+        const unsigned int max_d = std::min(3u,dimension);
         for(auto i: *this) {
             const int index = j++;
             //std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;

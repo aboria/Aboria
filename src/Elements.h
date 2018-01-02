@@ -76,7 +76,7 @@ public:
 
     ///
     /// This type
-    typedef Elements<ParticlesType,VAR,SelfD> elements_type;
+    typedef Elements<ParticlesType,VariableType,VAR,SelfD> elements_type;
 
     typedef ParticlesType particles_type;
     typedef VariableType variable_type;
@@ -84,7 +84,8 @@ public:
     ///
     /// The traits type used to build up the Elements container.
     /// Contains Level 0 vector class and dimension information
-    typedef TraitsCommon<VAR,ParticlesType::dimension,SelfD,TRAITS_USER> traits_type;
+    typedef TraitsCommon<VAR,ParticlesType::dimension,SelfD,
+                         typename ParticlesType::TRAITS_USER> traits_type;
 
     /// 
     /// a tuple type containing value_types for each Variable
@@ -144,7 +145,7 @@ public:
 
     ///
     /// the number of spatial dimensions 
-    static const unsigned int dimension = D;
+    static const unsigned int dimension = particles_type::dimension;
     static const unsigned int element_dimension = SelfD;
 
     ///
@@ -165,7 +166,7 @@ public:
 
 
     /// Contructs an empty container with no searching or id tracking enabled
-    Particles(const ParticlesType& particles):
+    Elements(const particles_type& particles):
         m_particles(&particles),
         m_next_id(0),
         m_seed(time(NULL))
@@ -247,7 +248,7 @@ public:
             for (size_t d = 0; d < element_dimension; ++d) {
                 size_t particle_id = get<particles>(m_data)[i][d];
                 //TODO: this will not work with thrust
-                ParticlesType::raw_pointer p = m_particles->get_query().find(particle_id);
+                typename ParticlesType::raw_pointer p = m_particles->get_query().find(particle_id);
                 CHECK(p != iterator_to_raw_pointer(m_particles.end()),"particle "<<particle_id<<" does not exist");
                 get<VariableType>(p).clear(i);
             }
@@ -272,7 +273,7 @@ public:
             for (size_t d = 0; d < element_dimension; ++d) {
                 size_t particle_id = get<particles>(m_data)[i][d];
                 //TODO: this will not work with thrust
-                ParticlesType::raw_pointer p = m_particles->get_query().find(particle_id);
+                typename ParticlesType::raw_pointer p = m_particles->get_query().find(particle_id);
                 CHECK(p != iterator_to_raw_pointer(m_particles.end()),"particle "<<particle_id<<" does not exist");
                 get<VariableType>(p).push_back(i);
             }
@@ -294,10 +295,10 @@ public:
 
 
     /// stream output for element data
-    friend std::ostream& operator<< (std::ostream& stream, const Particles& particles) {
+    friend std::ostream& operator<< (std::ostream& stream, const Elements& elements) {
         traits_type::header_to_stream(stream);
         stream << '\n';
-        for (const_iterator i=particles.cbegin(); i!=particles.cend(); ++i) { 
+        for (const_iterator i=elements.cbegin(); i!=elements.cend(); ++i) { 
             traits_type::to_stream(i,stream);
             stream << '\n';
         }
@@ -305,9 +306,9 @@ public:
     }
 
     /// stream input for element data
-    friend std::istream& operator>> (std::istream& stream, Particles& particles) {
+    friend std::istream& operator>> (std::istream& stream, Elements& elements) {
         stream.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-        for (iterator i=particles.begin(); i!=particles.end(); ++i) { 
+        for (iterator i=elements.begin(); i!=elements.end(); ++i) { 
             traits_type::from_stream(i);
         }
         return stream;
@@ -316,7 +317,7 @@ public:
     /// Boost serialization support
     template<class Archive>
     void serialize(Archive & ar, const unsigned int version) {
-        traits_type::serialize(data,ar,version);
+        traits_type::serialize(m_data,ar,version);
     }
 
 
@@ -365,7 +366,7 @@ public:
         int j = 0;
 
         double write_point[3];
-        const unsigned int max_d = std::min(3u,D);
+        const unsigned int max_d = std::min(3u,dimension);
         for(auto i: *this) {
             const int index = j++;
             //std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
@@ -431,7 +432,7 @@ public:
 private:
     /// a pointer to the particles data structure that containes the element
     /// particles
-    const ParticlesType* m_particles;
+    const particles_type* m_particles;
 
     /// Contains the element data, implemented as a std::tuple of Level 0 vectors
     data_type m_data;
