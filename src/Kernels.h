@@ -555,6 +555,10 @@ namespace Aboria {
         static const size_t BlockCols = base_type::BlockCols;
         static_assert(BlockRows==1, "only implemented for scalar kernels");
         static_assert(BlockCols==1, "only implemented for scalar kernels");
+        static_assert(is_particles<RowElements>::value && 
+                      is_particles<ColElements>::value,
+                      "only implemented for particle elements");
+
         typedef PositionF position_function_type;
 
         KernelH2(const RowElements& row_particles,
@@ -619,6 +623,10 @@ namespace Aboria {
         static const size_t BlockCols = base_type::BlockCols;
         static_assert(BlockRows==1, "only implemented for scalar kernels");
         static_assert(BlockCols==1, "only implemented for scalar kernels");
+        static_assert(is_particles<RowElements>::value && 
+                      is_particles<ColElements>::value,
+                      "only implemented for particle elements");
+
 
         KernelFMM(const RowElements& row_particles,
                         const ColElements& col_particles,
