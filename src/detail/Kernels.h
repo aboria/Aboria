@@ -53,6 +53,26 @@ namespace detail {
         typedef typename RowElements::const_reference const_row_reference;
         typedef typename ColElements::const_reference const_col_reference;
 
+        typedef typename std::result_of<F(const_row_reference, 
+                                          const_col_reference)>::type FunctionReturn;
+
+        typedef typename std::conditional<
+                            std::is_arithmetic<FunctionReturn>::value,
+                            Eigen::Matrix<FunctionReturn,1,1>,
+                            FunctionReturn>::type Block;
+
+        static_assert(Block::RowsAtCompileTime >= 0,"element type rows must be fixed");
+        static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
+    };
+
+    template<typename RowElements, typename ColElements, typename F>
+    struct dx_kernel_helper {
+        static const unsigned int dimension = RowElements::dimension;
+        typedef Vector<double,dimension> double_d;
+        typedef double_d const & const_position_reference;
+        typedef typename RowElements::const_reference const_row_reference;
+        typedef typename ColElements::const_reference const_col_reference;
+
         typedef typename std::result_of<F(const_position_reference, 
                                   const_row_reference, 
                                   const_col_reference)>::type FunctionReturn;
@@ -100,9 +120,10 @@ namespace detail {
                         is_particles<RowElements>::value &&
                         is_particles<ColElements>::value>> {
 
-        typedef typename detail::kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
+        typedef typename detail::dx_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
         static const unsigned int dimension = kernel_helper::dimension;
         typedef Vector<double,dimension> double_d;
+        typedef Vector<int,dimension> int_d;
         typedef typename kernel_helper::Block Block;
         typedef typename RowElements::position position;
         typedef typename kernel_helper::const_row_reference const_row_reference;
@@ -127,7 +148,7 @@ namespace detail {
                          const_col_reference b) const {
             Block result = Block::Zeros();
             const double_d domain_size = m_col.get_max()-m_col.get_min();
-            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1),
+            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1);
                     it != false; ++it) {
                 const auto& dx = get<position>(b) + (*it)*domain_size 
                                         - get<position>(a);
@@ -155,9 +176,10 @@ namespace detail {
                         is_elements<2,ColElements>::value>> {
 
 
-        typedef typename detail::kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
+        typedef typename detail::dx_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
         static const unsigned int dimension = kernel_helper::dimension;
         typedef Vector<double,dimension> double_d;
+        typedef Vector<int,dimension> int_d;
         typedef typename kernel_helper::Block Block;
         typedef typename kernel_helper::const_row_reference const_row_reference;
         typedef typename kernel_helper::const_col_reference const_col_reference;
@@ -173,7 +195,8 @@ namespace detail {
         const int_d m_periodic_extent;
         integrate_over_element(const RowElements& row, 
                                const ColElements& col,
-                               const Kernel& k):
+                               const Kernel& k,
+                               const size_t periodic_layers):
             m_kernel(k),
             m_row(row),
             m_col(col),
@@ -181,8 +204,7 @@ namespace detail {
             m_periodic_extent(col.get_periodic()*periodic_layers)
         {}
 
-        Block operator()(const double_d* b_offset;
-                         const_row_reference a,
+        Block operator()(const_row_reference a,
                          const_col_reference b) const {
             Block result = Block::Zeros();
             double_d a_b0,a_b1; 
@@ -192,15 +214,15 @@ namespace detail {
             ASSERT(b1 != iterator_to_raw_pointer(m_colp.end()),"cannot find b1");
 
             const double_d domain_size = m_col.get_max()-m_col.get_min();
-            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1),
+            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1);
                     it != false; ++it) {
                 const double_d offset = (*it)*domain_size;
                 const double_d a_b0 = *get<position>(b0) + offset - get<position>(a);
                 const double_d a_b1 = *get<position>(b1) + offset - get<position>(a);
-                const double_d scale = 0.5*(a_b1-a_b0);
-                const double_d offset = 0.5*(a_b0+a_b1);
+                const double_d node_scale = 0.5*(a_b1-a_b0);
+                const double_d node_offset = 0.5*(a_b0+a_b1);
                 for (size_t i = 0; i < QuadratureOrder; ++i) {
-                    const double_d mapped_node = scale*quadrature_type::nodes[i] + offset;
+                    const double_d mapped_node = node_scale*quadrature_type::nodes[i] + node_offset;
                     result += quadrature_type::weights[i] * m_kernel(mapped_node,a,b);
                 }
             }
@@ -295,8 +317,8 @@ namespace detail {
             return result;
         }
     };
-
     */
+
 
 
     template <typename RowElements, typename ColElements, typename F>
@@ -307,25 +329,29 @@ namespace detail {
         typedef typename RowElements::const_reference const_row_reference;
         typedef typename ColElements::const_reference const_col_reference;
 
-
         F m_f;
         position_kernel(const F f):m_f(f) {}
         double operator()(const double_d& dx,
                         const_row_reference a,
                         const_col_reference b) const {
-                            return m_f(dx,get<position>(a),get<position>(b));
+                            return m_f(dx);
         }
     };
 
-    template <typename Elements, size_t Repeats,
-               typename = std::enable_if_t<
-                        is_particles<Elements>::value
-                        >
-    struct integrate_chebyshev {
-        const unsigned int dimension = Elements::dimension;
+    template <typename Elements, size_t Repeats, size_t QuadratureOrder, typename = void>
+    struct integrate_chebyshev {};
+     
+
+    template <typename Elements, size_t Repeats,size_t QuadratureOrder>
+    struct integrate_chebyshev<Elements,Repeats,QuadratureOrder,
+                    typename std::enable_if_t<is_particles<Elements>::value>> {
+
+        static const unsigned int dimension = Elements::dimension;
         typedef Vector<double,dimension> double_d;
+        typedef Vector<int,dimension> int_d;
         typedef double_d const & const_position_reference;
         typedef typename Elements::const_reference const_reference;
+        typedef typename Elements::position position;
         typedef detail::bbox<dimension> box_type;
         typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix;
 
@@ -335,7 +361,7 @@ namespace detail {
         detail::ChebyshevRn<dimension> m_cheb;
         const Elements& m_elements;
 
-        chebyshev_kernel(const Elements& elements, const size_t order, const box_type box):
+        integrate_chebyshev(const Elements& elements, const size_t order, const box_type box):
             m_order(order),
             m_ncheb(std::pow(order,dimension)),
             m_box(box),
@@ -344,8 +370,8 @@ namespace detail {
         {}
 
         void operator()(eigen_matrix& result) const {
-            for (int i = 0; i < elements.size(); ++i) {
-                m_cheb.set_position(get<position>(elements)[i]);
+            for (int i = 0; i < m_elements.size(); ++i) {
+                m_cheb.set_position(get<position>(m_elements)[i]);
                 lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     result.block<Repeats,Repeats>(i*Repeats,j*Repeats) = m_cheb(*mj); 
@@ -353,21 +379,23 @@ namespace detail {
             }
         }
     };
+    
+    template <typename Elements, size_t Repeats, size_t QuadratureOrder>
+    struct integrate_chebyshev<Elements,Repeats,QuadratureOrder,
+                    typename std::enable_if_t<is_elements<2,Elements>::value>> {
 
-    template <typename Elements,
-               typename = std::enable_if_t<
-                        is_elements<2,Elements>::value
-                        >
-    struct integrate_chebyshev {
-        const unsigned int dimension = Elements::dimension;
+        static const unsigned int dimension = Elements::dimension;
         typedef typename Elements::particles_type particles_type;
         typedef typename Elements::variable_type variable_type;
         typedef typename particles_type::query_type query_type;
         typedef Vector<double,dimension> double_d;
+        typedef Vector<int,dimension> int_d;
         typedef double_d const & const_position_reference;
         typedef typename Elements::const_reference const_reference;
+        typedef typename particles_type::position position;
         typedef detail::bbox<dimension> box_type;
         typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix;
+        typedef typename detail::GaussLegendre<QuadratureOrder> quadrature_type;
 
         size_t m_order;
         size_t m_ncheb;
@@ -375,7 +403,7 @@ namespace detail {
         detail::ChebyshevRn<dimension> m_cheb;
         const Elements& m_elements;
 
-        chebyshev_kernel(const Elements& elements, const size_t order, const box_type box):
+        integrate_chebyshev(const Elements& elements, const size_t order, const box_type box):
             m_order(order),
             m_ncheb(std::pow(order,dimension)),
             m_box(box),
@@ -384,13 +412,13 @@ namespace detail {
         {}
 
         void operator()(eigen_matrix& result) const {
-            result = eigen_matrix::Zeros(elements.size()*Repeats,m_ncheb);
+            result = eigen_matrix::Zero(m_elements.size()*Repeats,m_ncheb);
             const auto& query = m_elements.get_particles().get_query();
-            for (int i = 0; i < elements.size(); ++i) {
-                auto pa = query.find(get<variable_type>(elements)[i][0]);
-                auto pb = query.find(get<variable_type>(elements)[i][1]);
-                ASSERT(pa != query.get_particles_begin()+m_query.number_of_particles(),"cannot find a");
-                ASSERT(pb != query.get_particles_begin()+m_query.number_of_particles(),"cannot find b");
+            for (int i = 0; i < m_elements.size(); ++i) {
+                auto pa = query.find(get<variable_type>(m_elements)[i][0]);
+                auto pb = query.find(get<variable_type>(m_elements)[i][1]);
+                ASSERT(pa != query.get_particles_begin()+query.number_of_particles(),"cannot find a");
+                ASSERT(pb != query.get_particles_begin()+query.number_of_particles(),"cannot find b");
                 const double_d& a = *get<position>(pa);
                 const double_d& b = *get<position>(pb);
                 const double_d scale = 0.5*(b-a);

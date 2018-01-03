@@ -145,9 +145,9 @@ struct TraitsCommon<std::tuple<TYPES...>,DomainD,SelfD,traits>:public traits {
     typedef Vector<unsigned int,dimension> unsigned_int_d;
     typedef Vector<bool,dimension> bool_d;
 
-    typedef std::conditional< (SelfD > 1),
-            particles_d<SelfD>,
-            position_d<dimension>> position;
+    typedef typename std::conditional< (SelfD > 1),
+                        particles_d<SelfD>,
+                        position_d<dimension>>::type position;
     typedef typename position::value_type position_value_type;
     typedef alive::value_type alive_value_type;
     typedef id::value_type id_value_type;

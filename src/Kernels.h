@@ -131,7 +131,7 @@ namespace Aboria {
             const int joffset = j - pj*BlockCols;
             const_row_reference ai = m_row_particles[pi];
             const_col_reference bj = m_col_particles[pj];
-            return m_function(ai,bi);
+            return m_function(ai,bj);
         }
 
         template<typename MatrixType>
@@ -164,12 +164,9 @@ namespace Aboria {
     class KernelDense: public KernelBase<RowElements,ColElements,F> {
     protected:
         typedef KernelBase<RowElements,ColElements,F> base_type;
-        typedef typename base_type::position position;
         static const unsigned int dimension = base_type::dimension;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::int_d int_d;
-        typedef typename position::value_type const & const_position_reference;
-        typedef typename position::value_type position_value_type;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
     public:
@@ -204,7 +201,7 @@ namespace Aboria {
                     const_col_reference  bj = b[j];
                     const_cast< MatrixType& >(matrix).block(
                             i*BlockRows,j*BlockCols,
-                            BlockRows,  BlockCols) = this->eval(ai,bi);
+                            BlockRows,  BlockCols) = this->eval(ai,bj);
                 }
             }
         }
@@ -306,12 +303,9 @@ namespace Aboria {
     class KernelMatrix: public KernelBase<RowElements,ColElements,F> {
     protected:
         typedef KernelBase<RowElements,ColElements,F> base_type;
-        typedef typename base_type::position position;
         static const unsigned int dimension = base_type::dimension;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::int_d int_d;
-        typedef typename position::value_type const & const_position_reference;
-        typedef typename position::value_type position_value_type;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
 
@@ -406,11 +400,10 @@ namespace Aboria {
 
     template<typename RowElements, typename ColElements, typename PositionF,
         size_t QuadratureOrder = 8,
-        typename ElementF=detail::position_lambda<RowElements,ColElements,PositionF>
-        typename F=detail::integrate_over_element<RowElements,ColElements,ElementF>>
+        typename ElementF=detail::position_kernel<RowElements,ColElements,PositionF>,
+        typename F=detail::integrate_over_element<RowElements,ColElements,ElementF,QuadratureOrder>>
     class KernelChebyshev: public KernelDense<RowElements,ColElements,F> {
         typedef KernelDense<RowElements,ColElements,F> base_type;
-        typedef typename base_type::position position;
         typedef typename base_type::double_d double_d;
         typedef typename base_type::int_d int_d;
         typedef typename base_type::const_position_reference const_position_reference;
@@ -424,7 +417,7 @@ namespace Aboria {
         static const unsigned int dimension = base_type::dimension;
         detail::Chebyshev_Rn<dimension> col_Rn,row_Rn;
         matrix_type m_col_Rn_matrix,m_row_Rn_matrix,m_kernel_matrix;
-        unsigned int m_n;
+        unsigned int m_order;
         unsigned int m_ncheb;
         const int_d m_start;
         const int_d m_end;
@@ -441,7 +434,7 @@ namespace Aboria {
         KernelChebyshev(const RowElements& row_particles,
                         const ColElements& col_particles,
                         const unsigned int n,
-                        const PositionF& function): m_n(n),
+                        const PositionF& function): m_order(n),
                                             m_ncheb(std::pow(n,dimension)),
                                             m_start(0),
                                             m_end(n),
@@ -453,7 +446,7 @@ namespace Aboria {
         };
 
         void set_n(const unsigned int n) { 
-            m_n = n; 
+            m_order = n; 
             m_ncheb = std::pow(n,dimension); 
             m_W.resize(m_ncheb*BlockCols);
             m_fcheb.resize(m_ncheb*BlockRows);
@@ -464,13 +457,15 @@ namespace Aboria {
         }
 
         void update_row_positions() {
-            integrate_chebyshev<RowElements,BlockRows> integrate(this->row_elements,m_order,
-                                            detail::bbox<dimension>(
+            detail::integrate_chebyshev<RowElements,BlockRows,QuadratureOrder> integrate(
+                                                this->row_elements,
+                                                m_order,
+                                                detail::bbox<dimension>(
                                                     this->row_elements.get_min(),
                                                     this->row_elements.get_max()));
                                                        
             // fill row_Rn matrix
-            m_row_Rn_matrix.resize(N*BlockRows,m_ncheb*BlockRows);
+            m_row_Rn_matrix.resize(this->row_elements.size()*BlockRows,m_ncheb*BlockRows);
             integrate(m_row_Rn_matrix);
         }
 
@@ -484,20 +479,21 @@ namespace Aboria {
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
                     m_kernel_matrix.block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) =
-                                            m_position_function(pi-pj,pj,pi);
+                                            m_position_function(pi-pj);
                 }
             }
         }
 
         void update_col_positions() {
-            integrate_chebyshev<ColElements,BlockCols> integrate(this->col_elements,
-                                                                 m_order,
+            detail::integrate_chebyshev<ColElements,BlockCols,QuadratureOrder> integrate(
+                                            this->col_elements,
+                                            m_order,
                                             detail::bbox<dimension>(
                                                     this->col_elements.get_min(),
                                                     this->col_elements.get_max()));
              
             // fill row_Rn matrix
-            m_col_Rn_matrix.resize(m_ncheb*BlockCols,N*BlockCols);
+            m_col_Rn_matrix.resize(m_ncheb*BlockCols,this->col_elements.size()*BlockCols);
             integrate(m_col_Rn_matrix.transpose());
             
         }
@@ -534,12 +530,6 @@ namespace Aboria {
         typename F=detail::position_lambda<RowElements,ColElements,PositionF>>
     class KernelH2: public KernelDense<RowElements,ColElements,F> {
         typedef KernelDense<RowElements,ColElements,F> base_type;
-        typedef typename base_type::position position;
-        typedef typename base_type::double_d double_d;
-        typedef typename base_type::int_d int_d;
-        typedef typename base_type::const_position_reference const_position_reference;
-        typedef typename base_type::const_row_reference const_row_reference;
-        typedef typename base_type::const_col_reference const_col_reference;
         typedef typename ColElements::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::H2LibBlackBoxExpansions<dimension,PositionF> expansions_type;
@@ -598,7 +588,7 @@ namespace Aboria {
 
     template<typename RowElements, typename ColElements, typename PositionF,
         unsigned int N,
-        typename F=detail::position_lambda<RowElements,ColElements,PositionF>>
+        typename F=detail::position_kernel<RowElements,ColElements,PositionF>>
     class KernelFMM: public KernelDense<RowElements,ColElements,F> {
         typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
@@ -623,8 +613,8 @@ namespace Aboria {
         static const size_t BlockCols = base_type::BlockCols;
         static_assert(BlockRows==1, "only implemented for scalar kernels");
         static_assert(BlockCols==1, "only implemented for scalar kernels");
-        static_assert(is_particles<RowElements>::value && 
-                      is_particles<ColElements>::value,
+        static_assert(detail::is_particles<RowElements>::value && 
+                      detail::is_particles<ColElements>::value,
                       "only implemented for particle elements");
 
 
@@ -657,8 +647,8 @@ namespace Aboria {
         typedef typename base_type::const_position_reference const_position_reference;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
-        static_assert(is_particles<RowElements>::value && 
-                      is_particles<ColElements>::value,
+        static_assert(detail::is_particles<RowElements>::value && 
+                      detail::is_particles<ColElements>::value,
                       "only implemented for particle elements");
     public:
         typedef typename base_type::Block Block;
