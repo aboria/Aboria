@@ -289,7 +289,7 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
 
 
     setup_datas_for_writing(size_t n, vtkSmartPointer<vtkFloatArray>* datas, vtkUnstructuredGrid *grid):
-        n(n),datas(datas),grid(grid){}
+        n(n),datas(datas),grid(grid) {}
 
     template< typename U >
     typename std::enable_if<
@@ -303,7 +303,6 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
         if (!datas[i]) {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
-            grid->GetPointData()->AddArray(datas[i]);
         }
         typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(1);
@@ -319,7 +318,6 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
         if (!datas[i]) {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
-            grid->GetPointData()->AddArray(datas[i]);
         }
         typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
@@ -336,7 +334,6 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
         if (!datas[i]) {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
-            grid->GetPointData()->AddArray(datas[i]);
         }
         typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::RowsAtCompileTime);
@@ -349,6 +346,7 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
     size_t n;
     vtkSmartPointer<vtkFloatArray>* datas;
     vtkUnstructuredGrid *grid;
+    bool particles;
 };
 
 #ifdef __aboria_have_thrust__
@@ -388,7 +386,6 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
         if (!datas[i]) {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
-            grid->GetPointData()->AddArray(datas[i]);
         }
         typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(1);
@@ -404,7 +401,6 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
         if (!datas[i]) {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
-            grid->GetPointData()->AddArray(datas[i]);
         }
         typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
@@ -421,7 +417,6 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
         if (!datas[i]) {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
-            grid->GetPointData()->AddArray(datas[i]);
         }
         typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::RowsAtCompileTime);
@@ -441,17 +436,23 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
 template <typename reference>
 struct setup_datas_for_reading {
     typedef typename reference::mpl_type_vector mpl_type_vector;
-    setup_datas_for_reading(size_t n,vtkSmartPointer<vtkFloatArray>* datas,vtkUnstructuredGrid *grid):
-        n(n),datas(datas),grid(grid){}
+    setup_datas_for_reading(size_t n,vtkSmartPointer<vtkFloatArray>* datas,vtkUnstructuredGrid *grid,bool particles):
+        n(n),datas(datas),grid(grid),particles(particles) {}
     template< typename U > void operator()(U i) {
         typedef typename mpl::at<mpl_type_vector,U>::type variable_type;
         const char *name = variable_type().name;
-        datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
+        if (particles) {
+            datas[i] = vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
+        } else {
+            datas[i] = vtkFloatArray::SafeDownCast(grid->GetCellData()->GetArray(name));
+        }
+
         CHECK(datas[i],"No data array "<<name<<" in vtkUnstructuredGrid");
         CHECK(datas[i]->GetNumberOfTuples()==n,"Data array "<<name<<" has size != id array. data size = "<<datas[i]->GetNumberOfTuples()<<". id size = "<<n);
     }
 
     size_t n;
+    bool particles;
     vtkSmartPointer<vtkFloatArray>* datas;
     vtkUnstructuredGrid *grid;
 };

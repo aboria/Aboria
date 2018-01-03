@@ -60,6 +60,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkIntArray.h>
 #include <vtkFloatArray.h>
 #include <vtkPointData.h>
+#include <vtkCellData.h>
 #include <vtkCellArray.h>
 #include <vtkUnsignedCharArray.h>
 #endif
@@ -340,6 +341,12 @@ public:
 
     ///  copy the particle data to a VTK unstructured grid
     void  copy_to_vtk_grid(vtkUnstructuredGrid *grid) {
+        CHECK(element_dimension < 2,"cannot write elements with dimension greater than 1");
+        size_t cell_type = VTK_VERTEX;
+        if (element_dimension == 1) {
+            cell_type = VTK_LINE;
+        }
+
         vtkSmartPointer<vtkPoints> points = grid->GetPoints();
         if (!points) {
             points = vtkSmartPointer<vtkPoints>::New();
@@ -348,36 +355,49 @@ public:
         vtkSmartPointer<vtkCellArray> cells = grid->GetCells();
         if (!cells) {
             cells = vtkSmartPointer<vtkCellArray>::New();
-            grid->SetCells(1,cells);
+            grid->SetCells(cell_type,cells);
         }
         vtkSmartPointer<vtkUnsignedCharArray> cell_types = grid->GetCellTypesArray();
         
 
-        const vtkIdType n = size();
+        const vtkIdType np = this->get_particles().size();
+        const vtkIdType nc = this->size();
 
         constexpr size_t dn = mpl::size<mpl_type_vector>::type::value;
         vtkSmartPointer<vtkFloatArray> datas[dn];
         mpl::for_each<mpl::range_c<int,1,dn> > (
-                detail::setup_datas_for_writing<reference>(n,datas,grid)
+                detail::setup_datas_for_writing<reference>(nc,datas,grid)
                 );
-        points->SetNumberOfPoints(n);
+        for (int i = 0; i < dn; ++i) {
+            grid->GetCellData()->AddArray(datas[i]);
+        }
+        points->SetNumberOfPoints(np);
         cells->Reset();
         cell_types->Reset();
         int j = 0;
 
         double write_point[3];
         const unsigned int max_d = std::min(3u,dimension);
-        for(auto i: *this) {
+        for(auto i: this->get_particles()) {
             const int index = j++;
             //std::cout <<"copying point at "<<i.get_position()<<" with id = "<<i.get_id()<<std::endl;
-            const double_d &r = get<position>(i);
+            const double_d &r = get<typename particles_type::position>(i);
             for (int d=0; d<max_d; ++d) {
                 write_point[d] = r[d];
             }
             points->SetPoint(index,write_point);
-            cells->InsertNextCell(1);
-            cells->InsertCellPoint(index);
-            cell_types->InsertNextTuple1(1);
+        }
+        for (auto i: *this) {
+            cells->InsertNextCell(element_dimension);
+            for (int j = 0; j < element_dimension; ++j) {
+                auto p = this->get_particles().get_query().find(get<particles>(i)[j]);
+                ASSERT(p != iterator_to_raw_pointer(this->get_particles().end()), "cannot find particle");
+                const size_t index = get<typename particles_type::position>(p) -
+                       get<typename particles_type::position>(this->get_particles()).data();
+                
+                cells->InsertCellPoint(index);
+            }
+            cell_types->InsertNextTuple1(cell_type);
 
             mpl::for_each<mpl::range_c<int,1,dn> > (
                     detail::write_from_tuple<reference>(
@@ -388,6 +408,7 @@ public:
                         )
                     );
         }
+
     }
 
 
@@ -405,27 +426,26 @@ public:
             constexpr size_t dn = mpl::size<mpl_type_vector>::type::value;
 
             vtkSmartPointer<vtkFloatArray> datas[dn];
-
-            const vtkIdType n = points->GetNumberOfPoints();
+            
+            const vtkIdType np = points->GetNumberOfPoints();
+            const vtkIdType nc = cells->GetNumberOfCells();
 
             mpl::for_each<mpl::range_c<int,1,dn> > (
-                    detail::setup_datas_for_reading<reference>(n,datas,grid)
+                    detail::setup_datas_for_reading<reference>(nc,datas,grid,false)
                     );
 
             this->clear();
 
             const unsigned int max_d = std::min(3u,traits_type::dimension);
-            for (int j = 0; j < n; ++j) {
-                value_type particle;
-                const double *r = points->GetPoint(j);
-                for (int d=0; d<max_d; ++d) {
-                    get<position>(particle)[d] = r[d];
-                }
+            for (int j = 0; j < nc; ++j) {
+                value_type element;
                 mpl::for_each<mpl::range_c<int,1,dn> > (
-                        detail::read_into_tuple<reference>(particle.get_tuple(),j,datas)
+                        detail::read_into_tuple<reference>(element.get_tuple(),j,datas)
                         );
-                this->push_back(particle);
+                this->push_back(element);
             }
+
+            push_connections(begin(),end());
         }
 #endif
 
@@ -456,7 +476,7 @@ namespace detail {
     struct is_elements: std::false_type {};
 
     template<unsigned int D, typename Particles, typename Variable, typename Var> 
-    struct is_elements<Element<Particles,Variable,Var,D>>: std::true_type {};
+    struct is_elements<D,Elements<Particles,Variable,Var,D>>: std::true_type {};
 
 }
 

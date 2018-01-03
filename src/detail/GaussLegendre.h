@@ -42,6 +42,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+namespace detail {
+
 template <size_t N>
 struct GaussLegendre {};
 
@@ -151,7 +153,9 @@ struct GaussLegendre<8> {
                                                     0.1012285362903762591525314};
 };
 
+} //namespace detail
 
 
+} //nanespace Aboria
 
 #endif

@@ -38,6 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DETAIL_KERNELS_H_
 
 #include "Elements.h"
+#include "Particles.h"
+#include "detail/GaussLegendre.h"
 
 namespace Aboria {
 
@@ -64,14 +66,40 @@ namespace detail {
         static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
     };
 
-    
+    /*
+    template<typename Elements, typename F>
+    struct single_kernel_helper {
+        static const unsigned int dimension = Elements::dimension;
+        typedef Vector<double,dimension> double_d;
+        typedef double_d const & const_position_reference;
+        typedef typename Elements::const_reference const_reference;
+
+        typedef typename std::result_of<F(const_position_reference, 
+                                  const_reference, 
+                                  const_col_reference)>::type FunctionReturn;
+
+        typedef typename std::conditional<
+                            std::is_arithmetic<FunctionReturn>::value,
+                            Eigen::Matrix<FunctionReturn,1,1>,
+                            FunctionReturn>::type Block;
+
+        static_assert(Block::RowsAtCompileTime >= 0,"element type rows must be fixed");
+        static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
+    };
+    */
+
     template <typename RowElements, typename ColElements, typename Kernel,
-              size_t QuadratureOrder = 8,
-              typename = std::enable_if_t<
+              size_t QuadratureOrder=8,
+              typename = void>
+    struct integrate_over_element {};
+     
+    template <typename RowElements, typename ColElements, typename Kernel,
+              size_t QuadratureOrder>
+    struct integrate_over_element<RowElements,ColElements,Kernel,QuadratureOrder,
+                        typename std::enable_if_t<
                         is_particles<RowElements>::value &&
-                        is_particles<ColElements>::value>
-                        >
-    struct integrate_over_element {
+                        is_particles<ColElements>::value>> {
+
         typedef typename detail::kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
         static const unsigned int dimension = kernel_helper::dimension;
         typedef Vector<double,dimension> double_d;
@@ -84,55 +112,65 @@ namespace detail {
         const Kernel& m_kernel;
         const RowElements& m_row; 
         const ColElements& m_col; 
-        const bool m_periodic;
+        const int_d m_periodic_extent;
         integrate_over_element(const RowElements& row, 
                                const ColElements& col,
-                               const Kernel& k):
+                               const Kernel& k,
+                               const size_t periodic_layers):
             m_kernel(k),
             m_row(row),
             m_col(col),
-            m_periodic(!col.get_periodic().any())
+            m_periodic_extent(col.get_periodic()*periodic_layers)
         {}
 
         Block operator()(const_row_reference a,
                          const_col_reference b) const {
-            double_d dx; 
-            if (m_periodic) { 
-                dx = m_col.correct_dx_for_periodicity(get<position>(b)-get<position>(a));
-            } else {
-                dx = get<position>(b)-get<position>(a);
+            Block result = Block::Zeros();
+            const double_d domain_size = m_col.get_max()-m_col.get_min();
+            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1),
+                    it != false; ++it) {
+                const auto& dx = get<position>(b) + (*it)*domain_size 
+                                        - get<position>(a);
+                result += m_kernel(dx,a,b);
             }
-            return m_kernel(dx,a,b);
+            return result;
         }
 
+
+        /*
         Block operator()(const double_d& dx,
                          const_row_reference a,
                          const_col_reference b) const {
             return m_kernel(dx,a,b);
         }
+        */
     };
 
+    
     template <typename RowElements, typename ColElements, typename Kernel,
-              size_t QuadratureOrder = 8,
-              typename = std::enable_if_t<
+              size_t QuadratureOrder>
+    struct integrate_over_element<RowElements,ColElements,Kernel,QuadratureOrder,
+                        typename std::enable_if_t<
                         is_particles<RowElements>::value &&
-                        is_elements<2,ColElements>::value>
-                        >
-    struct integrate_over_element {
-        typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
+                        is_elements<2,ColElements>::value>> {
+
+
+        typedef typename detail::kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
         static const unsigned int dimension = kernel_helper::dimension;
-        typedef kernel_helper::Block Block;
+        typedef Vector<double,dimension> double_d;
+        typedef typename kernel_helper::Block Block;
         typedef typename kernel_helper::const_row_reference const_row_reference;
         typedef typename kernel_helper::const_col_reference const_col_reference;
-        typedef typename ColParticles::variable_type variable_type;
+        typedef typename ColElements::variable_type variable_type;
+        typedef typename ColElements::particles_type col_particles_type;
         typedef typename RowElements::position position;
         typedef typename detail::GaussLegendre<QuadratureOrder> quadrature_type;
 
         const Kernel& m_kernel;
         const RowElements& m_row; 
         const ColElements& m_col; 
-        const ColParticles& m_colp; 
-        const bool m_periodic;
+        const col_particles_type& m_colp; 
+        const int_d m_periodic_extent;
         integrate_over_element(const RowElements& row, 
                                const ColElements& col,
                                const Kernel& k):
@@ -140,42 +178,48 @@ namespace detail {
             m_row(row),
             m_col(col),
             m_colp(col.get_particles()),
-            m_periodic(!col.get_periodic().any())
+            m_periodic_extent(col.get_periodic()*periodic_layers)
         {}
 
-        Block operator()(const_row_reference a,
-                          const_col_reference b) const {
+        Block operator()(const double_d* b_offset;
+                         const_row_reference a,
+                         const_col_reference b) const {
             Block result = Block::Zeros();
             double_d a_b0,a_b1; 
             auto b0 = m_colp.get_query().find(get<variable_type>(b)[0]);
             auto b1 = m_colp.get_query().find(get<variable_type>(b)[1]);
             ASSERT(b0 != iterator_to_raw_pointer(m_colp.end()),"cannot find b0");
             ASSERT(b1 != iterator_to_raw_pointer(m_colp.end()),"cannot find b1");
-            if (m_periodic) { 
-                a_b0 = col.correct_dx_for_periodicity(*get<position>(b0)-get<position>(a));
-                a_b1 = col.correct_dx_for_periodicity(*get<position>(b1)-get<position>(a));
-            } else {
-                a_b0 = *get<position>(b0)-get<position>(a);
-                a_b1 = *get<position>(b1)-get<position>(a);
-            }
-            const double_d scale = 0.5*(a_b1-a_b0);
-            const double_d offset = 0.5*(a_b0+a_b1);
-            for (size_t i = 0; i < QuadratureOrder; ++i) {
-                const double_d mapped_node = scale*quadrature_type::nodes[i] + offset;
-                result += quadrature_type::weights[i] * m_kernel(mapped_node,a,b)
-                
+
+            const double_d domain_size = m_col.get_max()-m_col.get_min();
+            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1),
+                    it != false; ++it) {
+                const double_d offset = (*it)*domain_size;
+                const double_d a_b0 = *get<position>(b0) + offset - get<position>(a);
+                const double_d a_b1 = *get<position>(b1) + offset - get<position>(a);
+                const double_d scale = 0.5*(a_b1-a_b0);
+                const double_d offset = 0.5*(a_b0+a_b1);
+                for (size_t i = 0; i < QuadratureOrder; ++i) {
+                    const double_d mapped_node = scale*quadrature_type::nodes[i] + offset;
+                    result += quadrature_type::weights[i] * m_kernel(mapped_node,a,b);
+                }
             }
             return result;
         }
     };
 
+    /*
     template <typename Elements, typename Kernel,
               size_t QuadratureOrder = 8,
-              typename = std::enable_if_t<
-                        is_particles<Elements>::value
-                        >
-    struct integrate_over_element {
-        typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
+              typename = void>
+    struct single_integrate_over_element {};
+     
+
+    template <typename Elements, typename Kernel, size_t QuadratureOrder>
+    struct single_integrate_over_element<Elements, Kernel, QuadratureOrder,
+              typename std::enable_if_t<is_particles<Elements>::value>> {
+
+        typedef typename detail::kernel_helper<Elements,Kernel> kernel_helper;
         const unsigned int dimension = kernel_helper::dimension;
         typedef kernel_helper::Block Block;
         typedef typename kernel_helper::const_row_reference const_row_reference;
@@ -198,14 +242,12 @@ namespace detail {
         }
     };
 
-    template <typename RowElements, typename ColElements, typename Kernel,
-              size_t QuadratureOrder = 8,
-              typename = std::enable_if_t<
-                        is_particles<RowElements>::value &&
-                        is_elements<2,ColElements>::value>
-                        >
-    struct integrate_over_element {
-        typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
+    template <typename Elements, typename Kernel, size_t QuadratureOrder>
+    struct single_integrate_over_element<Elements, Kernel, QuadratureOrder,
+              typename std::enable_if_t<is_elements<2,Elements>::value>> {
+
+
+        typedef typename detail::kernel_helper<Elements,Kernel> kernel_helper;
         const unsigned int dimension = kernel_helper::dimension;
         typedef kernel_helper::Block Block;
         typedef typename kernel_helper::const_row_reference const_row_reference;
@@ -254,13 +296,12 @@ namespace detail {
         }
     };
 
-
-
+    */
 
 
     template <typename RowElements, typename ColElements, typename F>
     struct position_kernel {
-        const unsigned int dimension = RowElements::dimension;
+        const static unsigned int dimension = RowElements::dimension;
         typedef Vector<double,dimension> double_d;
         typedef double_d const & const_position_reference;
         typedef typename RowElements::const_reference const_row_reference;
@@ -268,7 +309,7 @@ namespace detail {
 
 
         F m_f;
-        position_kernel(const F f):m_(f) {}
+        position_kernel(const F f):m_f(f) {}
         double operator()(const double_d& dx,
                         const_row_reference a,
                         const_col_reference b) const {

@@ -60,6 +60,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkIntArray.h>
 #include <vtkFloatArray.h>
 #include <vtkPointData.h>
+#include <vtkCellData.h>
 #include <vtkCellArray.h>
 #include <vtkUnsignedCharArray.h>
 #endif
@@ -620,6 +621,9 @@ public:
         mpl::for_each<mpl::range_c<int,1,dn> > (
                 detail::setup_datas_for_writing<reference>(n,datas,grid)
                 );
+        for (int i = 0; i < dn; ++i) {
+            grid->GetPointData()->AddArray(datas[i]);
+        }
         points->SetNumberOfPoints(n);
         cells->Reset();
         cell_types->Reset();
