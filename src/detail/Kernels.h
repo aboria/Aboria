@@ -61,6 +61,14 @@ namespace detail {
                             Eigen::Matrix<FunctionReturn,1,1>,
                             FunctionReturn>::type Block;
 
+
+        /*
+        static Block eval(const_row_reference a, 
+                          const_col_reference b) {
+            return m_function(a,b);
+        }
+        */
+
         static_assert(Block::RowsAtCompileTime >= 0,"element type rows must be fixed");
         static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
     };

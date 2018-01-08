@@ -71,6 +71,8 @@ namespace Aboria {
         typedef typename Block::Scalar Scalar;
         static const size_t BlockRows = Block::RowsAtCompileTime;
         static const size_t BlockCols = Block::ColsAtCompileTime;
+        typedef typename Eigen::Matrix<Scalar,BlockCols,1> BlockRHSVector;
+        typedef typename Eigen::Matrix<Scalar,BlockRows,1> BlockLHSVector;
 
         typedef RowElements row_particles_type;
         typedef ColElements col_particles_type;
@@ -117,10 +119,6 @@ namespace Aboria {
             return m_col_particles.size()*BlockCols;
         }
 
-        Block eval(const_row_reference a, 
-                   const_col_reference b) const {
-            return m_function(a,b);
-        }
 
         Scalar coeff(const size_t i, const size_t j) const {
             ASSERT(i < rows(),"i greater than rows()");
@@ -171,6 +169,7 @@ namespace Aboria {
         typedef typename base_type::const_col_reference const_col_reference;
     public:
         typedef typename base_type::Block Block;
+        typedef typename base_type::BlockLHSVector BlockLHSVector;
         typedef typename base_type::Scalar Scalar;
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
@@ -199,9 +198,7 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference  bj = b[j];
-                    const_cast< MatrixType& >(matrix).block(
-                            i*BlockRows,j*BlockCols,
-                            BlockRows,  BlockCols) = this->eval(ai,bj);
+                    const_cast< MatrixType& >(matrix).template block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) = Block(this->m_function(ai,bj));
                 }
             }
         }
@@ -223,7 +220,7 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    const Block element = this->eval(ai,bj);
+                    const Block element = this->m_function(ai,bj);
                     for (int ii = 0; ii < BlockRows; ++ii) {
                         for (int jj = 0; jj < BlockCols; ++jj) {
                             triplets.push_back(Triplet(i*BlockRows+ii,
@@ -249,21 +246,20 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
-            ASSERT(lhs.size() == this->rows(),"lhs size is inconsistent");
-            ASSERT(rhs.size() == this->cols(),"rhs size is inconsistent");
+            CHECK(lhs.size() == this->rows(),"lhs size is inconsistent");
+            CHECK(rhs.size() == this->cols(),"rhs size is inconsistent");
 
             const bool is_periodic = !a.get_periodic().any();
 
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                row_vector sum = row_vector::Zero();
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    sum += this->eval(ai,bj)
-                                *rhs.segment(j*BlockCols,(j+1)*BlockCols);
+                    lhs.template segment<BlockRows>(i*BlockRows) += 
+                                this->m_function(ai,bj)
+                                    *rhs.template segment<BlockCols>(j*BlockCols);
                 }
-                lhs.segment(i*BlockRows,(i+1)*BlockRows) += sum;
             }
        }
 
@@ -280,20 +276,18 @@ namespace Aboria {
             const size_t na = a.size();
             const size_t nb = b.size();
 
-            ASSERT(lhs.size() == na,"lhs size is inconsistent");
-            ASSERT(rhs.size() == nb,"rhs size is inconsistent");
+            CHECK(lhs.size() == na,"lhs size is inconsistent");
+            CHECK(rhs.size() == nb,"rhs size is inconsistent");
 
             const bool is_periodic = !a.get_periodic().any();
 
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                LHSType sum = LHSType::Zero();
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    sum += this->eval(ai,bj)*rhs[j];
+                    lhs[i] += this->m_function(ai,bj)*rhs[j];
                 }
-                lhs[i] += sum;
             }
        }
 
@@ -338,9 +332,9 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<b.size(); ++j) {
                     const_col_reference bj = b[j];
-                    m_matrix.block(i*BlockRows,j*BlockCols,
-                                   BlockRows,  BlockCols) = 
-                                                this->eval(ai,bj);
+                    m_matrix.template block<BlockRows,BlockCols>(
+                                           i*BlockRows,j*BlockCols) = 
+                                                Block(this->m_function(ai,bj));
                 }
             }
         }
@@ -375,12 +369,11 @@ namespace Aboria {
 
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
-                LHSType sum = LHSType::Zero();
                 for (size_t j=0; j<nb; ++j) {
-                    sum += m_matrix.block(i*BlockRows,j*BlockCols,
-                                          BlockRows,  BlockCols)*rhs[j];
+                    lhs[i] += m_matrix.template block<BlockRows,BlockCols>(
+                                            i*BlockRows,j*BlockCols)
+                                         *rhs[j];
                 }
-                lhs[i] += sum;
             }
         }
 
@@ -478,8 +471,9 @@ namespace Aboria {
                 lattice_iterator<dimension> mj(m_start,m_end);
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double_d pj = row_Rn.get_position(*mj);
-                    m_kernel_matrix.block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) =
-                                            m_position_function(pi-pj);
+                    m_kernel_matrix.template block<BlockRows,BlockCols>(
+                                        i*BlockRows,j*BlockCols) =
+                                            Block(m_position_function(pi-pj));
                 }
             }
         }
@@ -703,7 +697,7 @@ namespace Aboria {
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     const_cast< MatrixType& >(matrix).block<BlockRows,BlockCols>(
                             i*BlockRows,j*BlockCols) = 
-                                                this->m_function(dx,ai,bj);
+                                                Block(this->m_function(dx,ai,bj));
 
                 }
             }
@@ -761,15 +755,13 @@ namespace Aboria {
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                LHSType sum = LHSType::Zero();
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    sum += this->m_function(dx,ai,bj)*rhs[j];
+                    lhs[i] += this->m_function(dx,ai,bj)*rhs[j];
                 }
-                lhs[i] += sum;
             }
        }
 
@@ -790,16 +782,15 @@ namespace Aboria {
             #pragma omp parallel for
             for (size_t i=0; i<na; ++i) {
                 const_row_reference ai = a[i];
-                row_vector sum = row_vector::Zero();
                 const double radius = m_radius_function(ai);
                 for (auto pairj: euclidean_search(b.get_query(),get<position>(ai),radius)) {
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    sum += this->m_function(dx,ai,bj)
-                            *rhs.segment(j*BlockCols,(j+1)*BlockCols);
+                    lhs.template segment<BlockRows>(i*BlockRows) += 
+                        this->m_function(dx,ai,bj)
+                            *rhs.template segment<BlockCols>(j*BlockCols);
                 }
-                lhs.segment(i*BlockRows,(i+1)*BlockRows) += sum;
             }
        }
 

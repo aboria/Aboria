@@ -598,6 +598,7 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential_serial {
         const int new_index = i+start;
         const double_d& r = m_positions[new_index];
         const unsigned int bucketi = m_point_to_bucket_index.find_bucket_index(r);
+        ASSERT_CUDA(bucketi < m_point_to_bucket_index.m_bucket_index.m_size.prod());
         //std::cout << "inserting particle in index "<<new_index<<" at "<<r << " into bucket "<<bucketi<<std::endl;
         const int bucket_entry = m_buckets[bucketi];
 
