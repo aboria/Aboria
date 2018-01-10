@@ -41,14 +41,14 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
    
-template <typename Expansions, typename ColParticles,
-         typename NeighbourQuery = typename ColParticles::query_type>
+template <typename Expansions, typename Kernel, typename ColParticles>
 class FastMultipoleMethodBase {
 protected:
-    typedef typename NeighbourQuery::traits_type traits_type;
-    typedef typename NeighbourQuery::reference reference;
-    typedef typename NeighbourQuery::pointer pointer;
-    typedef typename NeighbourQuery::child_iterator child_iterator;
+    typedef typename ColParticles::query_type query_type;
+    typedef typename query_type::traits_type traits_type;
+    typedef typename query_type::reference reference;
+    typedef typename query_type::pointer pointer;
+    typedef typename query_type::child_iterator child_iterator;
     typedef typename Expansions::expansion_type expansion_type;
     typedef typename traits_type::template vector_type<expansion_type>::type storage_type;
     typedef typename traits_type::template vector_type<
@@ -56,7 +56,7 @@ protected:
         //typename std::remove_const<child_iterator>::type
         >::type child_iterator_vector_type;
     typedef typename traits_type::template vector_type<child_iterator_vector_type>::type connectivity_type;
-    typedef typename NeighbourQuery::particle_iterator particle_iterator;
+    typedef typename query_type::particle_iterator particle_iterator;
     typedef typename particle_iterator::reference particle_reference;
     typedef typename traits_type::double_d double_d;
     typedef typename traits_type::position position;
@@ -67,14 +67,17 @@ protected:
     mutable storage_type m_g;
     mutable connectivity_type m_connectivity; 
 
-    const NeighbourQuery *m_query;
+    const query_type *m_query;
     const ColParticles* m_col_particles;
     Expansions m_expansions;
+    Kernel m_kernel;
 
     FastMultipoleMethodBase(const ColParticles &col_particles, 
-                        const Expansions& expansions):
+                        const Expansions& expansions,
+                        const Kernel& kernel):
         m_query(&col_particles.get_query()),
         m_expansions(expansions),
+        m_kernel(kernel),
         m_col_particles(&col_particles)
     {}
 
@@ -167,14 +170,14 @@ protected:
                     detail::calculate_P2P(target_vector,source_vector,
                         m_query->get_bucket_particles(*ci),m_query->get_bucket_particles(*cj),
                         m_query->get_particles_begin(),m_query->get_particles_begin(),
-                        m_expansions);
+                        m_kernel);
                 } else {
                     for (reference ref_j: m_query->get_subtree(cj)) {
                         if (m_query->is_leaf_node(ref_j)) {
                             detail::calculate_P2P(target_vector,source_vector,
                                 m_query->get_bucket_particles(*ci),m_query->get_bucket_particles(ref_j),
                                 m_query->get_particles_begin(),m_query->get_particles_begin(),
-                                m_expansions);
+                                m_kernel);
                         }
                     }
                 }
@@ -183,10 +186,9 @@ protected:
     }
 };
 
-template <typename Expansions, typename ColParticles,
-         typename NeighbourQuery = typename ColParticles::query_type>
-class FastMultipoleMethod: public FastMultipoleMethodBase<Expansions,ColParticles> {
-   typedef FastMultipoleMethodBase<Expansions,ColParticles> base_type; 
+template <typename Expansions, typename Kernel, typename ColParticles>
+class FastMultipoleMethod: public FastMultipoleMethodBase<Expansions,Kernel,ColParticles> {
+   typedef FastMultipoleMethodBase<Expansions,Kernel,ColParticles> base_type; 
    typedef typename base_type::child_iterator child_iterator;
    typedef typename base_type::child_iterator_vector_type child_iterator_vector_type;
    typedef typename base_type::expansion_type expansion_type;
@@ -265,10 +267,9 @@ public:
     }
 };
 
-template <typename Expansions, typename ColParticles,
-         typename NeighbourQuery = typename ColParticles::query_type>
-class FastMultipoleMethodWithSource: public FastMultipoleMethodBase<Expansions,ColParticles> {
-    typedef FastMultipoleMethodBase<Expansions,ColParticles> base_type; 
+template <typename Expansions, typename Kernel, typename ColParticles>
+class FastMultipoleMethodWithSource: public FastMultipoleMethodBase<Expansions,Kernel,ColParticles> {
+    typedef FastMultipoleMethodBase<Expansions,Kernel,ColParticles> base_type; 
     typedef typename base_type::child_iterator child_iterator;
     typedef typename base_type::child_iterator_vector_type child_iterator_vector_type;
     typedef typename base_type::expansion_type expansion_type;
@@ -321,13 +322,13 @@ public:
             if (this->m_query->is_leaf_node(*ci)) {
                 sum += detail::calculate_P2P_position(p
                     ,this->m_query->get_bucket_particles(*ci)
-                    ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
+                    ,this->m_kernel,source_vector,this->m_query->get_particles_begin());
             } else {
                 for (reference subtree_reference: this->m_query->get_subtree(ci)) {
                     if (this->m_query->is_leaf_node(subtree_reference)) {
                         sum += detail::calculate_P2P_position(p
                                 ,this->m_query->get_bucket_particles(subtree_reference)
-                                ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
+                                ,this->m_kernel,source_vector,this->m_query->get_particles_begin());
                     }
                 }
             }
@@ -343,18 +344,20 @@ detail::BlackBoxExpansions<D,N,Function> make_black_box_expansion(const Function
 }
 
 
-template <typename Expansions, typename ColParticles>
-FastMultipoleMethod<Expansions,ColParticles>
-make_fmm(const ColParticles &col_particles, const Expansions& expansions) {
-    return FastMultipoleMethod<Expansions,ColParticles>(col_particles,expansions);
+template <typename Expansions, typename Kernel, typename ColParticles>
+FastMultipoleMethod<Expansions,Kernel,ColParticles>
+make_fmm(const ColParticles &col_particles, const Expansions& expansions, const Kernel& kernel) {
+    return FastMultipoleMethod<Expansions,Kernel,ColParticles>(col_particles,expansions,kernel);
 }
 
-template <typename Expansions, typename ColParticles, typename VectorType>
-FastMultipoleMethodWithSource<Expansions,ColParticles>
+template <typename Expansions, typename Kernel, typename ColParticles, typename VectorType>
+FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
 make_fmm_with_source(const ColParticles &col_particles, 
                      const Expansions& expansions, 
+                     const Kernel& kernel,
                      const VectorType& source_vector) {
-    return FastMultipoleMethodWithSource<Expansions,ColParticles>(col_particles,expansions,source_vector);
+    return FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
+                            (col_particles,expansions,kernel,source_vector);
 }
 
 }

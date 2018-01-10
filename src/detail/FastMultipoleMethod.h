@@ -231,7 +231,7 @@ namespace detail {
                     const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
-                    accum[i] += m_K(pj-pi,pi,pj)*source[j];
+                    accum[i] += m_K(pi,pj)*source[j];
                 }
             }
         }
@@ -248,7 +248,7 @@ namespace detail {
                     const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
-                    matrix(i,j) = m_K(pj-pi,pi,pj);
+                    matrix(i,j) = m_K(pi,pj);
                 }
             }
 
@@ -339,23 +339,7 @@ namespace detail {
             }
         }
 
-        template <typename RowParticlesType, typename ColParticlesType>
-        void P2P_matrix(p2p_matrix_type& matrix, 
-                    const std::vector<size_t>& row_indicies,
-                    const std::vector<size_t>& col_indicies,
-                    const RowParticlesType& row_particles,
-                    const ColParticlesType& col_particles) const {
-            typedef typename ColParticlesType::position position;
-            matrix.resize(row_indicies.size(),col_indicies.size());
-            for (int i = 0; i < row_indicies.size(); ++i) {
-                const double_d& pi = get<position>(row_particles)[row_indicies[i]];
-                for (int j = 0; j < col_indicies.size(); ++j) {
-                    const double_d& pj = get<position>(col_particles)[col_indicies[j]];
-                    matrix(i,j) = m_K(pj-pi,pi,pj);
-                }
-                
-            }
-        }
+        
 #endif
 
 
@@ -461,7 +445,7 @@ namespace detail {
                     const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
-                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
+                    setentry_amatrix(matrix,i,j,m_K(pi,pj));
                 }
             }
         }
@@ -487,7 +471,7 @@ namespace detail {
                     const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(box.bmax-box.bmin) 
                                                                     + box.bmin;
-                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
+                    setentry_amatrix(matrix,i,j,m_K(pi,pj));
                 }
                 
             }
@@ -572,33 +556,10 @@ namespace detail {
             }
         }
 
-        template <typename RowParticlesType, typename ColParticlesType>
-        void P2P_amatrix(pamatrix matrix, 
-                    const uint* row_indicies,
-                    const uint row_indicies_size,
-                    const uint* col_indicies,
-                    const uint col_indicies_size,
-                    const RowParticlesType& row_particles,
-                    const ColParticlesType& col_particles) const {
-            typedef typename ColParticlesType::position position;
-            ASSERT_CUDA(matrix->rows == row_indicies_size);
-            ASSERT_CUDA(matrix->cols == col_indicies_size);
-            //resize_amatrix(matrix,row_indicies_size,col_indicies_size);
-            for (int i = 0; i < row_indicies_size; ++i) {
-                const double_d& pi = get<position>(row_particles)[row_indicies[i]];
-                for (int j = 0; j < col_indicies_size; ++j) {
-                    const double_d& pj = get<position>(col_particles)[col_indicies[j]];
-                    setentry_amatrix(matrix,i,j,m_K(pj-pi,pi,pj));
-                }
-                
-            }
-        }
+        
 
     };
 #endif
-
-
-
 
     template <typename Expansions,
               typename Traits, 
@@ -703,13 +664,12 @@ namespace detail {
 
     }
 
-    template <typename Expansions,
+    template <typename Kernel,
               typename Traits, 
               typename TargetVectorType, 
               typename SourceVectorType, 
-                    typename VectorType=typename Expansions::expansion_type,
-                    typename ParticleIterator=typename Traits::raw_pointer, 
-                    unsigned int D=Traits::dimension>
+               typename ParticleIterator=typename Traits::raw_pointer, 
+               unsigned int D=Traits::dimension>
     void calculate_P2P(
                         TargetVectorType& target_vector,
                         const SourceVectorType& source_vector,
@@ -717,7 +677,7 @@ namespace detail {
                         const iterator_range<ranges_iterator<Traits>>& source_range, 
                         const ParticleIterator& target_particles_begin,
                         const ParticleIterator& source_particles_begin,
-                        const Expansions& expansions) {
+                        const Kernel& kernel) {
         typedef typename Traits::position position;
 
         const size_t n_target = std::distance(target_range.begin(),target_range.end());
@@ -735,19 +695,17 @@ namespace detail {
             const Vector<double,D>& pi = pbegin_target[i]; 
             for (int j = index_source; j < index_source+n_source; ++j) {
                 const Vector<double,D>& pj = pbegin_source[j]; 
-                target_vector[i] += expansions.m_K(pj-pi,pi,pj)
-                                                    *source_vector[j];
+                target_vector[i] += kernel(pi,pj)*source_vector[j];
             }
         }
     }
 
     // assume serial processing of particles, this could be more efficient for ranges iterators
-    template <typename Expansions,
+    template <typename Kernel,
                 typename TargetIterator, 
                 typename SourceIterator, 
               typename TargetVectorType, 
               typename SourceVectorType, 
-                 typename VectorType=typename Expansions::expansion_type, 
                  typename Traits=typename TargetIterator::traits_type,
                  typename ParticleIterator=typename Traits::raw_pointer, 
                  unsigned int D=Traits::dimension,
@@ -761,7 +719,7 @@ namespace detail {
                         const iterator_range<SourceIterator>& source_range, 
                         const ParticleIterator& target_particles_begin,
                         const ParticleIterator& source_particles_begin,
-                        const Expansions &expansions) {
+                        const Kernel &kernel) {
 
         typedef typename Traits::position position;
         for (auto& i: target_range) {
@@ -771,8 +729,7 @@ namespace detail {
                 const Vector<double,D>& pj = get<position>(j); 
                 const size_t source_index = &pj - &get<position>(source_particles_begin)[0];
                 LOG(4,"calculate_P2P: i = "<<target_index<<" pi = "<<pi<<" j = "<<source_index<<" pj = "<<pj);
-                target_vector[target_index] += expansions.m_K(pj-pi,pi,pj)
-                                                    *source_vector[source_index];
+                target_vector[target_index] += kernel(pi,pj)*source_vector[source_index];
             }
         }
 
@@ -780,13 +737,13 @@ namespace detail {
 
 
     template <typename Traits, 
-              typename Expansions, 
+              typename Kernel, 
               typename SourceVectorType,
-                    typename SourceParticleIterator=typename Traits::raw_pointer, 
-                    unsigned int D=Traits::dimension>
+              typename SourceParticleIterator=typename Traits::raw_pointer, 
+              unsigned int D=Traits::dimension>
     double calculate_P2P_position(const Vector<double,D>& p,
                             const iterator_range<ranges_iterator<Traits>>& range, 
-                            Expansions& expansions,
+                            const Kernel& kernel,
                             const SourceVectorType& source_vector,
                             const SourceParticleIterator& source_particles_begin) {
         typedef typename Traits::position position;
@@ -797,13 +754,13 @@ namespace detail {
         double sum = 0;
         for (int i = 0; i < N; ++i) {
             const Vector<double,D>& pi = pbegin[i]; 
-            sum += expansions.m_K(pi-p,p,pi)*source_vector[index+i];
+            sum += kernel(p,pi)*source_vector[index+i];
         }
         return sum;
     }
 
     template <typename Iterator, 
-              typename Expansions, 
+              typename Kernel, 
               typename SourceVectorType,
                     typename Traits=typename Iterator::traits_type,
                     typename SourceParticleIterator=typename Traits::raw_pointer, 
@@ -812,7 +769,7 @@ namespace detail {
         std::enable_if<!std::is_same<Iterator,ranges_iterator<Traits>>::value>>
     double calculate_P2P_position(const Vector<double,D>& p,
                             const iterator_range<Iterator>& range, 
-                            Expansions& expansions,
+                            const Kernel& kernel,
                             const SourceVectorType& source_vector,
                             const SourceParticleIterator& source_particles_begin) {
         typedef typename Traits::position position;
@@ -822,10 +779,54 @@ namespace detail {
         for (reference i: range) {
             const Vector<double,D>& pi = get<position>(i); 
             const size_t index = &pi- &get<position>(source_particles_begin)[0];
-            sum += expansions.m_K(pi-p,p,pi)*source_vector[index];
+            sum += kernel(p,pi)*source_vector[index];
         }
         return sum;
     }
+
+#ifdef HAVE_EIGEN
+    template <typename RowParticlesType, typename ColParticlesType, typename Kernel>
+    void P2P_matrix(Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic>& matrix, 
+                const std::vector<size_t>& row_indicies,
+                const std::vector<size_t>& col_indicies,
+                const RowParticlesType& row_particles,
+                const ColParticlesType& col_particles,
+                const Kernel& kernel) {
+        typedef typename ColParticlesType::position position;
+        matrix.resize(row_indicies.size(),col_indicies.size());
+        for (int i = 0; i < row_indicies.size(); ++i) {
+            for (int j = 0; j < col_indicies.size(); ++j) {
+                matrix(i,j) = kernel(row_particles[i],col_particles[j]);
+            }
+            
+        }
+    }
+#endif
+
+#ifdef HAVE_H2LIB
+    template <typename RowParticlesType, typename ColParticlesType, typename Kernel>
+    void P2P_amatrix(pamatrix matrix, 
+                const uint* row_indicies,
+                const uint row_indicies_size,
+                const uint* col_indicies,
+                const uint col_indicies_size,
+                const RowParticlesType& row_particles,
+                const ColParticlesType& col_particles,
+                const Kernel& kernel) {
+        typedef typename ColParticlesType::position position;
+        ASSERT_CUDA(matrix->rows == row_indicies_size);
+        ASSERT_CUDA(matrix->cols == col_indicies_size);
+        //resize_amatrix(matrix,row_indicies_size,col_indicies_size);
+        for (int i = 0; i < row_indicies_size; ++i) {
+            const auto& pi = get<position>(row_particles)[row_indicies[i]];
+            for (int j = 0; j < col_indicies_size; ++j) {
+                const auto& pj = get<position>(col_particles)[col_indicies[j]];
+                setentry_amatrix(matrix,i,j,kernel(pi,pj));
+            }
+            
+        }
+    }
+#endif
 
     /*
     template <unsigned int D>

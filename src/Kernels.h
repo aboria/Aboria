@@ -61,6 +61,7 @@ namespace Aboria {
         static const unsigned int dimension = kernel_helper::dimension;
         typedef Vector<double,dimension> double_d;
         typedef Vector<int,dimension> int_d;
+        typedef position_d<dimension> position;
         typedef typename kernel_helper::const_position_reference const_position_reference;
         typedef typename kernel_helper::const_row_reference const_row_reference;
         typedef typename kernel_helper::const_col_reference const_col_reference;
@@ -393,8 +394,7 @@ namespace Aboria {
 
     template<typename RowElements, typename ColElements, typename PositionF,
         size_t QuadratureOrder = 8,
-        typename ElementF=detail::position_kernel<RowElements,ColElements,PositionF>,
-        typename F=detail::integrate_over_element<RowElements,ColElements,ElementF,QuadratureOrder>>
+        typename F=detail::position_kernel<RowElements,ColElements,PositionF>>
     class KernelChebyshev: public KernelDense<RowElements,ColElements,F> {
         typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename base_type::double_d double_d;
@@ -473,7 +473,7 @@ namespace Aboria {
                     const double_d pj = row_Rn.get_position(*mj);
                     m_kernel_matrix.template block<BlockRows,BlockCols>(
                                         i*BlockRows,j*BlockCols) =
-                                            Block(m_position_function(pi-pj));
+                                            Block(m_position_function(pi,pj));
                 }
             }
         }
@@ -520,8 +520,7 @@ namespace Aboria {
 
 #ifdef HAVE_H2LIB
 
-    template<typename RowElements, typename ColElements, typename PositionF,
-        typename F=detail::position_lambda<RowElements,ColElements,PositionF>>
+    template<typename RowElements, typename ColElements, typename PositionF, typename F>
     class KernelH2: public KernelDense<RowElements,ColElements,F> {
         typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename ColElements::query_type query_type;
@@ -539,33 +538,29 @@ namespace Aboria {
         static const size_t BlockCols = base_type::BlockCols;
         static_assert(BlockRows==1, "only implemented for scalar kernels");
         static_assert(BlockCols==1, "only implemented for scalar kernels");
-        static_assert(is_particles<RowElements>::value && 
-                      is_particles<ColElements>::value,
+        static_assert(detail::is_particles<RowElements>::value && 
+                      detail::is_particles<ColElements>::value,
                       "only implemented for particle elements");
 
-        typedef PositionF position_function_type;
 
         KernelH2(const RowElements& row_particles,
-                        const ColElements& col_particles,
-                        const PositionF& function,
-                        const int order, 
-                        const double eta = 1.0):
+                 const ColElements& col_particles,
+                 const int order, 
+                 const PositionF& position_function,
+                 const F& function,
+                 const double eta = 1.0):
                           m_h2_matrix(row_particles,col_particles,
-                                  expansions_type(
-                                      order,
-                                      function),eta),
-                          m_position_function(function),
+                                      expansions_type(
+                                        order,
+                                        position_function),
+                                      function,eta),
                           base_type(row_particles,
                                   col_particles,
-                                  F(function)) {
+                                  function) {
                           }
 
         const h2_matrix_type& get_h2_matrix() const {
             return m_h2_matrix;
-        }
-
-        const PositionF& get_position_function() const {
-            return m_position_function;
         }
 
 
@@ -580,9 +575,8 @@ namespace Aboria {
 #endif
 
 
-    template<typename RowElements, typename ColElements, typename PositionF,
-        unsigned int N,
-        typename F=detail::position_kernel<RowElements,ColElements,PositionF>>
+    template<typename RowElements, typename ColElements, typename PositionF, typename F,
+        unsigned int N>
     class KernelFMM: public KernelDense<RowElements,ColElements,F> {
         typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename base_type::position position;
@@ -594,8 +588,7 @@ namespace Aboria {
         typedef typename ColElements::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef FastMultipoleMethod<expansions_type,ColElements> fmm_type;
-
+        typedef FastMultipoleMethod<expansions_type,F,ColElements> fmm_type;
 
         expansions_type m_expansions;
         fmm_type m_fmm;
@@ -614,13 +607,15 @@ namespace Aboria {
 
         KernelFMM(const RowElements& row_particles,
                         const ColElements& col_particles,
-                        const PositionF& function): 
-                                            m_expansions(function),
-                                            m_fmm(col_particles,
-                                                  m_expansions),
-                                            base_type(row_particles,
-                                                  col_particles,
-                                                  F(function)) {
+                        const PositionF& position_function,
+                        const F& function): 
+                                m_expansions(position_function),
+                                m_fmm(col_particles,
+                                      m_expansions,
+                                      function),
+                                base_type(row_particles,
+                                      col_particles,
+                                      function) {
         };
 
         /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
@@ -632,7 +627,9 @@ namespace Aboria {
         }
     };
 
-    template<typename RowElements, typename ColElements, typename FRadius, typename F>
+    template<typename RowElements, typename ColElements, typename FRadius, 
+        typename FWithDx,
+        typename F=detail::sparse_kernel<RowElements,ColElements,FRadius,FWithDx>>
     class KernelSparse: public KernelBase<RowElements,ColElements,F> {
     protected:
         typedef KernelBase<RowElements,ColElements,F> base_type;
@@ -653,10 +650,12 @@ namespace Aboria {
         KernelSparse(const RowElements& row_particles,
                     const ColElements& col_particles,
                     const FRadius& radius_function,
-                    const F& function): m_radius_function(radius_function),
-                                        base_type(row_particles,
-                                                  col_particles,
-                                                  function) 
+                    const FWithDx& withdx_function): 
+                        m_radius_function(radius_function),
+                        base_type(row_particles,
+                                  col_particles,
+                                  F(col_particles,radius_function,withdx_function)
+                                  )
         {};
 
         Block coeff(const size_t i, const size_t j) const {
@@ -798,20 +797,6 @@ namespace Aboria {
         FRadius m_radius_function;
     };
 
-    namespace detail {
-        template <typename RowElements,
-                 typename const_row_reference=
-                     typename RowElements::const_reference>
-        struct constant_radius {
-            const double m_radius;
-            constant_radius(const double radius):m_radius(radius)
-            {}
-            double operator()(const_row_reference a) const {
-                return m_radius; 
-            }
-        };
-    }
-
     template<typename RowElements, typename ColElements, typename F,
         typename RadiusFunction=detail::constant_radius<RowElements>>
     class KernelSparseConst: public KernelSparse<RowElements,ColElements,RadiusFunction,F> {
@@ -837,25 +822,8 @@ namespace Aboria {
         {}
     };
 
-    namespace detail {
-        template <typename RowElements, typename ColElements,
-                 typename double_d=
-                     typename RowElements::double_d,
-                 typename const_row_reference=
-                     typename RowElements::const_reference,
-                 typename const_col_reference=
-                     typename ColElements::const_reference>
-        struct zero_lambda {
-            double operator()(const double_d& dx,
-                            const_row_reference a,
-                            const_col_reference b) const {
-                                return 0.0;
-            }
-        };
-    }
-
     template<typename RowElements, typename ColElements,
-        typename F=detail::zero_lambda<RowElements,ColElements>>
+        typename F=detail::zero_kernel<RowElements,ColElements>>
     class KernelZero: public KernelBase<RowElements,ColElements,F> {
 
         typedef KernelBase<RowElements,ColElements,F> base_type;

@@ -238,18 +238,19 @@ assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
 }
 
 
-template <typename RowParticles,typename ColParticles,typename Expansions>
+template <typename RowParticles,typename ColParticles,typename Expansions,typename Kernel>
 static void
 assemble_block_h2matrix(pcblock b, uint bname,
 				    uint rname, uint cname, uint pardepth,
 				    void *data)
 {
     auto& data_cast = *static_cast<
-        std::tuple<Expansions*,RowParticles*,ColParticles*,ph2matrix*>*>(data);
+        std::tuple<Expansions*,Kernel*,RowParticles*,ColParticles*,ph2matrix*>*>(data);
 
     const Expansions& expansions = *std::get<0>(data_cast);
-    const RowParticles& row_particles = *std::get<1>(data_cast);
-    const ColParticles& col_particles = *std::get<2>(data_cast);
+    const Kernel& kernel = *std::get<1>(data_cast);
+    const RowParticles& row_particles = *std::get<2>(data_cast);
+    const ColParticles& col_particles = *std::get<3>(data_cast);
     ph2matrix* enum_h2 = std::get<3>(data_cast);
     ph2matrix h2 = enum_h2[bname];
 
@@ -260,20 +261,20 @@ assemble_block_h2matrix(pcblock b, uint bname,
         expansions.M2L_amatrix(&h2->u->S,h2->u->rb->t,h2->u->cb->t);
 
     } else if (h2->f) {
-        expansions.P2P_amatrix(h2->f,
+        detail::P2P_amatrix(h2->f,
                 h2->rb->t->idx,h2->rb->t->size,
                 h2->cb->t->idx,h2->cb->t->size,
-                row_particles,col_particles);
+                row_particles,col_particles,kernel);
     }
 
   }
 
 public:
 
-    template <typename RowParticles, typename ColParticles, typename Expansions>
+    template <typename RowParticles, typename ColParticles, typename Expansions, typename Kernel>
     H2LibMatrix(const RowParticles &row_particles, 
                 const ColParticles &col_particles, 
-                const Expansions& expansions,const double eta = 1.0):
+                const Expansions& expansions,const Kernel& kernel, const double eta = 1.0):
             m_h2(nullptr,del_h2matrix),
             m_block(nullptr,del_block) {
 
@@ -325,10 +326,10 @@ public:
                     build_from_block_h2matrix(m_block.get(),row_cb,col_cb),
                     del_h2matrix);
         ph2matrix* enum_h2mat = enumerate_h2matrix(m_h2.get());
-        auto data_h2 = std::make_tuple(&expansions,&row_particles,
+        auto data_h2 = std::make_tuple(&expansions,&kernel,&row_particles,
                                     &col_particles,enum_h2mat);
         iterate_byrow_block(m_block.get(), 0, 0, 0, max_pardepth, NULL,
-		      assemble_block_h2matrix<RowParticles,ColParticles,Expansions>, 
+		      assemble_block_h2matrix<RowParticles,ColParticles,Expansions,Kernel>, 
               &data_h2);
         freemem(enum_h2mat);
     }
@@ -451,18 +452,19 @@ class HLibMatrix {
     std::vector<uint> m_row_idx;
     std::vector<uint> m_col_idx;
 
-template <typename RowParticles,typename ColParticles,typename Expansions>
+template <typename RowParticles,typename ColParticles,typename Expansions,typename Kernel>
 static void
 assemble_block_hmatrix(pcblock b, uint bname,
 				    uint rname, uint cname, uint pardepth,
 				    void *data)
 {
     auto& data_cast = *static_cast<
-        std::tuple<Expansions*,RowParticles*,ColParticles*,phmatrix*>*>(data);
+        std::tuple<Expansions*,Kernel*,RowParticles*,ColParticles*,phmatrix*>*>(data);
 
     const Expansions& expansions = *std::get<0>(data_cast);
-    const RowParticles& row_particles = *std::get<1>(data_cast);
-    const ColParticles& col_particles = *std::get<2>(data_cast);
+    const Kernel& kernel = *std::get<1>(data_cast);
+    const RowParticles& row_particles = *std::get<2>(data_cast);
+    const ColParticles& col_particles = *std::get<3>(data_cast);
     phmatrix* enum_h = std::get<3>(data_cast);
     phmatrix h = enum_h[bname];
 
@@ -474,10 +476,10 @@ assemble_block_hmatrix(pcblock b, uint bname,
                 h->cc,h->cc->idx,h->cc->size,
                 col_particles);
     } else if (h->f) {
-        expansions.P2P_amatrix(h->f,
+        detail::P2P_amatrix(h->f,
                 h->rc->idx,h->rc->size,
                 h->cc->idx,h->cc->size,
-                row_particles,col_particles);
+                row_particles,col_particles,kernel);
     }
 
 }
@@ -502,10 +504,11 @@ truncate_block_hmatrix(pcblock b, uint bname,
 
 public:
 
-    template <typename RowParticles, typename ColParticles, typename Expansions>
+    template <typename RowParticles, typename ColParticles, typename Expansions, typename Kernel>
     HLibMatrix(const RowParticles &row_particles, 
                 const ColParticles &col_particles, 
-                const Expansions& expansions):
+                const Expansions& expansions,
+                const Kernel& kernel):
             m_h(nullptr,del_hmatrix),
             m_block(nullptr,del_block) {
 
@@ -546,10 +549,10 @@ public:
                     build_from_block_hmatrix(m_block.get(),expansions.m_ncheb),
                     del_hmatrix);
         phmatrix* enum_hmat = enumerate_hmatrix(m_block.get(),m_h.get());
-        auto data_h = std::make_tuple(&expansions,&row_particles,
+        auto data_h = std::make_tuple(&expansions,&kernel,&row_particles,
                                     &col_particles,enum_hmat);
         iterate_byrow_block(m_block.get(), 0, 0, 0, max_pardepth, NULL,
-		      assemble_block_hmatrix<RowParticles,ColParticles,Expansions>, 
+		      assemble_block_hmatrix<RowParticles,ColParticles,Expansions,Kernel>, 
               &data_h);
         freemem(enum_hmat);
     }
@@ -675,17 +678,15 @@ detail::H2LibBlackBoxExpansions<D,Function> make_h2lib_black_box_expansion(size_
     return detail::H2LibBlackBoxExpansions<D,Function>(order,function);
 }
 
-
-
-template <typename Expansions, typename RowParticlesType, typename ColParticlesType>
-HLibMatrix make_h2lib_h_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions) {
-    return HLibMatrix(row_particles,col_particles,expansions);
+template <typename Expansions, typename Kernel, typename RowParticlesType, typename ColParticlesType>
+HLibMatrix make_h2lib_h_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions, const Kernel& kernel) {
+    return HLibMatrix(row_particles,col_particles,expansions,kernel);
 }
     
 
-template <typename Expansions, typename RowParticlesType, typename ColParticlesType>
-H2LibMatrix make_h2lib_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions) {
-    return H2LibMatrix(row_particles,col_particles,expansions);
+template <typename Expansions, typename Kernel, typename RowParticlesType, typename ColParticlesType>
+H2LibMatrix make_h2lib_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions, const Kernel& kernel) {
+    return H2LibMatrix(row_particles,col_particles,expansions,kernel);
 }
 
 

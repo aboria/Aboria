@@ -387,23 +387,26 @@ Operator create_chebyshev_operator(const RowParticles& row_particles,
 ///                      first particle set
 /// \param col_particles The columns of the linear operator index this 
 ///                      first particle set
+/// \param position_function A function object that returns the value of the operator
+///                 for a given position pair (used for well-separated position pairs)
 /// \param function A function object that returns the value of the operator
-///                 for a given particle pair
+///                 for a given particle pair (used for close particle pairs)
 ///
 /// \tparam N The number of chebyshev nodes in each dimension to use
 /// \tparam RowParticles The type of the row particle set
 /// \tparam ColParticles The type of the column particle set
 /// \tparam F The type of the function object
-template<unsigned int N, typename RowParticles, typename ColParticles, typename F,
-         typename Kernel=KernelFMM<RowParticles,ColParticles,F,N>,
+template<unsigned int N, typename RowParticles, typename ColParticles, typename PositionF, typename F,
+         typename Kernel=KernelFMM<RowParticles,ColParticles,PositionF,F,N>,
          typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_fmm_operator(const RowParticles& row_particles,
                                const ColParticles& col_particles,
+                               const PositionF& position_function,
                                const F& function) {
         return Operator(
                 std::make_tuple(
-                    Kernel(row_particles,col_particles,function)
+                    Kernel(row_particles,col_particles,position_function,function)
                     )
                 );
     }
@@ -424,25 +427,29 @@ Operator create_fmm_operator(const RowParticles& row_particles,
 ///                      first particle set
 /// \param col_particles The columns of the linear operator index this 
 ///                      first particle set
+/// \param order Chebyshev order of the approximation within each cluster
+/// \param position_function A function object that returns the value of the operator
+///                 for a given position pair (used for well-separated position pairs)
 /// \param function A function object that returns the value of the operator
-///                 for a given particle pair
+///                 for a given particle pair (used for close particle pairs)
 ///
 /// \tparam N The number of chebyshev nodes in each dimension to use
 /// \tparam RowParticles The type of the row particle set
 /// \tparam ColParticles The type of the column particle set
 /// \tparam F The type of the function object
-template<typename RowParticles, typename ColParticles, typename F,
-         typename Kernel=KernelH2<RowParticles,ColParticles,F>,
+template<typename RowParticles, typename ColParticles, typename PositionF, typename F,
+         typename Kernel=KernelH2<RowParticles,ColParticles,PositionF,F>,
          typename Operator=MatrixReplacement<1,1,std::tuple<Kernel>>
                 >
 Operator create_h2_operator(const RowParticles& row_particles,
                             const ColParticles& col_particles,
-                            const F& function,
                             const int order,
+                            const PositionF& position_function,
+                            const F& function,
                             const double eta = 1.0) {
         return Operator(
                 std::make_tuple(
-                    Kernel(row_particles,col_particles,function,order,eta)
+                    Kernel(row_particles,col_particles,order,position_function,function,eta)
                     )
                 );
     }

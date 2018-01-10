@@ -156,8 +156,9 @@ set(VariablesTest
 
 set(OperatorsTestFile operators.h)
 set(OperatorsTest
-    test_Eigen
-    test_Eigen_block
+    test_dense_operator
+    test_sparse_operator
+    test_block_operator
     test_documentation
     )
 

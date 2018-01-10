@@ -74,7 +74,7 @@ namespace detail {
     };
 
     template<typename RowElements, typename ColElements, typename F>
-    struct dx_kernel_helper {
+    struct position_kernel_helper {
         static const unsigned int dimension = RowElements::dimension;
         typedef Vector<double,dimension> double_d;
         typedef double_d const & const_position_reference;
@@ -82,8 +82,7 @@ namespace detail {
         typedef typename ColElements::const_reference const_col_reference;
 
         typedef typename std::result_of<F(const_position_reference, 
-                                  const_row_reference, 
-                                  const_col_reference)>::type FunctionReturn;
+                                          const_position_reference)>::type FunctionReturn;
 
         typedef typename std::conditional<
                             std::is_arithmetic<FunctionReturn>::value,
@@ -124,11 +123,11 @@ namespace detail {
     template <typename RowElements, typename ColElements, typename Kernel,
               size_t QuadratureOrder>
     struct integrate_over_element<RowElements,ColElements,Kernel,QuadratureOrder,
-                        typename std::enable_if_t<
+                        typename std::enable_if<
                         is_particles<RowElements>::value &&
-                        is_particles<ColElements>::value>> {
+                        is_particles<ColElements>::value>::type> {
 
-        typedef typename detail::dx_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
+        typedef typename detail::position_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
         static const unsigned int dimension = kernel_helper::dimension;
         typedef Vector<double,dimension> double_d;
         typedef Vector<int,dimension> int_d;
@@ -136,55 +135,35 @@ namespace detail {
         typedef typename RowElements::position position;
         typedef typename kernel_helper::const_row_reference const_row_reference;
         typedef typename kernel_helper::const_col_reference const_col_reference;
-
+        typedef double_d const & const_position_reference;
 
         const Kernel& m_kernel;
         const RowElements& m_row; 
         const ColElements& m_col; 
-        const int_d m_periodic_extent;
         integrate_over_element(const RowElements& row, 
                                const ColElements& col,
-                               const Kernel& k,
-                               const size_t periodic_layers):
+                               const Kernel& k):
             m_kernel(k),
             m_row(row),
-            m_col(col),
-            m_periodic_extent(col.get_periodic()*periodic_layers)
+            m_col(col)
         {}
 
         Block operator()(const_row_reference a,
-                         const_col_reference b) const {
-            Block result = Block::Zeros();
-            const double_d domain_size = m_col.get_max()-m_col.get_min();
-            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1);
-                    it != false; ++it) {
-                const auto& dx = get<position>(b) + (*it)*domain_size 
-                                        - get<position>(a);
-                result += m_kernel(dx,a,b);
-            }
-            return result;
+                                  const_col_reference b) const {
+            return m_kernel(get<position>(a),get<position>(b));
         }
 
-
-        /*
-        Block operator()(const double_d& dx,
-                         const_row_reference a,
-                         const_col_reference b) const {
-            return m_kernel(dx,a,b);
-        }
-        */
     };
 
     
     template <typename RowElements, typename ColElements, typename Kernel,
               size_t QuadratureOrder>
     struct integrate_over_element<RowElements,ColElements,Kernel,QuadratureOrder,
-                        typename std::enable_if_t<
+                        typename std::enable_if<
                         is_particles<RowElements>::value &&
-                        is_elements<2,ColElements>::value>> {
+                        is_elements<2,ColElements>::value>::type> {
 
-
-        typedef typename detail::dx_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
+        typedef typename detail::position_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
         static const unsigned int dimension = kernel_helper::dimension;
         typedef Vector<double,dimension> double_d;
         typedef Vector<int,dimension> int_d;
@@ -200,39 +179,28 @@ namespace detail {
         const RowElements& m_row; 
         const ColElements& m_col; 
         const col_particles_type& m_colp; 
-        const int_d m_periodic_extent;
         integrate_over_element(const RowElements& row, 
                                const ColElements& col,
-                               const Kernel& k,
-                               const size_t periodic_layers):
+                               const Kernel& k):
             m_kernel(k),
             m_row(row),
             m_col(col),
-            m_colp(col.get_particles()),
-            m_periodic_extent(col.get_periodic()*periodic_layers)
+            m_colp(col.get_particles())
         {}
 
         Block operator()(const_row_reference a,
                          const_col_reference b) const {
             Block result = Block::Zeros();
-            double_d a_b0,a_b1; 
             auto b0 = m_colp.get_query().find(get<variable_type>(b)[0]);
             auto b1 = m_colp.get_query().find(get<variable_type>(b)[1]);
             ASSERT(b0 != iterator_to_raw_pointer(m_colp.end()),"cannot find b0");
             ASSERT(b1 != iterator_to_raw_pointer(m_colp.end()),"cannot find b1");
 
-            const double_d domain_size = m_col.get_max()-m_col.get_min();
-            for (lattice_iterator<dimension> it(-m_periodic_extent,m_periodic_extent+1);
-                    it != false; ++it) {
-                const double_d offset = (*it)*domain_size;
-                const double_d a_b0 = *get<position>(b0) + offset - get<position>(a);
-                const double_d a_b1 = *get<position>(b1) + offset - get<position>(a);
-                const double_d node_scale = 0.5*(a_b1-a_b0);
-                const double_d node_offset = 0.5*(a_b0+a_b1);
-                for (size_t i = 0; i < QuadratureOrder; ++i) {
-                    const double_d mapped_node = node_scale*quadrature_type::nodes[i] + node_offset;
-                    result += quadrature_type::weights[i] * m_kernel(mapped_node,a,b);
-                }
+            const double_d node_scale = 0.5*(*get<position>(b1) - *get<position>(b0));
+            const double_d node_offset = 0.5*(*get<position>(b0) + *get<position>(b1));
+            for (size_t i = 0; i < QuadratureOrder; ++i) {
+                const double_d mapped_node = node_scale*quadrature_type::nodes[i] + node_offset;
+                result += quadrature_type::weights[i] * m_kernel(a,mapped_node);
             }
             return result;
         }
@@ -327,22 +295,73 @@ namespace detail {
     };
     */
 
+    template <typename RowElements, typename ColElements>
+    struct zero_kernel {
+        typedef typename RowElements::const_reference const_row_reference;
+        typedef typename ColElements::const_reference const_col_reference;
 
+        double operator()(const_row_reference a,
+                          const_col_reference b) const { return 0.0; }
+    };
 
     template <typename RowElements, typename ColElements, typename F>
     struct position_kernel {
         const static unsigned int dimension = RowElements::dimension;
         typedef Vector<double,dimension> double_d;
+        typedef position_d<dimension> position;
         typedef double_d const & const_position_reference;
         typedef typename RowElements::const_reference const_row_reference;
         typedef typename ColElements::const_reference const_col_reference;
-
+        typedef typename std::result_of<F(const_position_reference,
+                                          const_position_reference)>::type FunctionReturn;
         F m_f;
         position_kernel(const F f):m_f(f) {}
-        double operator()(const double_d& dx,
-                        const_row_reference a,
-                        const_col_reference b) const {
-                            return m_f(dx);
+        FunctionReturn operator()(const_row_reference a,
+                                  const_col_reference b) const {
+            return m_f(get<position>(a),get<position>(b));
+        }
+    };
+
+    template <typename RowElements, typename ColElements, typename FRadius, typename F>
+    struct sparse_kernel {
+        const static unsigned int dimension = RowElements::dimension;
+        typedef Vector<double,dimension> double_d;
+        typedef double_d const & const_position_reference;
+        typedef position_d<dimension> position;
+        typedef typename RowElements::const_reference const_row_reference;
+        typedef typename ColElements::const_reference const_col_reference;
+        typedef typename std::result_of<F(const_position_reference,
+                                          const_row_reference, 
+                                          const_col_reference)>::type FunctionReturn;
+
+        F m_f;
+        FRadius m_fradius;
+        const ColElements& m_col;
+
+        sparse_kernel(const ColElements& col, const FRadius fradius, const F f):
+            m_f(f),m_fradius(fradius),m_col(col) {}
+        FunctionReturn operator()(const_row_reference a,
+                                  const_col_reference b) const {
+
+            const double_d dx = m_col.correct_dx_for_periodicity(
+                                    get<position>(b) - get<position>(a));
+            if (dx.squaredNorm() < std::pow(m_fradius(a),2)) {
+                return m_f(dx,a,b);
+            } else {
+                return 0.0;
+            }
+        }
+    };
+
+    template <typename RowElements,
+              typename const_row_reference=
+                 typename RowElements::const_reference>
+    struct constant_radius {
+        const double m_radius;
+        constant_radius(const double radius):m_radius(radius)
+        {}
+        double operator()(const_row_reference a) const {
+            return m_radius; 
         }
     };
 
@@ -352,7 +371,7 @@ namespace detail {
 
     template <typename Elements, size_t Repeats,size_t QuadratureOrder>
     struct integrate_chebyshev<Elements,Repeats,QuadratureOrder,
-                    typename std::enable_if_t<is_particles<Elements>::value>> {
+                    typename std::enable_if<is_particles<Elements>::value>::type> {
 
         static const unsigned int dimension = Elements::dimension;
         typedef Vector<double,dimension> double_d;
@@ -390,7 +409,7 @@ namespace detail {
     
     template <typename Elements, size_t Repeats, size_t QuadratureOrder>
     struct integrate_chebyshev<Elements,Repeats,QuadratureOrder,
-                    typename std::enable_if_t<is_elements<2,Elements>::value>> {
+                    typename std::enable_if<is_elements<2,Elements>::value>::type> {
 
         static const unsigned int dimension = Elements::dimension;
         typedef typename Elements::particles_type particles_type;
@@ -442,8 +461,6 @@ namespace detail {
             }
         }
     };
-
-
 
     
 

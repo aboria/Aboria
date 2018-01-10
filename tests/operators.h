@@ -132,12 +132,9 @@ containing $N=100$ particles with a single additional variable $a$.
             get<a>(particles)[i] = uniform(gen);
         }
 /*`
-For convenience, we will also define a few types that we will need to define our 
-kernel function. These will define a constant reference to the storage type used
-to store each particle positions, and a constant reference type to refer to each
+For convenience, we will also define a constant reference type to refer to each
 particle in the container
 */
-        typedef particle_type::position::value_type const & const_position_reference;
         typedef particle_type::const_reference const_particle_reference;
 
 /*`
@@ -145,9 +142,9 @@ We then create a dense kernel operator using the
 [funcref Aboria::create_dense_operator] function
 */
         auto K = create_dense_operator(particles,particles,
-                [epsilon](const_position_reference dx,
-                   const_particle_reference i,
-                   const_particle_reference j) {
+                [epsilon](const_particle_reference i,
+                          const_particle_reference j) {
+                const auto dx = get<position>(j) - get<position>(i);
                 return (get<a>(i) * get<a>(j)) / (dx.norm() + epsilon);
                 });
 
@@ -161,16 +158,11 @@ matrix.
 
 The third argument to [funcref Aboria::create_dense_operator] can be a function
 object, or C++ lambda expression. Basically any valid C++ object that can be
-called with three arguments, the first being of type `const_position_reference`
-(i.e. a constant reference to the position type), the second of type
-`const_particle_reference` (i.e. a constant reference to a particle in the set
-indexed by $i$), and the third of type `const_particle_reference` (i.e. a
-constant reference to a particle in the set indexed by $j$). The first argument
-will contain the shortest vector between the particle pair given by $i,j$, and
-the second and third will be references to the particles $i$ and $j$. Note that
+called with two arguments, the first of type `const_particle_reference` (i.e. a constant reference to a particle in the set indexed by $i$), and the second of type `const_particle_reference` (i.e. a
+constant reference to a particle in the set indexed by $j$). Note that
 in this case the particle sets indexed by $i$ and $j$ is the same particle set
 `particles`. However, in other cases you may want $i$ and $j$ to index different
-particle sets, in which case the types for argument 2 and 3 could be different.
+particle sets, in which case the types for arguments 1 and 2 could be different.
 
 In the code above, we are using a lambda expression as our function object, and
 create one that returns the particular kernel function
@@ -260,13 +252,14 @@ We can create the operator `K_s` in Aboria like so (setting $r=0.1$ in this case
         const double r = 0.1;
         auto K_s = create_sparse_operator(particles,particles,
                 r,
-                [epsilon](const_position_reference dx,
+                [epsilon](const vdouble3& dx,
                    const_particle_reference i,
                    const_particle_reference j) {
                 return (get<a>(i) * get<a>(j)) / (dx.norm() + epsilon);
                 });
 
 /*`
+Sparse operators support periodic domains, and therefore we now need the `dx` argument in the kernel function object. This is a distance value that gives the shortest vector from particle `i` to particle `j`.
 
 When applied to a vector, this operator will use the neighbour search of the
 `particles` container to perform a neighbour search for all particle pairs where
@@ -351,15 +344,14 @@ using the [funcref Aboria::create_chebyshev_operator] function
 */
         const unsigned int n = 10;
         auto K_c = create_chebyshev_operator(particles,particles,n,
-                [epsilon](const_position_reference dx,
-                          const_position_reference i,
-                          const_position_reference j) {
-                return std::sqrt(dx.norm() + epsilon);
+                [epsilon](const vdouble3& i,
+                          const vdouble3& j) {
+                return std::sqrt((j-i).norm() + epsilon);
                 });
 
 /*`
 
-where `n` sets the number of chebyshev nodes in each dimension. 
+where `n` sets the number of chebyshev nodes in each dimension. Here the function object given to [funcref Aboria::create_chebyshev_operator] must have two arguments representing the positions $\mathbf{x}\_i$ and $\mathbf{x}\_j$.
 
 [caution Once `K_c` is created, it assumes that the positions of the particles in 
 `particles` do not change. If this is not true, then you can use the function of 
@@ -407,19 +399,20 @@ using the [funcref Aboria::create_fmm_operator] function
 */
         const unsigned int n2 = 4;
         auto K_f = create_fmm_operator<n2>(particles,particles,
-                [epsilon](const_position_reference dx,
-                          const_position_reference i,
-                          const_position_reference j) {
-                return std::sqrt(dx.norm() + epsilon);
-                });
+            [epsilon](const vdouble3& i,
+                      const vdouble3& j) {
+                return std::sqrt((j-i).norm() + epsilon);
+            },
+            [epsilon](const_particle_reference i,
+                      const_particle_reference j) {
+                return std::sqrt(((get<position>(j)-get<position>(i)).norm() + epsilon));
+            });
 
 /*`
 
-where `n2` sets the number of chebyshev nodes in each dimension. Note that this is typically
-much less than what is required by the chebyshev operator discussed in the previous section.
+where `n2` sets the number of chebyshev nodes in each dimension. Note that this is typically much less than what is required by the chebyshev operator discussed in the previous section. Here we need to pass two function objects to [funcref Aboria::create_fmm_operator], both of which represent the kernel applied in different situations. The first takes two positions that are guarenteed to be not equal, and which in FMM terminology are used to create the M2L (multipole to local) operators. The second function object takes two particle references from the row and column particle sets, and is used to create the P2P (particle to particle) operator. Note that the position of `i` and `j`, and/or the particles themselves, might be identical. Therefore this function object must handle any kernel singularities.
 
-[note the [funcref Aboria::create_fmm_operator] function creates a kernel operator in which 
-the fast multipole algorithm is applied completely "on the fly". The fmm can be
+[note the [funcref Aboria::create_fmm_operator] function creates a kernel operator in which  the fast multipole algorithm is applied completely "on the fly". The fmm can be
 significantly speeded up for static particle positions by storing a hierarchical matrix. 
 Please see the next section for more details of how to do this in Aboria.]
 
@@ -449,11 +442,14 @@ A kernel operator which does this can be created using the
 [funcref Aboria::create_h2_operator] function
 
 */
-        auto K_h = create_h2_operator<n2>(particles,particles,
-                [epsilon](const_position_reference dx,
-                          const_position_reference i,
-                          const_position_reference j) {
-                return std::sqrt(dx.norm() + epsilon);
+        auto K_h = create_h2_operator(particles,particles,n2,
+                [epsilon](const vdouble3& i,
+                          const vdouble3& j) {
+                return std::sqrt((j-i).norm() + epsilon);
+                },
+                [epsilon](const_particle_reference i,
+                          const_particle_reference j) {
+                return std::sqrt(((get<position>(j)-get<position>(i)).norm() + epsilon));
                 });
 
 /*`
@@ -465,29 +461,6 @@ As before, this operator can be applied to an Eigen vector
         Eigen::VectorXd c_7 = K_h*b;
 
 /*`
-
-As noted earlier, the `K_h` operator assumes that the particle positions do not change once
-it is constructed. However, it is a relatively fast operation to change the positions for
-the [*row] particle set (this corresponds to the target particles in fmm terminology). Thus,
-a new h2 operator can also be constructed from an old h2 operator, using a different set of
-row particles.
-
-*/
-        /*
-         * create new particle set
-         */
-        particle_type particles2(N);
-        for (int i=0; i<N; ++i) {
-            get<position>(particles2)[i] = vdouble3(uniform(gen),uniform(gen),uniform(gen));
-        }
-
-        /*
-         * create h2 operator with new row particles
-         */
-        auto K_h2 = create_h2_operator(K_h.get_first_kernel(),particles2);
-
-/*`
-
 
 [endsect]
 
@@ -671,7 +644,113 @@ the result in `m`.
 #endif // HAVE_EIGEN
     }
 
-    void test_Eigen(void) {
+    void test_dense_operator(void) {
+#ifdef HAVE_EIGEN
+        ABORIA_VARIABLE(scalar1,double,"scalar1")
+        ABORIA_VARIABLE(scalar2,double,"scalar2")
+
+    	typedef Particles<std::tuple<scalar1,scalar2>> ParticlesType;
+        typedef position_d<3> position;
+       	ParticlesType particles;
+
+        double s_init1 = 1.0;
+        double s_init2 = 2.0;
+       	double diameter = 0.1;
+
+        ParticlesType::value_type p;
+        get<position>(p) = vdouble3(0,0,0);
+        get<scalar1>(p) = s_init1;
+        get<scalar2>(p) = s_init2;
+       	particles.push_back(p);
+        get<position>(p) = vdouble3(diameter*0.9,0,0);
+       	particles.push_back(p);
+        get<position>(p) = vdouble3(diameter*1.8,0,0);
+       	particles.push_back(p);
+
+        const size_t n = 3;
+
+
+        //      3  3  3
+        // A =  3  3  3
+        //      3  3  3
+        auto A = create_dense_operator(particles,particles,
+                    [](ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                    return get<scalar1>(a) + get<scalar2>(b);
+                    });
+
+        Eigen::VectorXd v(3);
+        v << 1, 2, 3;
+        Eigen::VectorXd ans(3);
+        ans = A*v;
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
+        }
+        v << 0, 2, 1;
+        ans = A*v;
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
+        }
+
+
+        Eigen::MatrixXd A_copy(n,n);
+        Eigen::VectorXd ans_copy(n);
+        A.assemble(A_copy);
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                TS_ASSERT_DELTA(A_copy(i,j),A.coeff(i,j),std::numeric_limits<double>::epsilon()); 
+            }
+        }
+
+        ans_copy = A_copy*v;
+        
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
+
+        //        3   3   3 
+        //       -1  -1  -1
+        // A2 =   3   3   3 
+        //       -1  -1  -1
+        //        3   3   3 
+        typedef Eigen::Matrix<double,2,1> eigen_vector;
+        auto A2 = create_dense_operator(particles,particles,
+                    [](ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                    return eigen_vector(get<scalar1>(a) + get<scalar2>(b),
+                                        get<scalar1>(a) - get<scalar2>(b));
+                    });
+
+        v << 1, 2, 3;
+        ans = A2*v;
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[2*i],  (s_init1+s_init2)*v.sum()); 
+            TS_ASSERT_EQUALS(ans[2*i+1],(s_init1-s_init2)*v.sum()); 
+        }
+        v << 0, 2, 1;
+        ans = A2*v;
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[2*i],  (s_init1+s_init2)*v.sum()); 
+            TS_ASSERT_EQUALS(ans[2*i+1],(s_init1-s_init2)*v.sum()); 
+        }
+
+        A2.assemble(A_copy);
+        for (int i=0; i<2*n; i++) {
+            for (int j=0; j<n; j++) {
+                TS_ASSERT_DELTA(A_copy(i,j),A.coeff(i,j),std::numeric_limits<double>::epsilon()); 
+            }
+        }
+
+        ans_copy = A_copy*v;
+        
+        for (int i=0; i<2*n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
+
+#endif // HAVE_EIGEN
+    }
+
+void test_sparse_operator(void) {
 #ifdef HAVE_EIGEN
         ABORIA_VARIABLE(scalar1,double,"scalar1")
         ABORIA_VARIABLE(scalar2,double,"scalar2")
@@ -701,28 +780,6 @@ the result in `m`.
 
         particles.init_neighbour_search(min,max,periodic);
 
-        //      3  3  3
-        // A =  3  3  3
-        //      3  3  3
-        auto A = create_dense_operator(particles,particles,
-                    [](const position::value_type &dx,
-                       ParticlesType::const_reference a,
-                       ParticlesType::const_reference b) {
-                    return get<scalar1>(a) + get<scalar2>(b);
-                    });
-
-        Eigen::VectorXd v(3);
-        v << 1, 2, 3;
-        Eigen::VectorXd ans(3);
-        ans = A*v;
-        for (int i=0; i<n; i++) {
-            TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
-        }
-        v << 0, 2, 1;
-        ans = A*v;
-        for (int i=0; i<n; i++) {
-            TS_ASSERT_EQUALS(ans[i],(s_init1+s_init2)*v.sum()); 
-        }
 
         //      3  3  0
         // C =  3  3  3
@@ -735,13 +792,14 @@ the result in `m`.
                         return get<scalar1>(a) + get<scalar2>(b);
                     });
 
+        Eigen::VectorXd v(n);
         v << 1, 2, 3;
 
 
         // 3  3  0   1   9
         // 3  3  3 * 2 = 18
         // 0  3  3   3   15
-        ans = C*v;
+        Eigen::VectorXd ans = C*v;
         
         for (int i=0; i<n; i++) {
             double sum = 0;
@@ -787,10 +845,76 @@ the result in `m`.
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
 
+        //       3  3  0
+        //      -1 -1  0
+        // C2 =  3  3  3
+        //      -1 -1 -1
+        //       0  3  3
+        //       0 -1 -1
+        typedef Eigen::Matrix<double,2,1> eigen_vector;
+        auto C2 = create_sparse_operator(particles,particles,
+                    diameter,
+                    [](const position::value_type &dx,
+                       ParticlesType::const_reference a,
+                       ParticlesType::const_reference b) {
+                        return eigen_vector(get<scalar1>(a) + get<scalar2>(b),
+                                        get<scalar1>(a) - get<scalar2>(b));
+                    });
+
+        v << 1, 2, 3;
+
+
+        // 3  3  0   1   9
+        // 3  3  3 * 2 = 18
+        // 0  3  3   3   15
+        ans = C2*v;
+        
+        for (int i=0; i<n; i++) {
+            double sum = 0;
+            for (int j=0; j<n; j++) {
+                if ((get<id>(particles[i]) == 0) && (get<id>(particles[j]) == 2)) {
+                    sum += 0;
+                } else if ((get<id>(particles[i]) == 2) && (get<id>(particles[j]) == 0)) {
+                    sum += 0;
+                } else {
+                    sum += (s_init1+s_init2)*v[j];
+                }
+            }
+            TS_ASSERT_EQUALS(ans[i],sum); 
+        }
+
+        C2.assemble(C_copy);
+        for (int i=0; i<n; i++) {
+            for (int j=0; j<n; j++) {
+                TS_ASSERT_DELTA(C_copy(i,j),C.coeff(i,j),std::numeric_limits<double>::epsilon()); 
+            }
+        }
+
+        ans_copy = C_copy*v;
+        
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
+
+        C2.assemble(C_sparse);
+        TS_ASSERT_EQUALS(C_sparse.nonZeros(),7);
+        for (int k=0; k<C_sparse.outerSize(); ++k) {
+            for (Eigen::SparseMatrix<double>::InnerIterator it(C_sparse,k); it; ++it) {
+                TS_ASSERT_EQUALS(it.value(),C.coeff(it.row(),it.col())); 
+            }
+        }
+
+        ans_copy = C_sparse*v;
+        
+        for (int i=0; i<n; i++) {
+            TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
+        }
+
 #endif // HAVE_EIGEN
     }
 
-    void test_Eigen_block(void) {
+
+    void test_block_operator(void) {
 #ifdef HAVE_EIGEN
         ABORIA_VARIABLE(scalar1,double,"scalar1")
         ABORIA_VARIABLE(scalar2,double,"scalar2")
@@ -832,8 +956,7 @@ the result in `m`.
         // A =  2  2  2
         //      3  3  3
         auto A = create_dense_operator(particles,particles,
-                    [](const position::value_type &dx,
-                       ParticlesType::const_reference a,
+                    [](ParticlesType::const_reference a,
                        ParticlesType::const_reference b) {
                     return get<scalar1>(a);
                     });
@@ -851,8 +974,7 @@ the result in `m`.
         //     0.2
         //     0.3
         auto B = create_dense_operator(particles,augment,
-                    [](const position::value_type &dx,
-                       ParticlesType::const_reference a,
+                    [](ParticlesType::const_reference a,
                        ParticlesType::const_reference b) {
                     return get<scalar2>(a);
                     });
@@ -860,8 +982,7 @@ the result in `m`.
 
         // C = 0.1 0.2 0.3
         auto C = create_dense_operator(augment,particles,
-                    [](const position::value_type &dx,
-                       ParticlesType::const_reference a,
+                    [](ParticlesType::const_reference a,
                        ParticlesType::const_reference b) {
                     return get<scalar2>(b);
                     });
@@ -925,6 +1046,9 @@ the result in `m`.
 
 #endif // HAVE_EIGEN
     }
+
+        
+
 
 
 };
