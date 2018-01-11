@@ -381,11 +381,12 @@ namespace detail {
         typedef typename Elements::position position;
         typedef detail::bbox<dimension> box_type;
         typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix;
+        typedef Eigen::Matrix<double,Repeats,Repeats> Block;
 
         size_t m_order;
         size_t m_ncheb;
         box_type m_box;
-        detail::ChebyshevRn<dimension> m_cheb;
+        mutable detail::ChebyshevRn<dimension> m_cheb;
         const Elements& m_elements;
 
         integrate_chebyshev(const Elements& elements, const size_t order, const box_type box):
@@ -395,13 +396,16 @@ namespace detail {
             m_cheb(order,box),
             m_elements(elements) 
         {}
-
-        void operator()(eigen_matrix& result) const {
+    
+        template <typename Derived>
+        void operator()(const Eigen::DenseBase<Derived>& result) const {
             for (int i = 0; i < m_elements.size(); ++i) {
                 m_cheb.set_position(get<position>(m_elements)[i]);
                 lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
-                    result.block<Repeats,Repeats>(i*Repeats,j*Repeats) = m_cheb(*mj); 
+                    const_cast<Eigen::DenseBase<Derived>&>(result)
+                                    .template block<Repeats,Repeats>(i*Repeats,j*Repeats) 
+                                        = Block::Constant(m_cheb(*mj)); 
                 }
             }
         }
@@ -423,11 +427,12 @@ namespace detail {
         typedef detail::bbox<dimension> box_type;
         typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> eigen_matrix;
         typedef typename detail::GaussLegendre<QuadratureOrder> quadrature_type;
+        typedef Eigen::Matrix<double,Repeats,Repeats> Block;
 
         size_t m_order;
         size_t m_ncheb;
         box_type m_box;
-        detail::ChebyshevRn<dimension> m_cheb;
+        mutable detail::ChebyshevRn<dimension> m_cheb;
         const Elements& m_elements;
 
         integrate_chebyshev(const Elements& elements, const size_t order, const box_type box):
@@ -438,8 +443,9 @@ namespace detail {
             m_elements(elements)
         {}
 
-        void operator()(eigen_matrix& result) const {
-            result = eigen_matrix::Zero(m_elements.size()*Repeats,m_ncheb);
+        template <typename Derived>
+        void operator()(const Eigen::DenseBase<Derived>& result) const {
+            const_cast<Eigen::DenseBase<Derived>&>(result).setZero();
             const auto& query = m_elements.get_particles().get_query();
             for (int i = 0; i < m_elements.size(); ++i) {
                 auto pa = query.find(get<variable_type>(m_elements)[i][0]);
@@ -455,7 +461,9 @@ namespace detail {
                     m_cheb.set_position(mapped_node);
                     lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                     for (int j=0; j<m_ncheb; ++j,++mj) {
-                        result.block<Repeats,Repeats>(i*Repeats,j*Repeats) += quadrature_type::weights[q]*cheb_rn(*mj);
+                        const_cast<Eigen::DenseBase<Derived>&>(result)
+                                .template block<Repeats,Repeats>(i*Repeats,j*Repeats) 
+                                        += Block::Constant(quadrature_type::weights[q]*cheb_rn(*mj));
                     }
                 }
             }

@@ -251,7 +251,7 @@ assemble_block_h2matrix(pcblock b, uint bname,
     const Kernel& kernel = *std::get<1>(data_cast);
     const RowParticles& row_particles = *std::get<2>(data_cast);
     const ColParticles& col_particles = *std::get<3>(data_cast);
-    ph2matrix* enum_h2 = std::get<3>(data_cast);
+    ph2matrix* enum_h2 = std::get<4>(data_cast);
     ph2matrix h2 = enum_h2[bname];
 
     if (h2->u) {

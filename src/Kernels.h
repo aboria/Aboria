@@ -75,8 +75,8 @@ namespace Aboria {
         typedef typename Eigen::Matrix<Scalar,BlockCols,1> BlockRHSVector;
         typedef typename Eigen::Matrix<Scalar,BlockRows,1> BlockLHSVector;
 
-        typedef RowElements row_particles_type;
-        typedef ColElements col_particles_type;
+        typedef RowElements row_elements_type;
+        typedef ColElements col_elements_type;
         typedef F function_type;
         typedef size_t Index;
         enum {
@@ -84,40 +84,40 @@ namespace Aboria {
             RowsAtCompileTime = -1
         };
 
-        KernelBase(const RowElements& row_particles,
-                   const ColElements& col_particles,
+        KernelBase(const RowElements& row_elements,
+                   const ColElements& col_elements,
                    const F& function): 
             m_function(function),
-            m_row_particles(row_particles), 
-            m_col_particles(col_particles)
+            m_row_elements(row_elements), 
+            m_col_elements(col_elements)
         {};
 
-        RowElements& get_row_particles() {
-            return m_row_particles;
+        RowElements& get_row_elements() {
+            return m_row_elements;
         }
 
-        const RowElements& get_row_particles() const {
-            return m_row_particles;
+        const RowElements& get_row_elements() const {
+            return m_row_elements;
         }
 
-        ColElements& get_col_particles() {
-            return m_col_particles;
+        ColElements& get_col_elements() {
+            return m_col_elements;
         }
 
         const function_type& get_kernel_function() const {
             return m_function;
         }
 
-        const ColElements& get_col_particles() const {
-            return m_col_particles;
+        const ColElements& get_col_elements() const {
+            return m_col_elements;
         }
 
         size_t rows() const {
-            return m_row_particles.size()*BlockRows;
+            return m_row_elements.size()*BlockRows;
         }
 
         size_t cols() const {
-            return m_col_particles.size()*BlockCols;
+            return m_col_elements.size()*BlockCols;
         }
 
 
@@ -128,8 +128,8 @@ namespace Aboria {
             const int ioffset = i - pi*BlockRows;
             const int pj = std::floor(static_cast<float>(j)/BlockCols);
             const int joffset = j - pj*BlockCols;
-            const_row_reference ai = m_row_particles[pi];
-            const_col_reference bj = m_col_particles[pj];
+            const_row_reference ai = m_row_elements[pi];
+            const_col_reference bj = m_col_elements[pj];
             return m_function(ai,bj);
         }
 
@@ -154,8 +154,8 @@ namespace Aboria {
        }
 
     protected:
-        const RowElements &m_row_particles;
-        const ColElements &m_col_particles;
+        const RowElements &m_row_elements;
+        const ColElements &m_col_elements;
         const F& m_function;
     };
 
@@ -175,18 +175,18 @@ namespace Aboria {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelDense(const RowElements& row_particles,
-                    const ColElements& col_particles,
-                    const F& function): base_type(row_particles,
-                                                  col_particles,
+        KernelDense(const RowElements& row_elements,
+                    const ColElements& col_elements,
+                    const F& function): base_type(row_elements,
+                                                  col_elements,
                                                   function) 
         {};
 
         template<typename MatrixType>
         void assemble(const MatrixType &matrix) const {
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
             const size_t na = a.size();
             const size_t nb = b.size();
 
@@ -199,7 +199,7 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference  bj = b[j];
-                    const_cast< MatrixType& >(matrix).template block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) = Block(this->m_function(ai,bj));
+                    const_cast< MatrixType& >(matrix).template block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) = static_cast<Block>(this->m_function(ai,bj));
                 }
             }
         }
@@ -209,8 +209,8 @@ namespace Aboria {
                       const size_t startI=0, const size_t startJ=0
                       ) const {
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -221,7 +221,7 @@ namespace Aboria {
                 const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
-                    const Block element = this->m_function(ai,bj);
+                    const Block element = static_cast<Block>(this->m_function(ai,bj));
                     for (int ii = 0; ii < BlockRows; ++ii) {
                         for (int jj = 0; jj < BlockCols; ++jj) {
                             triplets.push_back(Triplet(i*BlockRows+ii,
@@ -241,8 +241,8 @@ namespace Aboria {
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
             typedef Eigen::Matrix<Scalar,BlockRows,1> row_vector;
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -271,8 +271,8 @@ namespace Aboria {
         void evaluate(std::vector<LHSType> &lhs, 
                 const std::vector<RHSType> &rhs) const {
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -313,18 +313,18 @@ namespace Aboria {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelMatrix(const RowElements& row_particles,
-                    const ColElements& col_particles,
-                    const F& function): base_type(row_particles,
-                                                  col_particles,
+        KernelMatrix(const RowElements& row_elements,
+                    const ColElements& col_elements,
+                    const F& function): base_type(row_elements,
+                                                  col_elements,
                                                   function) 
         {
             assemble_matrix(); 
         };
 
         void assemble_matrix() {
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const bool is_periodic = !a.get_periodic().any();
 
@@ -335,7 +335,7 @@ namespace Aboria {
                     const_col_reference bj = b[j];
                     m_matrix.template block<BlockRows,BlockCols>(
                                            i*BlockRows,j*BlockCols) = 
-                                                Block(this->m_function(ai,bj));
+                                                static_cast<Block>(this->m_function(ai,bj));
                 }
             }
         }
@@ -357,8 +357,8 @@ namespace Aboria {
                 const std::vector<RHSType> &rhs) const {
 
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -424,16 +424,16 @@ namespace Aboria {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelChebyshev(const RowElements& row_particles,
-                        const ColElements& col_particles,
+        KernelChebyshev(const RowElements& row_elements,
+                        const ColElements& col_elements,
                         const unsigned int n,
                         const PositionF& function): m_order(n),
                                             m_ncheb(std::pow(n,dimension)),
                                             m_start(0),
                                             m_end(n),
                                             m_position_function(function),
-                                            base_type(row_particles,
-                                                  col_particles,
+                                            base_type(row_elements,
+                                                  col_elements,
                                                   F(function)) {
             set_n(n);
         };
@@ -451,14 +451,14 @@ namespace Aboria {
 
         void update_row_positions() {
             detail::integrate_chebyshev<RowElements,BlockRows,QuadratureOrder> integrate(
-                                                this->row_elements,
+                                                this->m_row_elements,
                                                 m_order,
                                                 detail::bbox<dimension>(
-                                                    this->row_elements.get_min(),
-                                                    this->row_elements.get_max()));
+                                                    this->m_row_elements.get_min(),
+                                                    this->m_row_elements.get_max()));
                                                        
             // fill row_Rn matrix
-            m_row_Rn_matrix.resize(this->row_elements.size()*BlockRows,m_ncheb*BlockRows);
+            m_row_Rn_matrix.resize(this->m_row_elements.size()*BlockRows,m_ncheb*BlockRows);
             integrate(m_row_Rn_matrix);
         }
 
@@ -473,21 +473,21 @@ namespace Aboria {
                     const double_d pj = row_Rn.get_position(*mj);
                     m_kernel_matrix.template block<BlockRows,BlockCols>(
                                         i*BlockRows,j*BlockCols) =
-                                            Block(m_position_function(pi,pj));
+                                            static_cast<Block>(m_position_function(pi,pj));
                 }
             }
         }
 
         void update_col_positions() {
             detail::integrate_chebyshev<ColElements,BlockCols,QuadratureOrder> integrate(
-                                            this->col_elements,
+                                            this->m_col_elements,
                                             m_order,
                                             detail::bbox<dimension>(
-                                                    this->col_elements.get_min(),
-                                                    this->col_elements.get_max()));
+                                                    this->m_col_elements.get_min(),
+                                                    this->m_col_elements.get_max()));
              
             // fill row_Rn matrix
-            m_col_Rn_matrix.resize(m_ncheb*BlockCols,this->col_elements.size()*BlockCols);
+            m_col_Rn_matrix.resize(m_ncheb*BlockCols,this->m_col_elements.size()*BlockCols);
             integrate(m_col_Rn_matrix.transpose());
             
         }
@@ -499,8 +499,8 @@ namespace Aboria {
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             CHECK(!b.get_periodic().any(),"chebyshev operator assumes not periodic");
             ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
@@ -529,7 +529,6 @@ namespace Aboria {
         typedef H2LibMatrix h2_matrix_type;
 
         h2_matrix_type m_h2_matrix;
-        PositionF m_position_function;
 
     public:
         typedef typename base_type::Block Block;
@@ -543,19 +542,19 @@ namespace Aboria {
                       "only implemented for particle elements");
 
 
-        KernelH2(const RowElements& row_particles,
-                 const ColElements& col_particles,
+        KernelH2(const RowElements& row_elements,
+                 const ColElements& col_elements,
                  const int order, 
                  const PositionF& position_function,
                  const F& function,
                  const double eta = 1.0):
-                          m_h2_matrix(row_particles,col_particles,
+                          m_h2_matrix(row_elements,col_elements,
                                       expansions_type(
                                         order,
                                         position_function),
                                       function,eta),
-                          base_type(row_particles,
-                                  col_particles,
+                          base_type(row_elements,
+                                  col_elements,
                                   function) {
                           }
 
@@ -605,16 +604,16 @@ namespace Aboria {
                       "only implemented for particle elements");
 
 
-        KernelFMM(const RowElements& row_particles,
-                        const ColElements& col_particles,
+        KernelFMM(const RowElements& row_elements,
+                        const ColElements& col_elements,
                         const PositionF& position_function,
                         const F& function): 
                                 m_expansions(position_function),
-                                m_fmm(col_particles,
+                                m_fmm(col_elements,
                                       m_expansions,
                                       function),
-                                base_type(row_particles,
-                                      col_particles,
+                                base_type(row_elements,
+                                      col_elements,
                                       function) {
         };
 
@@ -623,7 +622,7 @@ namespace Aboria {
         /// accumulates the result in vector lhs
         template<typename VectorLHS,typename VectorRHS>
         void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
-            m_fmm.matrix_vector_multiply(this->m_row_particles,lhs,rhs);
+            m_fmm.matrix_vector_multiply(this->m_row_elements,lhs,rhs);
         }
     };
 
@@ -641,32 +640,38 @@ namespace Aboria {
         static_assert(detail::is_particles<RowElements>::value && 
                       detail::is_particles<ColElements>::value,
                       "only implemented for particle elements");
+
+        FWithDx m_dx_function;
+        FRadius m_radius_function;
     public:
         typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelSparse(const RowElements& row_particles,
-                    const ColElements& col_particles,
+        KernelSparse(const RowElements& row_elements,
+                    const ColElements& col_elements,
                     const FRadius& radius_function,
                     const FWithDx& withdx_function): 
                         m_radius_function(radius_function),
-                        base_type(row_particles,
-                                  col_particles,
-                                  F(col_particles,radius_function,withdx_function)
+                        m_dx_function(withdx_function),
+                        base_type(row_elements,
+                                  col_elements,
+                                  F(col_elements,radius_function,withdx_function)
                                   )
         {};
 
+        /*
+         * shouldn't need this anymore....
         Block coeff(const size_t i, const size_t j) const {
             const int pi = std::floor(static_cast<float>(i)/BlockRows);
             const int ioffset = i - pi*BlockRows;
             const int pj = std::floor(static_cast<float>(j)/BlockCols);
             const int joffset = j - pj*BlockCols;
-            ASSERT(pi < this->m_row_particles.size(),"pi greater than a.size()");
-            ASSERT(pj < this->m_col_particles.size(),"pj greater than b.size()");
-            const_row_reference ai = this->m_row_particles[pi];
-            const_col_reference bj = this->m_col_particles[pj];
+            ASSERT(pi < this->m_row_elements.size(),"pi greater than a.size()");
+            ASSERT(pj < this->m_col_elements.size(),"pj greater than b.size()");
+            const_row_reference ai = this->m_row_elements[pi];
+            const_col_reference bj = this->m_col_elements[pj];
             const_position_reference dx = get<position>(bj)-get<position>(ai);
             if (dx.squaredNorm() < std::pow(m_radius_function(ai),2)) {
                 return this->m_function(dx,ai,bj)(ioffset,joffset);
@@ -674,12 +679,13 @@ namespace Aboria {
                 return 0.0;
             }
         }
+        */
 
         template<typename MatrixType>
         void assemble(const MatrixType &matrix) const {
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -694,9 +700,9 @@ namespace Aboria {
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    const_cast< MatrixType& >(matrix).block<BlockRows,BlockCols>(
+                    const_cast< MatrixType& >(matrix).template block<BlockRows,BlockCols>(
                             i*BlockRows,j*BlockCols) = 
-                                                Block(this->m_function(dx,ai,bj));
+                                                static_cast<Block>(m_dx_function(dx,ai,bj));
 
                 }
             }
@@ -707,8 +713,8 @@ namespace Aboria {
                       const size_t startI=0, const size_t startJ=0
                       ) const {
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -722,7 +728,7 @@ namespace Aboria {
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    const Block element = this->m_function(dx,ai,bj);
+                    const Block element = static_cast<Block>(m_dx_function(dx,ai,bj));
                     for (int ii = 0; ii < BlockRows; ++ii) {
                         for (int jj = 0; jj < BlockCols; ++jj) {
                             triplets.push_back(Triplet(i*BlockRows+ii+startI,
@@ -742,8 +748,8 @@ namespace Aboria {
         void evaluate(std::vector<LHSType> &lhs, 
                 const std::vector<RHSType> &rhs) const {
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -759,7 +765,7 @@ namespace Aboria {
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
-                    lhs[i] += this->m_function(dx,ai,bj)*rhs[j];
+                    lhs[i] += m_dx_function(dx,ai,bj)*rhs[j];
                 }
             }
        }
@@ -772,8 +778,8 @@ namespace Aboria {
             ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
             ASSERT(this->cols() == rhs.rows(),"rhs vector has incompatible size");
 
-            const RowElements& a = this->m_row_particles;
-            const ColElements& b = this->m_col_particles;
+            const RowElements& a = this->m_row_elements;
+            const ColElements& b = this->m_col_elements;
 
             const size_t na = a.size();
             const size_t nb = b.size();
@@ -787,14 +793,12 @@ namespace Aboria {
                     const_col_reference bj = detail::get_impl<0>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     lhs.template segment<BlockRows>(i*BlockRows) += 
-                        this->m_function(dx,ai,bj)
+                        m_dx_function(dx,ai,bj)
                             *rhs.template segment<BlockCols>(j*BlockCols);
                 }
             }
        }
 
-    private:
-        FRadius m_radius_function;
     };
 
     template<typename RowElements, typename ColElements, typename F,
@@ -812,11 +816,11 @@ namespace Aboria {
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
 
-        KernelSparseConst(const RowElements& row_particles,
-                    const ColElements& col_particles,
+        KernelSparseConst(const RowElements& row_elements,
+                    const ColElements& col_elements,
                     const double radius,
-                    const F& function): base_type(row_particles,
-                                                  col_particles,
+                    const F& function): base_type(row_elements,
+                                                  col_elements,
                                                   RadiusFunction(radius),
                                                   function) 
         {}
@@ -837,10 +841,10 @@ namespace Aboria {
         typedef typename base_type::Block Block;
         typedef typename base_type::Scalar Scalar;
 
-        KernelZero(const RowElements& row_particles,
-                   const ColElements& col_particles): 
-            base_type(row_particles,
-                      col_particles,
+        KernelZero(const RowElements& row_elements,
+                   const ColElements& col_elements): 
+            base_type(row_elements,
+                      col_elements,
                       F()) 
         {};
 

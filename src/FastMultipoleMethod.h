@@ -200,8 +200,9 @@ class FastMultipoleMethod: public FastMultipoleMethodBase<Expansions,Kernel,ColP
     static const unsigned int dimension = base_type::dimension;
 public:
     FastMultipoleMethod(const ColParticles &col_particles, 
-                        const Expansions& expansions):
-        base_type(col_particles,expansions)
+                        const Expansions& expansions,
+                        const Kernel& kernel):
+        base_type(col_particles,expansions,kernel)
     {}
 
     // target_vector += A*source_vector
@@ -283,8 +284,9 @@ public:
     template <typename VectorType>
     FastMultipoleMethodWithSource(const ColParticles& col_particles, 
                         const Expansions& expansions,
+                        const Kernel& kernel,
                         const VectorType& source_vector):
-        base_type(col_particles,expansions)
+        base_type(col_particles,expansions,kernel)
     {
         const size_t n = this->m_query->number_of_buckets();
         this->m_W.resize(n);
