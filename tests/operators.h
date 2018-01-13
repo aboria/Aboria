@@ -200,7 +200,7 @@ If we wish to perform the same operator, but using a traditional matrix, we can
 use `K`'s [memberref Aboria::MatrixReplacement::assemble] member function to
 fill in a normal Eigen matrix with the values of the kernel function
 $K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$. This might be useful if you wish to perform
-the same operation repeatedly, or in an iterative solver.
+the same operation repeatedly, or in one of Eigen's direct solvers.
 
 */
         Eigen::MatrixXd K_eigen(N,N);
@@ -734,10 +734,11 @@ the result in `m`.
             TS_ASSERT_EQUALS(ans[2*i+1],(s_init1-s_init2)*v.sum()); 
         }
 
+        A_copy.resize(2*n,n);
         A2.assemble(A_copy);
         for (int i=0; i<2*n; i++) {
             for (int j=0; j<n; j++) {
-                TS_ASSERT_DELTA(A_copy(i,j),A.coeff(i,j),std::numeric_limits<double>::epsilon()); 
+                TS_ASSERT_DELTA(A_copy(i,j),A2.coeff(i,j),std::numeric_limits<double>::epsilon()); 
             }
         }
 
@@ -864,29 +865,24 @@ void test_sparse_operator(void) {
         v << 1, 2, 3;
 
 
-        // 3  3  0   1   9
-        // 3  3  3 * 2 = 18
-        // 0  3  3   3   15
+        //  3  3  0   1    9
+        // -1 -1  0 * 2 = -3
+        //  3  3  3   3   18 
+        // -1 -1 -1       -7
+        //  0  3  3       15
+        //  0 -1 -1       -5
         ans = C2*v;
         
+        std::vector<double> check = {9,-3,18,-7,15,-5};
         for (int i=0; i<n; i++) {
-            double sum = 0;
-            for (int j=0; j<n; j++) {
-                if ((get<id>(particles[i]) == 0) && (get<id>(particles[j]) == 2)) {
-                    sum += 0;
-                } else if ((get<id>(particles[i]) == 2) && (get<id>(particles[j]) == 0)) {
-                    sum += 0;
-                } else {
-                    sum += (s_init1+s_init2)*v[j];
-                }
-            }
-            TS_ASSERT_EQUALS(ans[i],sum); 
+            TS_ASSERT_EQUALS(ans[i],check[i]); 
         }
 
+        C_copy.resize(2*n,n);
         C2.assemble(C_copy);
         for (int i=0; i<n; i++) {
             for (int j=0; j<n; j++) {
-                TS_ASSERT_DELTA(C_copy(i,j),C.coeff(i,j),std::numeric_limits<double>::epsilon()); 
+                TS_ASSERT_DELTA(C_copy(i,j),C2.coeff(i,j),std::numeric_limits<double>::epsilon()); 
             }
         }
 
@@ -896,11 +892,12 @@ void test_sparse_operator(void) {
             TS_ASSERT_EQUALS(ans[i],ans_copy[i]); 
         }
 
+        C_sparse.resize(2*n,n);
         C2.assemble(C_sparse);
-        TS_ASSERT_EQUALS(C_sparse.nonZeros(),7);
+        TS_ASSERT_EQUALS(C_sparse.nonZeros(),14);
         for (int k=0; k<C_sparse.outerSize(); ++k) {
             for (Eigen::SparseMatrix<double>::InnerIterator it(C_sparse,k); it; ++it) {
-                TS_ASSERT_EQUALS(it.value(),C.coeff(it.row(),it.col())); 
+                TS_ASSERT_EQUALS(it.value(),C2.coeff(it.row(),it.col())); 
             }
         }
 

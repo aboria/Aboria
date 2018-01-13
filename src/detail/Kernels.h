@@ -333,6 +333,11 @@ namespace detail {
         typedef typename std::result_of<F(const_position_reference,
                                           const_row_reference, 
                                           const_col_reference)>::type FunctionReturn;
+        typedef typename std::conditional<
+                            std::is_arithmetic<FunctionReturn>::value,
+                            Eigen::Matrix<FunctionReturn,1,1>,
+                            FunctionReturn>::type Block;
+
 
         F m_f;
         FRadius m_fradius;
@@ -340,15 +345,15 @@ namespace detail {
 
         sparse_kernel(const ColElements& col, const FRadius fradius, const F f):
             m_f(f),m_fradius(fradius),m_col(col) {}
-        FunctionReturn operator()(const_row_reference a,
+        Block operator()(const_row_reference a,
                                   const_col_reference b) const {
 
             const double_d dx = m_col.correct_dx_for_periodicity(
                                     get<position>(b) - get<position>(a));
             if (dx.squaredNorm() < std::pow(m_fradius(a),2)) {
-                return m_f(dx,a,b);
+                return Block(m_f(dx,a,b));
             } else {
-                return 0.0;
+                return Block::Zero();
             }
         }
     };
@@ -393,7 +398,7 @@ namespace detail {
             m_order(order),
             m_ncheb(std::pow(order,dimension)),
             m_box(box),
-            m_cheb(order,box),
+            m_cheb(order,m_box),
             m_elements(elements) 
         {}
     

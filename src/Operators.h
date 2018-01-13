@@ -167,7 +167,7 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
         void assemble(Eigen::DenseBase<Derived>& matrix) const {
             const size_t na = rows();
             const size_t nb = cols();
-            matrix.resize(na,nb);
+            //matrix.resize(na,nb);
             CHECK((matrix.rows() == na) && (matrix.cols() == nb), "matrix size is not compatible with expression.");
             assemble_impl(matrix,detail::make_index_sequence<NI*NJ>());
         }

@@ -40,6 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <type_traits>
 
 #include "detail/Chebyshev.h"
+
 #include <Eigen/Core>
 
 #include "FastMultipoleMethod.h"
@@ -128,9 +129,8 @@ namespace Aboria {
             const int ioffset = i - pi*BlockRows;
             const int pj = std::floor(static_cast<float>(j)/BlockCols);
             const int joffset = j - pj*BlockCols;
-            const_row_reference ai = m_row_elements[pi];
-            const_col_reference bj = m_col_elements[pj];
-            return m_function(ai,bj);
+            const Block block(m_function(m_row_elements[pi],m_col_elements[pj]));
+            return block(ioffset,joffset);
         }
 
         template<typename MatrixType>
@@ -156,7 +156,7 @@ namespace Aboria {
     protected:
         const RowElements &m_row_elements;
         const ColElements &m_col_elements;
-        const F& m_function;
+        const F m_function;
     };
 
     template<typename RowElements, typename ColElements, typename F>
@@ -165,6 +165,7 @@ namespace Aboria {
         typedef KernelBase<RowElements,ColElements,F> base_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename base_type::double_d double_d;
+        typedef typename base_type::position position;
         typedef typename base_type::int_d int_d;
         typedef typename base_type::const_row_reference const_row_reference;
         typedef typename base_type::const_col_reference const_col_reference;
@@ -182,8 +183,8 @@ namespace Aboria {
                                                   function) 
         {};
 
-        template<typename MatrixType>
-        void assemble(const MatrixType &matrix) const {
+        template<typename Derived>
+        void assemble(const Eigen::DenseBase<Derived> &matrix) const {
 
             const RowElements& a = this->m_row_elements;
             const ColElements& b = this->m_col_elements;
@@ -196,10 +197,10 @@ namespace Aboria {
             const bool is_periodic = !a.get_periodic().any();
 
             for (size_t i=0; i<na; ++i) {
-                const_row_reference ai = a[i];
                 for (size_t j=0; j<nb; ++j) {
-                    const_col_reference  bj = b[j];
-                    const_cast< MatrixType& >(matrix).template block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) = static_cast<Block>(this->m_function(ai,bj));
+                    const_cast< Eigen::DenseBase<Derived>& >(matrix)
+                        .template block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) = 
+                                Block(this->m_function(a[i],b[j]));
                 }
             }
         }
@@ -224,9 +225,9 @@ namespace Aboria {
                     const Block element = static_cast<Block>(this->m_function(ai,bj));
                     for (int ii = 0; ii < BlockRows; ++ii) {
                         for (int jj = 0; jj < BlockCols; ++jj) {
-                            triplets.push_back(Triplet(i*BlockRows+ii,
-                                                     j*BlockCols+jj,
-                                                     element(ii,jj)));
+                            triplets.push_back(Triplet(i*BlockRows+ii+startI,
+                                                       j*BlockCols+jj+startJ,
+                                                       element(ii,jj)));
                         }
                     }
                 }
@@ -508,7 +509,7 @@ namespace Aboria {
 
             //First compute the weights at the Chebyshev nodes ym 
             //by anterpolation 
-            m_W = m_col_Rn_matrix*rhs;
+            m_W = m_col_Rn_matrix*rhs.derived();
 
             //Next compute f ðxÞ at the Chebyshev nodes xl:
             m_fcheb = m_kernel_matrix*m_W;
@@ -587,7 +588,7 @@ namespace Aboria {
         typedef typename ColElements::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
         typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
-        typedef FastMultipoleMethod<expansions_type,F,ColElements> fmm_type;
+        typedef FastMultipoleMethod<expansions_type,F,RowElements,ColElements> fmm_type;
 
         expansions_type m_expansions;
         fmm_type m_fmm;
@@ -609,7 +610,8 @@ namespace Aboria {
                         const PositionF& position_function,
                         const F& function): 
                                 m_expansions(position_function),
-                                m_fmm(col_elements,
+                                m_fmm(row_elements,
+                                      col_elements,
                                       m_expansions,
                                       function),
                                 base_type(row_elements,
@@ -622,7 +624,7 @@ namespace Aboria {
         /// accumulates the result in vector lhs
         template<typename VectorLHS,typename VectorRHS>
         void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {
-            m_fmm.matrix_vector_multiply(this->m_row_elements,lhs,rhs);
+            m_fmm.matrix_vector_multiply(lhs,rhs);
         }
     };
 
