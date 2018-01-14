@@ -61,22 +61,22 @@ class FMMTest : public CxxTest::TestSuite {
     ABORIA_VARIABLE(target_fmm,double,"target fmm");
 
 public:
-    template <unsigned int N, typename ParticlesType, typename KernelFunction>
-    void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const double scale) {
+    template <unsigned int N, typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
+    void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const P2PKernelFunction& p2pkernel, const double scale) {
         typedef typename ParticlesType::position position;
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
 
         auto t0 = Clock::now();
-        auto fmm = make_fmm_with_source(particles,
+        auto fmm = make_fmm(particles,particles,
                         make_black_box_expansion<dimension,N>(kernel),
-                        get<source>(particles));
+                        p2pkernel);
         auto t1 = Clock::now();
         std::chrono::duration<double> time_fmm_setup = t1 - t0;
+        std::fill(std::begin(get<target_fmm>(particles)),std::end(get<target_fmm>(particles)),
+                  0.0);
         t0 = Clock::now();
-        for (reference p: particles) {
-            get<target_fmm>(p) = fmm.evaluate_at_point(get<position>(p),get<source>(particles));
-        }
+        fmm.matrix_vector_multiply(get<target_fmm>(particles),get<source>(particles));
         t1 = Clock::now();
         std::chrono::duration<double> time_fmm_eval = t1 - t0;
 
@@ -88,7 +88,7 @@ public:
                 [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
                 );
 
-        std::cout << "for fmm with source:" <<std::endl;
+        std::cout << "for fmm:" <<std::endl;
         std::cout << "dimension = "<<dimension<<". N = "<<N<<". L2_fmm error = "<<L2_fmm<<". L2_fmm relative error is "<<std::sqrt(L2_fmm/scale)<<". time_fmm_setup = "<<time_fmm_setup.count()<<". time_fmm_eval = "<<time_fmm_eval.count()<<std::endl;
 
         if (N == 3) {
@@ -101,7 +101,7 @@ public:
         }
         t0 = Clock::now();
         auto fmm_eigen = create_fmm_operator<N>(particles,particles,
-                                    kernel);
+                                    kernel,p2pkernel);
         t1 = Clock::now();
         time_fmm_setup = t1 - t0;
 
@@ -149,6 +149,7 @@ public:
 
         typedef Particles<std::tuple<source,target_manual,target_fmm>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
+        typedef typename ParticlesType::const_reference const_reference;
         ParticlesType particles(N);
 
         for (int i=0; i<N; i++) {
@@ -174,8 +175,11 @@ public:
                        std::begin(get<source>(particles)), source_fn);
 
         const double c = 0.01;
-        auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
-            return std::sqrt(dx.squaredNorm() + c); 
+        auto kernel = [&c](const double_d &pa, const double_d &pb) {
+            return std::sqrt((pb-pa).squaredNorm() + c); 
+        };
+        auto p2pkernel = [&c](const_reference pa, const_reference pb) {
+            return std::sqrt((get<position>(pb)-get<position>(pa)).squaredNorm() + c); 
         };
 
 
@@ -188,7 +192,7 @@ public:
             const double_d pi = get<position>(particles)[i];
             for (int j=0; j<N; j++) {
                 const double_d pj = get<position>(particles)[j];
-                get<target_manual>(particles)[i] += kernel(pi-pj,pi,pj)*get<source>(particles)[j];
+                get<target_manual>(particles)[i] += kernel(pi,pj)*get<source>(particles)[j];
             }
         }
         auto t1 = Clock::now();
@@ -203,9 +207,9 @@ public:
 
         std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<scale<<std::endl;
 
-        helper_fast_methods_calculate<1>(particles,kernel,scale);
-        helper_fast_methods_calculate<2>(particles,kernel,scale);
-        helper_fast_methods_calculate<3>(particles,kernel,scale);
+        helper_fast_methods_calculate<1>(particles,kernel,p2pkernel,scale);
+        helper_fast_methods_calculate<2>(particles,kernel,p2pkernel,scale);
+        helper_fast_methods_calculate<3>(particles,kernel,p2pkernel,scale);
     }
 
     
@@ -257,21 +261,17 @@ public:
             field_just_self_leaf2[i] = 0;
             for (int j = 0; j < n; ++j) {
                 field_just_self_leaf1[i] += source_leaf1[j]
-                    *expansions.m_K(particles_in_leaf1[j]-particles_in_leaf1[i],
-                                    particles_in_leaf1[i],particles_in_leaf1[j]);
+                    *expansions.m_K(particles_in_leaf1[i],particles_in_leaf1[j]);
                 field_just_self_leaf2[i] += source_leaf2[j]
-                    *expansions.m_K(particles_in_leaf2[j]-particles_in_leaf2[i],
-                                    particles_in_leaf2[i],particles_in_leaf2[j]);
+                    *expansions.m_K(particles_in_leaf2[i],particles_in_leaf2[j]);
             }
             field_all_leaf1[i] = field_just_self_leaf1[i];
             field_all_leaf2[i] = field_just_self_leaf2[i];
             for (int j = 0; j < n; ++j) {
                 field_all_leaf1[i] += source_leaf2[j]
-                    *expansions.m_K(particles_in_leaf2[j]-particles_in_leaf1[i],
-                                    particles_in_leaf1[i],particles_in_leaf2[j]);
+                    *expansions.m_K(particles_in_leaf1[i],particles_in_leaf2[j]);
                 field_all_leaf2[i] += source_leaf1[j]
-                    *expansions.m_K(particles_in_leaf1[j]-particles_in_leaf2[i],
-                                    particles_in_leaf2[i],particles_in_leaf1[j]);
+                    *expansions.m_K(particles_in_leaf2[i],particles_in_leaf1[j]);
             }
         }
 
@@ -336,8 +336,8 @@ public:
     void test_fmm_operators() {
         const unsigned int D = 2;
         typedef Vector<double,D> double_d;
-        auto kernel = [](const double_d &dx, const double_d &pa, const double_d &pb) {
-            return std::sqrt(dx.squaredNorm() + 0.1); 
+        auto kernel = [](const double_d &pa, const double_d &pb) {
+            return std::sqrt((pb-pa).squaredNorm() + 0.1); 
         };
         detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);
         helper_fmm_operators(expansions);

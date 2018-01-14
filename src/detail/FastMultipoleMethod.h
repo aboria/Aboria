@@ -692,11 +692,11 @@ namespace detail {
 
         const size_t index_source = pbegin_source_range - pbegin_source;
 
-        for (int i = index_target; i < index_target+n_target; ++i) {
-            const auto& pi = target_particles_begin[i]; 
-            for (int j = index_source; j < index_source+n_source; ++j) {
-                const auto& pj = source_particles_begin[i]; 
-                target_vector[i] += kernel(pi,pj)*source_vector[j];
+        auto pi = target_range.begin();
+        for (int i = index_target; i < index_target+n_target; ++i,++pi) {
+            auto pj = source_range.begin();
+            for (int j = index_source; j < index_source+n_source; ++j,++pj) {
+                target_vector[i] += kernel(*pi,*pj)*source_vector[j];
             }
         }
     }

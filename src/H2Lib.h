@@ -465,7 +465,7 @@ assemble_block_hmatrix(pcblock b, uint bname,
     const Kernel& kernel = *std::get<1>(data_cast);
     const RowParticles& row_particles = *std::get<2>(data_cast);
     const ColParticles& col_particles = *std::get<3>(data_cast);
-    phmatrix* enum_h = std::get<3>(data_cast);
+    phmatrix* enum_h = std::get<4>(data_cast);
     phmatrix h = enum_h[bname];
 
     if (h->r) {

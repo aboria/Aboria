@@ -136,8 +136,8 @@ public:
                        std::begin(get<source>(particles)), source_fn);
 
         const double c = 0.01;
-        auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
-            return std::sqrt(dx.squaredNorm() + c); 
+        auto kernel = [&c](const double_d &pa, const double_d &pb) {
+            return std::sqrt((pb-pa).squaredNorm() + c); 
         };
 
 
@@ -150,7 +150,7 @@ public:
             const double_d pi = get<position>(particles)[i];
             for (int j=0; j<N; j++) {
                 const double_d pj = get<position>(particles)[j];
-                get<target_manual>(particles)[i] += kernel(pi-pj,pi,pj)*get<source>(particles)[j];
+                get<target_manual>(particles)[i] += kernel(pi,pj)*get<source>(particles)[j];
             }
         }
         auto t1 = Clock::now();
@@ -274,21 +274,17 @@ public:
             field_just_self_leaf2[i] = 0;
             for (int j = 0; j < n; ++j) {
                 field_just_self_leaf1[i] += source_leaf1[j]
-                    *expansions.m_K(particles_in_leaf1[j]-particles_in_leaf1[i],
-                                    particles_in_leaf1[i],particles_in_leaf1[j]);
+                    *expansions.m_K(particles_in_leaf1[i],particles_in_leaf1[j]);
                 field_just_self_leaf2[i] += source_leaf2[j]
-                    *expansions.m_K(particles_in_leaf2[j]-particles_in_leaf2[i],
-                                    particles_in_leaf2[i],particles_in_leaf2[j]);
+                    *expansions.m_K(particles_in_leaf2[i],particles_in_leaf2[j]);
             }
             field_all_leaf1[i] = field_just_self_leaf1[i];
             field_all_leaf2[i] = field_just_self_leaf2[i];
             for (int j = 0; j < n; ++j) {
                 field_all_leaf1[i] += source_leaf2[j]
-                    *expansions.m_K(particles_in_leaf2[j]-particles_in_leaf1[i],
-                                    particles_in_leaf1[i],particles_in_leaf2[j]);
+                    *expansions.m_K(particles_in_leaf1[i],particles_in_leaf2[j]);
                 field_all_leaf2[i] += source_leaf1[j]
-                    *expansions.m_K(particles_in_leaf1[j]-particles_in_leaf2[i],
-                                    particles_in_leaf2[i],particles_in_leaf1[j]);
+                    *expansions.m_K(particles_in_leaf2[i],particles_in_leaf1[j]);
             }
         }
 
@@ -353,8 +349,8 @@ public:
     void test_fmm_operators() {
         const unsigned int D = 2;
         typedef Vector<double,D> double_d;
-        auto kernel = [](const double_d &dx, const double_d &pa, const double_d &pb) {
-            return std::sqrt(dx.squaredNorm() + 0.1); 
+        auto kernel = [](const double_d &pa, const double_d &pb) {
+            return std::sqrt((pb-pa).squaredNorm() + 0.1); 
         };
         detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);
         helper_fmm_operators(expansions);
