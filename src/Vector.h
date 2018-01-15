@@ -63,10 +63,10 @@ struct is_vector: std::false_type {};
 template <typename T, unsigned int N>
 struct is_vector<Vector<T,N>>: std::true_type {};
 
-#ifdef HAVE_EIGEN
 template <typename T>
 struct is_eigen_vector: std::false_type {};
 
+#ifdef HAVE_EIGEN
 template <typename T, int N>
 struct is_eigen_vector<Eigen::Matrix<T,N,1>>: std::true_type {};
 #endif

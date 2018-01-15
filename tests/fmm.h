@@ -44,7 +44,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 typedef std::chrono::system_clock Clock;
 #include "Level1.h"
+#ifdef HAVE_EIGEN
 #include "Kernels.h"
+#endif
 #include "Chebyshev.h"
 #include "FastMultipoleMethod.h"
 #ifdef HAVE_GPERFTOOLS
