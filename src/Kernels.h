@@ -129,7 +129,7 @@ namespace Aboria {
             const int ioffset = i - pi*BlockRows;
             const int pj = std::floor(static_cast<float>(j)/BlockCols);
             const int joffset = j - pj*BlockCols;
-            const Block block = m_function(m_row_elements[pi],m_col_elements[pj]);
+            const Block block = Block(m_function(m_row_elements[pi],m_col_elements[pj]));
             return block(ioffset,joffset);
         }
 

@@ -382,7 +382,7 @@ private:
                 *idx = pi;
                 
             }
-            if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
+            //if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
             t = new_cluster(idx-old_idx,old_idx,0,dim);
         } else {
             size_t sons = 0;
@@ -420,6 +420,10 @@ public:
 
     const ph2matrix get_ph2matrix() const {
         return m_h2.get();
+    }
+
+    const pblock get_pblock() const {
+        return m_block.get();
     }
 
     H2Lib_LR_Decomposition lr(const double tol) const {

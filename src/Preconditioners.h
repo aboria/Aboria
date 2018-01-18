@@ -105,6 +105,165 @@ namespace detail {
     }
 }
 
+template <Solver>
+class ReducedOrderPreconditioner {
+    typedef Solver solver_type;
+    
+    Index m_rows;
+    Index m_cols;
+    size_t m_order;
+    double m_tol;
+    std::vector<size_t> m_col_sizes;
+    std::vector<size_t> m_row_sizes;
+    std::vector<std::shared_ptr<solver_type>> m_solvers;
+
+  public:
+    typedef typename vector_type::StorageIndex StorageIndex;
+    enum {
+      ColsAtCompileTime = Eigen::Dynamic,
+      MaxColsAtCompileTime = Eigen::Dynamic
+    };
+
+    ReducedOrderPreconditioner():m_order(4),m_tol(1e-5)
+    {}
+
+    template<typename MatType>
+    explicit ReducedOrderPreconditioner(const MatType& mat):m_order(4),m_tol(1e-5) {
+      compute(mat);
+    }
+
+    Index rows() const { return m_rows; }
+    Index cols() const { return m_cols; }
+
+    template<unsigned int NI, unsigned int NJ, typename Blocks>
+    ReducedOrderPreconditioner& analyzePattern(const MatrixReplacement<NI,NJ,Blocks>& mat)
+    {
+
+        LOG(2,"ExtMatrixPreconditioner: analyze pattern");
+        m_rows = mat.rows();
+        m_cols = mat.cols();
+
+        return *this;
+    }
+    
+
+    struct factorize_block {
+        std::vector<size_t> &m_col_sizes; 
+        std::vector<size_t> &m_row_sizes; 
+        std::vector<std::shared_ptr<solver_type>> &m_solvers; 
+        size_t m_order;
+        double m_tol;
+        int i;
+
+        factorize_block(std::vector<size_t>& col_sizes,
+                        std::vector<size_t>& row_sizes,
+                        std::vector<std::shared_ptr<solver_type>>& solvers,
+                        size_t order,
+                        double tol):
+            m_col_sizes(col_sizes),m_row_sizes(row_sizes),m_solvers(solvers),m_order(order),m_tol(tol),i(0) {}
+
+
+        template <typename Block>
+        void operator()(const Block& block) {
+            LOG(2,"ReducedOrderPreconditioner: block "<<i<<": non h2 block");
+            m_solvers[i] = nullptr;
+            m_col_sizes[i] = block.cols();
+            m_row_sizes[i] = block.rows();
+            ++i;
+        }
+
+        template <typename RowParticles, typename ColParticles, typename PositionF>
+        void operator()(const KernelH2<RowParticles,ColParticles,PositionF>& kernel) {
+            static const unsigned int dimension = RowParticles::dimension;
+
+            LOG(2,"ReducedOrderPreconditioner: block "<<i<<": generate h2 matrix");
+            auto h2 = make_h2lib_matrix(kernel.get_row_particles(),
+                                        kernel.get_col_particles(),
+                       make_h2lib_black_box_expansion<dimension>(
+                                            m_order,
+                                            kernel.get_position_function()),
+                                        kernel.get_kernel_function());
+            m_col_sizes[i] = kernel.cols();
+            m_row_sizes[i] = kernel.rows();
+
+            LOG(2,"ReducedOrderPreconditioner: block "<<i<<": factorise h2 matrix");
+            m_solvers[i] = std::make_shared<solver_type>(h2.get_ph2matrix(),h2.get_pblock(),m_tol);
+
+            //m_solvers[i]->setMaxIterations(m_inner_iterations);
+            //LOG(2,"ExtMatrixPreconditioner: block "<<i<<": set precon");
+            //m_solvers[i]->preconditioner().setDroptol(0.1);
+            //m_solvers[i]->preconditioner().compute(m_str_ext_matrices[i]);
+            LOG(2,"ReducedOrderPreconditioner: block "<<i<<": factorization complete");
+            ++i;
+        }
+    };
+
+
+    template <unsigned int NI, unsigned int NJ, typename Blocks>
+    ReducedOrderPreconditioner& factorize(const MatrixReplacement<NI,NJ,Blocks>& mat)
+    {
+        LOG(2,"ReducedOrderPreconditioner: factorizing domain");
+
+        m_rows = mat.rows();
+        m_cols = mat.cols();
+        m_solvers.resize(NI);
+        m_col_sizes.resize(NI);
+        m_row_sizes.resize(NI);
+        detail::apply_function_to_diagonal_blocks(
+                factorize_block(m_col_sizes,m_row_sizes,m_solvers,m_order,m_tol), 
+                mat);
+        m_isInitialized = true;
+
+        return *this;
+    }
+    
+    template<typename MatType>
+    ReducedOrderPreconditioner& compute(const MatType& mat)
+    {
+        analyzePattern(mat);
+        return factorize(mat);
+    }
+
+    template<typename Rhs, typename Dest>
+    void _solve_impl(const Rhs& b, Dest& x) const {
+        vector_type m_ext_b;
+        vector_type m_ext_x;
+        size_t row = 0;
+        size_t col = 0;
+
+        for (int i = 0; i < m_solvers.size(); ++i) {
+            auto b_segment = b.segment(col,m_col_sizes[i]);
+            auto x_segment = x.segment(row,m_row_sizes[i]);
+            if (m_solvers[i] != nullptr) { // solver only exists for h2 blocks
+                LOG(2,"ReducedOrderPreconditioner: block "<<i<<" solve");
+                m_solvers[i].solve(b_segment);
+            }
+            x_segment = b_segment;
+            row += m_row_sizes[i];
+            col += m_col_sizes[i];
+            
+        }
+        LOG(2,"ReducedOrderPreconditioner: done solve_impl");
+    }
+    
+
+    template<typename Rhs> 
+    inline const Eigen::Solve<ReducedOrderPreconditioner, Rhs>
+    solve(const Eigen::MatrixBase<Rhs>& b) const {
+        eigen_assert(m_rows==b.rows()
+                && "ReducedOrderPreconditioner::solve(): invalid number of rows of the right hand side matrix b");
+        eigen_assert(m_isInitialized 
+                && "ReducedOrderPreconditioneris not initialized.");
+        return Eigen::Solve<ReducedOrderPreconditioner, Rhs>(*this, b.derived());
+    }
+    
+    Eigen::ComputationInfo info() { return Eigen::Success; }
+
+  protected:
+    bool m_isInitialized;
+};
+
+
 #if 0
 template <unsigned int ReducedOrder, 
           typename InnerPreconditioner=Eigen::IncompleteLUT<double>,
@@ -496,9 +655,9 @@ class RASMPreconditioner {
 
     template <typename Kernel>
     void analyze_impl_block(const Index start_row, const Kernel& kernel) {
-        typedef typename Kernel::row_particles_type row_particles_type;
-        typedef typename Kernel::col_particles_type col_particles_type;
-        typedef typename row_particles_type::query_type query_type;
+        typedef typename Kernel::row_elements_type row_elements_type;
+        typedef typename Kernel::col_elements_type col_elements_type;
+        typedef typename row_elements_type::query_type query_type;
         typedef typename query_type::reference reference;
         static const unsigned int dimension = query_type::dimension;
         typedef Vector<double,dimension> double_d;
@@ -507,10 +666,10 @@ class RASMPreconditioner {
         typedef detail::bbox<dimension> box_type;
         typedef typename query_type::child_iterator child_iterator;
 
-        static_assert(std::is_same<row_particles_type,col_particles_type>::value,
+        static_assert(std::is_same<row_elements_type,col_elements_type>::value,
            "RASM preconditioner restricted to identical row and col particle sets");
-        const row_particles_type& a = kernel.get_row_particles();
-        CHECK(&a == &(kernel.get_col_particles()),
+        const row_elements_type& a = kernel.get_row_elements();
+        CHECK(&a == &(kernel.get_col_elements()),
            "RASM preconditioner restricted to identical row and col particle sets");
         const query_type& query = a.get_query();
         if (query.is_tree()) {
@@ -542,7 +701,7 @@ class RASMPreconditioner {
             }
             const double_d side_length = (bounds.bmax-bounds.bmin)/size;
             iterator_range<lattice_iterator<dimension>> range(
-                    lattice_iterator<dimension>(int_d(0),size),
+                    lattice_iterator<dimension>(int_d::Zero(),size),
                     lattice_iterator<dimension>());
             for (typename lattice_iterator<dimension>::reference box: range) {
                 analyze_domain(start_row, kernel, query,

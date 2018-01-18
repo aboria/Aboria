@@ -390,7 +390,7 @@ namespace detail {
         {
             m_cheb_points.resize(m_ncheb);
             //precalculate cheb_points
-            lattice_iterator<dimension> mi(int_d(0),int_d(m_order));
+            lattice_iterator<dimension> mi(int_d::Constant(0),int_d::Constant(m_order));
             for (int i=0; i<m_cheb_points.size(); ++i,++mi) {
                 m_cheb_points[i] = detail::chebyshev_node_nd(*mi,m_order);
             }
@@ -416,7 +416,7 @@ namespace detail {
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 cheb_rn.set_position(p);
-                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
+                lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockCols; ++ii) {
@@ -447,7 +447,7 @@ namespace detail {
                     + source_box.bmin;
                 cheb_rn.set_position(pj);
 
-                lattice_iterator<D> mi(int_d(0),int_d(m_order));
+                lattice_iterator<D> mi(int_d::Constant(0),int_d::Constant(m_order));
                 for (int i=0; i<m_ncheb; ++i,++mi) {
                     const double tmp = cheb_rn(*mi);
                     for (int ii = 0; ii < BlockCols; ++ii) {
@@ -513,7 +513,7 @@ namespace detail {
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
                     + target_box.bmin;
                 cheb_rn.set_position(pi);
-                lattice_iterator<D> mj(int_d(0),int_d(m_order));
+                lattice_iterator<D> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockRows; ++ii) {
@@ -543,7 +543,7 @@ namespace detail {
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 cheb_rn.set_position(p);
-                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
+                lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockRows; ++ii) {
@@ -573,7 +573,7 @@ namespace detail {
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 cheb_rn.set_position(p);
-                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
+                lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockCols; ++ii) {

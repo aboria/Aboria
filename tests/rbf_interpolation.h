@@ -492,6 +492,7 @@ template<template <typename> class SearchMethod>
         }
 
         knots.init_neighbour_search(min,max,periodic);
+        test.init_neighbour_search(min,max,periodic);
 
         augment.push_back(p);
 
@@ -536,7 +537,20 @@ template<template <typename> class SearchMethod>
         dgmres.set_restart(restart);
         dgmres.compute(G);
         gamma = dgmres.solve(phi);
-        std::cout << "DGMRES-EXT:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
+        std::cout << "DGMRES:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
+
+        Eigen::DGMRES<decltype(G), DirectSolverPreconditioner<decltype(G)>> dgmres;
+        //Eigen::DGMRES<decltype(W)> dgmres;
+        //dgmres.preconditioner().set_buffer_size(RASM_buffer);
+        //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
+        //dgmres.preconditioner().analyzePattern(W);
+        dgmres.setMaxIterations(max_iter);
+        dgmres.set_restart(restart);
+        dgmres.compute(G);
+        gamma = dgmres.solve(phi);
+        std::cout << "DGMRES:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
+
+
 
         phi = G*gamma;
         double rms_error = 0;

@@ -610,7 +610,7 @@ struct nanoflann_adaptor_query {
         LOG(4,"\tget_buckets_near_point: position = "<<position<<" max_distance= "<<max_distance);
 #endif
         return iterator_range<query_iterator<LNormNumber>>(
-                query_iterator<LNormNumber>(get_children(),position,double_d(max_distance),
+                query_iterator<LNormNumber>(get_children(),position,double_d::Constant(max_distance),
                                m_number_of_levels,this),
                 query_iterator<LNormNumber>()
                 );

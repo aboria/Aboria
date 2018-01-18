@@ -1134,7 +1134,7 @@ struct bucket_search_serial_query {
 #endif
 
         return iterator_range<query_iterator<LNormNumber>>(
-                            query_iterator<LNormNumber>(position,double_d(max_distance),this),
+                            query_iterator<LNormNumber>(position,double_d::Constant(max_distance),this),
                             query_iterator<LNormNumber>());
     }
 
