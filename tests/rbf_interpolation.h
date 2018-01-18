@@ -129,11 +129,10 @@ public:
        	ParticlesType test;
 
        	const double c = 0.5;
-        vdouble2 min(0);
-        vdouble2 max(1);
-        vdouble2 periodic(false);
+        vdouble2 min = vdouble2::Constant(0);
+        vdouble2 max = vdouble2::Constant(1);
+        vbool2 periodic = vbool2::Constant(false);
 
-        
         const int N = 1000;
 
         const int nx = 3;
@@ -160,14 +159,12 @@ public:
 
         augment.push_back(p);
 
-        auto kernel = [](const_position_reference dx,
-                         const_particle_reference a,
+        auto kernel = [](const_particle_reference a,
                          const_particle_reference b) {
-                            return std::sqrt(dx.squaredNorm() + get<constant2>(b));
+                            return std::sqrt((get<position>(b)-get<position>(a)).squaredNorm() + get<constant2>(b));
                         };
 
-        auto one = [](const_position_reference dx,
-                      const_particle_reference a,
+        auto one = [](const_particle_reference a,
                       const_particle_reference b) {
                             return 1.0;
                         };
@@ -273,9 +270,9 @@ void helper_compact(void) {
        	ParticlesType test;
 
         const double hfac = 4.0;
-        vdouble2 min(0);
-        vdouble2 max(1);
-        vdouble2 periodic(false);
+        vdouble2 min = vdouble2::Constant(0);
+        vdouble2 max = vdouble2::Constant(1);
+        vbool2 periodic = vbool2::Constant(false);
         
         const int N = 1000;
         
@@ -312,8 +309,7 @@ void helper_compact(void) {
                             return std::pow(2.0-dx.norm()/h,4)*(1.0+2.0*dx.norm()/h);
                         };
 
-        auto one = [](const_position_reference dx,
-                      const_particle_reference a,
+        auto one = [](const_particle_reference a,
                       const_particle_reference b) {
                             return 1.0;
                         };
@@ -466,9 +462,9 @@ template<template <typename> class SearchMethod>
 
        	const double c = 3.0;
         const double c2 = std::pow(c,2);
-        vdouble2 min(0);
-        vdouble2 max(1);
-        vdouble2 periodic(false);
+        vdouble2 min = vdouble2::Constant(0);
+        vdouble2 max = vdouble2::Constant(1);
+        vbool2 periodic = vbool2::Constant(false);
 
         const int N = 10000;
 
@@ -499,30 +495,18 @@ template<template <typename> class SearchMethod>
 
         augment.push_back(p);
 
-        auto kernel = [&](const vdouble2& dx,
-                         const vdouble2& a,
-                         const vdouble2& b) {
-                            return std::exp(-dx.squaredNorm()*c2);
+        auto kernel = [&](const vdouble2& a,
+                          const vdouble2& b) {
+                            return std::exp(-(b-a).squaredNorm()*c2);
                         };
 
-        auto one = [](const_position_reference dx,
-                      const_particle_reference a,
-                      const_particle_reference b) {
-                            return 1.0;
+        auto self_kernel = [&](const_particle_reference a,
+                               const_particle_reference b) {
+                            return kernel(get<position>(a),get<position>(b));
                         };
 
-        auto G = create_h2_operator<4>(knots,knots,kernel);
-        auto P = create_dense_operator(knots,augment,one);
-        auto Pt = create_dense_operator(augment,knots,one);
-        auto Zero = create_zero_operator(augment,augment);
-
-        auto W = create_block_operator<2,2>(G, P,
-                                            Pt,Zero);
-
-        auto Gtest = create_h2_operator(G.get_first_kernel(),test);
-        auto Ptest = create_dense_operator(test,augment,one);
-        auto Wtest = create_block_operator<2,2>(Gtest, Ptest,
-                                                Pt,Zero);
+        auto G = create_h2_operator(knots,knots,4,kernel,self_kernel);
+        auto Gtest = create_h2_operator(test,knots,4,kernel,self_kernel);
 
         vector_type phi(N), gamma(N);
         for (int i=0; i<knots.size(); ++i) {
@@ -543,7 +527,7 @@ template<template <typename> class SearchMethod>
 
 
         //Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-        Eigen::DGMRES<decltype(G),  ExtMatrixPreconditioner<2>> dgmres;
+        Eigen::DGMRES<decltype(G), Eigen::DiagonalPreconditioner<double>> dgmres;
         //Eigen::DGMRES<decltype(W)> dgmres;
         //dgmres.preconditioner().set_buffer_size(RASM_buffer);
         //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);

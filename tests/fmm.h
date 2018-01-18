@@ -61,6 +61,9 @@ class FMMTest : public CxxTest::TestSuite {
     ABORIA_VARIABLE(source,double,"source");
     ABORIA_VARIABLE(target_manual,double,"target manual");
     ABORIA_VARIABLE(target_fmm,double,"target fmm");
+    ABORIA_VARIABLE(vsource,vdouble2,"vector-valued source");
+    ABORIA_VARIABLE(vtarget_manual,vdouble2,"vector-valued target manual");
+    ABORIA_VARIABLE(vtarget_fmm,vdouble2,"vector-valued target fmm");
 
 public:
     template <unsigned int N, typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
@@ -149,7 +152,7 @@ public:
         typedef Vector<int,D> int_d;
         const int num_particles_per_bucket = 50;
 
-        typedef Particles<std::tuple<source,target_manual,target_fmm>,D,StorageVector,SearchMethod> ParticlesType;
+        typedef Particles<std::tuple<source,target_manual,target_fmm,vsource,vtarget_manual,vtarget_fmm>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
         typedef typename ParticlesType::const_reference const_reference;
         ParticlesType particles(N);
@@ -161,7 +164,9 @@ public:
             }
             get<target_fmm>(particles)[i] = 0.0;
         }
-        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false),num_particles_per_bucket);
+        particles.init_neighbour_search(int_d::Constant(pos_min),
+                                        int_d::Constant(pos_max),
+                                        bool_d::Constant(false),num_particles_per_bucket);
 
         // generate a source vector using a smooth cosine
         auto source_fn = [&](const double_d &p) {
@@ -212,6 +217,71 @@ public:
         helper_fast_methods_calculate<1>(particles,kernel,p2pkernel,scale);
         helper_fast_methods_calculate<2>(particles,kernel,p2pkernel,scale);
         helper_fast_methods_calculate<3>(particles,kernel,p2pkernel,scale);
+
+#ifdef HAVE_EIGEN
+        if (D == 2) {
+            // generate a source vector using a smooth cosine
+            auto vsource_fn = [&](const double_d &p) {
+                //return (p-double_d(0)).norm();
+                vdouble2 ret = vdouble2::Constant(1.0);
+                const double scale = 2.0*detail::PI/(pos_max-pos_min); 
+                for (int i=0; i<D; i++) {
+                    ret *= cos((p[i]-pos_min)*scale);
+                }
+                return ret/N;
+            };
+            std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
+                    std::begin(get<vsource>(particles)), vsource_fn);
+
+            const double c = 0.01;
+            auto vkernel = [&c](const double_d &pa, const double_d &pb) {
+                const double_d x = pb-pa;
+                const double r2 = x.squaredNorm();
+                const double exp = std::exp(-r2/std::pow(c,2));
+                Eigen::Matrix<double,2,2> ret;
+                ret(0,0) = (x[0]*x[0]/r2 - 1)*exp;
+                ret(0,1) = (x[0]*x[1]/r2    )*exp;
+                ret(1,0) = ret(0,1);
+                ret(1,1) = (x[1]*x[1]/r2 - 1)*exp;
+                return ret;
+            };
+            auto vp2pkernel = [&](const_reference pa, const_reference pb) {
+                return kernel(get<position>(pa),get<position>(pa));
+            };
+
+
+            // perform the operation manually
+            std::fill(std::begin(get<vtarget_manual>(particles)), 
+                      std::end(get<vtarget_manual>(particles)),
+                    vdouble2::Zero());
+
+            t0 = Clock::now();
+            for (int i=0; i<N; i++) {
+                const double_d pi = get<position>(particles)[i];
+                for (int j=0; j<N; j++) {
+                    const double_d pj = get<position>(particles)[j];
+                    get<vtarget_manual>(particles)[i] += kernel(pi,pj)*get<source>(particles)[j];
+                }
+            }
+            t1 = Clock::now();
+            time_manual = t1 - t0;
+
+
+            const double vscale = std::accumulate(
+                    std::begin(get<vtarget_manual>(particles)), 
+                    std::end(get<vtarget_manual>(particles)),
+                    0,
+                    [](const double t1, const vdouble2 t2) { return t1 + t2.dot(t2); }
+                    );
+
+            std::cout << "VECTOR-VALUED - MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<vscale<<std::endl;
+
+            helper_fast_methods_calculate<1>(particles,kernel,p2pkernel,scale);
+            helper_fast_methods_calculate<2>(particles,kernel,p2pkernel,scale);
+            helper_fast_methods_calculate<3>(particles,kernel,p2pkernel,scale);
+        }
+#endif
+
     }
 
     
@@ -220,13 +290,14 @@ public:
         const unsigned int D = Expansions::dimension;
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
-        typedef typename Expansions::expansion_type expansion_type;
+        typedef typename Expansions::l_expansion_type l_expansion_type;
+        typedef typename Expansions::m_expansion_type m_expansion_type;
 
         // unit box
-        detail::bbox<D> parent(double_d(0.0),double_d(1.0));
-        detail::bbox<D> leaf1(double_d(0.0),double_d(1.0));
+        detail::bbox<D> parent(double_d::Constant(0.0),double_d::Constant(1.0));
+        detail::bbox<D> leaf1(double_d::Constant(0.0),double_d::Constant(1.0));
         leaf1.bmax[0] = 0.5;
-        detail::bbox<D> leaf2(double_d(0.0),double_d(1.0));
+        detail::bbox<D> leaf2(double_d::Constant(0.0),double_d::Constant(1.0));
         leaf2.bmin[0] = 0.5;
         std::cout << "parent = "<<parent<<" leaf1 = "<<leaf1<<" leaf2 = "<<leaf2<<std::endl;
 
@@ -278,13 +349,13 @@ public:
         }
 
         // check P2M, and L2P
-        expansion_type expansionM_leaf1 = {0};
+        m_expansion_type expansionM_leaf1 = {0};
 
         for (int i = 0; i < n; ++i) {
             expansions.P2M(expansionM_leaf1,leaf1,particles_in_leaf1[i],source_leaf1[i]);
         }
 
-        expansion_type expansionL_leaf1 = {0};
+        m_expansion_type expansionL_leaf1 = {0};
         expansions.M2L(expansionL_leaf1,leaf1,leaf1,expansionM_leaf1);
 
         double L2 = 0;
@@ -298,12 +369,12 @@ public:
 
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
 
-        expansion_type expansionM_leaf2 = {};
+        m_expansion_type expansionM_leaf2 = {};
         for (int i = 0; i < n; ++i) {
             expansions.P2M(expansionM_leaf2,leaf2,particles_in_leaf2[i],source_leaf2[i]);
         }
 
-        expansion_type expansionL_leaf2 = {};
+        l_expansion_type expansionL_leaf2 = {};
         expansions.M2L(expansionL_leaf2,leaf2,leaf2,expansionM_leaf2);
 
         L2 = 0;
@@ -315,13 +386,13 @@ public:
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
         
         // check M2M and L2L
-        expansion_type expansionM_parent = {};
+        m_expansion_type expansionM_parent = {};
         expansions.M2M(expansionM_parent,parent,leaf1,expansionM_leaf1);
         expansions.M2M(expansionM_parent,parent,leaf2,expansionM_leaf2);
-        expansion_type expansionL_parent = {};
+        l_expansion_type expansionL_parent = {};
         expansions.M2L(expansionL_parent,parent,parent,expansionM_parent);
 
-        expansion_type reexpansionL_leaf1 = {};
+        l_expansion_type reexpansionL_leaf1 = {};
         expansions.L2L(reexpansionL_leaf1,leaf1,parent,expansionL_parent);
 
         L2 = 0;
@@ -341,7 +412,7 @@ public:
         auto kernel = [](const double_d &pa, const double_d &pb) {
             return std::sqrt((pb-pa).squaredNorm() + 0.1); 
         };
-        detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);
+        detail::BlackBoxExpansions<D,10,decltype(kernel),1,1> expansions(kernel);
         helper_fmm_operators(expansions);
     }
 

@@ -673,9 +673,16 @@ public:
     }
 };
 
-template <unsigned int D, typename Function> 
-detail::H2LibBlackBoxExpansions<D,Function> make_h2lib_black_box_expansion(size_t order, const Function& function) {
-    return detail::H2LibBlackBoxExpansions<D,Function>(order,function);
+template <unsigned int D, typename Function,
+         typename KernelHelper = detail::position_kernel_helper<D,Function>,
+         typename Block = typename KernelHelper::Block> 
+detail::H2LibBlackBoxExpansions<D,Function,
+                           Block::RowsAtCompileTime,
+                           Block::ColsAtCompileTime> 
+make_h2lib_black_box_expansion(size_t order, const Function& function) {
+    return detail::H2LibBlackBoxExpansions<D,Function,
+                           Block::RowsAtCompileTime,
+                           Block::ColsAtCompileTime>(order,function);
 }
 
 template <typename Expansions, typename Kernel, typename RowParticlesType, typename ColParticlesType>

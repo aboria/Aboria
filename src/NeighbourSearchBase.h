@@ -181,7 +181,9 @@ public:
         LOG_CUDA(2,"neighbour_search_base: constructor, setting default domain");
         const double min = std::numeric_limits<double>::min();
         const double max = std::numeric_limits<double>::max();
-        set_domain(double_d(min/3.0),double_d(max/3.0),bool_d(false),10,false); 
+        set_domain(double_d::Constant(min/3.0),
+                   double_d::Constant(max/3.0),
+                   bool_d::Constant(false),10,false); 
     };
 
     static constexpr bool ordered() {

@@ -124,16 +124,20 @@ public:
     CUDA_HOST_DEVICE
 	Vector() {}
 
+    
+
     /// Constructs an vector with initial values.
     ///
     /// \param arg1 All the elements of the vector are set to
     /// this value
+    /*
     CUDA_HOST_DEVICE
 	Vector(T arg1) {
         for (unsigned int i=0; i<N; i++) {
 		    mem[i] = arg1;
         }
 	}
+    */
 
     /// Constructs an vector with initial values.
     ///
@@ -184,6 +188,28 @@ public:
 			mem[i] = arg[i];
 		}
 	}
+
+    /// Zero Vector
+    ///
+    /// Returns a zero vector
+    static Vector Zero() {
+        Vector ret;
+        for (unsigned int i = 0; i < N; ++i) {
+            ret.mem[i] = 0;
+        }
+        return ret;
+    }
+
+    /// Constant Vector
+    ///
+    /// Returns a constant vector
+    static Vector Constant(const T& c) {
+        Vector ret;
+        for (unsigned int i = 0; i < N; ++i) {
+            ret.mem[i] = c;
+        }
+        return ret;
+    }
 
     /// Vector assignment
     ///
@@ -783,6 +809,28 @@ typedef Vector<bool,7> vbool7;
 #define bool6 aboria_bool6
 #define bool7 aboria_bool7
 */
+
+namespace detail {
+    template <typename T>
+    struct VectorTraits {
+        static T Zero() {
+            return 0;
+        }
+        static T Constant(const T& c) {
+            return c;
+        }
+    };
+
+    template<typename T,unsigned int N>
+    struct VectorTraits<Vector<T,N>> {
+        static Vector<T,N> Zero() {
+            return Vector<T,N>::Zero();
+        }
+        static Vector<T,N> Constant(const T& c) {
+            return Vector<T,N>::Constant(c);
+        }
+    };
+}
 
 } // namespace Aboria
 

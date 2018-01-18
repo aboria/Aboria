@@ -61,33 +61,39 @@ namespace detail {
                             Eigen::Matrix<FunctionReturn,1,1>,
                             FunctionReturn>::type Block;
 
+        static const int BlockRows = Block::RowsAtCompileTime; 
+        static const int BlockCols = Block::ColsAtCompileTime; 
+        typedef typename Block::Scalar Scalar;
+        typedef typename Eigen::Matrix<Scalar,BlockRows,1> BlockLHSVector;
+        typedef typename Eigen::Matrix<Scalar,BlockCols,1> BlockRHSVector;
 
-        /*
-        static Block eval(const_row_reference a, 
-                          const_col_reference b) {
-            return m_function(a,b);
-        }
-        */
+        static_assert(BlockRows >= 0,"element type rows must be fixed");
+        static_assert(BlockCols >= 0,"element type cols must be fixed");
 
-        static_assert(Block::RowsAtCompileTime >= 0,"element type rows must be fixed");
-        static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
+
     };
 
-    template<typename RowElements, typename ColElements, typename F>
+    template<size_t D, typename F>
     struct position_kernel_helper {
-        static const unsigned int dimension = RowElements::dimension;
+        static const unsigned int dimension = D;
         typedef Vector<double,dimension> double_d;
         typedef double_d const & const_position_reference;
-        typedef typename RowElements::const_reference const_row_reference;
-        typedef typename ColElements::const_reference const_col_reference;
 
         typedef typename std::result_of<F(const_position_reference, 
                                           const_position_reference)>::type FunctionReturn;
+
 
         typedef typename std::conditional<
                             std::is_arithmetic<FunctionReturn>::value,
                             Eigen::Matrix<FunctionReturn,1,1>,
                             FunctionReturn>::type Block;
+
+        static const int BlockRows = Block::RowsAtCompileTime; 
+        static const int BlockCols = Block::ColsAtCompileTime; 
+        typedef typename Block::Scalar Scalar;
+        typedef typename Eigen::Matrix<Scalar,BlockRows,1> BlockLHSVector;
+        typedef typename Eigen::Matrix<Scalar,BlockCols,1> BlockRHSVector;
+
 
         static_assert(Block::RowsAtCompileTime >= 0,"element type rows must be fixed");
         static_assert(Block::ColsAtCompileTime >= 0,"element type cols must be fixed");
@@ -127,8 +133,8 @@ namespace detail {
                         is_particles<RowElements>::value &&
                         is_particles<ColElements>::value>::type> {
 
-        typedef typename detail::position_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
-        static const unsigned int dimension = kernel_helper::dimension;
+        static const unsigned int dimension = RowElements::dimension;
+        typedef typename detail::position_kernel_helper<dimension,Kernel> kernel_helper;
         typedef Vector<double,dimension> double_d;
         typedef Vector<int,dimension> int_d;
         typedef typename kernel_helper::Block Block;
@@ -163,8 +169,8 @@ namespace detail {
                         is_particles<RowElements>::value &&
                         is_elements<2,ColElements>::value>::type> {
 
-        typedef typename detail::position_kernel_helper<RowElements,ColElements,Kernel> kernel_helper;
-        static const unsigned int dimension = kernel_helper::dimension;
+        static const unsigned int dimension = RowElements::dimension;
+        typedef typename detail::position_kernel_helper<dimension,Kernel> kernel_helper;
         typedef Vector<double,dimension> double_d;
         typedef Vector<int,dimension> int_d;
         typedef typename kernel_helper::Block Block;
@@ -410,7 +416,7 @@ namespace detail {
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const_cast<Eigen::DenseBase<Derived>&>(result)
                                     .template block<Repeats,Repeats>(i*Repeats,j*Repeats) 
-                                        = Block::Constant(m_cheb(*mj)); 
+                                        = m_cheb(*mj)*Block::Identity(); 
                 }
             }
         }
@@ -468,7 +474,7 @@ namespace detail {
                     for (int j=0; j<m_ncheb; ++j,++mj) {
                         const_cast<Eigen::DenseBase<Derived>&>(result)
                                 .template block<Repeats,Repeats>(i*Repeats,j*Repeats) 
-                                        += Block::Constant(quadrature_type::weights[q]*cheb_rn(*mj));
+                                        += quadrature_type::weights[q]*cheb_rn(*mj)*Block::Identity();
                     }
                 }
             }

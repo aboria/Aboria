@@ -37,6 +37,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FAST_MULTIPOLE_METHOD_H_
 
 #include "detail/FastMultipoleMethod.h"
+#ifdef HAVE_EIGEN
+#include "detail/Kernels.h"
+#endif
 
 namespace Aboria {
 
@@ -57,9 +60,11 @@ protected:
     typedef typename col_query_type::particle_iterator col_particle_iterator;
     typedef typename col_particle_iterator::reference col_particle_reference;
 
-    typedef typename Expansions::expansion_type expansion_type;
+    typedef typename Expansions::l_expansion_type l_expansion_type;
+    typedef typename Expansions::m_expansion_type m_expansion_type;
     typedef typename ColParticles::traits_type traits_type;
-    typedef typename traits_type::template vector_type<expansion_type>::type storage_type;
+    typedef typename traits_type::template vector_type<l_expansion_type>::type l_storage_type;
+    typedef typename traits_type::template vector_type<m_expansion_type>::type m_storage_type;
     typedef typename traits_type::template vector_type<
         col_child_iterator
         //typename std::remove_const<child_iterator>::type
@@ -70,8 +75,8 @@ protected:
     static const unsigned int dimension = traits_type::dimension;
     typedef detail::bbox<dimension> box_type;
 
-    mutable storage_type m_W;
-    mutable storage_type m_g;
+    mutable m_storage_type m_W;
+    mutable l_storage_type m_g;
     mutable connectivity_type m_connectivity; 
 
     const ColParticles* m_col_particles;
@@ -94,12 +99,12 @@ protected:
     {}
 
     template <typename VectorType>
-    expansion_type& calculate_dive_P2M_and_M2M(const col_child_iterator& ci, 
+    m_expansion_type& calculate_dive_P2M_and_M2M(const col_child_iterator& ci, 
                                                const VectorType& source_vector) const {
         const size_t my_index = m_col_query->get_bucket_index(*ci);
         const box_type& my_box = m_col_query->get_bounds(ci);
         LOG(3,"calculate_dive_P2M_and_M2M with bucket "<<my_box);
-        expansion_type& W = m_W[my_index];
+        m_expansion_type& W = m_W[my_index];
         std::fill(std::begin(W),std::end(W),0.0);
         if (m_col_query->is_leaf_node(*ci)) { // leaf node
             detail::calculate_P2M(W, my_box, 
@@ -107,7 +112,7 @@ protected:
                     source_vector,m_col_query->get_particles_begin(),m_expansions);
         } else { 
             for (col_child_iterator cj = m_col_query->get_children(ci); cj != false; ++cj) {
-                expansion_type& child_W = calculate_dive_P2M_and_M2M(cj,source_vector);
+                m_expansion_type& child_W = calculate_dive_P2M_and_M2M(cj,source_vector);
                 const box_type& child_box = m_col_query->get_bounds(cj);
                 m_expansions.M2M(W,my_box,child_box,child_W);
             }
@@ -119,14 +124,14 @@ protected:
     void calculate_dive_M2L_and_L2L(
             VectorTypeTarget& target_vector,
             const col_child_iterator_vector_type& connected_buckets_parent,
-            const expansion_type& g_parent, 
+            const l_expansion_type& g_parent, 
             const box_type& box_parent, 
             const row_child_iterator& ci,
             const VectorTypeSource& source_vector) const {
         const box_type& target_box = m_row_query->get_bounds(ci);
         LOG(3,"calculate_dive_M2L_and_L2L with bucket "<<target_box);
         size_t target_index = m_row_query->get_bucket_index(*ci);
-        expansion_type& g = m_g[target_index];
+        l_expansion_type& g = m_g[target_index];
         std::fill(std::begin(g),std::end(g),0.0);
         typename connectivity_type::reference 
             connected_buckets = m_connectivity[target_index];
@@ -210,7 +215,8 @@ class FastMultipoleMethod: public FastMultipoleMethodBase<Expansions,Kernel,RowP
    typedef typename base_type::row_child_iterator row_child_iterator;
    typedef typename base_type::col_child_iterator col_child_iterator;
    typedef typename base_type::col_child_iterator_vector_type col_child_iterator_vector_type;
-   typedef typename base_type::expansion_type expansion_type;
+   typedef typename base_type::l_expansion_type l_expansion_type;
+   typedef typename base_type::m_expansion_type m_expansion_type;
    typedef typename base_type::box_type box_type;
    typedef typename base_type::double_d double_d;
    typedef typename base_type::position position;
@@ -244,7 +250,7 @@ public:
         for (row_child_iterator ci = this->m_row_query->get_children(); 
                 ci != false; ++ci) {
             col_child_iterator_vector_type dummy;
-            expansion_type g = {};
+            l_expansion_type g = {};
             this->calculate_dive_M2L_and_L2L(target_vector,dummy,g,box_type(),ci,source_vector);
         }
         /*
@@ -360,10 +366,25 @@ public:
 };
 */
 
-template <unsigned int D, unsigned int N, typename Function> 
-detail::BlackBoxExpansions<D,N,Function> make_black_box_expansion(const Function& function) {
-    return detail::BlackBoxExpansions<D,N,Function>(function);
+#ifdef HAVE_EIGEN
+template <unsigned int D, unsigned int N, typename Function,
+         typename KernelHelper = detail::position_kernel_helper<D,Function>,
+         typename Block = typename KernelHelper::Block> 
+detail::BlackBoxExpansions<D,N,Function,
+                           Block::RowsAtCompileTime,
+                           Block::ColsAtCompileTime> 
+make_black_box_expansion(const Function& function) {
+    return detail::BlackBoxExpansions<D,N,Function,
+                                      Block::RowsAtCompileTime,
+                                      Block::ColsAtCompileTime>(function);
 }
+#else
+template <unsigned int D, unsigned int N, typename Function> 
+detail::BlackBoxExpansions<D,N,Function,1,1> 
+make_black_box_expansion(const Function& function) {
+    return detail::BlackBoxExpansions<D,N,Function,1,1>(function);
+}
+#endif
 
 
 template <typename Expansions, typename Kernel, typename RowParticles, typename ColParticles>

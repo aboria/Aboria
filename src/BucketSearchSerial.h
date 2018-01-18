@@ -149,7 +149,7 @@ private:
             m_size_calculated_with_n = n;
             LOG(2,"bucket_search_serial: recalculating bucket size");
             if (this->m_n_particles_in_leaf > n) {
-                m_size = unsigned_int_d(1);
+                m_size = unsigned_int_d::Constant(1);
             } else {
                 const double total_volume = (this->m_bounds.bmax-this->m_bounds.bmin).prod();
                 const double box_volume = this->m_n_particles_in_leaf/double(n)*total_volume;
@@ -1031,7 +1031,7 @@ struct bucket_search_serial_query {
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
     child_iterator get_children() const {
-        return child_iterator(int_d(0),m_end_bucket+1);
+        return child_iterator(int_d::Constant(0),m_end_bucket+1);
     }
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -1077,7 +1077,7 @@ struct bucket_search_serial_query {
     CUDA_HOST_DEVICE
     get_bucket_particles(const reference bucket) const {
 #ifndef __CUDA_ARCH__
-        ASSERT((bucket>=int_d(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
+        ASSERT((bucket>=int_d::Constant(0)).all() && (bucket <= m_end_bucket).all(), "invalid bucket");
 #endif
         
         const unsigned int bucket_index = m_point_to_bucket_index.collapse_index_vector(bucket);

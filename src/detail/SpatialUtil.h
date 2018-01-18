@@ -46,7 +46,8 @@ struct bbox {
     double_d bmin;
 
     inline CUDA_HOST_DEVICE
-    bbox() : bmin(double_d(get_max<double>())), bmax(double_d(-get_max<double>()))
+    bbox() : bmin(double_d::Constant(get_max<double>())), 
+             bmax(double_d::Constant(-get_max<double>()))
     {}
 
     inline CUDA_HOST_DEVICE

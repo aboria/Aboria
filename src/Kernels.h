@@ -59,22 +59,22 @@ namespace Aboria {
     class KernelBase {
     protected:
         typedef typename detail::kernel_helper<RowElements,ColElements,F> kernel_helper;
-        static const unsigned int dimension = kernel_helper::dimension;
+        static const unsigned int dimension = RowElements::dimension;
         typedef Vector<double,dimension> double_d;
         typedef Vector<int,dimension> int_d;
         typedef position_d<dimension> position;
-        typedef typename kernel_helper::const_position_reference const_position_reference;
-        typedef typename kernel_helper::const_row_reference const_row_reference;
-        typedef typename kernel_helper::const_col_reference const_col_reference;
+        typedef double_d const & const_position_reference;
+        typedef typename RowElements::const_reference const_row_reference;
+        typedef typename ColElements::const_reference const_col_reference;
 
     public:
 
         typedef typename kernel_helper::Block Block;
-        typedef typename Block::Scalar Scalar;
-        static const size_t BlockRows = Block::RowsAtCompileTime;
-        static const size_t BlockCols = Block::ColsAtCompileTime;
-        typedef typename Eigen::Matrix<Scalar,BlockCols,1> BlockRHSVector;
-        typedef typename Eigen::Matrix<Scalar,BlockRows,1> BlockLHSVector;
+        typedef typename kernel_helper::Scalar Scalar;
+        static const size_t BlockRows = kernel_helper::BlockRows;
+        static const size_t BlockCols = kernel_helper::BlockCols;
+        typedef typename kernel_helper::BlockRHSVector BlockRHSVector;
+        typedef typename kernel_helper::BlockLHSVector BlockLHSVector;
 
         typedef RowElements row_elements_type;
         typedef ColElements col_elements_type;
@@ -129,7 +129,7 @@ namespace Aboria {
             const int ioffset = i - pi*BlockRows;
             const int pj = std::floor(static_cast<float>(j)/BlockCols);
             const int joffset = j - pj*BlockCols;
-            const Block block(m_function(m_row_elements[pi],m_col_elements[pj]));
+            const Block block = m_function(m_row_elements[pi],m_col_elements[pj]);
             return block(ioffset,joffset);
         }
 
@@ -526,7 +526,9 @@ namespace Aboria {
         typedef KernelDense<RowElements,ColElements,F> base_type;
         typedef typename ColElements::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
-        typedef typename detail::H2LibBlackBoxExpansions<dimension,PositionF> expansions_type;
+        typedef typename detail::H2LibBlackBoxExpansions<dimension,PositionF,
+                                                   base_type::BlockRows,
+                                                   base_type::BlockCols> expansions_type;
         typedef H2LibMatrix h2_matrix_type;
 
         h2_matrix_type m_h2_matrix;
@@ -536,8 +538,6 @@ namespace Aboria {
         typedef typename base_type::Scalar Scalar;
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
-        static_assert(BlockRows==1, "only implemented for scalar kernels");
-        static_assert(BlockCols==1, "only implemented for scalar kernels");
         static_assert(detail::is_particles<RowElements>::value && 
                       detail::is_particles<ColElements>::value,
                       "only implemented for particle elements");
@@ -587,7 +587,9 @@ namespace Aboria {
         typedef typename base_type::const_col_reference const_col_reference;
         typedef typename ColElements::query_type query_type;
         static const unsigned int dimension = base_type::dimension;
-        typedef typename detail::BlackBoxExpansions<dimension,N,PositionF> expansions_type;
+        typedef typename detail::BlackBoxExpansions<dimension,N,PositionF,
+                                base_type::BlockRows,
+                                base_type::BlockCols> expansions_type;
         typedef FastMultipoleMethod<expansions_type,F,RowElements,ColElements> fmm_type;
 
         expansions_type m_expansions;
@@ -598,8 +600,6 @@ namespace Aboria {
         typedef typename base_type::Scalar Scalar;
         static const size_t BlockRows = base_type::BlockRows;
         static const size_t BlockCols = base_type::BlockCols;
-        static_assert(BlockRows==1, "only implemented for scalar kernels");
-        static_assert(BlockCols==1, "only implemented for scalar kernels");
         static_assert(detail::is_particles<RowElements>::value && 
                       detail::is_particles<ColElements>::value,
                       "only implemented for particle elements");

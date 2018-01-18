@@ -137,15 +137,15 @@ double chebyshev_Rn_slow(const Vector<double,N> &x, const Vector<int,N> &i, unsi
 // evaluate 1/n + 2/n * sum_{k=1}^{n-1} T_k(y_i) T_k(x), where y_i is the i-th
 // root of the the chebyshev polynomial of order n
 // NOTE: valid range of i is 0..n-1
-template <typename T>
-T chebyshev_Sn(const T &x, unsigned int i, unsigned int n) {
+template <typename T,unsigned int N>
+Vector<T,N> chebyshev_Sn(const Vector<T,N> &x, unsigned int i, unsigned int n) {
     // Clenshaw algorithm: \alpha = 2x, \beta = -1, T0=1, T1=x
     //                     a_0 = 1/n, a_k = 2/n * cos(k*(2(i+1)-1)/(2n) * pi)
-    T bk_1 = 0;
-    T bk_2 = 0;
+    Vector<T,N> bk_1 = Vector<T,N>::Zero();
+    Vector<T,N> bk_2 = Vector<T,N>::Zero();
     const double invn = 1.0/n;
     for (unsigned int k=n-1; k>=1; --k) {
-        T bk = 2*invn*cos(k*(2.0*i+1.0)*PI_2*invn) + 2.0*x*bk_1 - bk_2; 
+        const Vector<T,N> bk = 2*invn*cos(k*(2.0*i+1.0)*PI_2*invn) + 2.0*x*bk_1 - bk_2; 
         bk_2 = bk_1;
         bk_1 = bk;
     }

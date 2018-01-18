@@ -116,20 +116,32 @@ namespace detail {
     };
 
 
-    template <unsigned int D, unsigned int N, typename Function> 
+    template <size_t D, size_t N, typename Function, size_t BlockRows, size_t BlockCols> 
     struct BlackBoxExpansions {
         typedef detail::bbox<D> box_type;
         static constexpr size_t ncheb = ipow(N,D); 
-        typedef std::array<double,ncheb> expansion_type;
+        
+        typedef typename std::conditional<BlockRows==1,
+                double,
+                Vector<double,BlockRows>>::type row_scalar_type;
+        typedef typename std::conditional<BlockCols==1,
+                double,
+                Vector<double,BlockCols>>::type col_scalar_type;
+        typedef std::array<col_scalar_type,ncheb> m_expansion_type;
+        typedef std::array<row_scalar_type,ncheb> l_expansion_type;
 
 #ifdef HAVE_EIGEN
-        typedef Eigen::Matrix<double,ncheb,ncheb> m2l_matrix_type;
-        typedef Eigen::Matrix<double,ncheb,ncheb> l2l_matrix_type;
-        typedef Eigen::Matrix<double,ncheb,Eigen::Dynamic> p2m_matrix_type;
-        typedef Eigen::Matrix<double,Eigen::Dynamic,ncheb> l2p_matrix_type;
+        typedef Eigen::Matrix<double,ncheb*BlockRows,ncheb*BlockCols> m2l_matrix_type;
+        typedef Eigen::Matrix<double,ncheb*BlockRows,ncheb*BlockRows> l2l_matrix_type;
+        typedef Eigen::Matrix<double,ncheb*BlockCols,ncheb*BlockCols> m2m_matrix_type;
+        typedef Eigen::Matrix<double,ncheb*BlockCols,Eigen::Dynamic> p2m_matrix_type;
+        typedef Eigen::Matrix<double,Eigen::Dynamic,ncheb*BlockRows> l2p_matrix_type;
         typedef Eigen::Matrix<double,Eigen::Dynamic,Eigen::Dynamic> p2p_matrix_type;
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> p_vector_type;
-        typedef Eigen::Matrix<double,ncheb,1> m_vector_type;
+        typedef Eigen::Matrix<double,ncheb*BlockCols,1> m_vector_type;
+        typedef Eigen::Matrix<double,ncheb*BlockRows,1> l_vector_type;
+        typedef Eigen::Matrix<double,BlockCols,BlockCols> blockcol_type;
+        typedef Eigen::Matrix<double,BlockRows,BlockRows> blockrow_type;
 #endif
 
         typedef Vector<double,D> double_d;
@@ -142,24 +154,27 @@ namespace detail {
         BlackBoxExpansions(const Function &K):m_K(K) 
         {
             //precalculate cheb_points
-            lattice_iterator<dimension> mi(int_d(0),int_d(N));
+            lattice_iterator<dimension> mi(int_d::Constant(0),int_d::Constant(N));
             for (int i=0; i<ncheb; ++i,++mi) {
                 m_cheb_points[i] = detail::chebyshev_node_nd(*mi,N);
             }
         }
 
-        static void P2M(expansion_type& accum, 
-                 const box_type& box, 
+
+        static void P2M(m_expansion_type& accum,
+                 const box_type& box,
                  const double_d& position,
-                 const double& source ) {
+                 const col_scalar_type& source) {
 
             detail::ChebyshevRnSingle<D,N> cheb_rn(position,box);
-            lattice_iterator<dimension> mj(int_d(0),int_d(N));
+            lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
             for (int j=0; j<ncheb; ++j,++mj) {
                 //std::cout << "accumulating P2M from "<<position<<" to node "<<*mj<<" with Rn = "<<cheb_rn(*mj)<<std::endl;
                 accum[j] += cheb_rn(*mj)*source;
             }
         }
+
+
 
 #ifdef HAVE_EIGEN
         template <typename ParticlesType>
@@ -168,23 +183,25 @@ namespace detail {
                     const std::vector<size_t>& indicies,
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
-            matrix.resize(ncheb,indicies.size());
+            matrix.resize(ncheb*BlockCols,indicies.size()*BlockCols);
             for (int i = 0; i < indicies.size(); ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
-                lattice_iterator<dimension> mj(int_d(0),int_d(N));
+                lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
                 for (int j=0; j<ncheb; ++j,++mj) {
-                    matrix(j,i) = cheb_rn(*mj);
+                    // check ij
+                    matrix.block<BlockCols,BlockCols>(i*BlockCols,j*BlockCols) = 
+                                                        cheb_rn(*mj)*blockcol_type::Identity();
                 }
                 
             }
         }
 #endif
 
-        void M2M(expansion_type& accum, 
+        void M2M(m_expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 const expansion_type& source) const {
+                 const m_expansion_type& source) const {
 
             for (int j=0; j<ncheb; ++j) {
                 const double_d& pj_unit_box = m_cheb_points[j];
@@ -192,7 +209,7 @@ namespace detail {
                     + source_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
 
-                lattice_iterator<D> mi(int_d(0),int_d(N));
+                lattice_iterator<D> mi(int_d::Constant(0),int_d::Constant(N));
                 for (int i=0; i<ncheb; ++i,++mi) {
                     accum[i] += cheb_rn(*mi)*source[j];
                 }
@@ -200,7 +217,7 @@ namespace detail {
         }
 
 #ifdef HAVE_EIGEN
-        void M2M_matrix(l2l_matrix_type& matrix, 
+        void M2M_matrix(m2m_matrix_type& matrix, 
                  const box_type& target_box, 
                  const box_type& source_box) const {
             for (int j=0; j<ncheb; ++j) {
@@ -209,18 +226,19 @@ namespace detail {
                     + source_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pj,target_box);
 
-                lattice_iterator<D> mi(int_d(0),int_d(N));
+                lattice_iterator<D> mi(int_d::Constant(0),int_d::Constant(N));
                 for (int i=0; i<ncheb; ++i,++mi) {
-                    matrix(i,j) = cheb_rn(*mi);
+                    matrix.block<BlockCols,BlockCols>(i*BlockCols,j*BlockCols) = 
+                                                        cheb_rn(*mi)*blockcol_type::Identity();
                 }
             }
         }
 #endif
 
-        void M2L(expansion_type& accum, 
+        void M2L(l_expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 const expansion_type& source) const {
+                 const m_expansion_type& source) const {
 
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
@@ -248,7 +266,7 @@ namespace detail {
                     const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
-                    matrix(i,j) = m_K(pi,pj);
+                    matrix.block<BlockRows,BlockCols>(i*BlockRows,j*BlockCols) = m_K(pi,pj);
                 }
             }
 
@@ -258,10 +276,10 @@ namespace detail {
 
 
 
-        void L2L(expansion_type& accum, 
+        void L2L(l_expansion_type& accum, 
                  const box_type& target_box, 
                  const box_type& source_box, 
-                 const expansion_type& source) const {
+                 const l_expansion_type& source) const {
             //M2M(accum,target_box,source_box,source);
             for (int i=0; i<ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
@@ -269,7 +287,7 @@ namespace detail {
                     + target_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
 
-                lattice_iterator<D> mj(int_d(0),int_d(N));
+                lattice_iterator<D> mj(int_d::Constant(0),int_d::Constant(N));
                 for (int j=0; j<ncheb; ++j,++mj) {
                     accum[i] += cheb_rn(*mj)*source[j];
                 }
@@ -287,21 +305,22 @@ namespace detail {
                     + target_box.bmin;
                 detail::ChebyshevRnSingle<D,N> cheb_rn(pi,source_box);
 
-                lattice_iterator<D> mj(int_d(0),int_d(N));
+                lattice_iterator<D> mj(int_d::Constant(0),int_d::Constant(N));
                 for (int j=0; j<ncheb; ++j,++mj) {
-                    matrix(i,j) = cheb_rn(*mj);
+                    matrix.block<BlockRows,BlockRows>(i*BlockRows,j*BlockRows) = 
+                                                    cheb_rn(*mj)*blockrow_type::Identity();
                 }
             }
         }
 #endif
 
 
-        static double L2P(const double_d& p,
+        static row_scalar_type L2P(const double_d& p,
                    const box_type& box, 
-                   const expansion_type& source) {
+                   const l_expansion_type& source) {
             detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
-            lattice_iterator<dimension> mj(int_d(0),int_d(N));
-            double sum = 0;
+            lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
+            row_scalar_type sum = detail::VectorTraits<row_scalar_type>::Zero();
             for (int j=0; j<ncheb; ++j,++mj) {
                 sum += cheb_rn(*mj)*source[j];
             }
@@ -309,14 +328,14 @@ namespace detail {
         }
 
 #ifdef HAVE_EIGEN
-        static double L2P(const double_d& p,
+        static row_scalar_type L2P(const double_d& p,
                    const box_type& box, 
                    const m_vector_type& source) {
             detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
-            lattice_iterator<dimension> mj(int_d(0),int_d(N));
-            double sum = 0;
+            lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
+            row_scalar_type sum = detail::VectorTraits<row_scalar_type>::Zero();
             for (int j=0; j<ncheb; ++j,++mj) {
-                sum += cheb_rn(*mj)*source[j];
+                sum += cheb_rn(*mj)*source.segment<BlockRows>(j*BlockRows);
             }
             return sum;
         }
@@ -327,13 +346,14 @@ namespace detail {
                     const std::vector<size_t>& indicies,
                     const ParticlesType& particles) {
             typedef typename ParticlesType::position position;
-            matrix.resize(indicies.size(),ncheb);
+            matrix.resize(indicies.size()*BlockRows,ncheb*BlockRows);
             for (int i = 0; i < indicies.size(); ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
-                lattice_iterator<dimension> mj(int_d(0),int_d(N));
+                lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
                 for (int j=0; j<ncheb; ++j,++mj) {
-                    matrix(i,j) = cheb_rn(*mj);
+                    matrix.block<BlockRows,BlockRows>(i*BlockRows,j*BlockRows) = 
+                                                cheb_rn(*mj)*blockrow_type::Identity();
                 }
                 
             }
@@ -343,13 +363,19 @@ namespace detail {
 #endif
 
 
-
     };
 
+
 #ifdef HAVE_H2LIB
-    template <unsigned int D, typename Function> 
+    template <size_t D, typename Function, size_t BlockRows, size_t BlockCols> 
     struct H2LibBlackBoxExpansions {
         typedef detail::bbox<D> box_type;
+
+        typedef Vector<double,BlockRows> row_scalar_type;
+        typedef Vector<double,BlockCols> col_scalar_type;
+#ifndef HAVE_EIGEN
+        static_assert(BlockRows == BlockCols == 1,"Need to define HAVE_EIGEN to use matrix-valued kernel");
+#endif
 
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
@@ -385,13 +411,17 @@ namespace detail {
             ASSERT_CUDA(matrix->rows == m_ncheb);
             ASSERT_CUDA(matrix->cols == indicies_size);
             //resize_amatrix(matrix,m_ncheb,indicies_size);
+            clear_amatrix(matrix);
             detail::ChebyshevRn<D> cheb_rn(m_order,box);
             for (int i = 0; i < indicies_size; ++i) {
                 const double_d& p = get<position>(particles)[indicies[i]];
                 cheb_rn.set_position(p);
                 lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
-                    setentry_amatrix(matrix,j,i,cheb_rn(*mj));
+                    const double tmp = cheb_rn(*mj);
+                    for (int ii = 0; ii < BlockCols; ++ii) {
+                        setentry_amatrix(matrix,j*BlockCols+ii,i*BlockCols+ii,tmp);
+                    }
                 }
             }
         }
@@ -402,6 +432,7 @@ namespace detail {
             //resize_amatrix(matrix,m_ncheb,m_ncheb);
             ASSERT_CUDA(matrix->rows == m_ncheb);
             ASSERT_CUDA(matrix->cols == m_ncheb);
+            clear_amatrix(matrix);
             box_type target_box,source_box;
             for (int i = 0; i < D; ++i) {
                 target_box.bmin[i] = target_t->bmin[i];
@@ -418,7 +449,10 @@ namespace detail {
 
                 lattice_iterator<D> mi(int_d(0),int_d(m_order));
                 for (int i=0; i<m_ncheb; ++i,++mi) {
-                    setentry_amatrix(matrix,i,j,cheb_rn(*mi));
+                    const double tmp = cheb_rn(*mi);
+                    for (int ii = 0; ii < BlockCols; ++ii) {
+                        setentry_amatrix(matrix,i*BlockCols+ii,j*BlockCols+ii,tmp);
+                    }
                 }
             }
         }
@@ -445,35 +479,17 @@ namespace detail {
                     const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
+#ifdef HAVE_EIGEN
+                    const Eigen::Matrix<double,BlockRows,BlockCols> tmp(m_K(pi,pj));
+                    for (int ii = 0; ii < BlockRows; ++ii) {
+                        for (int jj = 0; jj < BlockCols; ++jj) {
+                            setentry_amatrix(matrix,i*BlockRows+ii,j*BlockCols+jj,tmp(ii,jj));
+                        }
+                    }
+#else
                     setentry_amatrix(matrix,i,j,m_K(pi,pj));
+#endif
                 }
-            }
-        }
-
-        template <typename ParticlesType>
-        void M2P_amatrix(pamatrix matrix, 
-                    const pccluster t,
-                    const uint* indicies,
-                    const uint indicies_size,
-                    const ParticlesType& particles) const {
-            typedef typename ParticlesType::position position;
-            ASSERT_CUDA(matrix->rows == indicies_size);
-            ASSERT_CUDA(matrix->cols == m_ncheb);
-            box_type box;
-            for (int i = 0; i < D; ++i) {
-                box.bmin[i] = t->bmin[i];
-                box.bmax[i] = t->bmax[i];
-            }
-            for (int i = 0; i < indicies_size; ++i) {
-                const double_d& pi = get<position>(particles)[indicies[i]];
-                lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
-                for (int j=0; j<m_ncheb; ++j,++mj) {
-                    const double_d& pj_unit_box = m_cheb_points[j];
-                    const double_d pj = 0.5*(pj_unit_box+1)*(box.bmax-box.bmin) 
-                                                                    + box.bmin;
-                    setentry_amatrix(matrix,i,j,m_K(pi,pj));
-                }
-                
             }
         }
 
@@ -483,6 +499,7 @@ namespace detail {
             //resize_amatrix(matrix,m_ncheb,m_ncheb);
             ASSERT_CUDA(matrix->rows == m_ncheb);
             ASSERT_CUDA(matrix->cols == m_ncheb);
+            clear_amatrix(matrix);
             box_type target_box,source_box;
             for (int i = 0; i < D; ++i) {
                 target_box.bmin[i] = target_t->bmin[i];
@@ -498,7 +515,10 @@ namespace detail {
                 cheb_rn.set_position(pi);
                 lattice_iterator<D> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
-                    setentry_amatrix(matrix,i,j,cheb_rn(*mj));
+                    const double tmp = cheb_rn(*mj);
+                    for (int ii = 0; ii < BlockRows; ++ii) {
+                        setentry_amatrix(matrix,i*BlockRows+ii,j*BlockRows+ii,tmp);
+                    }
                 }
             }
         }
@@ -513,6 +533,7 @@ namespace detail {
             //resize_amatrix(matrix,indicies_size,m_ncheb);
             ASSERT_CUDA(matrix->rows == indicies_size);
             ASSERT_CUDA(matrix->cols == m_ncheb);
+            clear_amatrix(matrix);
             box_type box;
             for (int i = 0; i < D; ++i) {
                 box.bmin[i] = t->bmin[i];
@@ -524,7 +545,10 @@ namespace detail {
                 cheb_rn.set_position(p);
                 lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
-                    setentry_amatrix(matrix,i,j,cheb_rn(*mj));
+                    const double tmp = cheb_rn(*mj);
+                    for (int ii = 0; ii < BlockRows; ++ii) {
+                        setentry_amatrix(matrix,i*BlockRows+ii,j*BlockRows+ii,tmp);
+                    }
                 }
                 
             }
@@ -539,6 +563,7 @@ namespace detail {
             typedef typename ParticlesType::position position;
             ASSERT_CUDA(matrix->rows == m_ncheb);
             ASSERT_CUDA(matrix->cols == indicies_size);
+            clear_amatrix(matrix);
             box_type box;
             for (int i = 0; i < D; ++i) {
                 box.bmin[i] = t->bmin[i];
@@ -550,7 +575,10 @@ namespace detail {
                 cheb_rn.set_position(p);
                 lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
-                    setentry_amatrix(matrix,j,i,cheb_rn(*mj));
+                    const double tmp = cheb_rn(*mj);
+                    for (int ii = 0; ii < BlockCols; ++ii) {
+                        setentry_amatrix(matrix,j*BlockCols+ii,i*BlockCols+ii,tmp);
+                    }
                 }
                 
             }
@@ -877,7 +905,7 @@ namespace detail {
         }
 
         bool check(const double_d& low, const double_d& high) const {
-            double_d dist(0);
+            double_d dist = double_d::Zero();
             double max_diam = m_max_diam;
             for (int i = 0; i < D; ++i) {
                 if (m_high[i] < low[i]) {
