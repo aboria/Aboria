@@ -105,9 +105,11 @@ namespace detail {
     }
 }
 
-template <Solver>
+template <typename Solver>
 class ReducedOrderPreconditioner {
     typedef Solver solver_type;
+    typedef size_t Index;
+    typedef double Scalar;
     
     Index m_rows;
     Index m_cols;
@@ -118,7 +120,7 @@ class ReducedOrderPreconditioner {
     std::vector<std::shared_ptr<solver_type>> m_solvers;
 
   public:
-    typedef typename vector_type::StorageIndex StorageIndex;
+    typedef size_t StorageIndex;
     enum {
       ColsAtCompileTime = Eigen::Dynamic,
       MaxColsAtCompileTime = Eigen::Dynamic
@@ -134,6 +136,14 @@ class ReducedOrderPreconditioner {
 
     Index rows() const { return m_rows; }
     Index cols() const { return m_cols; }
+
+    void set_order(const size_t order) {
+        m_order = order;
+    }
+
+    void set_tolerance(const double tol) {
+        m_tol = tol;
+    }
 
     template<unsigned int NI, unsigned int NJ, typename Blocks>
     ReducedOrderPreconditioner& analyzePattern(const MatrixReplacement<NI,NJ,Blocks>& mat)
@@ -172,13 +182,13 @@ class ReducedOrderPreconditioner {
             ++i;
         }
 
-        template <typename RowParticles, typename ColParticles, typename PositionF>
-        void operator()(const KernelH2<RowParticles,ColParticles,PositionF>& kernel) {
+        template <typename RowParticles, typename ColParticles, typename PositionF, typename F>
+        void operator()(const KernelH2<RowParticles,ColParticles,PositionF,F>& kernel) {
             static const unsigned int dimension = RowParticles::dimension;
 
             LOG(2,"ReducedOrderPreconditioner: block "<<i<<": generate h2 matrix");
-            auto h2 = make_h2lib_matrix(kernel.get_row_particles(),
-                                        kernel.get_col_particles(),
+            auto h2 = make_h2lib_matrix(kernel.get_row_elements(),
+                                        kernel.get_col_elements(),
                        make_h2lib_black_box_expansion<dimension>(
                                             m_order,
                                             kernel.get_position_function()),
@@ -226,19 +236,21 @@ class ReducedOrderPreconditioner {
 
     template<typename Rhs, typename Dest>
     void _solve_impl(const Rhs& b, Dest& x) const {
-        vector_type m_ext_b;
-        vector_type m_ext_x;
         size_t row = 0;
         size_t col = 0;
+        Eigen::Matrix<double,Eigen::Dynamic,1> tmp;
 
         for (int i = 0; i < m_solvers.size(); ++i) {
             auto b_segment = b.segment(col,m_col_sizes[i]);
             auto x_segment = x.segment(row,m_row_sizes[i]);
             if (m_solvers[i] != nullptr) { // solver only exists for h2 blocks
                 LOG(2,"ReducedOrderPreconditioner: block "<<i<<" solve");
-                m_solvers[i].solve(b_segment);
+                tmp = b_segment;
+                m_solvers[i]->solve(tmp);
+                x_segment = tmp;
+            } else {
+                x_segment = b_segment;
             }
-            x_segment = b_segment;
             row += m_row_sizes[i];
             col += m_col_sizes[i];
             

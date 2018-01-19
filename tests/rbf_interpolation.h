@@ -539,18 +539,14 @@ template<template <typename> class SearchMethod>
         gamma = dgmres.solve(phi);
         std::cout << "DGMRES:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
-        Eigen::DGMRES<decltype(G), DirectSolverPreconditioner<decltype(G)>> dgmres;
-        //Eigen::DGMRES<decltype(W)> dgmres;
-        //dgmres.preconditioner().set_buffer_size(RASM_buffer);
-        //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        //dgmres.preconditioner().analyzePattern(W);
-        dgmres.setMaxIterations(max_iter);
-        dgmres.set_restart(restart);
-        dgmres.compute(G);
-        gamma = dgmres.solve(phi);
-        std::cout << "DGMRES:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
-
-
+        Eigen::DGMRES<decltype(G), ReducedOrderPreconditioner<H2LibCholeskyDecomposition>> dgmres_pre;
+        dgmres_pre.preconditioner().set_order(2);
+        dgmres_pre.preconditioner().set_tolerance(1e-4);
+        dgmres_pre.setMaxIterations(max_iter);
+        dgmres_pre.set_restart(restart);
+        dgmres_pre.compute(G);
+        gamma = dgmres_pre.solve(phi);
+        std::cout << "DGMRES-ROP:  #iterations: " << dgmres_pre.iterations() << ", estimated error: " << dgmres_pre.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
         phi = G*gamma;
         double rms_error = 0;

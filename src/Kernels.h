@@ -531,6 +531,7 @@ namespace Aboria {
                                                    base_type::BlockCols> expansions_type;
         typedef H2LibMatrix h2_matrix_type;
 
+        PositionF m_position_function;
         h2_matrix_type m_h2_matrix;
 
     public:
@@ -549,20 +550,25 @@ namespace Aboria {
                  const PositionF& position_function,
                  const F& function,
                  const double eta = 1.0):
+                          base_type(row_elements,
+                                  col_elements,
+                                  function),
+                          m_position_function(position_function),
                           m_h2_matrix(row_elements,col_elements,
                                       expansions_type(
                                         order,
                                         position_function),
-                                      function,eta),
-                          base_type(row_elements,
-                                  col_elements,
-                                  function) {
+                                      function,eta)
+                          {
                           }
 
         const h2_matrix_type& get_h2_matrix() const {
             return m_h2_matrix;
         }
 
+        const PositionF& get_position_function() const {
+            return m_position_function;
+        }
 
         /// Evaluates a h2 matrix linear operator given by \p expr \p if_expr,
         /// and particle sets \p a and \p b on a vector rhs and

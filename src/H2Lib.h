@@ -89,8 +89,19 @@ public:
         del_h2matrix(A);
     }
 
-    template <typename VectorType>
-    void solve(VectorType& vector) {
+
+    //TODO: match eigen's interface for solver
+    template <typename Derived>
+    void solve(const Eigen::DenseBase<Derived> &vector) {
+        ASSERT(vector.cols() == 1 || vector.rows() == 1,"solve must take a vector");
+        pavector x = new_pointer_avector(
+                           const_cast< Eigen::DenseBase<Derived>& >(vector).derived().data(),
+                           vector.size());
+        lrsolve_h2matrix_avector(L,R,x);
+    }
+
+    template <typename T>
+    void solve(std::vector<T> &vector) {
         pavector x = new_pointer_avector(
                            vector.data(),
                            vector.size());
@@ -141,8 +152,18 @@ public:
         del_h2matrix(A);
     }
 
-    template <typename VectorType>
-    void solve(VectorType& vector) {
+    //TODO: match eigen's interface for solver
+    template <typename Derived>
+    void solve(const Eigen::DenseBase<Derived> &vector) {
+        ASSERT(vector.cols() == 1 || vector.rows() == 1,"solve must take a vector");
+        pavector x = new_pointer_avector(
+                           const_cast< Eigen::DenseBase<Derived>& >(vector).derived().data(),
+                           vector.size());
+        cholsolve_h2matrix_avector(L,x);
+    }
+
+    template <typename T>
+    void solve(std::vector<T> &vector) {
         pavector x = new_pointer_avector(
                            vector.data(),
                            vector.size());
@@ -166,8 +187,18 @@ public:
         del_hmatrix(A);
     }
 
-    template <typename VectorType>
-    void solve(VectorType& vector) {
+    //TODO: match eigen's interface for solver
+    template <typename Derived>
+    void solve(const Eigen::DenseBase<Derived> &vector) {
+        ASSERT(vector.cols() == 1 || vector.rows() == 1,"solve must take a vector");
+        pavector x = new_pointer_avector(
+                           const_cast< Eigen::DenseBase<Derived>& >(vector).data(),
+                           vector.size());
+        lrsolve_hmatrix_avector(false,A,x);
+    }
+
+    template <typename T>
+    void solve(std::vector<T> &vector) {
         pavector x = new_pointer_avector(
                            vector.data(),
                            vector.size());
