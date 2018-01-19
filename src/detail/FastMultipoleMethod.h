@@ -584,8 +584,6 @@ namespace detail {
             }
         }
 
-        
-
     };
 #endif
 

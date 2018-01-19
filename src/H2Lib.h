@@ -507,7 +507,7 @@ assemble_block_hmatrix(pcblock b, uint bname,
         expansions.L2P_amatrix(&h->r->A,
                 h->rc,h->rc->idx,h->rc->size,
                 row_particles);
-        expansions.M2P_amatrix(&h->r->B,
+        expansions.L2P_amatrix(&h->r->B,
                 h->cc,h->cc->idx,h->cc->size,
                 col_particles);
     } else if (h->f) {
@@ -634,7 +634,7 @@ private:
                 *idx = pi;
                 
             }
-            if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
+            //if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
             t = new_cluster(idx-old_idx,old_idx,0,dim);
         } else {
             size_t sons = 0;

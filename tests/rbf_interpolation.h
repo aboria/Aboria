@@ -466,7 +466,7 @@ template<template <typename> class SearchMethod>
         vdouble2 max = vdouble2::Constant(1);
         vbool2 periodic = vbool2::Constant(false);
 
-        const int N = 10000;
+        const int N = 1000;
 
         const double RASM_size = 0.3/c;
         const int RASM_n = N*std::pow(RASM_size,2)/(max-min).prod();
@@ -491,8 +491,8 @@ template<template <typename> class SearchMethod>
             test.push_back(p);
         }
 
-        knots.init_neighbour_search(min,max,periodic);
-        test.init_neighbour_search(min,max,periodic);
+        knots.init_neighbour_search(min,max,periodic,16);
+        test.init_neighbour_search(min,max,periodic,16);
 
         augment.push_back(p);
 
@@ -507,7 +507,7 @@ template<template <typename> class SearchMethod>
                         };
 
         auto G = create_h2_operator(knots,knots,4,kernel,self_kernel);
-        auto Gtest = create_h2_operator(test,knots,4,kernel,self_kernel);
+        auto Gtest = create_fmm_operator<4>(test,knots,kernel,self_kernel);
 
         vector_type phi(N), gamma(N);
         for (int i=0; i<knots.size(); ++i) {
@@ -540,8 +540,8 @@ template<template <typename> class SearchMethod>
         std::cout << "DGMRES:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
         Eigen::DGMRES<decltype(G), ReducedOrderPreconditioner<H2LibCholeskyDecomposition>> dgmres_pre;
-        dgmres_pre.preconditioner().set_order(2);
-        dgmres_pre.preconditioner().set_tolerance(1e-4);
+        dgmres_pre.preconditioner().set_order(4);
+        dgmres_pre.preconditioner().set_tolerance(1e-10);
         dgmres_pre.setMaxIterations(max_iter);
         dgmres_pre.set_restart(restart);
         dgmres_pre.compute(G);
