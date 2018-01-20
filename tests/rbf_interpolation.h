@@ -464,7 +464,7 @@ template<template <typename> class SearchMethod>
        	ParticlesType augment;
        	ParticlesType test;
 
-        const double c = 1.0/0.1;
+        const double c = 1.0/0.05;
         const double c2 = std::pow(c,2);
         vdouble2 min = vdouble2::Constant(0);
         vdouble2 max = vdouble2::Constant(1);
@@ -496,7 +496,7 @@ template<template <typename> class SearchMethod>
         }
 
         const size_t order = 4;
-        const double tol = 1e-10;
+        const double tol = 1e-5;
         knots.init_neighbour_search(min,max,periodic,std::pow(order,2));
         test.init_neighbour_search(min,max,periodic,std::pow(order,2));
 
@@ -514,7 +514,7 @@ template<template <typename> class SearchMethod>
                         };
 
 
-        auto G = create_h2_operator(knots,knots,order,kernel,self_kernel);
+        auto G = create_h2_operator(knots,knots,order,kernel,self_kernel,0.5);
         auto Gtest = create_fmm_operator<order>(test,knots,kernel,self_kernel);
 
         vector_type phi(N), gamma(N);
@@ -547,7 +547,7 @@ template<template <typename> class SearchMethod>
         std::cout << "BiCGSTAB:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
         Eigen::BiCGSTAB<decltype(G), ReducedOrderPreconditioner<H2LibCholeskyDecomposition>> dgmres_pre;
-        dgmres_pre.preconditioner().set_order(2);
+        dgmres_pre.preconditioner().set_order(4);
         dgmres_pre.preconditioner().set_tolerance(tol);
         dgmres_pre.preconditioner().set_eta(0.5);
         dgmres_pre.setMaxIterations(max_iter);
