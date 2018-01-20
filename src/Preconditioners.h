@@ -115,6 +115,7 @@ class ReducedOrderPreconditioner {
     Index m_cols;
     size_t m_order;
     double m_tol;
+    double m_eta;
     std::vector<size_t> m_col_sizes;
     std::vector<size_t> m_row_sizes;
     std::vector<std::shared_ptr<solver_type>> m_solvers;
@@ -127,11 +128,11 @@ class ReducedOrderPreconditioner {
       MaxColsAtCompileTime = Eigen::Dynamic
     };
 
-    ReducedOrderPreconditioner():m_order(4),m_tol(1e-5)
+    ReducedOrderPreconditioner():m_order(4),m_tol(1e-5),m_eta(2)
     {}
 
     template<typename MatType>
-    explicit ReducedOrderPreconditioner(const MatType& mat):m_order(4),m_tol(1e-5) {
+    explicit ReducedOrderPreconditioner(const MatType& mat):m_order(4),m_tol(1e-5),m_eta(2) {
       compute(mat);
     }
 
@@ -144,6 +145,10 @@ class ReducedOrderPreconditioner {
 
     void set_tolerance(const double tol) {
         m_tol = tol;
+    }
+
+    void set_eta(const double eta) {
+        m_eta= eta;
     }
 
     template<unsigned int NI, unsigned int NJ, typename Blocks>
@@ -165,6 +170,7 @@ class ReducedOrderPreconditioner {
         std::vector<std::shared_ptr<h2_matrix_type>> &m_h2mats; 
         size_t m_order;
         double m_tol;
+        double m_eta;
         int i;
 
         factorize_block(std::vector<size_t>& col_sizes,
@@ -172,8 +178,9 @@ class ReducedOrderPreconditioner {
                         std::vector<std::shared_ptr<solver_type>>& solvers,
                         std::vector<std::shared_ptr<h2_matrix_type>>& h2mats,
                         size_t order,
-                        double tol):
-            m_col_sizes(col_sizes),m_row_sizes(row_sizes),m_solvers(solvers),m_h2mats(h2mats),m_order(order),m_tol(tol),i(0) {}
+                        double tol,
+                        double eta):
+            m_col_sizes(col_sizes),m_row_sizes(row_sizes),m_solvers(solvers),m_h2mats(h2mats),m_order(order),m_tol(tol),m_eta(eta),i(0) {}
 
 
         template <typename Block>
@@ -189,19 +196,53 @@ class ReducedOrderPreconditioner {
         void operator()(const KernelH2<RowParticles,ColParticles,PositionF,F>& kernel) {
             static const unsigned int dimension = RowParticles::dimension;
 
-            LOG(2,"ReducedOrderPreconditioner: block "<<i<<": generate h2 matrix with order "<<m_order);
+            LOG(2,"ReducedOrderPreconditioner: block "<<i<<": generate h2 matrix with order "<<m_order<<" and eta = "<<m_eta);
             m_h2mats[i] = std::make_shared<h2_matrix_type>(
-                                    make_h2lib_matrix(kernel.get_row_elements(),
-                                        kernel.get_col_elements(),
-                       make_h2lib_black_box_expansion<dimension>(
-                                            m_order,
-                                            kernel.get_position_function()),
-                                        kernel.get_kernel_function()));
+                            kernel.get_row_elements(),
+                            kernel.get_col_elements(),
+                            make_h2lib_black_box_expansion<dimension>(
+                                              m_order,
+                                              kernel.get_position_function()),
+                            kernel.get_kernel_function(),
+                            m_eta);
+            m_h2mats[i]->compress(m_tol);
             m_col_sizes[i] = kernel.cols();
             m_row_sizes[i] = kernel.rows();
 
             LOG(2,"ReducedOrderPreconditioner: block "<<i<<": factorise h2 matrix with tolerance "<<m_tol);
+            std::vector<double> b(m_row_sizes[i]);
+            std::vector<double> b2(m_row_sizes[i]);
+            std::vector<double> b3(m_row_sizes[i]);
+            for (int ii = 0; ii < m_row_sizes[i]; ++ii) {
+                b[ii] = 0.0001;
+                b2[ii] = 0.0;
+                b3[ii] = 0.0;
+            }
+            m_h2mats[i]->matrix_vector_multiply(b2,1,false,b);
+            for (int ii = 0; ii < m_row_sizes[i]; ++ii) {
+                for (int jj = 0; jj < m_col_sizes[i]; ++jj) {
+                    b3[ii] += kernel.get_kernel_function()(kernel.get_row_elements()[ii],
+                                                          kernel.get_col_elements()[jj])
+                                    *b[jj];
+                }
+            }
+            double sum = 0;
+            double sum2 = 0;
+            for (int ii = 0; ii < m_row_sizes[i]; ++ii) {
+                sum += std::pow(b3[ii]-b2[ii],2);
+                sum2 += std::pow(b3[ii],2);
+            }
+            std::cout << "mult accuracy = "<< std::sqrt(sum/sum2) << std::endl;
             m_solvers[i] = std::make_shared<solver_type>(m_h2mats[i]->get_ph2matrix(),m_h2mats[i]->get_pblock(),m_tol);
+
+            m_solvers[i]->solve(b2);
+            sum = 0;
+            sum2 = 0;
+            for (int ii = 0; ii < m_row_sizes[i]; ++ii) {
+                sum += std::pow(b2[ii]-b[ii],2);
+                sum2 += std::pow(b[ii],2);
+            }
+            std::cout << "accuracy = "<< std::sqrt(sum/sum2) << std::endl;
 
             //m_solvers[i]->setMaxIterations(m_inner_iterations);
             //LOG(2,"ExtMatrixPreconditioner: block "<<i<<": set precon");
@@ -225,7 +266,7 @@ class ReducedOrderPreconditioner {
         m_col_sizes.resize(NI);
         m_row_sizes.resize(NI);
         detail::apply_function_to_diagonal_blocks(
-                factorize_block(m_col_sizes,m_row_sizes,m_solvers,m_h2mats,m_order,m_tol), 
+                factorize_block(m_col_sizes,m_row_sizes,m_solvers,m_h2mats,m_order,m_tol,m_eta), 
                 mat);
         m_isInitialized = true;
 
@@ -249,7 +290,7 @@ class ReducedOrderPreconditioner {
             auto b_segment = b.segment(col,m_col_sizes[i]);
             auto x_segment = x.segment(row,m_row_sizes[i]);
             if (m_solvers[i] != nullptr) { // solver only exists for h2 blocks
-                LOG(2,"ReducedOrderPreconditioner: block "<<i<<" solve");
+                LOG(2,"ReducedOrderPreconditioner: block "<<i<<" solve for "<<m_row_sizes[i]<<"x"<<m_col_sizes[i]<<" matrix");
                 typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
                 buffer.resize(std::max(m_col_sizes[i],m_row_sizes[i]));
                 map_type b_map(buffer.data(),m_row_sizes[i]);
@@ -257,8 +298,6 @@ class ReducedOrderPreconditioner {
                 b_map = b_segment;
                 m_solvers[i]->solve(buffer);
                 x_segment = x_map;
-                m_h2mats[i]->matrix_vector_multiply(b_map,1,false,x_map);
-                std::cout << "accuracy = "<<(b_map-b_segment).norm()<< std::endl;
             } else {
                 x_segment = b_segment;
             }

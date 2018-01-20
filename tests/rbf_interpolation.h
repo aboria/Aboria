@@ -314,6 +314,10 @@ void helper_compact(void) {
                             return 1.0;
                         };
 
+        
+
+
+
         auto G = create_sparse_operator(knots,knots,2*h,kernel);
         auto P = create_dense_operator(knots,augment,one);
         auto Pt = create_dense_operator(augment,knots,one);
@@ -460,7 +464,7 @@ template<template <typename> class SearchMethod>
        	ParticlesType augment;
        	ParticlesType test;
 
-       	const double c = 3.0;
+        const double c = 1.0/0.1;
         const double c2 = std::pow(c,2);
         vdouble2 min = vdouble2::Constant(0);
         vdouble2 max = vdouble2::Constant(1);
@@ -491,8 +495,10 @@ template<template <typename> class SearchMethod>
             test.push_back(p);
         }
 
-        knots.init_neighbour_search(min,max,periodic,16);
-        test.init_neighbour_search(min,max,periodic,16);
+        const size_t order = 4;
+        const double tol = 1e-10;
+        knots.init_neighbour_search(min,max,periodic,std::pow(order,2));
+        test.init_neighbour_search(min,max,periodic,std::pow(order,2));
 
         augment.push_back(p);
 
@@ -503,11 +509,13 @@ template<template <typename> class SearchMethod>
 
         auto self_kernel = [&](const_particle_reference a,
                                const_particle_reference b) {
-                            return kernel(get<position>(a),get<position>(b));
+                            return std::exp(-(get<position>(b)-get<position>(a)).squaredNorm()*c2);
+                            //return kernel(get<position>(a),get<position>(b));
                         };
 
-        auto G = create_h2_operator(knots,knots,4,kernel,self_kernel);
-        auto Gtest = create_fmm_operator<4>(test,knots,kernel,self_kernel);
+
+        auto G = create_h2_operator(knots,knots,order,kernel,self_kernel);
+        auto Gtest = create_fmm_operator<order>(test,knots,kernel,self_kernel);
 
         vector_type phi(N), gamma(N);
         for (int i=0; i<knots.size(); ++i) {
@@ -528,25 +536,24 @@ template<template <typename> class SearchMethod>
 
 
         //Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-        Eigen::DGMRES<decltype(G), Eigen::DiagonalPreconditioner<double>> dgmres;
+        Eigen::BiCGSTAB<decltype(G), Eigen::DiagonalPreconditioner<double>> dgmres;
         //Eigen::DGMRES<decltype(W)> dgmres;
         //dgmres.preconditioner().set_buffer_size(RASM_buffer);
         //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
         //dgmres.preconditioner().analyzePattern(W);
         dgmres.setMaxIterations(max_iter);
-        dgmres.set_restart(restart);
         dgmres.compute(G);
         gamma = dgmres.solve(phi);
-        std::cout << "DGMRES:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
+        std::cout << "BiCGSTAB:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
-        Eigen::DGMRES<decltype(G), ReducedOrderPreconditioner<H2LibCholeskyDecomposition>> dgmres_pre;
-        dgmres_pre.preconditioner().set_order(4);
-        dgmres_pre.preconditioner().set_tolerance(1e-10);
+        Eigen::BiCGSTAB<decltype(G), ReducedOrderPreconditioner<H2LibCholeskyDecomposition>> dgmres_pre;
+        dgmres_pre.preconditioner().set_order(2);
+        dgmres_pre.preconditioner().set_tolerance(tol);
+        dgmres_pre.preconditioner().set_eta(0.5);
         dgmres_pre.setMaxIterations(max_iter);
-        dgmres_pre.set_restart(restart);
         dgmres_pre.compute(G);
         gamma = dgmres_pre.solve(phi);
-        std::cout << "DGMRES-ROP:  #iterations: " << dgmres_pre.iterations() << ", estimated error: " << dgmres_pre.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
+        std::cout << "BiCGSTAB-ROP:  #iterations: " << dgmres_pre.iterations() << ", estimated error: " << dgmres_pre.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
         phi = G*gamma;
         double rms_error = 0;
@@ -606,8 +613,8 @@ template<template <typename> class SearchMethod>
         std::cout << "-------------------------------------------\n"<<
                      "Running tests on kdtree....\n" <<
                      "------------------------------------------" << std::endl;
-        helper_compact<nanoflann_adaptor>();
         helper_h2<nanoflann_adaptor>();
+        helper_compact<nanoflann_adaptor>();
     }
 
     void test_octtree() {

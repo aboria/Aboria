@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "detail/FastMultipoleMethod.h"
 
+#include <GL/glut.h>
 extern "C" {
 #include <h2matrix.h>
 #include <h2update.h>
@@ -117,15 +118,15 @@ class H2LibCholeskyDecomposition {
 
 public:
     H2LibCholeskyDecomposition(const ph2matrix h2mat, const pblock broot, const double tol):
-        tm(new_abseucl_truncmode()),tol(tol) {
+        tm(new_releucl_truncmode()),tol(tol) {
 
         pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
         pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
         A = clone_h2matrix(h2mat,rbcopy,cbcopy);
 
-        pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
-        pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
-        ASSERT_CUDA(A->rb->t == A->cb->t);
+        pclusterbasis Lrcb = build_from_cluster_clusterbasis(h2mat->rb->t);
+        pclusterbasis Lccb = build_from_cluster_clusterbasis(h2mat->rb->t);
+        ASSERT_CUDA(h2mat->rb->t == h2mat->cb->t);
 
         L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
 
@@ -138,13 +139,11 @@ public:
 
         choldecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, tm, tol);
 
-        /*
-        pclusteroperator rwfh2 = prepare_row_clusteroperator(h2mat->rb, h2mat->cb, tm);
-        pclusteroperator cwfh2 = prepare_col_clusteroperator(h2mat->rb, h2mat->cb, tm);
-        addmul_h2matrix(-1.0, L, true, L, h2mat, rwfh2, cwfh2, tm, tol);
-        const double error = norm2_h2matrix(h2mat);
-        std::cout << "error in factorisation is "<<norm2_h2matrix(h2mat)/error<<std::endl;
-        */
+        pclusteroperator rwfh2 = prepare_row_clusteroperator(A->rb, A->cb, tm);
+        pclusteroperator cwfh2 = prepare_col_clusteroperator(A->rb, A->cb, tm);
+        const double error = norm2_h2matrix(A);
+        addmul_h2matrix(-1.0, L, true, L, A, rwfh2, cwfh2, tm, tol);
+        std::cout << "error in factorisation is "<<norm2_h2matrix(A)/error<<std::endl;
     }
 
     ~H2LibCholeskyDecomposition() {
@@ -305,12 +304,14 @@ public:
     template <typename RowParticles, typename ColParticles, typename Expansions, typename Kernel>
     H2LibMatrix(const RowParticles &row_particles, 
                 const ColParticles &col_particles, 
-                const Expansions& expansions,const Kernel& kernel, const double eta = 1.0):
+                const Expansions& expansions,
+                const Kernel& kernel, 
+                const double eta):
             m_h2(nullptr,del_h2matrix),
             m_block(nullptr,del_block) {
 
         //generate h2 matrix 
-        LOG(2,"H2LibMatrix: creating h2 matrix using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles");
+        LOG(2,"H2LibMatrix: creating h2 matrix using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles and eta = "<<eta);
 
         const bool row_equals_col = static_cast<const void*>(&row_particles) 
                                         == static_cast<const void*>(&col_particles);
@@ -353,6 +354,13 @@ public:
                 build_strict_block(row_t,col_t,&eta_copy,admissible_max_cluster),
                 del_block);
 
+        int argc = 1;
+        char name[10] = "test";
+        char *argv[1];
+        argv[0] = name;
+        glutInit(&argc, argv);
+        view_block(m_block.get());
+
         m_h2 = std::unique_ptr<h2matrix,decltype(&del_h2matrix)>(
                     build_from_block_h2matrix(m_block.get(),row_cb,col_cb),
                     del_h2matrix);
@@ -363,6 +371,7 @@ public:
 		      assemble_block_h2matrix<RowParticles,ColParticles,Expansions,Kernel>, 
               &data_h2);
         freemem(enum_h2mat);
+
     }
 
     void compress(const double tol) {
@@ -721,14 +730,21 @@ make_h2lib_black_box_expansion(size_t order, const Function& function) {
 }
 
 template <typename Expansions, typename Kernel, typename RowParticlesType, typename ColParticlesType>
-HLibMatrix make_h2lib_h_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions, const Kernel& kernel) {
+HLibMatrix make_h2lib_h_matrix(const RowParticlesType& row_particles, 
+                               const ColParticlesType& col_particles, 
+                               const Expansions& expansions, 
+                               const Kernel& kernel) {
     return HLibMatrix(row_particles,col_particles,expansions,kernel);
 }
     
 
 template <typename Expansions, typename Kernel, typename RowParticlesType, typename ColParticlesType>
-H2LibMatrix make_h2lib_matrix(const RowParticlesType& row_particles, const ColParticlesType& col_particles, const Expansions& expansions, const Kernel& kernel) {
-    return H2LibMatrix(row_particles,col_particles,expansions,kernel);
+H2LibMatrix make_h2lib_matrix(const RowParticlesType& row_particles, 
+                              const ColParticlesType& col_particles, 
+                              const Expansions& expansions, 
+                              const Kernel& kernel,
+                              const double eta) {
+    return H2LibMatrix(row_particles,col_particles,expansions,kernel,eta);
 }
 
 

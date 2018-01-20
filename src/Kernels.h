@@ -549,7 +549,7 @@ namespace Aboria {
                  const int order, 
                  const PositionF& position_function,
                  const F& function,
-                 const double eta = 1.0):
+                 const double eta):
                           base_type(row_elements,
                                   col_elements,
                                   function),
