@@ -163,6 +163,17 @@ class MatrixReplacement : public Eigen::EigenBase<MatrixReplacement<NI,NJ,Blocks
             return get_kernel<0,0>();
         }
 
+        template <unsigned int I, unsigned int J>
+        typename std::tuple_element<I*NJ+J,Blocks>::type& 
+        get_kernel() {
+            return std::get<I*NJ+J>(m_blocks);
+        }
+
+        typename std::tuple_element<0,Blocks>::type& 
+        get_first_kernel() {
+            return get_kernel<0,0>();
+        }
+
         template<typename Derived>
         void assemble(Eigen::DenseBase<Derived>& matrix) const {
             const size_t na = rows();

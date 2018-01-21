@@ -464,7 +464,7 @@ template<template <typename> class SearchMethod>
        	ParticlesType augment;
        	ParticlesType test;
 
-        const double c = 1.0/0.05;
+        const double c = 1.0/0.10;
         const double c2 = std::pow(c,2);
         vdouble2 min = vdouble2::Constant(0);
         vdouble2 max = vdouble2::Constant(1);
@@ -478,7 +478,7 @@ template<template <typename> class SearchMethod>
         //std::cout << "RASM_size = "<<RASM_size<<" RASM_n = "<<RASM_n<<" RASM_buffer = "<<RASM_buffer<<std::endl;
 
         const int nx = 3;
-        const int max_iter = 100;
+        const int max_iter = 200;
         const int restart = 101;
         const double delta = 1.0/nx;
         typename ParticlesType::value_type p;
@@ -495,16 +495,16 @@ template<template <typename> class SearchMethod>
             test.push_back(p);
         }
 
-        const size_t order = 4;
-        const double tol = 1e-5;
-        knots.init_neighbour_search(min,max,periodic,std::pow(order,2));
-        test.init_neighbour_search(min,max,periodic,std::pow(order,2));
+        const size_t order = 8;
+        knots.init_neighbour_search(min,max,periodic,std::pow(order/2,2));
+        test.init_neighbour_search(min,max,periodic,std::pow(order/2,2));
 
         augment.push_back(p);
 
         auto kernel = [&](const vdouble2& a,
                           const vdouble2& b) {
                             return std::exp(-(b-a).squaredNorm()*c2);
+                            //return std::sqrt((b-a).squaredNorm() + c2);
                         };
 
         auto self_kernel = [&](const_particle_reference a,
@@ -515,6 +515,7 @@ template<template <typename> class SearchMethod>
 
 
         auto G = create_h2_operator(knots,knots,order,kernel,self_kernel,0.5);
+        G.get_first_kernel().compress(1e-15);
         auto Gtest = create_fmm_operator<order>(test,knots,kernel,self_kernel);
 
         vector_type phi(N), gamma(N);
@@ -525,35 +526,20 @@ template<template <typename> class SearchMethod>
         }
         //phi[knots.size()] = 0;
 
-        //Eigen::BiCGSTAB<decltype(W), RASMPreconditioner<Eigen::HouseholderQR>> bicg;
-        //Eigen::BiCGSTAB<decltype(W), ExtMatrixPreconditioner<2>> bicg;
-        //bicg.preconditioner().set_buffer_size(RASM_buffer);
-        //bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        //bicg.setMaxIterations(max_iter);
-        //bicg.compute(W);
-        //gamma = bicg.solve(phi);
-        //std::cout << "BiCGSTAB-RASM:#iterations: " << bicg.iterations() << ", estimated error: " << bicg.error() << std::endl;
-
-
-        //Eigen::DGMRES<decltype(W),  RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
         Eigen::BiCGSTAB<decltype(G), Eigen::DiagonalPreconditioner<double>> dgmres;
-        //Eigen::DGMRES<decltype(W)> dgmres;
-        //dgmres.preconditioner().set_buffer_size(RASM_buffer);
-        //dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-        //dgmres.preconditioner().analyzePattern(W);
         dgmres.setMaxIterations(max_iter);
         dgmres.compute(G);
         gamma = dgmres.solve(phi);
         std::cout << "BiCGSTAB:  #iterations: " << dgmres.iterations() << ", estimated error: " << dgmres.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
 
+        /*
         Eigen::BiCGSTAB<decltype(G), ReducedOrderPreconditioner<H2LibCholeskyDecomposition>> dgmres_pre;
-        dgmres_pre.preconditioner().set_order(4);
-        dgmres_pre.preconditioner().set_tolerance(tol);
-        dgmres_pre.preconditioner().set_eta(0.5);
+        dgmres_pre.preconditioner().set_tolerance(1e-7);
         dgmres_pre.setMaxIterations(max_iter);
         dgmres_pre.compute(G);
         gamma = dgmres_pre.solve(phi);
         std::cout << "BiCGSTAB-ROP:  #iterations: " << dgmres_pre.iterations() << ", estimated error: " << dgmres_pre.error() << " true error = "<<(G*gamma-phi).norm() << std::endl;
+        */
 
         phi = G*gamma;
         double rms_error = 0;
@@ -569,7 +555,7 @@ template<template <typename> class SearchMethod>
         }
 
         std::cout << "rms_error for global support, at centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),2e-4);
         
         rms_error = 0;
         scale = 0;
@@ -583,7 +569,7 @@ template<template <typename> class SearchMethod>
             //TS_ASSERT_DELTA(eval_value,truth,2e-3); 
         }
         std::cout << "rms_error for global support, away from centers  = "<<std::sqrt(rms_error/scale)<<std::endl;
-        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-4);
+        TS_ASSERT_LESS_THAN(std::sqrt(rms_error/scale),1e-3);
 
 
 //=}

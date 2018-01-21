@@ -570,6 +570,10 @@ namespace Aboria {
             return m_position_function;
         }
 
+        void compress(const double tol) {
+            m_h2_matrix.compress(tol);
+        }
+
         /// Evaluates a h2 matrix linear operator given by \p expr \p if_expr,
         /// and particle sets \p a and \p b on a vector rhs and
         /// accumulates the result in vector lhs

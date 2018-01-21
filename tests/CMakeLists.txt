@@ -263,6 +263,7 @@ set(RbfInterpolationTest
     test_bucket_search_serial
     test_bucket_search_parallel
     test_kdtree
+    test_octtree
     )
     
 set(RbfPdeTestFile rbf_pde.h)

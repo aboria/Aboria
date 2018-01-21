@@ -90,22 +90,25 @@ public:
         del_h2matrix(A);
     }
 
-
     //TODO: match eigen's interface for solver
-    template <typename Derived>
-    void solve(const Eigen::DenseBase<Derived> &vector) {
-        ASSERT(vector.cols() == 1 || vector.rows() == 1,"solve must take a vector");
+    template <typename DerivedRHS>
+    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
+                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
+        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
+
+        dest = source;
         pavector x = new_pointer_avector(
-                           const_cast< Eigen::DenseBase<Derived>& >(vector).derived().data(),
-                           vector.size());
+                           dest.data(),
+                           dest.size());
         lrsolve_h2matrix_avector(L,R,x);
     }
 
     template <typename T>
-    void solve(std::vector<T> &vector) {
+    void solve(const std::vector<T> &source, std::vector<double> &dest) {
+        detail::copy(std::begin(source),std::end(source),std::begin(dest));
         pavector x = new_pointer_avector(
-                           vector.data(),
-                           vector.size());
+                           dest.data(),
+                           dest.size());
         lrsolve_h2matrix_avector(L,R,x);
     }
 };
@@ -139,11 +142,13 @@ public:
 
         choldecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, tm, tol);
 
+        /*
         pclusteroperator rwfh2 = prepare_row_clusteroperator(A->rb, A->cb, tm);
         pclusteroperator cwfh2 = prepare_col_clusteroperator(A->rb, A->cb, tm);
         const double error = norm2_h2matrix(A);
         addmul_h2matrix(-1.0, L, true, L, A, rwfh2, cwfh2, tm, tol);
         std::cout << "error in factorisation is "<<norm2_h2matrix(A)/error<<std::endl;
+        */
     }
 
     ~H2LibCholeskyDecomposition() {
@@ -152,22 +157,26 @@ public:
     }
 
     //TODO: match eigen's interface for solver
-    template <typename Derived>
-    void solve(const Eigen::DenseBase<Derived> &vector) {
-        ASSERT(vector.cols() == 1 || vector.rows() == 1,"solve must take a vector");
+    template <typename DerivedRHS>
+    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
+                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
+        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
+        dest = source;
         pavector x = new_pointer_avector(
-                           const_cast< Eigen::DenseBase<Derived>& >(vector).derived().data(),
-                           vector.size());
+                           dest.data(),
+                           dest.size());
         cholsolve_h2matrix_avector(L,x);
     }
 
     template <typename T>
-    void solve(std::vector<T> &vector) {
+    void solve(const std::vector<T> &source, std::vector<double> &dest) {
+        detail::copy(std::begin(source),std::end(source),std::begin(dest));
         pavector x = new_pointer_avector(
-                           vector.data(),
-                           vector.size());
+                           dest.data(),
+                           dest.size());
         cholsolve_h2matrix_avector(L,x);
     }
+
 };
 
 class HLib_LR_Decomposition {
@@ -187,22 +196,26 @@ public:
     }
 
     //TODO: match eigen's interface for solver
-    template <typename Derived>
-    void solve(const Eigen::DenseBase<Derived> &vector) {
-        ASSERT(vector.cols() == 1 || vector.rows() == 1,"solve must take a vector");
+    template <typename DerivedRHS>
+    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
+                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
+        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
+        dest = source;
         pavector x = new_pointer_avector(
-                           const_cast< Eigen::DenseBase<Derived>& >(vector).data(),
-                           vector.size());
+                           dest.data(),
+                           dest.size());
         lrsolve_hmatrix_avector(false,A,x);
     }
 
     template <typename T>
-    void solve(std::vector<T> &vector) {
+    void solve(const std::vector<T> &source, std::vector<double> &dest) {
+        detail::copy(std::begin(source),std::end(source),std::begin(dest));
         pavector x = new_pointer_avector(
-                           vector.data(),
-                           vector.size());
+                           dest.data(),
+                           dest.size());
         lrsolve_hmatrix_avector(false,A,x);
     }
+
 };
 
 class HLibCholeskyDecomposition {
@@ -222,13 +235,28 @@ public:
         del_hmatrix(A);
     }
 
-    template <typename VectorType>
-    void solve(VectorType& vector) {
+    //TODO: match eigen's interface for solver
+    template <typename DerivedRHS>
+    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
+                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
+        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
+
+        dest = source;
         pavector x = new_pointer_avector(
-                           vector.data(),
-                           vector.size());
+                           dest.data(),
+                           dest.size());
         cholsolve_hmatrix_avector(A,x);
     }
+
+    template <typename T>
+    void solve(const std::vector<T> &source, std::vector<double> &dest) {
+        detail::copy(std::begin(source),std::end(source),std::begin(dest));
+        pavector x = new_pointer_avector(
+                           dest.data(),
+                           dest.size());
+        cholsolve_hmatrix_avector(A,x);
+    }
+    
 };
 
 
@@ -347,19 +375,19 @@ public:
         // 
         // create h2 block
         //
-        //  eta = 1.0;
-
         double eta_copy = eta;
         m_block = std::unique_ptr<block,decltype(&del_block)>(
                 build_strict_block(row_t,col_t,&eta_copy,admissible_max_cluster),
                 del_block);
 
+        /*
         int argc = 1;
         char name[10] = "test";
         char *argv[1];
         argv[0] = name;
         glutInit(&argc, argv);
         view_block(m_block.get());
+        */
 
         m_h2 = std::unique_ptr<h2matrix,decltype(&del_h2matrix)>(
                     build_from_block_h2matrix(m_block.get(),row_cb,col_cb),
