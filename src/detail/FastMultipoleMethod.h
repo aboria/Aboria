@@ -120,6 +120,9 @@ namespace detail {
     struct BlackBoxExpansions {
         typedef detail::bbox<D> box_type;
         static constexpr size_t ncheb = ipow(N,D); 
+
+        static const size_t block_rows = BlockRows;
+        static const size_t block_cols = BlockCols;
         
         typedef typename std::conditional<BlockRows==1,
                 double,
@@ -371,6 +374,9 @@ namespace detail {
     struct H2LibBlackBoxExpansions {
         typedef detail::bbox<D> box_type;
 
+        static const size_t block_rows = BlockRows;
+        static const size_t block_cols = BlockCols;
+
         typedef Vector<double,BlockRows> row_scalar_type;
         typedef Vector<double,BlockCols> col_scalar_type;
 #ifndef HAVE_EIGEN
@@ -589,14 +595,14 @@ namespace detail {
 
     template <typename Expansions,
               typename Traits, 
-              typename SourceVectorType, 
+              typename T,
                     typename VectorType=typename Expansions::expansion_type,
                     typename SourceParticleIterator=typename Traits::raw_pointer, 
                     unsigned int D=Traits::dimension>
     void calculate_P2M(VectorType& sum, 
                         const detail::bbox<D>& box, 
                         const iterator_range<ranges_iterator<Traits>>& range, 
-                        const SourceVectorType& source_vector,
+                        const std::vector<T>& source_vector,
                         const SourceParticleIterator& source_particles_begin,
                         const Expansions& expansions) {
         typedef typename Traits::position position;
@@ -612,7 +618,7 @@ namespace detail {
     // assume serial processing of particles, this could be more efficient for ranges iterators
     template <typename Expansions,
                 typename Iterator, 
-              typename SourceVectorType, 
+                typename T,
                  typename VectorType=typename Expansions::expansion_type, 
                  typename Traits=typename Iterator::traits_type,
                  typename SourceParticleIterator=typename Traits::raw_pointer, 
@@ -622,7 +628,7 @@ namespace detail {
     void calculate_P2M(VectorType& sum, 
                         const detail::bbox<D>& box, 
                         const iterator_range<Iterator>& range, 
-                        const SourceVectorType& source_vector,
+                        const std::vector<T>& source_vector,
                         const SourceParticleIterator& source_particles_begin,
                         const Expansions &expansions) {
 
@@ -636,14 +642,65 @@ namespace detail {
 
     }
 
+#ifdef HAVE_EIGEN
     template <typename Expansions,
               typename Traits, 
-              typename TargetVectorType, 
+                    typename VectorType=typename Expansions::expansion_type,
+                    typename SourceParticleIterator=typename Traits::raw_pointer, 
+                    unsigned int D=Traits::dimension>
+    void calculate_P2M(VectorType& sum, 
+                        const detail::bbox<D>& box, 
+                        const iterator_range<ranges_iterator<Traits>>& range, 
+                        const Eigen::Matrix<double,Eigen::Dynamic,1>& source_vector,
+                        const SourceParticleIterator& source_particles_begin,
+                        const Expansions& expansions) {
+        typedef typename Traits::position position;
+        const size_t N = std::distance(range.begin(),range.end());
+        const Vector<double,D>* pbegin = &get<position>(*range.begin());
+        const size_t index = pbegin - &get<position>(source_particles_begin)[0];
+        const size_t block_size = expansions.block_cols;
+        for (int i = 0; i < N; ++i) {
+            const Vector<double,D>& pi = pbegin[i]; 
+            expansions.P2M(sum,box,pi,source_vector.segment<block_size>[(index+i)*block_size]);  
+        }
+    }
+
+    // assume serial processing of particles, this could be more efficient for ranges iterators
+    template <typename Expansions,
+                typename Iterator, 
+                 typename VectorType=typename Expansions::expansion_type, 
+                 typename Traits=typename Iterator::traits_type,
+                 typename SourceParticleIterator=typename Traits::raw_pointer, 
+                 unsigned int D=Traits::dimension,
+                 typename = typename
+        std::enable_if<!std::is_same<Iterator,ranges_iterator<Traits>>::value>>
+    void calculate_P2M(VectorType& sum, 
+                        const detail::bbox<D>& box, 
+                        const iterator_range<Iterator>& range, 
+                        const Eigen::Matrix<double,Eigen::Dynamic,1>& source_vector,
+                        const SourceParticleIterator& source_particles_begin,
+                        const Expansions &expansions) {
+
+        typedef typename Traits::position position;
+        typedef typename Iterator::reference reference;
+        const size_t block_size = expansions.block_cols;
+        for (reference i: range) {
+            const Vector<double,D>& pi = get<position>(i); 
+            const size_t index = &pi- &get<position>(source_particles_begin)[0];
+            expansions.P2M(sum,box,pi,source_vector.segment<block_size>[index*block_size]);  
+        }
+
+    }
+#endif
+
+    template <typename Expansions,
+              typename Traits, 
+              typename T, 
                     typename VectorType=typename Expansions::expansion_type,
                     typename ParticleIterator=typename Traits::raw_pointer, 
                     unsigned int D=Traits::dimension>
     void calculate_L2P(
-                        TargetVectorType& target_vector,
+                        std::vector<T>& target_vector,
                         const VectorType& source, 
                         const detail::bbox<D>& box, 
                         const iterator_range<ranges_iterator<Traits>>& range, 
@@ -664,7 +721,7 @@ namespace detail {
     // assume serial processing of particles, this could be more efficient for ranges iterators
     template <typename Expansions,
                 typename Iterator, 
-              typename TargetVectorType, 
+              typename T, 
                  typename VectorType=typename Expansions::expansion_type, 
                  typename Traits=typename Iterator::traits_type,
                  typename ParticleIterator=typename Traits::raw_pointer, 
@@ -672,7 +729,7 @@ namespace detail {
                  typename = typename
         std::enable_if<!std::is_same<Iterator,ranges_iterator<Traits>>::value>>
     void calculate_L2P(
-                        TargetVectorType& target_vector,
+                        std::vector<T>& target_vector,
                         const VectorType& source, 
                         const detail::bbox<D>& box, 
                         const iterator_range<Iterator>& range, 
@@ -689,6 +746,61 @@ namespace detail {
         }
 
     }
+
+#ifdef HAVE_EIGEN
+    template <typename Expansions,
+              typename Traits, 
+                    typename VectorType=typename Expansions::expansion_type,
+                    typename ParticleIterator=typename Traits::raw_pointer, 
+                    unsigned int D=Traits::dimension>
+    void calculate_L2P(
+                        Eigen::Matrix<double,Eigen::Dynamic,1>& target_vector,
+                        const VectorType& source, 
+                        const detail::bbox<D>& box, 
+                        const iterator_range<ranges_iterator<Traits>>& range, 
+                        const ParticleIterator& target_particles_begin,
+                        const Expansions& expansions) {
+        typedef typename Traits::position position;
+        LOG(3,"calculate_L2P (range): box = "<<box);
+        const size_t N = std::distance(range.begin(),range.end());
+        const Vector<double,D>* pbegin_range = &get<position>(*range.begin());
+        const Vector<double,D>* pbegin = &get<position>(target_particles_begin)[0];
+        const size_t index = pbegin_range - pbegin;
+        const size_t block_size = expansions.block_cols;
+        for (int i = index; i < index+N; ++i) {
+            const Vector<double,D>& pi = pbegin[i]; 
+            target_vector.segment<block_size>[i*block_size] += expansions.L2P(pi,box,source);  
+        }
+    }
+
+    // assume serial processing of particles, this could be more efficient for ranges iterators
+    template <typename Expansions,
+                typename Iterator, 
+                 typename VectorType=typename Expansions::expansion_type, 
+                 typename Traits=typename Iterator::traits_type,
+                 typename ParticleIterator=typename Traits::raw_pointer, 
+                 unsigned int D=Traits::dimension,
+                 typename = typename
+        std::enable_if<!std::is_same<Iterator,ranges_iterator<Traits>>::value>>
+    void calculate_L2P(
+                        Eigen::Matrix<double,Eigen::Dynamic,1>& target_vector,
+                        const VectorType& source, 
+                        const detail::bbox<D>& box, 
+                        const iterator_range<Iterator>& range, 
+                        const ParticleIterator& target_particles_begin,
+                        const Expansions &expansions) {
+
+        LOG(3,"calculate_L2P: box = "<<box);
+        typedef typename Traits::position position;
+        typedef typename Iterator::reference reference;
+        for (reference i: range) {
+            const Vector<double,D>& pi = get<position>(i); 
+            const size_t index = &pi- &get<position>(target_particles_begin)[0];
+            target_vector.segment<block_size>[index*block_size] += expansions.L2P(pi,box,source);  
+        }
+
+    }
+#endif
 
     template <typename Kernel,
               typename Traits, 

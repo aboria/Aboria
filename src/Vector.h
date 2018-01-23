@@ -544,6 +544,24 @@ OPERATOR(/)
 /// binary `*` operator for Vector class
 OPERATOR(*)
 
+#ifdef HAVE_EIGEN
+template<typename T,int N,unsigned int M> 
+CUDA_HOST_DEVICE 
+Vector<T,N> operator *(const Eigen::Matrix<T,N,int(M)> matrix, const Vector<T,M> &arg) { 
+    static_assert(N > 0, "matrix must have fixed number of rows");
+    Vector<double,N> ret; 
+    for (int i = 0; i < N; ++i) { 
+        ret[i] = 0;
+        for (int j = 0; j < M; ++j) { 
+            ret[i] += matrix(i,j)*arg[j];
+        }
+    } 
+    return ret; 
+} 
+#endif
+
+
+
 /*
 template<typename T1,typename T2,unsigned int N> 
 CUDA_HOST_DEVICE 
@@ -813,21 +831,36 @@ typedef Vector<bool,7> vbool7;
 namespace detail {
     template <typename T>
     struct VectorTraits {
+        static const int length = 1;
         static T Zero() {
             return 0;
         }
         static T Constant(const T& c) {
             return c;
         }
+        static T& Index(T& arg,size_t) {
+            return arg;
+        }
+
+        static T squaredNorm(const T& arg) {
+            return std::pow(arg,2);
+        }
     };
 
     template<typename T,unsigned int N>
     struct VectorTraits<Vector<T,N>> {
+        static const int length = N;
         static Vector<T,N> Zero() {
             return Vector<T,N>::Zero();
         }
         static Vector<T,N> Constant(const T& c) {
             return Vector<T,N>::Constant(c);
+        }
+        static T& Index(Vector<T,N>& arg, size_t i) {
+            return arg[i];
+        }
+        static T squaredNorm(const Vector<T,N>& arg) {
+            return arg.squaredNorm();
         }
     };
 }

@@ -496,8 +496,8 @@ template<template <typename> class SearchMethod>
         }
 
         const size_t order = 8;
-        knots.init_neighbour_search(min,max,periodic,std::pow(order/2,2));
-        test.init_neighbour_search(min,max,periodic,std::pow(order/2,2));
+        knots.init_neighbour_search(min,max,periodic,10);
+        test.init_neighbour_search(min,max,periodic,10);
 
         augment.push_back(p);
 
@@ -514,8 +514,8 @@ template<template <typename> class SearchMethod>
                         };
 
 
-        auto G = create_h2_operator(knots,knots,order,kernel,self_kernel,0.5);
-        G.get_first_kernel().compress(1e-15);
+        auto G = create_h2_operator(knots,knots,order,kernel,self_kernel,1.0);
+        G.get_first_kernel().compress(1e-10);
         auto Gtest = create_fmm_operator<order>(test,knots,kernel,self_kernel);
 
         vector_type phi(N), gamma(N);
@@ -534,7 +534,7 @@ template<template <typename> class SearchMethod>
 
         /*
         Eigen::BiCGSTAB<decltype(G), ReducedOrderPreconditioner<H2LibCholeskyDecomposition>> dgmres_pre;
-        dgmres_pre.preconditioner().set_tolerance(1e-7);
+        dgmres_pre.preconditioner().set_tolerance(1e-2);
         dgmres_pre.setMaxIterations(max_iter);
         dgmres_pre.compute(G);
         gamma = dgmres_pre.solve(phi);

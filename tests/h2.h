@@ -60,6 +60,10 @@ class H2Test: public CxxTest::TestSuite {
     ABORIA_VARIABLE(target_manual,double,"target manual");
     ABORIA_VARIABLE(target_h2,double,"target h2");
     ABORIA_VARIABLE(inverted_source,double,"inverted source h2");
+    ABORIA_VARIABLE(vsource,vdouble2,"vector-valued source");
+    ABORIA_VARIABLE(vtarget_manual,vdouble2,"vector-valued target manual");
+    ABORIA_VARIABLE(vtarget_fmm,vdouble2,"vector-valued target fmm");
+    ABORIA_VARIABLE(vinverted_source,double,"inverted source h2");
 
 public:
 #ifdef HAVE_EIGEN
@@ -549,6 +553,69 @@ public:
         //helper_fast_methods_calculate<1>(particles,kernel,scale);
         //helper_fast_methods_calculate<2>(particles,kernel,scale);
         helper_fast_methods_calculate(particles,kernel,p2pkernel);
+
+#ifdef HAVE_EIGEN
+        if (D == 2) {
+            // generate a source vector using a smooth cosine
+            auto vsource_fn = [&](const double_d &p) {
+                //return (p-double_d(0)).norm();
+                vdouble2 ret = vdouble2::Constant(1.0);
+                const double scale = 2.0*detail::PI/(pos_max-pos_min); 
+                for (int i=0; i<D; i++) {
+                    ret *= cos((p[i]-pos_min)*scale);
+                }
+                return ret/N;
+            };
+            std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
+                    std::begin(get<vsource>(particles)), vsource_fn);
+
+            const double c = 0.01;
+            auto vkernel = [&c](const double_d &pa, const double_d &pb) {
+                const double_d x = pb-pa;
+                const double r2 = x.squaredNorm();
+                const double exp = std::exp(-r2/std::pow(c,2));
+                Eigen::Matrix<double,2,2> ret;
+                ret(0,0) = (x[0]*x[0]/r2 - 1)*exp;
+                ret(0,1) = (x[0]*x[1]/r2    )*exp;
+                ret(1,0) = ret(0,1);
+                ret(1,1) = (x[1]*x[1]/r2 - 1)*exp;
+                return ret;
+            };
+            auto vp2pkernel = [&](const_reference pa, const_reference pb) {
+                return kernel(get<position>(pa),get<position>(pa));
+            };
+
+
+            // perform the operation manually
+            std::fill(std::begin(get<vtarget_manual>(particles)), 
+                      std::end(get<vtarget_manual>(particles)),
+                    vdouble2::Zero());
+
+            t0 = Clock::now();
+            for (int i=0; i<N; i++) {
+                const double_d pi = get<position>(particles)[i];
+                for (int j=0; j<N; j++) {
+                    const double_d pj = get<position>(particles)[j];
+                    get<vtarget_manual>(particles)[i] += kernel(pi,pj)*get<source>(particles)[j];
+                }
+            }
+            t1 = Clock::now();
+            time_manual = t1 - t0;
+
+
+            const double vscale = std::accumulate(
+                    std::begin(get<vtarget_manual>(particles)), 
+                    std::end(get<vtarget_manual>(particles)),
+                    0,
+                    [](const double t1, const vdouble2 t2) { return t1 + t2.dot(t2); }
+                    );
+
+            std::cout << "VECTOR-VALUED - MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<vscale<<std::endl;
+
+            helper_fast_methods_calculate(particles,kernel,p2pkernel,scale);
+        }
+#endif
+
     }
 
     /*

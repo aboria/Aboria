@@ -105,7 +105,8 @@ protected:
         const box_type& my_box = m_col_query->get_bounds(ci);
         LOG(3,"calculate_dive_P2M_and_M2M with bucket "<<my_box);
         m_expansion_type& W = m_W[my_index];
-        std::fill(std::begin(W),std::end(W),0.0);
+        typedef detail::VectorTraits<typename m_expansion_type::value_type> vector_traits;
+        std::fill(std::begin(W),std::end(W),vector_traits::Zero());
         if (m_col_query->is_leaf_node(*ci)) { // leaf node
             detail::calculate_P2M(W, my_box, 
                     m_col_query->get_bucket_particles(*ci),
@@ -132,7 +133,8 @@ protected:
         LOG(3,"calculate_dive_M2L_and_L2L with bucket "<<target_box);
         size_t target_index = m_row_query->get_bucket_index(*ci);
         l_expansion_type& g = m_g[target_index];
-        std::fill(std::begin(g),std::end(g),0.0);
+        typedef detail::VectorTraits<typename l_expansion_type::value_type> vector_traits;
+        std::fill(std::begin(g),std::end(g),vector_traits::Zero());
         typename connectivity_type::reference 
             connected_buckets = m_connectivity[target_index];
         connected_buckets.clear();

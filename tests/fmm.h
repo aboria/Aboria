@@ -66,11 +66,13 @@ class FMMTest : public CxxTest::TestSuite {
     ABORIA_VARIABLE(vtarget_fmm,vdouble2,"vector-valued target fmm");
 
 public:
-    template <unsigned int N, typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
+    template <unsigned int N, typename Source, typename TargetManual, typename TargetFMM, typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
     void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const P2PKernelFunction& p2pkernel, const double scale) {
         typedef typename ParticlesType::position position;
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
+        typedef typename TargetFMM::value_type value_type;
+        typedef detail::VectorTraits<value_type> scalar_traits;
 
         auto t0 = Clock::now();
         auto fmm = make_fmm(particles,particles,
@@ -78,19 +80,20 @@ public:
                         p2pkernel);
         auto t1 = Clock::now();
         std::chrono::duration<double> time_fmm_setup = t1 - t0;
-        std::fill(std::begin(get<target_fmm>(particles)),std::end(get<target_fmm>(particles)),
-                  0.0);
+        std::fill(std::begin(get<TargetFMM>(particles)),std::end(get<TargetFMM>(particles)),
+                  scalar_traits::Zero());
         t0 = Clock::now();
-        fmm.matrix_vector_multiply(get<target_fmm>(particles),get<source>(particles));
+        fmm.matrix_vector_multiply(get<TargetFMM>(particles),get<Source>(particles));
         t1 = Clock::now();
         std::chrono::duration<double> time_fmm_eval = t1 - t0;
 
         double L2_fmm = std::inner_product(
-                std::begin(get<target_fmm>(particles)), std::end(get<target_fmm>(particles)),
-                std::begin(get<target_manual>(particles)), 
+                std::begin(get<TargetFMM>(particles)), std::end(get<TargetFMM>(particles)),
+                std::begin(get<TargetManual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); }
                 );
 
         std::cout << "for fmm:" <<std::endl;
@@ -102,7 +105,7 @@ public:
 
 #ifdef HAVE_EIGEN
         for (reference p: particles) {
-            get<target_fmm>(p) = 0;
+            get<TargetFMM>(p) = scalar_traits::Zero();
         }
         t0 = Clock::now();
         auto fmm_eigen = create_fmm_operator<N>(particles,particles,
@@ -110,20 +113,31 @@ public:
         t1 = Clock::now();
         time_fmm_setup = t1 - t0;
 
-        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
-        map_type target_eigen(get<target_fmm>(particles).data(),particles.size());
-        map_type source_eigen(get<source>(particles).data(),particles.size());
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        const int length = scalar_traits::length;
+        vector_type target_eigen(length*particles.size());
+        vector_type source_eigen(length*particles.size());
+        for (int i = 0; i < particles.size(); ++i) {
+            for (int j = 0; j < length; ++j) {
+                source_eigen[i*length+j] = scalar_traits::Index(get<Source>(particles)[i],j);
+            }
+        }
         t0 = Clock::now();
         target_eigen = fmm_eigen*source_eigen; 
         t1 = Clock::now();
         time_fmm_eval = t1 - t0;
+        for (int i = 0; i < particles.size(); ++i) {
+            for (int j = 0; j < length; ++j) {
+                scalar_traits::Index(get<TargetFMM>(particles)[i],j) = target_eigen[i*length+j];
+            }
+        }
 
         L2_fmm = std::inner_product(
-                std::begin(get<target_fmm>(particles)), std::end(get<target_fmm>(particles)),
-                std::begin(get<target_manual>(particles)), 
+                std::begin(get<TargetFMM>(particles)), std::end(get<TargetFMM>(particles)),
+                std::begin(get<TargetManual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { return scalar_traits::squaredNorm(t1-t2); }
                 );
 
         std::cout << "for fmm operator:" <<std::endl;
@@ -214,9 +228,9 @@ public:
 
         std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<scale<<std::endl;
 
-        helper_fast_methods_calculate<1>(particles,kernel,p2pkernel,scale);
-        helper_fast_methods_calculate<2>(particles,kernel,p2pkernel,scale);
-        helper_fast_methods_calculate<3>(particles,kernel,p2pkernel,scale);
+        helper_fast_methods_calculate<1,source,target_manual,target_fmm>(particles,kernel,p2pkernel,scale);
+        helper_fast_methods_calculate<2,source,target_manual,target_fmm>(particles,kernel,p2pkernel,scale);
+        helper_fast_methods_calculate<3,source,target_manual,target_fmm>(particles,kernel,p2pkernel,scale);
 
 #ifdef HAVE_EIGEN
         if (D == 2) {
@@ -246,7 +260,7 @@ public:
                 return ret;
             };
             auto vp2pkernel = [&](const_reference pa, const_reference pb) {
-                return kernel(get<position>(pa),get<position>(pa));
+                return vkernel(get<position>(pa),get<position>(pa));
             };
 
 
@@ -276,9 +290,9 @@ public:
 
             std::cout << "VECTOR-VALUED - MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<vscale<<std::endl;
 
-            helper_fast_methods_calculate<1>(particles,kernel,p2pkernel,scale);
-            helper_fast_methods_calculate<2>(particles,kernel,p2pkernel,scale);
-            helper_fast_methods_calculate<3>(particles,kernel,p2pkernel,scale);
+            helper_fast_methods_calculate<1,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,scale);
+            helper_fast_methods_calculate<2,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,scale);
+            helper_fast_methods_calculate<3,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,scale);
         }
 #endif
 
