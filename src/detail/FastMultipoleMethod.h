@@ -1211,7 +1211,7 @@ namespace detail {
                 }
                 if (high[i]-low[i] > max_diam) max_diam = high[i]-low[i];
             }
-            return std::pow(max_diam,2) > 4.0*dist.squaredNorm();
+            return std::pow(max_diam,2) > 1.0*dist.squaredNorm();
         }
     };
 
