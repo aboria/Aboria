@@ -178,6 +178,24 @@ public:
     CUDA_HOST_DEVICE
 	Vector(const Vector<T,N> &arg) = default;
 
+#ifdef HAVE_EIGEN
+    /// Eigen copy constructor 
+    ///
+    /// Assigns an eigen vector object (arg) to this vector.
+    ///
+    template <typename Derived>
+    CUDA_HOST_DEVICE
+	Vector(const Eigen::DenseBase<Derived>& arg) {
+        static_assert(Eigen::DenseBase<Derived>::RowsAtCompileTime == N ||
+                      Eigen::DenseBase<Derived>::ColsAtCompileTime == N,
+                      "vector assignment has different or dynamic lengths");
+		for (int i = 0; i < N; ++i) {
+			mem[i] = arg[i];
+		}
+	}
+#endif
+
+
     /// Vector copy-constructor
     ///
     /// \param arg constructs a vector as a copy of this arguement
@@ -244,8 +262,12 @@ public:
     ///
     /// Assigns an eigen vector object (arg) to this vector.
     ///
+    template <typename Derived>
     CUDA_HOST_DEVICE
-	Vector<T,N> &operator =(const Eigen::Matrix<T,N,1>& arg) {
+	Vector<T,N> &operator =(const Eigen::DenseBase<Derived>& arg) {
+        static_assert(Eigen::DenseBase<Derived>::RowsAtCompileTime == N ||
+                      Eigen::DenseBase<Derived>::ColsAtCompileTime == N,
+                      "vector assignment has different or dynamic lengths");
 		for (int i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
@@ -831,18 +853,24 @@ typedef Vector<bool,7> vbool7;
 namespace detail {
     template <typename T>
     struct VectorTraits {
+        typedef typename std::remove_cv<
+                typename std::remove_reference<T>::type
+                >::type base_type;
         static const int length = 1;
-        static T Zero() {
+        static base_type Zero() {
             return 0;
         }
-        static T Constant(const T& c) {
+        static base_type Constant(const base_type& c) {
             return c;
         }
-        static T& Index(T& arg,size_t) {
+        static base_type& Index(base_type& arg,size_t) {
+            return arg;
+        }
+        static const base_type& Index(const base_type& arg,size_t) {
             return arg;
         }
 
-        static T squaredNorm(const T& arg) {
+        static base_type squaredNorm(const base_type& arg) {
             return std::pow(arg,2);
         }
     };
@@ -859,10 +887,18 @@ namespace detail {
         static T& Index(Vector<T,N>& arg, size_t i) {
             return arg[i];
         }
+        static const T& Index(const Vector<T,N>& arg, size_t i) {
+            return arg[i];
+        }
         static T squaredNorm(const Vector<T,N>& arg) {
             return arg.squaredNorm();
         }
     };
+
+    template<typename T,unsigned int N>
+    struct VectorTraits<const Vector<T,N>>: public VectorTraits<Vector<T,N>> {};
+    template<typename T,unsigned int N>
+    struct VectorTraits<const Vector<T,N>&>: public VectorTraits<Vector<T,N>> {};
 }
 
 } // namespace Aboria

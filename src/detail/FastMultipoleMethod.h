@@ -180,6 +180,24 @@ namespace detail {
 
 
 #ifdef HAVE_EIGEN
+
+        /*
+        template <typename Derived>
+        static void P2M(m_expansion_type& accum,
+                 const box_type& box,
+                 const double_d& position,
+                 const Eigen::DenseBase<Derived>& source) {
+
+            detail::ChebyshevRnSingle<D,N> cheb_rn(position,box);
+            lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
+            for (int j=0; j<ncheb; ++j,++mj) {
+                //std::cout << "accumulating P2M from "<<position<<" to node "<<*mj<<" with Rn = "<<cheb_rn(*mj)<<std::endl;
+                accum[j] += cheb_rn(*mj)*source;
+            }
+        }
+        */
+
+
         template <typename ParticlesType>
         static void P2M_matrix(p2m_matrix_type& matrix, 
                     const box_type& box,
@@ -321,9 +339,9 @@ namespace detail {
         static row_scalar_type L2P(const double_d& p,
                    const box_type& box, 
                    const l_expansion_type& source) {
+            row_scalar_type sum = detail::VectorTraits<row_scalar_type>::Zero();
             detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
             lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
-            row_scalar_type sum = detail::VectorTraits<row_scalar_type>::Zero();
             for (int j=0; j<ncheb; ++j,++mj) {
                 sum += cheb_rn(*mj)*source[j];
             }
@@ -331,9 +349,24 @@ namespace detail {
         }
 
 #ifdef HAVE_EIGEN
+
+        /*
+        template <typename Derived>
+        static void L2P(const double_d& p,
+                   const box_type& box, 
+                   const l_expansion_type& source,
+                   const Eigen::DenseBase<Derived>& sum
+                   ) {
+            detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
+            lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
+            for (int j=0; j<ncheb; ++j,++mj) {
+                const_cast<Eigen::DenseBase<Derived>&>(sum) += cheb_rn(*mj)*source[j];
+            }
+        }
+
         static row_scalar_type L2P(const double_d& p,
                    const box_type& box, 
-                   const m_vector_type& source) {
+                   const l_vector_type& source) {
             detail::ChebyshevRnSingle<D,N> cheb_rn(p,box);
             lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(N));
             row_scalar_type sum = detail::VectorTraits<row_scalar_type>::Zero();
@@ -342,6 +375,7 @@ namespace detail {
             }
             return sum;
         }
+        */
 
         template <typename ParticlesType>
         static void L2P_matrix(l2p_matrix_type& matrix, 
@@ -643,6 +677,30 @@ namespace detail {
     }
 
 #ifdef HAVE_EIGEN
+
+    //TODO: move this somewhere sensible
+    template <size_t Size>
+    struct ConvertToDoubleOrVector {
+        typedef typename std::conditional<Size==1,
+                         double,
+                         Vector<double,Size>>::type return_type;
+
+        template <typename Derived>
+        static return_type convert(const Eigen::DenseBase<Derived>& vector) {
+            return vector;
+        }
+    };
+
+    template <>
+    struct ConvertToDoubleOrVector<1> {
+        typedef double return_type;
+
+        template <typename Derived>
+        static return_type convert(const Eigen::DenseBase<Derived>& vector) {
+            return vector[0];
+        }
+    };
+
     template <typename Expansions,
               typename Traits, 
               typename Derived,
@@ -662,9 +720,13 @@ namespace detail {
         const size_t block_size = expansions.block_cols;
         for (int i = 0; i < N; ++i) {
             const Vector<double,D>& pi = pbegin[i]; 
-            expansions.P2M(sum,box,pi,source_vector.template segment<block_size>((index+i)*block_size));  
+            expansions.P2M(sum,box,pi,
+                    ConvertToDoubleOrVector<block_size>::convert(
+                        source_vector.template segment<block_size>((index+i)*block_size)));  
         }
     }
+
+    
 
     // assume serial processing of particles, this could be more efficient for ranges iterators
     template <typename Expansions,
@@ -689,7 +751,9 @@ namespace detail {
         for (reference i: range) {
             const Vector<double,D>& pi = get<position>(i); 
             const size_t index = &pi- &get<position>(source_particles_begin)[0];
-            expansions.P2M(sum,box,pi,source_vector.template segment<block_size>(index*block_size));  
+            expansions.P2M(sum,box,pi,
+                    ConvertToDoubleOrVector<block_size>::convert(
+                    source_vector.template segment<block_size>(index*block_size)));  
         }
 
     }
@@ -772,9 +836,11 @@ namespace detail {
         const size_t block_size = expansions.block_rows;
         for (int i = index; i < index+N; ++i) {
             const Vector<double,D>& pi = pbegin[i]; 
-            const_cast<Eigen::DenseBase<Derived>&>(target_vector)
-                    .template segment<block_size>(i*block_size) 
-                            += expansions.L2P(pi,box,source);  
+            const auto l2p = expansions.L2P(pi,box,source);
+            for (int ii = 0; ii < block_size; ++ii) {
+                const_cast<Eigen::DenseBase<Derived>&>(target_vector)[i*block_size+ii] += 
+                    detail::VectorTraits<decltype(l2p)>::Index(l2p,ii);
+            }
         }
     }
 
@@ -803,23 +869,24 @@ namespace detail {
         for (reference i: range) {
             const Vector<double,D>& pi = get<position>(i); 
             const size_t index = &pi- &get<position>(target_particles_begin)[0];
-            const_cast<Eigen::DenseBase<Derived>&>(target_vector)
-                .template segment<block_size>(index*block_size) 
-                        += expansions.L2P(pi,box,source);  
+            const auto& l2p = expansions.L2P(pi,box,source);
+            for (int ii = 0; ii < block_size; ++ii) {
+                const_cast<Eigen::DenseBase<Derived>&>(target_vector)[index*block_size+ii] += 
+                    detail::VectorTraits<decltype(l2p)>::Index(l2p,ii);
+            }
         }
-
     }
 #endif
 
     template <typename Kernel,
               typename Traits, 
-              typename TargetVectorType, 
-              typename SourceVectorType, 
+              typename TargetType, 
+              typename SourceType, 
                typename ParticleIterator=typename Traits::raw_pointer, 
                unsigned int D=Traits::dimension>
     void calculate_P2P(
-                        TargetVectorType& target_vector,
-                        const SourceVectorType& source_vector,
+                        std::vector<TargetType>& target_vector,
+                        const std::vector<SourceType>& source_vector,
                         const iterator_range<ranges_iterator<Traits>>& target_range, 
                         const iterator_range<ranges_iterator<Traits>>& source_range, 
                         const ParticleIterator& target_particles_begin,
@@ -852,8 +919,8 @@ namespace detail {
     template <typename Kernel,
                 typename TargetIterator, 
                 typename SourceIterator, 
-              typename TargetVectorType, 
-              typename SourceVectorType, 
+              typename TargetType, 
+              typename SourceType, 
                  typename Traits=typename TargetIterator::traits_type,
                  typename ParticleIterator=typename Traits::raw_pointer, 
                  unsigned int D=Traits::dimension,
@@ -861,8 +928,8 @@ namespace detail {
         std::enable_if<!(std::is_same<TargetIterator,ranges_iterator<Traits>>::value
                             && std::is_same<SourceIterator,ranges_iterator<Traits>>::value)>>
     void calculate_P2P(
-                        TargetVectorType& target_vector,
-                        const SourceVectorType& source_vector,
+                        std::vector<TargetType>& target_vector,
+                        const std::vector<SourceType>& source_vector,
                         const iterator_range<TargetIterator>& target_range, 
                         const iterator_range<SourceIterator>& source_range, 
                         const ParticleIterator& target_particles_begin,
@@ -882,6 +949,116 @@ namespace detail {
         }
 
     }
+
+#ifdef HAVE_EIGEN
+    template <typename Kernel,
+              typename Traits, 
+              typename TargetDerived, 
+              typename SourceDerived, 
+               typename ParticleIterator=typename Traits::raw_pointer, 
+               unsigned int D=Traits::dimension>
+    void calculate_P2P(
+                        const Eigen::DenseBase<TargetDerived>& target_vector,
+                        const Eigen::DenseBase<SourceDerived>& source_vector,
+                        const iterator_range<ranges_iterator<Traits>>& target_range, 
+                        const iterator_range<ranges_iterator<Traits>>& source_range, 
+                        const ParticleIterator& target_particles_begin,
+                        const ParticleIterator& source_particles_begin,
+                        const Kernel& kernel) {
+        typedef typename Traits::position position;
+        typedef typename Traits::raw_const_reference const_row_reference;
+        typedef typename Traits::raw_const_reference const_col_reference;
+
+        const size_t n_target = std::distance(target_range.begin(),target_range.end());
+        const size_t n_source = std::distance(source_range.begin(),source_range.end());
+
+        const Vector<double,D>* pbegin_target_range = &get<position>(*target_range.begin());
+        const Vector<double,D>* pbegin_target = &get<position>(target_particles_begin)[0];
+        const size_t index_target = pbegin_target_range - pbegin_target;
+
+        const Vector<double,D>* pbegin_source_range = &get<position>(*source_range.begin());
+        const Vector<double,D>* pbegin_source = &get<position>(source_particles_begin)[0];
+
+        const size_t index_source = pbegin_source_range - pbegin_source;
+
+
+        typedef typename std::result_of<Kernel(const_row_reference, 
+                                               const_col_reference)>::type FunctionReturn;
+       
+        typedef typename std::conditional<
+                            std::is_arithmetic<FunctionReturn>::value,
+                            Eigen::Matrix<FunctionReturn,1,1>,
+                            FunctionReturn>::type Block;
+
+        const int block_rows = Block::RowsAtCompileTime; 
+        const int block_cols = Block::ColsAtCompileTime; 
+
+        static_assert(block_rows > 0,"kernel function must return fixed size matrix");
+        static_assert(block_cols > 0,"kernel function must return fixed size matrix");
+
+        auto pi = target_range.begin();
+        for (int i = index_target; i < index_target+n_target; ++i,++pi) {
+            auto pj = source_range.begin();
+            for (int j = index_source; j < index_source+n_source; ++j,++pj) {
+                const_cast<Eigen::DenseBase<TargetDerived>&>(target_vector)
+                    .template segment<block_rows>(i*block_rows) += 
+                    kernel(*pi,*pj)*source_vector.template segment<block_cols>(j*block_cols);
+            }
+        }
+    }
+
+    // assume serial processing of particles, this could be more efficient for ranges iterators
+    template <typename Kernel,
+                typename TargetIterator, 
+                typename SourceIterator, 
+              typename TargetDerived, 
+              typename SourceDerived, 
+                 typename Traits=typename TargetIterator::traits_type,
+                 typename ParticleIterator=typename Traits::raw_pointer, 
+                 unsigned int D=Traits::dimension,
+                 typename = typename
+        std::enable_if<!(std::is_same<TargetIterator,ranges_iterator<Traits>>::value
+                            && std::is_same<SourceIterator,ranges_iterator<Traits>>::value)>>
+    void calculate_P2P(
+                        const Eigen::DenseBase<TargetDerived>& target_vector,
+                        const Eigen::DenseBase<SourceDerived>& source_vector,
+                        const iterator_range<TargetIterator>& target_range, 
+                        const iterator_range<SourceIterator>& source_range, 
+                        const ParticleIterator& target_particles_begin,
+                        const ParticleIterator& source_particles_begin,
+                        const Kernel &kernel) {
+
+        typedef typename Traits::position position;
+        typedef typename Traits::raw_const_reference const_row_reference;
+        typedef typename Traits::raw_const_reference const_col_reference;
+
+        typedef typename std::result_of<Kernel(const_row_reference, 
+                                               const_col_reference)>::type FunctionReturn;
+        typedef typename std::conditional<
+                            std::is_arithmetic<FunctionReturn>::value,
+                            Eigen::Matrix<FunctionReturn,1,1>,
+                            FunctionReturn>::type Block;
+
+        const int block_rows = Block::RowsAtCompileTime; 
+        const int block_cols = Block::ColsAtCompileTime; 
+
+        static_assert(block_rows > 0,"kernel function must return fixed size matrix");
+        static_assert(block_cols > 0,"kernel function must return fixed size matrix");
+
+        for (auto& i: target_range) {
+            const size_t target_index = &get<position>(i)
+                                      - &get<position>(target_particles_begin)[0];
+            for (auto& j: source_range) {
+                const size_t source_index = &get<position>(j) 
+                                          - &get<position>(source_particles_begin)[0];
+                LOG(4,"calculate_P2P: i = "<<target_index<<" j = "<<source_index);
+                const_cast<Eigen::DenseBase<TargetDerived>&>(target_vector)
+                    .template segment<block_rows>(target_index*block_rows) += 
+                    kernel(i,j)*source_vector.template segment<block_cols>(source_index*block_cols);
+            }
+        }
+    }
+#endif
 
 
     /*
