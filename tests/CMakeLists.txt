@@ -110,18 +110,6 @@ set(SpeedTest
     test_linear_spring
     )
 
-set(SpeedTestFile speed_test.h)
-set(SpeedTest 
-    test_vector_addition
-    test_daxpy
-    test_finite_difference
-    test_multiquadric
-    test_multiquadric_scaling
-    test_linear_spring
-    )
-
-
-
 set(MetafunctionsTestFile metafunctions.h) 
 set(MetafunctionsTest
     test_aliasing

@@ -37,29 +37,12 @@ for filename in ['benchmark_fmm','vector_addition','daxpy','finite_difference','
 
     handles = []
     if filename in ['benchmark_fmm']:
-        plt.title(r'fmm')
-        plt.loglog(datas[1][:,0],datas[1][:,1],label='direct Dim=2')
-        plt.loglog(datas[2][:,0],datas[2][:,1],label='direct Dim=3')
-        #plt.loglog(datas[0][:,0],datas[0][:,2],label='kdtree N=2 nb=10 Dim=1')
-        #plt.loglog(datas[0][:,0],datas[0][:,3],label='octtree N=2 nb=10 Dim=1')
-        #plt.loglog(datas[1][:,0],datas[1][:,2],label='kdtree N=2 nb=10 Dim=2')
-        #plt.loglog(datas[1][:,0],datas[1][:,3],label='octtree N=2 nb=10 Dim=2')
-        #plt.loglog(datas[2][:,0],datas[2][:,2],label='kdtree N=2 nb=10 Dim=3')
-        #plt.loglog(datas[2][:,0],datas[2][:,3],label='octtree N=2 nb=10 Dim=3')
-
-        #plt.loglog(datas[0][:,0],datas[0][:,4],label='kdtree N=3 nb=10 Dim=1')
-        #plt.loglog(datas[0][:,0],datas[0][:,5],label='octtree N=3 nb=10 Dim=1')
-        plt.loglog(datas[1][:,0],datas[1][:,4+(3-1)*6],label='kdtree N=3 nb=30 Dim=2')
-        #plt.loglog(datas[1][:,0],datas[1][:,3+(3-1)*6],label='octtree N=3 nb=30 Dim=2')
-        plt.loglog(datas[2][:,0],datas[2][:,4+(3-1)*6],label='kdtree N=3 nb=30 Dim=3')
-        #plt.loglog(datas[2][:,0],datas[2][:,3+(6-1)*6],label='octtree N=3 nb=60 Dim=3')
-
-        #plt.loglog(datas[0][:,0],datas[0][:,6],label='kdtree N=4 nb=10 Dim=1')
-        #plt.loglog(datas[0][:,0],datas[0][:,7],label='octtree N=4 nb=10 Dim=1')
-        #plt.loglog(datas[1][:,0],datas[1][:,6],label='kdtree N=4 nb=10 Dim=2')
-        #plt.loglog(datas[1][:,0],datas[1][:,7],label='octtree N=4 nb=10 Dim=2')
-        #plt.loglog(datas[2][:,0],datas[2][:,6],label='kdtree N=4 nb=10 Dim=3')
-        #plt.loglog(datas[2][:,0],datas[2][:,7],label='octtree N=4 nb=10 Dim=3')
+        plt.title(r'Direct summation versus FMM versus H2 (Dim=2, N=3)')
+        plt.loglog(datas[1][:,0],datas[1][:,1],label='Direct')
+        plt.loglog(datas[1][:,0],datas[1][:,6],label='FMM kdtree')
+        plt.loglog(datas[1][:,0],datas[1][:,7],label='FMM octtree')
+        plt.loglog(datas[1][:,0],datas[1][:,8],label='H2 kdtree')
+        plt.loglog(datas[1][:,0],datas[1][:,9],label='H2 octtree')
 
         plt.loglog(datas[1][:,0],0.5e-8*datas[1][:,0]**2,linestyle='--',label='$N^2$')
         plt.loglog(datas[1][:,0],3.0e-6*datas[1][:,0],linestyle='--',label='$N$')

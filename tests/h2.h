@@ -62,27 +62,29 @@ class H2Test: public CxxTest::TestSuite {
     ABORIA_VARIABLE(inverted_source,double,"inverted source h2");
     ABORIA_VARIABLE(vsource,vdouble2,"vector-valued source");
     ABORIA_VARIABLE(vtarget_manual,vdouble2,"vector-valued target manual");
-    ABORIA_VARIABLE(vtarget_fmm,vdouble2,"vector-valued target fmm");
+    ABORIA_VARIABLE(vtarget_h2,vdouble2,"vector-valued target fmm");
     ABORIA_VARIABLE(vinverted_source,double,"inverted source h2");
 
 public:
 #ifdef HAVE_EIGEN
-    template <typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
+    template <typename Source, typename TargetManual, typename TargetH2, typename InvertedSource, typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
     void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const P2PKernelFunction& p2pkernel) {
         typedef typename ParticlesType::position position;
         typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
+        typedef typename TargetH2::value_type value_type;
+        typedef detail::VectorTraits<value_type> scalar_traits;
 
         const double scale_target_manual = std::accumulate(
-            std::begin(get<target_manual>(particles)), std::end(get<target_manual>(particles)),
+            std::begin(get<TargetManual>(particles)), std::end(get<TargetManual>(particles)),
             0.0,
-            [](const double t1, const double t2) { return t1 + t2*t2; }
+            [](const double t1, const value_type& t2) { return t1 + scalar_traits::squaredNorm(t2); }
         );
 
         const double scale_source = std::accumulate(
-            std::begin(get<source>(particles)), std::end(get<source>(particles)),
+            std::begin(get<Source>(particles)), std::end(get<Source>(particles)),
             0.0,
-            [](const double t1, const double t2) { return t1 + t2*t2; }
+            [](const double t1, const value_type& t2) { return t1 + scalar_traits::squaredNorm(t2); }
         );
 
         std::cout << "target scale = "<<scale_target_manual<<" source scale =  "<<scale_source<<std::endl;
@@ -92,28 +94,28 @@ public:
         
         // perform the operation using h2lib matrix
         size_t order = std::ceil(std::pow(particles.get_max_bucket_size(),1.0/dimension));
-        std::cout << "creating h2lib_matrix with order = "<<order<<std::endl;
+        const double eta = 1.0;
+        std::cout << "creating h2lib_matrix with order = "<<order<<" and eta = "<<eta<<std::endl;
         auto t0 = Clock::now();
 
         auto h2lib_matrix = make_h2lib_matrix(particles,particles,
-                make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel);
+                make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel,eta);
         auto t1 = Clock::now();
         std::chrono::duration<double> time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
         t0 = Clock::now();
-        h2lib_matrix.matrix_vector_multiply(get<target_h2>(particles),1.0,false,get<source>(particles));
+        h2lib_matrix.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
         std::chrono::duration<double> time_h2_eval = t1 - t0;
         
         double L2_h2 = std::inner_product(
-                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
-                std::begin(get<target_manual>(particles)), 
+                std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),
+                std::begin(get<TargetManual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { 
-                
-                //std::cout << t1 << " versus1 "<<t2<<std::endl;
-                return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
+                }
                 );
 
         std::cout << "for h2lib matrix class:" <<std::endl;
@@ -129,25 +131,24 @@ public:
         // compress another matrix
         t0 = Clock::now();
         auto h2lib_matrix_compress = make_h2lib_matrix(particles,particles,
-                make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel);
+                make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel,eta);
         h2lib_matrix_compress.compress(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
         t0 = Clock::now();
-        h2lib_matrix_compress.matrix_vector_multiply(get<target_h2>(particles),1.0,false,get<source>(particles));
+        h2lib_matrix_compress.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
-                std::begin(get<target_manual>(particles)), 
+                std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),
+                std::begin(get<TargetManual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { 
-                
-                //std::cout << t1 << " versus1 "<<t2<<std::endl;
-                return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
+                    }
                 );
 
         std::cout << "for compressed h2lib matrix class:" <<std::endl;
@@ -161,21 +162,20 @@ public:
                 make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
         t0 = Clock::now();
-        hlib_matrix.matrix_vector_multiply(get<target_h2>(particles),1.0,false,get<source>(particles));
+        hlib_matrix.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
-                std::begin(get<target_manual>(particles)), 
+                std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),
+                std::begin(get<TargetManual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { 
-                
-                //std::cout << t1 << " versus1 "<<t2<<std::endl;
-                return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
+                    }
                 );
 
         std::cout << "for h2lib h matrix class:" <<std::endl;
@@ -189,21 +189,20 @@ public:
         hlib_matrix_compress.compress(1e-4);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
         t0 = Clock::now();
-        hlib_matrix_compress.matrix_vector_multiply(get<target_h2>(particles),1.0,false,get<source>(particles));
+        hlib_matrix_compress.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
-                std::begin(get<target_manual>(particles)), 
+                std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),
+                std::begin(get<TargetManual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { 
-                
-                //std::cout << t1 << " versus1 "<<t2<<std::endl;
-                return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
+                    }
                 );
 
         std::cout << "for compressed h2lib h matrix class:" <<std::endl;
@@ -214,20 +213,19 @@ public:
         auto h2lib_chol_compress = h2lib_matrix_compress.chol(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_manual>(particles)),
-                  std::end(get<target_manual>(particles)),
-                  std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
-        h2lib_chol_compress.solve(get<inverted_source>(particles));
+        h2lib_chol_compress.solve(get<TargetManual>(particles),get<InvertedSource>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<inverted_source>(particles)), std::end(get<inverted_source>(particles)),
-                std::begin(get<source>(particles)), 
+                std::begin(get<InvertedSource>(particles)), std::end(get<InvertedSource>(particles)),
+                std::begin(get<Source>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
+                    }
                 );
 
         std::cout << "for h2lib chol compressed invert:" <<std::endl;
@@ -241,23 +239,20 @@ public:
         auto h2lib_lr_compress = h2lib_matrix_compress.lr(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_manual>(particles)),
-                  std::end(get<target_manual>(particles)),
-                  std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
-        h2lib_lr_compress.solve(get<inverted_source>(particles));
+        h2lib_lr_compress.solve(get<TargetManual>(particles),get<InvertedSource>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<inverted_source>(particles)), std::end(get<inverted_source>(particles)),
-                std::begin(get<source>(particles)), 
+                std::begin(get<InvertedSource>(particles)), std::end(get<InvertedSource>(particles)),
+                std::begin(get<Source>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { 
+                [](const value_type& t1, const value_type& t2) { 
                 //std::cout << t1 << " versus2 "<<t2<<std::endl;
-                return (t1-t2)*(t1-t2); 
-                }
+                    return scalar_traits::squaredNorm(t1-t2); 
+                    }
                 );
 
         std::cout << "for h2lib lr compressed invert:" <<std::endl;
@@ -270,20 +265,19 @@ public:
         auto h2lib_chol = h2lib_matrix.chol(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_manual>(particles)),
-                  std::end(get<target_manual>(particles)),
-                  std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
-        h2lib_chol.solve(get<inverted_source>(particles));
+        h2lib_chol.solve(get<TargetManual>(particles),get<InvertedSource>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<inverted_source>(particles)), std::end(get<inverted_source>(particles)),
-                std::begin(get<source>(particles)), 
+                std::begin(get<InvertedSource>(particles)), std::end(get<InvertedSource>(particles)),
+                std::begin(get<Source>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
+                    }
                 );
 
         std::cout << "for h2lib chol invert:" <<std::endl;
@@ -297,22 +291,18 @@ public:
         auto h2lib_lr = h2lib_matrix.lr(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::copy(std::begin(get<target_manual>(particles)),
-                  std::end(get<target_manual>(particles)),
-                  std::begin(get<inverted_source>(particles)));
         t0 = Clock::now();
-        h2lib_lr.solve(get<inverted_source>(particles));
+        h2lib_lr.solve(get<TargetManual>(particles),get<InvertedSource>(particles));
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
         
         L2_h2 = std::inner_product(
-                std::begin(get<inverted_source>(particles)), std::end(get<inverted_source>(particles)),
-                std::begin(get<source>(particles)), 
+                std::begin(get<InvertedSource>(particles)), std::end(get<InvertedSource>(particles)),
+                std::begin(get<Source>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { 
-                //std::cout << t1 << " versus2 "<<t2<<std::endl;
-                return (t1-t2)*(t1-t2); 
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
                 }
                 );
 
@@ -326,21 +316,30 @@ public:
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
 
-        typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
-        map_type target_eigen(get<target_h2>(particles).data(),particles.size());
-        map_type source_eigen(get<source>(particles).data(),particles.size());
+        typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
+        const int length = scalar_traits::length;
+        vector_type target_eigen(length*particles.size());
+        vector_type source_eigen(length*particles.size());
 
         t0 = Clock::now();
         target_eigen = h2_eigen*source_eigen; 
         t1 = Clock::now();
         time_h2_eval = t1 - t0;
 
+        for (int i = 0; i < particles.size(); ++i) {
+            for (int j = 0; j < length; ++j) {
+                scalar_traits::Index(get<TargetH2>(particles)[i],j) = target_eigen[i*length+j];
+            }
+        }
+
         L2_h2 = std::inner_product(
-                std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),
-                std::begin(get<target_manual>(particles)), 
+                std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),
+                std::begin(get<TargetManual>(particles)), 
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
-                [](const double t1, const double t2) { return (t1-t2)*(t1-t2); }
+                [](const value_type& t1, const value_type& t2) { 
+                    return scalar_traits::squaredNorm(t1-t2); 
+                    }
                 );
 
         std::cout << "for h2 operator:" <<std::endl;
@@ -400,7 +399,7 @@ public:
         };
 
         auto h2_matrix = make_h2_matrix(particles,particles,
-                                        make_black_box_expansion<D,2>(kernel),p2pkernel);
+                                        make_black_box_expansion<D,2>(kernel),p2pkernel,1.0);
         std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
         h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
 
@@ -487,7 +486,7 @@ public:
         const int order = 4;
         const int num_particles_per_bucket = std::max(10.0,std::pow(order,D));
 
-        typedef Particles<std::tuple<source,target_manual,target_h2,inverted_source>,D,StorageVector,SearchMethod> ParticlesType;
+        typedef Particles<std::tuple<source,target_manual,target_h2,inverted_source,vsource,vtarget_manual,vtarget_h2,vinverted_source>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
         typedef typename ParticlesType::const_reference const_reference;
         ParticlesType particles(N);
@@ -552,7 +551,7 @@ public:
 
         //helper_fast_methods_calculate<1>(particles,kernel,scale);
         //helper_fast_methods_calculate<2>(particles,kernel,scale);
-        helper_fast_methods_calculate(particles,kernel,p2pkernel);
+        helper_fast_methods_calculate<source,target_h2,target_manual,inverted_source>(particles,kernel,p2pkernel);
 
 #ifdef HAVE_EIGEN
         if (D == 2) {
@@ -562,7 +561,8 @@ public:
                 vdouble2 ret = vdouble2::Constant(1.0);
                 const double scale = 2.0*detail::PI/(pos_max-pos_min); 
                 for (int i=0; i<D; i++) {
-                    ret *= cos((p[i]-pos_min)*scale);
+                    ret[0] *= cos((p[i]-pos_min)*scale);
+                    ret[1] *= sin((p[i]-pos_min)*scale);
                 }
                 return ret/N;
             };
@@ -582,7 +582,7 @@ public:
                 return ret;
             };
             auto vp2pkernel = [&](const_reference pa, const_reference pb) {
-                return kernel(get<position>(pa),get<position>(pa));
+                return kernel(get<position>(pa),get<position>(pb));
             };
 
 
@@ -596,23 +596,16 @@ public:
                 const double_d pi = get<position>(particles)[i];
                 for (int j=0; j<N; j++) {
                     const double_d pj = get<position>(particles)[j];
-                    get<vtarget_manual>(particles)[i] += kernel(pi,pj)*get<source>(particles)[j];
+                    get<vtarget_manual>(particles)[i] += vkernel(pi,pj)*get<vsource>(particles)[j];
                 }
             }
             t1 = Clock::now();
             time_manual = t1 - t0;
 
 
-            const double vscale = std::accumulate(
-                    std::begin(get<vtarget_manual>(particles)), 
-                    std::end(get<vtarget_manual>(particles)),
-                    0,
-                    [](const double t1, const vdouble2 t2) { return t1 + t2.dot(t2); }
-                    );
+            std::cout << "VECTOR-VALUED - MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<std::endl;
 
-            std::cout << "VECTOR-VALUED - MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<vscale<<std::endl;
-
-            helper_fast_methods_calculate(particles,kernel,p2pkernel,scale);
+            helper_fast_methods_calculate<vsource,vtarget_h2,vtarget_manual,vinverted_source>(particles,vkernel,vp2pkernel);
         }
 #endif
 

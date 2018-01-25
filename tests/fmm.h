@@ -240,27 +240,35 @@ public:
                 vdouble2 ret = vdouble2::Constant(1.0);
                 const double scale = 2.0*detail::PI/(pos_max-pos_min); 
                 for (int i=0; i<D; i++) {
-                    ret *= cos((p[i]-pos_min)*scale);
+                    ret[0] *= cos((p[i]-pos_min)*scale);
+                    ret[1] *= sin((p[i]-pos_min)*scale);
                 }
                 return ret/N;
             };
             std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                     std::begin(get<vsource>(particles)), vsource_fn);
 
-            const double c = 0.01;
+            const double c = 0.1;
             auto vkernel = [&c](const double_d &pa, const double_d &pb) {
                 const double_d x = pb-pa;
                 const double r2 = x.squaredNorm();
                 const double exp = std::exp(-r2/std::pow(c,2));
                 Eigen::Matrix<double,2,2> ret;
-                ret(0,0) = (x[0]*x[0]/r2 - 1)*exp;
-                ret(0,1) = (x[0]*x[1]/r2    )*exp;
-                ret(1,0) = ret(0,1);
-                ret(1,1) = (x[1]*x[1]/r2 - 1)*exp;
+                if (r2 == 0) {
+                    ret(0,0) = (-0.5)*exp;
+                    ret(0,1) = 0.5*exp;
+                    ret(1,0) = ret(0,1);
+                    ret(1,1) = (-0.5)*exp;
+                } else {
+                    ret(0,0) = (x[0]*x[0]/r2 - 1)*exp;
+                    ret(0,1) = (x[0]*x[1]/r2    )*exp;
+                    ret(1,0) = ret(0,1);
+                    ret(1,1) = (x[1]*x[1]/r2 - 1)*exp;
+                }
                 return ret;
             };
             auto vp2pkernel = [&](const_reference pa, const_reference pb) {
-                return vkernel(get<position>(pa),get<position>(pa));
+                return vkernel(get<position>(pa),get<position>(pb));
             };
 
 
@@ -274,25 +282,24 @@ public:
                 const double_d pi = get<position>(particles)[i];
                 for (int j=0; j<N; j++) {
                     const double_d pj = get<position>(particles)[j];
-                    get<vtarget_manual>(particles)[i] += kernel(pi,pj)*get<source>(particles)[j];
+                    get<vtarget_manual>(particles)[i] += vkernel(pi,pj)*get<vsource>(particles)[j];
                 }
             }
             t1 = Clock::now();
             time_manual = t1 - t0;
 
-
             const double vscale = std::accumulate(
                     std::begin(get<vtarget_manual>(particles)), 
                     std::end(get<vtarget_manual>(particles)),
-                    0,
+                    0.0,
                     [](const double t1, const vdouble2 t2) { return t1 + t2.dot(t2); }
                     );
 
             std::cout << "VECTOR-VALUED - MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<" scale = "<<vscale<<std::endl;
 
-            helper_fast_methods_calculate<1,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,scale);
-            helper_fast_methods_calculate<2,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,scale);
-            helper_fast_methods_calculate<3,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,scale);
+            helper_fast_methods_calculate<1,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,vscale);
+            helper_fast_methods_calculate<2,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,vscale);
+            helper_fast_methods_calculate<3,vsource,vtarget_manual,vtarget_fmm>(particles,vkernel,vp2pkernel,vscale);
         }
 #endif
 

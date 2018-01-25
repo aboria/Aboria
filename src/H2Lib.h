@@ -157,6 +157,7 @@ public:
     }
 
     //TODO: match eigen's interface for solver
+    /*
     template <typename DerivedRHS>
     void solve(const Eigen::DenseBase<DerivedRHS> &source, 
                      Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
@@ -167,14 +168,33 @@ public:
                            dest.size());
         cholsolve_h2matrix_avector(L,x);
     }
+    */
 
-    template <typename T>
-    void solve(const std::vector<T> &source, std::vector<double> &dest) {
-        detail::copy(std::begin(source),std::end(source),std::begin(dest));
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
+    template <typename T1, typename T2>
+    void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
+        typedef typename detail::VectorTraits<T1> traitsT1;
+        typedef typename detail::VectorTraits<T2> traitsT2;
+
+        const size_t lengthx = std::max(source.size()*traitsT1::length,dest.size()*traitsT2::length);
+        pavector x = new_avector(lengthx);
+
+        #pragma omp parallel for
+        for (int i = 0; i < source.size(); ++i) {
+            for (int j = 0; j < traitsT1::length; ++j) {
+                setentry_avector(x,i*traitsT1::length+j,traitsT1::Index(source[i],j));
+            }
+        }
+
         cholsolve_h2matrix_avector(L,x);
+
+        #pragma omp parallel for
+        for (int i = 0; i < dest.size(); ++i) {
+            for (int j = 0; j < traitsT2::length; ++j) {
+                traitsT1::Index(dest[i],j) = getentry_avector(x,i*traitsT2::length+j);
+            }
+        }
+
+        del_avector(x);
     }
 
 };

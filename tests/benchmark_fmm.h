@@ -77,9 +77,9 @@ public:
         typedef typename particles_type::position position;
        	particles_type particles(n);
 
-        double_d min(-0.1);
-        double_d max(1.1);
-        bool_d periodic(false);
+        double_d min = double_d::Constant(-0.1);
+        double_d max = double_d::Constant(1.1);
+        bool_d periodic = bool_d::Constant(false);
         
         for (int i=0; i<n; ++i) {
             get<position>(particles)[i] = position_vect[i];
@@ -89,8 +89,13 @@ public:
 
         particles.init_neighbour_search(min,max,periodic,nbucket);
 
-        auto h2 = create_h2_operator<N>(particles,particles,
-                                    kernel);
+        auto kernel2 = [&](typename particles_type::const_reference a,
+                           typename particles_type::const_reference b) {
+            return kernel(get<position>(a),get<position>(b));
+        };
+
+        auto h2 = create_h2_operator(particles,particles,N,
+                                     kernel,kernel2);
 
         typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
         map_type targetv(get<target>(particles).data(),particles.size());
@@ -149,9 +154,9 @@ public:
         typedef typename particles_type::position position;
        	particles_type particles(n);
 
-        double_d min(-0.1);
-        double_d max(1.1);
-        bool_d periodic(false);
+        double_d min = double_d::Constant(-0.1);
+        double_d max = double_d::Constant(1.1);
+        bool_d periodic = bool_d::Constant(false);
         
         for (int i=0; i<n; ++i) {
             get<position>(particles)[i] = position_vect[i];
@@ -160,9 +165,12 @@ public:
         }
 
         particles.init_neighbour_search(min,max,periodic,nbucket);
-
+        auto kernel2 = [&](typename particles_type::const_reference a,
+                           typename particles_type::const_reference b) {
+            return kernel(get<position>(a),get<position>(b));
+        };
         auto fmm = create_fmm_operator<N>(particles,particles,
-                                    kernel);
+                                    kernel,kernel2);
 
         typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
         map_type targetv(get<target>(particles).data(),particles.size());
@@ -218,8 +226,7 @@ public:
 
         for (int i = 0; i < n; ++i) {
             for (int j = 0; j < n; ++j) {
-                target_vect[i] += kernel(position_vect[j]-position_vect[i],
-                                         position_vect[i],
+                target_vect[i] += kernel(position_vect[i],
                                          position_vect[j])
                                     *source_vect[j];
             }
@@ -229,8 +236,7 @@ public:
         for (int r=0; r<repeats; ++r) {
             for (int i = 0; i < n; ++i) {
                 for (int j = 0; j < n; ++j) {
-                    target_vect[i] += kernel(position_vect[j]-position_vect[i],
-                                             position_vect[i],
+                    target_vect[i] += kernel(position_vect[i],
                                              position_vect[j])
                                         *source_vect[j];
                 }
@@ -247,7 +253,7 @@ public:
     void helper_multiquadric() {
         std::ofstream file;
         const size_t nbucket_min = 10;
-        const size_t nbucket_max = 100;
+        const size_t nbucket_max = 11;
         const size_t nbucket_incr = 10;
         const size_t base_repeatsN2 = 1e7;
         const size_t base_repeatsN = 2e5;
@@ -269,9 +275,9 @@ public:
                   << std::setw(25) << "h2-octtree-N-4-nb-"+std::to_string(i);
         }
         file << std::endl;
-        //for (double i = 1000; i < 100000; i *= 1.1) {
-        {
-            double i = 10000;
+        for (double i = 1000; i < 1000000; i *= 1.1) {
+        //{
+        //    double i = 10000;
             const size_t N = i;
             // randomly generate a bunch of positions over a range 
             const double pos_min = 0;
@@ -305,8 +311,8 @@ public:
 
             // multiquadric kernel
             const double c = 0.1;
-            auto kernel = [&c](const double_d &dx, const double_d &pa, const double_d &pb) {
-                return std::sqrt(dx.squaredNorm() + c); 
+            auto kernel = [&c](const double_d &pa, const double_d &pb) {
+                return std::sqrt((pb-pa).squaredNorm() + c); 
             };
 
             const size_t repeatsN2 = base_repeatsN2/std::pow(N,2) + 1;
@@ -320,9 +326,9 @@ public:
 #endif
             file << std::setw(25) << multiquadric_vector(target,positions,source,kernel,repeatsN2);
 
-            //for (size_t i = nbucket_min; i < nbucket_max; i += nbucket_incr) {
-            {
-                size_t i = 50;
+            for (size_t i = nbucket_min; i < nbucket_max; i += nbucket_incr) {
+            //{
+            //    size_t i = nbucket_min;
                 file << std::setw(25) << 
                     multiquadric_fmm<2,nanoflann_adaptor>(positions,source,
                             target,kernel,repeatsN,i);
@@ -368,11 +374,12 @@ public:
     }
 
     void test_multiquadric() {
-        helper_multiquadric<1>();
+        //helper_multiquadric<1>();
         helper_multiquadric<2>();
-        helper_multiquadric<3>();
+        //helper_multiquadric<3>();
         //helper_multiquadric<4>();
     }
+
 
 
 };
