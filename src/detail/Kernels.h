@@ -44,6 +44,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 namespace detail {
+    template<typename RowRef, typename ColRef, typename F>
+    struct kernel_helper_ref {
+    
+        typedef typename std::result_of<F(RowRef,ColRef)>::type FunctionReturn;
+
+        typedef typename std::conditional<
+            std::is_arithmetic<FunctionReturn>::value,
+            Eigen::Matrix<FunctionReturn,1,1>,
+            FunctionReturn>::type Block;
+
+        static const int block_rows = Block::RowsAtCompileTime; 
+        static const int block_cols = Block::ColsAtCompileTime; 
+
+        static_assert(block_rows > 0,"kernel function must return fixed size matrix");
+        static_assert(block_cols > 0,"kernel function must return fixed size matrix");
+    };
 
     template<typename RowElements, typename ColElements, typename F>
     struct kernel_helper {

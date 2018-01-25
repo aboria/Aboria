@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define FAST_MULTIPOLE_METHOD_DETAIL_H_
 
 #include "detail/SpatialUtil.h"
+#include "detail/Kernels.h"
 #include "detail/Chebyshev.h"
 #include "NeighbourSearchBase.h"
 #include "Traits.h"
@@ -981,28 +982,16 @@ namespace detail {
 
         const size_t index_source = pbegin_source_range - pbegin_source;
 
-
-        typedef typename std::result_of<Kernel(const_row_reference, 
-                                               const_col_reference)>::type FunctionReturn;
-       
-        typedef typename std::conditional<
-                            std::is_arithmetic<FunctionReturn>::value,
-                            Eigen::Matrix<FunctionReturn,1,1>,
-                            FunctionReturn>::type Block;
-
-        const int block_rows = Block::RowsAtCompileTime; 
-        const int block_cols = Block::ColsAtCompileTime; 
-
-        static_assert(block_rows > 0,"kernel function must return fixed size matrix");
-        static_assert(block_cols > 0,"kernel function must return fixed size matrix");
+        typedef detail::kernel_helper_ref<const_row_reference,
+                                           const_col_reference,Kernel> helper;
 
         auto pi = target_range.begin();
         for (int i = index_target; i < index_target+n_target; ++i,++pi) {
             auto pj = source_range.begin();
             for (int j = index_source; j < index_source+n_source; ++j,++pj) {
                 const_cast<Eigen::DenseBase<TargetDerived>&>(target_vector)
-                    .template segment<block_rows>(i*block_rows) += 
-                    kernel(*pi,*pj)*source_vector.template segment<block_cols>(j*block_cols);
+                    .template segment<helper::block_rows>(i*helper::block_rows) += 
+                    kernel(*pi,*pj)*source_vector.template segment<helper::block_cols>(j*helper::block_cols);
             }
         }
     }
@@ -1032,6 +1021,7 @@ namespace detail {
         typedef typename Traits::raw_const_reference const_row_reference;
         typedef typename Traits::raw_const_reference const_col_reference;
 
+        // TODO: lots of common code here to consolodate
         typedef typename std::result_of<Kernel(const_row_reference, 
                                                const_col_reference)>::type FunctionReturn;
         typedef typename std::conditional<
@@ -1119,13 +1109,19 @@ namespace detail {
                 const RowParticlesType& row_particles,
                 const ColParticlesType& col_particles,
                 const Kernel& kernel) {
+       
+        typedef detail::kernel_helper_ref<typename RowParticlesType::const_reference,
+                                          typename ColParticlesType::const_reference,
+                                          Kernel> helper;
+
         typedef typename ColParticlesType::position position;
         matrix.resize(row_indicies.size(),col_indicies.size());
         for (int i = 0; i < row_indicies.size(); ++i) {
             for (int j = 0; j < col_indicies.size(); ++j) {
-                matrix(i,j) = kernel(row_particles[i],col_particles[j]);
+                matrix.block<helper::block_rows,helper::block_cols>(
+                        i*helper::block_rows,j*helper::block_cols) 
+                                = kernel(row_particles[i],col_particles[j]);
             }
-            
         }
     }
 #endif
@@ -1143,12 +1139,23 @@ namespace detail {
         typedef typename ColParticlesType::position position;
         ASSERT_CUDA(matrix->rows == row_indicies_size);
         ASSERT_CUDA(matrix->cols == col_indicies_size);
+
+        typedef detail::kernel_helper_ref<typename RowParticlesType::const_reference,
+                                          typename ColParticlesType::const_reference,
+                                          Kernel> helper;
+
         //resize_amatrix(matrix,row_indicies_size,col_indicies_size);
         for (int i = 0; i < row_indicies_size; ++i) {
             const auto& pi = row_particles[row_indicies[i]];
             for (int j = 0; j < col_indicies_size; ++j) {
                 const auto& pj = col_particles[col_indicies[j]];
-                setentry_amatrix(matrix,i,j,kernel(pi,pj));
+                const typename helper::Block tmp(kernel(pi,pj));
+                for (int ii = 0; ii < helper::block_rows; ++ii) {
+                    for (int jj = 0; jj < helper::block_cols; ++jj) {
+                        setentry_amatrix(matrix,i,j,tmp(ii,jj));
+                    }
+                    
+                }
             }
             
         }

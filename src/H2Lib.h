@@ -91,6 +91,7 @@ public:
     }
 
     //TODO: match eigen's interface for solver
+    /*
     template <typename DerivedRHS>
     void solve(const Eigen::DenseBase<DerivedRHS> &source, 
                      Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
@@ -102,14 +103,21 @@ public:
                            dest.size());
         lrsolve_h2matrix_avector(L,R,x);
     }
+    */
 
-    template <typename T>
-    void solve(const std::vector<T> &source, std::vector<double> &dest) {
+    template <typename T1, typename T2>
+    void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
+        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
+        typedef typename detail::VectorTraits<T1> traitsT1;
+        typedef typename detail::VectorTraits<T2> traitsT2;
+
         detail::copy(std::begin(source),std::end(source),std::begin(dest));
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
-        lrsolve_h2matrix_avector(L,R,x);
+
+        pavector dest_avector = new_pointer_avector(
+                                    reinterpret_cast<double*>(dest.data()),
+                                    dest.size()*traitsT2::length);
+
+        lrsolve_h2matrix_avector(L,R,dest_avector);
     }
 };
 
@@ -172,29 +180,17 @@ public:
 
     template <typename T1, typename T2>
     void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
+        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
         typedef typename detail::VectorTraits<T1> traitsT1;
         typedef typename detail::VectorTraits<T2> traitsT2;
 
-        const size_t lengthx = std::max(source.size()*traitsT1::length,dest.size()*traitsT2::length);
-        pavector x = new_avector(lengthx);
+        detail::copy(std::begin(source),std::end(source),std::begin(dest));
 
-        #pragma omp parallel for
-        for (int i = 0; i < source.size(); ++i) {
-            for (int j = 0; j < traitsT1::length; ++j) {
-                setentry_avector(x,i*traitsT1::length+j,traitsT1::Index(source[i],j));
-            }
-        }
+        pavector dest_avector = new_pointer_avector(
+                                    reinterpret_cast<double*>(dest.data()),
+                                    dest.size()*traitsT2::length);
 
-        cholsolve_h2matrix_avector(L,x);
-
-        #pragma omp parallel for
-        for (int i = 0; i < dest.size(); ++i) {
-            for (int j = 0; j < traitsT2::length; ++j) {
-                traitsT1::Index(dest[i],j) = getentry_avector(x,i*traitsT2::length+j);
-            }
-        }
-
-        del_avector(x);
+        cholsolve_h2matrix_avector(L,dest_avector);
     }
 
 };
@@ -216,6 +212,7 @@ public:
     }
 
     //TODO: match eigen's interface for solver
+    /*
     template <typename DerivedRHS>
     void solve(const Eigen::DenseBase<DerivedRHS> &source, 
                      Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
@@ -226,14 +223,21 @@ public:
                            dest.size());
         lrsolve_hmatrix_avector(false,A,x);
     }
+    */
 
-    template <typename T>
-    void solve(const std::vector<T> &source, std::vector<double> &dest) {
+    template <typename T1, typename T2>
+    void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
+        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
+        typedef typename detail::VectorTraits<T1> traitsT1;
+        typedef typename detail::VectorTraits<T2> traitsT2;
+
         detail::copy(std::begin(source),std::end(source),std::begin(dest));
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
-        lrsolve_hmatrix_avector(false,A,x);
+
+        pavector dest_avector = new_pointer_avector(
+                                    reinterpret_cast<double*>(dest.data()),
+                                    dest.size()*traitsT2::length);
+
+        lrsolve_hmatrix_avector(false,A,dest_avector);
     }
 
 };
@@ -523,16 +527,22 @@ public:
     }
 
     // target_vector += alpha*A*source_vector or alpha*A'*source_vector
-    template <typename VectorTypeTarget, typename VectorTypeSource>
-    void matrix_vector_multiply(VectorTypeTarget& target_vector, 
+    template <typename T1, typename T2>
+    void matrix_vector_multiply(std::vector<T1>& target_vector, 
                                 const double alpha, const bool h2trans,
-                                const VectorTypeSource& source_vector) const {
+                                const std::vector<T2>& source_vector) const {
+        static_assert(std::is_standard_layout<T1>::value,"T1 must be standard layout");
+        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
+        typedef typename detail::VectorTraits<T1> traitsT1;
+        typedef typename detail::VectorTraits<T2> traitsT2;
+
         pavector source_avector = new_pointer_avector(
-                                    const_cast<double*>(source_vector.data()),
-                                    source_vector.size());
+                                    const_cast<double*>(
+                                        reinterpret_cast<const double*>(source_vector.data())),
+                                    source_vector.size()*traitsT1::length);
         pavector target_avector = new_pointer_avector(
-                                    target_vector.data(),
-                                    target_vector.size());
+                                    reinterpret_cast<double*>(target_vector.data()),
+                                    target_vector.size()*traitsT2::length);
         mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
     }
 };
@@ -750,17 +760,24 @@ public:
         return HLibCholeskyDecomposition(get_phmatrix(),tol);
     }
 
+
     // target_vector += alpha*A*source_vector or alpha*A'*source_vector
-    template <typename VectorTypeTarget, typename VectorTypeSource>
-    void matrix_vector_multiply(VectorTypeTarget& target_vector, 
+    template <typename T1, typename T2>
+    void matrix_vector_multiply(std::vector<T1>& target_vector, 
                                 const double alpha, const bool h2trans,
-                                const VectorTypeSource& source_vector) const {
+                                const std::vector<T2>& source_vector) const {
+        static_assert(std::is_standard_layout<T1>::value,"T1 must be standard layout");
+        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
+        typedef typename detail::VectorTraits<T1> traitsT1;
+        typedef typename detail::VectorTraits<T2> traitsT2;
+
         pavector source_avector = new_pointer_avector(
-                                    const_cast<double*>(source_vector.data()),
-                                    source_vector.size());
+                                    const_cast<double*>(
+                                        reinterpret_cast<const double*>(source_vector.data())),
+                                    source_vector.size()*traitsT1::length);
         pavector target_avector = new_pointer_avector(
-                                    target_vector.data(),
-                                    target_vector.size());
+                                    reinterpret_cast<double*>(target_vector.data()),
+                                    target_vector.size()*traitsT2::length);
         mvm_hmatrix_avector(alpha,h2trans,m_h.get(),source_avector,target_avector);
     }
 };

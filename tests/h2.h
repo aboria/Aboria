@@ -63,7 +63,7 @@ class H2Test: public CxxTest::TestSuite {
     ABORIA_VARIABLE(vsource,vdouble2,"vector-valued source");
     ABORIA_VARIABLE(vtarget_manual,vdouble2,"vector-valued target manual");
     ABORIA_VARIABLE(vtarget_h2,vdouble2,"vector-valued target fmm");
-    ABORIA_VARIABLE(vinverted_source,double,"inverted source h2");
+    ABORIA_VARIABLE(vinverted_source,vdouble2,"inverted source h2");
 
 public:
 #ifdef HAVE_EIGEN
@@ -102,7 +102,7 @@ public:
                 make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel,eta);
         auto t1 = Clock::now();
         std::chrono::duration<double> time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),scalar_traits::Zero());
         t0 = Clock::now();
         h2lib_matrix.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
@@ -135,7 +135,7 @@ public:
         h2lib_matrix_compress.compress(tol);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),scalar_traits::Zero());
         t0 = Clock::now();
         h2lib_matrix_compress.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
@@ -162,7 +162,7 @@ public:
                 make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),scalar_traits::Zero());
         t0 = Clock::now();
         hlib_matrix.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
@@ -189,7 +189,7 @@ public:
         hlib_matrix_compress.compress(1e-4);
         t1 = Clock::now();
         time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),0.0);
+        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),scalar_traits::Zero());
         t0 = Clock::now();
         hlib_matrix_compress.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
         t1 = Clock::now();
@@ -400,7 +400,7 @@ public:
 
         auto h2_matrix = make_h2_matrix(particles,particles,
                                         make_black_box_expansion<D,2>(kernel),p2pkernel,1.0);
-        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0.0);
+        std::fill(std::begin(get<target_h2>(particles)), std::end(get<target_h2>(particles)),0);
         h2_matrix.matrix_vector_multiply(get<target_h2>(particles),get<source>(particles));
 
         auto internal_extended_vector = h2_matrix.get_internal_state();
@@ -582,7 +582,7 @@ public:
                 return ret;
             };
             auto vp2pkernel = [&](const_reference pa, const_reference pb) {
-                return kernel(get<position>(pa),get<position>(pb));
+                return vkernel(get<position>(pa),get<position>(pb));
             };
 
 
