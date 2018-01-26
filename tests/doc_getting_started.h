@@ -156,7 +156,7 @@ void test_getting_started(void) {
     cmake_minimum_required(VERSION 2.8)
 
     # Boost
-    find_package(Boost 1.50.0 COMPONENTS python REQUIRED)
+    find_package(Boost 1.50.0 REQUIRED)
     list(APPEND LIBRARIES ${Boost_LIBRARIES})
     list(APPEND INCLUDES ${Boost_INCLUDE_DIRS})
 
