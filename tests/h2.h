@@ -67,7 +67,7 @@ class H2Test: public CxxTest::TestSuite {
 
 public:
 #ifdef HAVE_EIGEN
-    template <typename Source, typename TargetManual, typename TargetH2, typename InvertedSource, typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
+    template <typename Source, typename TargetH2, typename TargetManual, typename InvertedSource, typename ParticlesType, typename KernelFunction, typename P2PKernelFunction>
     void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const P2PKernelFunction& p2pkernel) {
         typedef typename ParticlesType::position position;
         typedef typename ParticlesType::reference reference;
@@ -320,6 +320,12 @@ public:
         const int length = scalar_traits::length;
         vector_type target_eigen(length*particles.size());
         vector_type source_eigen(length*particles.size());
+
+        for (int i = 0; i < particles.size(); ++i) {
+            for (int j = 0; j < length; ++j) {
+                 source_eigen[i*length+j] = scalar_traits::Index(get<Source>(particles)[i],j);
+            }
+        }
 
         t0 = Clock::now();
         target_eigen = h2_eigen*source_eigen; 
@@ -575,10 +581,17 @@ public:
                 const double r2 = x.squaredNorm();
                 const double exp = std::exp(-r2/std::pow(c,2));
                 Eigen::Matrix<double,2,2> ret;
-                ret(0,0) = (x[0]*x[0]/r2 - 1)*exp;
-                ret(0,1) = (x[0]*x[1]/r2    )*exp;
-                ret(1,0) = ret(0,1);
-                ret(1,1) = (x[1]*x[1]/r2 - 1)*exp;
+                if (r2 == 0) {
+                    ret(0,0) = (-0.5)*exp;
+                    ret(0,1) = 0.5*exp;
+                    ret(1,0) = ret(0,1);
+                    ret(1,1) = (-0.5)*exp;
+                } else {
+                    ret(0,0) = (x[0]*x[0]/r2 - 1)*exp;
+                    ret(0,1) = (x[0]*x[1]/r2    )*exp;
+                    ret(1,0) = ret(0,1);
+                    ret(1,1) = (x[1]*x[1]/r2 - 1)*exp;
+                }
                 return ret;
             };
             auto vp2pkernel = [&](const_reference pa, const_reference pb) {
@@ -863,6 +876,7 @@ public:
         helper_fast_methods<2,std::vector,octtree>(N);
         std::cout << "OCTTREE: testing 3D..." << std::endl;
         helper_fast_methods<3,std::vector,octtree>(N);
+        
 #endif
     }
 

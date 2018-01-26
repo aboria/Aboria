@@ -545,6 +545,24 @@ public:
                                     target_vector.size()*traitsT2::length);
         mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
     }
+
+    template <typename T1, typename T2>
+    void matrix_vector_multiply(Eigen::DenseBase<T1>& target_vector, 
+                                const double alpha, const bool h2trans,
+                                const Eigen::DenseBase<T2>& source_vector) const {
+
+        pavector source_avector = new_pointer_avector(
+                                    const_cast<double*>(
+                                        source_vector.derived().data()),
+                                    source_vector.size());
+        
+        pavector target_avector = new_pointer_avector(
+                                    //const_cast<double*>(
+                                        target_vector.derived().data(),
+                                    target_vector.size());
+
+        mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
+    }
 };
 
 class HLibMatrix {
