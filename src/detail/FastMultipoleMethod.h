@@ -449,8 +449,8 @@ namespace detail {
                 box.bmin[i] = t->bmin[i];
                 box.bmax[i] = t->bmax[i];
             }
-            ASSERT_CUDA(matrix->rows == m_ncheb);
-            ASSERT_CUDA(matrix->cols == indicies_size);
+            ASSERT_CUDA(matrix->rows == indicies_size*BlockCols);
+            ASSERT_CUDA(matrix->cols == m_ncheb*BlockCols);
             //resize_amatrix(matrix,m_ncheb,indicies_size);
             clear_amatrix(matrix);
             detail::ChebyshevRn<D> cheb_rn(m_order,box);
@@ -461,7 +461,7 @@ namespace detail {
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockCols; ++ii) {
-                        setentry_amatrix(matrix,j*BlockCols+ii,i*BlockCols+ii,tmp);
+                        setentry_amatrix(matrix,i*BlockCols+ii,j*BlockCols+ii,tmp);
                     }
                 }
             }
@@ -471,8 +471,8 @@ namespace detail {
                  pccluster target_t, 
                  pccluster source_t) const {
             //resize_amatrix(matrix,m_ncheb,m_ncheb);
-            ASSERT_CUDA(matrix->rows == m_ncheb);
-            ASSERT_CUDA(matrix->cols == m_ncheb);
+            ASSERT_CUDA(matrix->rows == m_ncheb*BlockCols);
+            ASSERT_CUDA(matrix->cols == m_ncheb*BlockCols);
             clear_amatrix(matrix);
             box_type target_box,source_box;
             for (int i = 0; i < D; ++i) {
@@ -503,8 +503,8 @@ namespace detail {
                  pccluster source_t) const {
             // don't resize, already done in new_uniform
             //resize_amatrix(matrix,m_ncheb,m_ncheb);
-            ASSERT_CUDA(matrix->rows == m_ncheb);
-            ASSERT_CUDA(matrix->cols == m_ncheb);
+            ASSERT_CUDA(matrix->rows == m_ncheb*BlockRows);
+            ASSERT_CUDA(matrix->cols == m_ncheb*BlockCols);
             box_type target_box,source_box;
             for (int i = 0; i < D; ++i) {
                 target_box.bmin[i] = target_t->bmin[i];
@@ -538,8 +538,8 @@ namespace detail {
                  pccluster target_t, 
                  pccluster source_t) const {
             //resize_amatrix(matrix,m_ncheb,m_ncheb);
-            ASSERT_CUDA(matrix->rows == m_ncheb);
-            ASSERT_CUDA(matrix->cols == m_ncheb);
+            ASSERT_CUDA(matrix->rows == m_ncheb*BlockRows);
+            ASSERT_CUDA(matrix->cols == m_ncheb*BlockRows);
             clear_amatrix(matrix);
             box_type target_box,source_box;
             for (int i = 0; i < D; ++i) {
@@ -572,8 +572,8 @@ namespace detail {
                     const ParticlesType& particles) const {
             typedef typename ParticlesType::position position;
             //resize_amatrix(matrix,indicies_size,m_ncheb);
-            ASSERT_CUDA(matrix->rows == indicies_size);
-            ASSERT_CUDA(matrix->cols == m_ncheb);
+            ASSERT_CUDA(matrix->rows == indicies_size*BlockRows);
+            ASSERT_CUDA(matrix->cols == m_ncheb*BlockRows);
             clear_amatrix(matrix);
             box_type box;
             for (int i = 0; i < D; ++i) {
@@ -602,8 +602,8 @@ namespace detail {
                     const uint indicies_size,
                     const ParticlesType& particles) const {
             typedef typename ParticlesType::position position;
-            ASSERT_CUDA(matrix->rows == m_ncheb);
-            ASSERT_CUDA(matrix->cols == indicies_size);
+            ASSERT_CUDA(matrix->rows == m_ncheb*BlockCols);
+            ASSERT_CUDA(matrix->cols == indicies_size*BlockCols);
             clear_amatrix(matrix);
             box_type box;
             for (int i = 0; i < D; ++i) {

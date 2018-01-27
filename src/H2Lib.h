@@ -305,20 +305,45 @@ assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
     const Particles& particles = *std::get<1>(data_cast);
     pclusterbasis rb = (pclusterbasis) rbc;
 
-    const uint k = expansions.m_ncheb;
+    const uint k = expansions.m_ncheb*expansions.block_rows;
     if (rb->sons > 0) {
         resize_clusterbasis(rb,k);
         for (int i = 0; i < rb->sons; ++i) {
             expansions.L2L_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
         }
     } else {
-        resize_amatrix(&rb->V,rb->t->size,k);
+        resize_amatrix(&rb->V,rb->t->size*expansions.block_rows,k);
         expansions.L2P_amatrix(&rb->V,rb->t,rb->t->idx,rb->t->size,particles);
         rb->k = k;
         update_clusterbasis(rb);
     }
 }
 
+template <typename Particles,typename Expansions>
+static void
+assemble_h2matrix_col_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
+{
+    auto& data_cast = *static_cast<
+        std::tuple<Expansions*,Particles*>*>(data);
+
+    const Expansions& expansions = *std::get<0>(data_cast);
+    const Particles& particles = *std::get<1>(data_cast);
+    pclusterbasis rb = (pclusterbasis) rbc;
+
+    const uint k = expansions.m_ncheb*expansions.block_cols;
+    if (rb->sons > 0) {
+        resize_clusterbasis(rb,k);
+        for (int i = 0; i < rb->sons; ++i) {
+            // should this be transposed?
+            expansions.M2M_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
+        }
+    } else {
+        resize_amatrix(&rb->V,rb->t->size*expansions.block_cols,k);
+        expansions.P2M_trans_amatrix(&rb->V,rb->t,rb->t->idx,rb->t->size,particles);
+        rb->k = k;
+        update_clusterbasis(rb);
+    }
+}
 
 template <typename RowParticles,typename ColParticles,typename Expansions,typename Kernel>
 static void
@@ -393,7 +418,7 @@ public:
         pclusterbasis col_cb = build_from_cluster_clusterbasis(col_t);
         auto data_col = std::make_tuple(&expansions,&col_particles);
         iterate_parallel_clusterbasis(col_cb, 0, max_pardepth, NULL,
-                assemble_h2matrix_row_clusterbasis<ColParticles,Expansions>,
+                assemble_h2matrix_col_clusterbasis<ColParticles,Expansions>,
 				&data_col);
 
         // 
