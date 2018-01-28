@@ -557,7 +557,7 @@ public:
 
         //helper_fast_methods_calculate<1>(particles,kernel,scale);
         //helper_fast_methods_calculate<2>(particles,kernel,scale);
-        helper_fast_methods_calculate<source,target_h2,target_manual,inverted_source>(particles,kernel,p2pkernel);
+        //helper_fast_methods_calculate<source,target_h2,target_manual,inverted_source>(particles,kernel,p2pkernel);
 
 #ifdef HAVE_EIGEN
         if (D == 2) {

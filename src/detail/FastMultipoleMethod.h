@@ -449,19 +449,19 @@ namespace detail {
                 box.bmin[i] = t->bmin[i];
                 box.bmax[i] = t->bmax[i];
             }
-            ASSERT_CUDA(matrix->rows == indicies_size*BlockCols);
+            ASSERT_CUDA(matrix->rows == indicies_size);
             ASSERT_CUDA(matrix->cols == m_ncheb*BlockCols);
             //resize_amatrix(matrix,m_ncheb,indicies_size);
             clear_amatrix(matrix);
             detail::ChebyshevRn<D> cheb_rn(m_order,box);
-            for (int i = 0; i < indicies_size; ++i) {
-                const double_d& p = get<position>(particles)[indicies[i]];
+            for (int i = 0; i < indicies_size; i+=BlockCols) {
+                const double_d& p = get<position>(particles)[indicies[i]/BlockCols];
                 cheb_rn.set_position(p);
                 lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockCols; ++ii) {
-                        setentry_amatrix(matrix,i*BlockCols+ii,j*BlockCols+ii,tmp);
+                        setentry_amatrix(matrix,i+ii,j*BlockCols+ii,tmp);
                     }
                 }
             }
@@ -493,6 +493,37 @@ namespace detail {
                     const double tmp = cheb_rn(*mi);
                     for (int ii = 0; ii < BlockCols; ++ii) {
                         setentry_amatrix(matrix,i*BlockCols+ii,j*BlockCols+ii,tmp);
+                    }
+                }
+            }
+        }
+
+        void M2M_trans_amatrix(pamatrix matrix, 
+                 pccluster target_t, 
+                 pccluster source_t) const {
+            //resize_amatrix(matrix,m_ncheb,m_ncheb);
+            ASSERT_CUDA(matrix->rows == m_ncheb*BlockCols);
+            ASSERT_CUDA(matrix->cols == m_ncheb*BlockCols);
+            clear_amatrix(matrix);
+            box_type target_box,source_box;
+            for (int i = 0; i < D; ++i) {
+                target_box.bmin[i] = target_t->bmin[i];
+                target_box.bmax[i] = target_t->bmax[i];
+                source_box.bmin[i] = source_t->bmin[i];
+                source_box.bmax[i] = source_t->bmax[i];
+            }
+            detail::ChebyshevRn<D> cheb_rn(m_order,target_box);
+            for (int j=0; j<m_ncheb; ++j) {
+                const double_d& pj_unit_box = m_cheb_points[j];
+                const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
+                    + source_box.bmin;
+                cheb_rn.set_position(pj);
+
+                lattice_iterator<D> mi(int_d::Constant(0),int_d::Constant(m_order));
+                for (int i=0; i<m_ncheb; ++i,++mi) {
+                    const double tmp = cheb_rn(*mi);
+                    for (int ii = 0; ii < BlockCols; ++ii) {
+                        setentry_amatrix(matrix,j*BlockCols+ii,i*BlockCols+ii,tmp);
                     }
                 }
             }
@@ -572,7 +603,7 @@ namespace detail {
                     const ParticlesType& particles) const {
             typedef typename ParticlesType::position position;
             //resize_amatrix(matrix,indicies_size,m_ncheb);
-            ASSERT_CUDA(matrix->rows == indicies_size*BlockRows);
+            ASSERT_CUDA(matrix->rows == indicies_size);
             ASSERT_CUDA(matrix->cols == m_ncheb*BlockRows);
             clear_amatrix(matrix);
             box_type box;
@@ -581,14 +612,14 @@ namespace detail {
                 box.bmax[i] = t->bmax[i];
             }
             detail::ChebyshevRn<D> cheb_rn(m_order,box);
-            for (int i = 0; i < indicies_size; ++i) {
-                const double_d& p = get<position>(particles)[indicies[i]];
+            for (int i = 0; i < indicies_size; i+=BlockRows) {
+                const double_d& p = get<position>(particles)[indicies[i]/BlockRows];
                 cheb_rn.set_position(p);
                 lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockRows; ++ii) {
-                        setentry_amatrix(matrix,i*BlockRows+ii,j*BlockRows+ii,tmp);
+                        setentry_amatrix(matrix,i+ii,j*BlockRows+ii,tmp);
                     }
                 }
                 
@@ -603,7 +634,7 @@ namespace detail {
                     const ParticlesType& particles) const {
             typedef typename ParticlesType::position position;
             ASSERT_CUDA(matrix->rows == m_ncheb*BlockCols);
-            ASSERT_CUDA(matrix->cols == indicies_size*BlockCols);
+            ASSERT_CUDA(matrix->cols == indicies_size);
             clear_amatrix(matrix);
             box_type box;
             for (int i = 0; i < D; ++i) {
@@ -611,14 +642,14 @@ namespace detail {
                 box.bmax[i] = t->bmax[i];
             }
             detail::ChebyshevRn<D> cheb_rn(m_order,box);
-            for (int i = 0; i < indicies_size; ++i) {
-                const double_d& p = get<position>(particles)[indicies[i]];
+            for (int i = 0; i < indicies_size; i+=BlockCols) {
+                const double_d& p = get<position>(particles)[indicies[i]/BlockCols];
                 cheb_rn.set_position(p);
                 lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
                     for (int ii = 0; ii < BlockCols; ++ii) {
-                        setentry_amatrix(matrix,j*BlockCols+ii,i*BlockCols+ii,tmp);
+                        setentry_amatrix(matrix,j*BlockCols+ii,i+ii,tmp);
                     }
                 }
                 
@@ -1115,7 +1146,7 @@ namespace detail {
                                           Kernel> helper;
 
         typedef typename ColParticlesType::position position;
-        matrix.resize(row_indicies.size(),col_indicies.size());
+        matrix.resize(row_indicies.size()*helper::block_rows,col_indicies.size()*helper::block_cols);
         for (int i = 0; i < row_indicies.size(); ++i) {
             for (int j = 0; j < col_indicies.size(); ++j) {
                 matrix.block<helper::block_rows,helper::block_cols>(
@@ -1137,18 +1168,19 @@ namespace detail {
                 const ColParticlesType& col_particles,
                 const Kernel& kernel) {
         typedef typename ColParticlesType::position position;
-        ASSERT_CUDA(matrix->rows == row_indicies_size);
-        ASSERT_CUDA(matrix->cols == col_indicies_size);
 
         typedef detail::kernel_helper_ref<typename RowParticlesType::const_reference,
                                           typename ColParticlesType::const_reference,
                                           Kernel> helper;
 
+        ASSERT_CUDA(matrix->rows == row_indicies_size);
+        ASSERT_CUDA(matrix->cols == col_indicies_size);
+
         //resize_amatrix(matrix,row_indicies_size,col_indicies_size);
-        for (int i = 0; i < row_indicies_size; ++i) {
-            const auto& pi = row_particles[row_indicies[i]];
-            for (int j = 0; j < col_indicies_size; ++j) {
-                const auto& pj = col_particles[col_indicies[j]];
+        for (int i = 0; i < row_indicies_size; i+=helper::block_rows) {
+            const auto& pi = row_particles[row_indicies[i]/helper::block_rows];
+            for (int j = 0; j < col_indicies_size; j+=helper::block_cols) {
+                const auto& pj = col_particles[col_indicies[j]/helper::block_cols];
                 const typename helper::Block tmp(kernel(pi,pj));
                 for (int ii = 0; ii < helper::block_rows; ++ii) {
                     for (int jj = 0; jj < helper::block_cols; ++jj) {

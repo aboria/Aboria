@@ -312,7 +312,7 @@ assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
             expansions.L2L_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
         }
     } else {
-        resize_amatrix(&rb->V,rb->t->size*expansions.block_rows,k);
+        resize_amatrix(&rb->V,rb->t->size,k);
         expansions.L2P_amatrix(&rb->V,rb->t,rb->t->idx,rb->t->size,particles);
         rb->k = k;
         update_clusterbasis(rb);
@@ -335,10 +335,10 @@ assemble_h2matrix_col_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
         resize_clusterbasis(rb,k);
         for (int i = 0; i < rb->sons; ++i) {
             // should this be transposed?
-            expansions.M2M_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
+            expansions.M2M_trans_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
         }
     } else {
-        resize_amatrix(&rb->V,rb->t->size*expansions.block_cols,k);
+        resize_amatrix(&rb->V,rb->t->size,k);
         expansions.P2M_trans_amatrix(&rb->V,rb->t,rb->t->idx,rb->t->size,particles);
         rb->k = k;
         update_clusterbasis(rb);
@@ -396,8 +396,8 @@ public:
         //
         // Create row clusters and clusterbasis
         //
-        m_row_idx.resize(row_particles.size());
-        pcluster row_t = set_root_idx(m_row_idx.data(),row_particles);
+        m_row_idx.resize(row_particles.size()*expansions.block_rows);
+        pcluster row_t = set_root_idx(m_row_idx.data(),row_particles,expansions.block_rows);
         pclusterbasis row_cb = build_from_cluster_clusterbasis(row_t);
         auto data_row = std::make_tuple(&expansions,&row_particles);
         iterate_parallel_clusterbasis(row_cb, 0, max_pardepth, NULL,
@@ -409,11 +409,11 @@ public:
         // Create col clusters and clusterbasis
         //
         pcluster col_t;
-        if (row_equals_col) {
+        if (row_equals_col && expansions.block_rows==expansions.block_cols) {
             col_t = row_t;
         } else {
-            m_col_idx.resize(col_particles.size());
-            col_t = set_root_idx(m_col_idx.data(),col_particles);
+            m_col_idx.resize(col_particles.size()*expansions.block_cols);
+            col_t = set_root_idx(m_col_idx.data(),col_particles,expansions.block_cols);
         }
         pclusterbasis col_cb = build_from_cluster_clusterbasis(col_t);
         auto data_col = std::make_tuple(&expansions,&col_particles);
@@ -461,7 +461,7 @@ public:
 private:
 
     template <typename Particles>
-    pcluster set_root_idx(uint* idx, const Particles& particles) {
+    pcluster set_root_idx(uint* idx, const Particles& particles, const size_t block_size) {
         uint *old_idx = idx;
         const uint dim = Particles::dimension;
         size_t sons = 0;
@@ -472,7 +472,7 @@ private:
         size_t i = 0;
         for (auto ci_child = particles.get_query().get_children(); 
                 ci_child != false; ++ci_child,++i) {
-            t->son[i] = set_idx(ci_child,idx,particles);
+            t->son[i] = set_idx(ci_child,idx,particles,block_size);
             idx += t->son[i]->size;
         }
         t->size = idx-old_idx;
@@ -486,18 +486,19 @@ private:
     }
 
     template <typename ChildIterator, typename Particles>
-    pcluster set_idx(const ChildIterator ci, uint* idx,const Particles& particles) {
+    pcluster set_idx(const ChildIterator ci, uint* idx,const Particles& particles, const size_t block_size) {
         uint *old_idx = idx;
         const uint dim = Particles::dimension;
         pcluster t;
         if (particles.get_query().is_leaf_node(*ci)) { // leaf node
             const auto& prange = particles.get_query().get_bucket_particles(*ci);
             auto pit = prange.begin();
-            for (auto pit = prange.begin(); pit != prange.end(); ++pit,++idx) {
+            for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
                 const size_t pi = &(get<typename Particles::position>(*pit))
                     - &get<typename Particles::position>(particles)[0];
-                *idx = pi;
-                
+                for (int i = 0; i < block_size; ++i,++idx) {
+                    *idx = pi*block_size+i;
+                }
             }
             //if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
             t = new_cluster(idx-old_idx,old_idx,0,dim);
@@ -510,7 +511,7 @@ private:
             size_t i = 0;
             for (auto ci_child = particles.get_query().get_children(ci); 
                       ci_child != false; ++ci_child,++i) {
-                pcluster child_t = set_idx(ci_child,idx,particles);
+                pcluster child_t = set_idx(ci_child,idx,particles,block_size);
                 if (child_t->size > 0) {
                     t->son[i] = child_t;
                     idx += child_t->size;
@@ -666,18 +667,18 @@ public:
         //
         // Create row clusters and clusterbasis
         //
-        m_row_idx.resize(row_particles.size());
-        pcluster row_t = set_root_idx(m_row_idx.data(),row_particles);
+        m_row_idx.resize(row_particles.size()*expansions.block_rows);
+        pcluster row_t = set_root_idx(m_row_idx.data(),row_particles,expansions.block_rows);
         
         //
         // Create col clusters and clusterbasis
         //
         pcluster col_t;
-        if (row_equals_col) {
+        if (row_equals_col && expansions.block_rows == expansions.block_cols) {
             col_t = row_t;
         } else {
-            m_col_idx.resize(col_particles.size());
-            col_t = set_root_idx(m_col_idx.data(),col_particles);
+            m_col_idx.resize(col_particles.size()*expansions.block_cols);
+            col_t = set_root_idx(m_col_idx.data(),col_particles,expansions.block_cols);
         }
 
         // 
@@ -690,8 +691,10 @@ public:
                 build_nonstrict_block(row_t,col_t,&eta,admissible_max_cluster),
                 del_block);
 
+        static_assert(expansions.block_rows == expansions.block_cols,
+                "H Matrix only implemented for square kernel matrices");
         m_h = std::unique_ptr<hmatrix,decltype(&del_hmatrix)>(
-                    build_from_block_hmatrix(m_block.get(),expansions.m_ncheb),
+                    build_from_block_hmatrix(m_block.get(),expansions.m_ncheb*expansions.block_rows),
                     del_hmatrix);
         phmatrix* enum_hmat = enumerate_hmatrix(m_block.get(),m_h.get());
         auto data_h = std::make_tuple(&expansions,&kernel,&row_particles,
@@ -706,7 +709,7 @@ public:
 private:
 
     template <typename Particles>
-    pcluster set_root_idx(uint* idx, const Particles& particles) {
+    pcluster set_root_idx(uint* idx, const Particles& particles, const size_t block_size) {
         uint *old_idx = idx;
         const uint dim = Particles::dimension;
         size_t sons = 0;
@@ -717,7 +720,7 @@ private:
         size_t i = 0;
         for (auto ci_child = particles.get_query().get_children(); 
                 ci_child != false; ++ci_child,++i) {
-            t->son[i] = set_idx(ci_child,idx,particles);
+            t->son[i] = set_idx(ci_child,idx,particles,block_size);
             idx += t->son[i]->size;
         }
         t->size = idx-old_idx;
@@ -731,18 +734,19 @@ private:
     }
 
     template <typename ChildIterator, typename Particles>
-    pcluster set_idx(const ChildIterator ci, uint* idx,const Particles& particles) {
+    pcluster set_idx(const ChildIterator ci, uint* idx,const Particles& particles, const size_t block_size) {
         uint *old_idx = idx;
         const uint dim = Particles::dimension;
         pcluster t;
         if (particles.get_query().is_leaf_node(*ci)) { // leaf node
             const auto& prange = particles.get_query().get_bucket_particles(*ci);
             auto pit = prange.begin();
-            for (auto pit = prange.begin(); pit != prange.end(); ++pit,++idx) {
+            for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
                 const size_t pi = &(get<typename Particles::position>(*pit))
                     - &get<typename Particles::position>(particles)[0];
-                *idx = pi;
-                
+                for (int i = 0; i < block_size; ++i,++idx) {
+                    *idx = pi*block_size+i;
+                }
             }
             //if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
             t = new_cluster(idx-old_idx,old_idx,0,dim);
@@ -755,7 +759,7 @@ private:
             size_t i = 0;
             for (auto ci_child = particles.get_query().get_children(ci); 
                       ci_child != false; ++ci_child,++i) {
-                pcluster child_t = set_idx(ci_child,idx,particles);
+                pcluster child_t = set_idx(ci_child,idx,particles,block_size);
                 if (child_t->size > 0) {
                     t->son[i] = child_t;
                     idx += child_t->size;
