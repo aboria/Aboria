@@ -21,6 +21,7 @@ neighbours
 particle_container
 symbolic
 doc/html/*
+doc/html-website/*
 !doc/html/boostbook.css
 !doc/html/images/*
 doc/autodoc.xml

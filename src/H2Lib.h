@@ -566,10 +566,24 @@ public:
                                     const_cast<double*>(
                                         reinterpret_cast<const double*>(source_vector.data())),
                                     source_vector.size()*traitsT1::length);
+        //std::cout << "source: "<<source_vector[0]<<" versus "<<getentry_avector(source_avector,0)<<std::endl;
         pavector target_avector = new_pointer_avector(
                                     reinterpret_cast<double*>(target_vector.data()),
                                     target_vector.size()*traitsT2::length);
+        /*
+        for(int i=0; i<5; ++i) {
+            std::cout << "target: "<<target_vector[i][0]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
+            std::cout << "target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
+        }
+        */
         mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
+        /*
+        for(int i=0; i<5; ++i) {
+            std::cout << "after target: "<<target_vector[i][0]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
+            std::cout << "after target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
+        }
+        */
+
     }
 
     template <typename T1, typename T2>

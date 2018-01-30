@@ -114,6 +114,7 @@ public:
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
                 [](const value_type& t1, const value_type& t2) { 
+                    std::cout << "t1 = "<<t1<<"t2 = "<<t2<<std::endl;
                     return scalar_traits::squaredNorm(t1-t2); 
                 }
                 );
@@ -156,7 +157,7 @@ public:
 
         TS_ASSERT_LESS_THAN(L2_h2/scale_target_manual,1e-8);
 
-        // create a h matrix
+        /*
         t0 = Clock::now();
         auto hlib_matrix = make_h2lib_h_matrix(particles,particles,
                 make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel);
@@ -207,6 +208,7 @@ public:
 
         std::cout << "for compressed h2lib h matrix class:" <<std::endl;
         std::cout << "dimension = "<<dimension<<". N = "<<order<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale_target_manual)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
+        */
 
         // invert compressed matrix
         t0 = Clock::now();
@@ -575,7 +577,7 @@ public:
             std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                     std::begin(get<vsource>(particles)), vsource_fn);
 
-            const double c = 0.01;
+            const double c = 0.1;
             auto vkernel = [&c](const double_d &pa, const double_d &pb) {
                 const double_d x = pb-pa;
                 const double r2 = x.squaredNorm();

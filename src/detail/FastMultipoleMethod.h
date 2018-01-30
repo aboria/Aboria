@@ -553,6 +553,7 @@ namespace detail {
                                                                     + source_box.bmin;
 #ifdef HAVE_EIGEN
                     const Eigen::Matrix<double,BlockRows,BlockCols> tmp(m_K(pi,pj));
+                    //std::cout << "M2L ij = "<<tmp<<" versus "<<m_K(pi,pj) << std::endl;
                     for (int ii = 0; ii < BlockRows; ++ii) {
                         for (int jj = 0; jj < BlockCols; ++jj) {
                             setentry_amatrix(matrix,i*BlockRows+ii,j*BlockCols+jj,tmp(ii,jj));
@@ -624,6 +625,16 @@ namespace detail {
                 }
                 
             }
+            /*
+            std::cout << "L2P = " << std::endl;
+            for (int i=0; i<indicies_size; ++i) {
+                std::cout << "| ";
+                for (int j=0; j<m_ncheb*BlockRows; ++j) {
+                    std::cout << getentry_amatrix(matrix,i,j) << " ";
+                }
+                std::cout << "|" <<std::endl;
+            }
+            */
         }
 
         template <typename ParticlesType>
@@ -1184,7 +1195,7 @@ namespace detail {
                 const typename helper::Block tmp(kernel(pi,pj));
                 for (int ii = 0; ii < helper::block_rows; ++ii) {
                     for (int jj = 0; jj < helper::block_cols; ++jj) {
-                        setentry_amatrix(matrix,i,j,tmp(ii,jj));
+                        setentry_amatrix(matrix,i+ii,j+jj,tmp(ii,jj));
                     }
                     
                 }
