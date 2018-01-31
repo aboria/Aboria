@@ -528,13 +528,26 @@ public:
                        */
 
         const double c = 1.0/std::pow(0.01,2);
+        //const double c = std::pow(0.01,2);
         auto kernel = [&c](const double_d &pa, const double_d &pb) {
-            //return std::sqrt(dx.squaredNorm() + c); 
+            //return std::sqrt((pb-pa).squaredNorm() + c); 
             return std::exp(-(pb-pa).squaredNorm()*c); 
+            //const double_d x = pb-pa;
+            //const double r2 = x.squaredNorm();
+            //const double exp = std::exp(-r2 / std::pow(0.1, 2));
+            //return exp;
+            /*
+            if (r2 == 0) {
+              return -0.5 * exp;
+            } else {
+              return (x[0] * x[0] / r2 - 1) * exp;
+            }
+            */
         };
-        auto p2pkernel = [&c](const_reference pa, const_reference pb) {
-            //return std::sqrt(dx.squaredNorm() + c); 
-            return std::exp(-(get<position>(pb)-get<position>(pa)).squaredNorm()*c); 
+        auto p2pkernel = [&kernel,&c](const_reference pa, const_reference pb) {
+            return kernel(get<position>(pa),get<position>(pb));
+            //return std::sqrt((get<position>(pb)-get<position>(pa)).squaredNorm() + c); 
+            //return std::exp(-(get<position>(pb)-get<position>(pa)).squaredNorm()*c); 
         };
 
 
@@ -559,7 +572,7 @@ public:
 
         //helper_fast_methods_calculate<1>(particles,kernel,scale);
         //helper_fast_methods_calculate<2>(particles,kernel,scale);
-        //helper_fast_methods_calculate<source,target_h2,target_manual,inverted_source>(particles,kernel,p2pkernel);
+        helper_fast_methods_calculate<source,target_h2,target_manual,inverted_source>(particles,kernel,p2pkernel);
 
 #ifdef HAVE_EIGEN
         if (D == 2) {
@@ -577,11 +590,10 @@ public:
             std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
                     std::begin(get<vsource>(particles)), vsource_fn);
 
-            const double c = 0.1;
             auto vkernel = [&c](const double_d &pa, const double_d &pb) {
                 const double_d x = pb-pa;
                 const double r2 = x.squaredNorm();
-                const double exp = std::exp(-r2/std::pow(0.1,2));
+                const double exp = std::exp(-r2*c);
                 Eigen::Matrix<double,2,2> ret;
                 if (r2 == 0) {
                     ret(0,0) = (-0.5)*exp;
@@ -848,8 +860,8 @@ public:
         helper_extended_matrix<3,std::vector,nanoflann_adaptor>(N);
         */
 
-        std::cout << "KD_TREE: testing 1D..." << std::endl;
-        helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
+        //std::cout << "KD_TREE: testing 1D..." << std::endl;
+        //helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 3D..." << std::endl;

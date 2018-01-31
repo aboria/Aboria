@@ -465,6 +465,16 @@ namespace detail {
                     }
                 }
             }
+            /*
+            std::cout << "P2M_trans = " << std::endl;
+            for (int i = 0; i < indicies_size; ++i) {
+                std::cout << "| ";
+                for (int j = 0; j < m_ncheb * BlockCols; ++j) {
+                    std::cout << getentry_amatrix(matrix, i, j) << " ";
+                }
+                std::cout << "|" << std::endl;
+            }
+            */
         }
 
         void M2M_amatrix(pamatrix matrix, 
@@ -527,6 +537,16 @@ namespace detail {
                     }
                 }
             }
+            /*
+            std::cout << "M2M_trans = " << std::endl;
+            for (int i = 0; i < m_ncheb * BlockCols; ++i) {
+                std::cout << "| ";
+                for (int j = 0; j < m_ncheb * BlockCols; ++j) {
+                    std::cout << getentry_amatrix(matrix, i, j) << " ";
+                }
+                std::cout << "|" << std::endl;
+            }
+            */
         }
 
         void M2L_amatrix(pamatrix matrix, 
@@ -551,6 +571,7 @@ namespace detail {
                     const double_d& pj_unit_box = m_cheb_points[j];
                     const double_d pj = 0.5*(pj_unit_box+1)*(source_box.bmax-source_box.bmin) 
                                                                     + source_box.bmin;
+                    //std::cout << "pi = "<<pi<<" pj = "<<pj<< "m_k =  "<<m_K(pi,pj)<<std::endl;
 #ifdef HAVE_EIGEN
                     const Eigen::Matrix<double,BlockRows,BlockCols> tmp(m_K(pi,pj));
                     //std::cout << "M2L ij = "<<tmp<<" versus "<<m_K(pi,pj) << std::endl;
@@ -564,6 +585,16 @@ namespace detail {
 #endif
                 }
             }
+            /*
+            std::cout << "M2L = " << std::endl;
+            for (int i=0; i<m_ncheb*BlockRows; ++i) {
+                std::cout << "| ";
+                for (int j=0; j<m_ncheb*BlockCols; ++j) {
+                    std::cout << getentry_amatrix(matrix,i,j) << " ";
+                }
+                std::cout << "|" <<std::endl;
+            }
+            */
         }
 
         void L2L_amatrix(pamatrix matrix, 
@@ -624,9 +655,11 @@ namespace detail {
                 box.bmin[i] = t->bmin[i];
                 box.bmax[i] = t->bmax[i];
             }
+            //std:cout << "L2P: D ="<<D<<" order = "<<m_order<<" box = "<<box<<std::endl;
             detail::ChebyshevRn<D> cheb_rn(m_order,box);
             for (int i = 0; i < indicies_size; i+=BlockRows) {
                 const double_d& p = get<position>(particles)[indicies[i]/BlockRows];
+                //std::cout << "p = "<<p<<std::endl;
                 cheb_rn.set_position(p);
                 lattice_iterator<dimension> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
@@ -1214,6 +1247,16 @@ namespace detail {
             }
             
         }
+        /*
+        std::cout << "P2P = " << std::endl;
+        for (int i = 0; i < row_indicies_size; ++i) {
+          std::cout << "| ";
+          for (int j = 0; j < col_indicies_size; ++j) {
+            std::cout << getentry_amatrix(matrix, i, j) << " ";
+          }
+          std::cout << "|" << std::endl;
+        }
+        */
     }
 #endif
 

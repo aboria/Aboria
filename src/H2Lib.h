@@ -335,7 +335,7 @@ assemble_h2matrix_col_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
         resize_clusterbasis(rb,k);
         for (int i = 0; i < rb->sons; ++i) {
             // should this be transposed?
-            expansions.M2M_trans_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
+            expansions.M2M_trans_amatrix(&rb->son[i]->E,rb->t,rb->son[i]->t);
         }
     } else {
         resize_amatrix(&rb->V,rb->t->size,k);
@@ -572,15 +572,15 @@ public:
                                     target_vector.size()*traitsT2::length);
         /*
         for(int i=0; i<5; ++i) {
-            std::cout << "target: "<<target_vector[i][0]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
-            std::cout << "target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
+            std::cout << "target: "<<target_vector[i]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
+            //std::cout << "target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
         }
         */
         mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
         /*
         for(int i=0; i<5; ++i) {
-            std::cout << "after target: "<<target_vector[i][0]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
-            std::cout << "after target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
+            std::cout << "after target: "<<target_vector[i]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
+            //std::cout << "after target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
         }
         */
 
