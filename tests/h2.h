@@ -114,7 +114,7 @@ public:
                 0.0,
                 [](const double t1, const double t2) { return t1 + t2; },
                 [](const value_type& t1, const value_type& t2) { 
-                    std::cout << "t1 = "<<t1<<"t2 = "<<t2<<std::endl;
+                    //std::cout << "t1 = "<<t1<<"t2 = "<<t2<<std::endl;
                     return scalar_traits::squaredNorm(t1-t2); 
                 }
                 );
@@ -491,7 +491,7 @@ public:
         std::uniform_real_distribution<double> U(pos_min,pos_max);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
-        const int order = 4;
+        const int order = 3;
         const int num_particles_per_bucket = std::max(10.0,std::pow(order,D));
 
         typedef Particles<std::tuple<source,target_manual,target_h2,inverted_source,vsource,vtarget_manual,vtarget_h2,vinverted_source>,D,StorageVector,SearchMethod> ParticlesType;
@@ -581,7 +581,7 @@ public:
             auto vkernel = [&c](const double_d &pa, const double_d &pb) {
                 const double_d x = pb-pa;
                 const double r2 = x.squaredNorm();
-                const double exp = std::exp(-r2/std::pow(c,2));
+                const double exp = std::exp(-r2/std::pow(0.1,2));
                 Eigen::Matrix<double,2,2> ret;
                 if (r2 == 0) {
                     ret(0,0) = (-0.5)*exp;

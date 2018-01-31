@@ -164,7 +164,7 @@ public:
         auto gen = std::bind(U, generator);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
-        const int num_particles_per_bucket = 50;
+        const int num_particles_per_bucket = 10;
 
         typedef Particles<std::tuple<source,target_manual,target_fmm,vsource,vtarget_manual,vtarget_fmm>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;

@@ -856,7 +856,7 @@ namespace detail {
         typedef typename std::remove_cv<
                 typename std::remove_reference<T>::type
                 >::type base_type;
-        static const int length = 1;
+        static const size_t length = 1;
         static base_type Zero() {
             return 0;
         }
@@ -877,7 +877,7 @@ namespace detail {
 
     template<typename T,unsigned int N>
     struct VectorTraits<Vector<T,N>> {
-        static const int length = N;
+        static const size_t length = N;
         static Vector<T,N> Zero() {
             return Vector<T,N>::Zero();
         }

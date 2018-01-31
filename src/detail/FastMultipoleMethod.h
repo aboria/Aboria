@@ -581,6 +581,7 @@ namespace detail {
                 source_box.bmax[i] = source_t->bmax[i];
             }
             detail::ChebyshevRn<D> cheb_rn(m_order,source_box);
+            //std:cout << "L2L: D ="<<D<<" order = "<<m_order<<" target_box = "<<target_box<<" source_box = "<<source_box<<std::endl;
             for (int i=0; i<m_ncheb; ++i) {
                 const double_d& pi_unit_box = m_cheb_points[i];
                 const double_d pi = 0.5*(pi_unit_box+1)*(target_box.bmax-target_box.bmin) 
@@ -589,11 +590,22 @@ namespace detail {
                 lattice_iterator<D> mj(int_d::Constant(0),int_d::Constant(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
                     const double tmp = cheb_rn(*mj);
+                    //std::cout << "mj = "<<*mj<<" tmp  = "<<tmp<<std::endl;
                     for (int ii = 0; ii < BlockRows; ++ii) {
                         setentry_amatrix(matrix,i*BlockRows+ii,j*BlockRows+ii,tmp);
                     }
                 }
             }
+            /*
+            std::cout << "L2L = " << std::endl;
+            for (int i=0; i<m_ncheb*BlockRows; ++i) {
+                std::cout << "| ";
+                for (int j=0; j<m_ncheb*BlockRows; ++j) {
+                    std::cout << getentry_amatrix(matrix,i,j) << " ";
+                }
+                std::cout << "|" <<std::endl;
+            }
+            */
         }
 
         template <typename ParticlesType>
