@@ -89,12 +89,12 @@ public:
 
         std::cout << "target scale = "<<scale_target_manual<<" source scale =  "<<scale_source<<std::endl;
 
-        const double tol = 1e-5;
+        const double tol = 1e-12;
 
         
         // perform the operation using h2lib matrix
         size_t order = std::ceil(std::pow(particles.get_max_bucket_size(),1.0/dimension));
-        const double eta = 1.0;
+        const double eta = 2.0;
         std::cout << "creating h2lib_matrix with order = "<<order<<" and eta = "<<eta<<std::endl;
         auto t0 = Clock::now();
 
@@ -156,59 +156,6 @@ public:
         std::cout << "dimension = "<<dimension<<". N = "<<order<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale_target_manual)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
 
         TS_ASSERT_LESS_THAN(L2_h2/scale_target_manual,1e-8);
-
-        /*
-        t0 = Clock::now();
-        auto hlib_matrix = make_h2lib_h_matrix(particles,particles,
-                make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel);
-        t1 = Clock::now();
-        time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),scalar_traits::Zero());
-        t0 = Clock::now();
-        hlib_matrix.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
-        t1 = Clock::now();
-        time_h2_eval = t1 - t0;
-        
-        L2_h2 = std::inner_product(
-                std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),
-                std::begin(get<TargetManual>(particles)), 
-                0.0,
-                [](const double t1, const double t2) { return t1 + t2; },
-                [](const value_type& t1, const value_type& t2) { 
-                    return scalar_traits::squaredNorm(t1-t2); 
-                    }
-                );
-
-        std::cout << "for h2lib h matrix class:" <<std::endl;
-        std::cout << "dimension = "<<dimension<<". N = "<<order<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale_target_manual)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
-
-
-        // create a compressed h matrix
-        t0 = Clock::now();
-        auto hlib_matrix_compress = make_h2lib_h_matrix(particles,particles,
-                make_h2lib_black_box_expansion<dimension>(order,kernel),p2pkernel);
-        hlib_matrix_compress.compress(1e-4);
-        t1 = Clock::now();
-        time_h2_setup = t1 - t0;
-        std::fill(std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),scalar_traits::Zero());
-        t0 = Clock::now();
-        hlib_matrix_compress.matrix_vector_multiply(get<TargetH2>(particles),1.0,false,get<Source>(particles));
-        t1 = Clock::now();
-        time_h2_eval = t1 - t0;
-        
-        L2_h2 = std::inner_product(
-                std::begin(get<TargetH2>(particles)), std::end(get<TargetH2>(particles)),
-                std::begin(get<TargetManual>(particles)), 
-                0.0,
-                [](const double t1, const double t2) { return t1 + t2; },
-                [](const value_type& t1, const value_type& t2) { 
-                    return scalar_traits::squaredNorm(t1-t2); 
-                    }
-                );
-
-        std::cout << "for compressed h2lib h matrix class:" <<std::endl;
-        std::cout << "dimension = "<<dimension<<". N = "<<order<<". L2_h2 error = "<<L2_h2<<". L2_h2 relative error is "<<std::sqrt(L2_h2/scale_target_manual)<<". time_h2_setup = "<<time_h2_setup.count()<<". time_h2_eval = "<<time_h2_eval.count()<<std::endl;
-        */
 
         // invert compressed matrix
         t0 = Clock::now();
@@ -476,9 +423,6 @@ public:
     }
 
 
-         
-     
-
     template<unsigned int D, template <typename,typename> class StorageVector,template <typename> class SearchMethod>
     void helper_fast_methods(size_t N) {
         typedef Vector<double,D> double_d;
@@ -491,8 +435,8 @@ public:
         std::uniform_real_distribution<double> U(pos_min,pos_max);
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
-        const int order = 3;
-        const int num_particles_per_bucket = std::max(10.0,std::pow(order,D));
+        const int order = 6;
+        const int num_particles_per_bucket = std::max(6.0,std::pow(order,D));
 
         typedef Particles<std::tuple<source,target_manual,target_h2,inverted_source,vsource,vtarget_manual,vtarget_h2,vinverted_source>,D,StorageVector,SearchMethod> ParticlesType;
         typedef typename ParticlesType::position position;
@@ -505,6 +449,8 @@ public:
             for (int d=0; d<D; ++d) {
                 get<position>(p)[d] = U(get<generator>(p));
                 get<source>(p) = U(get<generator>(p));
+                get<vsource>(p)[0] = U(get<generator>(p));
+                get<vsource>(p)[1] = U(get<generator>(p));
             }
         });
 
@@ -513,36 +459,12 @@ public:
                                         bool_d::Constant(false),
                                         num_particles_per_bucket);
 
-        /*
-        auto source_fn = [&](const double_d &p) {
-            //return (p-double_d(0)).norm();
-            double ret=1.0;
-            const double scale = 2.0*detail::PI/(pos_max-pos_min); 
-            for (int i=0; i<D; i++) {
-                ret *= cos((p[i]-pos_min)*scale);
-            }
-            return ret/N;
-        };
-        std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
-                       std::begin(get<source>(particles)), source_fn);
-                       */
 
         const double c = 1.0/std::pow(0.01,2);
         //const double c = std::pow(0.01,2);
         auto kernel = [&c](const double_d &pa, const double_d &pb) {
             //return std::sqrt((pb-pa).squaredNorm() + c); 
             return std::exp(-(pb-pa).squaredNorm()*c); 
-            //const double_d x = pb-pa;
-            //const double r2 = x.squaredNorm();
-            //const double exp = std::exp(-r2 / std::pow(0.1, 2));
-            //return exp;
-            /*
-            if (r2 == 0) {
-              return -0.5 * exp;
-            } else {
-              return (x[0] * x[0] / r2 - 1) * exp;
-            }
-            */
         };
         auto p2pkernel = [&kernel,&c](const_reference pa, const_reference pb) {
             return kernel(get<position>(pa),get<position>(pb));
@@ -566,8 +488,6 @@ public:
         auto t1 = Clock::now();
         std::chrono::duration<double> time_manual = t1 - t0;
 
-
-        
         std::cout << "MANUAL TIMING: dimension = "<<D<<". number of particles = "<<N<<". time = "<<time_manual.count()<<std::endl;
 
         //helper_fast_methods_calculate<1>(particles,kernel,scale);
@@ -576,30 +496,17 @@ public:
 
 #ifdef HAVE_EIGEN
         if (D == 2) {
-            // generate a source vector using a smooth cosine
-            auto vsource_fn = [&](const double_d &p) {
-                //return (p-double_d(0)).norm();
-                vdouble2 ret = vdouble2::Constant(1.0);
-                const double scale = 2.0*detail::PI/(pos_max-pos_min); 
-                for (int i=0; i<D; i++) {
-                    ret[0] *= cos((p[i]-pos_min)*scale);
-                    ret[1] *= sin((p[i]-pos_min)*scale);
-                }
-                return ret/N;
-            };
-            std::transform(std::begin(get<position>(particles)), std::end(get<position>(particles)), 
-                    std::begin(get<vsource>(particles)), vsource_fn);
 
             auto vkernel = [&c](const double_d &pa, const double_d &pb) {
                 const double_d x = pb-pa;
                 const double r2 = x.squaredNorm();
-                const double exp = std::exp(-r2*c);
+                const double exp = std::exp(-r2*c*100);
                 Eigen::Matrix<double,2,2> ret;
                 if (r2 == 0) {
-                    ret(0,0) = (-0.5)*exp;
-                    ret(0,1) = 0.5*exp;
+                    ret(0,0) = (1.0/std::sqrt(2.0)-1.0)*exp;
+                    ret(0,1) = (1.0/std::sqrt(2.0))*exp;
                     ret(1,0) = ret(0,1);
-                    ret(1,1) = (-0.5)*exp;
+                    ret(1,1) = ret(0,0);
                 } else {
                     ret(0,0) = (x[0]*x[0]/r2 - 1)*exp;
                     ret(0,1) = (x[0]*x[1]/r2    )*exp;
@@ -611,7 +518,6 @@ public:
             auto vp2pkernel = [&](const_reference pa, const_reference pb) {
                 return vkernel(get<position>(pa),get<position>(pb));
             };
-
 
             // perform the operation manually
             std::fill(std::begin(get<vtarget_manual>(particles)), 
@@ -860,8 +766,8 @@ public:
         helper_extended_matrix<3,std::vector,nanoflann_adaptor>(N);
         */
 
-        //std::cout << "KD_TREE: testing 1D..." << std::endl;
-        //helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
+        std::cout << "KD_TREE: testing 1D..." << std::endl;
+        helper_fast_methods<1,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 2D..." << std::endl;
         helper_fast_methods<2,std::vector,nanoflann_adaptor>(N);
         std::cout << "KD_TREE: testing 3D..." << std::endl;

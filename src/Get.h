@@ -14,12 +14,33 @@
 
 namespace Aboria {
 
+///
+/// @brief Generic type that can be used by ::get<variable>()
+///
+/// @tparam Tuple a `std::tuple` or `thrust::tuple` of values
+/// @tparam MplVector a boost::mpl typelist of variable types
+///
 template <typename Tuple, typename MplVector> 
-struct getter_type{};
+struct getter_type;
 
+
+///
+/// @brief Generic iterator that zips multiple iterators together
+/// 
+/// @tparam iterator_tuple_type `std::tuple` or `thrust::tuple` of individual
+///         iterators
+/// @tparam mpl_vector_type a `boost::mpl` typelist of variable types
+///
 template <typename iterator_tuple_type, typename mpl_vector_type>
 class zip_iterator;
 
+///
+/// @brief Generic pointer that zips multiple pointers together
+/// 
+/// @tparam TupleType std::tuple or thrust::tuple of individual
+///         iterators
+/// @tparam MplVector a boost::mpl typelist
+///
 template <typename TupleType, typename MplVector> 
 struct zip_pointer;
 
@@ -31,11 +52,17 @@ struct zip_pointer;
 
 namespace Aboria {
 
+template <typename Tuple, typename MplVector> 
+struct getter_type{};
 
-/*
- * specialisation for std::tuple. This needs to be host only
- * TODO: api is not good, consider doing an iterator_facade type thing
- */
+///
+/// @brief specialisation of @ref getter_type for `std::tuple`
+///
+/// This needs to be all host only code, use `thrust::tuple` specialisation
+/// for device code
+/// 
+/// @TODO: api is not good, consider doing an iterator_facade type thing
+///
 template <typename MplVector, typename ... Types> 
 struct getter_type<std::tuple<Types...>,MplVector>{
     typedef std::tuple<Types...> tuple_type;
@@ -47,7 +74,6 @@ struct getter_type<std::tuple<Types...>,MplVector>{
     template <typename T>
     using return_type = typename detail::getter_helper<tuple_type>::template return_type<elem_by_type<T>::index>;
 
-    //typedef typename detail::zip_helper<tuple_type>::pointer pointer;
 
     getter_type() {}
 
@@ -198,11 +224,13 @@ struct getter_type<std::tuple<Types...>,MplVector>{
     tuple_type data;
 };
 
-/*
- * specialisation for thrust::tuple.
- * TODO: api is not good, consider doing an iterator_facade type thing
- */
 #ifdef __aboria_have_thrust__ 
+///
+/// @brief specialisation of @ref getter_type for `thrust::tuple`
+///
+/// Use device code only in this specialisation
+/// @TODO: api is not good, consider doing an iterator_facade type thing
+/// 
 template <typename MplVector, typename TT1, 
                               typename TT2, 
                               typename TT3, 
@@ -403,10 +431,11 @@ struct getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>, MplVector
 };
 #endif
 
-/*
- * specialisation for tuple of pointers.
- * TODO: api is not good, consider doing an iterator_facade type thing
- */
+///
+/// @brief specialisation of @ref zip_pointer for `std::tuple`
+///
+/// Use host only code in this specialisation
+///
 template <typename MplVector, typename ... Types> 
 struct zip_pointer<std::tuple<Types*...>, MplVector>{
     typedef std::tuple<Types*...> tuple_type;
@@ -557,6 +586,11 @@ struct zip_pointer<std::tuple<Types*...>, MplVector>{
 };
 
 #ifdef __aboria_have_thrust__ 
+///
+/// @brief specialisation of @ref zip_pointer for `thrust::tuple`
+///
+/// Use device only code in this specialisation
+///
 template <typename MplVector, typename TT1, typename TT2, typename TT3, typename TT4, typename TT5, typename TT6, typename TT7, typename TT8, typename TT9> 
 struct zip_pointer<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9>, MplVector>{
     typedef thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6,TT7,TT8,TT9> tuple_type;
@@ -782,6 +816,11 @@ swap(getter_type<tuple_type,mpl_vector_type>& x,
 template <typename iterator_tuple_type, typename mpl_vector_type>
 class zip_iterator {};
     
+///
+/// @brief specialisation of @ref zip_iterator for `std::tuple`
+///
+/// Use host only code in this specialisation
+///
 template <typename mpl_vector_type, typename ... Types>
 class zip_iterator<std::tuple<Types...>, mpl_vector_type>: 
     public detail::zip_iterator_base<std::tuple<Types...>,mpl_vector_type>::type {
@@ -874,6 +913,11 @@ private:
 
 
 #ifdef __aboria_have_thrust__
+///
+/// @brief specialisation of @ref zip_iterator for `thrust::tuple`
+///
+/// Use device only code in this specialisation
+///
 template <typename mpl_vector_type, typename ... Types>
 class zip_iterator<thrust::tuple<Types...>, mpl_vector_type>: 
     public detail::zip_iterator_base<thrust::tuple<Types...>,mpl_vector_type>::type {
@@ -967,6 +1011,14 @@ private:
 
 
 
+///
+/// @brief convert an generic iterator to a @ref raw_pointer
+/// 
+/// @tparam Iterator the iterator type to be converted. Can be a normal STL iterator
+///         or a @zip_iterator
+/// @param arg  the actual iterator object to be converted
+/// @return decltype(detail::iterator_to_raw_pointer(arg,typename detail::is_zip_iterator<Iterator>::type())) 
+///
 template <typename Iterator>
 auto iterator_to_raw_pointer(const Iterator& arg) ->
     decltype(detail::iterator_to_raw_pointer(arg,
@@ -996,8 +1048,6 @@ auto pointer_to_raw_pointer(const Iterator& arg) ->
 */
 
 
-
-
 //
 // Particle getters/setters
 //
@@ -1022,6 +1072,16 @@ auto get(const ValueType& arg) ->
 }
 */
 
+///
+/// @brief get the value of a variable from a const @ref getter_type,
+///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
+/// 
+/// @tparam T the variable type to get, @see ABORIA_VARIABLE
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+///                   or @ref Particles
+/// @param arg the object with type ValueType
+/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T> ::type const& 
+///
 template<typename T, typename ValueType>
 CUDA_HOST_DEVICE
 typename ValueType::template return_type<T>::type const & 
@@ -1031,6 +1091,16 @@ get(const ValueType& arg) {
     //return arg.template get<T>();
 }
 
+///
+/// @brief get the value of a variable from a @ref getter_type, 
+///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
+/// 
+/// @tparam T the variable type to get, @see ABORIA_VARIABLE
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+///                   or @ref Particles
+/// @param arg the object with type ValueType
+/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T> ::type const& 
+///
 template<typename T, typename ValueType>
 CUDA_HOST_DEVICE
 typename ValueType::template return_type<T>::type & 
@@ -1040,33 +1110,16 @@ get(ValueType& arg) {
     //return arg.template get<T>();
 }
 
-/*
-template<typename T, typename VariableList, typename ... Types>
-CUDA_HOST_DEVICE
-typename getter_type<typename std::tuple<Types...>,VariableList>::template return_type<T>::type & 
-get(getter_type<typename std::tuple<Types...>,VariableList>& arg) {
-    return std::get<getter_type<typename std::tuple<Types...>,VariableList>::template elem_by_type<T>::index>(arg.get_tuple());
-}
-
-template<typename T, typename VariableList, typename T0,
-                                            typename T1,
-                                            typename T2,
-                                            typename T3,
-                                            typename T4,
-                                            typename T5,
-                                            typename T6,
-                                            typename T7,
-                                            typename T8,
-                                            typename T9
-                                            >
-CUDA_HOST_DEVICE
-typename getter_type<typename thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9>,VariableList>::template return_type<T>::type & 
-get(getter_type<typename thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9>,VariableList>& arg) {
-    return thrust::get<getter_type<typename thrust::tuple<T1,T2,T3,T4,T5,T6,T7,T8,T9>,VariableList>::template elem_by_type<T>::index>(arg.get_tuple());
-}
-*/
-
-
+///
+/// @brief get the value of a variable from a rvalue @ref getter_type, 
+///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
+/// 
+/// @tparam T the variable type to get, @see ABORIA_VARIABLE
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+///                   or @ref Particles
+/// @param arg the object with type ValueType
+/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T> ::type const& 
+///
 template<typename T, typename ValueType>
 CUDA_HOST_DEVICE
 typename ValueType::template return_type<T>::type & 
@@ -1076,6 +1129,17 @@ get(ValueType&& arg) {
     //return arg.template get<T>();
 }
 
+///
+/// @brief get the value of an indexed variable from a const @ref getter_type, 
+///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
+/// 
+/// @tparam N the index of the variable to get. The order of variables is set to
+///           (position,id,alive,generator,user_variable1,user_variable2,...)
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+///                   or @ref Particles
+/// @param arg the object with type ValueType
+/// @return CUDA_HOST_DEVICE const typename detail::getter_helper<typename ValueType::tuple_type> ::template return_type<N> ::type& 
+///
 template<unsigned int N, typename ValueType>
 CUDA_HOST_DEVICE
 const typename detail::getter_helper<typename ValueType::tuple_type>::template return_type<N>::type &
@@ -1083,6 +1147,17 @@ get_by_index(const ValueType& arg) {
     return detail::get_impl<N>(arg.get_tuple());
 }
 
+///
+/// @brief get the value of an indexed variable from a lvalue @ref getter_type, 
+///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
+/// 
+/// @tparam N the index of the variable to get. The order of variables is set to
+///           (position,id,alive,generator,user_variable1,user_variable2,...)
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+///                   or @ref Particles
+/// @param arg the object with type ValueType
+/// @return CUDA_HOST_DEVICE const typename detail::getter_helper<typename ValueType::tuple_type> ::template return_type<N> ::type& 
+///
 template<unsigned int N, typename ValueType>
 CUDA_HOST_DEVICE
 typename detail::getter_helper<typename ValueType::tuple_type>::template return_type<N>::type &
@@ -1090,6 +1165,17 @@ get_by_index(ValueType& arg) {
     return detail::get_impl<N>(arg.get_tuple());
 }
 
+///
+/// @brief get the value of an indexed variable from a rvalue @ref getter_type, 
+///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
+/// 
+/// @tparam N the index of the variable to get. The order of variables is set to
+///           (position,id,alive,generator,user_variable1,user_variable2,...)
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+///                   or @ref Particles
+/// @param arg the object with type ValueType
+/// @return CUDA_HOST_DEVICE const typename detail::getter_helper<typename ValueType::tuple_type> ::template return_type<N> ::type& 
+///
 template<unsigned int N, typename ValueType>
 CUDA_HOST_DEVICE
 typename detail::getter_helper<typename ValueType::tuple_type>::template return_type<N>::type &

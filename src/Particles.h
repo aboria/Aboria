@@ -85,11 +85,20 @@ namespace Aboria {
 ///  \code 
 ///     using namespace Aboria;
 ///     ABORIA_VARIABLE(scalar,double,"my scalar")
-///     typedef Particles<scalar> MyParticles;
+///     typedef Particles<std::tuple<scalar>> MyParticles;
 ///     MyParticles particles();
 ///  \endcode
 ///
-///  \param TYPES a list of one or more variable types
+///  \param VAR a `std::tuple` of one or more variable types
+///  \param DomainD (default 3) the spatial dimension of the particles
+///  \param VECTOR (default `std::vector`) a STL-compatable vector class, 
+///         templated by an element type and an allocator type. Valid options
+///         are currently `std::vector` or `thrust::device_vector`.
+///  \param SearchMethod (default `bucket_search_serial`) an Aboria spatial
+///         data structure. Valid options are `Aboria::bucket_search_serial`,
+///         `Aboria::bucket_search_parallel`, `Aboria::nanoflann_adaptor`, or
+///         `Aboria::octtree`
+///  \param TRAITS_USER the class Aboria::Traits must be specialised on VECTOR
 ///
 ///  \see #ABORIA_VARIABLE
 template<typename VAR=std::tuple<>, 
@@ -127,6 +136,8 @@ public:
 
     /// 
     /// a tuple type containing raw references to value_types for each Variable
+    /// note that this is only different from reference when using a 
+    /// `thrust::device_vector` level 0 vector 
     typedef typename traits_type::raw_reference raw_reference;
 
     /// 
@@ -201,7 +212,8 @@ public:
         seed(time(NULL))
     {}
 
-    /// Constructs a container with `size` particles
+    /// Constructs a container with `size` particles. Searching or id tracking
+    /// is disabled
     Particles(const size_t size):
         next_id(0),
         searchable(false),
@@ -210,7 +222,8 @@ public:
         resize(size);
     }
 
-    /// copy-constructor. performs deep copying of all particles
+    /// copy-constructor. performs deep copying of all particles from \p other
+    /// to \a *this
     Particles(const particles_type &other):
             data(other.data),
             search(other.search),
@@ -233,7 +246,9 @@ public:
     //
     
 
-    /// resize the continer. Note that if new particles are created, they
+    /// Resize the continer to \p n particles. 
+    /// 
+    /// Note that if new particles are created, they
     /// are NOT added to the neighbour search structure, and might be outside
     /// the domain
     ///
@@ -364,8 +379,11 @@ public:
 
     /// erase the particle pointed to by the iterator \p i.
     ///
+    /// \param i erase particle pointed to by \p i. This simply sets the `id`
+    ///     variable of that particle to `false` and 
+    ///     (if \p update_neighbour_search==true) calls ::update_positions
     /// \param update_neighbour_search by default this function will update
-    /// the neighbour search data structure. Set this to false to turn off update
+    ///     the neighbour search data structure. Set this to false to turn off update
     /// \sa update_positions
     iterator erase (iterator i, const bool update_neighbour_search = true) {
         const size_t i_position = i-begin();
@@ -397,16 +415,31 @@ public:
     }
 
     /// insert a particle \p val into the container at \p position
+    ///
+    /// Note that this will copy across the `id`, `generator` and `alive` variables
+    /// from val, which might conflict with particles already in the container
+    /// (e.g. the new container might have identical `id`s or `generators`, which
+    /// are generally assumed to be unique).
     iterator insert (iterator position, const value_type& val) {
         return traits_type::insert(data,position,val);
     }
 
     /// insert a \p n copies of the particle \p val into the container at \p position
+    ///
+    /// Note that this will copy across the `id`, `generator` and `alive` variables
+    /// from val, which might conflict with particles already in the container
+    /// (e.g. the new container might have identical `id`s or `generators`, which
+    /// are generally assumed to be unique).
     void insert (iterator position, size_type n, const value_type& val) {
         traits_type::insert(data,position,n,val);
     }
 
     /// insert a range of particles pointed to by \p first and \p last at \p position 
+    ///
+    /// Note that this will copy across the `id`, `generator` and `alive` variables
+    /// from the range, which might conflict with particles already in the container
+    /// (e.g. the new container might have identical `id`s or `generators`, which
+    /// are generally assumed to be unique).
     template <class InputIterator>
     iterator insert (iterator position, InputIterator first, InputIterator last) {
         return insert_dispatch(position, first, last, std::integral_constant<bool,
@@ -449,6 +482,8 @@ public:
 
     /// Initialise the "search by id" functionality. This will switch on the creation
     /// and updating of an internal data structure to enable search by id. 
+    ///
+    /// \see ::init_neighbour_search()
     void init_id_search() {
         LOG(2, "Particles:init_id_search");
         search.init_id_map();
