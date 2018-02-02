@@ -54,61 +54,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-
-template <typename IteratorType>
-struct iterator_range_with_transpose {
-    typedef IteratorType iterator;
-    typedef typename iterator::traits_type traits_type;
-    typedef typename traits_type::double_d double_d;
-    IteratorType m_begin;
-    IteratorType m_end;
-
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    iterator_range_with_transpose()
-    {}
-    /*
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    iterator_range_with_transpose(IteratorType&& begin, IteratorType&& end, const double_d& transpose):
-        m_begin(std::move(begin)),m_end(std::move(end)),m_transpose(transpose) 
-    {}
-    */
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    iterator_range_with_transpose(const IteratorType& begin, const IteratorType& end, const double_d &transpose):
-        m_begin(begin),m_end(end),m_transpose(transpose) 
-    {}
-
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    iterator_range_with_transpose(const IteratorType& begin, const IteratorType& end):
-        m_begin(begin),m_end(end),m_transpose(0) 
-    {}
-
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    const IteratorType &begin() const { return m_begin; }
-
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    const IteratorType &end() const { return m_end; }
-
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    IteratorType &begin() { return m_begin; }
-    
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    IteratorType &end() { return m_end; }
-
-    ABORIA_HOST_DEVICE_IGNORE_WARN
-    CUDA_HOST_DEVICE
-    const double_d& get_transpose() { return m_transpose; }
-    double_d m_transpose;
-
-};
-
+///
+/// @brief lightweight object that holds two iterators to the beginning and end
+///        of an STL range
+/// 
+/// @tparam IteratorType the type of the iterators to be held 
+///
 template <typename IteratorType>
 struct iterator_range{
     typedef IteratorType iterator;
@@ -155,12 +106,35 @@ struct iterator_range{
     IteratorType &end() { return m_end; }
 };
 
+///
+/// @brief helper function to make an @ref iterator_range from a begin and end
+///        pair of iterators
+/// 
+/// @tparam IteratorType the type of the iterators
+/// @param begin the iterator pointing to the beginning of the range
+/// @param end  the iterator pointing to the end of the range
+/// @return CUDA_HOST_DEVICE iterator_range<IteratorType> 
+///
 template <typename IteratorType>
 CUDA_HOST_DEVICE
 iterator_range<IteratorType> make_iterator_range(IteratorType&& begin, IteratorType&& end) {
     return iterator_range<IteratorType>(begin,end);
 }
 
+///
+/// @brief A base class for the spatial data structure classes.
+///
+/// It implements generic functionality such as setting up the spatial domain,
+/// logging, and the find-by-id map. In particular see @update_positions
+///
+/// @todo it uses curiously recurring template pattern (CRTP) to implement compile-time 
+/// polymorphism for historical reasons, but I don't think this is neccessary anymore
+/// as all the member functions are quite slow
+/// 
+/// @tparam Derived the derived class type
+/// @tparam Traits an instantiation of the @TraitsCommon class
+/// @tparam QueryType the query type associated with Derived
+///
 template <typename Derived, typename Traits, typename QueryType>
 class neighbour_search_base {
 public:
@@ -177,6 +151,13 @@ public:
     const Derived& cast() const { return static_cast<const Derived&>(*this); }
     Derived& cast() { return static_cast<Derived&>(*this); }
 
+    ///
+    /// @brief constructs a new spatial data structure
+    ///
+    /// The spatial domain is set to 1/3 of the maximum and minimum extents
+    /// possible using the `double` type. All periodicity is turned off, and the
+    /// number of particle per bucket is set to 10
+    ///
     neighbour_search_base():m_id_map(false) {
         LOG_CUDA(2,"neighbour_search_base: constructor, setting default domain");
         const double min = std::numeric_limits<double>::min();
@@ -186,10 +167,24 @@ public:
                    bool_d::Constant(false),10,false); 
     };
 
+    ///
+    /// @brief Returns true if this spatial data structure relies on the order
+    ///        of particles in the @ref Particles container. This is overloaded
+    ///        by the Derived class
+    /// 
+    /// @return true 
+    ///
     static constexpr bool ordered() {
         return true;
     }
 
+    ///
+    /// @brief A function object used to enforce the domain extents on the set
+    ///        of particles
+    /// 
+    /// @tparam D the spatial dimension of the particle set
+    /// @tparam Reference a raw reference to a particle in the particle set
+    ///
     template <unsigned int D, typename Reference>
     struct enforce_domain_lambda {
         typedef Vector<double,D> double_d;
@@ -202,6 +197,17 @@ public:
         enforce_domain_lambda(const double_d &low, const double_d &high, const bool_d &periodic):
             low(low),high(high),periodic(periodic) {}
 
+        ///
+        /// @brief updates the position of @p i (periodic domain) or its alive
+        ///        flag (non-periodic domain) based on its position relative
+        ///        to the spatial domain
+        /// 
+        /// If dimension $j$ is periodic, and $r_j$ is outside the domain,
+        /// then $r_j$ is updated to the correct position within the domain.
+        /// If dimensino $j$ is non-periodic, and $r_j$ is outside the domain,
+        /// then the `alive` variable for @p i is set to `false`
+        /// 
+        ///
         CUDA_HOST_DEVICE
         void operator()(Reference i) const {
             double_d r = Aboria::get<position>(i);
@@ -228,12 +234,18 @@ public:
         }
     };
 
-
-    /// resets the domain extents, periodicity and bucket size
-    /// \param low the lower extent of the search domain
-    /// \param high the upper extent of the search domain
-    /// \param _max_interaction_radius the side length of each bucket
-    /// \param periodic a boolean vector indicating wether each dimension
+    ///
+    /// @brief resets the domain extents, periodicity and number of particles
+    ///        within each bucket 
+    /// 
+    /// @param min_in the lower extent of the search domain
+    /// @param max_in the upper extent of the search domain
+    /// @param periodic_in wether or not each dimension is periodic
+    /// @param n_particles_in_leaf indicates the average, or maximum number of 
+    ///        particles in each bucket 
+    /// @param not_in_constructor used to determine if this function is called
+    ///        within the constructor
+    ///
     void set_domain(const double_d &min_in, const double_d &max_in, const bool_d& periodic_in, const double n_particles_in_leaf=10, const bool not_in_constructor=true) {
         LOG(2,"neighbour_search_base: set_domain:");
         m_domain_has_been_set = not_in_constructor;
@@ -249,6 +261,12 @@ public:
         LOG(2,"\tperiodic = "<<m_periodic);
     }
 
+    ///
+    /// @brief returns an index into the particle set given a particle id
+    /// 
+    /// @param id the id to search for
+    /// @return size_t the index into the particle set
+    ///
     size_t find_id_map(const size_t id) const {
         const size_t n = m_particles_end-m_particles_begin;
         return detail::lower_bound(m_id_map_key.begin(),
@@ -257,163 +275,26 @@ public:
                                 - m_id_map_key.begin();
     }
 
+    ///
+    /// @brief This function initialises the find-by-id functionality
+    ///
+    /// Find-by-id works using a key and value vector pair that act as a map
+    /// between ids and particle indicies. This pair is sorted by id for 
+    /// quick(ish) searching, especially in parallel. It is not as good as 
+    /// `std::map` on a (single-core) CPU, but can be done on a GPU using `thrust::vector`
+    /// 
+    /// @see find_id_map 
+    ///
     void init_id_map() {
         m_id_map = true;
         m_id_map_key.clear();
         m_id_map_value.clear();
     }
 
-    /*
-    void init_id_map(const bool reorder=false) {
-        m_id_map = true;
-	    LOG(2,"neighbour_search_base: init_id_map");
-        const size_t n = m_particles_end - m_particles_begin;
-        m_id_map_key.resize(n);
-        m_id_map_value.resize(n);
-        
-        if (reorder) {
-            detail::gather(m_alive_indices.begin(),m_alive_indices.end(),
-                           get<id>(m_particles_begin),
-                           m_id_map_key.begin());
-        } else {
-            detail::copy(get<id>(m_particles_begin),get<id>(m_particles_end),
-                     m_id_map_key.begin());
 
-        }
-        detail::sequence(m_id_map_value.begin(),m_id_map_value.end());
-        detail::sort_by_key(m_id_map_key.begin(),m_id_map_key.end(),
-                            m_id_map_value.begin());
-
-        if (ABORIA_LOG_LEVEL >= 4) { 
-            print_id_map();
-        }
-    }
-
-    void update_id_map(const size_t dist) {
-	    LOG(2,"neighbour_search_base: update_id_map:"<<dist);
-        const size_t n = m_particles_end - m_particles_begin;
-        m_id_map_key.resize(n);
-        m_id_map_value.resize(n);
-
-        auto map_key_start = m_id_map_key.end()-dist;
-        auto map_value_start = m_id_map_value.end()-dist;
-        auto particles_start = m_particles_end-dist;
-
-        detail::copy(get<id>(particles_start),get<id>(m_particles_end),map_key_start);
-        detail::sequence(map_value_start,m_id_map_value.end(),n-dist);
-        detail::sort_by_key(map_key_start,m_id_map_key.end(),map_value_start);
-    }
-
-    void copy_id_map(const size_t from_id, const size_t to_id, const int to_index) {
-        const size_t from_map_index = find_id_map(from_id);
-        const size_t to_map_index = find_id_map(to_id);
-
-	    LOG(2,"neighbour_search_base: copy_id_map: from_id="<<from_id<<" to_id="<<to_id<<" to_index="<<to_index<<" from_map_index="<<from_map_index<<" to_map_index="<<to_map_index);
-
-        ASSERT(from_map_index < (m_particles_end-m_particles_begin), "id not found");
-        ASSERT(to_map_index < (m_particles_end-m_particles_begin), "id not found");
-        ASSERT(m_id_map_value[to_map_index] == to_index,"found index is incorrect");
-
-        // copy_from id gets a new index
-        m_id_map_value[from_map_index] = to_index;
-        // mark to id for deletion
-        m_id_map_value[to_map_index] = -1;
-    }
-
-    void delete_marked_id_map() {
-	    LOG(2,"neighbour_search_base: delete_marked_id_map");
-        // now delete them
-        // TODO: would be usefule to have an aboria `make_zip_iterator`
-        typedef zip_iterator<typename Traits::template tuple<
-                                typename vector_int::iterator, 
-                                typename vector_int::iterator>,
-                             mpl::vector<>> pair_zip_type;
-
-        auto start_zip = pair_zip_type(m_id_map_key.begin(), m_id_map_value.begin());
-        auto end_zip = pair_zip_type(m_id_map_key.end(), m_id_map_value.end());
-
-        size_t first_dead_index = detail::stable_partition(start_zip,end_zip,
-                CUDA_DEVICE
-                [&](typename pair_zip_type::reference const& i) {
-                return detail::get_impl<1>(i.get_tuple()) >= 0;
-                }) - start_zip;
-
-        m_id_map_key.erase(m_id_map_key.begin()+first_dead_index,
-                m_id_map_key.end());
-        m_id_map_value.erase(m_id_map_value.begin()+first_dead_index,
-                m_id_map_value.end());
-    }
-
-
-    void delete_id_map_in_range(const size_t i, const size_t n) {
-        // TODO: would be usefule to have an aboria `make_zip_iterator`
-        typedef zip_iterator<typename Traits::template tuple<
-                                typename vector_int::iterator, 
-                                typename vector_int::iterator>,
-                             mpl::vector<>> pair_zip_type;
-
-        
-        const size_t np = m_particles_end-m_particles_begin; 
-        if (n*std::log(np) < np) {
-            if (n == 1) {
-                const size_t is_map_index = find_id_map(get<
-            detail::for_each(start_zip,end_zip,
-                CUDA_DEVICE
-                [&](typename pair_zip_type::reference const& p) {
-                    size_t& index = detail::get_impl<1>(p.get_tuple());
-                    if (index < i+n) {
-                        // to be deleted
-                        index = -1;
-                    } else {
-                        // to be shifted
-                        index -= n;
-                    }
-                });
-
-        auto start_zip = pair_zip_type(m_id_map_key.begin()+i, m_id_map_value.begin()+i);
-
-        if (
-
-        if (cast().ordered()) {
-            // particles will have kept ordering when deleting, so need to shift end indices
-#if defined(__CUDACC__)
-            typedef typename thrust::detail::iterator_category_to_system<
-                typename vector_int::iterator::iterator_category
-                >::type system;
-            detail::counting_iterator<unsigned int,system> count(i);
-#else
-            detail::counting_iterator<unsigned int> count(i);
-#endif
-            const query_type& query = get_query();
-            const bool ordered = cast().ordered();
-            detail::for_each(count,count+n,
-                CUDA_DEVICE
-                [&](const unsigned int index) {
-                    const size_t id_map_index = query.find(index)-query.get_particles_begin();
-                    if (index < i+n) {
-                        // to be deleted
-                        index = -1;
-                    } else {
-                        // to be shifted
-                        index -= n;
-                    }
-                });
-        } else {
-            // just delete
-            auto end_zip = pair_zip_type(m_id_map_key.end(), m_id_map_value.end());
-            auto end_zip = pair_zip_type(m_id_map_key.begin()+(i+n), m_id_map_value.begin()+(i+n));
-            detail::for_each(start_zip,end_zip,
-                CUDA_DEVICE
-                [&](typename pair_zip_type::reference const& p) {
-                    size_t& index = detail::get_impl<1>(p.get_tuple());
-                    index = -1;
-                });
-        }
-
-        delete_marked_id_map();
-
-    }
-        */
+    ///
+    /// @brief print to stdout the find-by-id id-index map
+    ///
     void print_id_map() {
         std::cout << "particle ids:\n";
         for (auto i = m_particles_begin; i != m_particles_end; ++i) {
