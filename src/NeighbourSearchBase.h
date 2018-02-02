@@ -315,18 +315,35 @@ public:
         std::cout << std::endl;
     }
 
-
-    // can have added new particles (so iterators might be invalid)
-    // can't have less particles (erase will update search)
-    // can have alive==false particles 
-    // only update id_map for new particles if derived class sets reorder, or
-    // particles have been added
+    ///
+    /// @brief This is the base function for updates to any of the spatial 
+    ///        data structures. It handles the domain enforcement, the deletion
+    ///        or addition of particles, and the find-by-id map. It also calls
+    ///        the `update_positions_impl` of the Derived class.
+    ///
+    /// One of the key responsibilities of this function is to set #m_alive_indices,
+    /// which is a vector of indices that are still alive after taking into account
+    /// the `alive` flags and the position of the particles within the domain.
+    /// The Particles::update_positions() function uses this vector to delete and
+    /// reorder the particles in the container
+    /// 
+    /// @param begin The `begin` iterator of the particle set
+    /// @param end The `end` iterator of the particle set
+    /// @param update_begin The `begin` iterator of the range of particles to 
+    ///        be updated
+    /// @param update_end The `end` iterator of the range of particles to be updated.
+    ///                   Note that if any particles are to be deleted, this must be the
+    ///                   same as @p end 
+    /// @param delete_dead_particles If `true` (the default), the function will ensure that
+    ///        the particles with an `false` `alive` variable are removed from the particle set.
+    ///        Note that this function does not actually do this
+    /// @return true if the particles need to be reordered/deleted
+    /// @return false if the particles don't need to be reordered/deleted
+    ///
     bool
     update_positions(iterator begin, iterator end, 
                      iterator update_begin, iterator update_end, 
                      const bool delete_dead_particles=true) {
-
-        //if (!m_domain_has_been_set && !m_id_map) return false;
 
 	    LOG(2,"neighbour_search_base: update_positions: updating "<<update_end-update_begin<<" points");
 
@@ -476,6 +493,13 @@ public:
             
     }
 
+    ///
+    /// @brief updates the internal copies held of the `begin` and `end` iterators
+    ///         of the particle set
+    /// 
+    /// @param begin the `begin` iterator of the particle set
+    /// @param end the `end` iterator of the particle set
+    ///
     void update_iterators(iterator begin, iterator end) {
         m_particles_begin = begin;
         m_particles_end = end;
@@ -487,35 +511,114 @@ public:
     }
 
     
+    ///
+    /// @return the query object
+    ///
     const query_type& get_query() const {
         return cast().get_query_impl();
     }
 
+    ///
+    /// @return a vector of ints that shows the new order of the particles
+    ///        within the particle container
+    /// @see update_positions(), #m_alive_indices
+    ///
     const vector_int& get_alive_indicies() const {
         return m_alive_indices;
     }
 
-    const vector_int& get_id_map() const {
+    ///
+    /// @return true if find-by-id functionality switched on
+    ///
+    bool get_id_map() const {
         return m_id_map;
     }
 
+    ///
+    /// @return the minimum extent of the cuboid domain
+    ///
     const double_d& get_min() const { return m_bounds.bmin; }
+
+    ///
+    /// @return the maximum extent of the cuboid domain
+    ///
     const double_d& get_max() const { return m_bounds.bmax; }
+    
+    ///
+    /// @return the periodicity of the domain
+    ///
     const bool_d& get_periodic() const { return m_periodic; }
+
+    ///
+    /// @return true if domain has been initialised
+    /// @see set_domain()
+    ///
     bool domain_has_been_set() const { return m_domain_has_been_set; }
+
+    ///
+    /// @return the number of particles in each bucket (average or maximum)
+    ///
     const double get_max_bucket_size() const { return m_n_particles_in_leaf; }
 
 protected:
+
+    ///
+    /// @brief a copy of the `begin` iterator for the particle set
+    ///
     iterator m_particles_begin;
+
+    ///
+    /// @brief a copy of the `end` iterator for the particle set
+    ///
     iterator m_particles_end;
+
+    ///
+    /// @brief a vector of ints holding a cummulative sum of the living particles
+    /// @see update_positions()
+    ///
     vector_int m_alive_sum;
+
+    ///
+    /// @brief A vector of particle set indices that are used by 
+    /// Particles::update_positions() to reorder and delete the particles
+    /// 
     vector_int m_alive_indices;
+
+    ///
+    /// @brief The `key` vector of the id->index map for the find-by-id functionality
+    /// 
     vector_int m_id_map_key;
+
+    ///
+    /// @brief The `value` vector of the id->index map for the find-by-id functionality
+    /// 
     vector_int m_id_map_value;
+
+    ///
+    /// @brief flag set to `true` if find-by-id functionality is turned on
+    ///
     bool m_id_map;
+
+    ///
+    /// @brief @Vector of bools indicating the periodicity of the domain
+    ///
     bool_d m_periodic;
+
+    ///
+    /// @brief true if the domain has been set
+    /// @see set_domain()
+    ///
     bool m_domain_has_been_set;
+
+    ///
+    /// @brief the bounds (min->max) of the domain
+    /// 
     detail::bbox<Traits::dimension> m_bounds;
+
+    ///
+    /// @brief holds the set number of particles in each bucket
+    /// 
+    ///
     double m_n_particles_in_leaf; 
 };
 
