@@ -36,3 +36,4 @@ compile_commands.json
 python/*_generated.cpp
 build*
 .vscode/*
+boostbook_catalog.xml
