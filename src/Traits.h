@@ -2,6 +2,7 @@
 #ifndef TRAITS_H_ 
 #define TRAITS_H_ 
 
+#include "Variable.h"
 #include "Vector.h"
 #include "CudaInclude.h"
 #include "Get.h"

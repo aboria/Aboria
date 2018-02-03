@@ -36,110 +36,109 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef DISTANCE_H_
 #define DISTANCE_H_
 
-#include <cmath>
-#include <algorithm>
 #include "Vector.h"
+#include <algorithm>
+#include <cmath>
 
 namespace Aboria {
 namespace detail {
 
-template <int LNormNumber>
-struct distance_helper {
-    CUDA_HOST_DEVICE
-    static inline double get_value_to_accumulate(const double arg) {
-        switch (LNormNumber) {
-            case -1:
-                return std::abs(arg); 
-            case 0:
-                return arg != 0; 
-            case 1:
-                return std::abs(arg); 
-            case 2:
-                return std::pow(arg,LNormNumber);
-            case 3:
-                return std::abs(std::pow(arg,LNormNumber));
-            case 4:
-                return std::pow(arg,LNormNumber);
-            default:
-                return std::abs(std::pow(arg,LNormNumber));
-        }
+template <int LNormNumber> struct distance_helper {
+  CUDA_HOST_DEVICE
+  static inline double get_value_to_accumulate(const double arg) {
+    switch (LNormNumber) {
+    case -1:
+      return std::abs(arg);
+    case 0:
+      return arg != 0;
+    case 1:
+      return std::abs(arg);
+    case 2:
+      return std::pow(arg, LNormNumber);
+    case 3:
+      return std::abs(std::pow(arg, LNormNumber));
+    case 4:
+      return std::pow(arg, LNormNumber);
+    default:
+      return std::abs(std::pow(arg, LNormNumber));
     }
+  }
 
-    template <unsigned int D,typename VectorType=Vector<double,D>>
-    CUDA_HOST_DEVICE
-    static inline VectorType get_value_to_accumulate(const VectorType& arg) {
-        VectorType ret;
-        switch (LNormNumber) {
-            case -1:
-                for (int i = 0; i < D; ++i) {
-                    ret[i] = std::abs(arg[i]);
-                }
-            case 0:
-                for (int i = 0; i < D; ++i) {
-                    ret[i] = arg[i] != 0; 
-                }
-            case 1:
-                for (int i = 0; i < D; ++i) {
-                    ret[i] = std::abs(arg[i]); 
-                }
-            case 2:
-                for (int i = 0; i < D; ++i) {
-                    ret[i] = std::pow(arg[i],LNormNumber);
-                }
-            case 3:
-                for (int i = 0; i < D; ++i) {
-                    ret[i] = std::abs(std::pow(arg[i],LNormNumber));
-                }
-            case 4:
-                for (int i = 0; i < D; ++i) {
-                    ret[i] = std::pow(arg[i],LNormNumber);
-                }
-            default:
-                for (int i = 0; i < D; ++i) {
-                    ret[i] = std::abs(std::pow(arg[i],LNormNumber));
-                }
-        }
-        return ret;
+  template <unsigned int D, typename VectorType = Vector<double, D>>
+  CUDA_HOST_DEVICE static inline VectorType
+  get_value_to_accumulate(const VectorType &arg) {
+    VectorType ret;
+    switch (LNormNumber) {
+    case -1:
+      for (size_t i = 0; i < D; ++i) {
+        ret[i] = std::abs(arg[i]);
+      }
+    case 0:
+      for (size_t i = 0; i < D; ++i) {
+        ret[i] = arg[i] != 0;
+      }
+    case 1:
+      for (size_t i = 0; i < D; ++i) {
+        ret[i] = std::abs(arg[i]);
+      }
+    case 2:
+      for (size_t i = 0; i < D; ++i) {
+        ret[i] = std::pow(arg[i], LNormNumber);
+      }
+    case 3:
+      for (size_t i = 0; i < D; ++i) {
+        ret[i] = std::abs(std::pow(arg[i], LNormNumber));
+      }
+    case 4:
+      for (size_t i = 0; i < D; ++i) {
+        ret[i] = std::pow(arg[i], LNormNumber);
+      }
+    default:
+      for (size_t i = 0; i < D; ++i) {
+        ret[i] = std::abs(std::pow(arg[i], LNormNumber));
+      }
     }
+    return ret;
+  }
 
-    CUDA_HOST_DEVICE
-    static inline double do_accumulate(const double accum, const double value) {
-        switch (LNormNumber) {
-            case -1:
-                if (value > accum) {
-                    return value;
-                } else {
-                    return accum;
-                }
-            default:
-                return accum + value;
-        }
-    }
-
-    CUDA_HOST_DEVICE
-    static inline double accumulate_norm(const double accum, const double arg) {
-        return do_accumulate(accum,get_value_to_accumulate(arg));
-    }
-    
-
-    CUDA_HOST_DEVICE
-    static inline double accumulate_max_norm(const double accum, const double arg1, const double arg2) {
-        return do_accumulate(accum,std::max(get_value_to_accumulate(arg1),
-                                            get_value_to_accumulate(arg2)));
-    }
-
-    template <unsigned int D>
-    CUDA_HOST_DEVICE
-    static inline double norm(const Vector<double,D>& vector) {
-        double accum = 0;
-        for (int i = 0; i < D; ++i) {
-            accum = accumulate_norm(accum,vector[i]);
-        }
+  CUDA_HOST_DEVICE
+  static inline double do_accumulate(const double accum, const double value) {
+    switch (LNormNumber) {
+    case -1:
+      if (value > accum) {
+        return value;
+      } else {
         return accum;
+      }
+    default:
+      return accum + value;
     }
+  }
+
+  CUDA_HOST_DEVICE
+  static inline double accumulate_norm(const double accum, const double arg) {
+    return do_accumulate(accum, get_value_to_accumulate(arg));
+  }
+
+  CUDA_HOST_DEVICE
+  static inline double accumulate_max_norm(const double accum,
+                                           const double arg1,
+                                           const double arg2) {
+    return do_accumulate(accum, std::max(get_value_to_accumulate(arg1),
+                                         get_value_to_accumulate(arg2)));
+  }
+
+  template <unsigned int D>
+  CUDA_HOST_DEVICE static inline double norm(const Vector<double, D> &vector) {
+    double accum = 0;
+    for (size_t i = 0; i < D; ++i) {
+      accum = accumulate_norm(accum, vector[i]);
+    }
+    return accum;
+  }
 };
 
-}
-}
+} // namespace detail
+} // namespace Aboria
 
 #endif

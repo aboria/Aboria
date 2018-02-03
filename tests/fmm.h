@@ -117,7 +117,7 @@ public:
         const int length = scalar_traits::length;
         vector_type target_eigen(length*particles.size());
         vector_type source_eigen(length*particles.size());
-        for (int i = 0; i < particles.size(); ++i) {
+        for (size_t i = 0; i < particles.size(); ++i) {
             for (int j = 0; j < length; ++j) {
                 source_eigen[i*length+j] = scalar_traits::Index(get<Source>(particles)[i],j);
             }
@@ -126,7 +126,7 @@ public:
         target_eigen = fmm_eigen*source_eigen; 
         t1 = Clock::now();
         time_fmm_eval = t1 - t0;
-        for (int i = 0; i < particles.size(); ++i) {
+        for (size_t i = 0; i < particles.size(); ++i) {
             for (int j = 0; j < length; ++j) {
                 scalar_traits::Index(get<TargetFMM>(particles)[i],j) = target_eigen[i*length+j];
             }
@@ -187,7 +187,7 @@ public:
             //return (p-double_d(0)).norm();
             double ret=1.0;
             const double scale = 2.0*detail::PI/(pos_max-pos_min); 
-            for (int i=0; i<D; i++) {
+            for (size_t i = 0; i < D;  ++i) {
                 ret *= cos((p[i]-pos_min)*scale);
             }
             return ret/N;
@@ -239,7 +239,7 @@ public:
                 //return (p-double_d(0)).norm();
                 vdouble2 ret = vdouble2::Constant(1.0);
                 const double scale = 2.0*detail::PI/(pos_max-pos_min); 
-                for (int i=0; i<D; i++) {
+                for (size_t i = 0; i < D;  ++i) {
                     ret[0] *= cos((p[i]-pos_min)*scale);
                     ret[1] *= sin((p[i]-pos_min)*scale);
                 }

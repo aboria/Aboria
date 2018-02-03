@@ -7,6 +7,7 @@
 #include "Traits.h"
 #include <algorithm>
 #include <boost/iterator/permutation_iterator.hpp>
+#include <boost/iterator/transform_iterator.hpp>
 
 namespace Aboria {
 

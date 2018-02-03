@@ -127,7 +127,7 @@ public:
             //return (p-double_d(0)).norm();
             double ret=1.0;
             const double scale = 2.0*detail::PI/(pos_max-pos_min); 
-            for (int i=0; i<D; i++) {
+            for (size_t i = 0; i < D;  ++i) {
                 ret *= cos((p[i]-pos_min)*scale);
             }
             return ret/N;
@@ -209,7 +209,7 @@ public:
             }
         }
         const double_d scale = double_d(1.0)/(Rn.box.bmax-Rn.box.bmin);
-        for (int i = 0; i < positions.size(); ++i) {
+        for (size_t i = 0; i < positions.size(); ++i) {
             const unsigned int n = 4;
             const double_d &x =  (2*positions[i]-Rn.box.bmin-Rn.box.bmax)*scale;
             detail::ChebyshevRnSingle<D,n> cheb_rn(positions[i],Rn.box);

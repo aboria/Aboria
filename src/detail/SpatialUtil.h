@@ -61,7 +61,7 @@ struct bbox {
     inline CUDA_HOST_DEVICE
     bbox operator+(const bbox &arg) {
         bbox bounds;
-        for (int i=0; i<D; i++) {
+        for (size_t i = 0; i < D;  ++i) {
             bounds.bmin[i] = std::min(bmin[i], arg.bmin[i]);
             bounds.bmax[i] = std::max(bmax[i], arg.bmax[i]);
         }
@@ -72,7 +72,7 @@ struct bbox {
     bool operator<(const bbox &arg) {
         bbox bounds;
         bool within = true;
-        for (int i=0; i<D; i++) {
+        for (size_t i = 0; i < D;  ++i) {
             within |= bmin[i] >= arg.bmin[i];
             within |= bmax[i] < arg.bmax[i];
         }
@@ -83,7 +83,7 @@ struct bbox {
     bool operator<=(const bbox &arg) {
         bbox bounds;
         bool within = true;
-        for (int i=0; i<D; i++) {
+        for (size_t i = 0; i < D;  ++i) {
             within |= bmin[i] >= arg.bmin[i];
             within |= bmax[i] <= arg.bmax[i];
         }
@@ -92,7 +92,7 @@ struct bbox {
 
     inline CUDA_HOST_DEVICE
     bool is_empty() {
-        for (int i=0; i<D; i++) {
+        for (size_t i = 0; i < D;  ++i) {
             if (bmax[i] < bmin[i]) return true;
         }
         return false;
@@ -266,7 +266,7 @@ struct point_to_bucket_index {
 
 // Utility functions to encode leaves and children in single int
 inline CUDA_HOST_DEVICE
-bool is_empty(int id) { return id == 0xffffffff; }
+bool is_empty(int id) { return id == (int)0xffffffff; }
 
 inline CUDA_HOST_DEVICE
 bool is_node(int id) { return id > 0; }
@@ -309,7 +309,7 @@ int point_to_tag(const Vector<double,D> &p, bbox<D> box, int max_level) {
         double_d mid;
         int_d hi_half;
     
-        for (int i=0; i<D; i++) {
+        for (size_t i = 0; i < D;  ++i) {
             // Classify in i-direction
             mid[i] = 0.5f * (box.bmin[i] + box.bmax[i]);
             hi_half[i] = (p[i] < mid[i]) ? 0 : 1;
@@ -320,7 +320,7 @@ int point_to_tag(const Vector<double,D> &p, bbox<D> box, int max_level) {
         }
   
         // Shrink the bounding box, still encapsulating the point
-        for (int i=0; i<D; i++) {
+        for (size_t i = 0; i < D;  ++i) {
             box.bmin[i] = (hi_half[i]) ? mid[i] : box.bmin[i];
             box.bmax[i] = (hi_half[i]) ? box.bmax[i] : mid[i];
         }

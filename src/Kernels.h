@@ -88,9 +88,9 @@ namespace Aboria {
         KernelBase(const RowElements& row_elements,
                    const ColElements& col_elements,
                    const F& function): 
-            m_function(function),
             m_row_elements(row_elements), 
-            m_col_elements(col_elements)
+            m_col_elements(col_elements),
+            m_function(function)
         {};
 
         RowElements& get_row_elements() {

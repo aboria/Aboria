@@ -295,7 +295,7 @@ public:
             auto source_fn = [&](const double_d &p) {
                 double ret=1.0;
                 const double scale = 2.0*detail::PI/(pos_max-pos_min); 
-                for (int i=0; i<D; i++) {
+                for (size_t i = 0; i < D;  ++i) {
                     ret *= cos((p[i]-pos_min)*scale);
                 }
                 return ret/N;

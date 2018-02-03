@@ -304,7 +304,7 @@ public:
     std::cout << std::endl;
 
     std::cout << "id map (id,index):\n";
-    for (int i = 0; i < m_id_map_key.size(); ++i) {
+    for (size_t i = 0; i < m_id_map_key.size(); ++i) {
       std::cout << "(" << m_id_map_key[i] << "," << m_id_map_value[i] << ")\n";
     }
     std::cout << std::endl;
@@ -1002,7 +1002,7 @@ public:
 
   CUDA_HOST_DEVICE
   depth_first_iterator(const iterator &copy) : m_query(copy.m_query) {
-    for (int i = 0; i < copy.m_stack.size(); ++i) {
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
       m_stack.push_back(copy.m_stack[i]);
     }
   }
@@ -1012,7 +1012,7 @@ public:
   CUDA_HOST_DEVICE
   iterator &operator=(const iterator &copy) {
     m_stack.resize(copy.m_stack.size());
-    for (int i = 0; i < copy.m_stack.size(); ++i) {
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
       m_stack[i] = copy.m_stack[i];
     }
 
@@ -1156,7 +1156,7 @@ public:
         m_inv_max_distance(copy.m_inv_max_distance), m_query(copy.m_query)
 
   {
-    for (int i = 0; i < copy.m_stack.size(); ++i) {
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
       m_stack.push_back(copy.m_stack[i]);
     }
   }
@@ -1173,7 +1173,7 @@ public:
     m_inv_max_distance = copy.m_inv_max_distance;
 
     m_stack.resize(copy.m_stack.size());
-    for (int i = 0; i < copy.m_stack.size(); ++i) {
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
       m_stack[i] = copy.m_stack[i];
     }
 
@@ -1743,7 +1743,7 @@ private:
 
     LOG_CUDA(3, "lattice_iterator_within_distance: reset_min_and_index:begin");
     while (m_valid && no_buckets) {
-      for (int i = 0; i < dimension; ++i) {
+      for (size_t i = 0; i < dimension; ++i) {
         m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
             m_query_point[i], i, ith_quadrant_bit(i));
       }

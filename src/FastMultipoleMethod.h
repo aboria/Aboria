@@ -264,7 +264,7 @@ public:
                 this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
             }
 
-            for (int i = 0; i < row_particles.size(); ++i) {
+            for (size_t i = 0; i < row_particles.size(); ++i) {
                 const double_d& p = get<position>(row_particles)[i];
                 pointer bucket;
                 box_type box;

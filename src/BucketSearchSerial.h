@@ -741,11 +741,11 @@ template <typename Traits>
 struct bucket_search_serial<Traits>::delete_points_in_bucket_lambda {
     int *m_linked_list;
     int *m_buckets;
-    size_t start_index_deleted;
-    size_t end_index_deleted;
+    int start_index_deleted;
+    int end_index_deleted;
 
-    delete_points_in_bucket_lambda(size_t start_index_deleted,
-                         size_t end_index_deleted,
+    delete_points_in_bucket_lambda(int start_index_deleted,
+                         int end_index_deleted,
                          int* m_linked_list,
                          int* m_buckets):
         m_linked_list(m_linked_list),

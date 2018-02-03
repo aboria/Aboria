@@ -587,7 +587,7 @@ public:
 
         //->
         #pragma omp parallel for
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             a_buffer[i] = a[i];
             for (int j = 0; j < N; ++j) {
                 const double dx_x = x[j]-x[i];
@@ -596,7 +596,7 @@ public:
             }
         }
         #pragma omp parallel for
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             a[i] = a_buffer[i];
         }
 
@@ -609,7 +609,7 @@ public:
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             #pragma omp parallel for
-            for (int i = 0; i < N; ++i) {
+            for (size_t i = 0; i < N; ++i) {
                 a_buffer[i] = a[i];
                 for (int j = 0; j < N; ++j) {
                     const double dx_x = x[j]-x[i];
@@ -618,7 +618,7 @@ public:
                 }
             }
             #pragma omp parallel for
-            for (int i = 0; i < N; ++i) {
+            for (size_t i = 0; i < N; ++i) {
                 a[i] = a_buffer[i];
             }
         }

@@ -426,7 +426,7 @@ namespace detail {
     
         template <typename Derived>
         void operator()(const Eigen::DenseBase<Derived>& result) const {
-            for (int i = 0; i < m_elements.size(); ++i) {
+            for (size_t i = 0; i < m_elements.size(); ++i) {
                 m_cheb.set_position(get<position>(m_elements)[i]);
                 lattice_iterator<dimension> mj(int_d(0),int_d(m_order));
                 for (int j=0; j<m_ncheb; ++j,++mj) {
@@ -474,7 +474,7 @@ namespace detail {
         void operator()(const Eigen::DenseBase<Derived>& result) const {
             const_cast<Eigen::DenseBase<Derived>&>(result).setZero();
             const auto& query = m_elements.get_particles().get_query();
-            for (int i = 0; i < m_elements.size(); ++i) {
+            for (size_t i = 0; i < m_elements.size(); ++i) {
                 auto pa = query.find(get<variable_type>(m_elements)[i][0]);
                 auto pb = query.find(get<variable_type>(m_elements)[i][1]);
                 ASSERT(pa != query.get_particles_begin()+query.number_of_particles(),"cannot find a");

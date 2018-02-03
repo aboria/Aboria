@@ -122,7 +122,7 @@ performs a binary search on the ordered vectors, with takes O(log(N)) time.
 
             detail::uniform_real_distribution<float> dist(a, b);
             detail::uniform_int_distribution<int> dist_int(0, N-1);
-            for (int d = 0; d < D; ++d) {
+            for (size_t d = 0; d < D; ++d) {
                 get<id_to_find>(arg) = dist_int(gen);
                 p[d] = dist(gen);
             }
@@ -219,7 +219,7 @@ performs a binary search on the ordered vectors, with takes O(log(N)) time.
             typename particles_type::value_type p;
             for (int i=0; i<N; ++i) {
                 get<id_to_find>(p) = uniform_int(gen);
-                for (int d = 0; d < D; ++d) {
+                for (size_t d = 0; d < D; ++d) {
                     get<position>(p)[d] = uniform(gen);
                 }
                 particles.push_back(p);
@@ -239,7 +239,7 @@ performs a binary search on the ordered vectors, with takes O(log(N)) time.
         /*
         // push 3 more particles
         for (int i=0; i<3; ++i) {
-            for (int d = 0; d < D; ++d) {
+            for (size_t d = 0; d < D; ++d) {
                 get<position>(p)[d] = uniform(gen);
             }
             particles.push_back(p);
@@ -279,7 +279,7 @@ performs a binary search on the ordered vectors, with takes O(log(N)) time.
                 aboria_check<particles_type>(particles)); 
         t1 = Clock::now();
         std::chrono::duration<double> dt_aboria = t1 - t0;
-        for (int i = 0; i < particles.size(); ++i) {
+        for (size_t i = 0; i < particles.size(); ++i) {
             if (int(get<index_brute>(particles)[i]) !=
                              int(get<index_aboria>(particles)[i])) {
                 std::cout << "error in finding id pid = " <<

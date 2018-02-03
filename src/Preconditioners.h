@@ -246,7 +246,7 @@ class ReducedOrderPreconditioner {
         size_t col = 0;
         Eigen::Matrix<double,Eigen::Dynamic,1> x_buffer;
 
-        for (int i = 0; i < m_solvers.size(); ++i) {
+        for (size_t i = 0; i < m_solvers.size(); ++i) {
             auto b_segment = b.segment(col,m_col_sizes[i]);
             auto x_segment = x.segment(row,m_row_sizes[i]);
             if (m_solvers[i] != nullptr) { // solver only exists for h2 blocks
@@ -449,12 +449,12 @@ class ExtMatrixPreconditioner {
         size_t row = 0;
         size_t col = 0;
 
-        for (int i = 0; i < m_solvers.size(); ++i) {
+        for (size_t i = 0; i < m_solvers.size(); ++i) {
             if (m_solvers[i] != nullptr) { // solver only exists for h2 blocks
                 LOG(2,"ExtMatrixPreconditioner: block "<<i<<" solve");
                 // construct b
                 m_ext_b.resize(m_ext_matrices[i].rows());
-                for (int j = 0; j < m_row_maps[i].size(); ++j) {
+                for (size_t j = 0; j < m_row_maps[i].size(); ++j) {
                     m_ext_b[m_row_maps[i][j]] = b[row + j];
                 }
                 for (int j = m_row_maps[i].size(); j < m_ext_matrices[i].rows(); ++j) {
@@ -482,7 +482,7 @@ class ExtMatrixPreconditioner {
                 LOG(2,"ExtMatrixPreconditioner: solve complete: #iterations: " << iters << " true error = "<<(m_ext_matrices[i]*m_ext_x-m_ext_b).norm());
 
                 // filter to x
-                for (int j = 0; j < m_col_maps[i].size(); ++j) {
+                for (size_t j = 0; j < m_col_maps[i].size(); ++j) {
                     x[col + j] = m_ext_x[m_col_maps[i][j]];
                 }
 
@@ -891,7 +891,7 @@ class RASMPreconditioner {
         vector_type domain_x;
         vector_type domain_b;
         x = b;
-        for (int i = 0; i < m_domain_indicies.size(); ++i) {
+        for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
             if (m_domain_indicies.size() == 0) continue;
 
             const storage_vector_type& buffer = m_domain_buffer[i];
@@ -904,13 +904,13 @@ class RASMPreconditioner {
 
             // copy x values from big vector
             size_t sub_index = 0;
-            for (int j = 0; j < indicies.size(); ++j) {
+            for (size_t j = 0; j < indicies.size(); ++j) {
                 domain_b[sub_index++] = b[indicies[j]];
             }
-            for (int j = 0; j < buffer.size(); ++j) {
+            for (size_t j = 0; j < buffer.size(); ++j) {
                 domain_b[sub_index++] = b[buffer[j]];
             }
-            for (int j = 0; j < random.size(); ++j) {
+            for (size_t j = 0; j < random.size(); ++j) {
                 domain_b[sub_index++] = b[random[j]];
             }
 
@@ -918,7 +918,7 @@ class RASMPreconditioner {
             domain_x = m_domain_factorized_matrix[i].solve(domain_b);
 
             // copy accumulate b values to big vector
-            for (int j = 0; j < indicies.size(); ++j) {
+            for (size_t j = 0; j < indicies.size(); ++j) {
                 x[indicies[j]] = domain_x[j];
             }
         }

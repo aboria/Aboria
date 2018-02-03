@@ -189,7 +189,7 @@ public:
         static_assert(Eigen::DenseBase<Derived>::RowsAtCompileTime == N ||
                       Eigen::DenseBase<Derived>::ColsAtCompileTime == N,
                       "vector assignment has different or dynamic lengths");
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 	}
@@ -251,7 +251,7 @@ public:
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector<T,N> &operator =(T2 *arg) {
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 		return *this;
@@ -268,7 +268,7 @@ public:
         static_assert(Eigen::DenseBase<Derived>::RowsAtCompileTime == N ||
                       Eigen::DenseBase<Derived>::ColsAtCompileTime == N,
                       "vector assignment has different or dynamic lengths");
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 		return *this;
@@ -303,7 +303,7 @@ public:
     CUDA_HOST_DEVICE
 	double inner_product(const Vector<T2,N> &arg) const {
 		double ret = 0;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret += arg[i]*mem[i];
 		}
 		return ret;
@@ -317,7 +317,7 @@ public:
     CUDA_HOST_DEVICE
     Vector<T2,N> cast() {
         Vector<T2,N> ret;
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             ret[i] = static_cast<T2>(mem[i]);
 		}
 		return ret;
@@ -340,7 +340,7 @@ public:
     CUDA_HOST_DEVICE
 	double squaredNorm() const {
 		double ret = 0;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret += mem[i]*mem[i];
 		}
 		return ret;
@@ -373,7 +373,7 @@ public:
     CUDA_HOST_DEVICE
 	Vector<T,N> pow(const EXP_T exponent) {
 		Vector<T,N> n = *this;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			n[i] = std::pow(n[i],exponent);
 		}
 		return n;
@@ -384,7 +384,7 @@ public:
     CUDA_HOST_DEVICE
 	void normalize() {
 		double n = norm();
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] /= n;
 		}
 	} 
@@ -395,7 +395,7 @@ public:
     CUDA_HOST_DEVICE
 	bool all() const {
 		bool ret = true;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret &= mem[i];
 		}
 		return ret;
@@ -407,7 +407,7 @@ public:
     CUDA_HOST_DEVICE
 	bool any() const {
 		bool ret = false;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret |= mem[i];
 		}
 		return ret;
@@ -443,7 +443,7 @@ public:
     CUDA_HOST_DEVICE
 	T prod() const {
 		T ret = 1;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret *= mem[i];
 		}
 		return ret;
@@ -474,7 +474,7 @@ Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
 template<typename T1,typename T2,unsigned int N> 
 bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { 
     bool ret = true; 
-    for (int i = 0; i < N; ++i) { 
+    for (size_t i = 0; i < N; ++i) { 
         ret &= arg1[i] == arg2[i]; 
     } 
     return ret; 
@@ -487,7 +487,7 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
     CUDA_HOST_DEVICE \
     Vector<double,N> operator the_op(const Vector<T,N> &arg1) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = the_op arg1[i]; \
         } \
         return ret; \
@@ -503,7 +503,7 @@ UNARY_OPERATOR(-)
     Vector<double,N> \
     operator the_op(const T1 &arg1, const Vector<T2,N> &arg2) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1 the_op arg2[i]; \
         } \
         return ret; \
@@ -512,7 +512,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2; \
         } \
         return ret; \
@@ -522,7 +522,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2[i]; \
         } \
         return ret; \
@@ -532,7 +532,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<int,N> operator the_op(const Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
         Vector<int,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2[i]; \
         } \
         return ret; \
@@ -541,7 +541,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<int,N> operator the_op(const int &arg1, const Vector<int,N> &arg2) { \
         Vector<int,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1 the_op arg2[i]; \
         } \
         return ret; \
@@ -550,7 +550,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<int,N> operator the_op(const Vector<int,N> &arg1, const int &arg2) { \
         Vector<int,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2; \
         } \
         return ret; \
@@ -572,7 +572,7 @@ CUDA_HOST_DEVICE
 Vector<T,N> operator *(const Eigen::Matrix<T,N,int(M)> matrix, const Vector<T,M> &arg) { 
     static_assert(N > 0, "matrix must have fixed number of rows");
     Vector<double,N> ret; 
-    for (int i = 0; i < N; ++i) { 
+    for (size_t i = 0; i < N; ++i) { 
         ret[i] = 0;
         for (int j = 0; j < M; ++j) { 
             ret[i] += matrix(i,j)*arg[j];
@@ -589,7 +589,7 @@ template<typename T1,typename T2,unsigned int N>
 CUDA_HOST_DEVICE 
 Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2) { 
     Vector<double,N> ret; 
-    for (int i = 0; i < N; ++i) { 
+    for (size_t i = 0; i < N; ++i) { 
         ret[i] = arg1[i*N] * arg2[0];
         for (int j = 1; j < N; ++j) { 
             ret[i] += arg1[i*N+j] * arg2[j]; 
@@ -604,7 +604,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
         Vector<bool,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2[i]; \
         } \
         return ret; \
@@ -613,7 +613,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
         Vector<bool,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2; \
         } \
         return ret; \
@@ -623,7 +623,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const T1 &arg1, const T2 &arg2) { \
         Vector<bool,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1 the_op arg2; \
         } \
         return ret; \
@@ -647,7 +647,7 @@ COMPARISON(!=)
     template<typename T1,typename T2,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2[i]; \
         } \
         return arg1; \
@@ -655,7 +655,7 @@ COMPARISON(!=)
     template<typename T1,typename T2,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const T2 &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2; \
         } \
         return arg1; \
@@ -664,7 +664,7 @@ COMPARISON(!=)
     template<int,int,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<int,N> &operator the_op(Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2[i]; \
         } \
         return arg1; \
@@ -672,7 +672,7 @@ COMPARISON(!=)
     template<int,int,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<int,N> &operator the_op(Vector<int,N> &arg1, const int &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2; \
         } \
         return arg1; \
@@ -693,7 +693,7 @@ COMPOUND_ASSIGN(/=)
     CUDA_HOST_DEVICE \
 	Vector<T,N> the_op(const Vector<T,N> &arg1) { \
 		Vector<T,N> ret; \
-	    for (int i = 0; i < N; ++i) { \
+	    for (size_t i = 0; i < N; ++i) { \
 		    ret[i] = std::the_op(arg1[i]); \
         }  \
 		return ret; \
@@ -782,7 +782,7 @@ inline const Vector<T,N> abs2(const Vector<T,N>& x)  {
 template<typename T,unsigned int N>
 std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 	out << "(";
-	for (int i = 0; i < N; ++i) {
+	for (size_t i = 0; i < N; ++i) {
 		out << v[i];
 		if (i != N-1) out << ",";
 	}
@@ -793,7 +793,7 @@ std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 template<typename T,unsigned int N>
 std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     out.get();
-	for (int i = 0; i < N; ++i) {
+	for (size_t i = 0; i < N; ++i) {
 		out >> v[i];
 		out.get();
 	}
