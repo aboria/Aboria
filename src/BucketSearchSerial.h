@@ -99,9 +99,10 @@ class bucket_search_serial:
 
 public:
     bucket_search_serial():
+        base_type(),
         m_size_calculated_with_n(std::numeric_limits<size_t>::max()),
-        m_serial(detail::concurrent_processes<Traits>() == 1),
-        base_type() {}
+        m_serial(detail::concurrent_processes<Traits>() == 1)
+        {}
 
     static constexpr bool ordered() {
         return false;
@@ -117,14 +118,14 @@ public:
     void print_data_structure() const {
         #ifndef __CUDA_ARCH__
             LOG(1,"\tbuckets:");
-            for (int i = 0; i<m_buckets.size(); ++i) {
+            for (size_t i = 0; i < m_buckets.size(); ++i) {
                 if (m_buckets[i] != detail::get_empty_id()) {
                     LOG(1,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
                 }
             }
             LOG(1,"\tend buckets");
             LOG(1,"\tlinked list:");
-            for (int i = 0; i<m_linked_list.size(); ++i) {
+            for (size_t i = 0; i < m_linked_list.size(); ++i) {
                 if (m_serial) {
                     LOG(1,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
@@ -157,7 +158,7 @@ private:
                 m_size = 
                     floor((this->m_bounds.bmax-this->m_bounds.bmin)/box_side_length)
                     .template cast<unsigned int>();
-                for (int i=0; i<Traits::dimension; ++i) {
+                for (size_t i=0; i<Traits::dimension; ++i) {
                     if (m_size[i] == 0) {
                         m_size[i] = 1;
                     }
@@ -196,7 +197,7 @@ private:
 
     void check_data_structure() {
         int num_particles = 0;
-        for (int i=0; i<m_buckets.size(); i++) {
+        for (size_t i = 0; i < m_buckets.size(); i++) {
             int j = m_buckets[i];
             int old_j = detail::get_empty_id();
             while (j != detail::get_empty_id()) {
@@ -212,7 +213,7 @@ private:
         ASSERT(num_particles == m_linked_list.size(), "m_linked_list size inconsistent");
         ASSERT(num_particles == m_linked_list_reverse.size(), "m_linked_list_reverse size inconsistent");
         ASSERT(num_particles == m_dirty_buckets.size(), "m_dirty_buckets size inconsistent");
-        for (int i=0; i<m_linked_list.size(); ++i) {
+        for (size_t i = 0; i < m_linked_list.size(); ++i) {
             ASSERT(i < m_linked_list.size(), "i index too large");
             ASSERT(i >= 0, "i index less than zero");
             ASSERT(m_dirty_buckets[i] < m_buckets.size(), "m_dirty_buckets not right");
@@ -247,14 +248,14 @@ private:
         #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
             LOG(4,"\tbuckets:");
-            for (int i = 0; i<m_buckets.size(); ++i) {
+            for (size_t i = 0; i < m_buckets.size(); ++i) {
                 if (m_buckets[i] != detail::get_empty_id()) {
                     LOG(4,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
                 }
             }
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
-            for (int i = 0; i<m_linked_list.size(); ++i) {
+            for (size_t i = 0; i < m_linked_list.size(); ++i) {
                 if (m_serial) {
                     LOG(4,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
@@ -292,7 +293,6 @@ private:
         const size_t n_all = this->m_particles_end-this->m_particles_begin;
         const size_t n = n_all-n_dead_in_update;
         const int update_begin_index = update_begin-this->m_particles_begin;
-        const int update_end_index = update_end-this->m_particles_begin;
 
         LOG(2,"BucketSearchSerial: update_positions, n_update = "<<n_update<<" n_alive = "<<n_alive<<" n = "<<n);
 
@@ -377,14 +377,14 @@ private:
 #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
             LOG(4,"\tbuckets:");
-            for (int i = 0; i<m_buckets.size(); ++i) {
+            for (size_t i = 0; i < m_buckets.size(); ++i) {
                 if (m_buckets[i] != detail::get_empty_id()) {
                     LOG(4,"\ti = "<<i<<" bucket contents = "<<m_buckets[i]);
                 }
             }
             LOG(4,"\tend buckets");
             LOG(4,"\tlinked list:");
-            for (int i = 0; i<m_linked_list.size(); ++i) {
+            for (size_t i = 0; i < m_linked_list.size(); ++i) {
                 if (m_serial) {
                     LOG(4,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
@@ -456,8 +456,6 @@ private:
 #endif
 
         if (m_serial) { // running in serial
-            auto raw_positions = iterator_to_raw_pointer(
-                                    get<position>(this->m_particles_begin));
             detail::for_each(count,count+n,
                     insert_points_lambda_sequential_serial(
                         iterator_to_raw_pointer(
@@ -515,12 +513,12 @@ struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential_serial 
     typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
     double_d* m_positions;
     int* m_alive_indices;
+    ptobl_type m_point_to_bucket_index;
     int* m_buckets;
     int* m_dirty_buckets;
     int* m_linked_list;
     int* m_linked_list_reverse;
     int start;
-    ptobl_type m_point_to_bucket_index;
 
 
     insert_points_lambda_non_sequential_serial(double_d* m_positions,
@@ -566,12 +564,12 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential_serial {
     typedef typename Traits::double_d double_d;
     typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
     double_d* m_positions;
+    ptobl_type m_point_to_bucket_index;
     int* m_buckets;
     int* m_dirty_buckets;
     int* m_linked_list;
     int* m_linked_list_reverse;
     int start;
-    ptobl_type m_point_to_bucket_index;
 
 
     insert_points_lambda_sequential_serial(double_d* m_positions,
@@ -621,11 +619,11 @@ struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential {
     typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
     double_d* m_positions;
     int* m_alive_indices;
+    ptobl_type m_point_to_bucket_index;
     int* m_buckets;
     int* m_dirty_buckets;
     int* m_linked_list;
     int start;
-    ptobl_type m_point_to_bucket_index;
 
 
     insert_points_lambda_non_sequential(double_d* m_positions,
@@ -681,11 +679,11 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
     typedef typename Traits::double_d double_d;
     typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
     double_d* m_positions;
+    ptobl_type m_point_to_bucket_index;
     int* m_buckets;
     int* m_dirty_buckets;
     int* m_linked_list;
     int start;
-    ptobl_type m_point_to_bucket_index;
 
 
     insert_points_lambda_sequential(double_d* m_positions,

@@ -355,7 +355,7 @@ public:
           "ordered search data structure can only update the entire particle "
           "set");
 
-    const size_t new_n = dead_and_alive_n - previous_n;
+    const int new_n = dead_and_alive_n - previous_n;
 
     // make sure update range covers new particles
     CHECK(
@@ -365,7 +365,6 @@ public:
 
     const size_t update_start_index = update_begin - begin;
     const size_t update_end_index = update_end - begin;
-    const bool update_end_point = update_end == end;
     const size_t update_n = update_end_index - update_start_index;
     if (update_n == 0)
       return false;
@@ -1231,7 +1230,7 @@ private:
   bool child_is_within_query(const child_iterator &node) {
     const box_type &bounds = m_query->get_bounds(node);
     double accum = 0;
-    for (int j = 0; j < dimension; j++) {
+    for (size_t j = 0; j < dimension; j++) {
       const bool less_than_bmin = m_query_point[j] < bounds.bmin[j];
       const bool more_than_bmax = m_query_point[j] > bounds.bmax[j];
 
@@ -1750,7 +1749,7 @@ private:
 
       // check distance
       double accum = 0;
-      for (int j = 0; j < dimension; ++j) {
+      for (size_t j = 0; j < dimension; ++j) {
         const double dist = m_query->m_point_to_bucket_index.get_dist_to_bucket(
             m_query_point[j], m_base_index[j], m_min[j], j);
         ASSERT_CUDA(dist >= 0);
@@ -1768,7 +1767,7 @@ private:
 
       // if good, check that this quadrant is within domain
       if (!no_buckets) {
-        for (int i = 0; i < dimension; i++) {
+        for (size_t i = 0; i < dimension; i++) {
           if (ith_quadrant_bit(i)) {
             if (m_min[i] < 0) {
               m_min[i] = 0;
@@ -1812,7 +1811,7 @@ private:
         position + max_distance);
 
     bool no_buckets = false;
-    for (int i = 0; i < dimension; i++) {
+    for (size_t i = 0; i < dimension; i++) {
       if (start[i] > m_query->m_end_bucket[i]) {
         no_buckets = true;
       }
@@ -1847,7 +1846,7 @@ private:
       // distance
       if (potential_bucket) {
         double accum = 0;
-        for (int j = 0; j < dimension; ++j) {
+        for (size_t j = 0; j < dimension; ++j) {
           const double dist =
               m_query->m_point_to_bucket_index.get_dist_to_bucket(
                   m_query_point[j], m_base_index[j], m_index[j], j);

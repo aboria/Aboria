@@ -513,7 +513,7 @@ private:
     int_d end = bucket + 1;
 
     bool no_buckets = false;
-    for (int i = 0; i < dimension; i++) {
+    for (size_t i = 0; i < dimension; i++) {
       if (start[i] < 0) {
         start[i] = 0;
       } else if (start[i] > query.get_end_bucket()[i]) {

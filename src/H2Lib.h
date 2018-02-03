@@ -108,7 +108,6 @@ public:
     template <typename T1, typename T2>
     void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
         static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T1> traitsT1;
         typedef typename detail::VectorTraits<T2> traitsT2;
 
         detail::copy(std::begin(source),std::end(source),std::begin(dest));
@@ -181,7 +180,6 @@ public:
     template <typename T1, typename T2>
     void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
         static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T1> traitsT1;
         typedef typename detail::VectorTraits<T2> traitsT2;
 
         detail::copy(std::begin(source),std::end(source),std::begin(dest));
@@ -228,7 +226,6 @@ public:
     template <typename T1, typename T2>
     void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
         static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T1> traitsT1;
         typedef typename detail::VectorTraits<T2> traitsT2;
 
         detail::copy(std::begin(source),std::end(source),std::begin(dest));
@@ -308,7 +305,7 @@ assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
     const uint k = expansions.m_ncheb*expansions.block_rows;
     if (rb->sons > 0) {
         resize_clusterbasis(rb,k);
-        for (int i = 0; i < rb->sons; ++i) {
+        for (size_t i = 0; i < rb->sons; ++i) {
             expansions.L2L_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
         }
     } else {
@@ -333,7 +330,7 @@ assemble_h2matrix_col_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
     const uint k = expansions.m_ncheb*expansions.block_cols;
     if (rb->sons > 0) {
         resize_clusterbasis(rb,k);
-        for (int i = 0; i < rb->sons; ++i) {
+        for (size_t i = 0; i < rb->sons; ++i) {
             // should this be transposed?
             expansions.M2M_trans_amatrix(&rb->son[i]->E,rb->t,rb->son[i]->t);
         }
@@ -477,7 +474,7 @@ private:
         }
         t->size = idx-old_idx;
         // bounding box
-        for (int i = 0; i < dim; ++i) {
+        for (size_t i = 0; i < dim; ++i) {
             t->bmin[i] = particles.get_min()[i];
             t->bmax[i] = particles.get_max()[i];
         }
@@ -492,11 +489,10 @@ private:
         pcluster t;
         if (particles.get_query().is_leaf_node(*ci)) { // leaf node
             const auto& prange = particles.get_query().get_bucket_particles(*ci);
-            auto pit = prange.begin();
             for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
                 const size_t pi = &(get<typename Particles::position>(*pit))
                     - &get<typename Particles::position>(particles)[0];
-                for (int i = 0; i < block_size; ++i,++idx) {
+                for (size_t i = 0; i < block_size; ++i,++idx) {
                     *idx = pi*block_size+i;
                 }
             }
@@ -525,7 +521,7 @@ private:
         }
         // bounding box
         const auto& bbox = particles.get_query().get_bounds(ci);
-        for (int i = 0; i < dim; ++i) {
+        for (size_t i = 0; i < dim; ++i) {
             t->bmin[i] = bbox.bmin[i];
             t->bmax[i] = bbox.bmax[i];
         }
@@ -739,7 +735,7 @@ private:
         }
         t->size = idx-old_idx;
         // bounding box
-        for (int i = 0; i < dim; ++i) {
+        for (size_t i = 0; i < dim; ++i) {
             t->bmin[i] = particles.get_min()[i];
             t->bmax[i] = particles.get_max()[i];
         }
@@ -758,7 +754,7 @@ private:
             for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
                 const size_t pi = &(get<typename Particles::position>(*pit))
                     - &get<typename Particles::position>(particles)[0];
-                for (int i = 0; i < block_size; ++i,++idx) {
+                for (size_t i = 0; i < block_size; ++i,++idx) {
                     *idx = pi*block_size+i;
                 }
             }
@@ -787,7 +783,7 @@ private:
         }
         // bounding box
         const auto& bbox = particles.get_query().get_bounds(ci);
-        for (int i = 0; i < dim; ++i) {
+        for (size_t i = 0; i < dim; ++i) {
             t->bmin[i] = bbox.bmin[i];
             t->bmax[i] = bbox.bmax[i];
         }

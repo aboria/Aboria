@@ -8,6 +8,7 @@
 #include <algorithm>
 #include <boost/iterator/permutation_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/zip_iterator.hpp>
 
 namespace Aboria {
 
@@ -217,7 +218,6 @@ void sort_by_key(T1 start_keys,
         T1 end_keys,
         T2 start_data,std::true_type) {
     typedef zip_iterator<std::tuple<T1,T2>,mpl::vector<>> pair_zip_type;
-    typedef typename pair_zip_type::reference reference;
     typedef typename pair_zip_type::value_type value_type;
 
     std::sort(
@@ -547,7 +547,7 @@ OutputIterator transform_exclusive_scan(
 
     const size_t n = last-first;
     result[0] = init;
-    for (int i=1; i<n; ++i) {
+    for (size_t i=1; i<n; ++i) {
         result[i] = binary_op(result[i-1],unary_op(first[i-1]));
     }
     return result + n;
@@ -644,7 +644,7 @@ void scatter_if(
         RandomAccessIterator output, Predicate pred, std::true_type) {
 
     const size_t n = last-first;
-    for (int i=0; i<n; ++i) {
+    for (size_t i=0; i<n; ++i) {
         if (pred(stencil[i])) {
             output[map[i]] = first[i];
         }
@@ -681,7 +681,7 @@ void scatter_if(
         RandomAccessIterator output, std::true_type) {
 
     const size_t n = last-first;
-    for (int i=0; i<n; ++i) {
+    for (size_t i=0; i<n; ++i) {
         if (stencil[i]) {
             output[map[i]] = first[i];
         }
@@ -740,7 +740,7 @@ OutputIterator copy_if(
         InputIterator2 stencil, OutputIterator result, Predicate pred, std::true_type) {
     //TODO: need to parallise this.... 
     const size_t n = last-first;
-    for (int i=0; i<n; ++i) {
+    for (size_t i=0; i<n; ++i) {
         if (pred(stencil[i])) {
             *result = first[i];
             ++result;

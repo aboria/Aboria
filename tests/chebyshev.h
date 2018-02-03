@@ -201,7 +201,7 @@ public:
                 ,lattice_iterator<D>()
                 );
             const double_d scale = double_d(1.0)/(Rn.box.bmax-Rn.box.bmin);
-            for (int i=0; i<positions.size(); ++i) {
+            for (size_t i = 0; i < positions.size(); ++i) {
                 const double_d &x =  (2*positions[i]-Rn.box.bmin-Rn.box.bmax)*scale;
                 for (const int_d& m: range) {
                     TS_ASSERT_DELTA(Rn(m,i),detail::chebyshev_Rn_slow(x,m,n),tol);

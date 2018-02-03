@@ -574,7 +574,7 @@ Vector<T,N> operator *(const Eigen::Matrix<T,N,int(M)> matrix, const Vector<T,M>
     Vector<double,N> ret; 
     for (size_t i = 0; i < N; ++i) { 
         ret[i] = 0;
-        for (int j = 0; j < M; ++j) { 
+        for (size_t j = 0; j < M; ++j) { 
             ret[i] += matrix(i,j)*arg[j];
         }
     } 

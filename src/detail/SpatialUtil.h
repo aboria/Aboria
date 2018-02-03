@@ -42,8 +42,8 @@ constexpr double get_max<double>() {
 template<unsigned int D>
 struct bbox {
     typedef Vector<double,D> double_d;
-    double_d bmax;
     double_d bmin;
+    double_d bmax;
 
     inline CUDA_HOST_DEVICE
     bbox() : bmin(double_d::Constant(get_max<double>())), 
@@ -182,10 +182,10 @@ struct point_to_bucket_index {
     typedef Vector<int,D> int_d;
     typedef Vector<unsigned int,D> unsigned_int_d;
 
-    bbox<D> m_bounds;
+    bucket_index<D> m_bucket_index;
     double_d m_bucket_side_length;
     double_d m_inv_bucket_side_length;
-    bucket_index<D> m_bucket_index;
+    bbox<D> m_bounds;
 
     CUDA_HOST_DEVICE
     point_to_bucket_index() {};
@@ -360,7 +360,7 @@ void print_active_nodes(const Vector &active_nodes, int max_level)
       std::cout << " ";
   }
   std::cout << std::endl;
-  for (int i = 0 ; i < active_nodes.size() ; ++i)
+  for (size_t i = 0; i < active_nodes.size() ; ++i)
   {
     std::cout << std::setw(4) << i << ": ";
     print_tag<D>(active_nodes[i], max_level);
@@ -386,7 +386,7 @@ void print_children(const Vector &children, int max_level)
       std::cout << " ";
   }
   std::cout << std::endl;
-  for (int i = 0 ; i < children.size() ; ++i)
+  for (size_t i = 0; i < children.size() ; ++i)
   {
     std::cout << std::setw(4) << i << ": ";
     print_tag<D>(children[i], max_level);
@@ -400,7 +400,7 @@ void print_child_bounds(const Vector &lower_bounds,
                         const Vector &upper_bounds)
 {
   std::cout << "Child bounds:\n      [ lower upper count ]\n";
-  for (int i = 0 ; i < lower_bounds.size() ; ++i)
+  for (size_t i = 0; i < lower_bounds.size() ; ++i)
   {
     std::cout << std::setw(4) << i << ": [ ";
     std::cout << std::setw(4) << lower_bounds[i] << "  ";
@@ -418,7 +418,7 @@ template<typename Vector>
 void print_child_node_kind(const Vector &child_node_kind)
 {
   std::cout << "child_node_kind:\n";
-  for (int i = 0 ; i < child_node_kind.size() ; ++i)
+  for (size_t i = 0; i < child_node_kind.size() ; ++i)
   {
     std::cout << std::setw(4) << i << ": [ ";
     std::cout << std::setw(5) << std::right;
@@ -447,7 +447,7 @@ void print_child_enumeration(const Vector &child_node_kind,
                              const Vector &leaves_on_this_level)
 {
   std::cout << "Node/leaf enumeration:\n      [ nodeid leafid ]\n";
-  for (int i = 0 ; i < child_node_kind.size() ; ++i)
+  for (size_t i = 0; i < child_node_kind.size() ; ++i)
   {
     std::cout << std::setw(4) << i << ": [ ";
     switch (child_node_kind[i])
@@ -473,10 +473,10 @@ void print_nodes(const Vector &nodes, const unsigned int D)
   std::cout << "Octtree nodes:\n";
   std::cout << "          [ nodeid  leafid ]\n";
   
-  int next_level = 0;
-  int children_at_next_level = 1<<D;
+  size_t next_level = 0;
+  size_t children_at_next_level = 1<<D;
 
-  for (int i = 0 ; i < nodes.size() ; ++i)
+  for (size_t i = 0; i < nodes.size(); ++i)
   {
     if (i == next_level)
     {
@@ -516,7 +516,7 @@ void print_leaves(const Vector &leaves)
   std::cout << "Octtree leaves:\n";
   std::cout << "          [ lower    upper ]\n";
   
-  for (int i = 0 ; i < leaves.size() ; ++i)
+  for (size_t i = 0; i < leaves.size(); ++i)
   {
     std::cout << std::setw(7) << i << " : [ ";
     std::cout << std::setw(4) << static_cast<vint2>(leaves[i])[0] << "    ";

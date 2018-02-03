@@ -44,14 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 
-#include "BucketSearchSerial.h"
-#include "Get.h"
-#include "Traits.h"
-#include "Variable.h"
-#include "Vector.h"
-#include "Zip.h"
-//#include "OctTree.h"
-#include "CudaInclude.h"
+
 
 #ifdef HAVE_VTK
 #include <vtkCellArray.h>
@@ -64,7 +57,23 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkUnstructuredGrid.h>
 #endif
 
+namespace Aboria {
+template <typename VAR, unsigned int DomainD,
+          template <typename, typename> class VECTOR,
+          template <typename> class SearchMethod,
+          typename TRAITS_USER>
+class Particles;
+}
+
 #include "detail/Particles.h"
+#include "BucketSearchSerial.h"
+#include "Get.h"
+#include "Traits.h"
+#include "Variable.h"
+#include "Vector.h"
+#include "Zip.h"
+//#include "OctTree.h"
+#include "CudaInclude.h"
 
 namespace Aboria {
 
@@ -767,17 +776,6 @@ private:
 #endif
 };
 
-namespace detail {
-
-template <typename T> struct is_particles : std::false_type {};
-
-template <typename Variables, unsigned int DomainD,
-          template <typename, typename> class Vector,
-          template <typename> class SearchMethod, typename Traits>
-struct is_particles<Particles<Variables, DomainD, Vector, SearchMethod, Traits>>
-    : std::true_type {};
-
-} // namespace detail
 
 } // namespace Aboria
 

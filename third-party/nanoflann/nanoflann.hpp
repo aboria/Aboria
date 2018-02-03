@@ -926,7 +926,7 @@ namespace nanoflann
 		 * @param params Basically, the maximum leaf node size
 		 */
 		KDTreeSingleIndexAdaptor(const int dimensionality, const DatasetAdaptor& inputData, const KDTreeSingleIndexAdaptorParams& params = KDTreeSingleIndexAdaptorParams() ) :
-			dataset(inputData), index_params(params), root_node(NULL), distance(inputData), m_number_of_nodes(0),m_number_of_levels(0)
+			dataset(inputData), index_params(params), m_number_of_nodes(0),m_number_of_levels(0), root_node(NULL), distance(inputData)
 		{
 			m_size = dataset.kdtree_get_point_count();
 			m_size_at_index_build = m_size;

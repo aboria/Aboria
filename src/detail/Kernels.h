@@ -38,7 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define DETAIL_KERNELS_H_
 
 #include "Elements.h"
-#include "Particles.h"
+#include "detail/Particles.h"
 #include "detail/GaussLegendre.h"
 
 namespace Aboria {

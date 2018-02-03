@@ -65,7 +65,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <vtkUnsignedCharArray.h>
 #endif
 
-#include "detail/Particles.h"
+#include "Particles.h"
 
 
 namespace Aboria {

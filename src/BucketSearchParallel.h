@@ -91,7 +91,7 @@ class bucket_search_parallel:
 
 
 public:
-    bucket_search_parallel():m_size_calculated_with_n(std::numeric_limits<size_t>::max()),base_type() {}
+    bucket_search_parallel():base_type(),m_size_calculated_with_n(std::numeric_limits<size_t>::max()) {}
 
     static constexpr bool ordered() {
         return true;
@@ -103,12 +103,12 @@ public:
     void print_data_structure() const {
          #ifndef __CUDA_ARCH__
             LOG(1,"\tbuckets:");
-            for (int i = 0; i<m_bucket_begin.size(); ++i) {
+            for (size_t i = 0; i < m_bucket_begin.size(); ++i) {
                 LOG(1,"\ti = "<<i<<" bucket contents = "<<m_bucket_begin[i]<<" to "<<m_bucket_end[i]);
             }
             LOG(1,"\tend buckets");
             LOG(1,"\tparticles:");
-            for (int i = 0; i<m_bucket_indices.size(); ++i) {
+            for (size_t i = 0; i < m_bucket_indices.size(); ++i) {
                 LOG(1,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                         " bucket = "<<m_bucket_indices[i]);
@@ -137,7 +137,7 @@ private:
                 m_size = 
                     floor((this->m_bounds.bmax-this->m_bounds.bmin)/box_side_length)
                     .template cast<unsigned int>();
-                for (int i=0; i<Traits::dimension; ++i) {
+                for (size_t i=0; i<Traits::dimension; ++i) {
                     if (m_size[i] == 0) {
                         m_size[i] = 1;
                     }
@@ -187,7 +187,7 @@ private:
         m_bucket_indices.resize(n);
         if (n > 0) {
             // transform the points to their bucket indices
-            if (update_end-update_begin == n) {
+            if (static_cast<size_t>(update_end-update_begin) == n) {
                 // m_alive_indicies is just a sequential list of indices
                 // (i.e. no dead)
                 detail::transform(
@@ -232,12 +232,12 @@ private:
         #ifndef __CUDA_ARCH__
         if (4 <= ABORIA_LOG_LEVEL) { 
             LOG(4,"\tbuckets:");
-            for (int i = 0; i<m_bucket_begin.size(); ++i) {
+            for (size_t i = 0; i < m_bucket_begin.size(); ++i) {
                 LOG(4,"\ti = "<<i<<" bucket contents = "<<m_bucket_begin[i]<<" to "<<m_bucket_end[i]);
             }
             LOG(4,"\tend buckets");
             LOG(4,"\tparticles:");
-            for (int i = 0; i<m_bucket_indices.size(); ++i) {
+            for (size_t i = 0; i < m_bucket_indices.size(); ++i) {
                 LOG(4,"\ti = "<<i<<" p = "<<
                         static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                         " bucket = "<<m_bucket_indices[i]);
@@ -327,12 +327,12 @@ private:
             #ifndef __CUDA_ARCH__
             if (4 <= ABORIA_LOG_LEVEL) { 
                 LOG(4,"\tbuckets:");
-                for (int i = 0; i<m_bucket_begin.size(); ++i) {
+                for (size_t i = 0; i < m_bucket_begin.size(); ++i) {
                     LOG(4,"\ti = "<<i<<" bucket contents = "<<m_bucket_begin[i]<<" to "<<m_bucket_end[i]);
                 }
                 LOG(4,"\tend buckets");
                 LOG(4,"\tparticles:");
-                for (int i = 0; i<m_bucket_indices.size(); ++i) {
+                for (size_t i = 0; i < m_bucket_indices.size(); ++i) {
                     LOG(4,"\ti = "<<i<<" p = "<<
                          static_cast<const double_d&>(get<position>(*(this->m_particles_begin+i)))<<
                          " bucket = "<<m_bucket_indices[i]);
@@ -478,10 +478,7 @@ struct bucket_search_parallel_query {
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     CUDA_HOST_DEVICE
-    bucket_search_parallel_query():
-        m_periodic(),
-        m_particles_begin(),
-        m_bucket_begin()
+    bucket_search_parallel_query()
     {}
 
     /*

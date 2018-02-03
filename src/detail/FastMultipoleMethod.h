@@ -412,23 +412,23 @@ struct H2LibBlackBoxExpansions {
     // resize_amatrix(matrix,m_ncheb,indicies_size);
     clear_amatrix(matrix);
     detail::ChebyshevRn<D> cheb_rn(m_order, box);
-    for (int i = 0; i < indicies_size; i += BlockCols) {
+    for (size_t i = 0; i < indicies_size; i += BlockCols) {
       const double_d &p = get<position>(particles)[indicies[i] / BlockCols];
       cheb_rn.set_position(p);
       lattice_iterator<dimension> mj(int_d::Constant(0),
                                      int_d::Constant(m_order));
-      for (int j = 0; j < m_ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < m_ncheb; ++j, ++mj) {
         const double tmp = cheb_rn(*mj);
-        for (int ii = 0; ii < BlockCols; ++ii) {
+        for (size_t ii = 0; ii < BlockCols; ++ii) {
           setentry_amatrix(matrix, i + ii, j * BlockCols + ii, tmp);
         }
       }
     }
     /*
     std::cout << "P2M_trans = " << std::endl;
-    for (int i = 0; i < indicies_size; ++i) {
+    for (size_t i = 0; i < indicies_size; ++i) {
         std::cout << "| ";
-        for (int j = 0; j < m_ncheb * BlockCols; ++j) {
+        for (size_t j = 0; j < m_ncheb * BlockCols; ++j) {
             std::cout << getentry_amatrix(matrix, i, j) << " ";
         }
         std::cout << "|" << std::endl;
@@ -450,7 +450,7 @@ struct H2LibBlackBoxExpansions {
       source_box.bmax[i] = source_t->bmax[i];
     }
     detail::ChebyshevRn<D> cheb_rn(m_order, target_box);
-    for (int j = 0; j < m_ncheb; ++j) {
+    for (size_t j = 0; j < m_ncheb; ++j) {
       const double_d &pj_unit_box = m_cheb_points[j];
       const double_d pj =
           0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
@@ -458,9 +458,9 @@ struct H2LibBlackBoxExpansions {
       cheb_rn.set_position(pj);
 
       lattice_iterator<D> mi(int_d::Constant(0), int_d::Constant(m_order));
-      for (int i = 0; i < m_ncheb; ++i, ++mi) {
+      for (size_t i = 0; i < m_ncheb; ++i, ++mi) {
         const double tmp = cheb_rn(*mi);
-        for (int ii = 0; ii < BlockCols; ++ii) {
+        for (size_t ii = 0; ii < BlockCols; ++ii) {
           setentry_amatrix(matrix, i * BlockCols + ii, j * BlockCols + ii, tmp);
         }
       }
@@ -481,7 +481,7 @@ struct H2LibBlackBoxExpansions {
       source_box.bmax[i] = source_t->bmax[i];
     }
     detail::ChebyshevRn<D> cheb_rn(m_order, target_box);
-    for (int j = 0; j < m_ncheb; ++j) {
+    for (size_t j = 0; j < m_ncheb; ++j) {
       const double_d &pj_unit_box = m_cheb_points[j];
       const double_d pj =
           0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
@@ -489,18 +489,18 @@ struct H2LibBlackBoxExpansions {
       cheb_rn.set_position(pj);
 
       lattice_iterator<D> mi(int_d::Constant(0), int_d::Constant(m_order));
-      for (int i = 0; i < m_ncheb; ++i, ++mi) {
+      for (size_t i = 0; i < m_ncheb; ++i, ++mi) {
         const double tmp = cheb_rn(*mi);
-        for (int ii = 0; ii < BlockCols; ++ii) {
+        for (size_t ii = 0; ii < BlockCols; ++ii) {
           setentry_amatrix(matrix, j * BlockCols + ii, i * BlockCols + ii, tmp);
         }
       }
     }
     /*
     std::cout << "M2M_trans = " << std::endl;
-    for (int i = 0; i < m_ncheb * BlockCols; ++i) {
+    for (size_t i = 0; i < m_ncheb * BlockCols; ++i) {
         std::cout << "| ";
-        for (int j = 0; j < m_ncheb * BlockCols; ++j) {
+        for (size_t j = 0; j < m_ncheb * BlockCols; ++j) {
             std::cout << getentry_amatrix(matrix, i, j) << " ";
         }
         std::cout << "|" << std::endl;
@@ -521,12 +521,12 @@ struct H2LibBlackBoxExpansions {
       source_box.bmin[i] = source_t->bmin[i];
       source_box.bmax[i] = source_t->bmax[i];
     }
-    for (int i = 0; i < m_ncheb; ++i) {
+    for (size_t i = 0; i < m_ncheb; ++i) {
       const double_d &pi_unit_box = m_cheb_points[i];
       const double_d pi =
           0.5 * (pi_unit_box + 1) * (target_box.bmax - target_box.bmin) +
           target_box.bmin;
-      for (int j = 0; j < m_ncheb; ++j) {
+      for (size_t j = 0; j < m_ncheb; ++j) {
         const double_d &pj_unit_box = m_cheb_points[j];
         const double_d pj =
             0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
@@ -536,8 +536,8 @@ struct H2LibBlackBoxExpansions {
 #ifdef HAVE_EIGEN
         const Eigen::Matrix<double, BlockRows, BlockCols> tmp(m_K(pi, pj));
         // std::cout << "M2L ij = "<<tmp<<" versus "<<m_K(pi,pj) << std::endl;
-        for (int ii = 0; ii < BlockRows; ++ii) {
-          for (int jj = 0; jj < BlockCols; ++jj) {
+        for (size_t ii = 0; ii < BlockRows; ++ii) {
+          for (size_t jj = 0; jj < BlockCols; ++jj) {
             setentry_amatrix(matrix, i * BlockRows + ii, j * BlockCols + jj,
                              tmp(ii, jj));
           }
@@ -575,17 +575,17 @@ struct H2LibBlackBoxExpansions {
     detail::ChebyshevRn<D> cheb_rn(m_order, source_box);
     // std:cout << "L2L: D ="<<D<<" order = "<<m_order<<" target_box =
     // "<<target_box<<" source_box = "<<source_box<<std::endl;
-    for (int i = 0; i < m_ncheb; ++i) {
+    for (size_t i = 0; i < m_ncheb; ++i) {
       const double_d &pi_unit_box = m_cheb_points[i];
       const double_d pi =
           0.5 * (pi_unit_box + 1) * (target_box.bmax - target_box.bmin) +
           target_box.bmin;
       cheb_rn.set_position(pi);
       lattice_iterator<D> mj(int_d::Constant(0), int_d::Constant(m_order));
-      for (int j = 0; j < m_ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < m_ncheb; ++j, ++mj) {
         const double tmp = cheb_rn(*mj);
         // std::cout << "mj = "<<*mj<<" tmp  = "<<tmp<<std::endl;
-        for (int ii = 0; ii < BlockRows; ++ii) {
+        for (size_t ii = 0; ii < BlockRows; ++ii) {
           setentry_amatrix(matrix, i * BlockRows + ii, j * BlockRows + ii, tmp);
         }
       }
@@ -619,15 +619,15 @@ struct H2LibBlackBoxExpansions {
     // std:cout << "L2P: D ="<<D<<" order = "<<m_order<<" box =
     // "<<box<<std::endl;
     detail::ChebyshevRn<D> cheb_rn(m_order, box);
-    for (int i = 0; i < indicies_size; i += BlockRows) {
+    for (size_t i = 0; i < indicies_size; i += BlockRows) {
       const double_d &p = get<position>(particles)[indicies[i] / BlockRows];
       // std::cout << "p = "<<p<<std::endl;
       cheb_rn.set_position(p);
       lattice_iterator<dimension> mj(int_d::Constant(0),
                                      int_d::Constant(m_order));
-      for (int j = 0; j < m_ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < m_ncheb; ++j, ++mj) {
         const double tmp = cheb_rn(*mj);
-        for (int ii = 0; ii < BlockRows; ++ii) {
+        for (size_t ii = 0; ii < BlockRows; ++ii) {
           setentry_amatrix(matrix, i + ii, j * BlockRows + ii, tmp);
         }
       }
@@ -658,14 +658,14 @@ struct H2LibBlackBoxExpansions {
       box.bmax[i] = t->bmax[i];
     }
     detail::ChebyshevRn<D> cheb_rn(m_order, box);
-    for (int i = 0; i < indicies_size; i += BlockCols) {
+    for (size_t i = 0; i < indicies_size; i += BlockCols) {
       const double_d &p = get<position>(particles)[indicies[i] / BlockCols];
       cheb_rn.set_position(p);
       lattice_iterator<dimension> mj(int_d::Constant(0),
                                      int_d::Constant(m_order));
-      for (int j = 0; j < m_ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < m_ncheb; ++j, ++mj) {
         const double tmp = cheb_rn(*mj);
-        for (int ii = 0; ii < BlockCols; ++ii) {
+        for (size_t ii = 0; ii < BlockCols; ++ii) {
           setentry_amatrix(matrix, j * BlockCols + ii, i + ii, tmp);
         }
       }
@@ -1135,7 +1135,6 @@ void P2P_matrix(Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> &matrix,
                                     Kernel>
       helper;
 
-  typedef typename ColParticlesType::position position;
   matrix.resize(row_indicies.size() * helper::block_rows,
                 col_indicies.size() * helper::block_cols);
   for (size_t i = 0; i < row_indicies.size(); ++i) {
@@ -1155,7 +1154,6 @@ void P2P_amatrix(pamatrix matrix, const uint *row_indicies,
                  const uint col_indicies_size,
                  const RowParticlesType &row_particles,
                  const ColParticlesType &col_particles, const Kernel &kernel) {
-  typedef typename ColParticlesType::position position;
 
   typedef detail::kernel_helper_ref<typename RowParticlesType::const_reference,
                                     typename ColParticlesType::const_reference,
@@ -1166,13 +1164,13 @@ void P2P_amatrix(pamatrix matrix, const uint *row_indicies,
   ASSERT_CUDA(matrix->cols == col_indicies_size);
 
   // resize_amatrix(matrix,row_indicies_size,col_indicies_size);
-  for (int i = 0; i < row_indicies_size; i += helper::block_rows) {
+  for (size_t i = 0; i < row_indicies_size; i += helper::block_rows) {
     const auto &pi = row_particles[row_indicies[i] / helper::block_rows];
-    for (int j = 0; j < col_indicies_size; j += helper::block_cols) {
+    for (size_t j = 0; j < col_indicies_size; j += helper::block_cols) {
       const auto &pj = col_particles[col_indicies[j] / helper::block_cols];
       const typename helper::Block tmp(kernel(pi, pj));
-      for (int ii = 0; ii < helper::block_rows; ++ii) {
-        for (int jj = 0; jj < helper::block_cols; ++jj) {
+      for (size_t ii = 0; ii < helper::block_rows; ++ii) {
+        for (size_t jj = 0; jj < helper::block_cols; ++jj) {
           setentry_amatrix(matrix, i + ii, j + jj, tmp(ii, jj));
         }
       }

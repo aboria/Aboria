@@ -70,8 +70,6 @@ public:
   void helper_fast_methods_calculate(ParticlesType &particles,
                                      const KernelFunction &kernel,
                                      const P2PKernelFunction &p2pkernel) {
-    typedef typename ParticlesType::position position;
-    typedef typename ParticlesType::reference reference;
     const unsigned int dimension = ParticlesType::dimension;
     typedef typename TargetH2::value_type value_type;
     typedef detail::VectorTraits<value_type> scalar_traits;
@@ -479,7 +477,6 @@ public:
     typedef Vector<double, D> double_d;
     typedef Vector<int, D> int_d;
     typedef Vector<bool, D> bool_d;
-    const double tol = 1e-10;
     // randomly generate a bunch of positions over a range
     const double pos_min = 0;
     const double pos_max = 1;
@@ -532,9 +529,9 @@ public:
               std::end(get<target_manual>(particles)), 0.0);
 
     auto t0 = Clock::now();
-    for (int i = 0; i < N; i++) {
+    for (size_t i = 0; i < N; i++) {
       const double_d pi = get<position>(particles)[i];
-      for (int j = 0; j < N; j++) {
+      for (size_t j = 0; j < N; j++) {
         const double_d pj = get<position>(particles)[j];
         get<target_manual>(particles)[i] +=
             kernel(pi, pj) * get<source>(particles)[j];
@@ -583,9 +580,9 @@ public:
                 std::end(get<vtarget_manual>(particles)), vdouble2::Zero());
 
       t0 = Clock::now();
-      for (int i = 0; i < N; i++) {
+      for (size_t i = 0; i < N; i++) {
         const double_d pi = get<position>(particles)[i];
-        for (int j = 0; j < N; j++) {
+        for (size_t j = 0; j < N; j++) {
           const double_d pj = get<position>(particles)[j];
           get<vtarget_manual>(particles)[i] +=
               vkernel(pi, pj) * get<vsource>(particles)[j];
@@ -761,11 +758,11 @@ public:
 
   void test_fmm_matrix_operators() {
 #ifdef HAVE_EIGEN
-    const unsigned int D = 2;
-    typedef Vector<double, D> double_d;
-    auto kernel = [](const double_d &pa, const double_d &pb) {
-      return std::sqrt((pb - pa).squaredNorm() + 0.1);
-    };
+    //const unsigned int D = 2;
+    //typedef Vector<double, D> double_d;
+    //auto kernel = [](const double_d &pa, const double_d &pb) {
+    //  return std::sqrt((pb - pa).squaredNorm() + 0.1);
+    //};
     // detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);
     // helper_fmm_matrix_operators(expansions);
 #endif

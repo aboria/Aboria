@@ -420,7 +420,7 @@ public:
                 // loop over n particles (the n rows in this bucket)
                 for (size_t p = 0; p < m_target_vector[i].size(); ++p) {
                     // p2p - loop over number of source particles (the columns)
-                    for (int sp = 0; sp < m_source_vector[source_index].size(); ++sp) {
+                    for (size_t sp = 0; sp < m_source_vector[source_index].size(); ++sp) {
                         A.insert(row_index+p,m_ext_indicies[source_index]+sp) = m_p2p_matrices[i][j](p,sp);
                     }
                 }
@@ -554,12 +554,12 @@ public:
         row_index = 0;
         size_t col_index = 0;
         for (size_t i = 0; i < m_target_vector.size(); ++i) {
-            for (int pi = 0; pi < m_target_vector[i].size(); ++pi,++row_index) {
+            for (size_t pi = 0; pi < m_target_vector[i].size(); ++pi,++row_index) {
                 double sum = 0;
                 size_t count = 0;
                 col_index = 0;
                 for (size_t j = 0; j < m_source_vector.size(); ++j) {
-                    for (int pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
+                    for (size_t pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
                                 //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
@@ -605,7 +605,7 @@ public:
                 size_t count = 0;
                 col_index = 0;
                 for (size_t j = 0; j < m_source_vector.size(); ++j) {
-                    for (int pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
+                    for (size_t pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
                                 //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;
@@ -651,7 +651,7 @@ public:
                 size_t count = 0;
                 col_index = 0;
                 for (size_t j = 0; j < m_source_vector.size(); ++j) {
-                    for (int pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
+                    for (size_t pj = 0; pj < m_source_vector[j].size(); ++pj,++col_index) {
                         for (sparse_matrix_type::InnerIterator it(A,col_index); it ;++it) {
                             if (it.row() == row_index) {
                                 //std::cout << "("<<it.row()<<","<<it.col()<<") = "<<it.value() << std::endl;

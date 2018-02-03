@@ -589,7 +589,7 @@ public:
         #pragma omp parallel for
         for (size_t i = 0; i < N; ++i) {
             a_buffer[i] = a[i];
-            for (int j = 0; j < N; ++j) {
+            for (size_t j = 0; j < N; ++j) {
                 const double dx_x = x[j]-x[i];
                 const double dx_y = y[j]-x[i];
                 a_buffer[i] += a[j]*std::sqrt(dx_x*dx_x+dx_y*dx_y+b[j]*b[j]);
@@ -611,7 +611,7 @@ public:
             #pragma omp parallel for
             for (size_t i = 0; i < N; ++i) {
                 a_buffer[i] = a[i];
-                for (int j = 0; j < N; ++j) {
+                for (size_t j = 0; j < N; ++j) {
                     const double dx_x = x[j]-x[i];
                     const double dx_y = y[j]-x[i];
                     a_buffer[i] += a[j]*std::sqrt(dx_x*dx_x+dx_y*dx_y+b[j]*b[j]);

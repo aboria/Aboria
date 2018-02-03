@@ -39,6 +39,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <type_traits>
 
+#include "Particles.h"
 #include "detail/Chebyshev.h"
 
 #include <Eigen/Core>
@@ -223,8 +224,8 @@ namespace Aboria {
                 for (size_t j=0; j<nb; ++j) {
                     const_col_reference bj = b[j];
                     const Block element = static_cast<Block>(this->m_function(ai,bj));
-                    for (int ii = 0; ii < BlockRows; ++ii) {
-                        for (int jj = 0; jj < BlockCols; ++jj) {
+                    for (size_t ii = 0; ii < BlockRows; ++ii) {
+                        for (size_t jj = 0; jj < BlockCols; ++jj) {
                             triplets.push_back(Triplet(i*BlockRows+ii+startI,
                                                        j*BlockCols+jj+startJ,
                                                        element(ii,jj)));
@@ -240,7 +241,6 @@ namespace Aboria {
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
-            typedef Eigen::Matrix<Scalar,BlockRows,1> row_vector;
 
             const RowElements& a = this->m_row_elements;
             const ColElements& b = this->m_col_elements;
@@ -741,8 +741,8 @@ namespace Aboria {
                     const_position_reference dx = detail::get_impl<1>(pairj);
                     const size_t j = &get<position>(bj) - get<position>(b).data();
                     const Block element = static_cast<Block>(m_dx_function(dx,ai,bj));
-                    for (int ii = 0; ii < BlockRows; ++ii) {
-                        for (int jj = 0; jj < BlockCols; ++jj) {
+                    for (size_t ii = 0; ii < BlockRows; ++ii) {
+                        for (size_t jj = 0; jj < BlockCols; ++jj) {
                             triplets.push_back(Triplet(i*BlockRows+ii+startI,
                                                        j*BlockCols+jj+startJ,
                                                        element(ii,jj)));
@@ -785,7 +785,6 @@ namespace Aboria {
         template <typename DerivedLHS, typename DerivedRHS>
         void evaluate(Eigen::DenseBase<DerivedLHS> &lhs, 
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
-            typedef Eigen::Matrix<Scalar,BlockRows,1> row_vector;
 
             ASSERT(this->rows() == lhs.rows(),"lhs vector has incompatible size");
             ASSERT(this->cols() == rhs.rows(),"rhs vector has incompatible size");

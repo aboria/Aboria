@@ -297,8 +297,9 @@ template <unsigned int D> struct ChebyshevRn {
   typedef Vector<double, D> double_d;
   typedef Vector<int, D> int_d;
   typedef std::vector<double_d> vector_double_d;
-  vector_double_d m_Sn;
   const detail::bbox<D> &m_box;
+  vector_double_d m_Sn;
+
   ChebyshevRn(const size_t order, const detail::bbox<D> &box)
       : m_box(box), m_Sn(order) {}
 

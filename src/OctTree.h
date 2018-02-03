@@ -45,6 +45,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CudaInclude.h"
 #include "Particles.h"
 #include "detail/SpatialUtil.h"
+#include "detail/Algorithms.h"
 
 namespace Aboria {
 
@@ -109,8 +110,6 @@ public:
 
 private:
   void set_domain_impl() {
-    const size_t n = this->m_particles_end - this->m_particles_begin;
-
     this->m_query.m_periodic = this->m_periodic;
     this->m_query.m_bounds = this->m_bounds;
   }
@@ -131,7 +130,7 @@ private:
       /******************************************
        * 3. Classify points                     *
        ******************************************/
-      if (update_end - update_begin == num_points) {
+      if (static_cast<size_t>(update_end - update_begin) == num_points) {
         // m_alive_indicies is just a sequential list of indices
         // (i.e. no dead)
         detail::transform(

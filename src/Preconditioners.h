@@ -676,7 +676,6 @@ class RASMPreconditioner {
         typedef typename Kernel::row_elements_type row_elements_type;
         typedef typename Kernel::col_elements_type col_elements_type;
         typedef typename row_elements_type::query_type query_type;
-        typedef typename query_type::reference reference;
         static const unsigned int dimension = query_type::dimension;
         typedef Vector<double,dimension> double_d;
         typedef Vector<unsigned int,dimension> unsigned_int_d;
@@ -775,7 +774,7 @@ class RASMPreconditioner {
         int count = 0;
         int minsize = 1000;
         int maxsize = 0;
-        for (int domain_index = 0; domain_index < m_domain_indicies.size(); ++domain_index) {
+        for (size_t domain_index = 0; domain_index < m_domain_indicies.size(); ++domain_index) {
             const int size = m_domain_indicies[domain_index].size();
             count += size;
             if (size < minsize) minsize = size;
@@ -816,7 +815,7 @@ class RASMPreconditioner {
 
         matrix_type domain_matrix;
 
-        for (int domain_index = 0; domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
+        for (size_t domain_index = 0; domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
             const storage_vector_type& buffer = m_domain_buffer[domain_index];
             const storage_vector_type& indicies = m_domain_indicies[domain_index];
             const storage_vector_type& random = m_domain_random[domain_index];

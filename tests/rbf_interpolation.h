@@ -182,7 +182,7 @@ public:
                                                  Pt,     Zero);
 
         vector_type phi(N+1), gamma(N+1);
-        for (int i=0; i<knots.size(); ++i) {
+        for (size_t i = 0; i < knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             phi[i] = funct(x,y);
@@ -204,7 +204,7 @@ public:
         phi = W*gamma;
         double rms_error = 0;
         double scale = 0;
-        for (int i=0; i<knots.size(); ++i) {
+        for (size_t i = 0; i < knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
@@ -220,7 +220,7 @@ public:
         phi = W_test*gamma;
         rms_error = 0;
         scale = 0;
-        for (int i=0; i<test.size(); ++i) {
+        for (size_t i = 0; i < test.size(); ++i) {
             const double x = get<position>(test[i])[0];
             const double y = get<position>(test[i])[1];
             const double truth = funct(x,y);
@@ -519,7 +519,7 @@ template<template <typename> class SearchMethod>
         auto Gtest = create_fmm_operator<order>(test,knots,kernel,self_kernel);
 
         vector_type phi(N), gamma(N);
-        for (int i=0; i<knots.size(); ++i) {
+        for (size_t i = 0; i < knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             phi[i] = funct(x,y);
@@ -544,7 +544,7 @@ template<template <typename> class SearchMethod>
         phi = G*gamma;
         double rms_error = 0;
         double scale = 0;
-        for (int i=0; i<knots.size(); ++i) {
+        for (size_t i = 0; i < knots.size(); ++i) {
             const double x = get<position>(knots[i])[0];
             const double y = get<position>(knots[i])[1];
             const double truth = funct(x,y);
@@ -560,7 +560,7 @@ template<template <typename> class SearchMethod>
         rms_error = 0;
         scale = 0;
         vector_type phi_test = Gtest*gamma;
-        for (int i=0; i<test.size(); ++i) {
+        for (size_t i = 0; i < test.size(); ++i) {
             const vdouble2 p = get<position>(test)[i]; 
             const double eval_value = phi_test[i];
             const double truth = funct(p[0],p[1]);

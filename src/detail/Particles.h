@@ -37,10 +37,21 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef PARTICLES_DETAIL_H_
 #define PARTICLES_DETAIL_H_
 
+#include "CudaInclude.h"
+
 
 namespace Aboria {
 
 namespace detail {
+
+template <typename T> struct is_particles : std::false_type {};
+
+template <typename Variables, unsigned int DomainD,
+          template <typename, typename> class Vector,
+          template <typename> class SearchMethod, typename Traits>
+struct is_particles<Particles<Variables, DomainD, Vector, SearchMethod, Traits>>
+    : std::true_type {};
+
 
 template <typename Reference>
 struct resize_lambda {
@@ -245,7 +256,6 @@ struct read_into_tuple {
     template< typename U > 
     typename boost::enable_if<boost::is_arithmetic<non_ref_tuple_element<U>>>::type
     operator()(U i) {
-        typedef typename std::tuple_element<U::value,tuple_type>::type data_type;
         std::get<U::value>(read_into) = datas[i]->GetValue(index);
     }
 
@@ -304,7 +314,6 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
         }
-        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(1);
         datas[i]->SetNumberOfTuples(n);
     }
@@ -319,7 +328,6 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
         }
-        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
         datas[i]->SetNumberOfTuples(n);
     }
@@ -335,7 +343,6 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>,MplVector>> {
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
         }
-        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::RowsAtCompileTime);
         datas[i]->SetNumberOfTuples(n);
     }
@@ -387,7 +394,6 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
         }
-        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(1);
         datas[i]->SetNumberOfTuples(n);
     }
@@ -402,7 +408,6 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
         }
-        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::size);
         datas[i]->SetNumberOfTuples(n);
     }
@@ -418,7 +423,6 @@ struct setup_datas_for_writing<getter_type<thrust::tuple<TT1,TT2,TT3,TT4,TT5,TT6
             datas[i] = vtkSmartPointer<vtkFloatArray>::New();
             datas[i]->SetName(name);
         }
-        typedef typename mpl::at<mpl_type_vector,U>::type::value_type data_type;
         datas[i]->SetNumberOfComponents(non_ref_tuple_element<U>::RowsAtCompileTime);
         datas[i]->SetNumberOfTuples(n);
     }
