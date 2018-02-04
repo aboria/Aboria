@@ -44,8 +44,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "CudaInclude.h"
 #include "Particles.h"
-#include "detail/SpatialUtil.h"
 #include "detail/Algorithms.h"
+#include "detail/SpatialUtil.h"
 
 namespace Aboria {
 
@@ -772,10 +772,6 @@ template <typename Traits> struct octtree_query {
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  box_type get_root_bucket_bounds(reference bucket) { return get_bounds(); }
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   void get_bucket(const double_d &position, pointer &bucket,
                   box_type &bounds) const {
     child_iterator i = get_children();
@@ -811,8 +807,8 @@ template <typename Traits> struct octtree_query {
 #endif
     return iterator_range<query_iterator<LNormNumber>>(
         query_iterator<LNormNumber>(get_children(), position,
-                                    double_d(max_distance), m_number_of_levels,
-                                    this),
+                                    double_d::Constant(max_distance),
+                                    m_number_of_levels, this),
         query_iterator<LNormNumber>());
   }
 

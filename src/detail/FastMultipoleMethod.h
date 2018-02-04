@@ -36,8 +36,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef FAST_MULTIPOLE_METHOD_DETAIL_H_
 #define FAST_MULTIPOLE_METHOD_DETAIL_H_
 
-#include "CudaInclude.h"
 #include "../Get.h"
+#include "CudaInclude.h"
 #include "Log.h"
 #include "NeighbourSearchBase.h"
 #include "Traits.h"
@@ -138,7 +138,7 @@ struct BlackBoxExpansions {
   BlackBoxExpansions(const Function &K) : m_K(K) {
     // precalculate cheb_points
     lattice_iterator<dimension> mi(int_d::Constant(0), int_d::Constant(N));
-    for (int i = 0; i < ncheb; ++i, ++mi) {
+    for (size_t i = 0; i < ncheb; ++i, ++mi) {
       m_cheb_points[i] = detail::chebyshev_node_nd(*mi, N);
     }
   }
@@ -148,7 +148,7 @@ struct BlackBoxExpansions {
 
     detail::ChebyshevRnSingle<D, N> cheb_rn(position, box);
     lattice_iterator<dimension> mj(int_d::Constant(0), int_d::Constant(N));
-    for (int j = 0; j < ncheb; ++j, ++mj) {
+    for (size_t j = 0; j < ncheb; ++j, ++mj) {
       // std::cout << "accumulating P2M from "<<position<<" to node "<<*mj<<"
       // with Rn = "<<cheb_rn(*mj)<<std::endl;
       accum[j] += cheb_rn(*mj) * source;
@@ -183,7 +183,7 @@ struct BlackBoxExpansions {
       const double_d &p = get<position>(particles)[indicies[i]];
       detail::ChebyshevRnSingle<D, N> cheb_rn(p, box);
       lattice_iterator<dimension> mj(int_d::Constant(0), int_d::Constant(N));
-      for (int j = 0; j < ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < ncheb; ++j, ++mj) {
         // check ij
         matrix.block<BlockCols, BlockCols>(i * BlockCols, j * BlockCols) =
             cheb_rn(*mj) * blockcol_type::Identity();
@@ -195,7 +195,7 @@ struct BlackBoxExpansions {
   void M2M(m_expansion_type &accum, const box_type &target_box,
            const box_type &source_box, const m_expansion_type &source) const {
 
-    for (int j = 0; j < ncheb; ++j) {
+    for (size_t j = 0; j < ncheb; ++j) {
       const double_d &pj_unit_box = m_cheb_points[j];
       const double_d pj =
           0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
@@ -203,7 +203,7 @@ struct BlackBoxExpansions {
       detail::ChebyshevRnSingle<D, N> cheb_rn(pj, target_box);
 
       lattice_iterator<D> mi(int_d::Constant(0), int_d::Constant(N));
-      for (int i = 0; i < ncheb; ++i, ++mi) {
+      for (size_t i = 0; i < ncheb; ++i, ++mi) {
         accum[i] += cheb_rn(*mi) * source[j];
       }
     }
@@ -212,7 +212,7 @@ struct BlackBoxExpansions {
 #ifdef HAVE_EIGEN
   void M2M_matrix(m2m_matrix_type &matrix, const box_type &target_box,
                   const box_type &source_box) const {
-    for (int j = 0; j < ncheb; ++j) {
+    for (size_t j = 0; j < ncheb; ++j) {
       const double_d &pj_unit_box = m_cheb_points[j];
       const double_d pj =
           0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
@@ -220,7 +220,7 @@ struct BlackBoxExpansions {
       detail::ChebyshevRnSingle<D, N> cheb_rn(pj, target_box);
 
       lattice_iterator<D> mi(int_d::Constant(0), int_d::Constant(N));
-      for (int i = 0; i < ncheb; ++i, ++mi) {
+      for (size_t i = 0; i < ncheb; ++i, ++mi) {
         matrix.block<BlockCols, BlockCols>(i * BlockCols, j * BlockCols) =
             cheb_rn(*mi) * blockcol_type::Identity();
       }
@@ -231,13 +231,13 @@ struct BlackBoxExpansions {
   void M2L(l_expansion_type &accum, const box_type &target_box,
            const box_type &source_box, const m_expansion_type &source) const {
 
-    for (int i = 0; i < ncheb; ++i) {
+    for (size_t i = 0; i < ncheb; ++i) {
       const double_d &pi_unit_box = m_cheb_points[i];
       const double_d pi =
           0.5 * (pi_unit_box + 1) * (target_box.bmax - target_box.bmin) +
           target_box.bmin;
 
-      for (int j = 0; j < ncheb; ++j) {
+      for (size_t j = 0; j < ncheb; ++j) {
         const double_d &pj_unit_box = m_cheb_points[j];
         const double_d pj =
             0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
@@ -250,12 +250,12 @@ struct BlackBoxExpansions {
 #ifdef HAVE_EIGEN
   void M2L_matrix(m2l_matrix_type &matrix, const box_type &target_box,
                   const box_type &source_box) const {
-    for (int i = 0; i < ncheb; ++i) {
+    for (size_t i = 0; i < ncheb; ++i) {
       const double_d &pi_unit_box = m_cheb_points[i];
       const double_d pi =
           0.5 * (pi_unit_box + 1) * (target_box.bmax - target_box.bmin) +
           target_box.bmin;
-      for (int j = 0; j < ncheb; ++j) {
+      for (size_t j = 0; j < ncheb; ++j) {
         const double_d &pj_unit_box = m_cheb_points[j];
         const double_d pj =
             0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
@@ -270,7 +270,7 @@ struct BlackBoxExpansions {
   void L2L(l_expansion_type &accum, const box_type &target_box,
            const box_type &source_box, const l_expansion_type &source) const {
     // M2M(accum,target_box,source_box,source);
-    for (int i = 0; i < ncheb; ++i) {
+    for (size_t i = 0; i < ncheb; ++i) {
       const double_d &pi_unit_box = m_cheb_points[i];
       const double_d pi =
           0.5 * (pi_unit_box + 1) * (target_box.bmax - target_box.bmin) +
@@ -278,7 +278,7 @@ struct BlackBoxExpansions {
       detail::ChebyshevRnSingle<D, N> cheb_rn(pi, source_box);
 
       lattice_iterator<D> mj(int_d::Constant(0), int_d::Constant(N));
-      for (int j = 0; j < ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < ncheb; ++j, ++mj) {
         accum[i] += cheb_rn(*mj) * source[j];
       }
     }
@@ -287,7 +287,7 @@ struct BlackBoxExpansions {
 #ifdef HAVE_EIGEN
   void L2L_matrix(l2l_matrix_type &matrix, const box_type &target_box,
                   const box_type &source_box) const {
-    for (int i = 0; i < ncheb; ++i) {
+    for (size_t i = 0; i < ncheb; ++i) {
       const double_d &pi_unit_box = m_cheb_points[i];
       const double_d pi =
           0.5 * (pi_unit_box + 1) * (target_box.bmax - target_box.bmin) +
@@ -295,7 +295,7 @@ struct BlackBoxExpansions {
       detail::ChebyshevRnSingle<D, N> cheb_rn(pi, source_box);
 
       lattice_iterator<D> mj(int_d::Constant(0), int_d::Constant(N));
-      for (int j = 0; j < ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < ncheb; ++j, ++mj) {
         matrix.block<BlockRows, BlockRows>(i * BlockRows, j * BlockRows) =
             cheb_rn(*mj) * blockrow_type::Identity();
       }
@@ -308,7 +308,7 @@ struct BlackBoxExpansions {
     row_scalar_type sum = detail::VectorTraits<row_scalar_type>::Zero();
     detail::ChebyshevRnSingle<D, N> cheb_rn(p, box);
     lattice_iterator<dimension> mj(int_d::Constant(0), int_d::Constant(N));
-    for (int j = 0; j < ncheb; ++j, ++mj) {
+    for (size_t j = 0; j < ncheb; ++j, ++mj) {
       sum += cheb_rn(*mj) * source[j];
     }
     return sum;
@@ -353,7 +353,7 @@ struct BlackBoxExpansions {
       const double_d &p = get<position>(particles)[indicies[i]];
       detail::ChebyshevRnSingle<D, N> cheb_rn(p, box);
       lattice_iterator<dimension> mj(int_d::Constant(0), int_d::Constant(N));
-      for (int j = 0; j < ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < ncheb; ++j, ++mj) {
         matrix.block<BlockRows, BlockRows>(i * BlockRows, j * BlockRows) =
             cheb_rn(*mj) * blockrow_type::Identity();
       }
@@ -858,7 +858,7 @@ void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
   for (int i = index; i < index + N; ++i) {
     const Vector<double, D> &pi = pbegin[i];
     const auto l2p = expansions.L2P(pi, box, source);
-    for (int ii = 0; ii < block_size; ++ii) {
+    for (size_t ii = 0; ii < block_size; ++ii) {
       const_cast<Eigen::DenseBase<Derived> &>(
           target_vector)[i * block_size + ii] +=
           detail::VectorTraits<decltype(l2p)>::Index(l2p, ii);
@@ -889,7 +889,7 @@ void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
     const Vector<double, D> &pi = get<position>(i);
     const size_t index = &pi - &get<position>(target_particles_begin)[0];
     const auto &l2p = expansions.L2P(pi, box, source);
-    for (int ii = 0; ii < block_size; ++ii) {
+    for (size_t ii = 0; ii < block_size; ++ii) {
       const_cast<Eigen::DenseBase<Derived> &>(
           target_vector)[index * block_size + ii] +=
           detail::VectorTraits<decltype(l2p)>::Index(l2p, ii);

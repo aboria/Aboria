@@ -167,8 +167,6 @@ public:
     ASSERT(matrix.rows() == this->rows(), "matrix has incompatible row size");
     ASSERT(matrix.cols() == this->cols(), "matrix has incompatible col size");
 
-    const bool is_periodic = !a.get_periodic().any();
-
     for (size_t i = 0; i < na; ++i) {
       for (size_t j = 0; j < nb; ++j) {
         const_cast<Eigen::DenseBase<Derived> &>(matrix)
@@ -188,8 +186,6 @@ public:
 
     const size_t na = a.size();
     const size_t nb = b.size();
-
-    const bool is_periodic = !a.get_periodic().any();
 
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
@@ -220,10 +216,10 @@ public:
     const size_t na = a.size();
     const size_t nb = b.size();
 
-    CHECK(lhs.size() == this->rows(), "lhs size is inconsistent");
-    CHECK(rhs.size() == this->cols(), "rhs size is inconsistent");
-
-    const bool is_periodic = !a.get_periodic().any();
+    CHECK(static_cast<size_t>(lhs.size()) == this->rows(),
+          "lhs size is inconsistent");
+    CHECK(static_cast<size_t>(rhs.size()) == this->cols(),
+          "rhs size is inconsistent");
 
 #pragma omp parallel for
     for (size_t i = 0; i < na; ++i) {
@@ -379,9 +375,9 @@ class KernelChebyshev : public KernelDense<RowElements, ColElements, F> {
   unsigned int m_ncheb;
   const int_d m_start;
   const int_d m_end;
+  PositionF m_position_function;
   mutable vector_type m_W;
   mutable vector_type m_fcheb;
-  PositionF m_position_function;
 
 public:
   typedef typename base_type::Scalar Scalar;
@@ -392,9 +388,9 @@ public:
   KernelChebyshev(const RowElements &row_elements,
                   const ColElements &col_elements, const unsigned int n,
                   const PositionF &function)
-      : m_order(n), m_ncheb(std::pow(n, dimension)), m_start(0), m_end(n),
-        m_position_function(function),
-        base_type(row_elements, col_elements, F(function)) {
+      : base_type(row_elements, col_elements, F(function)), m_order(n),
+        m_ncheb(std::pow(n, dimension)), m_start(int_d::Constant(0)),
+        m_end(int_d::Constant(n)), m_position_function(function) {
     set_n(n);
   };
 
@@ -425,10 +421,10 @@ public:
     // fill kernel matrix
     m_kernel_matrix.resize(m_ncheb * BlockRows, m_ncheb * BlockCols);
     lattice_iterator<dimension> mi(m_start, m_end);
-    for (int i = 0; i < m_ncheb; ++i, ++mi) {
+    for (size_t i = 0; i < m_ncheb; ++i, ++mi) {
       const double_d pi = col_Rn.get_position(*mi);
       lattice_iterator<dimension> mj(m_start, m_end);
-      for (int j = 0; j < m_ncheb; ++j, ++mj) {
+      for (size_t j = 0; j < m_ncheb; ++j, ++mj) {
         const double_d pj = row_Rn.get_position(*mj);
         m_kernel_matrix.template block<BlockRows, BlockCols>(i * BlockRows,
                                                              j * BlockCols) =
@@ -456,7 +452,6 @@ public:
   void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
-    const RowElements &a = this->m_row_elements;
     const ColElements &b = this->m_col_elements;
 
     CHECK(!b.get_periodic().any(), "chebyshev operator assumes not periodic");
@@ -556,9 +551,9 @@ public:
 
   KernelFMM(const RowElements &row_elements, const ColElements &col_elements,
             const PositionF &position_function, const F &function)
-      : m_expansions(position_function),
-        m_fmm(row_elements, col_elements, m_expansions, function),
-        base_type(row_elements, col_elements, function){};
+      : base_type(row_elements, col_elements, function),
+        m_expansions(position_function),
+        m_fmm(row_elements, col_elements, m_expansions, function){};
 
   /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
   /// and particle sets \p a and \p b on a vector rhs and
@@ -585,8 +580,8 @@ protected:
                     detail::is_particles<ColElements>::value,
                 "only implemented for particle elements");
 
-  FWithDx m_dx_function;
   FRadius m_radius_function;
+  FWithDx m_dx_function;
 
 public:
   typedef typename base_type::Block Block;
@@ -596,9 +591,9 @@ public:
 
   KernelSparse(const RowElements &row_elements, const ColElements &col_elements,
                const FRadius &radius_function, const FWithDx &withdx_function)
-      : m_radius_function(radius_function), m_dx_function(withdx_function),
-        base_type(row_elements, col_elements,
-                  F(col_elements, radius_function, withdx_function)){};
+      : base_type(row_elements, col_elements,
+                  F(col_elements, radius_function, withdx_function)),
+        m_radius_function(radius_function), m_dx_function(withdx_function){};
 
   /*
    * shouldn't need this anymore....
@@ -626,7 +621,6 @@ public:
     const ColElements &b = this->m_col_elements;
 
     const size_t na = a.size();
-    const size_t nb = b.size();
 
     const_cast<MatrixType &>(matrix).setZero();
 
@@ -654,7 +648,6 @@ public:
     const ColElements &b = this->m_col_elements;
 
     const size_t na = a.size();
-    const size_t nb = b.size();
 
     // sparse a x b block
     // std::cout << "sparse a x b block" << std::endl;
@@ -720,7 +713,6 @@ public:
     const ColElements &b = this->m_col_elements;
 
     const size_t na = a.size();
-    const size_t nb = b.size();
 
 #pragma omp parallel for
     for (size_t i = 0; i < na; ++i) {

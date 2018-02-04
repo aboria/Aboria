@@ -181,7 +181,8 @@ public:
     const size_t na = rows();
     const size_t nb = cols();
     // matrix.resize(na,nb);
-    CHECK((matrix.rows() == na) && (matrix.cols() == nb),
+    CHECK((static_cast<size_t>(matrix.rows()) == na) &&
+              (static_cast<size_t>(matrix.cols()) == nb),
           "matrix size is not compatible with expression.");
     assemble_impl(matrix, detail::make_index_sequence<NI * NJ>());
   }
@@ -191,7 +192,8 @@ public:
     const size_t na = rows();
     const size_t nb = cols();
     // matrix.resize(na,nb);
-    CHECK((matrix.rows() == na) && (matrix.cols() == nb),
+    CHECK((static_cast<size_t>(matrix.rows()) == na) &&
+              (static_cast<size_t>(matrix.cols()) == nb),
           "matrix size is not compatible with expression.");
 
     typedef Eigen::Triplet<Scalar> triplet_type;

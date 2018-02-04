@@ -1826,7 +1826,6 @@ private:
   void increment() {
     LOG_CUDA(3, "lattice_iterator_within_distance: increment :begin");
     for (int i = dimension - 1; i >= 0; --i) {
-      double distance = 0;
 
       // increment or decrement index depending on the current
       // quadrant

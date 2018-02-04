@@ -295,7 +295,7 @@ private:
     // const double_d& transpose = m_particle_range.get_transpose();
     double accum = 0;
     bool outside = false;
-    for (int i = 0; i < Traits::dimension; i++) {
+    for (size_t i = 0; i < Traits::dimension; i++) {
       m_dx[i] = p[i] - m_current_point[i];
       accum =
           detail::distance_helper<LNormNumber>::accumulate_norm(accum, m_dx[i]);
@@ -374,7 +374,7 @@ public:
       end[i] = is_periodic[i] ? 2 : 1;
     }
     lattice_iterator<dimension> it(start, end);
-    it = int_d(0);
+    it = int_d::Constant(0);
     return it;
   }
 
@@ -387,7 +387,8 @@ public:
   bucket_pair_iterator(const Query &query)
       : m_valid(true), m_domain_domain(true), m_query(&query),
         m_periodic(get_periodic_it(m_query->get_periodic())),
-        m_i(get_regular_buckets(query, *m_periodic)), m_position_offset(0) {
+        m_i(get_regular_buckets(query, *m_periodic)),
+        m_position_offset(double_d::Constant(0)) {
 #ifndef __CUDA_ARCH__
     LOG(3, "\tcreating bucket_pair_iterator. m_periodic = "
                << *m_periodic << " m_i = " << *m_i << " m_j = " << *m_j);
@@ -559,10 +560,10 @@ private:
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_ghost_buckets: " << quadrant);
 #endif
-    int_d start(0);
+    int_d start = int_d::Constant(0);
     int_d end(query.get_end_bucket());
 
-    for (int i = 0; i < Traits::dimension; i++) {
+    for (size_t i = 0; i < Traits::dimension; i++) {
       if (!query.get_periodic()[i]) {
         ASSERT_CUDA(quadrant[i] == 0);
       } else {

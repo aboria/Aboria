@@ -178,11 +178,6 @@ private:
 
       m_buckets.assign(m_size.prod(), detail::get_empty_id());
 
-      if (!m_serial) {
-        m_buckets_begin.resize(m_size.prod());
-        m_buckets_end.resize(m_size.prod());
-      }
-
       // TODO: should always be true?
       m_use_dirty_cells = true;
 
@@ -499,26 +494,75 @@ private:
   vector_int m_buckets;
 
   ///
-  /// @brief vector of the
+  /// @brief vector of the linked list nodes for each particle
   ///
-  ///
-  vector_int m_buckets_begin;
-  vector_int m_buckets_end;
   vector_int m_linked_list;
+
+  ///
+  /// @brief vector of the backwards linked list nodes for each particle
+  ///
   vector_int m_linked_list_reverse;
+
+  ///
+  /// @brief vector of which buckets have particles in them
+  ///
   vector_int m_dirty_buckets;
+
+  ///
+  /// @brief internal storage for detecting which buckets have particles to be
+  /// deleted
+  ///
   vector_int m_deleted_buckets;
+
+  ///
+  /// @brief internal storage for detecting which buckets have particles to be
+  /// copied
+  ///
   vector_int m_copied_buckets;
+
+  ///
+  /// @brief the query object
+  ///
   bucket_search_serial_query<Traits> m_query;
+
+  ///
+  /// @brief use m_dirty_buckets for efficiency
+  ///
   bool m_use_dirty_cells;
 
+  ///
+  /// @brief last resizing of the buckets occurred with n particles
+  ///
   size_t m_size_calculated_with_n;
+
+  ///
+  /// @brief running with multiple processes, or on gpu
+  ///
   bool m_serial;
+
+  ///
+  /// @brief how many buckets in each dimension
+  ///
   unsigned_int_d m_size;
+
+  ///
+  /// @brief length of buckets in each dimension
+  ///
   double_d m_bucket_side_length;
+
+  ///
+  /// @brief struct to convert a point to a bucket index
+  ///
   detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
 };
 
+///
+/// @brief non-threadsafe function object to insert a non-consecutive list of
+/// particles into
+///  the data structure
+///
+/// @tparam Traits The @ref TraitsCommon type
+///
 template <typename Traits>
 struct bucket_search_serial<
     Traits>::insert_points_lambda_non_sequential_serial {
@@ -533,6 +577,9 @@ struct bucket_search_serial<
   int *m_linked_list_reverse;
   int start;
 
+  ///
+  /// @brief copy all the neccessary info into the function object
+  ///
   insert_points_lambda_non_sequential_serial(
       double_d *m_positions, int *m_alive_indices,
       const ptobl_type &m_point_to_bucket_index, int *m_buckets,
@@ -543,7 +590,10 @@ struct bucket_search_serial<
         m_dirty_buckets(m_dirty_buckets), m_linked_list(m_linked_list),
         m_linked_list_reverse(m_linked_list_reverse), start(start) {}
 
-  // implements a lock-free linked list using atomic cas
+  ///
+  /// @brief insert a particle at index @p i into the data structure
+  ///
+  /// It is assumed that this is run in serial (not thread-safe)
   CUDA_HOST_DEVICE
   void operator()(const int i) {
     // use actual index to insert into ds
@@ -563,6 +613,12 @@ struct bucket_search_serial<
   }
 };
 
+///
+/// @brief non-threadsafe insert a consecutive vector of particles into the data
+/// structure
+///
+/// @tparam Traits the @ref TraitsCommon type
+///
 template <typename Traits>
 struct bucket_search_serial<Traits>::insert_points_lambda_sequential_serial {
   typedef typename Traits::double_d double_d;
@@ -575,6 +631,9 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential_serial {
   int *m_linked_list_reverse;
   int start;
 
+  ///
+  /// @brief copy in all the required info
+  ///
   insert_points_lambda_sequential_serial(
       double_d *m_positions, const ptobl_type &m_point_to_bucket_index,
       int *m_buckets, int *m_dirty_buckets, int *m_linked_list,
@@ -584,7 +643,10 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential_serial {
         m_dirty_buckets(m_dirty_buckets), m_linked_list(m_linked_list),
         m_linked_list_reverse(m_linked_list_reverse), start(start) {}
 
-  // implements a lock-free linked list using atomic cas
+  ///
+  /// @brief insert a particle at index @p i into the data structure
+  ///
+  /// It is assumed that this is run in serial (not thread-safe)
   CUDA_HOST_DEVICE
   void operator()(const int i) {
     // use actual index to insert into ds
@@ -606,6 +668,12 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential_serial {
   }
 };
 
+///
+/// @brief thread-safe function object to insert a list of non-consecutive
+/// particles into the data structure
+///
+/// @tparam Traits the @ref TraitsCommon type
+///
 template <typename Traits>
 struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential {
   typedef typename Traits::double_d double_d;
@@ -618,6 +686,9 @@ struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential {
   int *m_linked_list;
   int start;
 
+  ///
+  /// @brief copy all the required info
+  ///
   insert_points_lambda_non_sequential(double_d *m_positions,
                                       int *m_alive_indices,
                                       const ptobl_type &m_point_to_bucket_index,
@@ -628,7 +699,11 @@ struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential {
         m_dirty_buckets(m_dirty_buckets), m_linked_list(m_linked_list),
         start(start) {}
 
-  // implements a lock-free linked list using atomic cas
+  ///
+  /// @brief insert a particle with index @p i into the data structure
+  ///
+  /// implements a lock-free linked list using atomic CAS
+  ///
   CUDA_HOST_DEVICE
   void operator()(const int i) {
     // if (!m_alive[i]) return;
@@ -662,6 +737,12 @@ struct bucket_search_serial<Traits>::insert_points_lambda_non_sequential {
   }
 };
 
+///
+/// @brief thread-safe function object to insert a list of consecutive
+/// particles into the data structure
+///
+/// @tparam Traits the @ref TraitsCommon type
+///
 template <typename Traits>
 struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
   typedef typename Traits::double_d double_d;
@@ -673,6 +754,9 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
   int *m_linked_list;
   int start;
 
+  ///
+  /// @brief copy all the info
+  ///
   insert_points_lambda_sequential(double_d *m_positions,
                                   const ptobl_type &m_point_to_bucket_index,
                                   int *m_buckets, int *m_dirty_buckets,
@@ -682,7 +766,11 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
         m_dirty_buckets(m_dirty_buckets), m_linked_list(m_linked_list),
         start(start) {}
 
-  // implements a lock-free linked list using atomic cas
+  ///
+  /// @brief insert the particle at index @p i
+  ///
+  /// implements a lock-free linked list using atomic CAS
+  ///
   CUDA_HOST_DEVICE
   void operator()(const int i) {
     // if (!m_alive[i]) return;
@@ -716,6 +804,11 @@ struct bucket_search_serial<Traits>::insert_points_lambda_sequential {
   }
 };
 
+///
+/// @brief function object to delete a range of particles within the buckets
+///
+/// @tparam Traits the @ref TraitsCommon type
+///
 template <typename Traits>
 struct bucket_search_serial<Traits>::delete_points_in_bucket_lambda {
   int *m_linked_list;
@@ -729,6 +822,11 @@ struct bucket_search_serial<Traits>::delete_points_in_bucket_lambda {
         start_index_deleted(start_index_deleted),
         end_index_deleted(end_index_deleted) {}
 
+  ///
+  /// @brief goes through all the particles in bucket @p celli and deletes
+  ///  particles within the range given by m_start_index_deleted < i <
+  ///  m_end_index_deleted
+  ///
   CUDA_HOST_DEVICE
   void operator()(const int celli) {
     // go through linked list
@@ -759,6 +857,11 @@ struct bucket_search_serial<Traits>::delete_points_in_bucket_lambda {
   }
 };
 
+///
+/// @brief function object to copy a range of particles to another index range
+///
+/// @tparam Traits the @ref TraitsCommon type
+///
 template <typename Traits>
 struct bucket_search_serial<Traits>::copy_points_in_bucket_lambda {
   int *m_linked_list;
@@ -776,6 +879,10 @@ struct bucket_search_serial<Traits>::copy_points_in_bucket_lambda {
         end_index_copied(end_index_copied), m_linked_list(m_linked_list),
         m_buckets(m_buckets) {}
 
+  ///
+  /// @brief goes through bucket @p celli and updates the particle indices to
+  /// point to the new range
+  ///
   CUDA_HOST_DEVICE
   void operator()(const int celli) {
     // go through linked list
@@ -799,100 +906,15 @@ struct bucket_search_serial<Traits>::copy_points_in_bucket_lambda {
   }
 };
 
-/*
-template <typename Traits>
-struct bucket_search_serial<Traits>::copy_points_lambda {
-    int* m_linked_list;
-    int* m_buckets;
-    raw_pointer m_particles_begin;
-    int m_n;
-
-    copy_points_lambda(size_t start_index_deleted,
-                       size_t start_index_copied,
-                       size_t end_index_copied,
-                       int* m_linked_list,
-                       int* m_buckets):
-        start_index_deleted(start_index_deleted),
-        start_index_copied(start_index_copied),
-        end_index_copied(end_index_copied),
-        m_linked_list(m_linked_list),
-        m_buckets(m_buckets)
-    {}
-
-    CUDA_HOST_DEVICE
-    void copy_points_per_particle(const size_t to, const size_t from) {
-    }
-
-    CUDA_HOST_DEVICE
-    void copy_points_per_bucket(const size_t to, const size_t from) {
-        // go through from linked list
-        int i_minus_1 = detail::get_empty_id();
-        int i = m_buckets[m_dirty_buckets[from]];
-        while (i != detail::get_empty_id()) {
-            // update each copied index
-            if (i == from) {
-                int i_plus_1 = m_linked_list[i];
-                i = i - start_index_copied + start_index_deleted;
-                if (i_minus_1 != detail::get_empty_id()) {
-                    m_linked_list[i_minus_1] = i;
-                } else {
-                    m_buckets[celli] = i;
-                }
-                m_linked_list[i] = i_plus_1;
-            }
-            i_minus_1 = i;
-            i = m_linked_list[i];
-        }
-
-        // go through to linked list
-        i_minus_1 = detail::get_empty_id();
-        i = m_buckets[m_dirty_buckets[to]];
-        while (i != detail::get_empty_id()) {
-            // delete to index
-            if (i == to) {
-                int i_plus_1 = m_linked_list[i];
-                m_linked_list[i_minus_1] = i_plus_1;
-            }
-            i_minus_1 = i;
-            i = m_linked_list[i];
-        }
-    }
-
-
-    CUDA_HOST_DEVICE
-    void operator()(reference i) {
-        if (!get<alive>(i)) {
-            const size_t index = &get<position>(i)
-                - get<position>(m_particles_begin);
-
-            // do search for next alive index
-            size_t delete_index = index;
-            do {
-                delete_index = m_n-m_delete_indicies[delete_index];
-                if (delete_index <= index) return;
-            } while (!get<alive>(m_particles_begin)[delete_index]);
-
-            // might not need to update search
-            if (m_update_search) {
-                if (m_serial) {
-                    copy_points_per_particle(index,delete_index);
-                } else {
-                    copy_points_per_bucket(index,delete_index);
-                }
-            }
-
-            // copy particle info
-            i = *(m_particles_begin+delete_index);
-        }
-
-
-    }
-};
-*/
-
 // assume that query functions, are only called from device code
 // TODO: most of this code shared with bucket_search_parallel_query, need to
 // combine them
+///
+/// @brief a lightweight query object for @ref bucket_search_serial that can be
+/// copied (e.g. to the gpu)
+///
+/// @tparam Traits the @ref TraitsCommon type
+///
 template <typename Traits> struct bucket_search_serial_query {
 
   typedef Traits traits_type;
@@ -916,23 +938,68 @@ template <typename Traits> struct bucket_search_serial_query {
   typedef linked_list_iterator<Traits> particle_iterator;
   typedef detail::bbox<dimension> box_type;
 
+  ///
+  /// @brief periodicity of domain
+  ///
   bool_d m_periodic;
+
+  ///
+  /// @brief bucket length in each dimension
+  ///
   double_d m_bucket_side_length;
+
+  ///
+  /// @brief index of last bucket
+  ///
   int_d m_end_bucket;
+
+  ///
+  /// @brief domain min/max bounds
+  ///
   detail::bbox<dimension> m_bounds;
+
+  ///
+  /// @brief function object to calculate a bucket index from a position
+  ///
   detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 
+  ///
+  /// @brief pointer to the beginning of the particle set
+  ///
   raw_pointer m_particles_begin;
+
+  ///
+  /// @brief pointer to the end of the particle set
+  ///
   raw_pointer m_particles_end;
+
+  ///
+  /// @brief pointer to the beginning of the buckets
+  ///
   int *m_buckets_begin;
+
+  ///
+  /// @brief pointer to the beginning of the linked list
+  ///
   int *m_linked_list_begin;
+
+  ///
+  /// @brief pointer to the find-by-id map key
+  ///
   int *m_id_map_key;
+
+  ///
+  /// @brief pointer to the find-by-id map value
+  ///
   int *m_id_map_value;
 
+  ///
+  /// @brief construcutor checks that we are not using std::vector and cuda
+  /// at the same time
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  bucket_search_serial_query()
-      : m_periodic(), m_particles_begin(), m_buckets_begin() {
+  bucket_search_serial_query() {
 #if defined(__CUDA_ARCH__)
     CHECK_CUDA((!std::is_same<typename Traits::template vector<double>,
                               std::vector<double>>::value),
@@ -940,9 +1007,15 @@ template <typename Traits> struct bucket_search_serial_query {
 #endif
   }
 
-  /*
-   * functions for id mapping
-   */
+  ///
+  /// @brief implement find-by-id
+  ///
+  /// performs a binary search for the id in the map
+  ///
+  /// @param id the id of the particle to find
+  /// @return pointer to the particle found, or a pointer to the end of the
+  /// particle set if not found
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   raw_pointer find(const size_t id) const {
@@ -957,53 +1030,59 @@ template <typename Traits> struct bucket_search_serial_query {
   }
 
   /*
-   * functions for updating search ds
-   */
-  /*
-  CUDA_HOST_DEVICE
-  void copy_points(raw_pointer copy_from, raw_pointer copy_to) {
-      LOG(4,"neighbour_search_base: copy_points: fromi =
-  "<<copy_from-m_particles_begin<<" toi = "<<copy_to-m_particles_begin);
-      ASSERT((copy_to-m_particles_begin>=0) &&
-              (m_particles_end-copy_to>0),"invalid copy to pointer");
-      ASSERT((copy_from-m_particles_begin>=0) &&
-              (m_particles_end-copy_from>0),"invalid copy from pointer");
-
-      if (m_domain_has_been_set) {
-          cast().copy_points_impl(copy_from_iterator,copy_to_iterator);
-      }
-
-      if (m_id_map) {
-          copy_id_map(*get<id>(copy_from_iterator),
-                      *get<id>(copy_to_iterator),
-                      copy_to_iterator-m_particles_begin);
-      }
-  }
-  */
-
-  /*
    * functions for trees
    */
+  ///
+  /// @brief bucket_search_serial implements a "flat" tree, so all buckets are
+  /// leafs
+  ///
+  /// @param bucket the bucket to check
+  /// @return true always
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static bool is_leaf_node(const value_type &bucket) { return true; }
 
+  ///
+  /// @brief bucket_search_serial is not a proper tree structure
+  ///
+  /// @return true always
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static bool is_tree() { return false; }
 
+  ///
+  /// @brief gets all the children of the root node.
+  ///
+  /// for bucket_search_serial this is all the buckets (flat tree with one root
+  /// node, all the rest leafs)
+  ///
+  /// @return a @ref lattice_iterator to all the buckets
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   child_iterator get_children() const {
     return child_iterator(int_d::Constant(0), m_end_bucket + 1);
   }
 
+  ///
+  /// @brief returns all the children of the given child_iterator
+  ///
+  /// @param ci this fuction returns all the children of @p ci
+  /// @return same as get_children()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   child_iterator get_children(const child_iterator &ci) const {
     return child_iterator();
   }
 
+  ///
+  /// @brief returns the min/max bounds of the given child_iterator @p ci
+  ///
+  /// @return a @detail::bbox containing the bounds
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const box_type get_bounds(const child_iterator &ci) const {
@@ -1013,29 +1092,26 @@ template <typename Traits> struct bucket_search_serial_query {
     return bounds;
   }
 
-  // dodgy hack cause nullptr cannot be converted to pointer
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static const pointer get_child1(const pointer &bucket) {
-    CHECK(false, "this should not be called")
-    return pointer(-1);
-  }
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static const pointer get_child2(const pointer &bucket) {
-    CHECK(false, "this should not be called")
-    return pointer(-1);
-  }
-
+  ///
+  /// @brief returns entire domain min/max bounds
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const box_type &get_bounds() const { return m_bounds; }
 
+  ///
+  /// @brief returns the periodicity of the domain
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const bool_d &get_periodic() const { return m_periodic; }
 
+  ///
+  /// @brief returns an iterator range to all the particles within the given
+  /// bucket
+  ///
+  /// @param bucket a reference to the bucket in question
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   iterator_range<particle_iterator>
       CUDA_HOST_DEVICE get_bucket_particles(const reference bucket) const {
@@ -1058,6 +1134,9 @@ template <typename Traits> struct bucket_search_serial_query {
         particle_iterator());
   }
 
+  ///
+  /// @brief get min/max bounds of given bucket @p bucket
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   detail::bbox<dimension> get_bucket_bbox(const reference bucket) const {
@@ -1066,15 +1145,13 @@ template <typename Traits> struct bucket_search_serial_query {
         (bucket + 1) * m_bucket_side_length + m_bounds.bmin);
   }
 
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  box_type get_root_bucket_bounds(reference bucket) const {
-    box_type bounds;
-    bounds.bmin = bucket * m_bucket_side_length + m_bounds.bmin;
-    bounds.bmax = (bucket + 1) * m_bucket_side_length + m_bounds.bmin;
-    return bounds;
-  }
-
+  ///
+  /// @brief given a @p position, returns a @p bucket and a min/max @p bounds
+  ///
+  /// @param position (input)
+  /// @param bucket (output)
+  /// @param bounds (output)
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   void get_bucket(const double_d &position, pointer &bucket,
@@ -1084,12 +1161,28 @@ template <typename Traits> struct bucket_search_serial_query {
     bounds.bmax = (bucket + 1) * m_bucket_side_length + m_bounds.bmin;
   }
 
+  ///
+  /// @brief returns a bucket index/id given a @p bucket reference
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t get_bucket_index(const reference bucket) const {
     return m_point_to_bucket_index.collapse_index_vector(bucket);
   }
 
+  ///
+  /// @brief returns all the bucket within a distance of a point
+  ///
+  /// This function can use multiple p-norm distance types by setting @p
+  /// LNormNumber, and uses a isotropic distance value given by @p max_distance.
+  /// Note that only buckets within the domain are returned, and periodicity is
+  /// not taken into account
+  ///
+  /// @param position the position to search around
+  /// @param max_distance the maximum distance of the buckets to be returned
+  /// @return an @ref iterator_range containing all the buckets found
+  /// @see lattice_iterator_within_distance
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber = -1>
   CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
@@ -1106,6 +1199,19 @@ template <typename Traits> struct bucket_search_serial_query {
         query_iterator<LNormNumber>());
   }
 
+  ///
+  /// @brief returns all the bucket within an anisotropic distance of a point
+  ///
+  /// This function can use multiple p-norm distance types by setting @p
+  /// LNormNumber, and uses a anisotropic distance value given by @p
+  /// max_distance. Note that only buckets within the domain are returned, and
+  /// periodicity is not taken into account
+  ///
+  /// @param position the position to search around
+  /// @param max_distance the maximum distance of the buckets to be returned
+  /// @return an @ref iterator_range containing all the buckets found
+  /// @see lattice_iterator_within_distance
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber = -1>
   CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
@@ -1120,80 +1226,78 @@ template <typename Traits> struct bucket_search_serial_query {
         query_iterator<LNormNumber>());
   }
 
+  ///
+  /// @brief get index of the last bucket in the cell list
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const int_d &get_end_bucket() const { return m_end_bucket; }
 
+  ///
+  /// @brief return an @ref iterator range to the entire bucket tree under the
+  /// given child_iterator @p ci
+  ///
+  /// @param ci the child_iterator to search under
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range<all_iterator> get_subtree(const child_iterator &ci) const {
     return iterator_range<all_iterator>(all_iterator(), all_iterator());
   }
 
+  ///
+  /// @brief return an @ref iterator_range to the entire tree data structure
+  ///
+  /// Can use this range to loop through all the buckets in the data structure,
+  /// wether it is a tree or not
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range<all_iterator> get_subtree() const {
     return iterator_range<all_iterator>(
-        all_iterator(int_d(0), m_end_bucket + 1), all_iterator());
+        all_iterator(int_d::Constant(0), m_end_bucket + 1), all_iterator());
   }
 
+  ///
+  /// @brief return the total number of buckets in the data structure
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t number_of_buckets() const { return (m_end_bucket + 1).prod(); }
 
+  ///
+  /// @brief return the total number of particles in the data structure
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t number_of_particles() const {
     return (m_particles_end - m_particles_begin);
   }
 
+  ///
+  /// @brief get a pointer to the beginning of the particle container
+  ///
+  /// can use this and @ref number_of_particles() to loop through all the
+  /// particles
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const raw_pointer &get_particles_begin() const { return m_particles_begin; }
 
+  ///
+  /// @brief get a pointer to the beginning of the particle container
+  ///
+  /// can use this and @ref number_of_particles() to loop through all the
+  /// particles
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   raw_pointer &get_particles_begin() { return m_particles_begin; }
 
+  ///
+  /// @brief returns the number of levels in the tree
+  ///
   unsigned number_of_levels() const { return 2; }
-
-  /*
-  CUDA_HOST_DEVICE
-  iterator_range<theta_iterator> get_theta_buckets(const reference bucket) const
-  {
-
-      int_d start = bucket-int_d(2);
-      int_d end = bucket+int_d(2);
-
-      bool no_buckets = false;
-      for (int i=0; i<Traits::dimension; i++) {
-          if (start[i] < 0) {
-              start[i] = 0;
-          } else if (start[i] > m_end_bucket[i]) {
-              no_buckets = true;
-              start[i] = m_end_bucket[i];
-          }
-          if (end[i] < 0) {
-              no_buckets = true;
-              end[i] = 0;
-          } else if (end[i] > m_end_bucket[i]) {
-              end[i] = m_end_bucket[i];
-          }
-      }
-      if (no_buckets) {
-          return iterator_range<theta_iterator>(
-              theta_iterator(end,end,endend),
-              ++theta_iterator(end,end,end)
-              );
-
-      } else {
-          return iterator_range<theta_iterator>(
-              theta_iterator(start,end,start),
-              ++theta_iterator(start,end,end)
-              );
-      }
-  }
-  */
 };
 
 } // namespace Aboria
