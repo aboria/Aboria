@@ -91,10 +91,10 @@ struct SymbolicExpr<SUBSCRIPT_TYPE>
     return *this;                                                              \
   }
 
-  DEFINE_THE_OP(std::plus<typename VariableType::value_type>, +=)
-  DEFINE_THE_OP(std::minus<typename VariableType::value_type>, -=)
-  DEFINE_THE_OP(std::divides<typename VariableType::value_type>, /=)
-  DEFINE_THE_OP(std::multiplies<typename VariableType::value_type>, *=)
+  DEFINE_THE_OP(std::plus<void>, +=)
+  DEFINE_THE_OP(std::minus<void>, -=)
+  DEFINE_THE_OP(std::divides<void>, /=)
+  DEFINE_THE_OP(std::multiplies<void>, *=)
   DEFINE_THE_OP(detail::return_second, =)
 
 private:

@@ -315,7 +315,7 @@ public:
          * advance velocity, position and calculate pdr2
          */
         v0[a] = v[a];
-        v[a] += if_else(fixed[a] == false, dt / 2 * dvdt[a], 0);
+        v[a] += if_else(fixed[a] == false, dt / 2.0, 0.0) * dvdt[a];
         pdr2[a] = prb * (pow(rho[a] / refd, gamma) - 1.0) / pow(rho[a], 2);
         p[a] += dt / 2 * v0[a];
 
@@ -347,7 +347,8 @@ public:
         /*
          * 1/2 -> 1 step for velocity
          */
-        v[a] = if_else(fixed[a] == false, v0[a] + dt / 2 * dvdt[a], 0);
+        v[a] = if_else(fixed[a] == false, v0[a] + dt / 2 * dvdt[a],
+                       vector(0, 0, 0));
 
         t += dt;
 

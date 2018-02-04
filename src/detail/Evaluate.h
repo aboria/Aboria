@@ -33,8 +33,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
-
 #ifndef EVALUATE_DETAIL_H_
 #define EVALUATE_DETAIL_H_
 
@@ -48,101 +46,94 @@ namespace detail {
 //
 
 struct return_second {
-    template <typename T1, typename T2>
-    const T2& operator()(const T1& ignored, const T2& to_return) { return to_return; }
+  template <typename T1, typename T2>
+  const T2 &operator()(const T1 &ignored, const T2 &to_return) {
+    return to_return;
+  }
 };
 
 template <typename LabelType>
 struct is_not_my_label
     : proto::and_<
-        proto::terminal<label<_,_>>
-        , proto::if_< mpl::not_<
-                boost::is_same< proto::_value, LabelType>>() >
-      >
-{};
+          proto::terminal<label<_, _>>,
+          proto::if_<mpl::not_<boost::is_same<proto::_value, LabelType>>()>> {};
 
 template <typename VariableType>
-struct is_my_symbol
-    : proto::terminal<symbolic<VariableType>>
-{};
+struct is_my_symbol : proto::terminal<symbolic<VariableType>> {};
 
 template <typename VariableType, typename LabelType>
 struct is_not_aliased
     : proto::or_<
-        proto::and_<
-            proto::terminal<proto::_>
-            ,proto::not_< 
-                proto::and_<
-                    proto::if_<boost::is_same<VariableType,
-                                       typename LabelType::particles_type::position>()>
-                    , proto::terminal<dx<_,_>>
-                >
-             >
-          >
-        , proto::and_<
-            proto::nary_expr< proto::_, proto::vararg<is_not_aliased<VariableType,LabelType>>>
-            ,proto::not_<proto::subscript<is_my_symbol<VariableType>,is_not_my_label<LabelType>>>
-          >
-      >
-{};
+          proto::and_<proto::terminal<proto::_>,
+                      proto::not_<proto::and_<
+                          proto::if_<boost::is_same<
+                              VariableType,
+                              typename LabelType::particles_type::position>()>,
+                          proto::terminal<dx<_, _>>>>>,
+          proto::and_<
+              proto::nary_expr<proto::_, proto::vararg<is_not_aliased<
+                                             VariableType, LabelType>>>,
+              proto::not_<proto::subscript<is_my_symbol<VariableType>,
+                                           is_not_my_label<LabelType>>>>> {};
 
 // expose alias checking for testing in metafunctions.h
-template< typename SymbolType, typename LabelType, typename ExprRHS  > 
+template <typename SymbolType, typename LabelType, typename ExprRHS>
 typename boost::enable_if<
-mpl::not_<
-    proto::matches<typename proto::result_of::as_expr<ExprRHS>::type, 
-        is_not_aliased<typename SymbolType::variable_type,typename LabelType::data_type>>
-        >
-,mpl::true_>::type
+    mpl::not_<proto::matches<typename proto::result_of::as_expr<ExprRHS>::type,
+                             is_not_aliased<typename SymbolType::variable_type,
+                                            typename LabelType::data_type>>>,
+    mpl::true_>::type
 alias_check(SymbolType const &, LabelType const &, ExprRHS const &) {
-    return mpl::true_();
+  return mpl::true_();
 }
 
 // expose alias checking for testing in metafunctions.h
-template< typename SymbolType, typename LabelType, typename ExprRHS  > 
+template <typename SymbolType, typename LabelType, typename ExprRHS>
 typename boost::enable_if<
-proto::matches<typename proto::result_of::as_expr<ExprRHS>::type, 
-        is_not_aliased<typename SymbolType::variable_type,typename LabelType::data_type>>
-,mpl::false_>::type
+    proto::matches<typename proto::result_of::as_expr<ExprRHS>::type,
+                   is_not_aliased<typename SymbolType::variable_type,
+                                  typename LabelType::data_type>>,
+    mpl::false_>::type
 alias_check(SymbolType const &, LabelType const &, ExprRHS const &) {
-    return mpl::false_();
+  return mpl::false_();
 }
 
-template< typename LabelType, typename ExprRHS>
-typename boost::enable_if<detail::is_univariate<ExprRHS>,void >::type
-check_valid_assign_expr(const LabelType& label, ExprRHS const & expr) {
-    typedef typename LabelType::particles_type particles_type;
-    typedef typename detail::result_of::get_labels<ExprRHS>::type rhs_labels_type; 
-    typedef typename fusion::result_of::at_c<rhs_labels_type,0>::type rhs_label_type_ref; 
-    typedef typename std::remove_cv<
-        typename std::remove_reference<rhs_label_type_ref>::type>::type rhs_label_type;
+template <typename LabelType, typename ExprRHS>
+typename boost::enable_if<detail::is_univariate<ExprRHS>, void>::type
+check_valid_assign_expr(const LabelType &label, ExprRHS const &expr) {
+  typedef typename LabelType::particles_type particles_type;
+  typedef typename detail::result_of::get_labels<ExprRHS>::type rhs_labels_type;
+  typedef typename fusion::result_of::at_c<rhs_labels_type, 0>::type
+      rhs_label_type_ref;
+  typedef typename std::remove_cv<
+      typename std::remove_reference<rhs_label_type_ref>::type>::type
+      rhs_label_type;
 
-    const rhs_label_type& rhs_label = fusion::at_c<0>(detail::get_labels()(expr,fusion::nil()));
-    static_assert(std::is_same<rhs_label_type,LabelType>::value,
-            "Labels on LHS and RHS of assign expression do not match");
-    particles_type& particles = label.get_particles();
-    const auto& particles_in_expr = rhs_label.get_particles();
-    CHECK(&particles_in_expr == &particles, 
-            "labels on LHS and RHS of assign expression do not refer to the same particles container");
+  const rhs_label_type &rhs_label =
+      fusion::at_c<0>(detail::get_labels()(expr, fusion::nil()));
+  static_assert(std::is_same<rhs_label_type, LabelType>::value,
+                "Labels on LHS and RHS of assign expression do not match");
+  particles_type &particles = label.get_particles();
+  const auto &particles_in_expr = rhs_label.get_particles();
+  CHECK(&particles_in_expr == &particles,
+        "labels on LHS and RHS of assign expression do not refer to the same "
+        "particles container");
 }
 
-template< typename ParticlesType, typename ExprRHS>
+template <typename ParticlesType, typename ExprRHS>
 typename boost::enable_if<
-    mpl::or_<
-        detail::is_const<ExprRHS>
-        ,detail::is_univariate_with_no_label<ExprRHS>
-        >
-        ,void >::type
-check_valid_assign_expr(const ParticlesType& particles, ExprRHS const & expr) {
+    mpl::or_<detail::is_const<ExprRHS>,
+             detail::is_univariate_with_no_label<ExprRHS>>,
+    void>::type
+check_valid_assign_expr(const ParticlesType &particles, ExprRHS const &expr) {}
+
+template <typename ParticlesType, typename ExprRHS>
+typename boost::enable_if<detail::is_bivariate<ExprRHS>, void>::type
+check_valid_assign_expr(const ParticlesType &particles, ExprRHS const &expr) {
+  static_assert(!detail::is_bivariate<ExprRHS>::value,
+                "asignment expression must be constant or univariate");
 }
 
-template< typename ParticlesType, typename ExprRHS>
-typename boost::enable_if<detail::is_bivariate<ExprRHS>,void >::type
-check_valid_assign_expr(const ParticlesType& particles, ExprRHS const & expr) {
-    static_assert(!detail::is_bivariate<ExprRHS>::value,"asignment expression must be constant or univariate");
-}
-
-
-}
-}
+} // namespace detail
+} // namespace Aboria
 #endif
