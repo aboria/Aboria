@@ -986,12 +986,12 @@ template <typename Traits> struct bucket_search_serial_query {
   ///
   /// @brief pointer to the find-by-id map key
   ///
-  int *m_id_map_key;
+  size_t *m_id_map_key;
 
   ///
   /// @brief pointer to the find-by-id map value
   ///
-  int *m_id_map_value;
+  size_t *m_id_map_value;
 
   ///
   /// @brief construcutor checks that we are not using std::vector and cuda
@@ -1020,8 +1020,8 @@ template <typename Traits> struct bucket_search_serial_query {
   CUDA_HOST_DEVICE
   raw_pointer find(const size_t id) const {
     const size_t n = number_of_particles();
-    int *last = m_id_map_key + n;
-    int *first = detail::lower_bound(m_id_map_key, last, id);
+    size_t *last = m_id_map_key + n;
+    size_t *first = detail::lower_bound(m_id_map_key, last, id);
     if ((first != last) && !(id < *first)) {
       return m_particles_begin + m_id_map_value[first - m_id_map_key];
     } else {

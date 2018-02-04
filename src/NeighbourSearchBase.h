@@ -141,6 +141,7 @@ public:
   typedef typename Traits::iterator iterator;
   typedef typename Traits::vector_unsigned_int vector_unsigned_int;
   typedef typename Traits::vector_int vector_int;
+  typedef typename Traits::vector_size_t vector_size_t;
   typedef typename Traits::reference reference;
   typedef typename Traits::raw_reference raw_reference;
 
@@ -573,13 +574,13 @@ protected:
   /// @brief The `key` vector of the id->index map for the find-by-id
   /// functionality
   ///
-  vector_int m_id_map_key;
+  vector_size_t m_id_map_key;
 
   ///
   /// @brief The `value` vector of the id->index map for the find-by-id
   /// functionality
   ///
-  vector_int m_id_map_value;
+  vector_size_t m_id_map_value;
 
   ///
   /// @brief flag set to `true` if find-by-id functionality is turned on

@@ -33,7 +33,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef ITERATORS_TESTS_H_
 #define ITERATORS_TESTS_H_
 
@@ -43,154 +42,161 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 using namespace Aboria;
 
-class IteratorsTest: public CxxTest::TestSuite {
+class IteratorsTest : public CxxTest::TestSuite {
 public:
+  typedef std::mt19937 generator_type;
+  generator_type generator;
 
-    typedef std::mt19937 generator_type;
-    generator_type generator;
-
-    void test_lattice_within_distance(void) {
-        using particles_t = Particles<std::tuple<>,1,std::vector,bucket_search_serial>;
-        using query_t = typename particles_t::query_type;
-        using position = typename particles_t::position;
-        particles_t particles(100);
-        std::uniform_real_distribution<double> uni(0,1);
-        for (auto& p: get<position>(particles)) {
-            p = uni(generator);
-        }
-        particles.init_neighbour_search(vdouble1(0),vdouble1(1),vbool1(false));
-
-        //   0    1    2    3    4    5    6     7    8   9
-        // |----|----|----|----|----|----|----|----|----|----|
-        // 0   0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0
-        
-        int count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point(vdouble1(0.5),0.05)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,2);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point(vdouble1(0.5),0.15)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,4);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point(vdouble1(0.1),0.15)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,3);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point(vdouble1(-0.1),0.05)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,0);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point(vdouble1(-0.1),0.15)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,1);
+  void test_lattice_within_distance(void) {
+    using particles_t =
+        Particles<std::tuple<>, 1, std::vector, bucket_search_serial>;
+    using position = typename particles_t::position;
+    particles_t particles(100);
+    std::uniform_real_distribution<double> uni(0, 1);
+    for (auto &p : get<position>(particles)) {
+      p[0] = uni(generator);
     }
+    particles.init_neighbour_search(
+        vdouble1::Constant(0), vdouble1::Constant(1), vbool1::Constant(false));
 
-    void test_lattice_within_distance_2d(void) {
-        using particles_t = Particles<std::tuple<>,2,std::vector,bucket_search_serial>;
-        using query_t = typename particles_t::query_type;
-        using position = typename particles_t::position;
-        particles_t particles(1000);
-        std::uniform_real_distribution<double> uni(0,1);
-        for (auto& p: get<position>(particles)) {
-            p = vdouble2(uni(generator),uni(generator));
-        }
-        particles.init_neighbour_search(vdouble2(0,0),vdouble2(1,1),vbool2(false,false));
+    //   0    1    2    3    4    5    6     7    8   9
+    // |----|----|----|----|----|----|----|----|----|----|
+    // 0   0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0
 
-        //       0    1    2    3    4    5    6     7    8   9
-        // 0.0 |----|----|----|----|----|----|----|----|----|----|
-        // 0.1 |----|----|----|----|----|----|----|----|----|----|
-        // 0.2 |----|----|----|----|----|----|----|----|----|----|
-        // 0.3 |----|----|----|----|----|----|----|----|----|----|
-        // 0.4 |----|----|----|----|----|----|----|----|----|----|
-        // 0.5 |----|----|----|----|----|----|----|----|----|----|
-        // 0.6 |----|----|----|----|----|----|----|----|----|----|
-        // 0.7 |----|----|----|----|----|----|----|----|----|----|
-        // 0.8 |----|----|----|----|----|----|----|----|----|----|
-        // 0.9 |----|----|----|----|----|----|----|----|----|----|
-        //     0   0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0
-        
-        int count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(0.5,0.5),0.05)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,4);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(0.5,0.5),0.1001)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,12);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(0.55,0.55),0.1001)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,9);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(0.55,0.55),0.049999)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,1);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(-0.001,0.001),2.0)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,100);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(-0.001,0.001),0.01)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,1);
-
-        count = 0;
-        for (auto& p: particles.get_query().get_buckets_near_point<2>(vdouble2(1.001,1.001),0.01)) {
-            ++count;
-            std::cout << p;
-        }
-        std::cout << std::endl;
-        TS_ASSERT_EQUALS(count,1);
-
-
-
-
+    int count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point(
+             vdouble1::Constant(0.5), 0.05)) {
+      ++count;
+      std::cout << p;
     }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 2);
 
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point(
+             vdouble1::Constant(0.5), 0.15)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 4);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point(
+             vdouble1::Constant(0.1), 0.15)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 3);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point(
+             vdouble1::Constant(-0.1), 0.05)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 0);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point(
+             vdouble1::Constant(-0.1), 0.15)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 1);
+  }
+
+  void test_lattice_within_distance_2d(void) {
+    using particles_t =
+        Particles<std::tuple<>, 2, std::vector, bucket_search_serial>;
+    using position = typename particles_t::position;
+    particles_t particles(1000);
+    std::uniform_real_distribution<double> uni(0, 1);
+    for (auto &p : get<position>(particles)) {
+      p = vdouble2(uni(generator), uni(generator));
+    }
+    particles.init_neighbour_search(vdouble2(0, 0), vdouble2(1, 1),
+                                    vbool2(false, false));
+
+    //       0    1    2    3    4    5    6     7    8   9
+    // 0.0 |----|----|----|----|----|----|----|----|----|----|
+    // 0.1 |----|----|----|----|----|----|----|----|----|----|
+    // 0.2 |----|----|----|----|----|----|----|----|----|----|
+    // 0.3 |----|----|----|----|----|----|----|----|----|----|
+    // 0.4 |----|----|----|----|----|----|----|----|----|----|
+    // 0.5 |----|----|----|----|----|----|----|----|----|----|
+    // 0.6 |----|----|----|----|----|----|----|----|----|----|
+    // 0.7 |----|----|----|----|----|----|----|----|----|----|
+    // 0.8 |----|----|----|----|----|----|----|----|----|----|
+    // 0.9 |----|----|----|----|----|----|----|----|----|----|
+    //     0   0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0
+
+    int count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point<2>(
+             vdouble2(0.5, 0.5), 0.05)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 4);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point<2>(
+             vdouble2(0.5, 0.5), 0.1001)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 12);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point<2>(
+             vdouble2(0.55, 0.55), 0.1001)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 9);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point<2>(
+             vdouble2(0.55, 0.55), 0.049999)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 1);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point<2>(
+             vdouble2(-0.001, 0.001), 2.0)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 100);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point<2>(
+             vdouble2(-0.001, 0.001), 0.01)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 1);
+
+    count = 0;
+    for (auto &p : particles.get_query().get_buckets_near_point<2>(
+             vdouble2(1.001, 1.001), 0.01)) {
+      ++count;
+      std::cout << p;
+    }
+    std::cout << std::endl;
+    TS_ASSERT_EQUALS(count, 1);
+  }
 };
 
-
-#endif 
+#endif

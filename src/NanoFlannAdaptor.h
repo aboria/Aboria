@@ -410,8 +410,8 @@ template <typename Traits> struct nanoflann_adaptor_query {
   value_type *m_root;
   value_type m_dummy_root;
 
-  int *m_id_map_key;
-  int *m_id_map_value;
+  size_t *m_id_map_key;
+  size_t *m_id_map_value;
 
   const box_type &get_bounds() const { return m_bounds; }
   const bool_d &get_periodic() const { return m_periodic; }
@@ -423,8 +423,8 @@ template <typename Traits> struct nanoflann_adaptor_query {
   CUDA_HOST_DEVICE
   raw_pointer find(const size_t id) const {
     const size_t n = number_of_particles();
-    int *last = m_id_map_key + n;
-    int *first = detail::lower_bound(m_id_map_key, last, id);
+    size_t *last = m_id_map_key + n;
+    size_t *first = detail::lower_bound(m_id_map_key, last, id);
     if ((first != last) && !(id < *first)) {
       return m_particles_begin + m_id_map_value[first - m_id_map_key];
     } else {
