@@ -40,9 +40,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <GL/glut.h>
 extern "C" {
+#include <h2arith.h>
 #include <h2matrix.h>
 #include <h2update.h>
-#include <h2arith.h>
 #include <harith.h>
 #include <hcoarsen.h>
 #undef I
@@ -51,826 +51,801 @@ extern "C" {
 namespace Aboria {
 
 class H2Lib_LR_Decomposition {
-    ph2matrix A;
-    ph2matrix L;
-    ph2matrix R;
-    ptruncmode tm;
-    double tol;
+  ph2matrix A;
+  ph2matrix L;
+  ph2matrix R;
+  ptruncmode tm;
+  double tol;
 
 public:
-    H2Lib_LR_Decomposition(const ph2matrix h2mat, const pblock broot, const double tol):
-        tm(new_releucl_truncmode()),tol(tol) {
+  H2Lib_LR_Decomposition(const ph2matrix h2mat, const pblock broot,
+                         const double tol)
+      : tm(new_releucl_truncmode()), tol(tol) {
 
-        pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
-        pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
-        A = clone_h2matrix(h2mat,rbcopy,cbcopy);
+    pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
+    pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
+    A = clone_h2matrix(h2mat, rbcopy, cbcopy);
 
-        pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
-        pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
+    pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
+    pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
 
-        pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
-        pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
-        pclusterbasis Rrcb = build_from_cluster_clusterbasis(A->rb->t);
-        pclusterbasis Rccb = build_from_cluster_clusterbasis(A->cb->t);
+    pclusterbasis Lrcb = build_from_cluster_clusterbasis(A->rb->t);
+    pclusterbasis Lccb = build_from_cluster_clusterbasis(A->cb->t);
+    pclusterbasis Rrcb = build_from_cluster_clusterbasis(A->rb->t);
+    pclusterbasis Rccb = build_from_cluster_clusterbasis(A->cb->t);
 
-        L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
-        R = build_from_block_upper_h2matrix(broot,Rrcb,Rccb);
+    L = build_from_block_lower_h2matrix(broot, Lrcb, Lccb);
+    R = build_from_block_upper_h2matrix(broot, Rrcb, Rccb);
 
-        pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
-        pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
-        pclusteroperator Rrwf = prepare_row_clusteroperator(R->rb, R->cb, tm);
-        pclusteroperator Rcwf = prepare_col_clusteroperator(R->rb, R->cb, tm);
+    pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
+    pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
+    pclusteroperator Rrwf = prepare_row_clusteroperator(R->rb, R->cb, tm);
+    pclusteroperator Rcwf = prepare_col_clusteroperator(R->rb, R->cb, tm);
 
-        lrdecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, R, Rrwf, Rcwf, tm, tol);
-    }
+    lrdecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, R, Rrwf, Rcwf, tm, tol);
+  }
 
-    ~H2Lib_LR_Decomposition() {
-        del_h2matrix(L);
-        del_h2matrix(R);
-        del_h2matrix(A);
-    }
+  ~H2Lib_LR_Decomposition() {
+    del_h2matrix(L);
+    del_h2matrix(R);
+    del_h2matrix(A);
+  }
 
-    //TODO: match eigen's interface for solver
-    /*
-    template <typename DerivedRHS>
-    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
-                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
-        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
+  // TODO: match eigen's interface for solver
+  /*
+  template <typename DerivedRHS>
+  void solve(const Eigen::DenseBase<DerivedRHS> &source,
+                   Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
+      ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take
+  vectors");
 
-        dest = source;
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
-        lrsolve_h2matrix_avector(L,R,x);
-    }
-    */
+      dest = source;
+      pavector x = new_pointer_avector(
+                         dest.data(),
+                         dest.size());
+      lrsolve_h2matrix_avector(L,R,x);
+  }
+  */
 
-    template <typename T1, typename T2>
-    void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
-        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T2> traitsT2;
+  template <typename T1, typename T2>
+  void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
+    static_assert(std::is_standard_layout<T2>::value,
+                  "T2 must be standard layout");
+    typedef typename detail::VectorTraits<T2> traitsT2;
 
-        detail::copy(std::begin(source),std::end(source),std::begin(dest));
+    detail::copy(std::begin(source), std::end(source), std::begin(dest));
 
-        pavector dest_avector = new_pointer_avector(
-                                    reinterpret_cast<double*>(dest.data()),
-                                    dest.size()*traitsT2::length);
+    pavector dest_avector =
+        new_pointer_avector(reinterpret_cast<double *>(dest.data()),
+                            dest.size() * traitsT2::length);
 
-        lrsolve_h2matrix_avector(L,R,dest_avector);
-    }
+    lrsolve_h2matrix_avector(L, R, dest_avector);
+  }
 };
 
 class H2LibCholeskyDecomposition {
-    ph2matrix A;
-    ph2matrix L;
-    ptruncmode tm;
-    double tol;
+  ph2matrix A;
+  ph2matrix L;
+  ptruncmode tm;
+  double tol;
 
 public:
-    H2LibCholeskyDecomposition(const ph2matrix h2mat, const pblock broot, const double tol):
-        tm(new_releucl_truncmode()),tol(tol) {
+  H2LibCholeskyDecomposition(const ph2matrix h2mat, const pblock broot,
+                             const double tol)
+      : tm(new_releucl_truncmode()), tol(tol) {
 
-        pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
-        pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
-        A = clone_h2matrix(h2mat,rbcopy,cbcopy);
+    pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
+    pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
+    A = clone_h2matrix(h2mat, rbcopy, cbcopy);
 
-        pclusterbasis Lrcb = build_from_cluster_clusterbasis(h2mat->rb->t);
-        pclusterbasis Lccb = build_from_cluster_clusterbasis(h2mat->rb->t);
-        ASSERT_CUDA(h2mat->rb->t == h2mat->cb->t);
+    pclusterbasis Lrcb = build_from_cluster_clusterbasis(h2mat->rb->t);
+    pclusterbasis Lccb = build_from_cluster_clusterbasis(h2mat->rb->t);
+    ASSERT_CUDA(h2mat->rb->t == h2mat->cb->t);
 
-        L = build_from_block_lower_h2matrix(broot,Lrcb,Lccb);
+    L = build_from_block_lower_h2matrix(broot, Lrcb, Lccb);
 
-        pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
-        pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
+    pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
+    pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
 
-        pclusteroperator Arwf = nullptr;
-        pclusteroperator Acwf = nullptr;
-        init_cholesky_h2matrix(A, &Arwf, &Acwf, tm);
+    pclusteroperator Arwf = nullptr;
+    pclusteroperator Acwf = nullptr;
+    init_cholesky_h2matrix(A, &Arwf, &Acwf, tm);
 
-        choldecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, tm, tol);
+    choldecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, tm, tol);
 
-        /*
-        pclusteroperator rwfh2 = prepare_row_clusteroperator(A->rb, A->cb, tm);
-        pclusteroperator cwfh2 = prepare_col_clusteroperator(A->rb, A->cb, tm);
-        const double error = norm2_h2matrix(A);
-        addmul_h2matrix(-1.0, L, true, L, A, rwfh2, cwfh2, tm, tol);
-        std::cout << "error in factorisation is "<<norm2_h2matrix(A)/error<<std::endl;
-        */
-    }
-
-    ~H2LibCholeskyDecomposition() {
-        del_h2matrix(L);
-        del_h2matrix(A);
-    }
-
-    //TODO: match eigen's interface for solver
     /*
-    template <typename DerivedRHS>
-    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
-                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
-        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
-        dest = source;
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
-        cholsolve_h2matrix_avector(L,x);
-    }
+    pclusteroperator rwfh2 = prepare_row_clusteroperator(A->rb, A->cb, tm);
+    pclusteroperator cwfh2 = prepare_col_clusteroperator(A->rb, A->cb, tm);
+    const double error = norm2_h2matrix(A);
+    addmul_h2matrix(-1.0, L, true, L, A, rwfh2, cwfh2, tm, tol);
+    std::cout << "error in factorisation is
+    "<<norm2_h2matrix(A)/error<<std::endl;
     */
+  }
 
-    template <typename T1, typename T2>
-    void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
-        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T2> traitsT2;
+  ~H2LibCholeskyDecomposition() {
+    del_h2matrix(L);
+    del_h2matrix(A);
+  }
 
-        detail::copy(std::begin(source),std::end(source),std::begin(dest));
+  // TODO: match eigen's interface for solver
+  /*
+  template <typename DerivedRHS>
+  void solve(const Eigen::DenseBase<DerivedRHS> &source,
+                   Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
+      ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take
+  vectors"); dest = source; pavector x = new_pointer_avector( dest.data(),
+                         dest.size());
+      cholsolve_h2matrix_avector(L,x);
+  }
+  */
 
-        pavector dest_avector = new_pointer_avector(
-                                    reinterpret_cast<double*>(dest.data()),
-                                    dest.size()*traitsT2::length);
+  template <typename T1, typename T2>
+  void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
+    static_assert(std::is_standard_layout<T2>::value,
+                  "T2 must be standard layout");
+    typedef typename detail::VectorTraits<T2> traitsT2;
 
-        cholsolve_h2matrix_avector(L,dest_avector);
-    }
+    detail::copy(std::begin(source), std::end(source), std::begin(dest));
 
+    pavector dest_avector =
+        new_pointer_avector(reinterpret_cast<double *>(dest.data()),
+                            dest.size() * traitsT2::length);
+
+    cholsolve_h2matrix_avector(L, dest_avector);
+  }
 };
 
 class HLib_LR_Decomposition {
-    phmatrix A;
-    ptruncmode tm;
-    double tol;
+  phmatrix A;
+  ptruncmode tm;
+  double tol;
 
 public:
-    HLib_LR_Decomposition(const phmatrix hmat, const double tol):
-        tm(new_releucl_truncmode()),tol(tol) {
-        A = clone_hmatrix(hmat);
-        lrdecomp_hmatrix(A, tm, tol);
-    }
+  HLib_LR_Decomposition(const phmatrix hmat, const double tol)
+      : tm(new_releucl_truncmode()), tol(tol) {
+    A = clone_hmatrix(hmat);
+    lrdecomp_hmatrix(A, tm, tol);
+  }
 
-    ~HLib_LR_Decomposition() {
-        del_hmatrix(A);
-    }
+  ~HLib_LR_Decomposition() { del_hmatrix(A); }
 
-    //TODO: match eigen's interface for solver
-    /*
-    template <typename DerivedRHS>
-    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
-                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
-        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
-        dest = source;
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
-        lrsolve_hmatrix_avector(false,A,x);
-    }
-    */
+  // TODO: match eigen's interface for solver
+  /*
+  template <typename DerivedRHS>
+  void solve(const Eigen::DenseBase<DerivedRHS> &source,
+                   Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
+      ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take
+  vectors"); dest = source; pavector x = new_pointer_avector( dest.data(),
+                         dest.size());
+      lrsolve_hmatrix_avector(false,A,x);
+  }
+  */
 
-    template <typename T1, typename T2>
-    void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
-        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T2> traitsT2;
+  template <typename T1, typename T2>
+  void solve(const std::vector<T1> &source, std::vector<T2> &dest) {
+    static_assert(std::is_standard_layout<T2>::value,
+                  "T2 must be standard layout");
+    typedef typename detail::VectorTraits<T2> traitsT2;
 
-        detail::copy(std::begin(source),std::end(source),std::begin(dest));
+    detail::copy(std::begin(source), std::end(source), std::begin(dest));
 
-        pavector dest_avector = new_pointer_avector(
-                                    reinterpret_cast<double*>(dest.data()),
-                                    dest.size()*traitsT2::length);
+    pavector dest_avector =
+        new_pointer_avector(reinterpret_cast<double *>(dest.data()),
+                            dest.size() * traitsT2::length);
 
-        lrsolve_hmatrix_avector(false,A,dest_avector);
-    }
-
+    lrsolve_hmatrix_avector(false, A, dest_avector);
+  }
 };
 
 class HLibCholeskyDecomposition {
-    phmatrix A;
-    ptruncmode tm;
-    double tol;
+  phmatrix A;
+  ptruncmode tm;
+  double tol;
 
 public:
-    HLibCholeskyDecomposition(const phmatrix hmat, const double tol):
-        tm(new_abseucl_truncmode()),tol(tol) {
+  HLibCholeskyDecomposition(const phmatrix hmat, const double tol)
+      : tm(new_abseucl_truncmode()), tol(tol) {
 
-        A = clone_hmatrix(hmat);
-        choldecomp_hmatrix(A, tm, tol);
-    }
+    A = clone_hmatrix(hmat);
+    choldecomp_hmatrix(A, tm, tol);
+  }
 
-    ~HLibCholeskyDecomposition() {
-        del_hmatrix(A);
-    }
+  ~HLibCholeskyDecomposition() { del_hmatrix(A); }
 
-    //TODO: match eigen's interface for solver
-    template <typename DerivedRHS>
-    void solve(const Eigen::DenseBase<DerivedRHS> &source, 
-                     Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
-        ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors");
+  // TODO: match eigen's interface for solver
+  template <typename DerivedRHS>
+  void solve(const Eigen::DenseBase<DerivedRHS> &source,
+             Eigen::Matrix<double, Eigen::Dynamic, 1> &dest) {
+    ASSERT(source.cols() == 1 || source.rows() == 1, "solve must take vectors");
 
-        dest = source;
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
-        cholsolve_hmatrix_avector(A,x);
-    }
+    dest = source;
+    pavector x = new_pointer_avector(dest.data(), dest.size());
+    cholsolve_hmatrix_avector(A, x);
+  }
 
-    template <typename T>
-    void solve(const std::vector<T> &source, std::vector<double> &dest) {
-        detail::copy(std::begin(source),std::end(source),std::begin(dest));
-        pavector x = new_pointer_avector(
-                           dest.data(),
-                           dest.size());
-        cholsolve_hmatrix_avector(A,x);
-    }
-    
+  template <typename T>
+  void solve(const std::vector<T> &source, std::vector<double> &dest) {
+    detail::copy(std::begin(source), std::end(source), std::begin(dest));
+    pavector x = new_pointer_avector(dest.data(), dest.size());
+    cholsolve_hmatrix_avector(A, x);
+  }
 };
-
-
-
-
 
 class H2LibMatrix {
 
-    std::unique_ptr<h2matrix,decltype(&del_h2matrix)> m_h2;
-    std::unique_ptr<block,decltype(&del_block)> m_block;
-    std::vector<uint> m_row_idx;
-    std::vector<uint> m_col_idx;
+  std::unique_ptr<h2matrix, decltype(&del_h2matrix)> m_h2;
+  std::unique_ptr<block, decltype(&del_block)> m_block;
+  std::vector<uint> m_row_idx;
+  std::vector<uint> m_col_idx;
 
-template <typename Particles,typename Expansions>
-static void
-assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
-{
-    auto& data_cast = *static_cast<
-        std::tuple<Expansions*,Particles*>*>(data);
+  template <typename Particles, typename Expansions>
+  static void assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname,
+                                                 void *data) {
+    auto &data_cast =
+        *static_cast<std::tuple<Expansions *, Particles *> *>(data);
 
-    const Expansions& expansions = *std::get<0>(data_cast);
-    const Particles& particles = *std::get<1>(data_cast);
-    pclusterbasis rb = (pclusterbasis) rbc;
+    const Expansions &expansions = *std::get<0>(data_cast);
+    const Particles &particles = *std::get<1>(data_cast);
+    pclusterbasis rb = (pclusterbasis)rbc;
 
-    const uint k = expansions.m_ncheb*expansions.block_rows;
+    const uint k = expansions.m_ncheb * expansions.block_rows;
     if (rb->sons > 0) {
-        resize_clusterbasis(rb,k);
-        for (size_t i = 0; i < rb->sons; ++i) {
-            expansions.L2L_amatrix(&rb->son[i]->E,rb->son[i]->t,rb->t);
-        }
+      resize_clusterbasis(rb, k);
+      for (size_t i = 0; i < rb->sons; ++i) {
+        expansions.L2L_amatrix(&rb->son[i]->E, rb->son[i]->t, rb->t);
+      }
     } else {
-        resize_amatrix(&rb->V,rb->t->size,k);
-        expansions.L2P_amatrix(&rb->V,rb->t,rb->t->idx,rb->t->size,particles);
-        rb->k = k;
-        update_clusterbasis(rb);
+      resize_amatrix(&rb->V, rb->t->size, k);
+      expansions.L2P_amatrix(&rb->V, rb->t, rb->t->idx, rb->t->size, particles);
+      rb->k = k;
+      update_clusterbasis(rb);
     }
-}
+  }
 
-template <typename Particles,typename Expansions>
-static void
-assemble_h2matrix_col_clusterbasis(pcclusterbasis rbc, uint rname, void *data)
-{
-    auto& data_cast = *static_cast<
-        std::tuple<Expansions*,Particles*>*>(data);
+  template <typename Particles, typename Expansions>
+  static void assemble_h2matrix_col_clusterbasis(pcclusterbasis rbc, uint rname,
+                                                 void *data) {
+    auto &data_cast =
+        *static_cast<std::tuple<Expansions *, Particles *> *>(data);
 
-    const Expansions& expansions = *std::get<0>(data_cast);
-    const Particles& particles = *std::get<1>(data_cast);
-    pclusterbasis rb = (pclusterbasis) rbc;
+    const Expansions &expansions = *std::get<0>(data_cast);
+    const Particles &particles = *std::get<1>(data_cast);
+    pclusterbasis rb = (pclusterbasis)rbc;
 
-    const uint k = expansions.m_ncheb*expansions.block_cols;
+    const uint k = expansions.m_ncheb * expansions.block_cols;
     if (rb->sons > 0) {
-        resize_clusterbasis(rb,k);
-        for (size_t i = 0; i < rb->sons; ++i) {
-            // should this be transposed?
-            expansions.M2M_trans_amatrix(&rb->son[i]->E,rb->t,rb->son[i]->t);
-        }
+      resize_clusterbasis(rb, k);
+      for (size_t i = 0; i < rb->sons; ++i) {
+        // should this be transposed?
+        expansions.M2M_trans_amatrix(&rb->son[i]->E, rb->t, rb->son[i]->t);
+      }
     } else {
-        resize_amatrix(&rb->V,rb->t->size,k);
-        expansions.P2M_trans_amatrix(&rb->V,rb->t,rb->t->idx,rb->t->size,particles);
-        rb->k = k;
-        update_clusterbasis(rb);
+      resize_amatrix(&rb->V, rb->t->size, k);
+      expansions.P2M_trans_amatrix(&rb->V, rb->t, rb->t->idx, rb->t->size,
+                                   particles);
+      rb->k = k;
+      update_clusterbasis(rb);
     }
-}
+  }
 
-template <typename RowParticles,typename ColParticles,typename Expansions,typename Kernel>
-static void
-assemble_block_h2matrix(pcblock b, uint bname,
-				    uint rname, uint cname, uint pardepth,
-				    void *data)
-{
-    auto& data_cast = *static_cast<
-        std::tuple<Expansions*,Kernel*,RowParticles*,ColParticles*,ph2matrix*>*>(data);
+  template <typename RowParticles, typename ColParticles, typename Expansions,
+            typename Kernel>
+  static void assemble_block_h2matrix(pcblock b, uint bname, uint rname,
+                                      uint cname, uint pardepth, void *data) {
+    auto &data_cast =
+        *static_cast<std::tuple<Expansions *, Kernel *, RowParticles *,
+                                ColParticles *, ph2matrix *> *>(data);
 
-    const Expansions& expansions = *std::get<0>(data_cast);
-    const Kernel& kernel = *std::get<1>(data_cast);
-    const RowParticles& row_particles = *std::get<2>(data_cast);
-    const ColParticles& col_particles = *std::get<3>(data_cast);
-    ph2matrix* enum_h2 = std::get<4>(data_cast);
+    const Expansions &expansions = *std::get<0>(data_cast);
+    const Kernel &kernel = *std::get<1>(data_cast);
+    const RowParticles &row_particles = *std::get<2>(data_cast);
+    const ColParticles &col_particles = *std::get<3>(data_cast);
+    ph2matrix *enum_h2 = std::get<4>(data_cast);
     ph2matrix h2 = enum_h2[bname];
 
     if (h2->u) {
-        const uint kr = h2->u->rb->k;
-        const uint kc = h2->u->cb->k;
-        resize_amatrix(&h2->u->S,kr,kc);
-        expansions.M2L_amatrix(&h2->u->S,h2->u->rb->t,h2->u->cb->t);
+      const uint kr = h2->u->rb->k;
+      const uint kc = h2->u->cb->k;
+      resize_amatrix(&h2->u->S, kr, kc);
+      expansions.M2L_amatrix(&h2->u->S, h2->u->rb->t, h2->u->cb->t);
 
     } else if (h2->f) {
-        detail::P2P_amatrix(h2->f,
-                h2->rb->t->idx,h2->rb->t->size,
-                h2->cb->t->idx,h2->cb->t->size,
-                row_particles,col_particles,kernel);
+      detail::P2P_amatrix(h2->f, h2->rb->t->idx, h2->rb->t->size,
+                          h2->cb->t->idx, h2->cb->t->size, row_particles,
+                          col_particles, kernel);
     }
-
   }
 
 public:
+  template <typename RowParticles, typename ColParticles, typename Expansions,
+            typename Kernel>
+  H2LibMatrix(const RowParticles &row_particles,
+              const ColParticles &col_particles, const Expansions &expansions,
+              const Kernel &kernel, const double eta)
+      : m_h2(nullptr, del_h2matrix), m_block(nullptr, del_block) {
 
-    template <typename RowParticles, typename ColParticles, typename Expansions, typename Kernel>
-    H2LibMatrix(const RowParticles &row_particles, 
-                const ColParticles &col_particles, 
-                const Expansions& expansions,
-                const Kernel& kernel, 
-                const double eta):
-            m_h2(nullptr,del_h2matrix),
-            m_block(nullptr,del_block) {
+    // generate h2 matrix
+    LOG(2, "H2LibMatrix: creating h2 matrix using "
+               << row_particles.size() << " row particles and "
+               << col_particles.size()
+               << " column particles and eta = " << eta);
 
-        //generate h2 matrix 
-        LOG(2,"H2LibMatrix: creating h2 matrix using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles and eta = "<<eta);
+    const bool row_equals_col = static_cast<const void *>(&row_particles) ==
+                                static_cast<const void *>(&col_particles);
 
-        const bool row_equals_col = static_cast<const void*>(&row_particles) 
-                                        == static_cast<const void*>(&col_particles);
+    //
+    // Create row clusters and clusterbasis
+    //
+    m_row_idx.resize(row_particles.size() * expansions.block_rows);
+    pcluster row_t =
+        set_root_idx(m_row_idx.data(), row_particles, expansions.block_rows);
+    pclusterbasis row_cb = build_from_cluster_clusterbasis(row_t);
+    auto data_row = std::make_tuple(&expansions, &row_particles);
+    iterate_parallel_clusterbasis(
+        row_cb, 0, max_pardepth, NULL,
+        assemble_h2matrix_row_clusterbasis<RowParticles, Expansions>,
+        &data_row);
 
-        //
-        // Create row clusters and clusterbasis
-        //
-        m_row_idx.resize(row_particles.size()*expansions.block_rows);
-        pcluster row_t = set_root_idx(m_row_idx.data(),row_particles,expansions.block_rows);
-        pclusterbasis row_cb = build_from_cluster_clusterbasis(row_t);
-        auto data_row = std::make_tuple(&expansions,&row_particles);
-        iterate_parallel_clusterbasis(row_cb, 0, max_pardepth, NULL,
-                assemble_h2matrix_row_clusterbasis<RowParticles,Expansions>,
-				&data_row);
-
-
-        //
-        // Create col clusters and clusterbasis
-        //
-        pcluster col_t;
-        if (row_equals_col && expansions.block_rows==expansions.block_cols) {
-            col_t = row_t;
-        } else {
-            m_col_idx.resize(col_particles.size()*expansions.block_cols);
-            col_t = set_root_idx(m_col_idx.data(),col_particles,expansions.block_cols);
-        }
-        pclusterbasis col_cb = build_from_cluster_clusterbasis(col_t);
-        auto data_col = std::make_tuple(&expansions,&col_particles);
-        iterate_parallel_clusterbasis(col_cb, 0, max_pardepth, NULL,
-                assemble_h2matrix_col_clusterbasis<ColParticles,Expansions>,
-				&data_col);
-
-        // 
-        // create h2 block
-        //
-        double eta_copy = eta;
-        m_block = std::unique_ptr<block,decltype(&del_block)>(
-                build_strict_block(row_t,col_t,&eta_copy,admissible_max_cluster),
-                del_block);
-
-        /*
-        int argc = 1;
-        char name[10] = "test";
-        char *argv[1];
-        argv[0] = name;
-        glutInit(&argc, argv);
-        view_block(m_block.get());
-        */
-
-        m_h2 = std::unique_ptr<h2matrix,decltype(&del_h2matrix)>(
-                    build_from_block_h2matrix(m_block.get(),row_cb,col_cb),
-                    del_h2matrix);
-        ph2matrix* enum_h2mat = enumerate_h2matrix(m_h2.get());
-        auto data_h2 = std::make_tuple(&expansions,&kernel,&row_particles,
-                                    &col_particles,enum_h2mat);
-        iterate_byrow_block(m_block.get(), 0, 0, 0, max_pardepth, NULL,
-		      assemble_block_h2matrix<RowParticles,ColParticles,Expansions,Kernel>, 
-              &data_h2);
-        freemem(enum_h2mat);
-
+    //
+    // Create col clusters and clusterbasis
+    //
+    pcluster col_t;
+    if (row_equals_col && expansions.block_rows == expansions.block_cols) {
+      col_t = row_t;
+    } else {
+      m_col_idx.resize(col_particles.size() * expansions.block_cols);
+      col_t =
+          set_root_idx(m_col_idx.data(), col_particles, expansions.block_cols);
     }
+    pclusterbasis col_cb = build_from_cluster_clusterbasis(col_t);
+    auto data_col = std::make_tuple(&expansions, &col_particles);
+    iterate_parallel_clusterbasis(
+        col_cb, 0, max_pardepth, NULL,
+        assemble_h2matrix_col_clusterbasis<ColParticles, Expansions>,
+        &data_col);
 
-    void compress(const double tol) {
-        //ptruncmode tm = new_releucl_truncmode();
-        ptruncmode tm = new_blockreleucl_truncmode();
-        recompress_inplace_h2matrix(m_h2.get(),tm,tol);
-    }
+    //
+    // create h2 block
+    //
+    double eta_copy = eta;
+    m_block = std::unique_ptr<block, decltype(&del_block)>(
+        build_strict_block(row_t, col_t, &eta_copy, admissible_max_cluster),
+        del_block);
 
+    /*
+    int argc = 1;
+    char name[10] = "test";
+    char *argv[1];
+    argv[0] = name;
+    glutInit(&argc, argv);
+    view_block(m_block.get());
+    */
+
+    m_h2 = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
+        build_from_block_h2matrix(m_block.get(), row_cb, col_cb), del_h2matrix);
+    ph2matrix *enum_h2mat = enumerate_h2matrix(m_h2.get());
+    auto data_h2 = std::make_tuple(&expansions, &kernel, &row_particles,
+                                   &col_particles, enum_h2mat);
+    iterate_byrow_block(
+        m_block.get(), 0, 0, 0, max_pardepth, NULL,
+        assemble_block_h2matrix<RowParticles, ColParticles, Expansions, Kernel>,
+        &data_h2);
+    freemem(enum_h2mat);
+  }
+
+  void compress(const double tol) {
+    // ptruncmode tm = new_releucl_truncmode();
+    ptruncmode tm = new_blockreleucl_truncmode();
+    recompress_inplace_h2matrix(m_h2.get(), tm, tol);
+  }
 
 private:
-
-    template <typename Particles>
-    pcluster set_root_idx(uint* idx, const Particles& particles, const size_t block_size) {
-        uint *old_idx = idx;
-        const uint dim = Particles::dimension;
-        size_t sons = 0;
-        for (auto ci_child = particles.get_query().get_children(); 
-                ci_child != false; ++ci_child,++sons) {
-        }
-        pcluster t = new_cluster(0,old_idx,sons,dim);
-        size_t i = 0;
-        for (auto ci_child = particles.get_query().get_children(); 
-                ci_child != false; ++ci_child,++i) {
-            t->son[i] = set_idx(ci_child,idx,particles,block_size);
-            idx += t->son[i]->size;
-        }
-        t->size = idx-old_idx;
-        // bounding box
-        for (size_t i = 0; i < dim; ++i) {
-            t->bmin[i] = particles.get_min()[i];
-            t->bmax[i] = particles.get_max()[i];
-        }
-        update_cluster(t);
-        return t;
+  template <typename Particles>
+  pcluster set_root_idx(uint *idx, const Particles &particles,
+                        const size_t block_size) {
+    uint *old_idx = idx;
+    const uint dim = Particles::dimension;
+    size_t sons = 0;
+    for (auto ci_child = particles.get_query().get_children();
+         ci_child != false; ++ci_child, ++sons) {
     }
+    pcluster t = new_cluster(0, old_idx, sons, dim);
+    size_t i = 0;
+    for (auto ci_child = particles.get_query().get_children();
+         ci_child != false; ++ci_child, ++i) {
+      t->son[i] = set_idx(ci_child, idx, particles, block_size);
+      idx += t->son[i]->size;
+    }
+    t->size = idx - old_idx;
+    // bounding box
+    for (size_t i = 0; i < dim; ++i) {
+      t->bmin[i] = particles.get_min()[i];
+      t->bmax[i] = particles.get_max()[i];
+    }
+    update_cluster(t);
+    return t;
+  }
 
-    template <typename ChildIterator, typename Particles>
-    pcluster set_idx(const ChildIterator ci, uint* idx,const Particles& particles, const size_t block_size) {
-        uint *old_idx = idx;
-        const uint dim = Particles::dimension;
-        pcluster t;
-        if (particles.get_query().is_leaf_node(*ci)) { // leaf node
-            const auto& prange = particles.get_query().get_bucket_particles(*ci);
-            for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
-                const size_t pi = &(get<typename Particles::position>(*pit))
-                    - &get<typename Particles::position>(particles)[0];
-                for (size_t i = 0; i < block_size; ++i,++idx) {
-                    *idx = pi*block_size+i;
-                }
-            }
-            //if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
-            t = new_cluster(idx-old_idx,old_idx,0,dim);
+  template <typename ChildIterator, typename Particles>
+  pcluster set_idx(const ChildIterator ci, uint *idx,
+                   const Particles &particles, const size_t block_size) {
+    uint *old_idx = idx;
+    const uint dim = Particles::dimension;
+    pcluster t;
+    if (particles.get_query().is_leaf_node(*ci)) { // leaf node
+      const auto &prange = particles.get_query().get_bucket_particles(*ci);
+      for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
+        const size_t pi = &(get<typename Particles::position>(*pit)) -
+                          &get<typename Particles::position>(particles)[0];
+        for (size_t i = 0; i < block_size; ++i, ++idx) {
+          *idx = pi * block_size + i;
+        }
+      }
+      // if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
+      t = new_cluster(idx - old_idx, old_idx, 0, dim);
+    } else {
+      size_t sons = 0;
+      for (auto ci_child = particles.get_query().get_children(ci);
+           ci_child != false; ++ci_child, ++sons) {
+      }
+      t = new_cluster(0, old_idx, sons, dim);
+      size_t i = 0;
+      for (auto ci_child = particles.get_query().get_children(ci);
+           ci_child != false; ++ci_child, ++i) {
+        pcluster child_t = set_idx(ci_child, idx, particles, block_size);
+        if (child_t->size > 0) {
+          t->son[i] = child_t;
+          idx += child_t->size;
         } else {
-            size_t sons = 0;
-            for (auto ci_child = particles.get_query().get_children(ci); 
-                      ci_child != false; ++ci_child,++sons) {
-            }
-            t = new_cluster(0,old_idx,sons,dim);
-            size_t i = 0;
-            for (auto ci_child = particles.get_query().get_children(ci); 
-                      ci_child != false; ++ci_child,++i) {
-                pcluster child_t = set_idx(ci_child,idx,particles,block_size);
-                if (child_t->size > 0) {
-                    t->son[i] = child_t;
-                    idx += child_t->size;
-                } else {
-                    del_cluster(child_t);
-                    --i;
-                    --(t->sons);
-                }
-            }
-            t->size = idx - old_idx;
+          del_cluster(child_t);
+          --i;
+          --(t->sons);
         }
-        // bounding box
-        const auto& bbox = particles.get_query().get_bounds(ci);
-        for (size_t i = 0; i < dim; ++i) {
-            t->bmin[i] = bbox.bmin[i];
-            t->bmax[i] = bbox.bmax[i];
-        }
-        update_cluster(t);
-        return t;
+      }
+      t->size = idx - old_idx;
     }
-
+    // bounding box
+    const auto &bbox = particles.get_query().get_bounds(ci);
+    for (size_t i = 0; i < dim; ++i) {
+      t->bmin[i] = bbox.bmin[i];
+      t->bmax[i] = bbox.bmax[i];
+    }
+    update_cluster(t);
+    return t;
+  }
 
 public:
+  const ph2matrix get_ph2matrix() const { return m_h2.get(); }
 
-    const ph2matrix get_ph2matrix() const {
-        return m_h2.get();
+  const pblock get_pblock() const { return m_block.get(); }
+
+  H2Lib_LR_Decomposition lr(const double tol) const {
+    return H2Lib_LR_Decomposition(get_ph2matrix(), m_block.get(), tol);
+  }
+
+  H2LibCholeskyDecomposition chol(const double tol) const {
+    return H2LibCholeskyDecomposition(get_ph2matrix(), m_block.get(), tol);
+  }
+
+  // target_vector += alpha*A*source_vector or alpha*A'*source_vector
+  template <typename T1, typename T2>
+  void matrix_vector_multiply(std::vector<T1> &target_vector,
+                              const double alpha, const bool h2trans,
+                              const std::vector<T2> &source_vector) const {
+    static_assert(std::is_standard_layout<T1>::value,
+                  "T1 must be standard layout");
+    static_assert(std::is_standard_layout<T2>::value,
+                  "T2 must be standard layout");
+    typedef typename detail::VectorTraits<T1> traitsT1;
+    typedef typename detail::VectorTraits<T2> traitsT2;
+
+    pavector source_avector = new_pointer_avector(
+        const_cast<double *>(
+            reinterpret_cast<const double *>(source_vector.data())),
+        source_vector.size() * traitsT1::length);
+    // std::cout << "source: "<<source_vector[0]<<" versus
+    // "<<getentry_avector(source_avector,0)<<std::endl;
+    pavector target_avector =
+        new_pointer_avector(reinterpret_cast<double *>(target_vector.data()),
+                            target_vector.size() * traitsT2::length);
+    /*
+    for(int i=0; i<5; ++i) {
+        std::cout << "target: "<<target_vector[i]<<" versus
+    "<<getentry_avector(target_avector,i*2)<<std::endl;
+        //std::cout << "target: "<<target_vector[i][1]<<" versus
+    "<<getentry_avector(target_avector,i*2+1)<<std::endl;
     }
-
-    const pblock get_pblock() const {
-        return m_block.get();
+    */
+    mvm_h2matrix_avector(alpha, h2trans, m_h2.get(), source_avector,
+                         target_avector);
+    /*
+    for(int i=0; i<5; ++i) {
+        std::cout << "after target: "<<target_vector[i]<<" versus
+    "<<getentry_avector(target_avector,i*2)<<std::endl;
+        //std::cout << "after target: "<<target_vector[i][1]<<" versus
+    "<<getentry_avector(target_avector,i*2+1)<<std::endl;
     }
+    */
+  }
 
-    H2Lib_LR_Decomposition lr(const double tol) const {
-        return H2Lib_LR_Decomposition(get_ph2matrix(),m_block.get(),tol);
-    }
+  template <typename T1, typename T2>
+  void matrix_vector_multiply(Eigen::DenseBase<T1> &target_vector,
+                              const double alpha, const bool h2trans,
+                              const Eigen::DenseBase<T2> &source_vector) const {
 
-    H2LibCholeskyDecomposition chol(const double tol) const {
-        return H2LibCholeskyDecomposition(get_ph2matrix(),m_block.get(),tol);
-    }
+    pavector source_avector = new_pointer_avector(
+        const_cast<double *>(source_vector.derived().data()),
+        source_vector.size());
 
-    // target_vector += alpha*A*source_vector or alpha*A'*source_vector
-    template <typename T1, typename T2>
-    void matrix_vector_multiply(std::vector<T1>& target_vector, 
-                                const double alpha, const bool h2trans,
-                                const std::vector<T2>& source_vector) const {
-        static_assert(std::is_standard_layout<T1>::value,"T1 must be standard layout");
-        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T1> traitsT1;
-        typedef typename detail::VectorTraits<T2> traitsT2;
+    pavector target_avector = new_pointer_avector(
+        // const_cast<double*>(
+        target_vector.derived().data(), target_vector.size());
 
-        pavector source_avector = new_pointer_avector(
-                                    const_cast<double*>(
-                                        reinterpret_cast<const double*>(source_vector.data())),
-                                    source_vector.size()*traitsT1::length);
-        //std::cout << "source: "<<source_vector[0]<<" versus "<<getentry_avector(source_avector,0)<<std::endl;
-        pavector target_avector = new_pointer_avector(
-                                    reinterpret_cast<double*>(target_vector.data()),
-                                    target_vector.size()*traitsT2::length);
-        /*
-        for(int i=0; i<5; ++i) {
-            std::cout << "target: "<<target_vector[i]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
-            //std::cout << "target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
-        }
-        */
-        mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
-        /*
-        for(int i=0; i<5; ++i) {
-            std::cout << "after target: "<<target_vector[i]<<" versus "<<getentry_avector(target_avector,i*2)<<std::endl;
-            //std::cout << "after target: "<<target_vector[i][1]<<" versus "<<getentry_avector(target_avector,i*2+1)<<std::endl;
-        }
-        */
-
-    }
-
-    template <typename T1, typename T2>
-    void matrix_vector_multiply(Eigen::DenseBase<T1>& target_vector, 
-                                const double alpha, const bool h2trans,
-                                const Eigen::DenseBase<T2>& source_vector) const {
-
-        pavector source_avector = new_pointer_avector(
-                                    const_cast<double*>(
-                                        source_vector.derived().data()),
-                                    source_vector.size());
-        
-        pavector target_avector = new_pointer_avector(
-                                    //const_cast<double*>(
-                                        target_vector.derived().data(),
-                                    target_vector.size());
-
-        mvm_h2matrix_avector(alpha,h2trans,m_h2.get(),source_avector,target_avector);
-    }
+    mvm_h2matrix_avector(alpha, h2trans, m_h2.get(), source_avector,
+                         target_avector);
+  }
 };
 
 class HLibMatrix {
 
-    std::unique_ptr<hmatrix,decltype(&del_hmatrix)> m_h;
-    std::unique_ptr<block,decltype(&del_block)> m_block;
-    std::vector<uint> m_row_idx;
-    std::vector<uint> m_col_idx;
+  std::unique_ptr<hmatrix, decltype(&del_hmatrix)> m_h;
+  std::unique_ptr<block, decltype(&del_block)> m_block;
+  std::vector<uint> m_row_idx;
+  std::vector<uint> m_col_idx;
 
-template <typename RowParticles,typename ColParticles,typename Expansions,typename Kernel>
-static void
-assemble_block_hmatrix(pcblock b, uint bname,
-				    uint rname, uint cname, uint pardepth,
-				    void *data)
-{
-    auto& data_cast = *static_cast<
-        std::tuple<Expansions*,Kernel*,RowParticles*,ColParticles*,phmatrix*>*>(data);
+  template <typename RowParticles, typename ColParticles, typename Expansions,
+            typename Kernel>
+  static void assemble_block_hmatrix(pcblock b, uint bname, uint rname,
+                                     uint cname, uint pardepth, void *data) {
+    auto &data_cast =
+        *static_cast<std::tuple<Expansions *, Kernel *, RowParticles *,
+                                ColParticles *, phmatrix *> *>(data);
 
-    const Expansions& expansions = *std::get<0>(data_cast);
-    const Kernel& kernel = *std::get<1>(data_cast);
-    const RowParticles& row_particles = *std::get<2>(data_cast);
-    const ColParticles& col_particles = *std::get<3>(data_cast);
-    phmatrix* enum_h = std::get<4>(data_cast);
+    const Expansions &expansions = *std::get<0>(data_cast);
+    const Kernel &kernel = *std::get<1>(data_cast);
+    const RowParticles &row_particles = *std::get<2>(data_cast);
+    const ColParticles &col_particles = *std::get<3>(data_cast);
+    phmatrix *enum_h = std::get<4>(data_cast);
     phmatrix h = enum_h[bname];
 
     if (h->r) {
-        expansions.L2P_amatrix(&h->r->A,
-                h->rc,h->rc->idx,h->rc->size,
-                row_particles);
-        expansions.L2P_amatrix(&h->r->B,
-                h->cc,h->cc->idx,h->cc->size,
-                col_particles);
+      expansions.L2P_amatrix(&h->r->A, h->rc, h->rc->idx, h->rc->size,
+                             row_particles);
+      expansions.L2P_amatrix(&h->r->B, h->cc, h->cc->idx, h->cc->size,
+                             col_particles);
     } else if (h->f) {
-        detail::P2P_amatrix(h->f,
-                h->rc->idx,h->rc->size,
-                h->cc->idx,h->cc->size,
-                row_particles,col_particles,kernel);
+      detail::P2P_amatrix(h->f, h->rc->idx, h->rc->size, h->cc->idx,
+                          h->cc->size, row_particles, col_particles, kernel);
     }
+  }
 
-}
+  static void truncate_block_hmatrix(pcblock b, uint bname, uint rname,
+                                     uint cname, uint pardepth, void *data) {
+    auto &data_cast = *static_cast<std::tuple<double *, phmatrix *> *>(data);
 
-static void
-truncate_block_hmatrix(pcblock b, uint bname,
-				    uint rname, uint cname, uint pardepth,
-				    void *data)
-{
-    auto& data_cast = *static_cast<
-        std::tuple<double*,phmatrix*>*>(data);
-
-    const double& tol= *std::get<0>(data_cast);
-    phmatrix* enum_h = std::get<1>(data_cast);
+    const double &tol = *std::get<0>(data_cast);
+    phmatrix *enum_h = std::get<1>(data_cast);
     phmatrix h = enum_h[bname];
 
     if (h->r) {
-        trunc_rkmatrix(NULL, tol, h->r);
+      trunc_rkmatrix(NULL, tol, h->r);
     }
-
   }
 
 public:
+  template <typename RowParticles, typename ColParticles, typename Expansions,
+            typename Kernel>
+  HLibMatrix(const RowParticles &row_particles,
+             const ColParticles &col_particles, const Expansions &expansions,
+             const Kernel &kernel)
+      : m_h(nullptr, del_hmatrix), m_block(nullptr, del_block) {
 
-    template <typename RowParticles, typename ColParticles, typename Expansions, typename Kernel>
-    HLibMatrix(const RowParticles &row_particles, 
-                const ColParticles &col_particles, 
-                const Expansions& expansions,
-                const Kernel& kernel):
-            m_h(nullptr,del_hmatrix),
-            m_block(nullptr,del_block) {
+    // generate h2 matrix
+    LOG(2, "H2LibMatrix: creating h matrix using "
+               << row_particles.size() << " row particles and "
+               << col_particles.size() << " column particles");
 
-        //generate h2 matrix 
-        LOG(2,"H2LibMatrix: creating h matrix using "<<row_particles.size()<<" row particles and "<<col_particles.size()<<" column particles");
+    const bool row_equals_col = static_cast<const void *>(&row_particles) ==
+                                static_cast<const void *>(&col_particles);
 
-        const bool row_equals_col = static_cast<const void*>(&row_particles) 
-                                        == static_cast<const void*>(&col_particles);
+    //
+    // Create row clusters and clusterbasis
+    //
+    m_row_idx.resize(row_particles.size() * expansions.block_rows);
+    pcluster row_t =
+        set_root_idx(m_row_idx.data(), row_particles, expansions.block_rows);
 
-        //
-        // Create row clusters and clusterbasis
-        //
-        m_row_idx.resize(row_particles.size()*expansions.block_rows);
-        pcluster row_t = set_root_idx(m_row_idx.data(),row_particles,expansions.block_rows);
-        
-        //
-        // Create col clusters and clusterbasis
-        //
-        pcluster col_t;
-        if (row_equals_col && expansions.block_rows == expansions.block_cols) {
-            col_t = row_t;
-        } else {
-            m_col_idx.resize(col_particles.size()*expansions.block_cols);
-            col_t = set_root_idx(m_col_idx.data(),col_particles,expansions.block_cols);
-        }
-
-        // 
-        // create h block
-        //
-        //  eta = 1.0;
-
-        double eta = 1.0;
-        m_block = std::unique_ptr<block,decltype(&del_block)>(
-                build_nonstrict_block(row_t,col_t,&eta,admissible_max_cluster),
-                del_block);
-
-        static_assert(expansions.block_rows == expansions.block_cols,
-                "H Matrix only implemented for square kernel matrices");
-        m_h = std::unique_ptr<hmatrix,decltype(&del_hmatrix)>(
-                    build_from_block_hmatrix(m_block.get(),expansions.m_ncheb*expansions.block_rows),
-                    del_hmatrix);
-        phmatrix* enum_hmat = enumerate_hmatrix(m_block.get(),m_h.get());
-        auto data_h = std::make_tuple(&expansions,&kernel,&row_particles,
-                                    &col_particles,enum_hmat);
-        iterate_byrow_block(m_block.get(), 0, 0, 0, max_pardepth, NULL,
-		      assemble_block_hmatrix<RowParticles,ColParticles,Expansions,Kernel>, 
-              &data_h);
-        freemem(enum_hmat);
+    //
+    // Create col clusters and clusterbasis
+    //
+    pcluster col_t;
+    if (row_equals_col && expansions.block_rows == expansions.block_cols) {
+      col_t = row_t;
+    } else {
+      m_col_idx.resize(col_particles.size() * expansions.block_cols);
+      col_t =
+          set_root_idx(m_col_idx.data(), col_particles, expansions.block_cols);
     }
 
+    //
+    // create h block
+    //
+    //  eta = 1.0;
+
+    double eta = 1.0;
+    m_block = std::unique_ptr<block, decltype(&del_block)>(
+        build_nonstrict_block(row_t, col_t, &eta, admissible_max_cluster),
+        del_block);
+
+    static_assert(expansions.block_rows == expansions.block_cols,
+                  "H Matrix only implemented for square kernel matrices");
+    m_h = std::unique_ptr<hmatrix, decltype(&del_hmatrix)>(
+        build_from_block_hmatrix(m_block.get(),
+                                 expansions.m_ncheb * expansions.block_rows),
+        del_hmatrix);
+    phmatrix *enum_hmat = enumerate_hmatrix(m_block.get(), m_h.get());
+    auto data_h = std::make_tuple(&expansions, &kernel, &row_particles,
+                                  &col_particles, enum_hmat);
+    iterate_byrow_block(
+        m_block.get(), 0, 0, 0, max_pardepth, NULL,
+        assemble_block_hmatrix<RowParticles, ColParticles, Expansions, Kernel>,
+        &data_h);
+    freemem(enum_hmat);
+  }
 
 private:
-
-    template <typename Particles>
-    pcluster set_root_idx(uint* idx, const Particles& particles, const size_t block_size) {
-        uint *old_idx = idx;
-        const uint dim = Particles::dimension;
-        size_t sons = 0;
-        for (auto ci_child = particles.get_query().get_children(); 
-                ci_child != false; ++ci_child,++sons) {
-        }
-        pcluster t = new_cluster(0,old_idx,sons,dim);
-        size_t i = 0;
-        for (auto ci_child = particles.get_query().get_children(); 
-                ci_child != false; ++ci_child,++i) {
-            t->son[i] = set_idx(ci_child,idx,particles,block_size);
-            idx += t->son[i]->size;
-        }
-        t->size = idx-old_idx;
-        // bounding box
-        for (size_t i = 0; i < dim; ++i) {
-            t->bmin[i] = particles.get_min()[i];
-            t->bmax[i] = particles.get_max()[i];
-        }
-        update_cluster(t);
-        return t;
+  template <typename Particles>
+  pcluster set_root_idx(uint *idx, const Particles &particles,
+                        const size_t block_size) {
+    uint *old_idx = idx;
+    const uint dim = Particles::dimension;
+    size_t sons = 0;
+    for (auto ci_child = particles.get_query().get_children();
+         ci_child != false; ++ci_child, ++sons) {
     }
+    pcluster t = new_cluster(0, old_idx, sons, dim);
+    size_t i = 0;
+    for (auto ci_child = particles.get_query().get_children();
+         ci_child != false; ++ci_child, ++i) {
+      t->son[i] = set_idx(ci_child, idx, particles, block_size);
+      idx += t->son[i]->size;
+    }
+    t->size = idx - old_idx;
+    // bounding box
+    for (size_t i = 0; i < dim; ++i) {
+      t->bmin[i] = particles.get_min()[i];
+      t->bmax[i] = particles.get_max()[i];
+    }
+    update_cluster(t);
+    return t;
+  }
 
-    template <typename ChildIterator, typename Particles>
-    pcluster set_idx(const ChildIterator ci, uint* idx,const Particles& particles, const size_t block_size) {
-        uint *old_idx = idx;
-        const uint dim = Particles::dimension;
-        pcluster t;
-        if (particles.get_query().is_leaf_node(*ci)) { // leaf node
-            const auto& prange = particles.get_query().get_bucket_particles(*ci);
-            auto pit = prange.begin();
-            for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
-                const size_t pi = &(get<typename Particles::position>(*pit))
-                    - &get<typename Particles::position>(particles)[0];
-                for (size_t i = 0; i < block_size; ++i,++idx) {
-                    *idx = pi*block_size+i;
-                }
-            }
-            //if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
-            t = new_cluster(idx-old_idx,old_idx,0,dim);
+  template <typename ChildIterator, typename Particles>
+  pcluster set_idx(const ChildIterator ci, uint *idx,
+                   const Particles &particles, const size_t block_size) {
+    uint *old_idx = idx;
+    const uint dim = Particles::dimension;
+    pcluster t;
+    if (particles.get_query().is_leaf_node(*ci)) { // leaf node
+      const auto &prange = particles.get_query().get_bucket_particles(*ci);
+      auto pit = prange.begin();
+      for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
+        const size_t pi = &(get<typename Particles::position>(*pit)) -
+                          &get<typename Particles::position>(particles)[0];
+        for (size_t i = 0; i < block_size; ++i, ++idx) {
+          *idx = pi * block_size + i;
+        }
+      }
+      // if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
+      t = new_cluster(idx - old_idx, old_idx, 0, dim);
+    } else {
+      size_t sons = 0;
+      for (auto ci_child = particles.get_query().get_children(ci);
+           ci_child != false; ++ci_child, ++sons) {
+      }
+      t = new_cluster(0, old_idx, sons, dim);
+      size_t i = 0;
+      for (auto ci_child = particles.get_query().get_children(ci);
+           ci_child != false; ++ci_child, ++i) {
+        pcluster child_t = set_idx(ci_child, idx, particles, block_size);
+        if (child_t->size > 0) {
+          t->son[i] = child_t;
+          idx += child_t->size;
         } else {
-            size_t sons = 0;
-            for (auto ci_child = particles.get_query().get_children(ci); 
-                      ci_child != false; ++ci_child,++sons) {
-            }
-            t = new_cluster(0,old_idx,sons,dim);
-            size_t i = 0;
-            for (auto ci_child = particles.get_query().get_children(ci); 
-                      ci_child != false; ++ci_child,++i) {
-                pcluster child_t = set_idx(ci_child,idx,particles,block_size);
-                if (child_t->size > 0) {
-                    t->son[i] = child_t;
-                    idx += child_t->size;
-                } else {
-                    del_cluster(child_t);
-                    --i;
-                    --(t->sons);
-                }
-            }
-            t->size = idx - old_idx;
+          del_cluster(child_t);
+          --i;
+          --(t->sons);
         }
-        // bounding box
-        const auto& bbox = particles.get_query().get_bounds(ci);
-        for (size_t i = 0; i < dim; ++i) {
-            t->bmin[i] = bbox.bmin[i];
-            t->bmax[i] = bbox.bmax[i];
-        }
-        update_cluster(t);
-        return t;
+      }
+      t->size = idx - old_idx;
     }
-    
+    // bounding box
+    const auto &bbox = particles.get_query().get_bounds(ci);
+    for (size_t i = 0; i < dim; ++i) {
+      t->bmin[i] = bbox.bmin[i];
+      t->bmax[i] = bbox.bmax[i];
+    }
+    update_cluster(t);
+    return t;
+  }
+
 public:
+  void compress(const double tol) {
+    // ptruncmode tm = new_releucl_truncmode();
 
-    void compress(const double tol) {
-        //ptruncmode tm = new_releucl_truncmode();
+    phmatrix *enum_hmat = enumerate_hmatrix(m_block.get(), m_h.get());
+    auto data_h = std::make_tuple(&tol, enum_hmat);
+    iterate_byrow_block(m_block.get(), 0, 0, 0, max_pardepth, NULL,
+                        truncate_block_hmatrix, &data_h);
+    freemem(enum_hmat);
 
-        phmatrix* enum_hmat = enumerate_hmatrix(m_block.get(),m_h.get());
-        auto data_h = std::make_tuple(&tol,enum_hmat);
-        iterate_byrow_block(m_block.get(), 0, 0, 0, max_pardepth, NULL,
-		      truncate_block_hmatrix, &data_h);
-        freemem(enum_hmat);
+    coarsen_hmatrix(m_h.get(), NULL, tol, true);
+  }
 
-        coarsen_hmatrix(m_h.get(),NULL,tol,true);
-    }
+  const phmatrix get_phmatrix() const { return m_h.get(); }
 
-    const phmatrix get_phmatrix() const {
-        return m_h.get();
-    }
+  HLib_LR_Decomposition lr(const double tol) const {
+    return HLib_LR_Decomposition(get_phmatrix(), tol);
+  }
 
-    HLib_LR_Decomposition lr(const double tol) const {
-        return HLib_LR_Decomposition(get_phmatrix(),tol);
-    }
+  HLibCholeskyDecomposition chol(const double tol) const {
+    return HLibCholeskyDecomposition(get_phmatrix(), tol);
+  }
 
-    HLibCholeskyDecomposition chol(const double tol) const {
-        return HLibCholeskyDecomposition(get_phmatrix(),tol);
-    }
+  // target_vector += alpha*A*source_vector or alpha*A'*source_vector
+  template <typename T1, typename T2>
+  void matrix_vector_multiply(std::vector<T1> &target_vector,
+                              const double alpha, const bool h2trans,
+                              const std::vector<T2> &source_vector) const {
+    static_assert(std::is_standard_layout<T1>::value,
+                  "T1 must be standard layout");
+    static_assert(std::is_standard_layout<T2>::value,
+                  "T2 must be standard layout");
+    typedef typename detail::VectorTraits<T1> traitsT1;
+    typedef typename detail::VectorTraits<T2> traitsT2;
 
-
-    // target_vector += alpha*A*source_vector or alpha*A'*source_vector
-    template <typename T1, typename T2>
-    void matrix_vector_multiply(std::vector<T1>& target_vector, 
-                                const double alpha, const bool h2trans,
-                                const std::vector<T2>& source_vector) const {
-        static_assert(std::is_standard_layout<T1>::value,"T1 must be standard layout");
-        static_assert(std::is_standard_layout<T2>::value,"T2 must be standard layout");
-        typedef typename detail::VectorTraits<T1> traitsT1;
-        typedef typename detail::VectorTraits<T2> traitsT2;
-
-        pavector source_avector = new_pointer_avector(
-                                    const_cast<double*>(
-                                        reinterpret_cast<const double*>(source_vector.data())),
-                                    source_vector.size()*traitsT1::length);
-        pavector target_avector = new_pointer_avector(
-                                    reinterpret_cast<double*>(target_vector.data()),
-                                    target_vector.size()*traitsT2::length);
-        mvm_hmatrix_avector(alpha,h2trans,m_h.get(),source_avector,target_avector);
-    }
+    pavector source_avector = new_pointer_avector(
+        const_cast<double *>(
+            reinterpret_cast<const double *>(source_vector.data())),
+        source_vector.size() * traitsT1::length);
+    pavector target_avector =
+        new_pointer_avector(reinterpret_cast<double *>(target_vector.data()),
+                            target_vector.size() * traitsT2::length);
+    mvm_hmatrix_avector(alpha, h2trans, m_h.get(), source_avector,
+                        target_avector);
+  }
 };
 
 template <unsigned int D, typename Function,
-         typename KernelHelper = detail::position_kernel_helper<D,Function>,
-         typename Block = typename KernelHelper::Block> 
-detail::H2LibBlackBoxExpansions<D,Function,
-                           Block::RowsAtCompileTime,
-                           Block::ColsAtCompileTime> 
-make_h2lib_black_box_expansion(size_t order, const Function& function) {
-    return detail::H2LibBlackBoxExpansions<D,Function,
-                           Block::RowsAtCompileTime,
-                           Block::ColsAtCompileTime>(order,function);
+          typename KernelHelper = detail::position_kernel_helper<D, Function>,
+          typename Block = typename KernelHelper::Block>
+detail::H2LibBlackBoxExpansions<D, Function, Block::RowsAtCompileTime,
+                                Block::ColsAtCompileTime>
+make_h2lib_black_box_expansion(size_t order, const Function &function) {
+  return detail::H2LibBlackBoxExpansions<D, Function, Block::RowsAtCompileTime,
+                                         Block::ColsAtCompileTime>(order,
+                                                                   function);
 }
 
-template <typename Expansions, typename Kernel, typename RowParticlesType, typename ColParticlesType>
-HLibMatrix make_h2lib_h_matrix(const RowParticlesType& row_particles, 
-                               const ColParticlesType& col_particles, 
-                               const Expansions& expansions, 
-                               const Kernel& kernel) {
-    return HLibMatrix(row_particles,col_particles,expansions,kernel);
-}
-    
-
-template <typename Expansions, typename Kernel, typename RowParticlesType, typename ColParticlesType>
-H2LibMatrix make_h2lib_matrix(const RowParticlesType& row_particles, 
-                              const ColParticlesType& col_particles, 
-                              const Expansions& expansions, 
-                              const Kernel& kernel,
-                              const double eta) {
-    return H2LibMatrix(row_particles,col_particles,expansions,kernel,eta);
+template <typename Expansions, typename Kernel, typename RowParticlesType,
+          typename ColParticlesType>
+HLibMatrix make_h2lib_h_matrix(const RowParticlesType &row_particles,
+                               const ColParticlesType &col_particles,
+                               const Expansions &expansions,
+                               const Kernel &kernel) {
+  return HLibMatrix(row_particles, col_particles, expansions, kernel);
 }
 
-
+template <typename Expansions, typename Kernel, typename RowParticlesType,
+          typename ColParticlesType>
+H2LibMatrix make_h2lib_matrix(const RowParticlesType &row_particles,
+                              const ColParticlesType &col_particles,
+                              const Expansions &expansions,
+                              const Kernel &kernel, const double eta) {
+  return H2LibMatrix(row_particles, col_particles, expansions, kernel, eta);
 }
+
+} // namespace Aboria
 
 #endif
-
