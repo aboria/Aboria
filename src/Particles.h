@@ -44,8 +44,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 
-
-
 #ifdef HAVE_VTK
 #include <vtkCellArray.h>
 #include <vtkCellData.h>
@@ -60,18 +58,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 template <typename VAR, unsigned int DomainD,
           template <typename, typename> class VECTOR,
-          template <typename> class SearchMethod,
-          typename TRAITS_USER>
+          template <typename> class SearchMethod, typename TRAITS_USER>
 class Particles;
 }
 
-#include "detail/Particles.h"
 #include "BucketSearchSerial.h"
 #include "Get.h"
 #include "Traits.h"
 #include "Variable.h"
 #include "Vector.h"
 #include "Zip.h"
+#include "detail/Particles.h"
 //#include "OctTree.h"
 #include "CudaInclude.h"
 
@@ -618,7 +615,7 @@ public:
     vtkSmartPointer<vtkFloatArray> datas[dn];
     mpl::for_each<mpl::range_c<int, 1, dn>>(
         detail::setup_datas_for_writing<reference>(n, datas, grid));
-    for (int i = 0; i < dn; ++i) {
+    for (size_t i = 0; i < dn; ++i) {
       grid->GetPointData()->AddArray(datas[i]);
     }
     points->SetNumberOfPoints(n);
@@ -633,7 +630,7 @@ public:
       // std::cout <<"copying point at "<<i.get_position()<<" with id =
       // "<<i.get_id()<<std::endl;
       const double_d &r = get<position>(i);
-      for (int d = 0; d < max_d; ++d) {
+      for (size_t d = 0; d < max_d; ++d) {
         write_point[d] = r[d];
       }
       points->SetPoint(index, write_point);
@@ -672,10 +669,10 @@ public:
     this->clear();
 
     const unsigned int max_d = std::min(3u, traits_type::dimension);
-    for (int j = 0; j < n; ++j) {
+    for (size_t j = 0; j < n; ++j) {
       value_type particle;
       const double *r = points->GetPoint(j);
-      for (int d = 0; d < max_d; ++d) {
+      for (size_t d = 0; d < max_d; ++d) {
         get<position>(particle)[d] = r[d];
       }
       mpl::for_each<mpl::range_c<int, 1, dn>>(
@@ -775,7 +772,6 @@ private:
   vtkSmartPointer<vtkUnstructuredGrid> cache_grid;
 #endif
 };
-
 
 } // namespace Aboria
 

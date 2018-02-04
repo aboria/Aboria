@@ -33,50 +33,41 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
-
 #ifndef TERMINAL_DETAIL_H_
 #define TERMINAL_DETAIL_H_
 
-
+#include "Vector.h"
 
 namespace Aboria {
 namespace detail {
-
-
 
 ////////////////////////
 /// Terminal Classes ///
 ////////////////////////
 
-template<typename I, typename P>
-struct label {
-    typedef P particles_type;
-    typedef I depth;
+template <typename I, typename P> struct label {
+  typedef P particles_type;
+  typedef I depth;
 
-    label(P& p):
-        m_p(p),
-        m_buffers(new typename P::data_type()),
+  label(P &p)
+      : m_p(p), m_buffers(new typename P::data_type()),
         m_min(new typename P::value_type()),
-        m_max(new typename P::value_type())
-    {}
+        m_max(new typename P::value_type()) {}
 
-    P& get_particles() const { return m_p; }
-    typename P::data_type& get_buffers() const { return *m_buffers; }
-    typename P::value_type& get_min() const { return *m_min; }
-    typename P::value_type& get_max() const { return *m_max; }
+  P &get_particles() const { return m_p; }
+  typename P::data_type &get_buffers() const { return *m_buffers; }
+  typename P::value_type &get_min() const { return *m_min; }
+  typename P::value_type &get_max() const { return *m_max; }
 
-    P& m_p;
-    std::shared_ptr<typename P::data_type> m_buffers;
-    std::shared_ptr<typename P::value_type> m_min;
-    std::shared_ptr<typename P::value_type> m_max;
+  P &m_p;
+  std::shared_ptr<typename P::data_type> m_buffers;
+  std::shared_ptr<typename P::value_type> m_min;
+  std::shared_ptr<typename P::value_type> m_max;
 };
 
-
-template<typename T>
-struct symbolic {
-    typedef T variable_type;
-    typedef typename T::value_type value_type;
+template <typename T> struct symbolic {
+  typedef T variable_type;
+  typedef typename T::value_type value_type;
 };
 
 /*
@@ -86,128 +77,112 @@ struct symbolic {
    };
    */
 
-template <typename T>
-struct accumulate {
-    typedef T functor_type;
-    typedef typename T::result_type init_type;
-    accumulate():init(0) {};
-    accumulate(const T& functor):functor(functor),init(0) {};
-    void set_init(const init_type& arg) {
-        init = arg;
-    }
-    T functor;
-    init_type init;
+template <typename T> struct accumulate {
+  typedef T functor_type;
+  typedef typename T::result_type init_type;
+  accumulate() : init(VectorTraits<init_type>::Zero()){};
+  accumulate(const T &functor)
+      : functor(functor), init(VectorTraits<init_type>::Zero()){};
+  void set_init(const init_type &arg) { init = arg; }
+  T functor;
+  init_type init;
 };
 
-template <typename T, typename LNormNumber>
-struct accumulate_within_distance {
-    typedef T functor_type;
-    typedef LNormNumber norm_number_type;
-    typedef typename T::result_type init_type;
-    accumulate_within_distance(const double max_distance, const T& functor=T()):
-        functor(functor),
-        max_distance(max_distance),
-        init(0) 
-    {};
-    void set_init(const init_type& arg) {
-        init = arg;
-    }
-    void set_max_distance(const double arg) {
-        max_distance = arg;
-    }
-    T functor;
-    init_type init;
-    double max_distance;
+template <typename T, typename LNormNumber> struct accumulate_within_distance {
+  typedef T functor_type;
+  typedef LNormNumber norm_number_type;
+  typedef typename T::result_type init_type;
+  accumulate_within_distance(const double max_distance, const T &functor = T())
+      : functor(functor), max_distance(max_distance),
+        init(VectorTraits<init_type>::Zero()){};
+  void set_init(const init_type &arg) { init = arg; }
+  void set_max_distance(const double arg) { max_distance = arg; }
+  T functor;
+  double max_distance;
+  init_type init;
 };
 
-template <typename T,unsigned int N>
-struct vector {
-    typedef Vector<T,N> result_type;
+template <typename T, unsigned int N> struct vector {
+  typedef Vector<T, N> result_type;
 
-    template <typename ...Types>
-        result_type operator()(const Types... args) const {
-            return result_type(args...);
-        }
+  template <typename... Types>
+  result_type operator()(const Types... args) const {
+    return result_type(args...);
+  }
 };
 
-template <typename L1, typename L2>
-struct dx {
-    typedef L1 label_a_type;
-    typedef L2 label_b_type;
-    label_a_type la;
-    label_b_type lb;
-    dx(label_a_type &la, label_b_type &lb):la(la),lb(lb) {};
-    const label_a_type & get_label_a() const { return la; }
-    const label_b_type & get_label_b() const { return lb; }
+template <typename L1, typename L2> struct dx {
+  typedef L1 label_a_type;
+  typedef L2 label_b_type;
+  label_a_type la;
+  label_b_type lb;
+  dx(label_a_type &la, label_b_type &lb) : la(la), lb(lb){};
+  const label_a_type &get_label_a() const { return la; }
+  const label_b_type &get_label_b() const { return lb; }
 };
 
 struct normal {
-    //typedef std::mt19937 generator_type;
-    normal() {};
-    normal(uint32_t seed): generator(seed) {};
-    double operator()() {
-        detail::normal_distribution<double> normal_distribution;
-        return normal_distribution(generator);
-    }
-    /*
-       double operator()(const size_t& id) const {
-       std::normal_distribution<double> normal_distribution;
-       generator_type gen(id);
-       return normal_distribution(gen);
-       }
-       */
-    double operator()(generator_type& gen) const {
-        detail::normal_distribution<double> normal_distribution;
-        return normal_distribution(gen);
-    }
-    generator_type generator;
-
+  // typedef std::mt19937 generator_type;
+  normal(){};
+  normal(uint32_t seed) : generator(seed){};
+  double operator()() {
+    detail::normal_distribution<double> normal_distribution;
+    return normal_distribution(generator);
+  }
+  /*
+     double operator()(const size_t& id) const {
+     std::normal_distribution<double> normal_distribution;
+     generator_type gen(id);
+     return normal_distribution(gen);
+     }
+     */
+  double operator()(generator_type &gen) const {
+    detail::normal_distribution<double> normal_distribution;
+    return normal_distribution(gen);
+  }
+  generator_type generator;
 };
 
 struct uniform {
-    //typedef std::mt19937 generator_type;
-    uniform() {};
-    uniform(uint32_t seed): generator(seed) {};
-    double operator()() {
-        detail::uniform_real_distribution<double> uniform_distribution;
-        return uniform_distribution(generator);
-    }
-    /*
-       double operator()(const size_t& id) const {
-       std::uniform_real_distribution<double> uniform_distribution;
-       generator_type gen(id);
-       return uniform_distribution(gen);
-       }
-       */
-    double operator()(generator_type& gen) const {
-        detail::uniform_real_distribution<double> normal_distribution;
-        return normal_distribution(gen);
-    }
-    generator_type generator;
+  // typedef std::mt19937 generator_type;
+  uniform(){};
+  uniform(uint32_t seed) : generator(seed){};
+  double operator()() {
+    detail::uniform_real_distribution<double> uniform_distribution;
+    return uniform_distribution(generator);
+  }
+  /*
+     double operator()(const size_t& id) const {
+     std::uniform_real_distribution<double> uniform_distribution;
+     generator_type gen(id);
+     return uniform_distribution(gen);
+     }
+     */
+  double operator()(generator_type &gen) const {
+    detail::uniform_real_distribution<double> normal_distribution;
+    return normal_distribution(gen);
+  }
+  generator_type generator;
 };
 
-template <typename T>
-struct geometry {
-    typedef T result_type;
+template <typename T> struct geometry {
+  typedef T result_type;
 
-    template <typename... A>
-        result_type operator()(const A&... args) const {
-            return T(args...);
-        }
+  template <typename... A> result_type operator()(const A &... args) const {
+    return T(args...);
+  }
 };
 
+template <typename T> struct geometries {
+  typedef T result_type;
 
-template <typename T>
-struct geometries {
-    typedef T result_type;
-
-    //result_type operator()(const Vect3d& centre, const double radius, const bool in) const
-    template <typename... A>
-        result_type operator()(const A&... args) const {
-            return T(args...);
-        }
+  // result_type operator()(const Vect3d& centre, const double radius, const
+  // bool in) const
+  template <typename... A> result_type operator()(const A &... args) const {
+    return T(args...);
+  }
 };
 
-}
-}
+} // namespace detail
+} // namespace Aboria
 #endif

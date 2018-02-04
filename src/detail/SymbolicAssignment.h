@@ -33,86 +33,75 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
-
 #ifndef SYMBOLIC_ASSIGNMENT_DETAIL_H_
 #define SYMBOLIC_ASSIGNMENT_DETAIL_H_
 
-#include "detail/Symbolic.h"
 #include "detail/Evaluate.h"
+#include "detail/Symbolic.h"
 
 namespace Aboria {
-    namespace detail {
+namespace detail {
 
-    #define SUBSCRIPT_TYPE \
-    boost::proto::exprns_::basic_expr< \
-        boost::proto::tagns_::tag::subscript \
-        , boost::proto::argsns_::list2< \
-            Aboria::detail::SymbolicExpr<boost::proto::exprns_::expr< \
-                boost::proto::tagns_::tag::terminal \
-                , boost::proto::argsns_::term<Aboria::detail::symbolic<VariableType> > \
-            , 0l> >& \
-        , Aboria::Label<0u, ParticlesType >& \
-        > \
-    , 2l \
-    >
+#define SUBSCRIPT_TYPE                                                         \
+  boost::proto::exprns_::basic_expr<                                           \
+      boost::proto::tagns_::tag::subscript,                                    \
+      boost::proto::argsns_::list2<                                            \
+          Aboria::detail::SymbolicExpr<boost::proto::exprns_::expr<            \
+              boost::proto::tagns_::tag::terminal,                             \
+              boost::proto::argsns_::term<                                     \
+                  Aboria::detail::symbolic<VariableType>>,                     \
+              0l>> &,                                                          \
+          Aboria::Label<0u, ParticlesType> &>,                                 \
+      2l>
 
+// TODO: this seems a messy way to define a symbol subscripted by a label. might
+// be better to put a subscript operator in the Symbol class?
+// for: cleaner
+// against: messes up the grammer (already existing subscript expression).
+// Could have Symbol *not* be an expression, but then can't assume labels
+// within expressions anymore....
+template <typename VariableType, typename ParticlesType>
+struct SymbolicExpr<SUBSCRIPT_TYPE>
+    : proto::extends<SUBSCRIPT_TYPE, SymbolicExpr<SUBSCRIPT_TYPE>,
+                     SymbolicDomain> {
+  typedef SUBSCRIPT_TYPE Expr;
 
-    // TODO: this seems a messy way to define a symbol subscripted by a label. might
-    // be better to put a subscript operator in the Symbol class?
-    // for: cleaner
-    // against: messes up the grammer (already existing subscript expression). 
-    // Could have Symbol *not* be an expression, but then can't assume labels 
-    // within expressions anymore....
-    template<typename VariableType, typename ParticlesType>
-    struct SymbolicExpr<SUBSCRIPT_TYPE>
-        : proto::extends<SUBSCRIPT_TYPE, SymbolicExpr<SUBSCRIPT_TYPE>, SymbolicDomain> {
-            typedef SUBSCRIPT_TYPE Expr;
+  typedef typename ParticlesType::position position;
 
-            typedef typename ParticlesType::position position;
-            
+  typedef typename std::remove_const<
+      typename std::remove_reference<typename proto::result_of::value<
+          typename proto::result_of::child_c<Expr, 1>::type>::type>::type>::type
+      label_type;
+  typedef typename proto::result_of::value<
+      typename proto::result_of::child_c<Expr, 0>::type>::type symbol_type;
 
-            typedef typename std::remove_const< 
-                typename std::remove_reference<
-                typename proto::result_of::value< 
-                typename proto::result_of::child_c<Expr,1>::type 
-                >::type>::type>::type label_type;
-            typedef typename proto::result_of::value< 
-                typename proto::result_of::child_c<Expr,0>::type 
-                >::type symbol_type;
+#undef SUBSCRIPT_TYPE
 
+  explicit SymbolicExpr(Expr const &expr)
+      : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr),
+        msymbol(proto::value(proto::child_c<0>(expr))),
+        mlabel(proto::value(proto::child_c<1>(expr))) {}
 
-    #undef SUBSCRIPT_TYPE
+#define DEFINE_THE_OP(functor, the_op)                                         \
+  template <typename ExprRHS>                                                  \
+  const SymbolicExpr &operator the_op(ExprRHS const &expr) const {             \
+    BOOST_MPL_ASSERT_NOT((boost::is_same<VariableType, id>));                  \
+    evaluate_nonlinear<VariableType, functor>(                                 \
+        proto::as_expr<SymbolicDomain>(expr), mlabel);                         \
+    return *this;                                                              \
+  }
 
-            explicit SymbolicExpr(Expr const &expr)
-                : proto::extends<Expr, SymbolicExpr<Expr>, SymbolicDomain>(expr),
-                msymbol(proto::value(proto::child_c<0>(expr))),
-                mlabel(proto::value(proto::child_c<1>(expr))) {}
+  DEFINE_THE_OP(std::plus<typename VariableType::value_type>, +=)
+  DEFINE_THE_OP(std::minus<typename VariableType::value_type>, -=)
+  DEFINE_THE_OP(std::divides<typename VariableType::value_type>, /=)
+  DEFINE_THE_OP(std::multiplies<typename VariableType::value_type>, *=)
+  DEFINE_THE_OP(detail::return_second, =)
 
-            #define DEFINE_THE_OP(functor,the_op) \
-            template< typename ExprRHS > \
-            const SymbolicExpr &operator the_op (ExprRHS const & expr) const { \
-                BOOST_MPL_ASSERT_NOT(( boost::is_same<VariableType,id > )); \
-                evaluate_nonlinear<VariableType,functor>(proto::as_expr<SymbolicDomain>(expr),mlabel); \
-                return *this; \
-            } \
+private:
+  symbol_type &msymbol;
+  label_type &mlabel;
+};
 
-       
-            DEFINE_THE_OP(std::plus<typename VariableType::value_type>,+=)
-            DEFINE_THE_OP(std::minus<typename VariableType::value_type>,-=)
-            DEFINE_THE_OP(std::divides<typename VariableType::value_type>,/=)
-            DEFINE_THE_OP(std::multiplies<typename VariableType::value_type>,*=)
-            DEFINE_THE_OP(detail::return_second,=)
-            
-
-            private:
-
-            label_type& mlabel;
-            symbol_type& msymbol;
-
-            
-        };
-
-    }
-}
+} // namespace detail
+} // namespace Aboria
 #endif
