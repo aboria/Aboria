@@ -403,7 +403,7 @@ public:
         LOG(3,"\tnote: vector_size = "<<vector_size);
         LOG(3,"\tnote: size_W is = "<<size_W);
         LOG(3,"\tnote: size_g is = "<<size_g);
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             LOG(4,"\tfor column "<<i<<", reserving "<<reserve[i]<<" rows");
         }
 
@@ -541,7 +541,7 @@ public:
         A.makeCompressed();
 
 #ifndef NDEBUG
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             size_t count = 0;
             for (sparse_matrix_type::InnerIterator it(A,i); it ;++it) {
                 count++;
@@ -765,7 +765,7 @@ public:
         LOG(3,"\tnote: vector_size = "<<vector_size);
         LOG(3,"\tnote: size_W is = "<<size_W);
         LOG(3,"\tnote: size_g is = "<<size_g);
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             LOG(4,"\tfor column "<<i<<", reserving "<<reserve[i]<<" rows");
         }
 
@@ -822,7 +822,7 @@ public:
         A.makeCompressed();
 
 #ifndef NDEBUG
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             size_t count = 0;
             for (sparse_matrix_type::InnerIterator it(A,i); it ;++it) {
                 count++;

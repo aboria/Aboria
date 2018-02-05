@@ -648,7 +648,7 @@ public:
           return p[0];
       };
 
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
           get<position>(particles)[i][0] = 0.5*U(generator);
           get<position>(particles)[n+i][0] = 0.5*U(generator)+0.5;
           for (int j = 1; j < D; ++j) {
@@ -661,12 +661,12 @@ public:
           leaf2_indicies.push_back(n+i);
       }
 
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
           const double_d& pi_leaf1 = get<position>(particles)[i];
           const double_d& pi_leaf2 = get<position>(particles)[n+i];
           field_just_self_leaf1[i] = 0;
           field_just_self_leaf2[i] = 0;
-          for (int j = 0; j < n; ++j) {
+          for (size_t j = 0; j < n; ++j) {
               const double_d& pj_leaf1 = get<position>(particles)[j];
               const double_d& pj_leaf2 = get<position>(particles)[n+j];
               field_just_self_leaf1[i] += source_leaf1[j]
@@ -676,7 +676,7 @@ public:
           }
           field_all_leaf1[i] = field_just_self_leaf1[i];
           field_all_leaf2[i] = field_just_self_leaf2[i];
-          for (int j = 0; j < n; ++j) {
+          for (size_t j = 0; j < n; ++j) {
               const double_d& pj_leaf1 = get<position>(particles)[j];
               const double_d& pj_leaf2 = get<position>(particles)[n+j];
               field_all_leaf1[i] += source_leaf2[j]
@@ -704,7 +704,7 @@ public:
 
       double L2 = 0;
       double scale = 0;
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
           L2 += std::pow(result_leaf1[i]-field_just_self_leaf1[i],2);
           scale += std::pow(field_just_self_leaf1[i],2);
           TS_ASSERT_LESS_THAN(std::abs(result_leaf1[i]-field_just_self_leaf1[i]),2e-4);
@@ -725,7 +725,7 @@ public:
       p_vector_type result_leaf2 = l2p_matrix_leaf2*expansionL_leaf2;
 
       L2 = 0;
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
           L2 += std::pow(result_leaf2[i]-field_just_self_leaf2[i],2);
           scale += std::pow(field_just_self_leaf2[i],2);
       }
@@ -747,7 +747,7 @@ public:
 
       L2 = 0;
       scale = 0;
-      for (int i = 0; i < n; ++i) {
+      for (size_t i = 0; i < n; ++i) {
           L2 += std::pow(total_result_leaf1[i]-field_all_leaf1[i],2);
           scale += std::pow(field_all_leaf1[i],2);
       }

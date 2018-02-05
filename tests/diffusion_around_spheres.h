@@ -124,8 +124,8 @@ public:
 		for (int i = 0; i < timesteps; ++i) {
 			p[a_p] += std::sqrt(2*D*dt)*vector(N[a_p],N[a_p],N[a_p]);
             p[a_p] += sum(b_s, if_else(norm(dx) < r[b_s]
-                                    ,-2*(r[b_s]/norm(dx)-1)*dx
-                                    ,0));
+                                    ,-2*(r[b_s]/norm(dx)-1)
+                                    ,0)*dx);
             /*
             const vdouble3 pos = get<position>(points[0]);
             if (((pos - vdouble3(0,0,0)).norm() < 1.0) || 

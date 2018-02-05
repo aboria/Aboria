@@ -258,7 +258,7 @@ public:
             return p[0];
         };
 
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             particles_in_leaf1[i][0] = 0.5*U(generator);
             particles_in_leaf2[i][0] = 0.5*U(generator)+0.5;
             for (int j = 1; j < D; ++j) {
@@ -269,10 +269,10 @@ public:
             source_leaf2[i] = f(particles_in_leaf2[i]);
         }
 
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             field_just_self_leaf1[i] = 0;
             field_just_self_leaf2[i] = 0;
-            for (int j = 0; j < n; ++j) {
+            for (size_t j = 0; j < n; ++j) {
                 field_just_self_leaf1[i] += source_leaf1[j]
                     *expansions.m_K(particles_in_leaf1[i],particles_in_leaf1[j]);
                 field_just_self_leaf2[i] += source_leaf2[j]
@@ -280,7 +280,7 @@ public:
             }
             field_all_leaf1[i] = field_just_self_leaf1[i];
             field_all_leaf2[i] = field_just_self_leaf2[i];
-            for (int j = 0; j < n; ++j) {
+            for (size_t j = 0; j < n; ++j) {
                 field_all_leaf1[i] += source_leaf2[j]
                     *expansions.m_K(particles_in_leaf1[i],particles_in_leaf2[j]);
                 field_all_leaf2[i] += source_leaf1[j]
@@ -291,7 +291,7 @@ public:
         // check P2M, and L2P
         expansion_type expansionM_leaf1 = {0};
 
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             expansions.P2M(expansionM_leaf1,leaf1,particles_in_leaf1[i],source_leaf1[i]);
         }
 
@@ -300,7 +300,7 @@ public:
 
         double L2 = 0;
         double scale = 0;
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             const double check = expansions.L2P(particles_in_leaf1[i],leaf1,expansionL_leaf1);
             L2 += std::pow(check-field_just_self_leaf1[i],2);
             scale += std::pow(field_just_self_leaf1[i],2);
@@ -310,7 +310,7 @@ public:
         TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
 
         expansion_type expansionM_leaf2 = {};
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             expansions.P2M(expansionM_leaf2,leaf2,particles_in_leaf2[i],source_leaf2[i]);
         }
 
@@ -318,7 +318,7 @@ public:
         expansions.M2L(expansionL_leaf2,leaf2,leaf2,expansionM_leaf2);
 
         L2 = 0;
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             const double check = expansions.L2P(particles_in_leaf2[i],leaf2,expansionL_leaf2);
             L2 += std::pow(check-field_just_self_leaf2[i],2);
             scale += std::pow(field_just_self_leaf2[i],2);
@@ -337,7 +337,7 @@ public:
 
         L2 = 0;
         scale = 0;
-        for (int i = 0; i < n; ++i) {
+        for (size_t i = 0; i < n; ++i) {
             const double check = expansions.L2P(particles_in_leaf1[i],leaf1,reexpansionL_leaf1);
             L2 += std::pow(check-field_all_leaf1[i],2);
             scale += std::pow(field_all_leaf1[i],2);

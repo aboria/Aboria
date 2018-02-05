@@ -807,7 +807,7 @@ void calculate_L2P(std::vector<T> &target_vector, const VectorType &source,
   const Vector<double, D> *pbegin_range = &get<position>(*range.begin());
   const Vector<double, D> *pbegin = &get<position>(target_particles_begin)[0];
   const size_t index = pbegin_range - pbegin;
-  for (int i = index; i < index + N; ++i) {
+  for (size_t i = index; i < index + N; ++i) {
     const Vector<double, D> &pi = pbegin[i];
     target_vector[i] += expansions.L2P(pi, box, source);
   }
@@ -930,9 +930,9 @@ void calculate_P2P(std::vector<TargetType> &target_vector,
   const size_t index_source = pbegin_source_range - pbegin_source;
 
   auto pi = target_range.begin();
-  for (int i = index_target; i < index_target + n_target; ++i, ++pi) {
+  for (size_t i = index_target; i < index_target + n_target; ++i, ++pi) {
     auto pj = source_range.begin();
-    for (int j = index_source; j < index_source + n_source; ++j, ++pj) {
+    for (size_t j = index_source; j < index_source + n_source; ++j, ++pj) {
       target_vector[i] += kernel(*pi, *pj) * source_vector[j];
     }
   }

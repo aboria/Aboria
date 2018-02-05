@@ -224,8 +224,8 @@ public:
         std::fill(std::begin(target_vect),std::end(target_vect),0.0);
         std::cout << "multiquadric_vector: D = "<<D<<" N = "<<n<<" repeats = "<<repeats<<std::endl;
 
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
+        for (size_t i = 0; i < n; ++i) {
+            for (size_t j = 0; j < n; ++j) {
                 target_vect[i] += kernel(position_vect[i],
                                          position_vect[j])
                                     *source_vect[j];
@@ -234,8 +234,8 @@ public:
         
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            for (int i = 0; i < n; ++i) {
-                for (int j = 0; j < n; ++j) {
+            for (size_t i = 0; i < n; ++i) {
+                for (size_t j = 0; j < n; ++j) {
                     target_vect[i] += kernel(position_vect[i],
                                              position_vect[j])
                                         *source_vect[j];
