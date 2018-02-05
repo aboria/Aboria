@@ -17,6 +17,8 @@ env:
         # (dont use vtk for now cause travis hasnt whitelisted this)
         - Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
         - Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Debug
+        - Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Debug
+        - Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
     global:
         - ENCRYPTION_LABEL: "b90db56f7413"
         - COMMIT_AUTHOR_EMAIL: "martinjrobins@gmail.com"
@@ -55,6 +57,7 @@ addons:
 before_install:
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
 - if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;mv eigen*/unsupported .; fi
+- if [ "$Aboria_USE_H2LIB" == "on" ]; then git clone https://github.com/H2Lib/H2Lib.git ; cd H2Lib ; make ; fi
 
 before_script:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi

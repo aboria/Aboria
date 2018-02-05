@@ -135,8 +135,8 @@ public:
             }
             p[i] += std::sqrt(2*D*dt)*vector(N[i],N[i],N[i]);
             p[i] += sum(b, if_else(norm(dx) < r[b] && norm(dx) != 0
-                                ,-2*(r[b]/norm(dx)-1)*dx
-                                ,0));
+                                ,-2*(r[b]/norm(dx)-1)
+                                ,0)*dx);
 
         }
         std::cout << std::endl;

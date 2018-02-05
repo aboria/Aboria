@@ -38,6 +38,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define CHEBYSHEV_H_
 
 #include "detail/Chebyshev.h"
+#include "NeighbourSearchBase.h"
 
 #ifdef HAVE_EIGEN
 #include <Eigen/Core>

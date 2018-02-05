@@ -470,6 +470,9 @@ public:
     [endsect]
 
 
+    */
+#ifdef HAVE_H2LIB
+    /*`
     [section Creating Hierarchical Matrix Operators]
 
     The fast multipole method (fmm) results in multiple tree traversals while
@@ -504,6 +507,9 @@ public:
     /*`
 
     [endsect]
+    */
+#endif // HAVE_H2LIB
+    /*`
 
     [section Block Operators]
 
