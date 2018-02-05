@@ -72,7 +72,7 @@ before_install:
 - if [ "$Aboria_USE_H2LIB" == "on" ]; then 
     git clone -b community https://github.com/H2Lib/H2Lib.git ; 
     cd H2Lib ; 
-    cp -f ../third-party/H2Lib/options.inc .
+    cp -f ../third-party/H2Lib/options.inc . ;
     make ; 
     cd .. ; 
   fi
