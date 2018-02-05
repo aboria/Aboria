@@ -43,7 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <time.h>
 typedef std::chrono::system_clock Clock;
 #include "H2Lib.h"
-#include "H2Matrix.h"
+//#include "H2Matrix.h"
 #include "Kernels.h"
 #include "Level1.h"
 #ifdef HAVE_GPERFTOOLS
