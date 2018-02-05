@@ -53,7 +53,9 @@ addons:
     - docbook-xml 
     - docbook-xsl
     - texlive-latex-base
+    # for h2lib
     - liblapack-dev
+    - gfortran
 
 before_install:
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
