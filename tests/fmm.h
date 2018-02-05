@@ -70,7 +70,6 @@ public:
                                      const KernelFunction &kernel,
                                      const P2PKernelFunction &p2pkernel,
                                      const double scale) {
-    typedef typename ParticlesType::reference reference;
     const unsigned int dimension = ParticlesType::dimension;
     typedef typename TargetFMM::value_type value_type;
     typedef detail::VectorTraits<value_type> scalar_traits;

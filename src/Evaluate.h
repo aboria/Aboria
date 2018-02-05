@@ -71,7 +71,9 @@ void evaluate_nonlinear(ExprRHS const & expr, LabelType &label) {
     // evaluate expression for all particles and store in buffer
     const size_t n = particles.size();
     Functor functor;
+#ifdef HAVE_OPENMP
     #pragma omp parallel for
+#endif
     for (size_t i=0; i<n; i++) {
         buffer[i] = functor(get<VariableType>(particles)[i],eval(expr,particles[i]));
     }
@@ -79,7 +81,9 @@ void evaluate_nonlinear(ExprRHS const & expr, LabelType &label) {
     //if aliased then copy back from the buffer
     if (not_aliased::value == false) {
         const size_t n = particles.size();
+#ifdef HAVE_OPENMP
         #pragma omp parallel for
+#endif
         for (size_t i=0; i<n; i++) {
             get<VariableType>(particles[i]) = buffer[i];	
         }

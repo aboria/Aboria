@@ -40,6 +40,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "detail/GaussLegendre.h"
 #include "detail/Particles.h"
 
+#ifdef HAVE_EIGEN
+
 namespace Aboria {
 
 namespace detail {
@@ -479,5 +481,7 @@ struct integrate_chebyshev<
 
 } // namespace detail
 } // namespace Aboria
+
+#endif // HAVE_EIGEN
 
 #endif
