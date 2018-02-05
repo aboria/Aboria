@@ -275,7 +275,7 @@ public:
                 size_t particle_id = get<particles>(m_data)[i][d];
                 //TODO: this will not work with thrust
                 typename ParticlesType::raw_pointer p = m_particles->get_query().find(particle_id);
-                CHECK(p != iterator_to_raw_pointer(m_particles.end()),"particle "<<particle_id<<" does not exist");
+                CHECK(p != iterator_to_raw_pointer(m_particles->end()),"particle "<<particle_id<<" does not exist");
                 get<VariableType>(p).push_back(i);
             }
         }
