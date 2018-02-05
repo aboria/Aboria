@@ -435,7 +435,7 @@ public:
   }
 
   template <template <typename> class SearchMethod> void helper_h2(void) {
-#ifdef HAVE_EIGEN
+#ifdef HAVE_H2LIB
     std::cout << "---------------------\n"
               << "Running h2 test....\n"
               << "---------------------" << std::endl;
@@ -577,7 +577,7 @@ public:
 
 //=}
 //]
-#endif // HAVE_EIGEN
+#endif // HAVE_H2LIB
   }
 
   void test_bucket_search_parallel() {

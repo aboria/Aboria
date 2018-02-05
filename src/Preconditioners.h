@@ -96,6 +96,7 @@ void apply_function_to_diagonal_blocks(
 }
 } // namespace detail
 
+#ifdef HAVE_H2LIB
 template <typename Solver> class ReducedOrderPreconditioner {
   typedef Solver solver_type;
   typedef size_t Index;
@@ -266,6 +267,7 @@ public:
 protected:
   bool m_isInitialized;
 };
+#endif //HAVE_H2LIB
 
 #if 0
 template <unsigned int ReducedOrder, 

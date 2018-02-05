@@ -40,7 +40,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <cxxtest/TestSuite.h>
 
-
 //[rbf_pde
 #include "Aboria.h"
 
@@ -71,7 +70,6 @@ public:
     	typedef Particles<std::tuple<alpha,boundary,constant2,interpolated>,2,std::vector,SearchMethod> ParticlesType;
         typedef position_d<2> position;
         typedef typename ParticlesType::const_reference const_particle_reference;
-        typedef typename position::value_type const & const_position_reference;
         typedef Eigen::Map<Eigen::Matrix<double,Eigen::Dynamic,1>> map_type; 
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
        	ParticlesType knots,augment;
@@ -79,7 +77,6 @@ public:
        	const double c = 0.5;
         const int max_iter = 100;
         const int restart = 100;
-        vdouble2 periodic(false);
         
         const int nx = 7;
         constexpr int N = (nx+1)*(nx+1);
@@ -99,34 +96,35 @@ public:
         }
         augment.push_back(p);
 
-        
-        auto kernel = [](const_position_reference dx,
+        auto kernel = [](
                          const_particle_reference a,
                          const_particle_reference b) {
+             const vdouble2 dx = get<position>(b) - get<position>(a);
              return std::exp(-dx.squaredNorm()/get<constant2>(b));
                         };
 
-        auto laplace_kernel = [](const_position_reference dx,
+        auto laplace_kernel = [](
                          const_particle_reference a,
                          const_particle_reference b) {
+             const vdouble2 dx = get<position>(b) - get<position>(a);
              return 4.0*(dx.squaredNorm()-get<constant2>(b))*
                         std::exp(-dx.squaredNorm()/get<constant2>(b))/
                             (get<constant2>(b)*get<constant2>(b));
                         };
 
         auto G = create_dense_operator(knots,knots,
-                [kernel,laplace_kernel](const_position_reference dx,
+                [kernel,laplace_kernel](
                          const_particle_reference a,
                          const_particle_reference b) {
                     if (get<boundary>(a)) {
-                        return kernel(dx,a,b);
+                        return kernel(a,b);
                     } else {
-                        return laplace_kernel(dx,a,b);
+                        return laplace_kernel(a,b);
                     }
                     });
 
         auto P = create_dense_operator(knots,augment,
-                [](const_position_reference dx,
+                [](
                          const_particle_reference a,
                          const_particle_reference b) {
                     if (get<boundary>(a)) {
@@ -137,7 +135,7 @@ public:
                     });
 
         auto Pt = create_dense_operator(augment,knots,
-                [](const_position_reference dx,
+                [](
                          const_particle_reference a,
                          const_particle_reference b) {
                     if (get<boundary>(b)) {

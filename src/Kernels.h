@@ -255,7 +255,9 @@ public:
 
     const bool is_periodic = !a.get_periodic().any();
 
-#pragma omp parallel for
+#ifdef HAVE_OPENMP
+    #pragma omp parallel for
+#endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       for (size_t j = 0; j < nb; ++j) {
@@ -334,7 +336,9 @@ public:
 
     const bool is_periodic = !a.get_periodic().any();
 
-#pragma omp parallel for
+#ifdef HAVE_OPENMP
+    #pragma omp parallel for
+#endif
     for (size_t i = 0; i < na; ++i) {
       for (size_t j = 0; j < nb; ++j) {
         lhs[i] += m_matrix.template block<BlockRows, BlockCols>(i * BlockRows,
@@ -698,7 +702,9 @@ public:
     ASSERT(na == a.size(), "lhs vector has incompatible size");
     ASSERT(nb == b.size(), "rhs vector has incompatible size");
 
-#pragma omp parallel for
+#ifdef HAVE_OPENMP
+    #pragma omp parallel for
+#endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       const double radius = m_radius_function(ai);
@@ -724,7 +730,9 @@ public:
 
     const size_t na = a.size();
 
-#pragma omp parallel for
+#ifdef HAVE_OPENMP
+    #pragma omp parallel for
+#endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       const double radius = m_radius_function(ai);
