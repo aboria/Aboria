@@ -41,7 +41,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Particles.h"
 #include "detail/Chebyshev.h"
 
-#include <Eigen/Core>
 
 #include "FastMultipoleMethod.h"
 #include "detail/Kernels.h"
@@ -51,6 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 #ifdef HAVE_EIGEN
+#include <Eigen/Core>
 
 namespace Aboria {
 
