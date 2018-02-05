@@ -53,6 +53,7 @@ addons:
     - docbook-xml 
     - docbook-xsl
     - texlive-latex-base
+    - liblapack-dev
 
 before_install:
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
