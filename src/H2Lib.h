@@ -36,7 +36,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef H2_LIB_H_
 #define H2_LIB_H_
 
-
 #include "detail/FastMultipoleMethod.h"
 
 #ifdef HAVE_H2LIB
@@ -427,7 +426,7 @@ public:
 
     m_h2 = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
         build_from_block_h2matrix(m_block.get(), row_cb, col_cb), del_h2matrix);
-    ph2matrix *enum_h2mat = enumerate_h2matrix(m_h2.get());
+    ph2matrix *enum_h2mat = enumerate_h2matrix(m_block.get(), m_h2.get());
     auto data_h2 = std::make_tuple(&expansions, &kernel, &row_particles,
                                    &col_particles, enum_h2mat);
     iterate_byrow_block(

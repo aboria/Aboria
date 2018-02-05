@@ -70,8 +70,9 @@ before_install:
   fi
 # install H2Lib
 - if [ "$Aboria_USE_H2LIB" == "on" ]; then 
-    git clone https://github.com/H2Lib/H2Lib.git ; 
+    git clone -b community https://github.com/H2Lib/H2Lib.git ; 
     cd H2Lib ; 
+    cp -f ../third-party/H2Lib/options.inc .
     make ; 
     cd .. ; 
   fi
