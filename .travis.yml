@@ -53,13 +53,16 @@ addons:
     - docbook-xml 
     - docbook-xsl
     - texlive-latex-base
-    # for h2lib
+    # install h2lib dependencies
     - liblapack-dev
     - gfortran
 
 before_install:
+# install coveralls
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
+# install Eigen
 - if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;mv eigen*/unsupported .; fi
+# install H2Lib
 - if [ "$Aboria_USE_H2LIB" == "on" ]; then git clone https://github.com/H2Lib/H2Lib.git ; cd H2Lib ; make ; cd .. ; fi
 
 before_script:
