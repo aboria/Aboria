@@ -59,11 +59,22 @@ addons:
 
 before_install:
 # install coveralls
-- if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
+- if [ "$Aboria_COVERAGE" == "on" ]; then 
+    pip install --user cpp-coveralls; 
+  fi
 # install Eigen
-- if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;mv eigen*/unsupported .; fi
+- if [ "$Aboria_USE_EIGEN" == "on" ]; then 
+    wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; 
+    tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;
+    mv eigen*/unsupported .; 
+  fi
 # install H2Lib
-- if [ "$Aboria_USE_H2LIB" == "on" ]; then git clone https://github.com/H2Lib/H2Lib.git ; cd H2Lib ; make ; cd .. ; fi
+- if [ "$Aboria_USE_H2LIB" == "on" ]; then 
+    git clone https://github.com/H2Lib/H2Lib.git ; 
+    cd H2Lib ; 
+    make ; 
+    cd .. ; 
+  fi
 
 before_script:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
@@ -78,7 +89,15 @@ before_script:
 - if [ "$Travis_UPDATE_DOC" == "on" ]; then cp doc/user-config.jam ~; fi
 
 script:
-- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DAboria_USE_H2LIB=$Aboria_USE_H2LIB -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION .
+- cmake -DAboria_COVERAGE=$Aboria_COVERAGE 
+        -DAboria_USE_EIGEN=$Aboria_USE_EIGEN 
+        -DAboria_USE_H2LIB=$Aboria_USE_H2LIB
+        -DH2Lib_ROOT=./H2Lib 
+        -DEIGEN3_INCLUDE_DIR=. 
+        -DAboria_USE_OPENMP=$Aboria_USE_OPENMP 
+        -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE 
+        -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION 
+        .
 - make
 - ctest --output-on-failure
 
