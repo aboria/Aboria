@@ -301,14 +301,6 @@ set(H2Test
     test_fast_methods_octtree
     test_fmm_matrix_operators
     )
-if (Aboria_USE_THRUST)
-    list(APPEND H2Test
-    test_fast_methods_bucket_search_serial_thrust
-    test_fast_methods_bucket_search_parallel_thrust
-    test_fast_methods_kd_tree_thrust
-    test_fast_methods_octtree_thrust
-    )
-endif()
 
 
 message("-- Adding test suites:")
