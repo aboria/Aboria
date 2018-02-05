@@ -41,7 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_H2LIB
 
-#include <GL/glut.h>
+//#include <GL/glut.h>
 extern "C" {
 #include <h2arith.h>
 #include <h2matrix.h>
