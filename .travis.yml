@@ -78,7 +78,7 @@ before_script:
 - if [ "$Travis_UPDATE_DOC" == "on" ]; then cp doc/user-config.jam ~; fi
 
 script:
-- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION .
+- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DAboria_USE_H2LIB=$Aboria_USE_H2LIB -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION .
 - make
 - ctest --output-on-failure
 
