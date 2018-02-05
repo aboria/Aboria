@@ -60,7 +60,7 @@ addons:
 before_install:
 - if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
 - if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;mv eigen*/unsupported .; fi
-- if [ "$Aboria_USE_H2LIB" == "on" ]; then git clone https://github.com/H2Lib/H2Lib.git ; cd H2Lib ; make ; fi
+- if [ "$Aboria_USE_H2LIB" == "on" ]; then git clone https://github.com/H2Lib/H2Lib.git ; cd H2Lib ; make ; cd .. ; fi
 
 before_script:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
