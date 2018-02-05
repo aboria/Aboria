@@ -60,8 +60,6 @@ class ChebyshevTest : public CxxTest::TestSuite {
 public:
     template <unsigned int N, typename ParticlesType, typename KernelFunction>
     void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const double scale) {
-        typedef typename ParticlesType::position position;
-        typedef typename ParticlesType::reference reference;
         const unsigned int dimension = ParticlesType::dimension;
 
 #ifdef HAVE_EIGEN
@@ -100,7 +98,6 @@ public:
         typedef Vector<double,D> double_d;
         typedef Vector<int,D> int_d;
         typedef Vector<bool,D> bool_d;
-        const double tol = 1e-10;
         // randomly generate a bunch of positions over a range 
         const double pos_min = 0;
         const double pos_max = 1;
@@ -114,13 +111,13 @@ public:
         typedef typename ParticlesType::position position;
         ParticlesType particles(N);
 
-        for (int i=0; i<N; i++) {
-            for (int d=0; d<D; ++d) {
+        for (size_t i=0; i<N; i++) {
+            for (size_t d=0; d<D; ++d) {
                 get<position>(particles)[i][d] = gen();
                 get<source>(particles)[i] = gen();
             }
         }
-        particles.init_neighbour_search(int_d(pos_min),int_d(pos_max),bool_d(false));
+        particles.init_neighbour_search(int_d::Constant(pos_min),int_d::Constant(pos_max),bool_d::Constant(false));
 
         // generate a source vector using a smooth cosine
         auto source_fn = [&](const double_d &p) {
@@ -146,9 +143,9 @@ public:
                     0.0);
 
         auto t0 = Clock::now();
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             const double_d pi = get<position>(particles)[i];
-            for (int j=0; j<N; j++) {
+            for (size_t j=0; j<N; j++) {
                 const double_d pj = get<position>(particles)[j];
                 get<target_manual>(particles)[i] += kernel(pi,pj)*get<source>(particles)[j];
             }
@@ -186,21 +183,21 @@ public:
         typedef Vector<int,D> int_d;
         const size_t N = 50;
         std::vector<double_d> positions(N);
-        for (int i=0; i<N; i++) {
-            for (int d=0; d<D; ++d) {
+        for (size_t i=0; i<N; i++) {
+            for (size_t d=0; d<D; ++d) {
                 positions[i][d] = U(generator);
             }
         }
         detail::Chebyshev_Rn<D> Rn;
         for (int n=1; n<10; ++n) {
             Rn.calculate_Sn(std::begin(positions),N,n);
-            const int_d start = int_d(0);
-            const int_d end = int_d(n);
+            const int_d start = int_d::Constant(0);
+            const int_d end = int_d::Constant(n);
             auto range = iterator_range<lattice_iterator<D>>(
                 lattice_iterator<D>(start,end)
                 ,lattice_iterator<D>()
                 );
-            const double_d scale = double_d(1.0)/(Rn.box.bmax-Rn.box.bmin);
+            const double_d scale = double_d::Constant(1.0)/(Rn.box.bmax-Rn.box.bmin);
             for (size_t i = 0; i < positions.size(); ++i) {
                 const double_d &x =  (2*positions[i]-Rn.box.bmin-Rn.box.bmax)*scale;
                 for (const int_d& m: range) {
@@ -208,13 +205,13 @@ public:
                 }
             }
         }
-        const double_d scale = double_d(1.0)/(Rn.box.bmax-Rn.box.bmin);
+        const double_d scale = double_d::Constant(1.0)/(Rn.box.bmax-Rn.box.bmin);
         for (size_t i = 0; i < positions.size(); ++i) {
             const unsigned int n = 4;
             const double_d &x =  (2*positions[i]-Rn.box.bmin-Rn.box.bmax)*scale;
             detail::ChebyshevRnSingle<D,n> cheb_rn(positions[i],Rn.box);
-            const int_d start = int_d(0);
-            const int_d end = int_d(n);
+            const int_d start = int_d::Constant(0);
+            const int_d end = int_d::Constant(n);
             auto range = iterator_range<lattice_iterator<D>>(
                 lattice_iterator<D>(start,end)
                 ,lattice_iterator<D>()
@@ -224,136 +221,6 @@ public:
                 TS_ASSERT_DELTA(cheb_rn(m),detail::chebyshev_Rn_slow(x,m,n),tol);
             }
         }
-    }
-
-    template <typename Expansions>
-    void helper_fmm_operators(Expansions& expansions) {
-        const unsigned int D = Expansions::dimension;
-        typedef Vector<double,D> double_d;
-        typedef Vector<int,D> int_d;
-        typedef typename Expansions::expansion_type expansion_type;
-
-        // unit box
-        detail::bbox<D> parent(double_d(0.0),double_d(1.0));
-        detail::bbox<D> leaf1(double_d(0.0),double_d(1.0));
-        leaf1.bmax[0] = 0.5;
-        detail::bbox<D> leaf2(double_d(0.0),double_d(1.0));
-        leaf2.bmin[0] = 0.5;
-        std::cout << "parent = "<<parent<<" leaf1 = "<<leaf1<<" leaf2 = "<<leaf2<<std::endl;
-
-        // create n particles, 2 leaf boxes, 1 parent box
-        std::uniform_real_distribution<double> U(0,1);
-        generator_type generator(time(NULL));
-        const size_t n = 10;
-        double_d particles_in_leaf1[n];
-        double_d particles_in_leaf2[n];
-        double source_leaf1[n];
-        double field_just_self_leaf1[n];
-        double field_all_leaf1[n];
-        double source_leaf2[n];
-        double field_just_self_leaf2[n];
-        double field_all_leaf2[n];
-
-        auto f = [](const double_d& p) {
-            return p[0];
-        };
-
-        for (size_t i = 0; i < n; ++i) {
-            particles_in_leaf1[i][0] = 0.5*U(generator);
-            particles_in_leaf2[i][0] = 0.5*U(generator)+0.5;
-            for (int j = 1; j < D; ++j) {
-                particles_in_leaf1[i][j] = U(generator);
-                particles_in_leaf2[i][j] = U(generator);
-            }
-            source_leaf1[i] = f(particles_in_leaf1[i]);
-            source_leaf2[i] = f(particles_in_leaf2[i]);
-        }
-
-        for (size_t i = 0; i < n; ++i) {
-            field_just_self_leaf1[i] = 0;
-            field_just_self_leaf2[i] = 0;
-            for (size_t j = 0; j < n; ++j) {
-                field_just_self_leaf1[i] += source_leaf1[j]
-                    *expansions.m_K(particles_in_leaf1[i],particles_in_leaf1[j]);
-                field_just_self_leaf2[i] += source_leaf2[j]
-                    *expansions.m_K(particles_in_leaf2[i],particles_in_leaf2[j]);
-            }
-            field_all_leaf1[i] = field_just_self_leaf1[i];
-            field_all_leaf2[i] = field_just_self_leaf2[i];
-            for (size_t j = 0; j < n; ++j) {
-                field_all_leaf1[i] += source_leaf2[j]
-                    *expansions.m_K(particles_in_leaf1[i],particles_in_leaf2[j]);
-                field_all_leaf2[i] += source_leaf1[j]
-                    *expansions.m_K(particles_in_leaf2[i],particles_in_leaf1[j]);
-            }
-        }
-
-        // check P2M, and L2P
-        expansion_type expansionM_leaf1 = {0};
-
-        for (size_t i = 0; i < n; ++i) {
-            expansions.P2M(expansionM_leaf1,leaf1,particles_in_leaf1[i],source_leaf1[i]);
-        }
-
-        expansion_type expansionL_leaf1 = {0};
-        expansions.M2L(expansionL_leaf1,leaf1,leaf1,expansionM_leaf1);
-
-        double L2 = 0;
-        double scale = 0;
-        for (size_t i = 0; i < n; ++i) {
-            const double check = expansions.L2P(particles_in_leaf1[i],leaf1,expansionL_leaf1);
-            L2 += std::pow(check-field_just_self_leaf1[i],2);
-            scale += std::pow(field_just_self_leaf1[i],2);
-            TS_ASSERT_LESS_THAN(std::abs(check-field_just_self_leaf1[i]),2e-4);
-        }
-
-        TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
-
-        expansion_type expansionM_leaf2 = {};
-        for (size_t i = 0; i < n; ++i) {
-            expansions.P2M(expansionM_leaf2,leaf2,particles_in_leaf2[i],source_leaf2[i]);
-        }
-
-        expansion_type expansionL_leaf2 = {};
-        expansions.M2L(expansionL_leaf2,leaf2,leaf2,expansionM_leaf2);
-
-        L2 = 0;
-        for (size_t i = 0; i < n; ++i) {
-            const double check = expansions.L2P(particles_in_leaf2[i],leaf2,expansionL_leaf2);
-            L2 += std::pow(check-field_just_self_leaf2[i],2);
-            scale += std::pow(field_just_self_leaf2[i],2);
-        }
-        TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
-        
-        // check M2M and L2L
-        expansion_type expansionM_parent = {};
-        expansions.M2M(expansionM_parent,parent,leaf1,expansionM_leaf1);
-        expansions.M2M(expansionM_parent,parent,leaf2,expansionM_leaf2);
-        expansion_type expansionL_parent = {};
-        expansions.M2L(expansionL_parent,parent,parent,expansionM_parent);
-
-        expansion_type reexpansionL_leaf1 = {};
-        expansions.L2L(reexpansionL_leaf1,leaf1,parent,expansionL_parent);
-
-        L2 = 0;
-        scale = 0;
-        for (size_t i = 0; i < n; ++i) {
-            const double check = expansions.L2P(particles_in_leaf1[i],leaf1,reexpansionL_leaf1);
-            L2 += std::pow(check-field_all_leaf1[i],2);
-            scale += std::pow(field_all_leaf1[i],2);
-        }
-        TS_ASSERT_LESS_THAN(std::sqrt(L2/scale),1e-4);
-
-    }
-        
-    void test_fmm_operators() {
-        const unsigned int D = 2;
-        typedef Vector<double,D> double_d;
-        auto kernel = [](const double_d &pa, const double_d &pb) {
-            return std::sqrt((pb-pa).squaredNorm() + 0.1); 
-        };
-        detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);
-        helper_fmm_operators(expansions);
     }
 
     void test_chebyshev_polynomial_calculation(void) {

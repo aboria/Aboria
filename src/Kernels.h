@@ -369,7 +369,6 @@ class KernelChebyshev : public KernelDense<RowElements, ColElements, F> {
   typedef Eigen::Map<vector_type> map_type;
 
   static const unsigned int dimension = base_type::dimension;
-  detail::Chebyshev_Rn<dimension> col_Rn, row_Rn;
   matrix_type m_col_Rn_matrix, m_row_Rn_matrix, m_kernel_matrix;
   unsigned int m_order;
   unsigned int m_ncheb;
@@ -418,6 +417,13 @@ public:
   }
 
   void update_kernel_matrix() {
+    detail::ChebyshevRn<dimension> col_Rn(m_order,
+              detail::bbox<dimension>(this->m_col_elements.get_min(),
+                                      this->m_col_elements.get_max()));
+    detail::ChebyshevRn<dimension> row_Rn(m_order,
+              detail::bbox<dimension>(this->m_row_elements.get_min(),
+                                      this->m_row_elements.get_max()));
+ 
     // fill kernel matrix
     m_kernel_matrix.resize(m_ncheb * BlockRows, m_ncheb * BlockCols);
     lattice_iterator<dimension> mi(m_start, m_end);

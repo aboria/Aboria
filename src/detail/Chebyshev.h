@@ -89,7 +89,7 @@ template <typename T> T chebyshev_polynomial(const T &x, unsigned int n) {
   } else {
     T Tn_2 = 1.0;
     T Tn_1 = x;
-    for (int i = 2; i <= n; ++i) {
+    for (size_t i = 2; i <= n; ++i) {
       T Tn = 2.0 * x * Tn_1 - Tn_2;
       Tn_2 = Tn_1;
       Tn_1 = Tn;
@@ -172,7 +172,7 @@ template <unsigned int D> struct Chebyshev_Rn {
     Sn.resize(N * n);
     box.bmin = positions[0];
     box.bmax = positions[0];
-    for (int i = 1; i < N; ++i) {
+    for (size_t i = 1; i < N; ++i) {
       for (size_t d = 0; d < D; ++d) {
         if (positions[i][d] < box.bmin[d])
           box.bmin[d] = positions[i][d];
@@ -190,9 +190,9 @@ template <unsigned int D> struct Chebyshev_Rn {
       }
     }
 
-    const double_d scale = double_d(1.0) / box_size;
+    const double_d scale = double_d::Constant(1.0) / box_size;
     for (size_t i = 0; i < N; ++i) {
-      for (int m = 0; m < n; ++m) {
+      for (size_t m = 0; m < n; ++m) {
         Sn[i * n + m] = chebyshev_Sn(
             (2 * positions[i] - box.bmin - box.bmax) * scale, m, n);
       }

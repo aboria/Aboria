@@ -280,7 +280,6 @@ set(ChebyshevTest
     test_fast_methods_bucket_search_parallel
     test_fast_methods_kd_tree
     test_fast_methods_octtree
-    test_fmm_operators
     test_chebyshev_polynomial_calculation
     )
 
