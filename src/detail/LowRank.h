@@ -60,7 +60,7 @@ size_t adaptive_cross_approximation_partial(const Kernel& Z,
     typedef Kernel matrix_type;
     typedef Eigen::Matrix<double,matrix_type::RowsAtCompileTime,1> col_vector_type;
     typedef Eigen::Matrix<double,1,matrix_type::ColsAtCompileTime> row_vector_type;
-    typedef typename matrix_type::Index index_type;
+    typedef size_t index_type;
     //init
     //init I_1 = 1 and set Z = 0
     const index_type rows = Z.rows();
@@ -72,11 +72,11 @@ size_t adaptive_cross_approximation_partial(const Kernel& Z,
     
     auto rowi = row_pivots.begin();
     auto coli = col_pivots.begin();
-    for (int i = 0; i < cols; ++i) {
+    for (size_t i = 0; i < cols; ++i) {
         *coli = i;
         ++coli;
     }
-    for (int i = 1; i < rows; ++i) {
+    for (size_t i = 1; i < rows; ++i) {
         *rowi = i;
         ++rowi;
     }
@@ -86,15 +86,15 @@ size_t adaptive_cross_approximation_partial(const Kernel& Z,
 
     index_type k = 0;
     index_type i = 0;
-    index_type j;
+    index_type j = 0;
     double uv_norm2 = 1;
     double Z_norm2 = 0;
     while (uv_norm2 > epsilon2*Z_norm2 && k < max_k) {
         row_vector_type Rrow(cols);
-        for (int jj = 0; jj < cols; ++jj) {
+        for (size_t jj = 0; jj < cols; ++jj) {
             Rrow(jj) = Z.coeff(i,jj);
         }
-        for (int l = 0; l < k; ++l) {
+        for (size_t l = 0; l < k; ++l) {
             Rrow -= U.col(l)(i)*V.row(l);
         }
 
@@ -116,17 +116,17 @@ size_t adaptive_cross_approximation_partial(const Kernel& Z,
         V.row(k) = Rrow/Rrow(j);
 
         col_vector_type Rcol(rows);
-        for (int ii = 0; ii < rows; ++ii) {
+        for (size_t ii = 0; ii < rows; ++ii) {
             Rcol(ii) = Z.coeff(ii,j);
         }
-        for (int l = 0; l < k; ++l) {
+        for (size_t l = 0; l < k; ++l) {
             Rcol -= V.row(l)(j)*U.col(l);
         }
 
         U.col(k) = Rcol;
         uv_norm2 = V.row(k).norm()*U.col(k).norm();
         double sum = 0;
-        for (int l = 0; l < k; ++l) {
+        for (size_t l = 0; l < k; ++l) {
             const double innerU = U.col(l).dot(U.col(k));
             const double innerV = V.row(l).dot(V.row(k));
             sum += std::abs(innerU) * std::abs(innerV);
@@ -170,10 +170,7 @@ size_t adaptive_cross_approximation_full(Eigen::MatrixBase<DerivedZ>& Z,
         Eigen::MatrixBase<DerivedU>& U,Eigen::MatrixBase<DerivedV>& V) {
     ASSERT(U.rows() == Z.rows(), "number of U rows not equal to number of Z rows");
     ASSERT(V.cols() == Z.cols(), "number of V cols not equal to number of Z cols");
-    typedef DerivedZ matrix_type;
-    typedef Eigen::Matrix<double,matrix_type::RowsAtCompileTime,1> col_vector_type;
-    typedef Eigen::Matrix<double,1,matrix_type::ColsAtCompileTime> row_vector_type;
-    typedef typename matrix_type::Index index_type;
+    typedef size_t index_type;
     //init
     //init I_1 = 1 and set Z = 0
     const index_type rows = Z.rows();
@@ -183,15 +180,15 @@ size_t adaptive_cross_approximation_full(Eigen::MatrixBase<DerivedZ>& Z,
     LOG(3,"adaptive_cross_approximation (full) (Z = ["<<rows<<","<<cols<<"] max_k = "<<max_k<<" epsilon = "<<epsilon<<")")
 
     index_type k = 0;
-    index_type i;
-    index_type j;
+    index_type i = 0;
+    index_type j = 0;
     double B_norm2 = Z.squaredNorm();
     double Z_norm2 = epsilon2*B_norm2+1.0;
     while (Z_norm2 > epsilon2*B_norm2 && k < max_k) {
         // find max element i,j
         double max = 0;
-        for (int ii = 0; ii < rows; ++ii) {
-            for (int jj = 0; jj < cols; ++jj) {
+        for (size_t ii = 0; ii < rows; ++ii) {
+            for (size_t jj = 0; jj < cols; ++jj) {
                 const double aij = std::abs(Z(ii,jj));
                 if (max < aij) {
                     max = aij;

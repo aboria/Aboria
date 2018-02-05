@@ -118,9 +118,6 @@ public:
 #ifdef HAVE_EIGEN
         const unsigned int D = 2;
         const size_t N = 100;
-        typedef Vector<double,D> double_d;
-        typedef Vector<int,D> int_d;
-        typedef Vector<bool,D> bool_d;
         // randomly generate a bunch of positions over a range 
         const double pos_min = 0;
         const double pos_max = 1;
@@ -129,8 +126,6 @@ public:
         generator_type generator(time(NULL));
         auto gen1 = std::bind(U1, generator);
         auto gen2 = std::bind(U2, generator);
-        typedef Vector<double,D> double_d;
-        typedef Vector<int,D> int_d;
 
         typedef Particles<std::tuple<>,D> ParticlesType;
         typedef ParticlesType::const_reference const_reference;
@@ -139,16 +134,16 @@ public:
         ParticlesType particles2(N);
         const double error_aim = 0.01;
 
-        for (int i=0; i<N; i++) {
-            for (int d=0; d<D; ++d) {
+        for (size_t i=0; i<N; i++) {
+            for (size_t d=0; d<D; ++d) {
                 get<position>(particles1)[i][d] = gen1();
                 get<position>(particles2)[i][d] = gen2();
             }
         }
 
         const double c = 0.01;
-        auto kernel_fun = [&c](const double_d &dx, const_reference pa, const_reference  pb) {
-            return std::sqrt(dx.squaredNorm() + c); 
+        auto kernel_fun = [&c](const_reference pa, const_reference  pb) {
+            return std::sqrt((get<position>(pb)-get<position>(pa)).squaredNorm() + c); 
         };
 
         KernelDense<ParticlesType,ParticlesType,decltype(kernel_fun)> kernel(particles1,particles2,kernel_fun);
@@ -161,8 +156,8 @@ public:
         kernel.assemble(dyn_mat);
 
         double rms_error_scale = 0;
-        for (int i=0; i<N; i++) {
-            for (int j=0; j<N; j++) {
+        for (size_t i=0; i<N; i++) {
+            for (size_t j=0; j<N; j++) {
                 double Ztilde = kernel.coeff(i,j);
                 rms_error_scale += std::pow(Ztilde,2);
             }
@@ -177,10 +172,10 @@ public:
 
             // check accuracy
             double rms_error_full_fixed = 0;
-            for (int i=0; i<N; i++) {
-                for (int j=0; j<N; j++) {
+            for (size_t i=0; i<N; i++) {
+                for (size_t j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<est_k; kk++) {
+                    for (size_t kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_full_fixed += std::pow(Ztilde-fixed_mat(i,j),2);
@@ -194,10 +189,10 @@ public:
             
             // check accuracy
             double rms_error_full_dyn = 0;
-            for (int i=0; i<N; i++) {
-                for (int j=0; j<N; j++) {
+            for (size_t i=0; i<N; i++) {
+                for (size_t j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<est_k; kk++) {
+                    for (size_t kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_full_dyn += std::pow(Ztilde-dyn_mat(i,j),2);
@@ -210,10 +205,10 @@ public:
 
             // check accuracy
             double rms_error_partial_fixed = 0;
-            for (int i=0; i<N; i++) {
-                for (int j=0; j<N; j++) {
+            for (size_t i=0; i<N; i++) {
+                for (size_t j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<est_k; kk++) {
+                    for (size_t kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_partial_fixed += std::pow(Ztilde-fixed_mat(i,j),2);
@@ -226,10 +221,10 @@ public:
             
             // check accuracy
             double rms_error_partial_dyn = 0;
-            for (int i=0; i<N; i++) {
-                for (int j=0; j<N; j++) {
+            for (size_t i=0; i<N; i++) {
+                for (size_t j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<est_k; kk++) {
+                    for (size_t kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_partial_dyn += std::pow(Ztilde-dyn_mat(i,j),2);
@@ -242,10 +237,10 @@ public:
 
             // check accuracy
             double rms_error_kernel = 0;
-            for (int i=0; i<N; i++) {
-                for (int j=0; j<N; j++) {
+            for (size_t i=0; i<N; i++) {
+                for (size_t j=0; j<N; j++) {
                     double Ztilde = 0;
-                    for (int kk=0; kk<est_k; kk++) {
+                    for (size_t kk=0; kk<est_k; kk++) {
                         Ztilde += U(i,kk)*V(kk,j);
                     }
                     rms_error_kernel += std::pow(Ztilde-kernel.coeff(i,j),2);
@@ -262,8 +257,8 @@ public:
                             *svd.matrixV().transpose();
 
             double rms_error_svd_fixed = 0;
-            for (int i=0; i<N; i++) {
-                for (int j=0; j<N; j++) {
+            for (size_t i=0; i<N; i++) {
+                for (size_t j=0; j<N; j++) {
                     rms_error_svd_fixed += std::pow(fixed_mat_approx(i,j)-fixed_mat(i,j),2);
                 }
             }
@@ -278,8 +273,8 @@ public:
                             *svd2.matrixV().transpose();
 
             double rms_error_svd_dyn = 0;
-            for (int i=0; i<N; i++) {
-                for (int j=0; j<N; j++) {
+            for (size_t i=0; i<N; i++) {
+                for (size_t j=0; j<N; j++) {
                     rms_error_svd_dyn += std::pow(dyn_mat_approx(i,j)-dyn_mat(i,j),2);
                 }
             }
