@@ -63,7 +63,7 @@ class H2Test : public CxxTest::TestSuite {
   ABORIA_VARIABLE(vinverted_source, vdouble2, "inverted source h2");
 
 public:
-#ifdef HAVE_EIGEN
+#ifdef HAVE_H2LIB
   template <typename Source, typename TargetH2, typename TargetManual,
             typename InvertedSource, typename ParticlesType,
             typename KernelFunction, typename P2PKernelFunction>
@@ -769,7 +769,7 @@ public:
   }
 
   void test_fast_methods_bucket_search_serial(void) {
-#ifdef HAVE_EIGEN
+#ifdef HAVE_H2LIB
     const size_t N = 1000;
     /*
     std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 1D..." <<
@@ -790,7 +790,7 @@ public:
   }
 
   void test_fast_methods_bucket_search_parallel(void) {
-#ifdef HAVE_EIGEN
+#ifdef HAVE_H2LIB
     const size_t N = 1000;
     /*
     std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 1D..." <<
@@ -811,7 +811,7 @@ public:
   }
 
   void test_fast_methods_kd_tree(void) {
-#ifdef HAVE_EIGEN
+#ifdef HAVE_H2LIB
     const size_t N = 1000;
     /*
     std::cout << "KD_TREE: testing extended matrix 1D..." << std::endl;
@@ -832,7 +832,7 @@ public:
   }
 
   void test_fast_methods_octtree(void) {
-#ifdef HAVE_EIGEN
+#ifdef HAVE_H2LIB
     const size_t N = 1000;
     /*
     std::cout << "OCTTREE: testing extended matrix 1D..." << std::endl;

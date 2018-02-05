@@ -109,6 +109,7 @@ public:
     }
 
 #ifdef HAVE_EIGEN
+    typedef typename ParticlesType::reference reference;
     for (reference p : particles) {
       get<TargetFMM>(p) = scalar_traits::Zero();
     }

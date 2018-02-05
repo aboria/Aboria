@@ -36,7 +36,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef H2_LIB_H_
 #define H2_LIB_H_
 
+
 #include "detail/FastMultipoleMethod.h"
+
+#ifdef HAVE_H2LIB
 
 #include <GL/glut.h>
 extern "C" {
@@ -847,5 +850,7 @@ H2LibMatrix make_h2lib_matrix(const RowParticlesType &row_particles,
 }
 
 } // namespace Aboria
+
+#endif // HAVE_H2LIB
 
 #endif
