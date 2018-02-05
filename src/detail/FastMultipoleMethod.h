@@ -855,7 +855,7 @@ void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
   const Vector<double, D> *pbegin = &get<position>(target_particles_begin)[0];
   const size_t index = pbegin_range - pbegin;
   const size_t block_size = expansions.block_rows;
-  for (int i = index; i < index + N; ++i) {
+  for (size_t i = index; i < index + N; ++i) {
     const Vector<double, D> &pi = pbegin[i];
     const auto l2p = expansions.L2P(pi, box, source);
     for (size_t ii = 0; ii < block_size; ++ii) {
@@ -1008,9 +1008,9 @@ void calculate_P2P(const Eigen::DenseBase<TargetDerived> &target_vector,
       helper;
 
   auto pi = target_range.begin();
-  for (int i = index_target; i < index_target + n_target; ++i, ++pi) {
+  for (size_t i = index_target; i < index_target + n_target; ++i, ++pi) {
     auto pj = source_range.begin();
-    for (int j = index_source; j < index_source + n_source; ++j, ++pj) {
+    for (size_t j = index_source; j < index_source + n_source; ++j, ++pj) {
       const_cast<Eigen::DenseBase<TargetDerived> &>(target_vector)
           .template segment<helper::block_rows>(i * helper::block_rows) +=
           kernel(*pi, *pj) * source_vector.template segment<helper::block_cols>(
