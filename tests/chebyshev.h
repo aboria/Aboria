@@ -60,9 +60,9 @@ class ChebyshevTest : public CxxTest::TestSuite {
 public:
     template <unsigned int N, typename ParticlesType, typename KernelFunction>
     void helper_fast_methods_calculate(ParticlesType& particles, const KernelFunction& kernel, const double scale) {
-        const unsigned int dimension = ParticlesType::dimension;
 
 #ifdef HAVE_EIGEN
+        const unsigned int dimension = ParticlesType::dimension;
 
         // perform the operation using chebyshev interpolation operator 
         auto t0 = Clock::now();

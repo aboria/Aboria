@@ -50,6 +50,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "H2Lib.h"
 #endif
 
+#ifdef HAVE_EIGEN
+
 namespace Aboria {
 
 template <typename RowElements, typename ColElements, typename F>
@@ -221,7 +223,9 @@ public:
     CHECK(static_cast<size_t>(rhs.size()) == this->cols(),
           "rhs size is inconsistent");
 
-#pragma omp parallel for
+#ifdef HAVE_OPENMP
+    #pragma omp parallel for
+#endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       for (size_t j = 0; j < nb; ++j) {
@@ -795,5 +799,7 @@ public:
 };
 
 } // namespace Aboria
+
+#endif // HAVE_EIGEN
 
 #endif
