@@ -336,7 +336,7 @@ template <unsigned int D> struct ChebyshevRn {
   }
 
   // NOTE: valid range of m is 0..n-1
-  double operator()(const int_d &m) {
+  double operator()(const int_d &m) const {
     ASSERT((m >= 0).all(), "m should be greater than or equal to 0");
     ASSERT((m < static_cast<int>(m_Sn.size())).all(),
            "m should be less than n");

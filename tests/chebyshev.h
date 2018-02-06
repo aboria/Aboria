@@ -74,6 +74,7 @@ public:
     typedef Eigen::Map<vector_type> map_type;
     map_type source_vect(get<source>(particles).data(), particles.size());
     map_type target_vect(get<target_cheb>(particles).data(), particles.size());
+
     t0 = Clock::now();
     target_vect = C * source_vect;
     t1 = Clock::now();
@@ -84,7 +85,11 @@ public:
         std::end(get<target_cheb>(particles)),
         std::begin(get<target_manual>(particles)), 0.0,
         [](const double t1, const double t2) { return t1 + t2; },
-        [](const double t1, const double t2) { return (t1 - t2) * (t1 - t2); });
+        [](const double t1, const double t2) {
+          // std::cout << "t1 = " << t1 << "t2 = " << t2 << std::endl;
+
+          return (t1 - t2) * (t1 - t2);
+        });
 
     std::cout << "dimension = " << dimension << ". N = " << N
               << ". L2_cheb error = " << L2_cheb
@@ -102,16 +107,13 @@ public:
             template <typename> class SearchMethod>
   void helper_fast_methods(size_t N) {
     typedef Vector<double, D> double_d;
-    typedef Vector<int, D> int_d;
     typedef Vector<bool, D> bool_d;
     // randomly generate a bunch of positions over a range
-    const double pos_min = 0;
-    const double pos_max = 1;
+    const double pos_min = 0.0;
+    const double pos_max = 1.0;
     std::uniform_real_distribution<double> U(pos_min, pos_max);
     generator_type generator(time(NULL));
     auto gen = std::bind(U, generator);
-    typedef Vector<double, D> double_d;
-    typedef Vector<int, D> int_d;
 
     typedef Particles<
         std::tuple<source, target_cheb, target_manual, target_fmm, target_h2>,
@@ -123,11 +125,11 @@ public:
     for (size_t i = 0; i < N; i++) {
       for (size_t d = 0; d < D; ++d) {
         get<position>(particles)[i][d] = gen();
-        get<source>(particles)[i] = gen();
       }
+      get<source>(particles)[i] = gen();
     }
-    particles.init_neighbour_search(int_d::Constant(pos_min),
-                                    int_d::Constant(pos_max),
+    particles.init_neighbour_search(double_d::Constant(pos_min),
+                                    double_d::Constant(pos_max),
                                     bool_d::Constant(false));
 
     // generate a source vector using a smooth cosine

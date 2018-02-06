@@ -396,17 +396,16 @@ struct integrate_chebyshev<
 
   size_t m_order;
   size_t m_ncheb;
-  box_type m_box;
-  mutable detail::ChebyshevRn<dimension> m_cheb;
+  detail::ChebyshevRn<dimension> m_cheb;
   const Elements &m_elements;
 
   integrate_chebyshev(const Elements &elements, const size_t order,
-                      const box_type box)
-      : m_order(order), m_ncheb(std::pow(order, dimension)), m_box(box),
-        m_cheb(order, m_box), m_elements(elements) {}
+                      const box_type &box)
+      : m_order(order), m_ncheb(std::pow(order, dimension)), m_cheb(order, box),
+        m_elements(elements) {}
 
   template <typename Derived>
-  void operator()(const Eigen::DenseBase<Derived> &result) const {
+  void operator()(const Eigen::DenseBase<Derived> &result) {
     for (size_t i = 0; i < m_elements.size(); ++i) {
       m_cheb.set_position(get<position>(m_elements)[i]);
       lattice_iterator<dimension> mj(int_d::Constant(0),
@@ -441,14 +440,13 @@ struct integrate_chebyshev<
 
   size_t m_order;
   size_t m_ncheb;
-  box_type m_box;
-  mutable detail::ChebyshevRn<dimension> m_cheb;
+  detail::ChebyshevRn<dimension> m_cheb;
   const Elements &m_elements;
 
   integrate_chebyshev(const Elements &elements, const size_t order,
-                      const box_type box)
-      : m_order(order), m_ncheb(std::pow(order, dimension)), m_box(box),
-        m_cheb(order, box), m_elements(elements) {}
+                      const box_type &box)
+      : m_order(order), m_ncheb(std::pow(order, dimension)), m_cheb(order, box),
+        m_elements(elements) {}
 
   template <typename Derived>
   void operator()(const Eigen::DenseBase<Derived> &result) const {

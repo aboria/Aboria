@@ -408,10 +408,10 @@ public:
   }
 
   void update_row_positions() {
+    detail::bbox<dimension> row_box(this->m_row_elements.get_min(),
+                                    this->m_row_elements.get_max());
     detail::integrate_chebyshev<RowElements, BlockRows, QuadratureOrder>
-        integrate(this->m_row_elements, m_order,
-                  detail::bbox<dimension>(this->m_row_elements.get_min(),
-                                          this->m_row_elements.get_max()));
+        integrate(this->m_row_elements, m_order, row_box);
 
     // fill row_Rn matrix
     m_row_Rn_matrix.resize(this->m_row_elements.size() * BlockRows,
@@ -420,12 +420,12 @@ public:
   }
 
   void update_kernel_matrix() {
-    detail::ChebyshevRn<dimension> col_Rn(
-        m_order, detail::bbox<dimension>(this->m_col_elements.get_min(),
-                                         this->m_col_elements.get_max()));
-    detail::ChebyshevRn<dimension> row_Rn(
-        m_order, detail::bbox<dimension>(this->m_row_elements.get_min(),
-                                         this->m_row_elements.get_max()));
+    detail::bbox<dimension> row_box(this->m_row_elements.get_min(),
+                                    this->m_row_elements.get_max());
+    detail::bbox<dimension> col_box(this->m_col_elements.get_min(),
+                                    this->m_col_elements.get_max());
+    detail::ChebyshevRn<dimension> col_Rn(m_order, row_box);
+    detail::ChebyshevRn<dimension> row_Rn(m_order, col_box);
 
     // fill kernel matrix
     m_kernel_matrix.resize(m_ncheb * BlockRows, m_ncheb * BlockCols);
@@ -443,15 +443,15 @@ public:
   }
 
   void update_col_positions() {
+    detail::bbox<dimension> col_box(this->m_col_elements.get_min(),
+                                    this->m_col_elements.get_max());
     detail::integrate_chebyshev<ColElements, BlockCols, QuadratureOrder>
-        integrate(this->m_col_elements, m_order,
-                  detail::bbox<dimension>(this->m_col_elements.get_min(),
-                                          this->m_col_elements.get_max()));
+        integrate(this->m_col_elements, m_order, col_box);
 
     // fill row_Rn matrix
-    m_col_Rn_matrix.resize(m_ncheb * BlockCols,
-                           this->m_col_elements.size() * BlockCols);
-    integrate(m_col_Rn_matrix.transpose());
+    m_col_Rn_matrix.resize(this->m_col_elements.size() * BlockCols,
+                           m_ncheb * BlockCols);
+    integrate(m_col_Rn_matrix);
   }
 
   /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
@@ -466,12 +466,12 @@ public:
     CHECK(!b.get_periodic().any(), "chebyshev operator assumes not periodic");
     ASSERT(static_cast<typename DerivedLHS::Index>(this->rows()) == lhs.rows(),
            "lhs vector has incompatible size");
-    ASSERT(static_cast<typename DerivedLHS::Index>(this->cols()) == rhs.rows(),
+    ASSERT(static_cast<typename DerivedRHS::Index>(this->cols()) == rhs.rows(),
            "rhs vector has incompatible size");
 
     // First compute the weights at the Chebyshev nodes ym
     // by anterpolation
-    m_W = m_col_Rn_matrix * rhs.derived();
+    m_W = m_col_Rn_matrix.transpose() * rhs.derived();
 
     // Next compute f ðxÞ at the Chebyshev nodes xl:
     m_fcheb = m_kernel_matrix * m_W;
