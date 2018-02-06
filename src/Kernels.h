@@ -41,7 +41,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Particles.h"
 #include "detail/Chebyshev.h"
 
-
 #include "FastMultipoleMethod.h"
 #include "detail/Kernels.h"
 
@@ -224,7 +223,7 @@ public:
           "rhs size is inconsistent");
 
 #ifdef HAVE_OPENMP
-    #pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
@@ -253,10 +252,8 @@ public:
     CHECK(lhs.size() == na, "lhs size is inconsistent");
     CHECK(rhs.size() == nb, "rhs size is inconsistent");
 
-    const bool is_periodic = !a.get_periodic().any();
-
 #ifdef HAVE_OPENMP
-    #pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
@@ -298,8 +295,6 @@ public:
     const RowElements &a = this->m_row_elements;
     const ColElements &b = this->m_col_elements;
 
-    const bool is_periodic = !a.get_periodic().any();
-
     m_matrix.resize(this->rows(), this->cols());
     for (size_t i = 0; i < a.size(); ++i) {
       const_row_reference ai = a[i];
@@ -334,10 +329,8 @@ public:
     ASSERT(lhs.size() == na, "lhs size is inconsistent");
     ASSERT(rhs.size() == nb, "rhs size is inconsistent");
 
-    const bool is_periodic = !a.get_periodic().any();
-
 #ifdef HAVE_OPENMP
-    #pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (size_t i = 0; i < na; ++i) {
       for (size_t j = 0; j < nb; ++j) {
@@ -425,13 +418,13 @@ public:
   }
 
   void update_kernel_matrix() {
-    detail::ChebyshevRn<dimension> col_Rn(m_order,
-              detail::bbox<dimension>(this->m_col_elements.get_min(),
-                                      this->m_col_elements.get_max()));
-    detail::ChebyshevRn<dimension> row_Rn(m_order,
-              detail::bbox<dimension>(this->m_row_elements.get_min(),
-                                      this->m_row_elements.get_max()));
- 
+    detail::ChebyshevRn<dimension> col_Rn(
+        m_order, detail::bbox<dimension>(this->m_col_elements.get_min(),
+                                         this->m_col_elements.get_max()));
+    detail::ChebyshevRn<dimension> row_Rn(
+        m_order, detail::bbox<dimension>(this->m_row_elements.get_min(),
+                                         this->m_row_elements.get_max()));
+
     // fill kernel matrix
     m_kernel_matrix.resize(m_ncheb * BlockRows, m_ncheb * BlockCols);
     lattice_iterator<dimension> mi(m_start, m_end);
@@ -697,13 +690,12 @@ public:
     const ColElements &b = this->m_col_elements;
 
     const size_t na = a.size();
-    const size_t nb = b.size();
 
-    ASSERT(na == a.size(), "lhs vector has incompatible size");
-    ASSERT(nb == b.size(), "rhs vector has incompatible size");
+    ASSERT(na == rhs.size(), "lhs vector has incompatible size");
+    ASSERT(b.size() == lhs.size(), "rhs vector has incompatible size");
 
 #ifdef HAVE_OPENMP
-    #pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
@@ -731,7 +723,7 @@ public:
     const size_t na = a.size();
 
 #ifdef HAVE_OPENMP
-    #pragma omp parallel for
+#pragma omp parallel for
 #endif
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];

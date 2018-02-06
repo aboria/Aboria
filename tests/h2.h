@@ -347,7 +347,6 @@ public:
     typedef Vector<double, D> double_d;
     typedef Vector<int, D> int_d;
     typedef Vector<bool, D> bool_d;
-    const double tol = 1e-10;
     // randomly generate a bunch of positions over a range
     const double pos_min = 0;
     const double pos_max = 1;
@@ -517,7 +516,7 @@ public:
       // return std::sqrt((pb-pa).squaredNorm() + c);
       return std::exp(-(pb - pa).squaredNorm() * c);
     };
-    auto p2pkernel = [&kernel, &c](const_reference pa, const_reference pb) {
+    auto p2pkernel = [&kernel](const_reference pa, const_reference pb) {
       return kernel(get<position>(pa), get<position>(pb));
       // return std::sqrt((get<position>(pb)-get<position>(pa)).squaredNorm() +
       // c); return
@@ -758,9 +757,9 @@ public:
 
   void test_fmm_matrix_operators() {
 #ifdef HAVE_EIGEN
-    //const unsigned int D = 2;
-    //typedef Vector<double, D> double_d;
-    //auto kernel = [](const double_d &pa, const double_d &pb) {
+    // const unsigned int D = 2;
+    // typedef Vector<double, D> double_d;
+    // auto kernel = [](const double_d &pa, const double_d &pb) {
     //  return std::sqrt((pb - pa).squaredNorm() + 0.1);
     //};
     // detail::BlackBoxExpansions<D,10,decltype(kernel)> expansions(kernel);

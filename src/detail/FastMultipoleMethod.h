@@ -99,8 +99,8 @@ struct BlackBoxExpansions {
   typedef detail::bbox<D> box_type;
   static constexpr size_t ncheb = ipow(N, D);
 
-  static const size_t block_rows = BlockRows;
-  static const size_t block_cols = BlockCols;
+  static constexpr size_t block_rows = BlockRows;
+  static constexpr size_t block_cols = BlockCols;
 
   typedef typename std::conditional<
       BlockRows == 1, double, Vector<double, BlockRows>>::type row_scalar_type;
@@ -185,7 +185,8 @@ struct BlackBoxExpansions {
       lattice_iterator<dimension> mj(int_d::Constant(0), int_d::Constant(N));
       for (size_t j = 0; j < ncheb; ++j, ++mj) {
         // check ij
-        matrix.block<BlockCols, BlockCols>(i * BlockCols, j * BlockCols) =
+        matrix.template block<BlockCols, BlockCols>(i * BlockCols,
+                                                    j * BlockCols) =
             cheb_rn(*mj) * blockcol_type::Identity();
       }
     }
@@ -221,7 +222,8 @@ struct BlackBoxExpansions {
 
       lattice_iterator<D> mi(int_d::Constant(0), int_d::Constant(N));
       for (size_t i = 0; i < ncheb; ++i, ++mi) {
-        matrix.block<BlockCols, BlockCols>(i * BlockCols, j * BlockCols) =
+        matrix.template block<BlockCols, BlockCols>(i * BlockCols,
+                                                    j * BlockCols) =
             cheb_rn(*mi) * blockcol_type::Identity();
       }
     }
@@ -260,8 +262,8 @@ struct BlackBoxExpansions {
         const double_d pj =
             0.5 * (pj_unit_box + 1) * (source_box.bmax - source_box.bmin) +
             source_box.bmin;
-        matrix.block<BlockRows, BlockCols>(i * BlockRows, j * BlockCols) =
-            m_K(pi, pj);
+        matrix.template block<BlockRows, BlockCols>(
+            i * BlockRows, j * BlockCols) = m_K(pi, pj);
       }
     }
   }
@@ -296,7 +298,8 @@ struct BlackBoxExpansions {
 
       lattice_iterator<D> mj(int_d::Constant(0), int_d::Constant(N));
       for (size_t j = 0; j < ncheb; ++j, ++mj) {
-        matrix.block<BlockRows, BlockRows>(i * BlockRows, j * BlockRows) =
+        matrix.template block<BlockRows, BlockRows>(i * BlockRows,
+                                                    j * BlockRows) =
             cheb_rn(*mj) * blockrow_type::Identity();
       }
     }
@@ -354,7 +357,8 @@ struct BlackBoxExpansions {
       detail::ChebyshevRnSingle<D, N> cheb_rn(p, box);
       lattice_iterator<dimension> mj(int_d::Constant(0), int_d::Constant(N));
       for (size_t j = 0; j < ncheb; ++j, ++mj) {
-        matrix.block<BlockRows, BlockRows>(i * BlockRows, j * BlockRows) =
+        matrix.template block<BlockRows, BlockRows>(i * BlockRows,
+                                                    j * BlockRows) =
             cheb_rn(*mj) * blockrow_type::Identity();
       }
     }
@@ -368,8 +372,8 @@ template <size_t D, typename Function, size_t BlockRows, size_t BlockCols>
 struct H2LibBlackBoxExpansions {
   typedef detail::bbox<D> box_type;
 
-  static const size_t block_rows = BlockRows;
-  static const size_t block_cols = BlockCols;
+  static constexpr size_t block_rows = BlockRows;
+  static constexpr size_t block_cols = BlockCols;
 
   typedef Vector<double, BlockRows> row_scalar_type;
   typedef Vector<double, BlockCols> col_scalar_type;
@@ -753,7 +757,7 @@ void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
   const size_t N = std::distance(range.begin(), range.end());
   const Vector<double, D> *pbegin = &get<position>(*range.begin());
   const size_t index = pbegin - &get<position>(source_particles_begin)[0];
-  const size_t block_size = expansions.block_cols;
+  const size_t block_size = Expansions::block_cols;
   for (size_t i = 0; i < N; ++i) {
     const Vector<double, D> &pi = pbegin[i];
     expansions.P2M(sum, box, pi,
@@ -780,7 +784,7 @@ void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
 
   typedef typename Traits::position position;
   typedef typename Iterator::reference reference;
-  const size_t block_size = expansions.block_cols;
+  constexpr size_t block_size = Expansions::block_cols;
   for (reference i : range) {
     const Vector<double, D> &pi = get<position>(i);
     const size_t index = &pi - &get<position>(source_particles_begin)[0];
@@ -854,7 +858,7 @@ void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
   const Vector<double, D> *pbegin_range = &get<position>(*range.begin());
   const Vector<double, D> *pbegin = &get<position>(target_particles_begin)[0];
   const size_t index = pbegin_range - pbegin;
-  const size_t block_size = expansions.block_rows;
+  const size_t block_size = Expansions::block_rows;
   for (size_t i = index; i < index + N; ++i) {
     const Vector<double, D> &pi = pbegin[i];
     const auto l2p = expansions.L2P(pi, box, source);
@@ -884,7 +888,7 @@ void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
   LOG(3, "calculate_L2P: box = " << box);
   typedef typename Traits::position position;
   typedef typename Iterator::reference reference;
-  const size_t block_size = expansions.block_rows;
+  const size_t block_size = Expansions::block_rows;
   for (reference i : range) {
     const Vector<double, D> &pi = get<position>(i);
     const size_t index = &pi - &get<position>(target_particles_begin)[0];

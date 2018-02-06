@@ -167,7 +167,6 @@ public:
               typename F>
     void operator()(
         const KernelH2<RowParticles, ColParticles, PositionF, F> &kernel) {
-      static const unsigned int dimension = RowParticles::dimension;
 
       m_h2mats[i] = &kernel.get_h2_matrix();
       m_col_sizes[i] = kernel.cols();
@@ -267,7 +266,7 @@ public:
 protected:
   bool m_isInitialized;
 };
-#endif //HAVE_H2LIB
+#endif // HAVE_H2LIB
 
 #if 0
 template <unsigned int ReducedOrder, 

@@ -57,12 +57,11 @@ class H2Lib_LR_Decomposition {
   ph2matrix L;
   ph2matrix R;
   ptruncmode tm;
-  double tol;
 
 public:
   H2Lib_LR_Decomposition(const ph2matrix h2mat, const pblock broot,
                          const double tol)
-      : tm(new_releucl_truncmode()), tol(tol) {
+      : tm(new_releucl_truncmode()) {
 
     pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
     pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
@@ -129,12 +128,11 @@ class H2LibCholeskyDecomposition {
   ph2matrix A;
   ph2matrix L;
   ptruncmode tm;
-  double tol;
 
 public:
   H2LibCholeskyDecomposition(const ph2matrix h2mat, const pblock broot,
                              const double tol)
-      : tm(new_releucl_truncmode()), tol(tol) {
+      : tm(new_releucl_truncmode()) {
 
     pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
     pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
@@ -201,11 +199,10 @@ public:
 class HLib_LR_Decomposition {
   phmatrix A;
   ptruncmode tm;
-  double tol;
 
 public:
   HLib_LR_Decomposition(const phmatrix hmat, const double tol)
-      : tm(new_releucl_truncmode()), tol(tol) {
+      : tm(new_releucl_truncmode()) {
     A = clone_hmatrix(hmat);
     lrdecomp_hmatrix(A, tm, tol);
   }
@@ -243,11 +240,10 @@ public:
 class HLibCholeskyDecomposition {
   phmatrix A;
   ptruncmode tm;
-  double tol;
 
 public:
   HLibCholeskyDecomposition(const phmatrix hmat, const double tol)
-      : tm(new_abseucl_truncmode()), tol(tol) {
+      : tm(new_abseucl_truncmode()) {
 
     A = clone_hmatrix(hmat);
     choldecomp_hmatrix(A, tm, tol);
