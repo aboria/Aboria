@@ -62,7 +62,7 @@ template <typename Traits> struct bucket_search_parallel_params {
   double_d side_length;
 };
 
-template <typename Traits> class bucket_search_parallel_query;
+template <typename Traits> struct bucket_search_parallel_query;
 
 template <typename Traits>
 class bucket_search_parallel

@@ -49,7 +49,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <typename Traits> class bucket_search_serial_query;
+template <typename Traits> struct bucket_search_serial_query;
 
 /// \brief Implements neighbourhood searching using a bucket search algorithm,
 /// dividing the domain into constant size "buckets".
@@ -312,13 +312,16 @@ private:
         for (int toi = start_index_deleted; toi < end_index_deleted; ++toi) {
           const int toi_back = m_linked_list_reverse[toi];
           const int toi_forward = m_linked_list[toi];
-          ASSERT(toi_back == detail::get_empty_id() ||
-                     (toi_back < m_linked_list_reverse.size() && toi_back >= 0),
-                 "invalid index of " << toi_back
-                                     << ". Note linked list reverse size is "
-                                     << m_linked_list_reverse.size());
+          ASSERT(
+              toi_back == detail::get_empty_id() ||
+                  (toi_back < static_cast<int>(m_linked_list_reverse.size()) &&
+                   toi_back >= 0),
+              "invalid index of " << toi_back
+                                  << ". Note linked list reverse size is "
+                                  << m_linked_list_reverse.size());
           ASSERT(toi_forward == detail::get_empty_id() ||
-                     (toi_forward < m_linked_list_reverse.size() &&
+                     (toi_forward <
+                          static_cast<int>(m_linked_list_reverse.size()) &&
                       toi_forward >= 0),
                  "invalid index of " << toi_back
                                      << ". Note linked list reverse size is "

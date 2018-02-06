@@ -49,7 +49,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <typename Traits> class octtree_query;
+template <typename Traits> struct octtree_query;
 
 template <typename Traits>
 class octtree : public neighbour_search_base<octtree<Traits>, Traits,

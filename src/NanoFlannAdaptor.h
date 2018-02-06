@@ -51,7 +51,7 @@ namespace Aboria {
 
 template <typename Traits> class nanoflann_adaptor;
 
-template <typename Traits> class nanoflann_adaptor_query;
+template <typename Traits> struct nanoflann_adaptor_query;
 
 template <typename Traits> class nanoflann_child_iterator;
 

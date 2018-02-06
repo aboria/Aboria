@@ -104,7 +104,9 @@ public:
     TS_ASSERT_EQUALS(test.size(), 0);
 
     typename Test_type::reference p_ref = test[0];
+    get<id>(p_ref) = 101;
     typename Test_type::value_type p_value = test[0];
+    TS_ASSERT_EQUALS(get<id>(p_value), 101);
   }
 
   void test_documentation(void) {
@@ -163,6 +165,7 @@ public:
     ABORIA_VARIABLE(flag, uint8_t, "my flag variable")
     //<-
     flag flag_not_used;
+    (void)flag_not_used;
     //->
 
     /*`

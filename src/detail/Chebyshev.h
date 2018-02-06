@@ -107,7 +107,7 @@ template <unsigned int D>
 Vector<double, D> chebyshev_node_nd(const Vector<int, D> &m,
                                     const unsigned int n) {
   ASSERT((m >= 0).all(), "m should be greater than or equal to 0");
-  ASSERT((m < n).all(), "m should be less than n");
+  ASSERT((m < static_cast<int>(n)).all(), "m should be less than n");
   Vector<double, D> pos;
   for (size_t d = 0; d < D; ++d) {
     pos[d] = chebyshev_node(m[d], n);
@@ -337,7 +337,8 @@ template <unsigned int D> struct ChebyshevRn {
   // NOTE: valid range of m is 0..n-1
   double operator()(const int_d &m) {
     ASSERT((m >= 0).all(), "m should be greater than or equal to 0");
-    ASSERT((m < m_Sn.size()).all(), "m should be less than n");
+    ASSERT((m < static_cast<int>(m_Sn.size())).all(),
+           "m should be less than n");
     double ret = 1.0;
     for (size_t d = 0; d < D; ++d) {
       ret *= m_Sn[m[d]][d];
