@@ -56,9 +56,9 @@ size_t adaptive_cross_approximation_partial(const Kernel &Z, const size_t max_k,
                                             const double epsilon,
                                             Eigen::MatrixBase<DerivedU> &U,
                                             Eigen::MatrixBase<DerivedV> &V) {
-  ASSERT(U.rows() == Z.rows(),
+  ASSERT(U.rows() == static_cast<typename DerivedU::Index>(Z.rows()),
          "number of U rows not equal to number of Z rows");
-  ASSERT(V.cols() == Z.cols(),
+  ASSERT(V.cols() == static_cast<typename DerivedV::Index>(Z.cols()),
          "number of V cols not equal to number of Z cols");
   typedef Kernel matrix_type;
   typedef Eigen::Matrix<double, matrix_type::RowsAtCompileTime, 1>

@@ -165,8 +165,10 @@ public:
     const size_t na = a.size();
     const size_t nb = b.size();
 
-    ASSERT(matrix.rows() == this->rows(), "matrix has incompatible row size");
-    ASSERT(matrix.cols() == this->cols(), "matrix has incompatible col size");
+    ASSERT(matrix.rows() == static_cast<typename Derived::Index>(this->rows()),
+           "matrix has incompatible row size");
+    ASSERT(matrix.cols() == static_cast<typename Derived::Index>(this->cols()),
+           "matrix has incompatible col size");
 
     for (size_t i = 0; i < na; ++i) {
       for (size_t j = 0; j < nb; ++j) {
@@ -462,8 +464,10 @@ public:
     const ColElements &b = this->m_col_elements;
 
     CHECK(!b.get_periodic().any(), "chebyshev operator assumes not periodic");
-    ASSERT(this->rows() == lhs.rows(), "lhs vector has incompatible size");
-    ASSERT(this->cols() == rhs.rows(), "rhs vector has incompatible size");
+    ASSERT(static_cast<typename DerivedLHS::Index>(this->rows()) == lhs.rows(),
+           "lhs vector has incompatible size");
+    ASSERT(static_cast<typename DerivedLHS::Index>(this->cols()) == rhs.rows(),
+           "rhs vector has incompatible size");
 
     // First compute the weights at the Chebyshev nodes ym
     // by anterpolation
@@ -714,8 +718,10 @@ public:
   void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
-    ASSERT(this->rows() == lhs.rows(), "lhs vector has incompatible size");
-    ASSERT(this->cols() == rhs.rows(), "rhs vector has incompatible size");
+    ASSERT(static_cast<typename DerivedLHS::Index>(this->rows()) == lhs.rows(),
+           "lhs vector has incompatible size");
+    ASSERT(static_cast<typename DerivedRHS::Index>(this->cols()) == rhs.rows(),
+           "rhs vector has incompatible size");
 
     const RowElements &a = this->m_row_elements;
     const ColElements &b = this->m_col_elements;

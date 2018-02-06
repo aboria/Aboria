@@ -794,9 +794,9 @@ public:
   template <typename MatType>
   RASMPreconditioner &factorize(const MatType &mat) {
     LOG(2, "RASMPreconditioner: factorizing domain");
-    eigen_assert(m_rows == mat.rows() &&
+    eigen_assert(static_cast<typename MatType::Index>(m_rows) == mat.rows() &&
                  "RASMPreconditioner::solve(): invalid number of rows of mat");
-    eigen_assert(m_cols == mat.cols() &&
+    eigen_assert(static_cast<typename MatType::Index>(m_cols) == mat.cols() &&
                  "RASMPreconditioner::solve(): invalid number of rows of mat");
 
     m_domain_factorized_matrix.resize(m_domain_indicies.size());
@@ -914,7 +914,7 @@ public:
   template <typename Rhs>
   inline const Eigen::Solve<RASMPreconditioner, Rhs>
   solve(const Eigen::MatrixBase<Rhs> &b) const {
-    eigen_assert(m_rows == b.rows() &&
+    eigen_assert(static_cast<typename Rhs::Index>(m_rows) == b.rows() &&
                  "RASMPreconditioner::solve(): invalid number of rows of the "
                  "right hand side matrix b");
     eigen_assert(m_isInitialized && "RASMPreconditioner is not initialized.");

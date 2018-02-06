@@ -124,6 +124,94 @@ protected:
     return W;
   }
 
+  /*
+    template <typename RowParticles>
+    void generate_levels(
+        const col_child_iterator_vector_type &parents_strong_connections,
+        const box_type &box_parent, const child_iterator &ci_parent,
+        const row_child_iterator &ci, const RowParticles &row_particles,
+        const ColParticles &col_particles, const size_t level, bool active) {
+
+      const box_type &target_box = m_query->get_bounds(ci);
+      size_t target_index = m_query->get_bucket_index(*ci);
+      LOG(3, "generate_levels with bucket " << target_box);
+
+      // add current iterator to level
+      if (level >= m_levels.size()) {
+        m_levels.resize(level + 1);
+      }
+
+      // setup theta condition test
+      detail::theta_condition<dimension> theta(target_box.bmin,
+    target_box.bmax);
+
+      // add strongly connected buckets to current connectivity list
+      if (parents_strong_connections.empty()) {
+        for (col_child_iterator cj = m_col_query->get_children(); cj != false;
+             ++cj) {
+          const box_type &source_box = m_query->get_bounds(cj);
+          if (theta.check(source_box.bmin, source_box.bmax)) {
+            // add strongly connected buckets to current connectivity list
+            m_strong_connectivity[target_index].push_back(cj);
+          } else {
+            // add weakly connected buckets to current connectivity list
+            m_weak_connectivity[target_index].push_back(cj);
+            active = true;
+          }
+        }
+      } else {
+        if (active) {
+          m_parent_connectivity[target_index] = ci_parent;
+        }
+        for (const col_child_iterator &source : parents_strong_connections) {
+          if (m_col_query->is_leaf_node(*source)) {
+            m_strong_connectivity[target_index].push_back(source);
+          } else {
+            for (col_child_iterator cj = m_col_query->get_children(source);
+                 cj != false; ++cj) {
+              const box_type &source_box = m_col_query->get_bounds(cj);
+              if (theta.check(source_box.bmin, source_box.bmax)) {
+                m_strong_connectivity[target_index].push_back(cj);
+              } else {
+                m_weak_connectivity[target_index].push_back(cj);
+                active = true;
+              }
+            }
+          }
+        }
+      }
+      if (!m_row_query->is_leaf_node(*ci)) { // non leaf node
+        for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
+          generate_levels(m_strong_connectivity[target_index], target_box, ci,
+    cj, row_particles, col_particles, level + 1, active);
+        }
+      } else {
+        ASSERT(active == true,
+               "have a non-active leaf node, don't know what to do in this
+    case"); child_iterator_vector_type strong_copy =
+            m_strong_connectivity[target_index];
+        m_strong_connectivity[target_index].clear();
+        for (child_iterator &source : strong_copy) {
+          if (m_query->is_leaf_node(*source)) {
+            m_strong_connectivity[target_index].push_back(source);
+          } else {
+            auto range = m_query->get_subtree(source);
+            for (all_iterator i = range.begin(); i != range.end(); ++i) {
+              if (m_query->is_leaf_node(*i)) {
+                m_strong_connectivity[target_index].push_back(
+                    i.get_child_iterator());
+              }
+            }
+          }
+        }
+      }
+
+      if (active) {
+        m_levels[level].push_back(ci);
+      }
+    }
+    */
+
   template <typename VectorTypeTarget, typename VectorTypeSource>
   void calculate_dive_M2L_and_L2L(
       VectorTypeTarget &target_vector,
@@ -308,18 +396,17 @@ public:
 };
 
 /*
-template <typename Expansions, typename Kernel, typename RowParticles, typename
-ColParticles> class FastMultipoleMethodWithSource: public
+template <typename Expansions, typename Kernel, typename RowParticles,
+typename ColParticles> class FastMultipoleMethodWithSource: public
 FastMultipoleMethodBase<Expansions,Kernel,RowParticles,ColParticles> { typedef
-FastMultipoleMethodBase<Expansions,Kernel,RowParticles,ColParticles> base_type;
-    typedef typename base_type::row_child_iterator row_child_iterator;
+FastMultipoleMethodBase<Expansions,Kernel,RowParticles,ColParticles>
+base_type; typedef typename base_type::row_child_iterator row_child_iterator;
     typedef typename base_type::col_child_iterator col_child_iterator;
     typedef typename base_type::col_child_iterator_vector_type
 col_child_iterator_vector_type; typedef typename base_type::expansion_type
-expansion_type; typedef typename base_type::box_type box_type; typedef typename
-base_type::double_d double_d; typedef typename base_type::position position;
-    static const unsigned int dimension = base_type::dimension;
-public:
+expansion_type; typedef typename base_type::box_type box_type; typedef
+typename base_type::double_d double_d; typedef typename base_type::position
+position; static const unsigned int dimension = base_type::dimension; public:
     template <typename VectorType>
     FastMultipoleMethodWithSource(const RowParticles& col_particles,
                         const ColParticles& col_particles,
@@ -407,8 +494,9 @@ make_fmm(const RowParticles &row_particles, const ColParticles &col_particles,
 }
 
 /*
-template <typename Expansions, typename Kernel, typename ColParticles, typename
-VectorType> FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
+template <typename Expansions, typename Kernel, typename ColParticles,
+typename VectorType>
+FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
 make_fmm_with_source(const ColParticles &col_particles,
                      const Expansions& expansions,
                      const Kernel& kernel,
