@@ -7,7 +7,7 @@
 <link rel="home" href="../index.html" title="Aboria 0.5">
 <link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">
 <link rel="prev" href="linked_list_iterator.html" title="Class template linked_list_iterator">
-<link rel="next" href="static_vector.html" title="Class template static_vector">
+<link rel="next" href="depth_first_iterator.html" title="Class template depth_first_iterator">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="linked_list_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="static_vector.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="linked_list_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="depth_first_iterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.index_vector_iterator"></a><div class="titlepage"></div>
@@ -55,58 +55,58 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>            <a name="Aboria.index_vector_iterator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>  
 
   <span class="comment">// <a class="link" href="index_vector_iterator.html#Aboria.index_vector_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="index_vector_iterator.html#idp71355213627920-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="index_vector_iterator.html#idp71355213628048-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="identifier">Iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="index_vector_iterator.html#idp71426364856336-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="index_vector_iterator.html#idp71426364856464-bb"><span class="identifier">index_vector_iterator</span></a><span class="special">(</span><span class="identifier">Iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp71355213616144-bb">public member functions</a></span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp71355213616544-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp71355213617536-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <span class="special">&amp;</span> <a class="link" href="index_vector_iterator.html#idp71355213618528-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <a class="link" href="index_vector_iterator.html#idp71355213619952-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">size_t</span> <a class="link" href="index_vector_iterator.html#idp71355213621904-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span>iterator<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp71355213623696-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp71355213625808-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp71426364844560-bb">public member functions</a></span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp71426364844960-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp71426364845952-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <span class="special">&amp;</span> <a class="link" href="index_vector_iterator.html#idp71426364846944-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <a class="link" href="index_vector_iterator.html#idp71426364848368-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">size_t</span> <a class="link" href="index_vector_iterator.html#idp71426364850320-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span>iterator<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp71426364852112-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp71426364854224-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp71355213630032-bb">private member functions</a></span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">void</span> <a class="link" href="index_vector_iterator.html#idp71355213630448-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp71355213631424-bb"><span class="identifier">equal</span></a><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp71355213633376-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="index_vector_iterator.html#idp71426364858448-bb">private member functions</a></span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">void</span> <a class="link" href="index_vector_iterator.html#idp71426364858864-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a class="link" href="index_vector_iterator.html#idp71426364859840-bb"><span class="identifier">equal</span></a><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a class="link" href="index_vector_iterator.html#idp71426364861792-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp70940157514224"></a><h2>Description</h2>
+<a name="idp71195988450464"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp70940157514640"></a><h3>
+<a name="idp71195988450880"></a><h3>
 <a name="Aboria.index_vector_iteratorconstruct-copy-destruct"></a><code class="computeroutput">index_vector_iterator</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><a name="idp71355213627920-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp71426364856336-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp71355213628048-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="identifier">Iterator</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span> particles_begin<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp71426364856464-bb"></a><span class="identifier">index_vector_iterator</span><span class="special">(</span><span class="identifier">Iterator</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span> particles_begin<span class="special">)</span><span class="special">;</span></pre>
 <p>this constructor is used to start the iterator at the head of a bucket list </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp70940157527904"></a><h3>
-<a name="idp71355213616144-bb"></a><code class="computeroutput">index_vector_iterator</code> public member functions</h3>
+<a name="idp71195988464176"></a><h3>
+<a name="idp71426364844560-bb"></a><code class="computeroutput">index_vector_iterator</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a name="idp71355213616544-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a name="idp71355213617536-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <span class="special">&amp;</span> <a name="idp71355213618528-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <a name="idp71355213619952-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">size_t</span> <a name="idp71355213621904-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span>iterator start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a name="idp71355213623696-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a name="idp71355213625808-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a name="idp71426364844960-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a name="idp71426364845952-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <span class="special">&amp;</span> <a name="idp71426364846944-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> iterator <a name="idp71426364848368-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">size_t</span> <a name="idp71426364850320-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span>iterator start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a name="idp71426364852112-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a name="idp71426364854224-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> iterator <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp70940157574720"></a><h3>
-<a name="idp71355213630032-bb"></a><code class="computeroutput">index_vector_iterator</code> private member functions</h3>
+<a name="idp71195988510992"></a><h3>
+<a name="idp71426364858448-bb"></a><code class="computeroutput">index_vector_iterator</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">void</span> <a name="idp71355213630448-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a name="idp71355213631424-bb"></a><span class="identifier">equal</span><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a name="idp71355213633376-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">void</span> <a name="idp71426364858864-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="keyword">bool</span> <a name="idp71426364859840-bb"></a><span class="identifier">equal</span><span class="special">(</span>iterator <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">ABORIA_HOST_DEVICE_IGNORE_WARN</span> <span class="identifier">reference</span> <a name="idp71426364861792-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
@@ -117,7 +117,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="linked_list_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="static_vector.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="linked_list_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="depth_first_iterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

@@ -68,7 +68,7 @@ MathJax.Hub.Config({
       </p>
 <pre class="programlisting"><span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
 
-<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">scalar</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"my scalar"</span><span class="special">)</span>
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">scalar</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="string">"my scalar"</span><span class="special">)</span>
 <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;&gt;</span> <span class="identifier">MyParticles</span><span class="special">;</span>
 <span class="identifier">MyParticles</span> <span class="identifier">particles</span><span class="special">;</span>
 </pre>
@@ -77,16 +77,16 @@ MathJax.Hub.Config({
         integer template argument (defaults to 3). For example, if you wanted a container
         of particles in 2D space, you would use
       </p>
-<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;,</span><span class="number">2</span><span class="special">&gt;</span> <span class="identifier">MyParticles2</span><span class="special">;</span>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;,</span> <span class="number">2</span><span class="special">&gt;</span> <span class="identifier">MyParticles2</span><span class="special">;</span>
 </pre>
 <p>
         If you wanted each particle to have a potential variable held as a <code class="computeroutput"><span class="keyword">double</span></code>, as well as a velocity variable held
         as a <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.vdouble3">Aboria::vdouble3</a></code> vector
         class, then you would write the following
       </p>
-<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">potential</span><span class="special">,</span><span class="keyword">double</span><span class="special">,</span><span class="string">"potential energy"</span><span class="special">)</span>
-<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span><span class="identifier">vdouble3</span><span class="special">,</span><span class="string">"velocity"</span><span class="special">)</span>
-<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">potential</span><span class="special">,</span><span class="identifier">velocity</span><span class="special">&gt;&gt;</span> <span class="identifier">MyParticles3</span><span class="special">;</span>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">potential</span><span class="special">,</span> <span class="keyword">double</span><span class="special">,</span> <span class="string">"potential energy"</span><span class="special">)</span>
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span> <span class="identifier">vdouble3</span><span class="special">,</span> <span class="string">"velocity"</span><span class="special">)</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">potential</span><span class="special">,</span> <span class="identifier">velocity</span><span class="special">&gt;&gt;</span> <span class="identifier">MyParticles3</span><span class="special">;</span>
 </pre>
 <p>
         Note that there is a special case for boolean variables, which must be represented
@@ -95,7 +95,7 @@ MathJax.Hub.Config({
         For example, here we can use an 8-bit unsigned integer to stand in for the
         boolean <code class="computeroutput"><span class="identifier">flag</span></code> variable.
       </p>
-<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">flag</span><span class="special">,</span><span class="identifier">uint8_t</span><span class="special">,</span><span class="string">"my flag variable"</span><span class="special">)</span>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">flag</span><span class="special">,</span> <span class="identifier">uint8_t</span><span class="special">,</span> <span class="string">"my flag variable"</span><span class="special">)</span>
 </pre>
 <p>
         You can give the <code class="computeroutput"><span class="identifier">MyParticles</span></code>
@@ -115,7 +115,7 @@ MathJax.Hub.Config({
 <p>
         Each <code class="computeroutput"><span class="identifier">value_type</span></code> is a tuple
         of values, of the types specified by each variable. You can retrieve or set
-        these value using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp71355213091280.html" title="Function template get">Aboria::get</a></code>
+        these value using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp71426364215920.html" title="Function template get">Aboria::get</a></code>
         function, which is templated on the variable type. For example, say you wanted
         to set the <code class="computeroutput"><span class="identifier">scalar</span></code> variable
         for particle <code class="computeroutput"><span class="identifier">p</span></code>:
@@ -123,10 +123,10 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
 </pre>
 <p>
-        You can print the value back out, again using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp71355213091280.html" title="Function template get">Aboria::get</a></code>
+        You can print the value back out, again using the <code class="computeroutput"><a class="link" href="../Aboria/get_idp71426364215920.html" title="Function template get">Aboria::get</a></code>
         function
       </p>
-<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"the scalar variable equals "</span><span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"the scalar variable equals "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
 </pre>
 <p>
         The <code class="computeroutput"><span class="identifier">value_type</span></code> of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Particles</a></code> container also has, a position,
@@ -135,18 +135,18 @@ MathJax.Hub.Config({
         the type from the container type, i.e.
       </p>
 <pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">MyParticles</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
-<span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">=</span> <span class="identifier">vdouble3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">);</span>
+<span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">=</span> <span class="identifier">vdouble3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">);</span>
 </pre>
 <p>
         Getting the id or alive flag from a <code class="computeroutput"><span class="identifier">value_type</span></code>
         is much simpler
       </p>
-<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"the particle id is "</span><span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
-<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"the particle alive flag is "</span><span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"the particle id is "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"the particle alive flag is "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">alive</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
 </pre>
 <p>
         Once you are happy with your particle, you can add it to the container using
-        the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214222224-bb">Aboria::Particles::push_back</a></code>
+        the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365418160-bb">Aboria::Particles::push_back</a></code>
         member function
       </p>
 <pre class="programlisting"><span class="identifier">particles</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">p</span><span class="special">);</span>
@@ -163,7 +163,7 @@ MathJax.Hub.Config({
         <code class="computeroutput"><a class="link" href="../Aboria/Vector.html" title="Class template Vector">Aboria::Vector</a></code> is templated on
         the type of each element and the number of dimensions:
       </p>
-<pre class="programlisting"><span class="identifier">Vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">,</span><span class="number">3</span><span class="special">&gt;</span> <span class="identifier">dim3vector</span><span class="special">;</span>
+<pre class="programlisting"><span class="identifier">Vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">,</span> <span class="number">3</span><span class="special">&gt;</span> <span class="identifier">dim3vector</span><span class="special">;</span>
 </pre>
 <p>
         There are a number of predefined <code class="computeroutput"><span class="keyword">double</span></code>,
@@ -185,8 +185,9 @@ MathJax.Hub.Config({
 <p>
         You can use the indexing operator <code class="computeroutput"><span class="identifier">Operator</span><span class="special">[]</span></code> to simply loop through the container
       </p>
-<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span><span class="special">=</span><span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">size</span><span class="special">();</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
-   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">[</span><span class="identifier">i</span><span class="special">])</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">size</span><span class="special">();</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">[</span><span class="identifier">i</span><span class="special">])</span>
+            <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
 <p>
@@ -199,14 +200,14 @@ MathJax.Hub.Config({
         to the beginning and end of the container.
       </p>
 <pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">();</span> <span class="identifier">i</span><span class="special">++)</span> <span class="special">{</span>
-   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(*</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(*</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
 <p>
         Or
       </p>
-<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">:</span> <span class="identifier">particles</span><span class="special">)</span> <span class="special">{</span>
-   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">:</span> <span class="identifier">particles</span><span class="special">)</span> <span class="special">{</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
 <p>
@@ -216,7 +217,7 @@ MathJax.Hub.Config({
       </p>
 <pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">MyParticles</span><span class="special">::</span><span class="identifier">reference</span> <span class="identifier">reference</span><span class="special">;</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">for_each</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(),</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(),</span> <span class="special">[](</span><span class="identifier">reference</span> <span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
-   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Accessing particle with id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
 <span class="special">});</span>
 </pre>
 </div>
@@ -228,11 +229,11 @@ MathJax.Hub.Config({
 <p>
         Each variable is held internally by a STL vector <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>.
         If you wish to directly access this vector, then you can use the normal
-        <code class="computeroutput"><a class="link" href="../Aboria/get_idp71355213091280.html" title="Function template get">Aboria::get</a></code> functions to get
+        <code class="computeroutput"><a class="link" href="../Aboria/get_idp71426364215920.html" title="Function template get">Aboria::get</a></code> functions to get
         it.
       </p>
-<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">size_t</span><span class="special">&gt;&amp;</span> <span class="identifier">ids</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">);</span>
-<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;&amp;</span> <span class="identifier">scalars</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">);</span>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="identifier">size_t</span><span class="special">&gt;</span> <span class="special">&amp;</span><span class="identifier">ids</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">);</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="special">&amp;</span><span class="identifier">scalars</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">scalar</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">);</span>
 </pre>
 </div>
 <div class="section">
@@ -280,8 +281,8 @@ MathJax.Hub.Config({
 <p>
         The <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> data
         structure acts fairly typically like a normal STL random-access container,
-        with a few important differences. It has methods like <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214222224-bb">push_back</a></code>,
-        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214252864-bb">clear</a></code>, <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214279616-bb">size</a></code>, <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214254144-bb">erase</a></code>.
+        with a few important differences. It has methods like <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365418160-bb">push_back</a></code>,
+        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365448800-bb">clear</a></code>, <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365486272-bb">size</a></code>, <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365450080-bb">erase</a></code>.
         It provides subtypes like <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.value_type">value_type</a></code>,
         <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.reference">reference</a></code>, <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_reference">const_reference</a></code>, <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.iterator">iterator</a></code>, <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_iterator">const_iterator</a></code>.
         All of the normal algorithms in the standard library <span class="bold"><strong>should</strong></span>
@@ -299,16 +300,16 @@ MathJax.Hub.Config({
       </p>
 <p>
         2. Additional member functions are available to suit the specific purpose
-        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214222224-bb">push_back</a></code>
+        of this container, for example the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365418160-bb">push_back</a></code>
         function can take a vector data-type for the particle position, and the
-        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214290080-bb">get_query</a></code> function
+        <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365498016-bb">get_query</a></code> function
         for neighbour searching.
       </p>
 <p>
         3. When using the neighbourhood searching capabilities of the container,
         the order of the particles in the particle container might change due to
         internal sorting for neighbourhood searching efficiency. So do not assume
-        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214222224-bb">push_back</a></code>
+        that the particle ordering is fixed. For example, the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365418160-bb">push_back</a></code>
         member function can reorder the particles if neighbourhood searching is turned
         on.
       </p>

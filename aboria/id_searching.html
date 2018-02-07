@@ -45,10 +45,9 @@ MathJax.Hub.Config({
     </p>
 <pre class="programlisting"><span class="keyword">const</span> <span class="identifier">size_t</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
 <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;&gt;</span> <span class="identifier">particle_type</span><span class="special">;</span>
-<span class="keyword">typedef</span> <span class="identifier">particle_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
 <span class="identifier">particle_type</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">default_random_engine</span> <span class="identifier">g</span><span class="special">;</span>
-<span class="identifier">std</span><span class="special">::</span><span class="identifier">shuffle</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(),</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(),</span><span class="identifier">g</span><span class="special">);</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">shuffle</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(),</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(),</span> <span class="identifier">g</span><span class="special">);</span>
 </pre>
 <p>
       This will create a set of particles that each have a unique id between <code class="computeroutput"><span class="number">0</span></code> and <code class="computeroutput"><span class="identifier">N</span><span class="special">-</span><span class="number">1</span></code> (but their
@@ -66,17 +65,17 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Note that each <code class="computeroutput"><span class="identifier">find</span></code> function
-      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp71355212602048-bb">Aboria::bucket_search_serial_query::find</a></code>)
+      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/bucket_search_serial_query.html#idp71426363664992-bb">Aboria::bucket_search_serial_query::find</a></code>)
       returns an iterator to the particle set. If we try and search for an id which
       doesn't exist, then this iterator will point to the end of the particle vector
     </p>
-<pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">id_2N</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">().</span><span class="identifier">find</span><span class="special">(</span><span class="number">2</span><span class="special">*</span><span class="identifier">N</span><span class="special">);</span>
+<pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">id_2N</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">().</span><span class="identifier">find</span><span class="special">(</span><span class="number">2</span> <span class="special">*</span> <span class="identifier">N</span><span class="special">);</span>
 <span class="identifier">assert</span><span class="special">(</span><span class="identifier">id_2N</span> <span class="special">==</span> <span class="identifier">iterator_to_raw_pointer</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">()));</span>
 </pre>
 <p>
       Finally, a note on performance: The id search is done by internally creating
       vectors of id and indicies ordered by id. Keeping these vectors ordered at
-      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71355214306000-bb">Aboria::Particles::update_positions</a></code>
+      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71426365513936-bb">Aboria::Particles::update_positions</a></code>
       takes O(Nlog(N)). The call to <code class="computeroutput"><span class="identifier">find</span></code>
       performs a binary search on the ordered vectors, with takes O(log(N)) time.
     </p>

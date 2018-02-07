@@ -43,27 +43,33 @@ MathJax.Hub.Config({
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Kernels_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Kernels.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Kernels.h</a>&gt;
 
-</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> RowParticles<span class="special">,</span> <span class="keyword">typename</span> ColParticles<span class="special">,</span> <span class="keyword">typename</span> F<span class="special">,</span> 
-         <span class="keyword">typename</span> RadiusFunction <span class="special">=</span> detail::constant_radius<span class="special">&lt;</span><span class="identifier">RowParticles</span><span class="special">&gt;</span> <span class="special">&gt;</span> 
-<span class="keyword">class</span> <a class="link" href="KernelSparseConst.html" title="Class template KernelSparseConst">KernelSparseConst</a> <span class="special">:</span> <span class="keyword">public</span> Aboria::KernelSparse&lt; RowParticles, ColParticles, RadiusFunction, F &gt;
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> RowElements<span class="special">,</span> <span class="keyword">typename</span> ColElements<span class="special">,</span> <span class="keyword">typename</span> F<span class="special">,</span> 
+         <span class="keyword">typename</span> RadiusFunction <span class="special">=</span> <span class="identifier">detail</span><span class="special">::</span><span class="identifier">constant_radius</span><span class="special">&lt;</span><span class="identifier">RowElements</span><span class="special">&gt;</span> <span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="KernelSparseConst.html" title="Class template KernelSparseConst">KernelSparseConst</a> <span class="special">:</span>
+  <span class="keyword">public</span> <span class="identifier">Aboria</span><span class="special">::</span><span class="identifier">KernelSparse</span><span class="special">&lt;</span> <span class="identifier">RowElements</span><span class="special">,</span> <span class="identifier">ColElements</span><span class="special">,</span> <span class="identifier">RadiusFunction</span><span class="special">,</span> <span class="identifier">F</span> <span class="special">&gt;</span>
 <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">base_type</span><span class="special">::</span><span class="identifier">Block</span>  <a name="Aboria.KernelSparseConst.Block"></a><span class="identifier">Block</span><span class="special">;</span> 
   <span class="keyword">typedef</span> <span class="identifier">base_type</span><span class="special">::</span><span class="identifier">Scalar</span> <a name="Aboria.KernelSparseConst.Scalar"></a><span class="identifier">Scalar</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="KernelSparseConst.html#Aboria.KernelSparseConstconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="KernelSparseConst.html#idp71355213301488-bb"><span class="identifier">KernelSparseConst</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> 
+  <a class="link" href="KernelSparseConst.html#idp71426364500752-bb"><span class="identifier">KernelSparseConst</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowElements</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ColElements</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> 
                     <span class="keyword">const</span> <span class="identifier">F</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="identifier">size_t</span> <span class="identifier">BlockRows</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="identifier">size_t</span> <span class="identifier">BlockCols</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp70940154949520"></a><h2>Description</h2>
+<a name="idp71195985935008"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp70940154949936"></a><h3>
+<a name="idp71195985935424"></a><h3>
 <a name="Aboria.KernelSparseConstconstruct-copy-destruct"></a><code class="computeroutput">KernelSparseConst</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp71355213301488-bb"></a><span class="identifier">KernelSparseConst</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowParticles</span> <span class="special">&amp;</span> row_particles<span class="special">,</span> 
-                  <span class="keyword">const</span> <span class="identifier">ColParticles</span> <span class="special">&amp;</span> col_particles<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span> radius<span class="special">,</span> 
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp71426364500752-bb"></a><span class="identifier">KernelSparseConst</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">RowElements</span> <span class="special">&amp;</span> row_elements<span class="special">,</span> 
+                  <span class="keyword">const</span> <span class="identifier">ColElements</span> <span class="special">&amp;</span> col_elements<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span> radius<span class="special">,</span> 
                   <span class="keyword">const</span> <span class="identifier">F</span> <span class="special">&amp;</span> function<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>

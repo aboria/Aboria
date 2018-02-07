@@ -38,7 +38,7 @@ MathJax.Hub.Config({
 <a name="Aboria.zip_iterator"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Class template zip_iterator</span></h2>
-<p>Aboria::zip_iterator</p>
+<p>Aboria::zip_iterator &#8212; Generic iterator that zips multiple iterators together. </p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
 <div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Get_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Get.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Get.h</a>&gt;
@@ -47,10 +47,25 @@ MathJax.Hub.Config({
 <span class="keyword">class</span> <a class="link" href="zip_iterator.html" title="Class template zip_iterator">zip_iterator</a> <span class="special">{</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp70940152032112"></a><h2>Description</h2>
+<a name="idp71195982622112"></a><h2>Description</h2>
+<p>
+</p>
 <div class="refsect2">
-<a name="idp70940152032528"></a><h3>Specializations</h3>
-<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><a class="link" href="zip_iter_idp71355213047808.html" title="Class template zip_iterator&lt;std::tuple&lt; Types...&gt;, mpl_vector_type&gt;">Class template zip_iterator&lt;std::tuple&lt; Types...&gt;, mpl_vector_type&gt;</a></p></li></ul></div>
+<a name="idp71195982622784"></a><h3>Template Parameters</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">typename</span> iterator_tuple_type</pre>
+<p><code class="computeroutput">std::tuple</code> or <code class="computeroutput">thrust::tuple</code> of individual iterators </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">typename</span> mpl_vector_type</pre>
+<p>a <code class="computeroutput">boost::mpl</code> typelist of variable types </p>
+</li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp71195982630000"></a><h3>Specializations</h3>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem"><p><a class="link" href="zip_iter_idp71426364168400.html" title="Class template zip_iterator&lt;std::tuple&lt; Types...&gt;, mpl_vector_type&gt;">Class template zip_iterator&lt;std::tuple&lt; Types...&gt;, mpl_vector_type&gt;</a></p></li></ul></div>
 </div>
 </div>
 </div>

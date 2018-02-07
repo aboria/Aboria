@@ -50,78 +50,59 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">T</span> <a name="Aboria.Vector.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="Vector.html#Aboria.Vectorconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="Vector.html#idp71355214926384-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Vector.html#idp71355214926832-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Vector.html#idp71355214928832-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Vector.html#idp71355214931952-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Vector.html#idp71355214936192-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
-  <a class="link" href="Vector.html#idp71355214941568-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="special">=</span> <span class="keyword">default</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html#idp71355214943104-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a class="link" href="Vector.html#idp71355214946928-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a class="link" href="Vector.html#idp71355214952064-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp71426366137568-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp71426366138016-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp71426366141632-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp71426366145872-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp71426366151248-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="special">=</span> <span class="keyword">default</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> <a class="link" href="Vector.html#idp71426366152784-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html#idp71426366155200-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a class="link" href="Vector.html#idp71426366159024-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a class="link" href="Vector.html#idp71426366164160-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> 
+    Vector&amp; <a class="link" href="Vector.html#idp71426366168288-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Vector.html#idp71355214878944-bb">public member functions</a></span>
-  <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idp71355214879344-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idp71355214882896-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idp71355214886448-bb"><span class="identifier">inner_product</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a class="link" href="Vector.html#idp71355214890992-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idp71355214895120-bb"><span class="identifier">dot</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">double</span> <a class="link" href="Vector.html#idp71355214900640-bb"><span class="identifier">squaredNorm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">double</span> <a class="link" href="Vector.html#idp71355214902464-bb"><span class="identifier">norm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">double</span> <a class="link" href="Vector.html#idp71355214904272-bb"><span class="identifier">inf_norm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a class="link" href="Vector.html#idp71355214906096-bb"><span class="identifier">pow</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Vector.html#idp71355214908880-bb"><span class="identifier">normalize</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="Vector.html#idp71355214911440-bb"><span class="identifier">all</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="Vector.html#idp71355214914192-bb"><span class="identifier">any</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">T</span> <a class="link" href="Vector.html#idp71355214916944-bb"><span class="identifier">minCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">T</span> <a class="link" href="Vector.html#idp71355214918784-bb"><span class="identifier">maxCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">T</span> <a class="link" href="Vector.html#idp71355214920624-bb"><span class="identifier">prod</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="Vector.html#idp71355214921904-bb"><span class="identifier">data</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Archive<span class="special">&gt;</span> <span class="keyword">void</span> <a class="link" href="Vector.html#idp71355214923200-bb"><span class="identifier">serialize</span></a><span class="special">(</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="Vector.html#idp71426366090128-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idp71426366090528-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idp71426366094080-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idp71426366097632-bb"><span class="identifier">inner_product</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a class="link" href="Vector.html#idp71426366102176-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idp71426366106304-bb"><span class="identifier">dot</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idp71426366111824-bb"><span class="identifier">squaredNorm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idp71426366113648-bb"><span class="identifier">norm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idp71426366115456-bb"><span class="identifier">inf_norm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a class="link" href="Vector.html#idp71426366117280-bb"><span class="identifier">pow</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Vector.html#idp71426366120064-bb"><span class="identifier">normalize</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="Vector.html#idp71426366122624-bb"><span class="identifier">all</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="Vector.html#idp71426366125376-bb"><span class="identifier">any</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idp71426366128128-bb"><span class="identifier">minCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idp71426366129968-bb"><span class="identifier">maxCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idp71426366131808-bb"><span class="identifier">prod</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="Vector.html#idp71426366133088-bb"><span class="identifier">data</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Archive<span class="special">&gt;</span> <span class="keyword">void</span> <a class="link" href="Vector.html#idp71426366134384-bb"><span class="identifier">serialize</span></a><span class="special">(</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="Vector.html#idp71426366171696-bb">public static functions</a></span>
+  <span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a class="link" href="Vector.html#idp71426366172096-bb"><span class="identifier">Zero</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a class="link" href="Vector.html#idp71426366174608-bb"><span class="identifier">Constant</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">size</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp70940168426848"></a><h2>Description</h2>
+<a name="idp71195999337984"></a><h2>Description</h2>
 <p><a class="link" href="Normal.html" title="Struct Normal">Normal</a> C++ operators ('*','/','&lt;' etc.) operate on this vector class in an element-wise fashion.</p>
 <p>
 </p>
 <div class="refsect2">
-<a name="idp70940168428704"></a><h3>
+<a name="idp71195999339840"></a><h3>
 <a name="Aboria.Vectorconstruct-copy-destruct"></a><code class="computeroutput">Vector</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><a name="idp71355214926384-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Constructs an vector and allocates memory. </li>
+<pre class="literallayout"><a name="idp71426366137568-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Constructs an vector and allocates memory. </li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp71355214926832-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">)</span><span class="special">;</span></pre>
-<p>Constructs an vector with initial values.</p>
-<p>
-</p>
-<div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term">Parameters:</span></p></td>
-<td><div class="variablelist"><table border="0" class="variablelist compact">
-<colgroup>
-<col align="left" valign="top">
-<col>
-</colgroup>
-<tbody><tr>
-<td><p><span class="term"><code class="computeroutput">arg1</code></span></p></td>
-<td><p>All the elements of the vector are set to this value </p></td>
-</tr></tbody>
-</table></div></td>
-</tr></tbody>
-</table></div>
-</li>
-<li class="listitem">
-<pre class="literallayout"><a name="idp71355214928832-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp71426366138016-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">)</span><span class="special">;</span></pre>
 <p>Constructs an vector with initial values.</p>
 <p>
 </p>
@@ -140,7 +121,10 @@ MathJax.Hub.Config({
 <tbody>
 <tr>
 <td><p><span class="term"><code class="computeroutput">arg1</code></span></p></td>
-<td><p>The first element is set to this value </p></td>
+<td>
+<p>All the elements of the vector are set to this value Constructs an vector with initial values.</p>
+<p>The first element is set to this value </p>
+</td>
 </tr>
 <tr>
 <td><p><span class="term"><code class="computeroutput">arg2</code></span></p></td>
@@ -152,7 +136,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp71355214931952-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">,</span> <span class="identifier">T</span> arg3<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp71426366141632-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">,</span> <span class="identifier">T</span> arg3<span class="special">)</span><span class="special">;</span></pre>
 <p>Constructs an vector with initial values.</p>
 <p>
 </p>
@@ -187,7 +171,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><a name="idp71355214936192-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">,</span> <span class="identifier">T</span> arg3<span class="special">,</span> <span class="identifier">T</span> arg4<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp71426366145872-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">,</span> <span class="identifier">T</span> arg3<span class="special">,</span> <span class="identifier">T</span> arg4<span class="special">)</span><span class="special">;</span></pre>
 <p>Constructs an vector with initial values.</p>
 <p>
 </p>
@@ -225,9 +209,14 @@ MathJax.Hub.Config({
 </tr></tbody>
 </table></div>
 </li>
-<li class="listitem"><pre class="literallayout"><a name="idp71355214941568-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="special">=</span> <span class="keyword">default</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp71426366151248-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="special">=</span> <span class="keyword">default</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idp71355214943104-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> <a name="idp71426366152784-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>Eigen copy constructor</p>
+<p>Assigns an eigen vector object (arg) to this vector. </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idp71426366155200-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
 <p><code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> copy-constructor</p>
 <p>
 </p>
@@ -252,7 +241,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a name="idp71355214946928-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a name="idp71426366159024-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
 <p><code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> assignment</p>
 <p>Assigns a vector with different type <code class="computeroutput">T2</code> but same length <code class="computeroutput">N</code> to this vector</p>
 <p>
@@ -278,7 +267,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a name="idp71355214952064-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a name="idp71426366164160-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span> arg<span class="special">)</span><span class="special">;</span></pre>
 <p>Other <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> assignment</p>
 <p>Assigns a vector-like object (arg) to this vector.</p>
 <p>
@@ -303,14 +292,20 @@ MathJax.Hub.Config({
 </tr></tbody>
 </table></div>
 </li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> 
+  Vector&amp; <a name="idp71426366168288-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>Eigen <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> assignment</p>
+<p>Assigns an eigen vector object (arg) to this vector. </p>
+</li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp70940168538272"></a><h3>
-<a name="idp71355214878944-bb"></a><code class="computeroutput">Vector</code> public member functions</h3>
+<a name="idp71195999467344"></a><h3>
+<a name="idp71426366090128-bb"></a><code class="computeroutput">Vector</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a name="idp71355214879344-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a name="idp71426366090528-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>const Index operator</p>
 <p>Returns a const reference to the <code class="computeroutput">n</code>-th element of the vector</p>
 <p>
@@ -336,7 +331,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">T</span> <span class="special">&amp;</span> <a name="idp71355214882896-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">T</span> <span class="special">&amp;</span> <a name="idp71426366094080-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre>
 <p>Index operator</p>
 <p>Returns a reference to the <code class="computeroutput">n</code>-th element of the vector</p>
 <p>
@@ -362,7 +357,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idp71355214886448-bb"></a><span class="identifier">inner_product</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idp71426366097632-bb"></a><span class="identifier">inner_product</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>inner product</p>
 <p>
 </p>
@@ -378,7 +373,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="idp71355214890992-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="idp71426366102176-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
 <p>change vector type</p>
 <p>
 </p>
@@ -394,7 +389,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idp71355214895120-bb"></a><span class="identifier">dot</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idp71426366106304-bb"></a><span class="identifier">dot</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>inner product</p>
 <p>
 </p>
@@ -414,7 +409,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">double</span> <a name="idp71355214900640-bb"></a><span class="identifier">squaredNorm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp71426366111824-bb"></a><span class="identifier">squaredNorm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>squared norm 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -429,7 +424,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">double</span> <a name="idp71355214902464-bb"></a><span class="identifier">norm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp71426366113648-bb"></a><span class="identifier">norm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>2-norm 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -444,7 +439,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">double</span> <a name="idp71355214904272-bb"></a><span class="identifier">inf_norm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp71426366115456-bb"></a><span class="identifier">inf_norm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>inf-norm 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -458,9 +453,9 @@ MathJax.Hub.Config({
 </tr></tbody>
 </table></div>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="idp71355214906096-bb"></a><span class="identifier">pow</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span> exponent<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="idp71426366117280-bb"></a><span class="identifier">pow</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span> exponent<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp71355214908880-bb"></a><span class="identifier">normalize</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp71426366120064-bb"></a><span class="identifier">normalize</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
 <p>normalise vector so that its length (2-norm) equals one. </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>norm </p>
@@ -468,7 +463,7 @@ MathJax.Hub.Config({
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">bool</span> <a name="idp71355214911440-bb"></a><span class="identifier">all</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp71426366122624-bb"></a><span class="identifier">all</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>collapse boolean vector using <code class="computeroutput">&amp;</code> operator 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -483,7 +478,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">bool</span> <a name="idp71355214914192-bb"></a><span class="identifier">any</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp71426366125376-bb"></a><span class="identifier">any</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>collapse boolean vector using <code class="computeroutput">|</code> operator 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -498,7 +493,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">T</span> <a name="idp71355214916944-bb"></a><span class="identifier">minCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">T</span> <a name="idp71426366128128-bb"></a><span class="identifier">minCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>find the minimum element of the vector 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -513,7 +508,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">T</span> <a name="idp71355214918784-bb"></a><span class="identifier">maxCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">T</span> <a name="idp71426366129968-bb"></a><span class="identifier">maxCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>find the maximum element of the vector 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -528,11 +523,27 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">T</span> <a name="idp71355214920624-bb"></a><span class="identifier">prod</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the product of every element in the vector </li>
+<pre class="literallayout"><span class="identifier">T</span> <a name="idp71426366131808-bb"></a><span class="identifier">prod</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the product of every element in the vector </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idp71355214921904-bb"></a><span class="identifier">data</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns the raw memory array containing the data for the vector </li>
+<pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idp71426366133088-bb"></a><span class="identifier">data</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns the raw memory array containing the data for the vector </li>
 <li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Archive<span class="special">&gt;</span> 
-  <span class="keyword">void</span> <a name="idp71355214923200-bb"></a><span class="identifier">serialize</span><span class="special">(</span><span class="identifier">Archive</span> <span class="special">&amp;</span> ar<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> version<span class="special">)</span><span class="special">;</span></pre></li>
+  <span class="keyword">void</span> <a name="idp71426366134384-bb"></a><span class="identifier">serialize</span><span class="special">(</span><span class="identifier">Archive</span> <span class="special">&amp;</span> ar<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> version<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp71195999627712"></a><h3>
+<a name="idp71426366171696-bb"></a><code class="computeroutput">Vector</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a name="idp71426366172096-bb"></a><span class="identifier">Zero</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<p>Zero <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code></p>
+<p>Returns a zero vector </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a name="idp71426366174608-bb"></a><span class="identifier">Constant</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> c<span class="special">)</span><span class="special">;</span></pre>
+<p>Constant <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code></p>
+<p>Returns a constant vector </p>
+</li>
 </ol></div>
 </div>
 </div>
