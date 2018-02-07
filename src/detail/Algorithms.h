@@ -202,7 +202,7 @@ void sort(RandomIt start, RandomIt end, std::false_type) {
 #endif
 
 template <typename RandomIt> void sort(RandomIt start, RandomIt end) {
-  sort(start, end, typename is_std_iterator<RandomIt>::type());
+  detail::sort(start, end, typename is_std_iterator<RandomIt>::type());
 }
 
 template <typename T1, typename T2>
@@ -228,8 +228,8 @@ template <typename T1, typename T2>
 void sort_by_key(T1 start_keys, T1 end_keys, T2 start_data) {
   // TODO: how to check its generically a std iterator as opposed to a
   // thrust::iterator
-  sort_by_key(start_keys, end_keys, start_data,
-              typename is_std_iterator<T1>::type());
+  detail::sort_by_key(start_keys, end_keys, start_data,
+                      typename is_std_iterator<T1>::type());
 }
 
 template <typename ForwardIterator, typename InputIterator,
@@ -257,8 +257,8 @@ void lower_bound(ForwardIterator first, ForwardIterator last,
                  InputIterator values_first, InputIterator values_last,
                  OutputIterator result) {
 
-  lower_bound(first, last, values_first, values_last, result,
-              typename is_std_iterator<ForwardIterator>::type());
+  detail::lower_bound(first, last, values_first, values_last, result,
+                      typename is_std_iterator<ForwardIterator>::type());
 }
 
 template <typename ForwardIterator, typename LessThanComparable>
@@ -281,8 +281,8 @@ template <typename ForwardIterator, typename LessThanComparable>
 ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last,
                             const LessThanComparable &value) {
 
-  return lower_bound(first, last, value,
-                     typename is_std_iterator<ForwardIterator>::type());
+  return detail::lower_bound(first, last, value,
+                             typename is_std_iterator<ForwardIterator>::type());
 }
 
 template <typename ForwardIterator, typename InputIterator,
@@ -311,8 +311,8 @@ void upper_bound(ForwardIterator first, ForwardIterator last,
                  InputIterator values_first, InputIterator values_last,
                  OutputIterator result) {
 
-  upper_bound(first, last, values_first, values_last, result,
-              typename is_std_iterator<ForwardIterator>::type());
+  detail::upper_bound(first, last, values_first, values_last, result,
+                      typename is_std_iterator<ForwardIterator>::type());
 }
 
 template <class InputIt, class T, class BinaryOperation>
@@ -334,7 +334,8 @@ T reduce(InputIt first, InputIt last, T init, BinaryOperation op,
 template <class InputIt, class T, class BinaryOperation>
 T reduce(InputIt first, InputIt last, T init, BinaryOperation op) {
 
-  reduce(first, last, init, op, typename is_std_iterator<InputIt>::type());
+  detail::reduce(first, last, init, op,
+                 typename is_std_iterator<InputIt>::type());
 }
 
 template <class InputIterator, class OutputIterator, class UnaryOperation>
@@ -356,8 +357,8 @@ OutputIterator transform(InputIterator first, InputIterator last,
 template <class InputIterator, class OutputIterator, class UnaryOperation>
 OutputIterator transform(InputIterator first, InputIterator last,
                          OutputIterator result, UnaryOperation op) {
-  return transform(first, last, result, op,
-                   typename is_std_iterator<OutputIterator>::type());
+  return detail::transform(first, last, result, op,
+                           typename is_std_iterator<OutputIterator>::type());
 }
 
 template <class ForwardIterator>
@@ -394,13 +395,14 @@ void sequence(ForwardIterator first, ForwardIterator last, T init,
 
 template <class ForwardIterator>
 void sequence(ForwardIterator first, ForwardIterator last) {
-  sequence(first, last, typename is_std_iterator<ForwardIterator>::type());
+  detail::sequence(first, last,
+                   typename is_std_iterator<ForwardIterator>::type());
 }
 
 template <class ForwardIterator, typename T>
 void sequence(ForwardIterator first, ForwardIterator last, T init) {
-  sequence(first, last, init,
-           typename is_std_iterator<ForwardIterator>::type());
+  detail::sequence(first, last, init,
+                   typename is_std_iterator<ForwardIterator>::type());
 }
 
 template <typename ForwardIterator, typename UnaryOperation>
@@ -426,8 +428,8 @@ void tabulate(ForwardIterator first, ForwardIterator last,
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(ForwardIterator first, ForwardIterator last,
               UnaryOperation unary_op) {
-  tabulate(first, last, unary_op,
-           typename is_std_iterator<ForwardIterator>::type());
+  detail::tabulate(first, last, unary_op,
+                   typename is_std_iterator<ForwardIterator>::type());
 }
 
 template <class ForwardIt, class UnaryPredicate>
@@ -446,7 +448,8 @@ ForwardIt partition(ForwardIt first, ForwardIt last, UnaryPredicate p,
 
 template <class ForwardIt, class UnaryPredicate>
 ForwardIt partition(ForwardIt first, ForwardIt last, UnaryPredicate p) {
-  return partition(first, last, p, typename is_std_iterator<ForwardIt>::type());
+  return detail::partition(first, last, p,
+                           typename is_std_iterator<ForwardIt>::type());
 }
 
 template <class ForwardIt, class UnaryPredicate>
@@ -465,8 +468,8 @@ ForwardIt stable_partition(ForwardIt first, ForwardIt last, UnaryPredicate p,
 
 template <class ForwardIt, class UnaryPredicate>
 ForwardIt stable_partition(ForwardIt first, ForwardIt last, UnaryPredicate p) {
-  return stable_partition(first, last, p,
-                          typename is_std_iterator<ForwardIt>::type());
+  return detail::stable_partition(first, last, p,
+                                  typename is_std_iterator<ForwardIt>::type());
 }
 
 template <class ForwardIt>
@@ -482,7 +485,8 @@ ForwardIt unique(ForwardIt first, ForwardIt last, std::false_type) {
 #endif
 
 template <class ForwardIt> ForwardIt unique(ForwardIt first, ForwardIt last) {
-  return unique(first, last, typename is_std_iterator<ForwardIt>::type());
+  return detail::unique(first, last,
+                        typename is_std_iterator<ForwardIt>::type());
 }
 
 template <typename InputIterator, typename OutputIterator>
@@ -502,8 +506,8 @@ OutputIterator copy(InputIterator first, InputIterator last,
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(InputIterator first, InputIterator last,
                     OutputIterator result) {
-  return copy(first, last, result,
-              typename is_std_iterator<InputIterator>::type());
+  return detail::copy(first, last, result,
+                      typename is_std_iterator<InputIterator>::type());
 }
 
 template <typename InputIterator, typename OutputIterator,
@@ -541,7 +545,7 @@ OutputIterator transform_exclusive_scan(InputIterator first, InputIterator last,
                                         UnaryFunction unary_op, T init,
                                         AssociativeOperator binary_op) {
 
-  return transform_exclusive_scan(
+  return detail::transform_exclusive_scan(
       first, last, result, unary_op, init, binary_op,
       typename is_std_iterator<InputIterator>::type());
 }
@@ -567,8 +571,8 @@ OutputIt inclusive_scan(InputIt first, InputIt last, OutputIt d_first,
 
 template <class InputIt, class OutputIt>
 OutputIt inclusive_scan(InputIt first, InputIt last, OutputIt d_first) {
-  return inclusive_scan(first, last, d_first,
-                        typename is_std_iterator<InputIt>::type());
+  return detail::inclusive_scan(first, last, d_first,
+                                typename is_std_iterator<InputIt>::type());
 }
 
 template <class InputIt, class OutputIt, class T>
@@ -598,8 +602,8 @@ OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
 
 template <class InputIt, class OutputIt, class T>
 OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init) {
-  return exclusive_scan(first, last, d_first, init,
-                        typename is_std_iterator<InputIt>::type());
+  return detail::exclusive_scan(first, last, d_first, init,
+                                typename is_std_iterator<InputIt>::type());
 }
 
 template <typename InputIterator1, typename InputIterator2,
@@ -636,8 +640,8 @@ void scatter_if(InputIterator1 first, InputIterator1 last, InputIterator2 map,
                 InputIterator3 stencil, RandomAccessIterator output,
                 Predicate pred) {
 
-  scatter_if(first, last, map, stencil, output, pred,
-             typename is_std_iterator<RandomAccessIterator>::type());
+  detail::scatter_if(first, last, map, stencil, output, pred,
+                     typename is_std_iterator<RandomAccessIterator>::type());
 }
 
 template <typename InputIterator1, typename InputIterator2,
@@ -670,8 +674,8 @@ template <typename InputIterator1, typename InputIterator2,
 void scatter_if(InputIterator1 first, InputIterator1 last, InputIterator2 map,
                 InputIterator3 stencil, RandomAccessIterator output) {
 
-  scatter_if(first, last, map, stencil, output,
-             typename is_std_iterator<RandomAccessIterator>::type());
+  detail::scatter_if(first, last, map, stencil, output,
+                     typename is_std_iterator<RandomAccessIterator>::type());
 }
 
 template <typename InputIterator, typename RandomAccessIterator,
@@ -699,8 +703,8 @@ template <typename InputIterator, typename RandomAccessIterator,
           typename OutputIterator>
 void gather(InputIterator map_first, InputIterator map_last,
             RandomAccessIterator input_first, OutputIterator result) {
-  gather(map_first, map_last, input_first, result,
-         typename is_std_iterator<RandomAccessIterator>::type());
+  detail::gather(map_first, map_last, input_first, result,
+                 typename is_std_iterator<RandomAccessIterator>::type());
 }
 
 template <typename InputIterator1, typename InputIterator2,
@@ -736,8 +740,8 @@ OutputIterator copy_if(InputIterator1 first, InputIterator1 last,
                        InputIterator2 stencil, OutputIterator result,
                        Predicate pred) {
 
-  return copy_if(first, last, stencil, result, pred,
-                 typename is_std_iterator<InputIterator1>::type());
+  return detail::copy_if(first, last, stencil, result, pred,
+                         typename is_std_iterator<InputIterator1>::type());
 }
 
 } // namespace detail
