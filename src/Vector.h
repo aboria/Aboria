@@ -41,8 +41,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cmath>
 #include "CudaInclude.h"
 #include <boost/serialization/nvp.hpp>
+#include <boost/serialization/split_free.hpp>
+#include <boost/serialization/array.hpp>
+
 
 #include <iostream>
+
+#ifdef HAVE_EIGEN
+#include <Eigen/Core>
+#endif
 
 
 namespace Aboria {
@@ -55,6 +62,49 @@ struct is_vector: std::false_type {};
 
 template <typename T, unsigned int N>
 struct is_vector<Vector<T,N>>: std::true_type {};
+
+template <typename T>
+struct is_eigen_vector: std::false_type {};
+
+#ifdef HAVE_EIGEN
+template <typename T, int N>
+struct is_eigen_vector<Eigen::Matrix<T,N,1>>: std::true_type {};
+#endif
+
+
+template <typename T, class Enable = void>
+struct scalar {
+    typedef void type;
+};
+
+template <typename T>
+struct scalar<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+    typedef T type;
+}; 
+
+template <typename T>
+struct scalar<T, typename std::enable_if<is_vector<T>::value>::type> {
+    typedef typename T::value_type type;
+}; 
+
+template <typename T, class Enable = void>
+struct dim {
+    typedef void type;
+};
+
+template <typename T>
+struct dim<T, typename std::enable_if<std::is_arithmetic<T>::value>::type> {
+    static const size_t value = 1;
+}; 
+
+template <typename T>
+struct dim<T, typename std::enable_if<is_vector<T>::value>::type> {
+    static const size_t value = T::size;
+}; 
+
+
+
+
 
 /// \brief An N-dimensional vector class
 ///
@@ -74,16 +124,20 @@ public:
     CUDA_HOST_DEVICE
 	Vector() {}
 
+    
+
     /// Constructs an vector with initial values.
     ///
     /// \param arg1 All the elements of the vector are set to
     /// this value
+    /*
     CUDA_HOST_DEVICE
 	Vector(T arg1) {
         for (unsigned int i=0; i<N; i++) {
 		    mem[i] = arg1;
         }
 	}
+    */
 
     /// Constructs an vector with initial values.
     ///
@@ -124,6 +178,24 @@ public:
     CUDA_HOST_DEVICE
 	Vector(const Vector<T,N> &arg) = default;
 
+#ifdef HAVE_EIGEN
+    /// Eigen copy constructor 
+    ///
+    /// Assigns an eigen vector object (arg) to this vector.
+    ///
+    template <typename Derived>
+    CUDA_HOST_DEVICE
+	Vector(const Eigen::DenseBase<Derived>& arg) {
+        static_assert(Eigen::DenseBase<Derived>::RowsAtCompileTime == N ||
+                      Eigen::DenseBase<Derived>::ColsAtCompileTime == N,
+                      "vector assignment has different or dynamic lengths");
+		for (size_t i = 0; i < N; ++i) {
+			mem[i] = arg[i];
+		}
+	}
+#endif
+
+
     /// Vector copy-constructor
     ///
     /// \param arg constructs a vector as a copy of this arguement
@@ -134,6 +206,28 @@ public:
 			mem[i] = arg[i];
 		}
 	}
+
+    /// Zero Vector
+    ///
+    /// Returns a zero vector
+    static Vector Zero() {
+        Vector ret;
+        for (unsigned int i = 0; i < N; ++i) {
+            ret.mem[i] = 0;
+        }
+        return ret;
+    }
+
+    /// Constant Vector
+    ///
+    /// Returns a constant vector
+    static Vector Constant(const T& c) {
+        Vector ret;
+        for (unsigned int i = 0; i < N; ++i) {
+            ret.mem[i] = c;
+        }
+        return ret;
+    }
 
     /// Vector assignment
     ///
@@ -157,11 +251,29 @@ public:
 	template<typename T2>
     CUDA_HOST_DEVICE
 	Vector<T,N> &operator =(T2 *arg) {
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] = arg[i];
 		}
 		return *this;
 	}
+
+#ifdef HAVE_EIGEN
+    /// Eigen Vector assignment
+    ///
+    /// Assigns an eigen vector object (arg) to this vector.
+    ///
+    template <typename Derived>
+    CUDA_HOST_DEVICE
+	Vector<T,N> &operator =(const Eigen::DenseBase<Derived>& arg) {
+        static_assert(Eigen::DenseBase<Derived>::RowsAtCompileTime == N ||
+                      Eigen::DenseBase<Derived>::ColsAtCompileTime == N,
+                      "vector assignment has different or dynamic lengths");
+		for (size_t i = 0; i < N; ++i) {
+			mem[i] = arg[i];
+		}
+		return *this;
+	}
+#endif
 
     /// const Index operator
     ///
@@ -191,7 +303,7 @@ public:
     CUDA_HOST_DEVICE
 	double inner_product(const Vector<T2,N> &arg) const {
 		double ret = 0;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret += arg[i]*mem[i];
 		}
 		return ret;
@@ -205,7 +317,7 @@ public:
     CUDA_HOST_DEVICE
     Vector<T2,N> cast() {
         Vector<T2,N> ret;
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             ret[i] = static_cast<T2>(mem[i]);
 		}
 		return ret;
@@ -228,7 +340,7 @@ public:
     CUDA_HOST_DEVICE
 	double squaredNorm() const {
 		double ret = 0;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret += mem[i]*mem[i];
 		}
 		return ret;
@@ -261,7 +373,7 @@ public:
     CUDA_HOST_DEVICE
 	Vector<T,N> pow(const EXP_T exponent) {
 		Vector<T,N> n = *this;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			n[i] = std::pow(n[i],exponent);
 		}
 		return n;
@@ -272,7 +384,7 @@ public:
     CUDA_HOST_DEVICE
 	void normalize() {
 		double n = norm();
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			mem[i] /= n;
 		}
 	} 
@@ -283,7 +395,7 @@ public:
     CUDA_HOST_DEVICE
 	bool all() const {
 		bool ret = true;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret &= mem[i];
 		}
 		return ret;
@@ -295,7 +407,7 @@ public:
     CUDA_HOST_DEVICE
 	bool any() const {
 		bool ret = false;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret |= mem[i];
 		}
 		return ret;
@@ -331,7 +443,7 @@ public:
     CUDA_HOST_DEVICE
 	T prod() const {
 		T ret = 1;
-		for (int i = 0; i < N; ++i) {
+		for (size_t i = 0; i < N; ++i) {
 			ret *= mem[i];
 		}
 		return ret;
@@ -362,7 +474,7 @@ Vector<T,N> pow(Vector<T,N> arg, EXP_T exponent) {
 template<typename T1,typename T2,unsigned int N> 
 bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { 
     bool ret = true; 
-    for (int i = 0; i < N; ++i) { 
+    for (size_t i = 0; i < N; ++i) { 
         ret &= arg1[i] == arg2[i]; 
     } 
     return ret; 
@@ -375,7 +487,7 @@ bool operator ==(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) {
     CUDA_HOST_DEVICE \
     Vector<double,N> operator the_op(const Vector<T,N> &arg1) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = the_op arg1[i]; \
         } \
         return ret; \
@@ -391,7 +503,7 @@ UNARY_OPERATOR(-)
     Vector<double,N> \
     operator the_op(const T1 &arg1, const Vector<T2,N> &arg2) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1 the_op arg2[i]; \
         } \
         return ret; \
@@ -400,7 +512,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2; \
         } \
         return ret; \
@@ -410,7 +522,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<double,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
         Vector<double,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2[i]; \
         } \
         return ret; \
@@ -420,7 +532,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<int,N> operator the_op(const Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
         Vector<int,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2[i]; \
         } \
         return ret; \
@@ -429,7 +541,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<int,N> operator the_op(const int &arg1, const Vector<int,N> &arg2) { \
         Vector<int,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1 the_op arg2[i]; \
         } \
         return ret; \
@@ -438,7 +550,7 @@ UNARY_OPERATOR(-)
     CUDA_HOST_DEVICE \
     Vector<int,N> operator the_op(const Vector<int,N> &arg1, const int &arg2) { \
         Vector<int,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2; \
         } \
         return ret; \
@@ -454,12 +566,30 @@ OPERATOR(/)
 /// binary `*` operator for Vector class
 OPERATOR(*)
 
+#ifdef HAVE_EIGEN
+template<typename T,int N,unsigned int M> 
+CUDA_HOST_DEVICE 
+Vector<T,N> operator *(const Eigen::Matrix<T,N,int(M)> matrix, const Vector<T,M> &arg) { 
+    static_assert(N > 0, "matrix must have fixed number of rows");
+    Vector<double,N> ret; 
+    for (size_t i = 0; i < N; ++i) { 
+        ret[i] = 0;
+        for (size_t j = 0; j < M; ++j) { 
+            ret[i] += matrix(i,j)*arg[j];
+        }
+    } 
+    return ret; 
+} 
+#endif
+
+
+
 /*
 template<typename T1,typename T2,unsigned int N> 
 CUDA_HOST_DEVICE 
 Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2) { 
     Vector<double,N> ret; 
-    for (int i = 0; i < N; ++i) { 
+    for (size_t i = 0; i < N; ++i) { 
         ret[i] = arg1[i*N] * arg2[0];
         for (int j = 1; j < N; ++j) { 
             ret[i] += arg1[i*N+j] * arg2[j]; 
@@ -474,7 +604,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
         Vector<bool,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2[i]; \
         } \
         return ret; \
@@ -483,7 +613,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const Vector<T1,N> &arg1, const T2 &arg2) { \
         Vector<bool,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1[i] the_op arg2; \
         } \
         return ret; \
@@ -493,7 +623,7 @@ Vector<double,N> operator *(const Vector<T1,N*N> &arg1, const Vector<T2,N> &arg2
     CUDA_HOST_DEVICE \
     Vector<bool,N> operator the_op(const T1 &arg1, const T2 &arg2) { \
         Vector<bool,N> ret; \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             ret[i] = arg1 the_op arg2; \
         } \
         return ret; \
@@ -517,7 +647,7 @@ COMPARISON(!=)
     template<typename T1,typename T2,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const Vector<T2,N> &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2[i]; \
         } \
         return arg1; \
@@ -525,7 +655,7 @@ COMPARISON(!=)
     template<typename T1,typename T2,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<double,N> &operator the_op(Vector<T1,N> &arg1, const T2 &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2; \
         } \
         return arg1; \
@@ -534,7 +664,7 @@ COMPARISON(!=)
     template<int,int,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<int,N> &operator the_op(Vector<int,N> &arg1, const Vector<int,N> &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2[i]; \
         } \
         return arg1; \
@@ -542,7 +672,7 @@ COMPARISON(!=)
     template<int,int,unsigned int N> \
     CUDA_HOST_DEVICE \
     Vector<int,N> &operator the_op(Vector<int,N> &arg1, const int &arg2) { \
-        for (int i = 0; i < N; ++i) { \
+        for (size_t i = 0; i < N; ++i) { \
             arg1[i] the_op arg2; \
         } \
         return arg1; \
@@ -563,7 +693,7 @@ COMPOUND_ASSIGN(/=)
     CUDA_HOST_DEVICE \
 	Vector<T,N> the_op(const Vector<T,N> &arg1) { \
 		Vector<T,N> ret; \
-	    for (int i = 0; i < N; ++i) { \
+	    for (size_t i = 0; i < N; ++i) { \
 		    ret[i] = std::the_op(arg1[i]); \
         }  \
 		return ret; \
@@ -652,7 +782,7 @@ inline const Vector<T,N> abs2(const Vector<T,N>& x)  {
 template<typename T,unsigned int N>
 std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 	out << "(";
-	for (int i = 0; i < N; ++i) {
+	for (size_t i = 0; i < N; ++i) {
 		out << v[i];
 		if (i != N-1) out << ",";
 	}
@@ -663,7 +793,7 @@ std::ostream& operator<< (std::ostream& out, const Vector<T,N>& v) {
 template<typename T,unsigned int N>
 std::istream& operator>> (std::istream& out, Vector<T,N>& v) {
     out.get();
-	for (int i = 0; i < N; ++i) {
+	for (size_t i = 0; i < N; ++i) {
 		out >> v[i];
 		out.get();
 	}
@@ -720,5 +850,160 @@ typedef Vector<bool,7> vbool7;
 #define bool7 aboria_bool7
 */
 
+namespace detail {
+    template <typename T>
+    struct VectorTraits {
+        typedef typename std::remove_cv<
+                typename std::remove_reference<T>::type
+                >::type base_type;
+        static const size_t length = 1;
+        static base_type Zero() {
+            return 0;
+        }
+        static base_type Constant(const base_type& c) {
+            return c;
+        }
+        static base_type& Index(base_type& arg,size_t) {
+            return arg;
+        }
+        static const base_type& Index(const base_type& arg,size_t) {
+            return arg;
+        }
+
+        static base_type squaredNorm(const base_type& arg) {
+            return std::pow(arg,2);
+        }
+    };
+
+    template<typename T,unsigned int N>
+    struct VectorTraits<Vector<T,N>> {
+        static const size_t length = N;
+        static Vector<T,N> Zero() {
+            return Vector<T,N>::Zero();
+        }
+        static Vector<T,N> Constant(const T& c) {
+            return Vector<T,N>::Constant(c);
+        }
+        static T& Index(Vector<T,N>& arg, size_t i) {
+            return arg[i];
+        }
+        static const T& Index(const Vector<T,N>& arg, size_t i) {
+            return arg[i];
+        }
+        static T squaredNorm(const Vector<T,N>& arg) {
+            return arg.squaredNorm();
+        }
+    };
+
+    template<typename T,unsigned int N>
+    struct VectorTraits<const Vector<T,N>>: public VectorTraits<Vector<T,N>> {};
+    template<typename T,unsigned int N>
+    struct VectorTraits<const Vector<T,N>&>: public VectorTraits<Vector<T,N>> {};
 }
+
+} // namespace Aboria
+
+#ifdef HAVE_EIGEN
+// taken from https://stackoverflow.com/a/35074759
+namespace boost { namespace serialization {
+
+template<   class Archive,
+            class S,
+            int Rows_,
+            int Cols_,
+            int Ops_,
+            int MaxRows_,
+            int MaxCols_>
+inline void serialize(Archive & ar,
+                      Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & matrix,
+                      const unsigned int version)
+{
+  int rows = matrix.rows();
+  int cols = matrix.cols();
+  ar & make_nvp("rows", rows);
+  ar & make_nvp("cols", cols);    
+  matrix.resize(rows, cols); // no-op if size does not change!
+
+  // always save/load row-major
+  for(int r = 0; r < rows; ++r)
+    for(int c = 0; c < cols; ++c)
+      ar & make_nvp("val", matrix(r,c));
+}    
+
+template<   class Archive,
+            class S,
+            int Dim_,
+            int Mode_,
+            int Options_>
+inline void serialize(Archive & ar,
+                      Eigen::Transform<S, Dim_, Mode_, Options_> & transform,
+                      const unsigned int version)
+{
+  serialize(ar, transform.matrix(), version);
+}    
+}} // namespace boost::serialization
+/*
+namespace boost{
+    namespace serialization{
+
+        template<   class Archive, 
+                    class S, 
+                    int Rows_, 
+                    int Cols_, 
+                    int Ops_, 
+                    int MaxRows_, 
+                    int MaxCols_>
+        inline void save(
+            Archive & ar, 
+            const Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & g, 
+            const unsigned int version)
+            {
+                int rows = g.rows();
+                int cols = g.cols();
+
+                ar & rows;
+                ar & cols;
+                ar & boost::serialization::make_array(g.data(), rows * cols);
+            }
+
+        template<   class Archive, 
+                    class S, 
+                    int Rows_,
+                    int Cols_,
+                    int Ops_, 
+                    int MaxRows_, 
+                    int MaxCols_>
+        inline void load(
+            Archive & ar, 
+            Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & g, 
+            const unsigned int version)
+        {
+            int rows, cols;
+            ar & rows;
+            ar & cols;
+            g.resize(rows, cols);
+            ar & boost::serialization::make_array(g.data(), rows * cols);
+        }
+
+        template<   class Archive, 
+                    class S, 
+                    int Rows_, 
+                    int Cols_, 
+                    int Ops_, 
+                    int MaxRows_, 
+                    int MaxCols_>
+        inline void serialize(
+            Archive & ar, 
+            Eigen::Matrix<S, Rows_, Cols_, Ops_, MaxRows_, MaxCols_> & g, 
+            const unsigned int version)
+        {
+            split_free(ar, g, version);
+        }
+
+
+    } // namespace serialization
+} // namespace boost
+*/
+#endif
+
 #endif /* VECTOR_H_ */

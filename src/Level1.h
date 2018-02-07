@@ -48,6 +48,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Traits.h"
 #include "Get.h"
 #include "Particles.h"
+#include "Elements.h"
 #include "BucketSearchSerial.h"
 #include "BucketSearchParallel.h"
 #include "NanoFlannAdaptor.h"

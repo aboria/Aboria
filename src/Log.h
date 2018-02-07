@@ -33,115 +33,104 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef LOG_H_
 #define LOG_H_
 
-#include <signal.h>
-#include <iostream>
 #include <assert.h>
+#include <iostream>
+#include <signal.h>
 
 #ifdef NDEBUG
-#define ASSERT(condition, message) 
-#define ASSERT_CUDA(condition) 
+#define ASSERT(condition, message)
+#define ASSERT_CUDA(condition)
 #else
-#define ASSERT(condition, message) \
-    if (! (condition)) { \
-            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
-                      << " line " << __LINE__ << ": " << message << std::endl; \
-        raise(SIGTRAP); \
-    } 
-#define ASSERT_CUDA(condition) \
-    assert(condition);
+#define ASSERT(condition, message)                                             \
+  if (!(condition)) {                                                          \
+    std::cerr << "Assertion `" #condition "` failed in " << __FILE__           \
+              << " line " << __LINE__ << ": " << message << std::endl;         \
+    raise(SIGTRAP);                                                            \
+  }
+#define ASSERT_CUDA(condition) assert(condition);
 
 #endif
 
-#define CHECK(condition, message) \
-		if (! (condition)) { \
-            std::cerr << "Assertion `" #condition "` failed in " << __FILE__ \
-                      << " line " << __LINE__ << ": " << message << std::endl; \
-            raise(SIGTRAP); \
-        }
+#define CHECK(condition, message)                                              \
+  if (!(condition)) {                                                          \
+    std::cerr << "Assertion `" #condition "` failed in " << __FILE__           \
+              << " line " << __LINE__ << ": " << message << std::endl;         \
+    raise(SIGTRAP);                                                            \
+  }
 
-#define CHECK_CUDA(condition, message) \
-		if (! (condition)) { \
-            printf("Assertion %s failed in %s line %d message %s\n",#condition,__FILE__,__LINE__,message); \
-            assert(false); \
-        }
+#define CHECK_CUDA(condition, message)                                         \
+  if (!(condition)) {                                                          \
+    printf("Assertion %s failed in %s line %d message %s\n", #condition,       \
+           __FILE__, __LINE__, message);                                       \
+    assert(false);                                                             \
+  }
 
+#define ERROR(message)                                                         \
+  std::cerr << "Error at " << __FILE__ << " line " << __LINE__ << ": "         \
+            << message << std::endl;                                           \
+  raise(SIGTRAP);
 
-#define ERROR(message) \
-            std::cerr << "Error at " << __FILE__ \
-                      << " line " << __LINE__ << ": " << message << std::endl; \
-            raise(SIGTRAP);
+#define ERROR_CUDA(message)                                                    \
+  printf("%s\n", message);                                                     \
+  assert(false);
 
-#define ERROR_CUDA(message) \
-            printf("%s\n",message); \
-            assert(false);
-
-
-
-//std::exit(EXIT_FAILURE);
+// std::exit(EXIT_FAILURE);
 
 #ifndef ABORIA_LOG_LEVEL
-#	ifdef NDEBUG
-#		define ABORIA_LOG_LEVEL 1
-#	else
-#		define ABORIA_LOG_LEVEL 2
-#	endif
+#ifdef NDEBUG
+#define ABORIA_LOG_LEVEL 1
+#else
+#define ABORIA_LOG_LEVEL 2
+#endif
 #endif
 
-#define LOG(level, message) \
-    if (level <= ABORIA_LOG_LEVEL) { \
-        char color[] =  { 0x1b, '[', '3', '8', ';', '5', ';', '7', 'm', 0 }; \
-        char reset[] =  { 0x1b, '[', '0', 'm', 0 }; \
-        switch (level) { \
-            case 1:  \
-                color[7] = '4'; \
-                break; \
-            case 2: \
-                color[7] = '2'; \
-                break; \
-            case 3: \
-                color[7] = '1'; \
-            default: \
-                color[5] = '5'; \
-        } \
-    	std::cout << color << message << reset << std::endl; \
-    }
+#define LOG(level, message)                                                    \
+  if (level <= ABORIA_LOG_LEVEL) {                                             \
+    char color[] = {0x1b, '[', '3', '8', ';', '5', ';', '7', 'm', 0};          \
+    char reset[] = {0x1b, '[', '0', 'm', 0};                                   \
+    switch (level) {                                                           \
+    case 1:                                                                    \
+      color[7] = '4';                                                          \
+      break;                                                                   \
+    case 2:                                                                    \
+      color[7] = '2';                                                          \
+      break;                                                                   \
+    case 3:                                                                    \
+      color[7] = '1';                                                          \
+    default:                                                                   \
+      color[5] = '5';                                                          \
+    }                                                                          \
+    std::cout << color << message << reset << std::endl;                       \
+  }
 
-#define LOG_CUDA(level,message) \
-    if (level <= ABORIA_LOG_LEVEL) { \
-        printf("%s\n",message); \
-    }
+#define LOG_CUDA(level, message)                                               \
+  if (level <= ABORIA_LOG_LEVEL) {                                             \
+    printf("%s\n", message);                                                   \
+  }
 
-        //char color[] =  { 0x1b, '[', '1', ';', '3', '7', 'm', 0 }; 
-        
-#define LOG_BOLD(level, message) \
-    if (level <= ABORIA_LOG_LEVEL) { \
-        char bold[] =  { 0x1b, '[', '1', 'm', 0 }; \
-        char color[] =  { 0x1b, '[', '3', '8', ';', '5', ';', '7', 'm', 0 }; \
-        char reset[] =  { 0x1b, '[', '0', 'm', 0 }; \
-        switch (level) { \
-            case 1:  \
-                color[5] = '4'; \
-                break; \
-            case 2: \
-                color[5] = '2'; \
-                break; \
-            case 3: \
-                color[5] = '1'; \
-            default: \
-                color[5] = '5'; \
-        } \
-    	std::cout << bold << color << message << reset << std::endl; \
-    }
+// char color[] =  { 0x1b, '[', '1', ';', '3', '7', 'm', 0 };
 
-
-
-
-
-
-
+#define LOG_BOLD(level, message)                                               \
+  if (level <= ABORIA_LOG_LEVEL) {                                             \
+    char bold[] = {0x1b, '[', '1', 'm', 0};                                    \
+    char color[] = {0x1b, '[', '3', '8', ';', '5', ';', '7', 'm', 0};          \
+    char reset[] = {0x1b, '[', '0', 'm', 0};                                   \
+    switch (level) {                                                           \
+    case 1:                                                                    \
+      color[5] = '4';                                                          \
+      break;                                                                   \
+    case 2:                                                                    \
+      color[5] = '2';                                                          \
+      break;                                                                   \
+    case 3:                                                                    \
+      color[5] = '1';                                                          \
+    default:                                                                   \
+      color[5] = '5';                                                          \
+    }                                                                          \
+    std::cout << bold << color << message << reset << std::endl;               \
+  }
 
 #endif /* LOG_H_ */

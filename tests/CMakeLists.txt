@@ -111,18 +111,6 @@ set(SpeedTest
     test_linear_spring
     )
 
-set(SpeedTestFile speed_test.h)
-set(SpeedTest 
-    test_vector_addition
-    test_daxpy
-    test_finite_difference
-    test_multiquadric
-    test_multiquadric_scaling
-    test_linear_spring
-    )
-
-
-
 set(MetafunctionsTestFile metafunctions.h) 
 set(MetafunctionsTest
     test_aliasing
@@ -157,8 +145,9 @@ set(VariablesTest
 
 set(OperatorsTestFile operators.h)
 set(OperatorsTest
-    test_Eigen
-    test_Eigen_block
+    test_dense_operator
+    test_sparse_operator
+    test_block_operator
     test_documentation
     )
 
@@ -268,6 +257,7 @@ set(RbfInterpolationTest
     test_bucket_search_serial
     test_bucket_search_parallel
     test_kdtree
+    test_octtree
     )
     
 set(RbfPdeTestFile rbf_pde.h)
@@ -296,7 +286,6 @@ set(ChebyshevTest
     test_fast_methods_bucket_search_parallel
     test_fast_methods_kd_tree
     test_fast_methods_octtree
-    test_fmm_operators
     test_chebyshev_polynomial_calculation
     )
 
@@ -318,7 +307,6 @@ set(H2Test
     test_fast_methods_octtree
     test_fmm_matrix_operators
     )
-
 
 
 message("-- Adding test suites:")

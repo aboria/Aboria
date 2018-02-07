@@ -133,7 +133,7 @@ void create_n_particles_with_rejection_sampling(const unsigned int n, PTYPE &par
             }
         }
     }
-    for (int i = 0; i < n; ++i) {
+    for (size_t i = 0; i < n; ++i) {
         Vect3d r = Vect3d(uni(generator),uni(generator),uni(generator))*(high-low) + low;
         while (uni(generator) > generator_fun(r)/max_generator_fun) {
             r = Vect3d(uni(generator),uni(generator),uni(generator))*(high-low) + low;
@@ -173,7 +173,7 @@ void radial_distribution_function(const T& particles,
 	const double rho = particles->size()/volume;
 
     const double PI = boost::math::constants::pi<double>();
-	for (int i = 0; i < n; ++i) {
+	for (size_t i = 0; i < n; ++i) {
 		out[i] /= particles->size()*(4.0/3.0)*PI*(std::pow((i+1)*bsep+min,3)-std::pow(i*bsep+min,3))*rho;
 	}
 

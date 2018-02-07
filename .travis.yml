@@ -17,6 +17,8 @@ env:
         # (dont use vtk for now cause travis hasnt whitelisted this)
         - Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
         - Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Debug
+        - Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Debug
+        - Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
     global:
         - ENCRYPTION_LABEL: "b90db56f7413"
         - COMMIT_AUTHOR_EMAIL: "martinjrobins@gmail.com"
@@ -45,20 +47,40 @@ addons:
     - g++-5
     - clang-3.8
       # cant find this package
-      #- libomp-dev
+    - libiomp-dev
     - doxygen
     - xsltproc
     - docbook-xml 
     - docbook-xsl
     - texlive-latex-base
+    # install h2lib dependencies
+    - liblapack-dev
+    - gfortran
 
 before_install:
-- if [ "$Aboria_COVERAGE" == "on" ]; then pip install --user cpp-coveralls; fi
-- if [ "$Aboria_USE_EIGEN" == "on" ]; then wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;mv eigen*/unsupported .; fi
+# install coveralls
+- if [ "$Aboria_COVERAGE" == "on" ]; then 
+    pip install --user cpp-coveralls; 
+  fi
+# install Eigen
+- if [ "$Aboria_USE_EIGEN" == "on" ]; then 
+    wget http://bitbucket.org/eigen/eigen/get/3.3.1.tar.gz; 
+    tar -xvf 3.3.1.tar.gz;mv eigen*/Eigen .;
+    mv eigen*/unsupported .; 
+  fi
+# install H2Lib
+- if [ "$Aboria_USE_H2LIB" == "on" ]; then 
+    git clone -b community https://github.com/H2Lib/H2Lib.git ; 
+    cd H2Lib ; 
+    cp -f ../third-party/H2Lib/options.inc . ;
+    make ; 
+    cd .. ; 
+  fi
 
 before_script:
 - if [ "$CXX" = "g++" ]; then export CXX="g++-5" CC="gcc-5"; fi
 - if [ "$CXX" = "clang++" ]; then export CXX="clang++-3.8" CC="clang-3.8"; fi
+- export OMP_NUM_THREADS=3
 - uname -a
 - printenv
 - clang++ --version 2>&1 | grep clang
@@ -69,7 +91,15 @@ before_script:
 - if [ "$Travis_UPDATE_DOC" == "on" ]; then cp doc/user-config.jam ~; fi
 
 script:
-- cmake -DAboria_COVERAGE=$Aboria_COVERAGE -DAboria_USE_EIGEN=$Aboria_USE_EIGEN -DEIGEN3_INCLUDE_DIR=. -DAboria_USE_OPENMP=$Aboria_USE_OPENMP -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION .
+- cmake -DAboria_COVERAGE=$Aboria_COVERAGE 
+        -DAboria_USE_EIGEN=$Aboria_USE_EIGEN 
+        -DAboria_USE_H2LIB=$Aboria_USE_H2LIB
+        -DH2Lib_ROOT=./H2Lib 
+        -DEIGEN3_INCLUDE_DIR=. 
+        -DAboria_USE_OPENMP=$Aboria_USE_OPENMP 
+        -DCMAKE_BUILD_TYPE=$CMAKE_BUILD_TYPE 
+        -DAboria_BUILD_DOCUMENTATION=$Aboria_BUILD_DOCUMENTATION 
+        .
 - make
 - ctest --output-on-failure
 

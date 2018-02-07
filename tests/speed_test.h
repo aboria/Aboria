@@ -88,7 +88,7 @@ public:
     	typedef Particles<std::tuple<a_var,b_var,c_var>,3> nodes_type;
        	nodes_type nodes(N);
         //<- 
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             get<a_var>(nodes)[i] = i;
             get<b_var>(nodes)[i] = i*2;
         }
@@ -125,7 +125,7 @@ public:
         ABORIA_VARIABLE(c_var,double,"c")
     	typedef Particles<std::tuple<a_var,b_var,c_var>,3> nodes_type;
        	nodes_type nodes(N);
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             get<a_var>(nodes)[i] = i;
             get<b_var>(nodes)[i] = i*2;
         }
@@ -134,13 +134,13 @@ public:
         We compare this with Level 1 Aboria using the `get` functions and looping
         through the container
         */
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             get<a_var>(nodes)[i] = get<b_var>(nodes)[i] + get<c_var>(nodes)[i];
         }
         //<-
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
+            for (size_t i=0; i<N; i++) {
                 get<a_var>(nodes)[i] = get<b_var>(nodes)[i] + get<c_var>(nodes)[i];
             }
         }
@@ -157,18 +157,18 @@ public:
         */
         std::vector<double> a(N),b(N),c(N);
         //<-
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             a[i] = i;
             b[i] = i*2;
         }
         //->
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             a[i] = b[i] + c[i];
         }
         //<-
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
+            for (size_t i=0; i<N; i++) {
                 a[i] = b[i] + c[i];
             }
         }
@@ -187,7 +187,7 @@ public:
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
         vector_type a(N),b(N),c(N);
         //<-
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             a[i] = i;
             b[i] = 2*i;
         }
@@ -222,7 +222,7 @@ public:
         ABORIA_VARIABLE(b_var,double,"b")
     	typedef Particles<std::tuple<a_var,b_var>,3> nodes_type;
        	nodes_type nodes(N);
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             get<a_var>(nodes)[i] = i;
             get<b_var>(nodes)[i] = i*2;
         }
@@ -256,7 +256,7 @@ public:
         ABORIA_VARIABLE(b_var,double,"b")
     	typedef Particles<std::tuple<a_var,b_var>,3> nodes_type;
        	nodes_type nodes(N);
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             get<a_var>(nodes)[i] = i;
             get<b_var>(nodes)[i] = i*2;
         }
@@ -264,13 +264,13 @@ public:
         /*`
         We compare against a Level 1 implementation like so 
         */
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             get<a_var>(nodes)[i] += 0.1*get<b_var>(nodes)[i];
         }
         //<-
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
+            for (size_t i=0; i<N; i++) {
                 get<a_var>(nodes)[i] += 0.1*get<b_var>(nodes)[i];
             }
         }
@@ -287,18 +287,18 @@ public:
         */
         std::vector<double> a(N),b(N);
         //<-
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             a[i] = i;
             b[i] = i*2;
         }
         //->
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             a[i] += 0.1*b[i];
         }
         //<-
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
-            for (int i=0; i<N; i++) {
+            for (size_t i=0; i<N; i++) {
                 a[i] += 0.1*b[i];
             }
         }
@@ -318,7 +318,7 @@ public:
         typedef Eigen::Matrix<double,Eigen::Dynamic,1> vector_type; 
         vector_type a(N),b(N);
         //<-
-        for (int i=0; i<N; i++) {
+        for (size_t i=0; i<N; i++) {
             a[i] = i;
             b[i] = 2*i;
         }
@@ -587,16 +587,16 @@ public:
 
         //->
         #pragma omp parallel for
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             a_buffer[i] = a[i];
-            for (int j = 0; j < N; ++j) {
+            for (size_t j = 0; j < N; ++j) {
                 const double dx_x = x[j]-x[i];
                 const double dx_y = y[j]-x[i];
                 a_buffer[i] += a[j]*std::sqrt(dx_x*dx_x+dx_y*dx_y+b[j]*b[j]);
             }
         }
         #pragma omp parallel for
-        for (int i = 0; i < N; ++i) {
+        for (size_t i = 0; i < N; ++i) {
             a[i] = a_buffer[i];
         }
 
@@ -609,16 +609,16 @@ public:
         auto t0 = Clock::now();
         for (int r=0; r<repeats; ++r) {
             #pragma omp parallel for
-            for (int i = 0; i < N; ++i) {
+            for (size_t i = 0; i < N; ++i) {
                 a_buffer[i] = a[i];
-                for (int j = 0; j < N; ++j) {
+                for (size_t j = 0; j < N; ++j) {
                     const double dx_x = x[j]-x[i];
                     const double dx_y = y[j]-x[i];
                     a_buffer[i] += a[j]*std::sqrt(dx_x*dx_x+dx_y*dx_y+b[j]*b[j]);
                 }
             }
             #pragma omp parallel for
-            for (int i = 0; i < N; ++i) {
+            for (size_t i = 0; i < N; ++i) {
                 a[i] = a_buffer[i];
             }
         }

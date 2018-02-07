@@ -20,7 +20,11 @@ geometry
 neighbours
 particle_container
 symbolic
+doc/html.xsl
+doc/html-website.xsl
 doc/html/*
+doc/html-website/*
+doc/libaboria/libaboria.doxyfile
 !doc/html/boostbook.css
 !doc/html/images/*
 doc/autodoc.xml
@@ -31,3 +35,5 @@ doc/bin
 compile_commands.json
 python/*_generated.cpp
 build*
+.vscode/*
+boostbook_catalog.xml

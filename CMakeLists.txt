@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8)
 project(Aboria)
 
+include(CMakeToolsHelpers OPTIONAL)
+
 set(Aboria_LOG_LEVEL 1 CACHE STRING "Logging level (1 = least, 3 = most)")
 add_definitions(-DABORIA_LOG_LEVEL=${Aboria_LOG_LEVEL})
 
@@ -12,7 +14,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
 
 
                     #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wreturn-type -Wno-deprecated -std=c++11")
-list(APPEND CMAKE_CXX_FLAGS "-Wno-deprecated -std=c++11 -ftemplate-backtrace-limit=0")
+list(APPEND CMAKE_CXX_FLAGS "-Wall -Wno-deprecated -std=c++14 -ftemplate-backtrace-limit=0")
 #set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} "-Wno-deprecated -std=c++11"")
 
 option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
@@ -83,13 +85,28 @@ if (Aboria_USE_EIGEN)
     find_package(Eigen3 REQUIRED)
     option(Aboria_USE_INTEL_MKL "Use Intel MKL for all supported Eigen ops. Remeber to set BLA_VENDOR appropriatly)" OFF)
     add_definitions(-DHAVE_EIGEN)
+endif()
+
+option(Aboria_USE_H2LIB "Use H2Lib library" OFF)
+if (Aboria_USE_H2LIB)
+    if (NOT Aboria_USE_OPENMP)
+        message(FATAL_ERROR "H2Lib library requires that Aboria_USE_OPENMP=ON")
+    endif()
+    find_package(H2Lib REQUIRED)
+    list(APPEND Aboria_LIBRARIES ${H2Lib_LIBRARIES})
+    list(APPEND Aboria_INCLUDES ${H2Lib_INCLUDE_DIRS})
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${H2Lib_LINKER_FLAGS}")
+    add_definitions(-DHAVE_H2LIB)
+endif()
+
+if (Aboria_USE_INTEL_MKL)
     if (Aboria_USE_INTEL_MKL)
         set(BLA_VENDOR Intel10_64lp)
-        find_package(BLAS REQUIRED)
-        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
-        list(APPEND Aboria_LIBRARIES "${BLAS_LIBRARIES}")
         add_definitions(-DEIGEN_USE_MKL_ALL)
     endif()
+    find_package(BLAS REQUIRED)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
+    list(APPEND Aboria_LIBRARIES "${BLAS_LIBRARIES}")
 endif()
 
 #export compiler flags for code completion engines
@@ -109,7 +126,7 @@ endif()
 
 include_directories(src)
 include_directories(third-party)
-include_directories(SYSTEM ${CXXTEST_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} ${THRUST_INCLUDE_DIR})
+include_directories(SYSTEM ${CXXTEST_INCLUDES} ${Aboria_INCLUDES} ${EIGEN3_INCLUDE_DIR} ${VTK_INCLUDE_DIRS} ${Boost_INCLUDE_DIR}  ${PYTHON_INCLUDE_DIRS} ${THRUST_INCLUDE_DIR})
 
 enable_testing()
 if (CXXTEST_FOUND)

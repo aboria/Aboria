@@ -33,27 +33,26 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef ABORIA_H_
 #define ABORIA_H_
 
-//Level1
+// Level1
 #include "Level1.h"
 
-//Level2
+// Level2
 #include "Search.h"
+
+#ifdef HAVE_EIGEN
 #include "Kernels.h"
 #include "Operators.h"
 #include "Preconditioners.h"
-#include "FastMultipoleMethod.h"
-#include "H2Matrix.h"
+#endif
 
-//Level3
-#include "Symbolic.h"
-#include "Functions.h"
+// Level3
 #include "Evaluate.h"
-//TODO: seems clumsy here
+#include "Functions.h"
+#include "Symbolic.h"
+// TODO: seems clumsy here
 #include "detail/SymbolicAssignment.h"
-
 
 #endif /* ABORIA_H_ */
