@@ -9,15 +9,10 @@ compiler:
     - clang
 env:
     matrix:
-        # default options
+        - CMAKE_BUILD_TYPE=Debug
         - CMAKE_BUILD_TYPE=Release
-        - CMAKE_BUILD_TYPE=Debug 
-        # turn on all options 
-        # (dont use openmp for now cause travis seems to have problems)
-        # (dont use vtk for now cause travis hasnt whitelisted this)
-        - Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Release
-        - Aboria_USE_EIGEN=on CMAKE_BUILD_TYPE=Debug
-        - Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Debug
+        - Aboria_USE_EIGEN=on 
+        - Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on
         - Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on CMAKE_BUILD_TYPE=Release
     global:
         - ENCRYPTION_LABEL: "b90db56f7413"
@@ -27,10 +22,10 @@ matrix:
     include:
         # Documentation
         - compiler: gcc
-          env: Travis_UPDATE_DOC=on CMAKE_BUILD_TYPE=Release Aboria_BUILD_DOCUMENTATION=on
+          env: Travis_UPDATE_DOC=on Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on CMAKE_BUILD_TYPE=Release Aboria_BUILD_DOCUMENTATION=on
         # Coverage
         - compiler: gcc
-          env: Aboria_COVERAGE=on CMAKE_BUILD_TYPE=Debug Aboria_USE_EIGEN=on  
+          env: Aboria_COVERAGE=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on Aboria_USE_EIGEN=on  
 
 addons:
   apt:
