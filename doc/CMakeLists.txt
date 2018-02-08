@@ -13,7 +13,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Aboria.h
     ../src/Particles.h
     ../src/Variable.h
-    ../src/BucketSearchParallel.h
+    ../src/CellListOrdered.h
     ../src/CellList.h
     ../src/NanoFlannAdaptor.h
     ../src/OctTree.h

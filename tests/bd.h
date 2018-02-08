@@ -63,7 +63,7 @@ public:
         const double L = 10.0;
         const double D = 1.0;
         const double dt = 0.01;
-        const double timesteps = 1000;
+        const double timesteps = 500;
 
         spheres.push_back(vdouble3(0,0,0));
         get<radius>(spheres[0]) = 1.0;

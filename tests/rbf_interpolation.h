@@ -352,17 +352,6 @@ public:
     std::cout << "CG-RASM:     #iterations: " << cg.iterations()
               << ", estimated error: " << cg.error() << std::endl;
 
-    Eigen::MINRES<matrix_type, Eigen::Lower | Eigen::Upper,
-                  RASMPreconditioner<Eigen::HouseholderQR>>
-        minres;
-    minres.setMaxIterations(max_iter);
-    minres.preconditioner().set_buffer_size(RASM_buffer);
-    minres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-    minres.preconditioner().analyzePattern(W);
-    minres.compute(W_matrix);
-    gamma = minres.solve(phi);
-    std::cout << "MINRES-RASM: #iterations: " << minres.iterations()
-              << ", estimated error: " << minres.error() << std::endl;
 
     Eigen::GMRES<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> gmres;
     gmres.setMaxIterations(max_iter);
@@ -374,17 +363,6 @@ public:
     gamma = gmres.solve(phi);
     std::cout << "GMRES-RASM:  #iterations: " << gmres.iterations()
               << ", estimated error: " << gmres.error() << std::endl;
-
-    Eigen::DGMRES<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> dgmres;
-    dgmres.setMaxIterations(max_iter);
-    dgmres.preconditioner().set_buffer_size(RASM_buffer);
-    dgmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
-    dgmres.preconditioner().analyzePattern(W);
-    dgmres.set_restart(restart);
-    dgmres.compute(W_matrix);
-    gamma = dgmres.solve(phi);
-    std::cout << "DGMRES-RASM:  #iterations: " << dgmres.iterations()
-              << ", estimated error: " << dgmres.error() << std::endl;
 
     Eigen::BiCGSTAB<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> bicg;
     bicg.setMaxIterations(max_iter);

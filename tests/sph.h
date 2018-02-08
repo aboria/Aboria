@@ -205,7 +205,7 @@ public:
     Label<0, sph_type> a(sph);
     Label<1, sph_type> b(sph);
 
-    const int timesteps = 500;
+    const int timesteps = 200;
     const int nout = 10;
     const int timesteps_per_out = timesteps / nout;
     const double L = 31.0 / 1000.0;

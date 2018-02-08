@@ -9,7 +9,7 @@ doxygen autodoc
     ../src/Particles.h
     ../src/Variable.h
     ../src/DataVector.h
-    ../src/BucketSearchParallel.h
+    ../src/CellListOrdered.h
     ../src/Functions.h
     ../src/Log.h
     ../src/Symbolic.h

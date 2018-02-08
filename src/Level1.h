@@ -50,7 +50,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Particles.h"
 #include "Elements.h"
 #include "CellList.h"
-#include "BucketSearchParallel.h"
+#include "CellListOrdered.h"
 #include "NanoFlannAdaptor.h"
 #include "OctTree.h"
 #include "PrintTuple.h"
