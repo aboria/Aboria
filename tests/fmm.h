@@ -468,7 +468,7 @@ public:
   }
 
   void test_fast_methods_CellList(void) {
-    const size_t N = 5000;
+    const size_t N = 1000;
 #ifdef HAVE_GPERFTOOLS
     ProfilerStart("fmm_CellList");
 #endif
@@ -484,7 +484,7 @@ public:
   }
 
   void test_fast_methods_bucket_search_parallel(void) {
-    const size_t N = 5000;
+    const size_t N = 1000;
 #ifdef HAVE_GPERFTOOLS
     ProfilerStart("fmm_bucket_search_parallel");
 #endif
@@ -500,7 +500,7 @@ public:
   }
 
   void test_fast_methods_kd_tree(void) {
-    const size_t N = 5000;
+    const size_t N = 1000;
 #ifdef HAVE_GPERFTOOLS
     ProfilerStart("fmm_kd_tree");
 #endif
@@ -516,7 +516,7 @@ public:
   }
 
   void test_fast_methods_octtree(void) {
-    const size_t N = 5000;
+    const size_t N = 1000;
 #ifdef HAVE_GPERFTOOLS
     ProfilerStart("fmm_oct_tree");
 #endif
