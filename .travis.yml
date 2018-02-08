@@ -25,7 +25,7 @@ matrix:
           env: Travis_UPDATE_DOC=on CMAKE_BUILD_TYPE=Release Aboria_BUILD_DOCUMENTATION=on
         # Coverage
         - compiler: gcc
-          env: Aboria_COVERAGE=on   
+          env: Aboria_COVERAGE=on Aboria_USE_EIGEN=on Aboria_USE_H2LIB=on Aboria_USE_OPENMP=on  
 
 addons:
   apt:
