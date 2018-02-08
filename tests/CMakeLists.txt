@@ -37,8 +37,9 @@ if (Aboria_RUN_TESTS)
         ChebyshevTest
         FMMTest
         DocGettingStartedTest
+        H2Test
         )
-    set(notdebug_test_suites
+    set(releaseonly_test_suites
         BDTest
         DEMTest
         SPHTest
@@ -48,7 +49,6 @@ if (Aboria_RUN_TESTS)
         RbfInterpolationTest
         RbfPdeTest
         #RbfStokesTest
-        H2Test
         )
 
     foreach(test_suite ${all_test_suites})
@@ -58,11 +58,11 @@ if (Aboria_RUN_TESTS)
         endif()
     endforeach()
 
-    foreach(test_suite ${notdebug_test_suites})
-        if (CMAKE_BUILD_TYPE STREQUAL "Debug")
-            option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" OFF)
-        else()
+    foreach(test_suite ${releaseonly_test_suites})
+        if (CMAKE_BUILD_TYPE STREQUAL "Release")
             option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
+        else()
+            option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" OFF)
         endif()
         if (Aboria_RUN_TEST_${test_suite})
             set(test_suites ${test_suites} ${test_suite})
