@@ -224,7 +224,7 @@ MathJax.Hub.Config({
 </table></div>
 <p>
         If we wish to perform the same operator, but using a traditional matrix,
-        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp72080091902064-bb">Aboria::MatrixReplacement::assemble</a></code>
+        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp71686549190080-bb">Aboria::MatrixReplacement::assemble</a></code>
         member function to fill in a normal Eigen matrix with the values of the kernel
         function $K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$. This might be useful if
         you wish to perform the same operation repeatedly, or in one of Eigen's direct
@@ -433,9 +433,7 @@ MathJax.Hub.Config({
 <p>
         Another powerful class of methods are based on the Fast Multipole Method,
         which has been also implemented in Aboria. These are valid for kernel functions
-        with singularities and which boasts $\mathcal{O}(N)$ complexity if the column
-        and row particle sets are identical, and $\mathcal{O}(NlogN)$ if they are
-        not.
+        with singularities and which boasts $\mathcal{O}(N)$ complexity.
       </p>
 <p>
         Once again, we will use chebyshev interpolation, but now will construct a
@@ -502,8 +500,6 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">c_6</span> <span class="special">=</span> <span class="identifier">K_f</span> <span class="special">*</span> <span class="identifier">b</span><span class="special">;</span>
 </pre>
 </div>
-<pre class="programlisting"><span class="preprocessor">#ifdef</span> <span class="identifier">HAVE_H2LIB</span>
-</pre>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
 <a name="aboria.evaluating_and_solving_kernel_op.creating_hierarchical_matrix_ope"></a><a class="link" href="evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.creating_hierarchical_matrix_ope" title="Creating Hierarchical Matrix Operators">Creating
@@ -537,8 +533,6 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">VectorXd</span> <span class="identifier">c_7</span> <span class="special">=</span> <span class="identifier">K_h</span> <span class="special">*</span> <span class="identifier">b</span><span class="special">;</span>
 </pre>
 </div>
-<pre class="programlisting"><span class="preprocessor">#endif</span> <span class="comment">// HAVE_H2LIB</span>
-</pre>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
 <a name="aboria.evaluating_and_solving_kernel_op.block_operators"></a><a class="link" href="evaluating_and_solving_kernel_op.html#aboria.evaluating_and_solving_kernel_op.block_operators" title="Block Operators">Block
