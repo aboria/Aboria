@@ -404,9 +404,7 @@ public:
 
     Another powerful class of methods are based on the Fast Multipole Method,
     which has been also implemented in Aboria. These are valid for kernel
-    functions with singularities and which boasts $\mathcal{O}(N)$ complexity if
-    the column and row particle sets are identical, and
-    $\mathcal{O}(NlogN)$ if they are not.
+    functions with singularities and which boasts $\mathcal{O}(N)$ complexity.
 
     Once again, we will use chebyshev interpolation, but now will construct a
     tree data structure using one of Aboria's tree data structures (kd-tree or
@@ -471,7 +469,9 @@ public:
 
 
     */
+    //<-
 #ifdef HAVE_H2LIB
+    //->
     /*`
     [section Creating Hierarchical Matrix Operators]
 
@@ -508,7 +508,9 @@ public:
 
     [endsect]
     */
+    //<-
 #endif // HAVE_H2LIB
+    //->
     /*`
 
     [section Block Operators]
