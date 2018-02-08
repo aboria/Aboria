@@ -63,7 +63,7 @@ Header: `<Aboria.h>`
 
 [[Class Name] [Description]]
 
-    [[[classref Aboria::bucket_search_serial_query]]         
+    [[[classref Aboria::CellListQuery]]         
     
         [[memberref Aboria::Particles::get_query] returns a query object that 
         can be used to query the spatial data structure for that particle set.  

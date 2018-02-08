@@ -146,9 +146,9 @@ public:
         helper_bd<bucket_search_parallel>();
     }
 
-    void test_bucket_search_serial() {
-        std::cout << "bucket_search_serial" << std::endl;
-        helper_bd<bucket_search_serial>();
+    void test_CellList() {
+        std::cout << "CellList" << std::endl;
+        helper_bd<CellList>();
     }
 
     void test_nanoflann_adaptor() {

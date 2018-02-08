@@ -222,8 +222,8 @@ public:
         helper_Eigen<bucket_search_parallel>();
     }
 
-    void test_bucket_search_serial() {
-        helper_Eigen<bucket_search_serial>();
+    void test_CellList() {
+        helper_Eigen<CellList>();
     }
 
 

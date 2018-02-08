@@ -588,12 +588,12 @@ public:
     helper_compact<bucket_search_parallel>();
   }
 
-  void test_bucket_search_serial() {
+  void test_CellList() {
     std::cout << "-------------------------------------------\n"
-              << "Running tests on bucket_search_serial....\n"
+              << "Running tests on CellList....\n"
               << "------------------------------------------" << std::endl;
-    helper_global<bucket_search_serial>();
-    helper_compact<bucket_search_serial>();
+    helper_global<CellList>();
+    helper_compact<CellList>();
   }
 
   void test_kdtree() {

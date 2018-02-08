@@ -62,7 +62,7 @@ template <typename VAR, unsigned int DomainD,
 class Particles;
 }
 
-#include "BucketSearchSerial.h"
+#include "CellList.h"
 #include "Get.h"
 #include "Traits.h"
 #include "Variable.h"
@@ -98,8 +98,8 @@ namespace Aboria {
 ///  \param VECTOR (default `std::vector`) a STL-compatable vector class,
 ///         templated by an element type and an allocator type. Valid options
 ///         are currently `std::vector` or `thrust::device_vector`.
-///  \param SearchMethod (default `bucket_search_serial`) an Aboria spatial
-///         data structure. Valid options are `Aboria::bucket_search_serial`,
+///  \param SearchMethod (default `CellList`) an Aboria spatial
+///         data structure. Valid options are `Aboria::CellList`,
 ///         `Aboria::bucket_search_parallel`, `Aboria::nanoflann_adaptor`, or
 ///         `Aboria::octtree`
 ///  \param TRAITS_USER the class Aboria::Traits must be specialised on VECTOR
@@ -107,7 +107,7 @@ namespace Aboria {
 ///  \see #ABORIA_VARIABLE
 template <typename VAR = std::tuple<>, unsigned int DomainD = 3,
           template <typename, typename> class VECTOR = std::vector,
-          template <typename> class SearchMethod = bucket_search_serial,
+          template <typename> class SearchMethod = CellList,
           typename TRAITS_USER = Traits<VECTOR>>
 class Particles {
 public:

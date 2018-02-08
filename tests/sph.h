@@ -364,7 +364,7 @@ public:
 
   void test_bucket_search_parallel() { helper_sph<bucket_search_parallel>(); }
 
-  void test_bucket_search_serial() { helper_sph<bucket_search_serial>(); }
+  void test_CellList() { helper_sph<CellList>(); }
 
   void test_nanoflann_adaptor() { helper_sph<nanoflann_adaptor>(); }
 };

@@ -252,14 +252,14 @@ public:
     }
   }
 
-  void test_fast_methods_bucket_search_serial(void) {
+  void test_fast_methods_CellList(void) {
     const size_t N = 1000;
     std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<1, std::vector, CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<2, std::vector, CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<3, std::vector, CellList>(N);
   }
 
   void test_fast_methods_bucket_search_parallel(void) {

@@ -14,7 +14,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Particles.h
     ../src/Variable.h
     ../src/BucketSearchParallel.h
-    ../src/BucketSearchSerial.h
+    ../src/CellList.h
     ../src/NanoFlannAdaptor.h
     ../src/OctTree.h
     ../src/NeighbourSearchBase.h
@@ -38,7 +38,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
       MACRO_EXPANSION=YES
       EXPAND_ONLY_PREDEF=YES
       TAB_SIZE=4
-      PREDEFINED="BOOST_COMPUTE_DOXYGEN_INVOKED\" \\ \"HAVE_EIGEN\" \\ \" HAVE_THRUST\" \\ \"HAVE_VTK\" \\ \"CUDA_HOST_DEVICE="
+      PREDEFINED="BOOST_COMPUTE_DOXYGEN_INVOKED\" \\ \"HAVE_EIGEN\" \\ \" HAVE_THRUST\" \\ \"HAVE_VTK\" \\ \"CUDA_HOST_DEVICE=\" \\ \"ABORIA_HOST_DEVICE_IGNORE_WARN="
       EXPAND_AS_DEFINED=UFUNC 
       EXPAND_AS_DEFINED="COMPOUND_ASSIGN\" \"COMPARISON\" \"OPERATOR\" \"UNARY_OPERATOR\" \"ABORIA_UNARY_FUNCTION\" \"ABORIA_BINARY_FUNCTION"
       BOOSTBOOK 

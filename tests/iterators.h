@@ -49,7 +49,7 @@ public:
 
   void test_lattice_within_distance(void) {
     using particles_t =
-        Particles<std::tuple<>, 1, std::vector, bucket_search_serial>;
+        Particles<std::tuple<>, 1, std::vector, CellList>;
     using position = typename particles_t::position;
     particles_t particles(100);
     std::uniform_real_distribution<double> uni(0, 1);
@@ -111,7 +111,7 @@ public:
 
   void test_lattice_within_distance_2d(void) {
     using particles_t =
-        Particles<std::tuple<>, 2, std::vector, bucket_search_serial>;
+        Particles<std::tuple<>, 2, std::vector, CellList>;
     using position = typename particles_t::position;
     particles_t particles(1000);
     std::uniform_real_distribution<double> uni(0, 1);

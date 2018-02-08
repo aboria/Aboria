@@ -44,7 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 
-#include "BucketSearchSerial.h"
+#include "CellList.h"
 #include "Get.h"
 #include "Traits.h"
 #include "Variable.h"

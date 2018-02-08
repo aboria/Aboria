@@ -208,8 +208,8 @@ public:
     helper_diffusion_around_spheres<bucket_search_parallel>();
   }
 
-  void test_bucket_search_serial() {
-    helper_diffusion_around_spheres<bucket_search_serial>();
+  void test_CellList() {
+    helper_diffusion_around_spheres<CellList>();
   }
 
   void test_nanoflann_adaptor() {

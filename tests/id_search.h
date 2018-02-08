@@ -90,7 +90,7 @@ public:
 
     /*`
     Note that each `find` function (e.g. [memberref
-    Aboria::bucket_search_serial_query::find]) returns an iterator to the
+    Aboria::CellListQuery::find]) returns an iterator to the
     particle set. If we try and search for an id which doesn't exist, then this
     iterator will point to the end of the particle vector
     */
@@ -312,8 +312,8 @@ O(log(N)) time.
     helper_d_random<2, VectorType, SearchMethod>(1000, true, true);
   }
 
-  void test_std_vector_bucket_search_serial(void) {
-    helper_d_test_list_random<std::vector, bucket_search_serial>();
+  void test_std_vector_CellList(void) {
+    helper_d_test_list_random<std::vector, CellList>();
   }
 
   void test_std_vector_bucket_search_parallel(void) {
@@ -330,9 +330,9 @@ O(log(N)) time.
     helper_d_test_list_random<std::vector, octtree>();
   }
 
-  void test_thrust_vector_bucket_search_serial(void) {
+  void test_thrust_vector_CellList(void) {
 #if defined(__aboria_have_thrust__)
-    // helper_d_test_list_random<thrust::device_vector,bucket_search_serial>();
+    // helper_d_test_list_random<thrust::device_vector,CellList>();
 #endif
   }
 

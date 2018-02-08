@@ -775,24 +775,24 @@ public:
 #endif
   }
 
-  void test_fast_methods_bucket_search_serial(void) {
+  void test_fast_methods_CellList(void) {
 #ifdef HAVE_H2LIB
     const size_t N = 1000;
     /*
     std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 1D..." <<
-    std::endl; helper_extended_matrix<1,std::vector,bucket_search_serial>(N);
+    std::endl; helper_extended_matrix<1,std::vector,CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 2D..." <<
-    std::endl; helper_extended_matrix<2,std::vector,bucket_search_serial>(N);
+    std::endl; helper_extended_matrix<2,std::vector,CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing extended matrix 3D..." <<
-    std::endl; helper_extended_matrix<3,std::vector,bucket_search_serial>(N);
+    std::endl; helper_extended_matrix<3,std::vector,CellList>(N);
     */
 
     std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<1, std::vector, CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<2, std::vector, CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<3, std::vector, CellList>(N);
 #endif
   }
 

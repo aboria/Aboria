@@ -397,11 +397,11 @@ public:
 #endif
   }
 
-  void test_std_vector_bucket_search_serial(void) {
-    helper_add_particle1<std::vector, bucket_search_serial>();
-    helper_add_particle2<std::vector, bucket_search_serial>();
-    helper_add_particle2_dimensions<std::vector, bucket_search_serial>();
-    helper_add_delete_particle<std::vector, bucket_search_serial>();
+  void test_std_vector_CellList(void) {
+    helper_add_particle1<std::vector, CellList>();
+    helper_add_particle2<std::vector, CellList>();
+    helper_add_particle2_dimensions<std::vector, CellList>();
+    helper_add_delete_particle<std::vector, CellList>();
   }
 
   void test_std_vector_bucket_search_parallel(void) {

@@ -467,17 +467,17 @@ public:
     helper_fmm_operators(expansions);
   }
 
-  void test_fast_methods_bucket_search_serial(void) {
+  void test_fast_methods_CellList(void) {
     const size_t N = 5000;
 #ifdef HAVE_GPERFTOOLS
-    ProfilerStart("fmm_bucket_search_serial");
+    ProfilerStart("fmm_CellList");
 #endif
     std::cout << "BUCKET_SEARCH_SERIAL: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<1, std::vector, CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<2, std::vector, CellList>(N);
     std::cout << "BUCKET_SEARCH_SERIAL: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, bucket_search_serial>(N);
+    helper_fast_methods<3, std::vector, CellList>(N);
 #ifdef HAVE_GPERFTOOLS
     ProfilerStop();
 #endif

@@ -610,6 +610,217 @@ protected:
   double m_n_particles_in_leaf;
 };
 
+///
+/// @brief Base type for query types
+////
+/// This implements the interface (and documents it) for all the query types
+///
+/// @tparam Traits A @ref TraitsCommon type
+///
+template <typename Traits> struct NeighbourQueryBase {
+
+  typedef typename Traits::raw_pointer raw_pointer;
+  typedef typename Traits::double_d double_d;
+  typedef typename Traits::bool_d bool_d;
+  typedef typename Traits::int_d int_d;
+  typedef typename Traits::unsigned_int_d unsigned_int_d;
+  typedef typename Traits::reference particle_reference;
+  typedef typename Traits::const_reference particle_const_reference;
+  const static unsigned int dimension = Traits::dimension;
+  typedef detail::bbox<dimension> box_type;
+
+  template <int LNormNumber>
+  struct query_iterator {
+    struct reference;
+    struct pointer;
+    struct value_type;
+  };
+
+  struct all_iterator;
+  struct child_iterator;
+  struct particle_iterator;
+
+  typedef typename query_iterator<2>::reference reference;
+  typedef typename query_iterator<2>::pointer pointer;
+  typedef typename query_iterator<2>::value_type value_type;
+
+
+  ///
+  /// @brief implement find-by-id
+  ///
+  /// performs a binary search for the id in the map
+  ///
+  /// @param id the id of the particle to find
+  /// @return pointer to the particle found, or a pointer to the end of the
+  /// particle set if not found
+  ///
+  raw_pointer find(const size_t id) const;
+
+  ///
+  /// @brief given a reference to a bucket, checks if that bucket is a leaf
+  /// (i.e. does not have any children)
+  ///
+  /// @param bucket the bucket to check
+  /// @return true if @p is a bucket
+  /// @return false if @p is not a bucket
+  ///
+  bool is_leaf_node(const value_type &bucket);
+
+  ///
+  /// @return true if this data structure is a tree (e.g. kdtree, octtree)
+  /// @return false if this data structure is not a tree (e.g. cell list)
+  ///
+  bool is_tree();
+
+  ///
+  /// @brief gets all the children of the root node.
+  ///
+  /// @return a @ref child_iterator that iterates through all the buckets in the
+  /// data structure
+  ///
+  child_iterator get_children() const;
+
+  ///
+  /// @brief returns all the children of the given child_iterator
+  ///
+  /// @param ci this fuction returns all the children of @p ci
+  /// @return same as get_children()
+  ///
+  child_iterator get_children(const child_iterator &ci) const;
+
+  ///
+  /// @brief returns the min/max bounds of the given child_iterator @p ci
+  ///
+  /// @return a @detail::bbox containing the bounds
+  ///
+  const box_type get_bounds(const child_iterator &ci) const;
+
+  ///
+  /// @brief returns entire domain min/max bounds
+  ///
+  const box_type &get_bounds() const;
+
+  ///
+  /// @brief returns the periodicity of the domain
+  ///
+  const bool_d &get_periodic() const;
+
+  ///
+  /// @brief returns an iterator range to all the particles within the given
+  /// bucket
+  ///
+  /// @param bucket a reference to the bucket in question
+  ///
+  iterator_range<particle_iterator>
+  get_bucket_particles(const reference bucket);
+
+  ///
+  /// @brief get min/max bounds of given bucket @p bucket
+  ///
+  detail::bbox<dimension> get_bucket_bbox(const reference bucket) const;
+
+  ///
+  /// @brief given a @p position, returns a @p bucket and a min/max @p bounds
+  ///
+  /// @param position (input)
+  /// @param bucket (output)
+  /// @param bounds (output)
+  ///
+  void get_bucket(const double_d &position, pointer &bucket,
+                  box_type &bounds) const;
+
+  ///
+  /// @brief returns a bucket index/id given a @p bucket reference
+  ///
+  size_t get_bucket_index(const reference bucket) const;
+
+  ///
+  /// @brief returns all the bucket within a distance of a point
+  ///
+  /// This function can use multiple p-norm distance types by setting @p
+  /// LNormNumber, and uses a isotropic distance value given by @p max_distance.
+  /// Note that only buckets within the domain are returned, and periodicity is
+  /// not taken into account
+  ///
+  /// @param position the position to search around
+  /// @param max_distance the maximum distance of the buckets to be returned
+  /// @return an @ref iterator_range containing all the buckets found
+  ///
+  template <int LNormNumber = -1>
+  iterator_range<query_iterator<LNormNumber>>
+  get_buckets_near_point(const double_d &position,
+                         const double max_distance) const;
+
+  ///
+  /// @brief returns all the bucket within an anisotropic distance of a point
+  ///
+  /// This function can use multiple p-norm distance types by setting @p
+  /// LNormNumber, and uses a anisotropic distance value given by @p
+  /// max_distance. Note that only buckets within the domain are returned, and
+  /// periodicity is not taken into account
+  ///
+  /// @param position the position to search around
+  /// @param max_distance the maximum distance of the buckets to be returned
+  /// @return an @ref iterator_range containing all the buckets found
+  ///
+  template <int LNormNumber = -1>
+  iterator_range<query_iterator<LNormNumber>>
+  get_buckets_near_point(const double_d &position,
+                         const double_d &max_distance) const;
+
+  ///
+  /// @brief get index of the last bucket in the cell list
+  ///
+  const int_d &get_end_bucket() const;
+
+  ///
+  /// @brief return an @ref iterator range to the entire bucket tree under the
+  /// given child_iterator @p ci
+  ///
+  /// @param ci the child_iterator to search under
+  ///
+  iterator_range<all_iterator> get_subtree(const child_iterator &ci) const;
+
+  ///
+  /// @brief return an @ref iterator_range to the entire tree data structure
+  ///
+  /// Can use this range to loop through all the buckets in the data structure,
+  /// wether it is a tree or not
+  ///
+  iterator_range<all_iterator> get_subtree() const;
+
+  ///
+  /// @brief return the total number of buckets in the data structure
+  ///
+  size_t number_of_buckets() const;
+
+  ///
+  /// @brief return the total number of particles in the data structure
+  ///
+  size_t number_of_particles() const;
+
+  ///
+  /// @brief get a pointer to the beginning of the particle container
+  ///
+  /// can use this and @ref number_of_particles() to loop through all the
+  /// particles
+  ///
+  const raw_pointer &get_particles_begin() const;
+
+  ///
+  /// @brief get a pointer to the beginning of the particle container
+  ///
+  /// can use this and @ref number_of_particles() to loop through all the
+  /// particles
+  ///
+  raw_pointer &get_particles_begin();
+
+  ///
+  /// @brief returns the number of levels in the tree
+  ///
+  unsigned number_of_levels() const;
+};
+
 // assume that these iterators, and query functions, are only called from device
 // code
 template <typename Traits> class ranges_iterator {

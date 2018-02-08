@@ -165,8 +165,8 @@ endif()
 
 set(NeighboursTestFile neighbours.h)
 set(NeighboursTest
-    test_std_vector_bucket_search_serial
-    test_std_vector_bucket_search_serial_fast_bucketsearch
+    test_std_vector_CellList
+    test_std_vector_CellList_fast_bucketsearch
     test_std_vector_bucket_search_parallel
     test_std_vector_bucket_search_parallel_fast_bucketsearch
     test_std_vector_nanoflann_adaptor
@@ -182,7 +182,7 @@ endif()
 
 set(IDSearchTestFile id_search.h)
 set(IDSearchTest
-    test_std_vector_bucket_search_serial
+    test_std_vector_CellList
     test_std_vector_bucket_search_parallel
     test_std_vector_nanoflann_adaptor
     test_std_vector_octtree
@@ -190,7 +190,7 @@ set(IDSearchTest
     )
 if (Aboria_USE_THRUST)
     list(APPEND IDSearchTest
-        #test_thrust_vector_bucket_search_serial
+        #test_thrust_vector_CellList
     test_thrust_vector_bucket_search_parallel
     test_thrust_vector_octtree
     )
@@ -198,7 +198,7 @@ endif()
 
 set(ParticleContainerTestFile particle_container.h)
 set(ParticleContainerTest 
-    test_std_vector_bucket_search_serial
+    test_std_vector_CellList
     test_std_vector_bucket_search_parallel
     test_documentation
     )
@@ -212,7 +212,7 @@ endif()
 
 set(BDTestFile bd.h)
 set(BDTest
-    test_bucket_search_serial
+    test_CellList
     test_bucket_search_parallel
     test_nanoflann_adaptor
     test_octtree
@@ -225,14 +225,14 @@ set(DEMTest
 
 set(SPHTestFile sph.h)
 set(SPHTest
-    test_bucket_search_serial
+    test_CellList
     test_bucket_search_parallel
     test_nanoflann_adaptor
     )
  
 set(MDTestFile md.h)
 set(MDTest
-    test_bucket_search_serial
+    test_CellList
     test_bucket_search_parallel
     test_nanoflann_adaptor
     test_octtree
@@ -242,7 +242,7 @@ set(MDLevel1TestFile md_level1.h)
 set(MDLevel1Test "")
 if (Aboria_USE_THRUST)
     list(APPEND MDLevel1Test
-    test_std_vector_bucket_search_serial
+    test_std_vector_CellList
     test_std_vector_bucket_search_parallel
     test_std_vector_octtree
     test_thrust_vector_bucket_search_parallel
@@ -254,7 +254,7 @@ endif()
  
 set(RbfInterpolationTestFile rbf_interpolation.h)
 set(RbfInterpolationTest 
-    test_bucket_search_serial
+    test_CellList
     test_bucket_search_parallel
     test_kdtree
     test_octtree
@@ -262,19 +262,19 @@ set(RbfInterpolationTest
     
 set(RbfPdeTestFile rbf_pde.h)
 set(RbfPdeTest 
-    test_bucket_search_serial
+    test_CellList
     test_bucket_search_parallel
     )
 
 set(RbfStokesTestFile rbf_stokes.h)
 set(RbfStokesTest 
-    test_bucket_search_serial
+    test_CellList
     test_bucket_search_parallel
     )
 
 set(DiffusionAroundSpheresFile diffusion_around_spheres.h)
 set(DiffusionAroundSpheres 
-    test_bucket_search_serial
+    test_CellList
     test_bucket_search_parallel
     test_nanoflann_adaptor
     )
@@ -282,7 +282,7 @@ set(DiffusionAroundSpheres
 set(ChebyshevTestFile chebyshev.h)
 set(ChebyshevTest
     test_Rn_calculation
-    test_fast_methods_bucket_search_serial
+    test_fast_methods_CellList
     test_fast_methods_bucket_search_parallel
     test_fast_methods_kd_tree
     test_fast_methods_octtree
@@ -292,7 +292,7 @@ set(ChebyshevTest
 
 set(FMMTestFile fmm.h)
 set(FMMTest
-    test_fast_methods_bucket_search_serial
+    test_fast_methods_CellList
     test_fast_methods_bucket_search_parallel
     test_fast_methods_kd_tree
     test_fast_methods_octtree
@@ -301,7 +301,7 @@ set(FMMTest
 
 set(H2TestFile h2.h)
 set(H2Test
-    test_fast_methods_bucket_search_serial
+    test_fast_methods_CellList
     test_fast_methods_bucket_search_parallel
     test_fast_methods_kd_tree
     test_fast_methods_octtree

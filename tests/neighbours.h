@@ -180,7 +180,7 @@ public:
     /*`
 
     Note that this code is valid only for the default [classref
-    Aboria::bucket_search_serial] neighbour data structure (see below), as this
+    Aboria::CellList] neighbour data structure (see below), as this
     is (currently) the only data structure that does not depend on the specific
     ordering of the particles in the `particles` vector, and thus the only data
     structure that can update a single particle independently to the others. The
@@ -233,14 +233,14 @@ public:
 
     The first cell list data structure supports serial insertion of particles,
     and parallel queries. The relevant classes are [classref
-    Aboria::bucket_search_serial] and [classref
-    Aboria::bucket_search_serial_query]. This data structure can be selected on
+    Aboria::CellList] and [classref
+    Aboria::CellListQuery]. This data structure can be selected on
     a per-particle-set basis, by setting the fourth template argument for
     [classref Aboria::Particles]. I.e.
 
     */
 
-    typedef Particles<std::tuple<>, 3, std::vector, bucket_search_serial>
+    typedef Particles<std::tuple<>, 3, std::vector, CellList>
         particle_bs_serial_type;
     particle_bs_serial_type particle_bs_serial;
 
@@ -299,7 +299,7 @@ public:
     containing all possible pairs of neighbouring buckets. The user can then
     iterator over each bucket pair, looping through all the particle within in
     bucket using either the [memberref
-    Aboria::bucket_search_serial_query::get_bucket_particles] or [memberref
+    Aboria::CellListQuery::get_bucket_particles] or [memberref
     Aboria::bucket_search_parallel_query::get_bucket_particles] functions. For
     example, to count up the number of neighbours within a distance of `radius`,
     you might write:
@@ -327,7 +327,7 @@ public:
     The above code considers particle pairs within neighbouring buckets, but not
     those within the same bucket. These pairs can be obtained by simply looping
     through all the buckets in the cell-list, using the [memberref
-    Aboria::bucket_search_serial_query::get_subtree] or [memberref
+    Aboria::CellListQuery::get_subtree] or [memberref
     Aboria::bucket_search_parallel_query::get_subtree] functions.
 
     For example:
@@ -1068,11 +1068,11 @@ public:
     }
   }
 
-  void test_std_vector_bucket_search_serial(void) {
-    helper_d_test_list_random<std::vector, bucket_search_serial>();
-    helper_single_particle<std::vector, bucket_search_serial>();
-    helper_two_particles<std::vector, bucket_search_serial>();
-    helper_d_test_list_regular<std::vector, bucket_search_serial>();
+  void test_std_vector_CellList(void) {
+    helper_d_test_list_random<std::vector, CellList>();
+    helper_single_particle<std::vector, CellList>();
+    helper_two_particles<std::vector, CellList>();
+    helper_d_test_list_regular<std::vector, CellList>();
   }
 
   void test_std_vector_bucket_search_parallel(void) {
@@ -1083,12 +1083,12 @@ public:
     helper_d_test_list_regular<std::vector, bucket_search_parallel>();
   }
 
-  void test_std_vector_bucket_search_serial_fast_bucketsearch(void) {
+  void test_std_vector_CellList_fast_bucketsearch(void) {
     helper_d_test_list_random_fast_bucketsearch<std::vector,
-                                                bucket_search_serial>();
-    helper_single_particle<std::vector, bucket_search_serial>();
-    helper_two_particles<std::vector, bucket_search_serial>();
-    helper_d_test_list_regular<std::vector, bucket_search_serial>();
+                                                CellList>();
+    helper_single_particle<std::vector, CellList>();
+    helper_two_particles<std::vector, CellList>();
+    helper_d_test_list_regular<std::vector, CellList>();
   }
 
   void test_std_vector_bucket_search_parallel_fast_bucketsearch(void) {
@@ -1111,10 +1111,10 @@ public:
     helper_d_test_list_regular<std::vector, octtree>();
   }
 
-  // void test_thrust_vector_bucket_search_serial(void) {
+  // void test_thrust_vector_CellList(void) {
   //#if //defined(__aboria_have_thrust__)
-  //    helper_d_test_list_regular<thrust::device_vector,bucket_search_serial>();
-  //    helper_d_test_list_random<thrust::device_vector,bucket_search_serial>();
+  //    helper_d_test_list_regular<thrust::device_vector,CellList>();
+  //    helper_d_test_list_random<thrust::device_vector,CellList>();
   //#end//if
   //}
 

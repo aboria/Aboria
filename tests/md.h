@@ -210,7 +210,7 @@ public:
 
   void test_bucket_search_parallel() { helper_md<bucket_search_parallel>(); }
 
-  void test_bucket_search_serial() { helper_md<bucket_search_serial>(); }
+  void test_CellList() { helper_md<CellList>(); }
 
   void test_nanoflann_adaptor() { helper_md<nanoflann_adaptor>(); }
 

@@ -218,8 +218,8 @@ std::endl;
   }
   //]
 
-  void test_std_vector_bucket_search_serial(void) {
-    helper_md<std::vector, bucket_search_serial>();
+  void test_std_vector_CellList(void) {
+    helper_md<std::vector, CellList>();
   }
 
   void test_std_vector_bucket_search_parallel(void) {
@@ -228,9 +228,9 @@ std::endl;
 
   void test_std_vector_octtree(void) { helper_md<std::vector, octtree>(); }
 
-  // void test_thrust_vector_bucket_search_serial(void) {
+  // void test_thrust_vector_CellList(void) {
   //#if //defined(__aboria_have_thrust__)
-  //    helper_md<thrust::device_vector,bucket_search_serial>();
+  //    helper_md<thrust::device_vector,CellList>();
   //#end//if
   //}
 
