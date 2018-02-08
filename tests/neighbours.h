@@ -256,13 +256,13 @@ public:
     theoretically (this hasn't been tested yet) this should speed up
     neighbourhood search queries as the particles that are local in memory are
     also local in space. The relevant classes are [classref
-    Aboria::bucket_search_parallel] and [classref
-    Aboria::bucket_search_parallel_query], and you can use this data structure
+    Aboria::CellListOrdered] and [classref
+    Aboria::CellListOrderedQuery], and you can use this data structure
     like so:
 
     */
 
-    typedef Particles<std::tuple<>, 3, std::vector, bucket_search_parallel>
+    typedef Particles<std::tuple<>, 3, std::vector, CellListOrdered>
         particle_bs_parallel_type;
     particle_bs_parallel_type particle_bs_parallel;
 
@@ -300,7 +300,7 @@ public:
     iterator over each bucket pair, looping through all the particle within in
     bucket using either the [memberref
     Aboria::CellListQuery::get_bucket_particles] or [memberref
-    Aboria::bucket_search_parallel_query::get_bucket_particles] functions. For
+    Aboria::CellListOrderedQuery::get_bucket_particles] functions. For
     example, to count up the number of neighbours within a distance of `radius`,
     you might write:
 
@@ -328,7 +328,7 @@ public:
     those within the same bucket. These pairs can be obtained by simply looping
     through all the buckets in the cell-list, using the [memberref
     Aboria::CellListQuery::get_subtree] or [memberref
-    Aboria::bucket_search_parallel_query::get_subtree] functions.
+    Aboria::CellListOrderedQuery::get_subtree] functions.
 
     For example:
     */
@@ -1075,12 +1075,12 @@ public:
     helper_d_test_list_regular<std::vector, CellList>();
   }
 
-  void test_std_vector_bucket_search_parallel(void) {
-    helper_d_test_list_random<std::vector, bucket_search_parallel>();
-    helper_single_particle<std::vector, bucket_search_parallel>();
-    helper_two_particles<std::vector, bucket_search_parallel>();
+  void test_std_vector_CellListOrdered(void) {
+    helper_d_test_list_random<std::vector, CellListOrdered>();
+    helper_single_particle<std::vector, CellListOrdered>();
+    helper_two_particles<std::vector, CellListOrdered>();
 
-    helper_d_test_list_regular<std::vector, bucket_search_parallel>();
+    helper_d_test_list_regular<std::vector, CellListOrdered>();
   }
 
   void test_std_vector_CellList_fast_bucketsearch(void) {
@@ -1091,12 +1091,12 @@ public:
     helper_d_test_list_regular<std::vector, CellList>();
   }
 
-  void test_std_vector_bucket_search_parallel_fast_bucketsearch(void) {
+  void test_std_vector_CellListOrdered_fast_bucketsearch(void) {
     helper_d_test_list_random_fast_bucketsearch<std::vector,
-                                                bucket_search_parallel>();
-    helper_single_particle<std::vector, bucket_search_parallel>();
-    helper_two_particles<std::vector, bucket_search_parallel>();
-    helper_d_test_list_regular<std::vector, bucket_search_parallel>();
+                                                CellListOrdered>();
+    helper_single_particle<std::vector, CellListOrdered>();
+    helper_two_particles<std::vector, CellListOrdered>();
+    helper_d_test_list_regular<std::vector, CellListOrdered>();
   }
 
   void test_std_vector_nanoflann_adaptor(void) {
@@ -1118,11 +1118,11 @@ public:
   //#end//if
   //}
 
-  void test_thrust_vector_bucket_search_parallel(void) {
+  void test_thrust_vector_CellListOrdered(void) {
 #if defined(__aboria_have_thrust__)
-    // helper_d_test_list_random_fast_bucketsearch<std::vector,bucket_search_parallel>();
-    helper_d_test_list_regular<thrust::device_vector, bucket_search_parallel>();
-    helper_d_test_list_random<thrust::device_vector, bucket_search_parallel>();
+    // helper_d_test_list_random_fast_bucketsearch<std::vector,CellListOrdered>();
+    helper_d_test_list_regular<thrust::device_vector, CellListOrdered>();
+    helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
 #endif
   }
 

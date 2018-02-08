@@ -910,7 +910,7 @@ struct CellList<Traits>::copy_points_in_bucket_lambda {
 };
 
 // assume that query functions, are only called from device code
-// TODO: most of this code shared with bucket_search_parallel_query, need to
+// TODO: most of this code shared with CellListOrderedQuery, need to
 // combine them
 ///
 /// @brief a lightweight query object for @ref CellList that can be

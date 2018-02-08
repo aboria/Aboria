@@ -796,24 +796,24 @@ public:
 #endif
   }
 
-  void test_fast_methods_bucket_search_parallel(void) {
+  void test_fast_methods_CellListOrdered(void) {
 #ifdef HAVE_H2LIB
     const size_t N = 1000;
     /*
     std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 1D..." <<
-    std::endl; helper_extended_matrix<1,std::vector,bucket_search_parallel>(N);
+    std::endl; helper_extended_matrix<1,std::vector,CellListOrdered>(N);
     std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 2D..." <<
-    std::endl; helper_extended_matrix<2,std::vector,bucket_search_parallel>(N);
+    std::endl; helper_extended_matrix<2,std::vector,CellListOrdered>(N);
     std::cout << "BUCKET_SEARCH_PARALLEL: testing extended matrix 3D..." <<
-    std::endl; helper_extended_matrix<3,std::vector,bucket_search_parallel>(N);
+    std::endl; helper_extended_matrix<3,std::vector,CellListOrdered>(N);
     */
 
     std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, bucket_search_parallel>(N);
+    helper_fast_methods<1, std::vector, CellListOrdered>(N);
     std::cout << "BUCKET_SEARCH_PARALLEL: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, bucket_search_parallel>(N);
+    helper_fast_methods<2, std::vector, CellListOrdered>(N);
     std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, bucket_search_parallel>(N);
+    helper_fast_methods<3, std::vector, CellListOrdered>(N);
 #endif
   }
 

@@ -208,7 +208,7 @@ public:
   }
   //]
 
-  void test_bucket_search_parallel() { helper_md<bucket_search_parallel>(); }
+  void test_CellListOrdered() { helper_md<CellListOrdered>(); }
 
   void test_CellList() { helper_md<CellList>(); }
 

@@ -204,8 +204,8 @@ public:
     }
   }
 
-  void test_bucket_search_parallel() {
-    helper_diffusion_around_spheres<bucket_search_parallel>();
+  void test_CellListOrdered() {
+    helper_diffusion_around_spheres<CellListOrdered>();
   }
 
   void test_CellList() {

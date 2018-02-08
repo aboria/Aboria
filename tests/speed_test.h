@@ -958,7 +958,7 @@ public:
                 const double radius = radius_div_h*h;
                 file << std::setw(15) << std::pow(N,3);
                 file << std::setw(15) << std::pow(N,6)/linear_spring_aboria<CellList>(N,radius,repeats);
-                file << std::setw(15) << std::pow(N,6)/linear_spring_aboria<bucket_search_parallel>(N,radius,repeats);
+                file << std::setw(15) << std::pow(N,6)/linear_spring_aboria<CellListOrdered>(N,radius,repeats);
                 file << std::setw(15) << std::pow(N,6)/linear_spring_gromacs(N,radius,repeats);
                 file << std::endl;
             }

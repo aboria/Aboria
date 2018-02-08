@@ -262,14 +262,14 @@ public:
     helper_fast_methods<3, std::vector, CellList>(N);
   }
 
-  void test_fast_methods_bucket_search_parallel(void) {
+  void test_fast_methods_CellListOrdered(void) {
     const size_t N = 1000;
     std::cout << "BUCKET_SEARCH_PARALLEL: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, bucket_search_parallel>(N);
+    helper_fast_methods<1, std::vector, CellListOrdered>(N);
     std::cout << "BUCKET_SEARCH_PARALLEL: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, bucket_search_parallel>(N);
+    helper_fast_methods<2, std::vector, CellListOrdered>(N);
     std::cout << "BUCKET_SEARCH_PARALLEL: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, bucket_search_parallel>(N);
+    helper_fast_methods<3, std::vector, CellListOrdered>(N);
   }
 
   void test_fast_methods_kd_tree(void) {

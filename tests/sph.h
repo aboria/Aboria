@@ -362,7 +362,7 @@ public:
   }
   //]
 
-  void test_bucket_search_parallel() { helper_sph<bucket_search_parallel>(); }
+  void test_CellListOrdered() { helper_sph<CellListOrdered>(); }
 
   void test_CellList() { helper_sph<CellList>(); }
 

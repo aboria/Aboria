@@ -222,8 +222,8 @@ std::endl;
     helper_md<std::vector, CellList>();
   }
 
-  void test_std_vector_bucket_search_parallel(void) {
-    helper_md<std::vector, bucket_search_parallel>();
+  void test_std_vector_CellListOrdered(void) {
+    helper_md<std::vector, CellListOrdered>();
   }
 
   void test_std_vector_octtree(void) { helper_md<std::vector, octtree>(); }
@@ -234,9 +234,9 @@ std::endl;
   //#end//if
   //}
 
-  void test_thrust_vector_bucket_search_parallel(void) {
+  void test_thrust_vector_CellListOrdered(void) {
 #if defined(__aboria_have_thrust__)
-    helper_md<thrust::device_vector, bucket_search_parallel>();
+    helper_md<thrust::device_vector, CellListOrdered>();
 #endif
   }
 

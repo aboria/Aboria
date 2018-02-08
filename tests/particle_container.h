@@ -404,20 +404,20 @@ public:
     helper_add_delete_particle<std::vector, CellList>();
   }
 
-  void test_std_vector_bucket_search_parallel(void) {
-    helper_add_particle1<std::vector, bucket_search_parallel>();
-    helper_add_particle2<std::vector, bucket_search_parallel>();
-    helper_add_particle2_dimensions<std::vector, bucket_search_parallel>();
-    helper_add_delete_particle<std::vector, bucket_search_parallel>();
+  void test_std_vector_CellListOrdered(void) {
+    helper_add_particle1<std::vector, CellListOrdered>();
+    helper_add_particle2<std::vector, CellListOrdered>();
+    helper_add_particle2_dimensions<std::vector, CellListOrdered>();
+    helper_add_delete_particle<std::vector, CellListOrdered>();
   }
 
-  void test_thrust_vector_bucket_search_parallel(void) {
+  void test_thrust_vector_CellListOrdered(void) {
 #if defined(__CUDACC__)
-    helper_add_particle1<thrust::device_vector, bucket_search_parallel>();
-    helper_add_particle2<thrust::device_vector, bucket_search_parallel>();
+    helper_add_particle1<thrust::device_vector, CellListOrdered>();
+    helper_add_particle2<thrust::device_vector, CellListOrdered>();
     helper_add_particle2_dimensions<thrust::device_vector,
-                                    bucket_search_parallel>();
-    helper_add_delete_particle<thrust::device_vector, bucket_search_parallel>();
+                                    CellListOrdered>();
+    helper_add_delete_particle<thrust::device_vector, CellListOrdered>();
 #endif
   }
 };

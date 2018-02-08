@@ -316,8 +316,8 @@ O(log(N)) time.
     helper_d_test_list_random<std::vector, CellList>();
   }
 
-  void test_std_vector_bucket_search_parallel(void) {
-    helper_d_test_list_random<std::vector, bucket_search_parallel>();
+  void test_std_vector_CellListOrdered(void) {
+    helper_d_test_list_random<std::vector, CellListOrdered>();
   }
 
   void test_std_vector_nanoflann_adaptor(void) {
@@ -336,9 +336,9 @@ O(log(N)) time.
 #endif
   }
 
-  void test_thrust_vector_bucket_search_parallel(void) {
+  void test_thrust_vector_CellListOrdered(void) {
 #if defined(__aboria_have_thrust__)
-    helper_d_test_list_random<thrust::device_vector, bucket_search_parallel>();
+    helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
 #endif
   }
 

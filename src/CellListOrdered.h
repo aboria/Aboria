@@ -54,20 +54,20 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <typename Traits> struct bucket_search_parallel_params {
+template <typename Traits> struct CellListOrdered_params {
   typedef typename Traits::double_d double_d;
-  bucket_search_parallel_params() : side_length(detail::get_max<double>()) {}
-  bucket_search_parallel_params(const double_d &side_length)
+  CellListOrdered_params() : side_length(detail::get_max<double>()) {}
+  CellListOrdered_params(const double_d &side_length)
       : side_length(side_length) {}
   double_d side_length;
 };
 
-template <typename Traits> struct bucket_search_parallel_query;
+template <typename Traits> struct CellListOrderedQuery;
 
 template <typename Traits>
-class bucket_search_parallel
-    : public neighbour_search_base<bucket_search_parallel<Traits>, Traits,
-                                   bucket_search_parallel_query<Traits>> {
+class CellListOrdered
+    : public neighbour_search_base<CellListOrdered<Traits>, Traits,
+                                   CellListOrderedQuery<Traits>> {
 
   typedef typename Traits::double_d double_d;
   typedef typename Traits::position position;
@@ -78,16 +78,16 @@ class bucket_search_parallel
   typedef typename Traits::vector_unsigned_int vector_unsigned_int;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   typedef typename Traits::iterator iterator;
-  typedef bucket_search_parallel_params<Traits> params_type;
+  typedef CellListOrdered_params<Traits> params_type;
 
-  typedef neighbour_search_base<bucket_search_parallel<Traits>, Traits,
-                                bucket_search_parallel_query<Traits>>
+  typedef neighbour_search_base<CellListOrdered<Traits>, Traits,
+                                CellListOrderedQuery<Traits>>
       base_type;
 
   friend base_type;
 
 public:
-  bucket_search_parallel()
+  CellListOrdered()
       : base_type(),
         m_size_calculated_with_n(std::numeric_limits<size_t>::max()) {}
 
@@ -119,7 +119,7 @@ private:
     const size_t n = this->m_alive_indices.size();
     if (n < 0.5 * m_size_calculated_with_n ||
         n > 2 * m_size_calculated_with_n) {
-      LOG(2, "bucket_search_parallel: recalculating bucket size");
+      LOG(2, "CellListOrdered: recalculating bucket size");
       m_size_calculated_with_n = n;
       if (this->m_n_particles_in_leaf > n) {
         m_size = unsigned_int_d::Constant(1);
@@ -243,185 +243,12 @@ private:
 #endif
   }
 
-  /*
-  bool add_points_at_end_impl(const size_t dist) {
-      const bool embed_all = set_domain_impl();
-      auto start_adding = embed_all?this->m_particles_begin:
-                                    (this->m_particles_end-dist);
-      const size_t total = m_bucket_indices.size() + dist;
-      auto positions_start_adding =
-embed_all?get<position>(this->m_particles_begin):
-                                          get<position>(this->m_particles_end)-
-dist; m_bucket_indices.resize(total); auto bucket_indices_start_adding =
-embed_all?m_bucket_indices.begin(): m_bucket_indices.end() - dist;
-      build_bucket_indices(positions_start_adding,
-                           get<position>(this->m_particles_end),
-                           bucket_indices_start_adding);
-      sort_by_bucket_index();
-      build_buckets();
-
-#ifndef __CUDA_ARCH__
-      if (4 <= ABORIA_LOG_LEVEL) {
-          LOG(4,"bucket_search_parallel data structure:");
-          for (int ii = 0; ii<m_bucket_indices.size(); ++ii) {
-              const size_t i = this->m_order[ii];
-              LOG(4,"\tp = "<<
-                      static_cast<const
-double_d&>(get<position>(*(this->m_particles_begin+i)))<< " index =
-"<<m_bucket_indices[ii]<<
-                      ". m_bucket_begin[index] =
-"<<m_bucket_begin[m_bucket_indices[ii]]<<
-                      ". m_bucket_end[index] =
-"<<m_bucket_end[m_bucket_indices[ii]]);
-          }
-      }
-#endif
-
-      this->m_query.m_particles_begin =
-iterator_to_raw_pointer(this->m_particles_begin); this->m_query.m_particles_end
-= iterator_to_raw_pointer(this->m_particles_end);
-
-      return true;
-  }
-
-  bool delete_points_impl(const size_t i, const size_t n) {
-      const bool resize_buckets = set_domain_impl();
-      if (resize_buckets) {
-          // buckets all changed, so start from scratch
-          embed_points_impl(false);
-          return true;
-      } else {
-          // only redo buckets that changed
-          const size_t start_bucket = m_bucket_indices[i-1];
-          const size_t end_bucket = m_bucket_indices[i+n];
-
-          m_bucket_indices.erase(m_bucket_indices.begin()+i,
-                                 m_bucket_indices.begin()+i+n);
-
-          //set begins in deleted range to i
-          detail::fill(m_bucket_begin.begin()+start_bucket+1,
-                       m_bucket_begin.begin()+end_bucket+1,
-                       i);
-
-          //set ends in deleted range to i
-          detail::fill(m_bucket_end.begin()+start_bucket,
-                       m_bucket_end.begin()+end_bucket,
-                       i);
-
-          //minus n from begins after deleted range
-          detail::transform(m_bucket_begin.begin()+end_bucket+1,
-                            m_bucket_begin.end(),
-                            m_bucket_begin.begin()+end_bucket+1,
-                            std::bind2nd(std::minus<int>(),n));
-
-          //minus n from ends after deleted range
-          detail::transform(m_bucket_end.begin()+end_bucket,
-                            m_bucket_end.end(),
-                            m_bucket_end.begin()+end_bucket,
-                            std::bind2nd(std::minus<int>(),n));
-
-           this->m_query.m_particles_begin =
-iterator_to_raw_pointer(this->m_particles_begin); this->m_query.m_particles_end
-= iterator_to_raw_pointer(this->m_particles_end);
-
-
-          #ifndef __CUDA_ARCH__
-          if (4 <= ABORIA_LOG_LEVEL) {
-              LOG(4,"\tbuckets:");
-              for (size_t i = 0; i < m_bucket_begin.size(); ++i) {
-                  LOG(4,"\ti = "<<i<<" bucket contents = "<<m_bucket_begin[i]<<"
-to "<<m_bucket_end[i]);
-              }
-              LOG(4,"\tend buckets");
-              LOG(4,"\tparticles:");
-              for (size_t i = 0; i < m_bucket_indices.size(); ++i) {
-                  LOG(4,"\ti = "<<i<<" p = "<<
-                       static_cast<const
-double_d&>(get<position>(*(this->m_particles_begin+i)))<< " bucket =
-"<<m_bucket_indices[i]);
-              }
-              LOG(4,"\tend particles:");
-          }
-          #endif
-
-
-
-          return false;
-      }
-
-
-
-  }
-
-  void copy_points_impl(iterator copy_from_iterator, iterator copy_to_iterator)
-{ auto positions_from = get<position>(copy_from_iterator); auto positions_to =
-get<position>(copy_to_iterator);
-
-      const size_t toi =
-std::distance(this->m_particles_begin,copy_to_iterator); const size_t fromi =
-std::distance(this->m_particles_begin,copy_from_iterator);
-
-      build_bucket_indices(positions_from,positions_from+1,
-             m_bucket_indices.begin() + fromi);
-      build_bucket_indices(positions_to,positions_to+1,
-             m_bucket_indices.begin() + toi);
-      sort_by_bucket_index();
-      build_buckets();
-  }
-
-  */
-  const bucket_search_parallel_query<Traits> &get_query_impl() const {
+  const CellListOrderedQuery<Traits> &get_query_impl() const {
     return m_query;
   }
 
-  bucket_search_parallel_query<Traits> &get_query_impl() { return m_query; }
+  CellListOrderedQuery<Traits> &get_query_impl() { return m_query; }
 
-  /*
-  const bucket_search_parallel_query<Traits>& get_query() const {
-      return m_query;
-  }
-  */
-
-  /*
-  void build_buckets() {
-      // find the beginning of each bucket's list of points
-      detail::counting_iterator<unsigned int> search_begin(0);
-      detail::lower_bound(m_bucket_indices.begin(),
-              m_bucket_indices.end(),
-              search_begin,
-              search_begin + m_size.prod(),
-              m_bucket_begin.begin());
-
-      // find the end of each bucket's list of points
-      detail::upper_bound(m_bucket_indices.begin(),
-              m_bucket_indices.end(),
-              search_begin,
-              search_begin + m_size.prod(),
-              m_bucket_end.begin());
-  }
-
-  void build_bucket_indices(
-      vector_double_d_const_iterator positions_begin,
-      vector_double_d_const_iterator positions_end,
-      vector_unsigned_int_iterator bucket_indices_begin) {
-      // transform the points to their bucket indices
-      detail::transform(positions_begin,
-              positions_end,
-              bucket_indices_begin,
-              m_point_to_bucket_index);
-  }
-
-  void sort_by_bucket_index() {
-      // sort the points by their bucket index
-      if (m_bucket_indices.size() > 0) {
-          this->m_order.resize(m_bucket_indices.size());
-          detail::sequence(this->m_order.begin(), this->m_order.end());
-          detail::sort_by_key(m_bucket_indices.begin(),
-                              m_bucket_indices.end(),
-                              this->m_order.begin());
-      }
-  }
-  */
 
   // the grid data structure keeps a range per grid bucket:
   // each bucket_begin[i] indexes the first element of bucket i's list of points
@@ -430,7 +257,7 @@ std::distance(this->m_particles_begin,copy_from_iterator);
   vector_unsigned_int m_bucket_begin;
   vector_unsigned_int m_bucket_end;
   vector_unsigned_int m_bucket_indices;
-  bucket_search_parallel_query<Traits> m_query;
+  CellListOrderedQuery<Traits> m_query;
 
   double_d m_bucket_side_length;
   unsigned_int_d m_size;
@@ -439,7 +266,15 @@ std::distance(this->m_particles_begin,copy_from_iterator);
 };
 
 // assume that query functions, are only called from device code
-template <typename Traits> struct bucket_search_parallel_query {
+// TODO: most of this code shared with CellListQuery, need to
+// combine them
+///
+/// @brief a lightweight query object for @ref CellListOrdered that can be
+/// copied (e.g. to the gpu)
+///
+/// @tparam Traits the @ref TraitsCommon type
+///
+template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBase<Traits> {
 
   typedef Traits traits_type;
   typedef typename Traits::raw_pointer raw_pointer;
@@ -450,7 +285,7 @@ template <typename Traits> struct bucket_search_parallel_query {
   const static unsigned int dimension = Traits::dimension;
   template <int LNormNumber>
   using query_iterator =
-      lattice_iterator_within_distance<bucket_search_parallel_query,
+      lattice_iterator_within_distance<CellListOrderedQuery,
                                        LNormNumber>;
   typedef lattice_iterator<dimension> all_iterator;
   typedef lattice_iterator<dimension> child_iterator;
@@ -460,6 +295,7 @@ template <typename Traits> struct bucket_search_parallel_query {
   typedef ranges_iterator<Traits> particle_iterator;
   typedef detail::bbox<dimension> box_type;
 
+  
   raw_pointer m_particles_begin;
   raw_pointer m_particles_end;
 
@@ -478,7 +314,7 @@ template <typename Traits> struct bucket_search_parallel_query {
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  bucket_search_parallel_query() {}
+  CellListOrderedQuery() {}
 
   /*
    * functions for id mapping

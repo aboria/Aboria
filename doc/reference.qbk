@@ -69,7 +69,7 @@ Header: `<Aboria.h>`
         can be used to query the spatial data structure for that particle set.  
         This is the query object for the serial cell lists data structure]]
 
-    [[[classref Aboria::bucket_search_parallel_query]]         
+    [[[classref Aboria::CellListOrderedQuery]]         
     
         [This is the query object for the parallel cell lists data structure]]
 

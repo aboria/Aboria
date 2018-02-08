@@ -580,12 +580,12 @@ public:
 #endif // HAVE_H2LIB
   }
 
-  void test_bucket_search_parallel() {
+  void test_CellListOrdered() {
     std::cout << "-------------------------------------------\n"
-              << "Running tests on bucket_search_parallel....\n"
+              << "Running tests on CellListOrdered....\n"
               << "------------------------------------------" << std::endl;
-    helper_global<bucket_search_parallel>();
-    helper_compact<bucket_search_parallel>();
+    helper_global<CellListOrdered>();
+    helper_compact<CellListOrdered>();
   }
 
   void test_CellList() {

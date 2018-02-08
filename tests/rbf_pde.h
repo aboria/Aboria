@@ -218,8 +218,8 @@ public:
     }
 
 
-    void test_bucket_search_parallel() {
-        helper_Eigen<bucket_search_parallel>();
+    void test_CellListOrdered() {
+        helper_Eigen<CellListOrdered>();
     }
 
     void test_CellList() {

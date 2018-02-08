@@ -141,9 +141,9 @@ public:
     }
 //]
 
-    void test_bucket_search_parallel() {
-        std::cout << "bucket_search_parallel" << std::endl;
-        helper_bd<bucket_search_parallel>();
+    void test_CellListOrdered() {
+        std::cout << "CellListOrdered" << std::endl;
+        helper_bd<CellListOrdered>();
     }
 
     void test_CellList() {

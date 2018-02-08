@@ -167,15 +167,15 @@ set(NeighboursTestFile neighbours.h)
 set(NeighboursTest
     test_std_vector_CellList
     test_std_vector_CellList_fast_bucketsearch
-    test_std_vector_bucket_search_parallel
-    test_std_vector_bucket_search_parallel_fast_bucketsearch
+    test_std_vector_CellListOrdered
+    test_std_vector_CellListOrdered_fast_bucketsearch
     test_std_vector_nanoflann_adaptor
     test_std_vector_octtree
     test_documentation
     )
 if (Aboria_USE_THRUST)
     list(APPEND NeighboursTest
-    test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_CellListOrdered
     test_thrust_vector_octtree
     )
 endif()
@@ -183,7 +183,7 @@ endif()
 set(IDSearchTestFile id_search.h)
 set(IDSearchTest
     test_std_vector_CellList
-    test_std_vector_bucket_search_parallel
+    test_std_vector_CellListOrdered
     test_std_vector_nanoflann_adaptor
     test_std_vector_octtree
     test_documentation
@@ -191,7 +191,7 @@ set(IDSearchTest
 if (Aboria_USE_THRUST)
     list(APPEND IDSearchTest
         #test_thrust_vector_CellList
-    test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_CellListOrdered
     test_thrust_vector_octtree
     )
 endif()
@@ -199,12 +199,12 @@ endif()
 set(ParticleContainerTestFile particle_container.h)
 set(ParticleContainerTest 
     test_std_vector_CellList
-    test_std_vector_bucket_search_parallel
+    test_std_vector_CellListOrdered
     test_documentation
     )
 if (Aboria_USE_THRUST)
     list(APPEND ParticleContainerTest 
-    test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_CellListOrdered
     )
 endif()
 
@@ -213,7 +213,7 @@ endif()
 set(BDTestFile bd.h)
 set(BDTest
     test_CellList
-    test_bucket_search_parallel
+    test_CellListOrdered
     test_nanoflann_adaptor
     test_octtree
     )
@@ -226,14 +226,14 @@ set(DEMTest
 set(SPHTestFile sph.h)
 set(SPHTest
     test_CellList
-    test_bucket_search_parallel
+    test_CellListOrdered
     test_nanoflann_adaptor
     )
  
 set(MDTestFile md.h)
 set(MDTest
     test_CellList
-    test_bucket_search_parallel
+    test_CellListOrdered
     test_nanoflann_adaptor
     test_octtree
     )
@@ -243,9 +243,9 @@ set(MDLevel1Test "")
 if (Aboria_USE_THRUST)
     list(APPEND MDLevel1Test
     test_std_vector_CellList
-    test_std_vector_bucket_search_parallel
+    test_std_vector_CellListOrdered
     test_std_vector_octtree
-    test_thrust_vector_bucket_search_parallel
+    test_thrust_vector_CellListOrdered
     test_thrust_vector_octtree
     )
 endif()
@@ -255,7 +255,7 @@ endif()
 set(RbfInterpolationTestFile rbf_interpolation.h)
 set(RbfInterpolationTest 
     test_CellList
-    test_bucket_search_parallel
+    test_CellListOrdered
     test_kdtree
     test_octtree
     )
@@ -263,19 +263,19 @@ set(RbfInterpolationTest
 set(RbfPdeTestFile rbf_pde.h)
 set(RbfPdeTest 
     test_CellList
-    test_bucket_search_parallel
+    test_CellListOrdered
     )
 
 set(RbfStokesTestFile rbf_stokes.h)
 set(RbfStokesTest 
     test_CellList
-    test_bucket_search_parallel
+    test_CellListOrdered
     )
 
 set(DiffusionAroundSpheresFile diffusion_around_spheres.h)
 set(DiffusionAroundSpheres 
     test_CellList
-    test_bucket_search_parallel
+    test_CellListOrdered
     test_nanoflann_adaptor
     )
 
@@ -283,7 +283,7 @@ set(ChebyshevTestFile chebyshev.h)
 set(ChebyshevTest
     test_Rn_calculation
     test_fast_methods_CellList
-    test_fast_methods_bucket_search_parallel
+    test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
     test_fast_methods_octtree
     test_chebyshev_polynomial_calculation
@@ -293,7 +293,7 @@ set(ChebyshevTest
 set(FMMTestFile fmm.h)
 set(FMMTest
     test_fast_methods_CellList
-    test_fast_methods_bucket_search_parallel
+    test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
     test_fast_methods_octtree
     test_fmm_operators
@@ -302,7 +302,7 @@ set(FMMTest
 set(H2TestFile h2.h)
 set(H2Test
     test_fast_methods_CellList
-    test_fast_methods_bucket_search_parallel
+    test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
     test_fast_methods_octtree
     test_fmm_matrix_operators
