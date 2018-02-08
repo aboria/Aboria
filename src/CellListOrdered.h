@@ -296,20 +296,64 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
   typedef detail::bbox<dimension> box_type;
 
   
+  ///
+  /// @brief pointer to the beginning of the particle set
+  /// 
   raw_pointer m_particles_begin;
+
+  ///
+  /// @brief pointer to the end of the particle set
+  /// 
   raw_pointer m_particles_end;
 
+  ///
+  /// @brief periodicity of the domain
+  /// 
   bool_d m_periodic;
+
+  ///
+  /// @brief dimensions of each bucket 
+  /// 
   double_d m_bucket_side_length;
+
+  ///
+  /// @brief index of the last bucket in the cell list
+  /// 
   int_d m_end_bucket;
+
+  ///
+  /// @brief min/max bounds of the domain
+  /// 
   detail::bbox<dimension> m_bounds;
+
+  ///
+  /// @brief function object to transform a point to a bucket index
+  /// 
   detail::point_to_bucket_index<dimension> m_point_to_bucket_index;
 
+  ///
+  /// @brief pointer to the beginning of the buckets
+  /// 
   unsigned int *m_bucket_begin;
+
+  ///
+  /// @brief pointer to the end of the buckets
+  /// 
   unsigned int *m_bucket_end;
+
+  ///
+  /// @brief the number of buckets
+  /// 
   unsigned int m_nbuckets;
 
+  ///
+  /// @brief a pointer to the "key" values of the find-by-id map
+  /// 
   size_t *m_id_map_key;
+
+  ///
+  /// @brief a pointer to the "value" values of the find-by-id map
+  /// 
   size_t *m_id_map_value;
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -319,6 +363,10 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
   /*
    * functions for id mapping
    */
+
+  ///
+  /// @copydoc NeighbourQueryBase::find() 
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   raw_pointer find(const size_t id) const {
@@ -335,26 +383,48 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
   /*
    * functions for trees
    */
+
+  ///
+  /// @copydoc NeighbourQueryBase::is_leaf_node() 
+  ///
+  /// always true for CellListOrdered
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static bool is_leaf_node(const value_type &bucket) { return true; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::is_tree() 
+  ///
+  /// always false for CellListOrdered
+  ///
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static bool is_tree() { return false; }
 
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_children() const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   child_iterator get_children() const {
     return child_iterator(int_d::Constant(0), m_end_bucket + 1);
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_children(const child_iterator&) const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   child_iterator get_children(const child_iterator &ci) const {
     return child_iterator();
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_bounds(const child_iterator&) const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const box_type get_bounds(const child_iterator &ci) const {
@@ -364,31 +434,23 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
     return bounds;
   }
 
-  // dodgy hack cause nullptr cannot be converted to pointer
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static const pointer get_child1(const pointer &bucket) {
-    CHECK(false, "this should not be called")
-    return pointer(-1);
-  }
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static const pointer get_child2(const pointer &bucket) {
-    CHECK(false, "this should not be called")
-    return pointer(-1);
-  }
-
-  // const double_d& get_min_bucket_size() const { return m_bucket_side_length;
-  // }
+  ///
+  /// @copydoc NeighbourQueryBase::get_bounds()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const box_type &get_bounds() const { return m_bounds; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_periodic()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const bool_d &get_periodic() const { return m_periodic; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_bucket_particles()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range<particle_iterator>
@@ -414,6 +476,9 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
         particle_iterator(m_particles_begin + range_end_index));
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_bucket_bbox()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   detail::bbox<dimension> get_bucket_bbox(const reference bucket) const {
@@ -422,6 +487,9 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
         (bucket + 1) * m_bucket_side_length + m_bounds.bmin);
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_bucket()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   void get_bucket(const double_d &position, pointer &bucket,
@@ -431,12 +499,18 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
     bounds.bmax = (bucket + 1) * m_bucket_side_length + m_bounds.bmin;
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_bucket_index()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t get_bucket_index(const reference bucket) const {
     return m_point_to_bucket_index.collapse_index_vector(bucket);
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const double) const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber = -1>
   CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
@@ -452,6 +526,9 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
         query_iterator<LNormNumber>());
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const double_d&) const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber = -1>
   CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
@@ -466,16 +543,25 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
         query_iterator<LNormNumber>());
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_end_bucket()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const int_d &get_end_bucket() const { return m_end_bucket; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_subtree(const child_iterator&) const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range<all_iterator> get_subtree(const child_iterator &ci) const {
     return iterator_range<all_iterator>(all_iterator(), all_iterator());
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_subtree() const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range<all_iterator> get_subtree() const {
@@ -483,42 +569,43 @@ template <typename Traits> struct CellListOrderedQuery: public NeighbourQueryBas
         all_iterator(int_d::Constant(0), m_end_bucket + 1), all_iterator());
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::number_of_buckets()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t number_of_buckets() const { return (m_end_bucket + 1).prod(); }
 
+  ///
+  /// @copydoc NeighbourQueryBase::number_of_particles()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t number_of_particles() const {
     return (m_particles_end - m_particles_begin);
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_particles_begin() const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const raw_pointer &get_particles_begin() const { return m_particles_begin; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_particles_begin()
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   raw_pointer &get_particles_begin() { return m_particles_begin; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::number_of_levels()
+  ///
+  /// always 2 for CellListOrdered
+  ///
   unsigned number_of_levels() const { return 2; }
 
-  /*
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  bool get_children_buckets(const bucket_reference &bucket,
-  std::array<value_type,2>& children) { return false;
-  }
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range<query_iterator> get_root_buckets() const {
-      return iterator_range<query_iterator>(
-              query_iterator(int_d(0),m_end_bucket,int_d(0)),
-              ++query_iterator(int_d(0),m_end_bucket,m_end_bucket)
-              );
-  }
-  */
 };
 
 } // namespace Aboria
