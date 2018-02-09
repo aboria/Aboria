@@ -69,7 +69,12 @@ struct is_not_aliased
                           proto::if_<boost::is_same<
                               VariableType,
                               typename LabelType::particles_type::position>()>,
-                          proto::terminal<dx<_, _>>>>>,
+                          proto::terminal<dx<_, _>>>>,
+                      proto::not_<proto::and_<
+                          proto::if_<boost::is_same<
+                              VariableType,
+                              typename LabelType::particles_type::position>()>,
+                          proto::terminal<accumulate_within_distance<_, _>>>>>,
           proto::and_<
               proto::nary_expr<proto::_, proto::vararg<is_not_aliased<
                                              VariableType, LabelType>>>,
