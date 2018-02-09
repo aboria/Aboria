@@ -26,6 +26,7 @@ if (Aboria_RUN_TESTS)
     set(all_test_suites
         MetafunctionsTest 
         NeighboursTest
+        SpatialDataStructuresTest
         IDSearchTest
         ParticleContainerTest
         SymbolicTest
@@ -162,6 +163,10 @@ if (Aboria_USE_THRUST)
     )
 endif()
 
+set(SpatialDataStructuresTestFile data_structures.h)
+set(SpatialDataStructuresTest
+    test_documentation
+    )
 
 set(NeighboursTestFile neighbours.h)
 set(NeighboursTest

@@ -23,6 +23,10 @@
 [import ../tests/neighbours.h]
 [neighbour_search]
 
+[/ import documentation from data_structures.h]
+[import ../tests/data_structures.h]
+[spatial_data_structures]
+
 [/ import documentation from id_search.h]
 [import ../tests/id_search.h]
 [id_search]

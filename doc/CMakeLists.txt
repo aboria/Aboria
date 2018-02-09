@@ -59,6 +59,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         ../tests/particle_container.h
         ../tests/operators.h
         ../tests/neighbours.h
+        ../tests/data_structures.h
         ../tests/md.h
         ../tests/bd.h
         ../tests/dem.h
