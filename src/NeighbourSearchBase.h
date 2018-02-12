@@ -635,12 +635,36 @@ template <typename Traits> struct NeighbourQueryBase {
     struct value_type;
   };
 
-  struct all_iterator;
-  struct child_iterator;
-  struct particle_iterator;
+  ///
+  /// @brief An iterator that steps through all the buckets in the tree
+  /// (depth-first)
+  ///
+  struct all_iterator {};
+  ///
+  /// @brief An iterator that steps through the children of a single bucket in
+  /// the tree
+  ///
+  struct child_iterator {};
 
+  ///
+  /// @brief An iterator that steps through the particles within a given
+  /// bucket
+  ///
+  struct particle_iterator {};
+
+  ///
+  /// @brief A reference to a bucket in the tree
+  ///
   typedef typename query_iterator<2>::reference reference;
+
+  ///
+  /// @brief A pointer to a bucket in the tree
+  ///
   typedef typename query_iterator<2>::pointer pointer;
+
+  ///
+  /// @brief A value_type for a bucket in the tree
+  ///
   typedef typename query_iterator<2>::value_type value_type;
 
   ///

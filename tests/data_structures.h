@@ -90,6 +90,11 @@ public:
     }
 
     /*`
+    The iterators in Aboria are similar to STL iterators in that they can step
+    through a given range of objects using the `++` operator, with some slight
+    differences that we will describe below.
+
+
     Before we can start using the data structure iterators in Aboria, we need a
     particle set. Lets create a random set of points in 2D:
     */
@@ -114,7 +119,7 @@ public:
     object that has all the information neccessary to access either the particle
     set itself or the underlying spatial data structures. It was designed
     because the [classref Aboria::Particles] container and the neighbour search
-    classes (e.g. [classref Aboria::NeighbourSearchBase]) were unsuitable for
+    classes (e.g. [classref Aboria::NeighbourQueryBase]) were unsuitable for
     copying to a gpu in order to perform calculations there, so a simpler class,
     the query class, was created with the required functionality.
     */
@@ -136,10 +141,13 @@ public:
     list.
 
     You can create a child_iterator by using the [funcref
-    Aboria::NeighbourQueryBase::get_children()] function. This creates a
+    Aboria::NeighbourQueryBase::get_children() const] function. This creates a
     child_iterator that loops through the children of the root node of the tree.
     We will use this iterator to loop through all these children and print out
-    the spatial bounds of each node.
+    the spatial bounds of each node. In order to determine when we have reached
+    the end of the children, we can compare the iterator to `false`. This
+    pattern is widely used in Aboria, rather than specific `end` iterators as
+    used in the STL.
 
     */
 
@@ -148,10 +156,10 @@ public:
     }
 
     /*`
-    Above we use the [funcref Aboria::NeighbourQueryBase::get_bounds(const
-    child_iterator& ci) const] function to get the bounds of the child iterator.
-    This returns a [classref Aboria::detail::bbox] class that contains the
-    minimum and maximum spatial extents of the node pointed to by `i`.
+    Above we use the [funcref Aboria::NeighbourQueryBase::get_bounds]
+    function to get the bounds of the child iterator. This returns a [classref
+    Aboria::detail::bbox] class that contains the minimum and maximum spatial
+    extents of the node pointed to by `i`.
 
     Note that here we are using the default spatial data structure, a cell list
     provided by [classref Aboria::CellList], so the "tree" here will only have 2
@@ -178,11 +186,10 @@ public:
     Now `particles_octtree` contains a full oct-tree, dividing the spatial
     domain into a hierarchical set of boxes that make up our tree data
     structure. The simplest iteration we might want to do on the tree is a
-    depth-first iteration, which is easiest achieved by recursion. The [classref
-    Aboria::NeighbourQueryBase::get_children(const child_iterator& ci) const]
-    function can be used to get the children of a `child_iterator`, and using a
-    C++ lambda function to provide the recursion we can implement a depth-first
-    iteration like so
+    depth-first iteration, which is easiest achieved by recursion. The
+    [classref Aboria::NeighbourQueryBase::get_children] function can be used to
+    get the children of a `child_iterator`, and using a C++ lambda function to
+    provide the recursion we can implement a depth-first iteration like so
     */
 
     std::cout << "recursive depth-first" << std::endl;
@@ -200,9 +207,9 @@ public:
     /*`
 
     This construction might be a bit clumsy to use in practice however, so
-    Aboria provides a special depth-first iterator [classref
-    Aboria::NeighbourQueryBase::all_iterator] to allow you to write a loop
-    equivalent to the recursive depth-first code given above.
+    Aboria provides a special depth-first iterator
+    [classref Aboria::NeighbourQueryBase::all_iterator] to allow you to write a
+    loop equivalent to the recursive depth-first code given above.
 
     */
 
@@ -212,16 +219,16 @@ public:
     }
 
     /*`
-    The [funcref Aboria::NeighbourQueryBase::get_subtree()] function returns a
+    The [funcref Aboria::NeighbourQueryBase::get_subtree] function returns a
     [classref Aboria::NeighbourQueryBase::all_iterator] that performs a
     depth-first iteration over the tree. Note that you can also pass in a
-    child_iterator to [funcref Aboria::NeighbourQueryBase::get_subtree(const
-    child_iterator& ci) const] to iterate over the sub-tree below a particular
-    node of the tree.
+    child_iterator to [funcref Aboria::NeighbourQueryBase::get_subtree] to
+    iterate over the sub-tree below a particular node of the tree.
 
     You might also want to distinguish between leaf nodes (nodes with no
-    children) and non-leaf nodes. You can do this with the [funcref
-    Aboria::NeighbourQueryBase:is_leaf()] function, which can be used like so
+    children) and non-leaf nodes. You can do this with the [memberref
+    Aboria::NeighbourQueryBase:is_leaf_node] function, which can be used like
+    so
     */
 
     std::cout << "subtree depth-first showing leaf nodes" << std::endl;

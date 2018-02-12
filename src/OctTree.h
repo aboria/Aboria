@@ -736,7 +736,7 @@ template <typename Traits> struct octtree_query {
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bounds(const child_iterator &ci) const
+  /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN CUDA_HOST_DEVICE static const box_type
   get_bounds(const child_iterator &ci) {
@@ -744,7 +744,7 @@ template <typename Traits> struct octtree_query {
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bounds(const query_iterator &ci) const
+  /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -754,7 +754,7 @@ template <typename Traits> struct octtree_query {
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bounds(const all_iterator &ci) const
+  /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE

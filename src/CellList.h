@@ -1066,7 +1066,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bounds(const child_iterator &ci) const
+  /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1078,7 +1078,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bounds(const query_iterator &ci) const
+  /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1160,8 +1160,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const
-  /// double) const
+  /// @copydoc NeighbourQueryBase::get_buckets_near_point()
   ///
   /// @see lattice_iterator_within_distance
   ///
@@ -1180,8 +1179,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const
-  /// double_d&) const
+  /// @copydoc NeighbourQueryBase::get_buckets_near_point()
   ///
   /// @see lattice_iterator_within_distance
   ///
