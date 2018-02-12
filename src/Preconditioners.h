@@ -570,22 +570,20 @@ public:
     // TODO: cant use chebyshev search function as does not yet
     // support anisotropic distance measures, need to add this then
     // remove hack below
-    auto range = query.template get_buckets_near_point<-1>(
+    auto it = query.template get_buckets_near_point<-1>(
         0.5 * (bounds.bmax - bounds.bmin) + bounds.bmin,
         0.5 * (bounds.bmax - bounds.bmin) + m_buffer);
 
-    typedef typename Query::reference reference;
     typedef typename Query::traits_type::position position;
-    typedef typename Query::particle_iterator::reference particle_reference;
-    for (reference bucket : range) {
-      auto particles = query.get_bucket_particles(bucket);
-      for (particle_reference particle : particles) {
-        const size_t index = &(get<position>(particle)) -
+    for (; it != false; ++it) {
+      for (auto particle = query.get_bucket_particles(*it); particle != false;
+           ++particle) {
+        const size_t index = &(get<position>(*particle)) -
                              get<position>(query.get_particles_begin());
-        if ((get<position>(particle) >= bounds.bmin - m_buffer).all() &&
-            (get<position>(particle) < bounds.bmax + m_buffer).all()) {
-          if ((get<position>(particle) < bounds.bmin).any() ||
-              (get<position>(particle) >= bounds.bmax).any()) {
+        if ((get<position>(*particle) >= bounds.bmin - m_buffer).all() &&
+            (get<position>(*particle) < bounds.bmax + m_buffer).all()) {
+          if ((get<position>(*particle) < bounds.bmin).any() ||
+              (get<position>(*particle) >= bounds.bmax).any()) {
             buffer.push_back(start_row + index);
           } else {
             indicies.push_back(start_row + index);
@@ -614,8 +612,7 @@ public:
     size_t count = 0;
     bool done = false;
     if (query.is_leaf_node(*ci)) {
-      auto particles = query.get_bucket_particles(*ci);
-      count = std::distance(particles.begin(), particles.end());
+      count = query.get_bucket_particles(*ci).distance_to_end();
     } else {
       std::vector<child_iterator> not_done;
       for (child_iterator cj = query.get_children(ci); cj != false; ++cj) {

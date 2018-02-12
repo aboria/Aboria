@@ -1016,6 +1016,14 @@ public:
     m_linked_list_begin = other.m_linked_list_begin;
   }
 
+  size_t distance_to_end() const {
+    size_t count = 0;
+    for (auto i = *this; i != false; ++i) {
+      ++count;
+    }
+    return count;
+  }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }

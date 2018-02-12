@@ -375,7 +375,7 @@ public:
     std::cout << "Octtree" << std::endl;
     helper_data_structure<std::vector, octtree>();
   }
-  void test_kd_tree() {
+  void test_kdtree() {
     std::cout << "kd tree" << std::endl;
     helper_data_structure<std::vector, nanoflann_adaptor>();
   }
