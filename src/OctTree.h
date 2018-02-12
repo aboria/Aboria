@@ -728,23 +728,34 @@ template <typename Traits> struct octtree_query {
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   child_iterator get_children(const child_iterator &ci) const {
-    ASSERT_CUDA(*ci >= 0);
-    return child_iterator((m_nodes_begin + *ci), ci.get_bounds());
+    if (!is_leaf_node(*ci)) {
+      return child_iterator((m_nodes_begin + *ci), ci.get_bounds());
+    } else {
+      return child_iterator();
+    }
   }
 
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static const box_type get_bounds(const child_iterator &ci) {
+  ///
+  /// @copydoc NeighbourQueryBase::get_bounds(const child_iterator &ci) const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN CUDA_HOST_DEVICE static const box_type
+  get_bounds(const child_iterator &ci) {
     return ci.get_bounds();
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_bounds(const query_iterator &ci) const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
   template <int LNormNumber>
-  CUDA_HOST_DEVICE static const box_type
-  get_bounds(const query_iterator<LNormNumber> &qi) {
+  static const box_type get_bounds(const query_iterator<LNormNumber> &qi) {
     return qi.get_bounds();
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_bounds(const all_iterator &ci) const
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static const box_type get_bounds(const all_iterator &ai) {
@@ -752,22 +763,20 @@ template <typename Traits> struct octtree_query {
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  iterator_range<particle_iterator>
-      CUDA_HOST_DEVICE get_bucket_particles(reference bucket) const {
-    if (detail::is_empty(bucket)) {
-      return iterator_range<particle_iterator>();
+  particle_iterator CUDA_HOST_DEVICE
+  get_bucket_particles(reference bucket) const {
+    if (!detail::is_leaf(bucket) || detail::is_empty(bucket)) {
+      return particle_iterator();
     }
 
-    ASSERT_CUDA(detail::is_leaf(bucket));
     const int leaf_idx = detail::get_leaf_offset(bucket);
     const vint2 &particle_idxs = m_leaves_begin[leaf_idx];
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_bucket_particles: looking in bucket with start index = "
                << particle_idxs[0] << " end index = " << particle_idxs[1]);
 #endif
-    return iterator_range<particle_iterator>(
-        particle_iterator(m_particles_begin + particle_idxs[0]),
-        particle_iterator(m_particles_begin + particle_idxs[1]));
+    return particle_iterator(m_particles_begin + particle_idxs[0],
+                             m_particles_begin + particle_idxs[1]);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -798,33 +807,29 @@ template <typename Traits> struct octtree_query {
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber>
-  CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double max_distance) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
-    return iterator_range<query_iterator<LNormNumber>>(
-        query_iterator<LNormNumber>(get_children(), position,
-                                    double_d::Constant(max_distance),
-                                    m_number_of_levels, this),
-        query_iterator<LNormNumber>());
+    return query_iterator<LNormNumber>(get_children(), position,
+                                       double_d::Constant(max_distance),
+                                       m_number_of_levels, this);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber>
-  CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
-    return iterator_range<query_iterator<LNormNumber>>(
-        query_iterator<LNormNumber>(get_children(), position, max_distance,
-                                    m_number_of_levels, this),
-        query_iterator<LNormNumber>());
+    return query_iterator<LNormNumber>(get_children(), position, max_distance,
+                                       m_number_of_levels, this);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -835,17 +840,14 @@ template <typename Traits> struct octtree_query {
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  iterator_range<all_iterator> get_subtree(const child_iterator &ci) const {
-    return iterator_range<all_iterator>(
-        all_iterator(get_children(ci), m_number_of_levels, this),
-        all_iterator());
+  all_iterator get_subtree(const child_iterator &ci) const {
+    return all_iterator(get_children(ci), m_number_of_levels, this);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  iterator_range<all_iterator> get_subtree() const {
-    return iterator_range<all_iterator>(
-        all_iterator(get_children(), m_number_of_levels, this), all_iterator());
+  all_iterator get_subtree() const {
+    return all_iterator(get_children(), m_number_of_levels, this);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -865,7 +867,7 @@ template <typename Traits> struct octtree_query {
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   raw_pointer &get_particles_begin() { return m_particles_begin; }
-};
+}; // namespace Aboria
 
 } // namespace Aboria
 #endif /* OCTTREE_H_ */

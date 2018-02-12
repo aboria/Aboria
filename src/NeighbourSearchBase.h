@@ -629,8 +629,7 @@ template <typename Traits> struct NeighbourQueryBase {
   const static unsigned int dimension = Traits::dimension;
   typedef detail::bbox<dimension> box_type;
 
-  template <int LNormNumber>
-  struct query_iterator {
+  template <int LNormNumber> struct query_iterator {
     struct reference;
     struct pointer;
     struct value_type;
@@ -643,7 +642,6 @@ template <typename Traits> struct NeighbourQueryBase {
   typedef typename query_iterator<2>::reference reference;
   typedef typename query_iterator<2>::pointer pointer;
   typedef typename query_iterator<2>::value_type value_type;
-
 
   ///
   /// @brief implement find-by-id
@@ -696,6 +694,21 @@ template <typename Traits> struct NeighbourQueryBase {
   const box_type get_bounds(const child_iterator &ci) const;
 
   ///
+  /// @brief returns the min/max bounds of the given query_iterator @p ci
+  ///
+  /// @return a @detail::bbox containing the bounds
+  ///
+  template <int LNormNumber>
+  const box_type get_bounds(const query_iterator<LNormNumber> &ci) const;
+
+  ///
+  /// @brief returns the min/max bounds of the given all_iterator @p ci
+  ///
+  /// @return a @detail::bbox containing the bounds
+  ///
+  const box_type get_bounds(const all_iterator &ci) const;
+
+  ///
   /// @brief returns entire domain min/max bounds
   ///
   const box_type &get_bounds() const;
@@ -706,13 +719,12 @@ template <typename Traits> struct NeighbourQueryBase {
   const bool_d &get_periodic() const;
 
   ///
-  /// @brief returns an iterator range to all the particles within the given
-  /// bucket
+  /// @brief returns a particle_iterator range to all the particles within the
+  /// given bucket
   ///
   /// @param bucket a reference to the bucket in question
   ///
-  iterator_range<particle_iterator>
-  get_bucket_particles(const reference bucket);
+  particle_iterator get_bucket_particles(const reference bucket);
 
   ///
   /// @brief get min/max bounds of given bucket @p bucket
@@ -747,7 +759,7 @@ template <typename Traits> struct NeighbourQueryBase {
   /// @return an @ref iterator_range containing all the buckets found
   ///
   template <int LNormNumber = -1>
-  iterator_range<query_iterator<LNormNumber>>
+  query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double max_distance) const;
 
@@ -764,7 +776,7 @@ template <typename Traits> struct NeighbourQueryBase {
   /// @return an @ref iterator_range containing all the buckets found
   ///
   template <int LNormNumber = -1>
-  iterator_range<query_iterator<LNormNumber>>
+  query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double_d &max_distance) const;
 
@@ -774,20 +786,20 @@ template <typename Traits> struct NeighbourQueryBase {
   const int_d &get_end_bucket() const;
 
   ///
-  /// @brief return an @ref iterator range to the entire bucket tree under the
-  /// given child_iterator @p ci
+  /// @brief return an @ref all_iterator to the entire tree under
+  /// the given child_iterator @p ci
   ///
   /// @param ci the child_iterator to search under
   ///
-  iterator_range<all_iterator> get_subtree(const child_iterator &ci) const;
+  all_iterator get_subtree(const child_iterator &ci) const;
 
   ///
-  /// @brief return an @ref iterator_range to the entire tree data structure
+  /// @brief return an @ref all_iterator to the entire tree data structure
   ///
   /// Can use this range to loop through all the buckets in the data structure,
   /// wether it is a tree or not
   ///
-  iterator_range<all_iterator> get_subtree() const;
+  all_iterator get_subtree() const;
 
   ///
   /// @brief return the total number of buckets in the data structure
@@ -846,7 +858,10 @@ public:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
-  ranges_iterator(const p_pointer &begin) : m_current_p(begin) {}
+  ranges_iterator(const p_pointer &begin, const p_pointer &end)
+      : m_current_p(begin), m_end_p(end) {}
+
+  size_t distance_to_end() const { return m_end_p - m_current_p; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -904,6 +919,14 @@ public:
     return !operator==(rhs);
   }
 
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
 private:
   friend class boost::iterator_core_access;
 
@@ -912,6 +935,12 @@ private:
   CUDA_HOST_DEVICE
   bool equal(ranges_iterator const &other) const {
     return m_current_p == other.m_current_p;
+  }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const {
+    return (m_current_p < m_end_p) == other;
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -928,6 +957,7 @@ private:
   void increment(const int n) { m_current_p += n; }
 
   p_pointer m_current_p;
+  p_pointer m_end_p;
 };
 
 /// A const iterator to a set of neighbouring points. This iterator implements
@@ -1037,6 +1067,14 @@ public:
     return !operator==(rhs);
   }
 
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
 private:
   friend class boost::iterator_core_access;
 
@@ -1068,6 +1106,12 @@ private:
   CUDA_HOST_DEVICE
   bool equal(linked_list_iterator const &other) const {
     return m_current_index == other.m_current_index;
+  }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const {
+    return (m_current_index != detail::get_empty_id()) == other;
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -1261,8 +1305,15 @@ public:
   }
   CUDA_HOST_DEVICE
   inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
   CUDA_HOST_DEVICE
   inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
 private:
   friend class boost::iterator_core_access;
@@ -1298,6 +1349,9 @@ private:
       return m_stack.back() == other.m_stack.back();
     }
   }
+
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_stack.empty() != other; }
 
   CUDA_HOST_DEVICE
   reference dereference() const { return *m_stack.back(); }
@@ -1435,6 +1489,12 @@ public:
   CUDA_HOST_DEVICE
   inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
 
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
 private:
   friend class boost::iterator_core_access;
 
@@ -1547,6 +1607,9 @@ private:
       return m_stack.back() == other.m_stack.back();
     }
   }
+
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_stack.empty() != other; }
 
   CUDA_HOST_DEVICE
   reference dereference() const { return *m_stack.back(); }

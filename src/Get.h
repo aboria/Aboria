@@ -506,6 +506,22 @@ struct zip_pointer<std::tuple<Types *...>, MplVector> {
     return other.distance_to(*this);
   }
 
+  bool operator<(const zip_pointer &other) const {
+    return distance_to(other) > 0;
+  }
+
+  bool operator<=(const zip_pointer &other) const {
+    return distance_to(other) >= 0;
+  }
+
+  bool operator>(const zip_pointer &other) const {
+    return distance_to(other) < 0;
+  }
+
+  bool operator>=(const zip_pointer &other) const {
+    return distance_to(other) <= 0;
+  }
+
   zip_pointer &operator--() {
     decrement();
     return *this;
@@ -672,6 +688,22 @@ struct zip_pointer<thrust::tuple<TT1, TT2, TT3, TT4, TT5, TT6, TT7, TT8, TT9>,
     return temp; // return saved state
   }
 
+  bool operator<(const zip_pointer &other) const {
+    return distance_to(other) > 0;
+  }
+
+  bool operator<=(const zip_pointer &other) const {
+    return distance_to(other) >= 0;
+  }
+
+  bool operator>(const zip_pointer &other) const {
+    return distance_to(other) < 0;
+  }
+
+  bool operator>=(const zip_pointer &other) const {
+    return distance_to(other) <= 0;
+  }
+
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
 
@@ -743,8 +775,8 @@ void swap(getter_type<tuple_type, mpl_vector_type> x,
 }
 
 /*
-template <typename tuple_type, typename tuple_type2, typename mpl_vector_type>
-typename std::enable_if<
+template <typename tuple_type, typename tuple_type2, typename
+mpl_vector_type> typename std::enable_if<
     detail::getter_helper<tuple_type>::is_reference::value
     && detail::getter_helper<tuple_type2>::is_reference::value
     >::type
@@ -753,8 +785,8 @@ swap(getter_type<tuple_type,mpl_vector_type> x,
     y.swap(x);
 }
 
-template <typename tuple_type, typename tuple_type2, typename mpl_vector_type>
-typename std::enable_if<
+template <typename tuple_type, typename tuple_type2, typename
+mpl_vector_type> typename std::enable_if<
     !detail::getter_helper<tuple_type>::is_reference::value
     && !detail::getter_helper<tuple_type2>::is_reference::value
     >::type
@@ -796,7 +828,8 @@ public:
       mpl_vector_type>
       pointer;
 
-  // Note: Can't call it raw_pointer or thrust thinks it is a trivial iterator!
+  // Note: Can't call it raw_pointer or thrust thinks it is a trivial
+  // iterator!
   typedef zip_pointer<
       typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,
       mpl_vector_type>
@@ -904,7 +937,8 @@ public:
       mpl_vector_type>
       pointer;
 
-  // Note: Can't call it raw_pointer or thrust thinks it is a trivial iterator!
+  // Note: Can't call it raw_pointer or thrust thinks it is a trivial
+  // iterator!
   typedef zip_pointer<
       typename detail::zip_helper<iterator_tuple_type>::tuple_raw_pointer,
       mpl_vector_type>
@@ -1043,11 +1077,12 @@ elem_by_type<T>::index>(arg.get_tuple());
 ///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
 ///
 /// @tparam T the variable type to get, @see ABORIA_VARIABLE
-/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref
+/// zip_pointer,
 ///                   or @ref Particles
 /// @param arg the object with type ValueType
-/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T> ::type
-/// const&
+/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T>
+/// ::type const&
 ///
 template <typename T, typename ValueType>
 CUDA_HOST_DEVICE typename ValueType::template return_type<T>::type const &
@@ -1063,11 +1098,12 @@ get(const ValueType &arg) {
 ///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
 ///
 /// @tparam T the variable type to get, @see ABORIA_VARIABLE
-/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref
+/// zip_pointer,
 ///                   or @ref Particles
 /// @param arg the object with type ValueType
-/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T> ::type
-/// const&
+/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T>
+/// ::type const&
 ///
 template <typename T, typename ValueType>
 CUDA_HOST_DEVICE typename ValueType::template return_type<T>::type &
@@ -1083,11 +1119,12 @@ get(ValueType &arg) {
 ///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
 ///
 /// @tparam T the variable type to get, @see ABORIA_VARIABLE
-/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref
+/// zip_pointer,
 ///                   or @ref Particles
 /// @param arg the object with type ValueType
-/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T> ::type
-/// const&
+/// @return CUDA_HOST_DEVICE typename ValueType::template return_type<T>
+/// ::type const&
 ///
 template <typename T, typename ValueType>
 CUDA_HOST_DEVICE typename ValueType::template return_type<T>::type &
@@ -1099,12 +1136,15 @@ get(ValueType &&arg) {
 }
 
 ///
-/// @brief get the value of an indexed variable from a const @ref getter_type,
+/// @brief get the value of an indexed variable from a const @ref
+/// getter_type,
 ///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
 ///
-/// @tparam N the index of the variable to get. The order of variables is set to
+/// @tparam N the index of the variable to get. The order of variables is
+/// set to
 ///           (position,id,alive,generator,user_variable1,user_variable2,...)
-/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref
+/// zip_pointer,
 ///                   or @ref Particles
 /// @param arg the object with type ValueType
 /// @return CUDA_HOST_DEVICE const typename detail::getter_helper<typename
@@ -1118,12 +1158,15 @@ get_by_index(const ValueType &arg) {
 }
 
 ///
-/// @brief get the value of an indexed variable from a lvalue @ref getter_type,
+/// @brief get the value of an indexed variable from a lvalue @ref
+/// getter_type,
 ///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
 ///
-/// @tparam N the index of the variable to get. The order of variables is set to
+/// @tparam N the index of the variable to get. The order of variables is
+/// set to
 ///           (position,id,alive,generator,user_variable1,user_variable2,...)
-/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref
+/// zip_pointer,
 ///                   or @ref Particles
 /// @param arg the object with type ValueType
 /// @return CUDA_HOST_DEVICE const typename detail::getter_helper<typename
@@ -1137,12 +1180,15 @@ get_by_index(ValueType &arg) {
 }
 
 ///
-/// @brief get the value of an indexed variable from a rvalue @ref getter_type,
+/// @brief get the value of an indexed variable from a rvalue @ref
+/// getter_type,
 ///        @ref zip_iterator, @ref zip_pointer, or @ref Particles
 ///
-/// @tparam N the index of the variable to get. The order of variables is set to
+/// @tparam N the index of the variable to get. The order of variables is
+/// set to
 ///           (position,id,alive,generator,user_variable1,user_variable2,...)
-/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref zip_pointer,
+/// @tparam ValueType the @ref getter_type, @ref zip_iterator, @ref
+/// zip_pointer,
 ///                   or @ref Particles
 /// @param arg the object with type ValueType
 /// @return CUDA_HOST_DEVICE const typename detail::getter_helper<typename

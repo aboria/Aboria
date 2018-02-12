@@ -472,7 +472,11 @@ template <typename Traits> struct nanoflann_adaptor_query {
   }
 
   static child_iterator get_children(const child_iterator &ci) {
-    return child_iterator(&(*ci), ci.get_bounds());
+    if (!is_leaf_node(*ci)) {
+      return child_iterator(&(*ci), ci.get_bounds());
+    } else {
+      return child_iterator();
+    }
   }
 
   static const box_type get_bounds(const child_iterator &ci) {
@@ -498,18 +502,19 @@ template <typename Traits> struct nanoflann_adaptor_query {
     return os;
   }
 
-  iterator_range<particle_iterator>
-  get_bucket_particles(reference bucket) const {
+  particle_iterator get_bucket_particles(reference bucket) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_bucket_particles: looking in bucket with idx = "
                << get_dimension_index(bucket)
                << " start index = " << bucket.node_type.lr.left
                << " end index = " << bucket.node_type.lr.right);
 #endif
+    if (!is_leaf_node(bucket)) {
+      return particle_iterator();
+    }
 
-    return iterator_range<particle_iterator>(
-        particle_iterator(m_particles_begin + bucket.node_type.lr.left),
-        particle_iterator(m_particles_begin + bucket.node_type.lr.right));
+    return particle_iterator(m_particles_begin + bucket.node_type.lr.left,
+                             m_particles_begin + bucket.node_type.lr.right);
   }
 
   /*
@@ -551,47 +556,40 @@ template <typename Traits> struct nanoflann_adaptor_query {
   size_t number_of_buckets() const { return m_number_of_buckets; }
 
   template <int LNormNumber>
-  iterator_range<query_iterator<LNormNumber>>
+  query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double max_distance) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
-    return iterator_range<query_iterator<LNormNumber>>(
-        query_iterator<LNormNumber>(get_children(), position,
-                                    double_d::Constant(max_distance),
-                                    m_number_of_levels, this),
-        query_iterator<LNormNumber>());
+    return query_iterator<LNormNumber>(get_children(), position,
+                                       double_d::Constant(max_distance),
+                                       m_number_of_levels, this);
   }
 
   template <int LNormNumber>
-  iterator_range<query_iterator<LNormNumber>>
+  query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
-    return iterator_range<query_iterator<LNormNumber>>(
-        query_iterator<LNormNumber>(get_children(), position, max_distance,
-                                    m_number_of_levels, this),
-        query_iterator<LNormNumber>());
+    return query_iterator<LNormNumber>(get_children(), position, max_distance,
+                                       m_number_of_levels, this);
   }
 
   iterator_range<root_iterator> get_root_buckets() const {
     return iterator_range<root_iterator>(m_root, m_root + 1);
   }
 
-  iterator_range<all_iterator> get_subtree(const child_iterator &ci) const {
-    return iterator_range<all_iterator>(
-        all_iterator(get_children(ci), m_number_of_levels, this),
-        all_iterator());
+  all_iterator get_subtree(const child_iterator &ci) const {
+    return all_iterator(get_children(ci), m_number_of_levels, this);
   }
 
-  iterator_range<all_iterator> get_subtree() const {
-    return iterator_range<all_iterator>(
-        all_iterator(get_children(), m_number_of_levels, this), all_iterator());
+  all_iterator get_subtree() const {
+    return all_iterator(get_children(), m_number_of_levels, this);
   }
 
   size_t number_of_particles() const {

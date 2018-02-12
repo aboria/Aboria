@@ -65,9 +65,8 @@ template <typename Traits> struct CellListQuery;
 /// point.
 ///
 template <typename Traits>
-class CellList
-    : public neighbour_search_base<CellList<Traits>, Traits,
-                                   CellListQuery<Traits>> {
+class CellList : public neighbour_search_base<CellList<Traits>, Traits,
+                                              CellListQuery<Traits>> {
 
   typedef typename Traits::double_d double_d;
   typedef typename Traits::position position;
@@ -75,8 +74,7 @@ class CellList
   typedef typename Traits::iterator iterator;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
 
-  typedef neighbour_search_base<CellList<Traits>, Traits,
-                                CellListQuery<Traits>>
+  typedef neighbour_search_base<CellList<Traits>, Traits, CellListQuery<Traits>>
       base_type;
 
   friend base_type;
@@ -482,9 +480,7 @@ private:
   ///
   /// @brief returns the query object via the base class
   ///
-  const CellListQuery<Traits> &get_query_impl() const {
-    return m_query;
-  }
+  const CellListQuery<Traits> &get_query_impl() const { return m_query; }
 
   ///
   /// @brief returns the query object via the base class
@@ -567,8 +563,7 @@ private:
 /// @tparam Traits The @ref TraitsCommon type
 ///
 template <typename Traits>
-struct CellList<
-    Traits>::insert_points_lambda_non_sequential_serial {
+struct CellList<Traits>::insert_points_lambda_non_sequential_serial {
   typedef typename Traits::double_d double_d;
   typedef typename detail::point_to_bucket_index<Traits::dimension> ptobl_type;
   double_d *m_positions;
@@ -918,7 +913,8 @@ struct CellList<Traits>::copy_points_in_bucket_lambda {
 ///
 /// @tparam Traits the @ref TraitsCommon type
 ///
-template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Traits> {
+template <typename Traits>
+struct CellListQuery : public NeighbourQueryBase<Traits> {
 
   typedef Traits traits_type;
   typedef typename Traits::raw_pointer raw_pointer;
@@ -1011,7 +1007,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::find() 
+  /// @copydoc NeighbourQueryBase::find()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1030,7 +1026,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
    * functions for trees
    */
   ///
-  /// @copydoc NeighbourQueryBase::is_leaf_node() 
+  /// @copydoc NeighbourQueryBase::is_leaf_node()
   ///
   /// CellList implements a "flat" tree, so all buckets are
   /// leafs
@@ -1040,7 +1036,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   static bool is_leaf_node(const value_type &bucket) { return true; }
 
   ///
-  /// @copydoc NeighbourQueryBase::is_tree() 
+  /// @copydoc NeighbourQueryBase::is_tree()
   ///
   /// CellList is not a proper tree structure, so will return false always
   ///
@@ -1049,7 +1045,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   static bool is_tree() { return false; }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_children() 
+  /// @copydoc NeighbourQueryBase::get_children()
   ///
   /// for CellList this is all the buckets (flat tree with one root
   /// node, all the rest leafs)
@@ -1061,7 +1057,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_children(const child_iterator&) const 
+  /// @copydoc NeighbourQueryBase::get_children(const child_iterator&) const
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1070,7 +1066,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bounds() 
+  /// @copydoc NeighbourQueryBase::get_bounds(const child_iterator &ci) const
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1082,25 +1078,38 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bounds() 
+  /// @copydoc NeighbourQueryBase::get_bounds(const query_iterator &ci) const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  template <int LNormNumber>
+  const box_type get_bounds(const query_iterator<LNormNumber> &qi) const {
+    box_type bounds;
+    bounds.bmin = (*qi) * m_bucket_side_length + m_bounds.bmin;
+    bounds.bmax = ((*qi) + 1) * m_bucket_side_length + m_bounds.bmin;
+    return bounds;
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const box_type &get_bounds() const { return m_bounds; }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_periodic() 
+  /// @copydoc NeighbourQueryBase::get_periodic()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const bool_d &get_periodic() const { return m_periodic; }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bucket_particles() 
+  /// @copydoc NeighbourQueryBase::get_bucket_particles()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  iterator_range<particle_iterator>
-      CUDA_HOST_DEVICE get_bucket_particles(const reference bucket) const {
+  CUDA_HOST_DEVICE
+  particle_iterator get_bucket_particles(const reference bucket) const {
 #ifndef __CUDA_ARCH__
     ASSERT((bucket >= int_d::Constant(0)).all() &&
                (bucket <= m_end_bucket).all(),
@@ -1114,14 +1123,12 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
     LOG(4, "\tget_bucket_particles: looking in bucket " << bucket << " = "
                                                         << bucket_index);
 #endif
-    return iterator_range<particle_iterator>(
-        particle_iterator(m_buckets_begin[bucket_index], m_particles_begin,
-                          m_linked_list_begin),
-        particle_iterator());
+    return particle_iterator(m_buckets_begin[bucket_index], m_particles_begin,
+                             m_linked_list_begin);
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bucket_bbox() 
+  /// @copydoc NeighbourQueryBase::get_bucket_bbox()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1132,7 +1139,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bucket() 
+  /// @copydoc NeighbourQueryBase::get_bucket()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1144,7 +1151,7 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_bucket_index() 
+  /// @copydoc NeighbourQueryBase::get_bucket_index()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1153,13 +1160,14 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const double) const
+  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const
+  /// double) const
   ///
   /// @see lattice_iterator_within_distance
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber = -1>
-  CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double max_distance) const {
 #ifndef __CUDA_ARCH__
@@ -1167,33 +1175,30 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
                << position << " max_distance = " << max_distance);
 #endif
 
-    return iterator_range<query_iterator<LNormNumber>>(
-        query_iterator<LNormNumber>(position, double_d::Constant(max_distance),
-                                    this),
-        query_iterator<LNormNumber>());
+    return query_iterator<LNormNumber>(position,
+                                       double_d::Constant(max_distance), this);
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const double_d&) const
+  /// @copydoc NeighbourQueryBase::get_buckets_near_point(const double_d&, const
+  /// double_d&) const
   ///
   /// @see lattice_iterator_within_distance
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber = -1>
-  CUDA_HOST_DEVICE iterator_range<query_iterator<LNormNumber>>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double_d &max_distance) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance = " << max_distance);
 #endif
-    return iterator_range<query_iterator<LNormNumber>>(
-        query_iterator<LNormNumber>(position, max_distance, this),
-        query_iterator<LNormNumber>());
+    return query_iterator<LNormNumber>(position, max_distance, this);
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_end_bucket() 
+  /// @copydoc NeighbourQueryBase::get_end_bucket()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1204,8 +1209,8 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  iterator_range<all_iterator> get_subtree(const child_iterator &ci) const {
-    return iterator_range<all_iterator>(all_iterator(), all_iterator());
+  all_iterator get_subtree(const child_iterator &ci) const {
+    return all_iterator();
   }
 
   ///
@@ -1213,20 +1218,19 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  iterator_range<all_iterator> get_subtree() const {
-    return iterator_range<all_iterator>(
-        all_iterator(int_d::Constant(0), m_end_bucket + 1), all_iterator());
+  all_iterator get_subtree() const {
+    return all_iterator(int_d::Constant(0), m_end_bucket + 1);
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::number_of_buckets() 
+  /// @copydoc NeighbourQueryBase::number_of_buckets()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t number_of_buckets() const { return (m_end_bucket + 1).prod(); }
 
   ///
-  /// @copydoc NeighbourQueryBase::number_of_particles() 
+  /// @copydoc NeighbourQueryBase::number_of_particles()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -1235,21 +1239,21 @@ template <typename Traits> struct CellListQuery: public NeighbourQueryBase<Trait
   }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_particles_begin() 
+  /// @copydoc NeighbourQueryBase::get_particles_begin()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const raw_pointer &get_particles_begin() const { return m_particles_begin; }
 
   ///
-  /// @copydoc NeighbourQueryBase::get_particles_begin() 
+  /// @copydoc NeighbourQueryBase::get_particles_begin()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   raw_pointer &get_particles_begin() { return m_particles_begin; }
 
   ///
-  /// @copydoc NeighbourQueryBase::number_of_levels() 
+  /// @copydoc NeighbourQueryBase::number_of_levels()
   ///
   unsigned number_of_levels() const { return 2; }
 };

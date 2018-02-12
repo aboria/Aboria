@@ -310,14 +310,16 @@ public:
       const auto &j = std::get<1>(ij); // bucket j
       // position offset to apply to particles in i (for periodic boundaries)
       const auto &poffset = std::get<2>(ij);
-      for (auto pi : particles.get_query().get_bucket_particles(i)) {
-        const Vector<double, 3> pi_position = get<position>(pi) + poffset;
-        for (auto pj : particles.get_query().get_bucket_particles(j)) {
-          if ((pi_position - get<position>(pj)).squaredNorm() < radius) {
+      for (auto pi = particles.get_query().get_bucket_particles(i); pi != false;
+           ++pi) {
+        const Vector<double, 3> pi_position = get<position>(*pi) + poffset;
+        for (auto pj = particles.get_query().get_bucket_particles(j);
+             pj != false; ++pj) {
+          if ((pi_position - get<position>(*pj)).squaredNorm() < radius) {
             // each ij bucket pair is counted once, so need to
             // increment neighbour count for pi and pj
-            get<neighbours_count>(pi)++;
-            get<neighbours_count>(pj)++;
+            get<neighbours_count>(*pi)++;
+            get<neighbours_count>(*pj)++;
           }
         }
       }
@@ -332,11 +334,11 @@ public:
 
     For example:
     */
-    for (auto &i : particles.get_query().get_subtree()) {
-      auto prangei = particles.get_query().get_bucket_particles(i);
-      for (auto pi = prangei.begin(); pi != prangei.end(); ++pi) {
+    for (auto i = particles.get_query().get_subtree(); i != false; ++i) {
+      for (auto pi = particles.get_query().get_bucket_particles(*i);
+           pi != false; ++pi) {
         get<neighbours_count>(*pi)++; // self is a neighbour
-        for (auto pj = pi + 1; pj != prangei.end(); ++pj) {
+        for (auto pj = pi + 1; pj != false; ++pj) {
           if ((get<position>(*pi) - get<position>(*pj)).squaredNorm() <
               radius) {
             get<neighbours_count>(*pi)++;
@@ -704,14 +706,14 @@ public:
       const auto &j = detail::get_impl<1>(ij);
       const auto &poffset = detail::get_impl<2>(ij);
       // std::cout << "checking i = "<<i<<" j = "<<j << std::endl;
-      for (auto pi : query.get_bucket_particles(i)) {
-        const double_d pi_position = get<position>(pi) + poffset;
-        for (auto pj : query.get_bucket_particles(j)) {
-          if ((pi_position - get<position>(pj)).squaredNorm() < r2) {
+      for (auto pi = query.get_bucket_particles(i); pi != false; ++pi) {
+        const double_d pi_position = get<position>(*pi) + poffset;
+        for (auto pj = query.get_bucket_particles(j); pj != false; ++pj) {
+          if ((pi_position - get<position>(*pj)).squaredNorm() < r2) {
             // std::cout << "particles "<< get<position>(pi)<< " and "<<
             // get<position>(pj)<< " are neighbours"<< std::endl;
-            get<neighbours_aboria>(pi)++;
-            get<neighbours_aboria>(pj)++;
+            get<neighbours_aboria>(*pi)++;
+            get<neighbours_aboria>(*pj)++;
           }
         }
       }
@@ -732,10 +734,9 @@ public:
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
-      auto prangei = query.get_bucket_particles(i);
-      for (auto pi = prangei.begin(); pi != prangei.end(); ++pi) {
+      for (auto pi = query.get_bucket_particles(i); pi != false; ++pi) {
         get<neighbours_aboria>(*pi)++; // self is a neighbour
-        for (auto pj = pi + 1; pj != prangei.end(); ++pj) {
+        for (auto pj = pi + 1; pj != false; ++pj) {
           if ((get<position>(*pi) - get<position>(*pj)).squaredNorm() < r2) {
             // std::cout << "particles "<< get<position>(*pi)<< " and "<<
             // get<position>(*pj)<< " are neighbours (self)"<< std::endl;
@@ -915,7 +916,7 @@ public:
                      aboria_fast_bucketsearch_check_neighbour<query_type>(
                          particles.get_query(), r));
     auto self_it = particles.get_query().get_subtree();
-    detail::for_each(std::begin(self_it), std::end(self_it),
+    detail::for_each(self_it, decltype(self_it)(),
                      aboria_fast_bucketsearch_check_self<query_type>(
                          particles.get_query(), r));
     t1 = Clock::now();
@@ -1084,16 +1085,14 @@ public:
   }
 
   void test_std_vector_CellList_fast_bucketsearch(void) {
-    helper_d_test_list_random_fast_bucketsearch<std::vector,
-                                                CellList>();
+    helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
     helper_single_particle<std::vector, CellList>();
     helper_two_particles<std::vector, CellList>();
     helper_d_test_list_regular<std::vector, CellList>();
   }
 
   void test_std_vector_CellListOrdered_fast_bucketsearch(void) {
-    helper_d_test_list_random_fast_bucketsearch<std::vector,
-                                                CellListOrdered>();
+    helper_d_test_list_random_fast_bucketsearch<std::vector, CellListOrdered>();
     helper_single_particle<std::vector, CellListOrdered>();
     helper_two_particles<std::vector, CellListOrdered>();
     helper_d_test_list_regular<std::vector, CellListOrdered>();

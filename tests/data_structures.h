@@ -76,7 +76,7 @@ public:
     */
 
     size_t index = 0;
-    for (std::vector<double>::iterator i = v.begin(), i != v.end(), ++i) {
+    for (std::vector<double>::iterator i = v.begin(); i != v.end(); ++i) {
       *i = index++;
     }
 
@@ -85,7 +85,7 @@ public:
     */
 
     index = 0;
-    for (auto i = v.begin(), i != v.end(), ++i) {
+    for (auto i = v.begin(); i != v.end(); ++i) {
       *i = index++;
     }
 
@@ -172,39 +172,43 @@ public:
     particles_octtree.init_neighbour_search(vdouble2(0, 0), vdouble2(1, 1),
                                             vdouble2(false, false));
 
+    auto query_octtree = particles_octtree.get_query();
+
     /*`
     Now `particles_octtree` contains a full oct-tree, dividing the spatial
     domain into a hierarchical set of boxes that make up our tree data
     structure. The simplest iteration we might want to do on the tree is a
-    depth-first iteration, which is easiest achieved by iteration. The [classref
+    depth-first iteration, which is easiest achieved by recursion. The [classref
     Aboria::NeighbourQueryBase::get_children(const child_iterator& ci) const]
     function can be used to get the children of a `child_iterator`, and using a
     C++ lambda function to provide the recursion we can implement a depth-first
     iteration like so
     */
 
-    auto depth_first = [&](const auto &parent) {
-      std::cout << query.get_bounds(parent) << std::endl;
-      for (auto i = query.get_children(parent); i != false; ++i) {
-        depth_first(i);
-      }
-    };
-
-    for (auto i = query.get_children(); i != false; ++i) {
-      std::cout << query.get_bounds() << std::endl;
+    std::cout << "recursive depth-first" << std::endl;
+    for (auto i = query_octtree.get_children(); i != false; ++i) {
+      std::function<void(decltype(i) &)> depth_first;
+      depth_first = [&](const auto &parent) {
+        std::cout << query_octtree.get_bounds(parent) << std::endl;
+        for (auto i = query_octtree.get_children(parent); i != false; ++i) {
+          depth_first(i);
+        }
+      };
       depth_first(i);
     }
 
     /*`
 
     This construction might be a bit clumsy to use in practice however, so
-    Aboria provides a special depth-first iterator to allow you to write
-    a loop equivalent to the recursive depth-first code given above.
+    Aboria provides a special depth-first iterator [classref
+    Aboria::NeighbourQueryBase::all_iterator] to allow you to write a loop
+    equivalent to the recursive depth-first code given above.
 
     */
 
-    for (auto i = query.get_subtree(); i != false; ++i) {
-      std::cout << query.get_bounds() << std::endl;
+    std::cout << "subtree depth-first" << std::endl;
+    for (auto i = query_octtree.get_subtree(); i != false; ++i) {
+      std::cout << query_octtree.get_bounds(i) << std::endl;
     }
 
     /*`
@@ -220,47 +224,160 @@ public:
     Aboria::NeighbourQueryBase:is_leaf()] function, which can be used like so
     */
 
-    for (auto i = query.get_subtree(); i != false; ++i) {
-      if (query.is_leaf_node(*i)) {
-        std::cout << "leaf node with bounds = " << query.get_bounds()
+    std::cout << "subtree depth-first showing leaf nodes" << std::endl;
+    for (auto i = query_octtree.get_subtree(); i != false; ++i) {
+      if (query_octtree.is_leaf_node(*i)) {
+        std::cout << "leaf node with bounds = " << query_octtree.get_bounds(i)
                   << std::endl;
       } else {
-        std::cout << "non-leaf node with bounds = " << query.get_bounds()
-                  << std::endl;
+        std::cout << "non-leaf node with bounds = "
+                  << query_octtree.get_bounds(i) << std::endl;
       }
     }
 
     /*`
     Leaf nodes in the tree are the only nodes that contain particles. You can
     loop through all the particles in a given leaf node using the [funcref
-    Aboria::NeighbourQueryBase::get_bucket_particles()] function. Note that this
-    function returns an [classref Aboria::iterator_range], a lightweight object
-    containing  `begin()` and `end()` functions that return iterators over a
-    given range. These can be used in C++ range-based loops.
+    Aboria::NeighbourQueryBase::get_bucket_particles()] function, which returns
+    an iterator.
     */
 
-    for (auto i = query.get_subtree(); i != false; ++i) {
-      if (query.is_leaf_node(*i)) {
-        std::cout << "leaf node with bounds = " << query.get_bounds()
+    std::cout << "subtree depth-first showing leaf nodes and particles"
+              << std::endl;
+    for (auto i = query_octtree.get_subtree(); i != false; ++i) {
+      if (query_octtree.is_leaf_node(*i)) {
+        std::cout << "leaf node with bounds = " << query_octtree.get_bounds(i)
                   << std::endl;
-        for (auto &p : get_bucket_particles(*i)) {
-          std::cout << "\t has particle with position" << get<position>(p);
+        for (auto j = query_octtree.get_bucket_particles(*i); j != false; ++j) {
+          std::cout << "\t has particle with position" << get<position>(*j)
+                    << std::endl;
         }
       } else {
-        std::cout << "non-leaf node with bounds = " << query.get_bounds()
-                  << std::endl;
+        std::cout << "non-leaf node with bounds = "
+                  << query_octtree.get_bounds(i) << std::endl;
       }
     }
 
     /*`
 
-    Neighbour searching is a key functionality area for Aboria, so
+    Aboria also provides functions to query leaf nodes, or buckets, within a
+    certain distance of a point, and these are used internally for the neighbour
+    search functionality discussed in earlier sections. You can use the [funcref
+    Aboria::NeighbourQueryBase::get_buckets_near_point()] function, which
+    returns a [classref Aboria::NeighbourQueryBase::query_iterator] of all the
+    buckets with a given distance of a point. This function also takes a
+    template argument `P`, which refers to the p-norm distance that it uses
+    (i.e. P=2 is the standard euclidean distance)
+
     */
+
+    const int P = 2;
+    const vdouble2 search_point = vdouble2(0.5, 0.5);
+    const double search_radius = 0.1;
+    std::cout << "searching within " << search_point << " of point "
+              << search_point << std::endl;
+    for (auto i = query_octtree.get_buckets_near_point<P>(search_point,
+                                                          search_radius);
+         i != false; ++i) {
+      std::cout << "\t found bucket at " << query_octtree.get_bounds(i)
+                << std::endl;
+      for (auto j = query_octtree.get_bucket_particles(*i); j != false; ++j) {
+        std::cout << "\t\t found particle at " << get<position>(*j)
+                  << std::endl;
+      }
+    }
 
     /*`
     [endsect]
     */
     //]
+  }
+
+  template <template <typename, typename> class Vector,
+            template <typename> class SearchMethod>
+  void helper_data_structure() {
+
+    const size_t N = 20;
+    typedef Particles<std::tuple<>, 2, Vector, SearchMethod> Particles_t;
+    typedef typename Particles_t::position position;
+    Particles_t particles(N);
+
+    std::uniform_real_distribution<double> uniform(0, 1);
+    for (size_t i = 0; i < N; ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] = vdouble2(uniform(gen), uniform(gen));
+    }
+
+    particles.init_neighbour_search(vdouble2(0, 0), vdouble2(1, 1),
+                                    vdouble2(false, false), 5);
+
+    auto query = particles.get_query();
+
+    int child_count_recurse = 0;
+    for (auto i = query.get_children(); i != false; ++i) {
+      std::function<int(decltype(i) &)> depth_first;
+      depth_first = [&](const auto &parent) {
+        int child_count = 1;
+        auto parent_bounds = query.get_bounds(parent);
+        for (auto i = query.get_children(parent); i != false; ++i) {
+          child_count += depth_first(i);
+          auto bounds = query.get_bounds(i);
+          for (size_t i = 0; i < 2; ++i) {
+            TS_ASSERT_LESS_THAN_EQUALS(bounds.bmax[i], parent_bounds.bmax[i]);
+            TS_ASSERT_LESS_THAN_EQUALS(parent_bounds.bmin[i], bounds.bmin[i]);
+          }
+        }
+        if (query.is_leaf_node(*parent)) {
+          TS_ASSERT_EQUALS(child_count, 1);
+          for (auto j = query.get_bucket_particles(*i); j != false; ++j) {
+            auto p = get<position>(*j);
+            for (size_t i = 0; i < 2; ++i) {
+              TS_ASSERT_LESS_THAN_EQUALS(p[i], parent_bounds.bmax[i]);
+              TS_ASSERT_LESS_THAN_EQUALS(parent_bounds.bmin[i], p[i]);
+            }
+          }
+        }
+        return child_count;
+      };
+      child_count_recurse += depth_first(i);
+    }
+
+    int child_count_subtree = 0;
+    for (auto i = query.get_subtree(); i != false; ++i) {
+      child_count_subtree++;
+      auto bounds = query.get_bounds(i);
+      int num_particles = 0;
+      for (auto j = query.get_bucket_particles(*i); j != false; ++j) {
+        num_particles++;
+        auto p = get<position>(*j);
+        for (size_t i = 0; i < 2; ++i) {
+          TS_ASSERT_LESS_THAN_EQUALS(p[i], bounds.bmax[i]);
+          TS_ASSERT_LESS_THAN_EQUALS(bounds.bmin[i], p[i]);
+        }
+      }
+      if (!query.is_leaf_node(*i)) {
+        TS_ASSERT_EQUALS(num_particles, 0);
+      }
+    }
+
+    TS_ASSERT_EQUALS(child_count_recurse, child_count_subtree);
+  }
+
+  void test_CellList() {
+    std::cout << "CellList" << std::endl;
+    helper_data_structure<std::vector, CellList>();
+  }
+  void test_CellListOrdered() {
+    std::cout << "CellListOrdered" << std::endl;
+    helper_data_structure<std::vector, CellListOrdered>();
+  }
+  void test_octtree() {
+    std::cout << "Octtree" << std::endl;
+    helper_data_structure<std::vector, octtree>();
+  }
+  void test_kd_tree() {
+    std::cout << "kd tree" << std::endl;
+    helper_data_structure<std::vector, nanoflann_adaptor>();
   }
 };
 

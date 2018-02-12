@@ -83,12 +83,9 @@ template <typename Query, int LNormNumber> class search_iterator {
   const Query *m_query;
   double m_max_distance;
   double m_max_distance2;
-  iterator_range<periodic_iterator_type> m_periodic;
   periodic_iterator_type m_current_periodic;
   double_d m_current_point;
-  iterator_range<query_iterator> m_bucket_range;
   query_iterator m_current_bucket;
-  iterator_range<particle_iterator> m_particle_range;
   particle_iterator m_current_particle;
 
 public:
@@ -103,15 +100,13 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  static iterator_range<periodic_iterator_type>
-  get_periodic_range(const bool_d is_periodic) {
+  static periodic_iterator_type get_periodic_range(const bool_d is_periodic) {
     int_d start, end;
     for (size_t i = 0; i < dimension; ++i) {
       start[i] = is_periodic[i] ? -1 : 0;
       end[i] = is_periodic[i] ? 2 : 1;
     }
-    return iterator_range<periodic_iterator_type>(
-        periodic_iterator_type(start, end), periodic_iterator_type());
+    return periodic_iterator_type(start, end);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -134,14 +129,12 @@ public:
         m_max_distance2(
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
                 max_distance)),
-        m_periodic(get_periodic_range(m_query->get_periodic())),
-        m_current_periodic(m_periodic.begin()),
+        m_current_periodic(get_periodic_range(m_query->get_periodic())),
         m_current_point(
             r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin)),
-        m_bucket_range(query.template get_buckets_near_point<LNormNumber>(
-            m_current_point, max_distance)),
-        m_current_bucket(m_bucket_range.begin()) {
+        m_current_bucket(query.template get_buckets_near_point<LNormNumber>(
+            m_current_point, max_distance)) {
 
 #if defined(__CUDA_ARCH__)
     CHECK_CUDA((!std::is_same<typename Traits::template vector<double>,
@@ -154,8 +147,7 @@ public:
                << m_r << ", and m_current_point = " << m_current_point << ")");
 #endif
     if ((m_valid = get_valid_bucket())) {
-      m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
-      m_current_particle = m_particle_range.begin();
+      m_current_particle = m_query->get_bucket_particles(*m_current_bucket);
       if ((m_valid = get_valid_candidate())) {
         if (!check_candidate()) {
           increment();
@@ -237,13 +229,13 @@ private:
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_valid_bucket:");
 #endif
-    while (m_current_bucket == m_bucket_range.end()) {
+    while (m_current_bucket == false) {
 #ifndef __CUDA_ARCH__
       LOG(3, "\tgo_to_next periodic (search_iterator): m_current_periodic = "
                  << *m_current_periodic);
 #endif
       ++m_current_periodic;
-      if (m_current_periodic == m_periodic.end()) {
+      if (m_current_periodic == false) {
 #ifndef __CUDA_ARCH__
         LOG(4, "\tran out of buckets to search (search_iterator):");
 #endif
@@ -252,9 +244,8 @@ private:
       m_current_point =
           m_r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin);
-      m_bucket_range = m_query->template get_buckets_near_point<LNormNumber>(
+      m_current_bucket = m_query->template get_buckets_near_point<LNormNumber>(
           m_current_point, m_max_distance);
-      m_current_bucket = m_bucket_range.begin();
     }
     return true;
   }
@@ -262,7 +253,7 @@ private:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool get_valid_candidate() {
-    while (m_current_particle == m_particle_range.end()) {
+    while (m_current_particle == false) {
 #ifndef __CUDA_ARCH__
       LOG(4, "\tgo_to_next bucket (search_iterator):");
 #endif
@@ -270,8 +261,7 @@ private:
       if (!get_valid_bucket()) {
         return false;
       }
-      m_particle_range = m_query->get_bucket_particles(*m_current_bucket);
-      m_current_particle = m_particle_range.begin();
+      m_current_particle = m_query->get_bucket_particles(*m_current_bucket);
     }
     return true;
   }

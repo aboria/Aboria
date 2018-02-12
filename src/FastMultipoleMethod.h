@@ -287,11 +287,11 @@ protected:
                                 m_row_query->get_particles_begin(),
                                 m_col_query->get_particles_begin(), m_kernel);
         } else {
-          for (col_reference ref_j : m_col_query->get_subtree(cj)) {
-            if (m_col_query->is_leaf_node(ref_j)) {
+          for (auto j = m_col_query->get_subtree(cj); j != false; ++j) {
+            if (m_col_query->is_leaf_node(*j)) {
               detail::calculate_P2P(target_vector, source_vector,
                                     m_row_query->get_bucket_particles(*ci),
-                                    m_col_query->get_bucket_particles(ref_j),
+                                    m_col_query->get_bucket_particles(*j),
                                     m_row_query->get_particles_begin(),
                                     m_col_query->get_particles_begin(),
                                     m_kernel);

@@ -166,6 +166,10 @@ endif()
 set(SpatialDataStructuresTestFile data_structures.h)
 set(SpatialDataStructuresTest
     test_documentation
+    test_CellList
+    test_CellListOrdered
+    test_octtree
+    test_kdtree
     )
 
 set(NeighboursTestFile neighbours.h)

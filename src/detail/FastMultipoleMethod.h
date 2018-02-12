@@ -683,13 +683,13 @@ template <typename Expansions, typename Traits, typename T,
           typename SourceParticleIterator = typename Traits::raw_pointer,
           unsigned int D = Traits::dimension>
 void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
-                   const iterator_range<ranges_iterator<Traits>> &range,
+                   const ranges_iterator<Traits> &range,
                    const std::vector<T> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
                    const Expansions &expansions) {
   typedef typename Traits::position position;
-  const size_t N = std::distance(range.begin(), range.end());
-  const Vector<double, D> *pbegin = &get<position>(*range.begin());
+  const size_t N = range.distance_to_end();
+  const Vector<double, D> *pbegin = &get<position>(*range);
   const size_t index = pbegin - &get<position>(source_particles_begin)[0];
   for (size_t i = 0; i < N; ++i) {
     const Vector<double, D> &pi = pbegin[i];
@@ -707,15 +707,13 @@ template <typename Expansions, typename Iterator, typename T,
           typename = typename std::enable_if<
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
 void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
-                   const iterator_range<Iterator> &range,
-                   const std::vector<T> &source_vector,
+                   const Iterator &range, const std::vector<T> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
                    const Expansions &expansions) {
 
   typedef typename Traits::position position;
-  typedef typename Iterator::reference reference;
-  for (reference i : range) {
-    const Vector<double, D> &pi = get<position>(i);
+  for (auto i = range; i != false; ++i) {
+    const Vector<double, D> &pi = get<position>(*i);
     const size_t index = &pi - &get<position>(source_particles_begin)[0];
     expansions.P2M(sum, box, pi, source_vector[index]);
   }
@@ -749,13 +747,13 @@ template <typename Expansions, typename Traits, typename Derived,
           typename SourceParticleIterator = typename Traits::raw_pointer,
           unsigned int D = Traits::dimension>
 void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
-                   const iterator_range<ranges_iterator<Traits>> &range,
+                   const ranges_iterator<Traits> &range,
                    const Eigen::DenseBase<Derived> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
                    const Expansions &expansions) {
   typedef typename Traits::position position;
-  const size_t N = std::distance(range.begin(), range.end());
-  const Vector<double, D> *pbegin = &get<position>(*range.begin());
+  const size_t N = range.distance_to_end();
+  const Vector<double, D> *pbegin = &get<position>(*range);
   const size_t index = pbegin - &get<position>(source_particles_begin)[0];
   const size_t block_size = Expansions::block_cols;
   for (size_t i = 0; i < N; ++i) {
@@ -777,16 +775,15 @@ template <typename Expansions, typename Iterator, typename Derived,
           typename = typename std::enable_if<
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
 void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
-                   const iterator_range<Iterator> &range,
+                   const Iterator &range,
                    const Eigen::DenseBase<Derived> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
                    const Expansions &expansions) {
 
   typedef typename Traits::position position;
-  typedef typename Iterator::reference reference;
   constexpr size_t block_size = Expansions::block_cols;
-  for (reference i : range) {
-    const Vector<double, D> &pi = get<position>(i);
+  for (auto i = range; i != false; ++i) {
+    const Vector<double, D> &pi = get<position>(*i);
     const size_t index = &pi - &get<position>(source_particles_begin)[0];
     expansions.P2M(
         sum, box, pi,
@@ -802,13 +799,13 @@ template <typename Expansions, typename Traits, typename T,
           unsigned int D = Traits::dimension>
 void calculate_L2P(std::vector<T> &target_vector, const VectorType &source,
                    const detail::bbox<D> &box,
-                   const iterator_range<ranges_iterator<Traits>> &range,
+                   const ranges_iterator<Traits> &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {
   typedef typename Traits::position position;
   LOG(3, "calculate_L2P (range): box = " << box);
-  const size_t N = std::distance(range.begin(), range.end());
-  const Vector<double, D> *pbegin_range = &get<position>(*range.begin());
+  const size_t N = range.distance_to_end();
+  const Vector<double, D> *pbegin_range = &get<position>(*range);
   const Vector<double, D> *pbegin = &get<position>(target_particles_begin)[0];
   const size_t index = pbegin_range - pbegin;
   for (size_t i = index; i < index + N; ++i) {
@@ -827,16 +824,14 @@ template <typename Expansions, typename Iterator, typename T,
           typename = typename std::enable_if<
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
 void calculate_L2P(std::vector<T> &target_vector, const VectorType &source,
-                   const detail::bbox<D> &box,
-                   const iterator_range<Iterator> &range,
+                   const detail::bbox<D> &box, const Iterator &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {
 
   LOG(3, "calculate_L2P: box = " << box);
   typedef typename Traits::position position;
-  typedef typename Iterator::reference reference;
-  for (reference i : range) {
-    const Vector<double, D> &pi = get<position>(i);
+  for (auto i = range; i != false; ++i) {
+    const Vector<double, D> &pi = get<position>(*i);
     const size_t index = &pi - &get<position>(target_particles_begin)[0];
     target_vector[index] += expansions.L2P(pi, box, source);
   }
@@ -849,13 +844,13 @@ template <typename Expansions, typename Traits, typename Derived,
           unsigned int D = Traits::dimension>
 void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
                    const VectorType &source, const detail::bbox<D> &box,
-                   const iterator_range<ranges_iterator<Traits>> &range,
+                   const ranges_iterator<Traits> &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {
   typedef typename Traits::position position;
   LOG(3, "calculate_L2P (range): box = " << box);
-  const size_t N = std::distance(range.begin(), range.end());
-  const Vector<double, D> *pbegin_range = &get<position>(*range.begin());
+  const size_t N = range.distance_to_end();
+  const Vector<double, D> *pbegin_range = &get<position>(*range);
   const Vector<double, D> *pbegin = &get<position>(target_particles_begin)[0];
   const size_t index = pbegin_range - pbegin;
   const size_t block_size = Expansions::block_rows;
@@ -881,16 +876,15 @@ template <typename Expansions, typename Iterator, typename Derived,
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
 void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
                    const VectorType &source, const detail::bbox<D> &box,
-                   const iterator_range<Iterator> &range,
+                   const Iterator &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {
 
   LOG(3, "calculate_L2P: box = " << box);
   typedef typename Traits::position position;
-  typedef typename Iterator::reference reference;
   const size_t block_size = Expansions::block_rows;
-  for (reference i : range) {
-    const Vector<double, D> &pi = get<position>(i);
+  for (auto i = range; i != false; ++i) {
+    const Vector<double, D> &pi = get<position>(*i);
     const size_t index = &pi - &get<position>(target_particles_begin)[0];
     const auto &l2p = expansions.L2P(pi, box, source);
     for (size_t ii = 0; ii < block_size; ++ii) {
@@ -908,34 +902,30 @@ template <typename Kernel, typename Traits, typename TargetType,
           unsigned int D = Traits::dimension>
 void calculate_P2P(std::vector<TargetType> &target_vector,
                    const std::vector<SourceType> &source_vector,
-                   const iterator_range<ranges_iterator<Traits>> &target_range,
-                   const iterator_range<ranges_iterator<Traits>> &source_range,
+                   const ranges_iterator<Traits> &target_range,
+                   const ranges_iterator<Traits> &source_range,
                    const ParticleIterator &target_particles_begin,
                    const ParticleIterator &source_particles_begin,
                    const Kernel &kernel) {
   typedef typename Traits::position position;
 
-  const size_t n_target =
-      std::distance(target_range.begin(), target_range.end());
-  const size_t n_source =
-      std::distance(source_range.begin(), source_range.end());
+  const size_t n_target = target_range.distance_to_end();
+  const size_t n_source = source_range.distance_to_end();
 
-  const Vector<double, D> *pbegin_target_range =
-      &get<position>(*target_range.begin());
+  const Vector<double, D> *pbegin_target_range = &get<position>(*target_range);
   const Vector<double, D> *pbegin_target =
       &get<position>(target_particles_begin)[0];
   const size_t index_target = pbegin_target_range - pbegin_target;
 
-  const Vector<double, D> *pbegin_source_range =
-      &get<position>(*source_range.begin());
+  const Vector<double, D> *pbegin_source_range = &get<position>(*source_range);
   const Vector<double, D> *pbegin_source =
       &get<position>(source_particles_begin)[0];
 
   const size_t index_source = pbegin_source_range - pbegin_source;
 
-  auto pi = target_range.begin();
+  auto pi = target_range;
   for (size_t i = index_target; i < index_target + n_target; ++i, ++pi) {
-    auto pj = source_range.begin();
+    auto pj = source_range;
     for (size_t j = index_source; j < index_source + n_source; ++j, ++pj) {
       target_vector[i] += kernel(*pi, *pj) * source_vector[j];
     }
@@ -954,21 +944,22 @@ template <typename Kernel, typename TargetIterator, typename SourceIterator,
                 std::is_same<SourceIterator, ranges_iterator<Traits>>::value)>>
 void calculate_P2P(std::vector<TargetType> &target_vector,
                    const std::vector<SourceType> &source_vector,
-                   const iterator_range<TargetIterator> &target_range,
-                   const iterator_range<SourceIterator> &source_range,
+                   const TargetIterator &target_range,
+                   const SourceIterator &source_range,
                    const ParticleIterator &target_particles_begin,
                    const ParticleIterator &source_particles_begin,
                    const Kernel &kernel) {
 
   typedef typename Traits::position position;
-  for (auto &i : target_range) {
+  for (auto i = target_range; i != false; ++i) {
     const size_t target_index =
-        &get<position>(i) - &get<position>(target_particles_begin)[0];
-    for (auto &j : source_range) {
+        &get<position>(*i) - &get<position>(target_particles_begin)[0];
+    for (auto j = source_range; j != false; ++j) {
       const size_t source_index =
-          &get<position>(j) - &get<position>(source_particles_begin)[0];
+          &get<position>(*j) - &get<position>(source_particles_begin)[0];
       LOG(4, "calculate_P2P: i = " << target_index << " j = " << source_index);
-      target_vector[target_index] += kernel(i, j) * source_vector[source_index];
+      target_vector[target_index] +=
+          kernel(*i, *j) * source_vector[source_index];
     }
   }
 }
@@ -980,8 +971,8 @@ template <typename Kernel, typename Traits, typename TargetDerived,
           unsigned int D = Traits::dimension>
 void calculate_P2P(const Eigen::DenseBase<TargetDerived> &target_vector,
                    const Eigen::DenseBase<SourceDerived> &source_vector,
-                   const iterator_range<ranges_iterator<Traits>> &target_range,
-                   const iterator_range<ranges_iterator<Traits>> &source_range,
+                   const ranges_iterator<Traits> &target_range,
+                   const ranges_iterator<Traits> &source_range,
                    const ParticleIterator &target_particles_begin,
                    const ParticleIterator &source_particles_begin,
                    const Kernel &kernel) {
@@ -989,19 +980,15 @@ void calculate_P2P(const Eigen::DenseBase<TargetDerived> &target_vector,
   typedef typename Traits::raw_const_reference const_row_reference;
   typedef typename Traits::raw_const_reference const_col_reference;
 
-  const size_t n_target =
-      std::distance(target_range.begin(), target_range.end());
-  const size_t n_source =
-      std::distance(source_range.begin(), source_range.end());
+  const size_t n_target = target_range.distance_to_end();
+  const size_t n_source = source_range.distance_to_end();
 
-  const Vector<double, D> *pbegin_target_range =
-      &get<position>(*target_range.begin());
+  const Vector<double, D> *pbegin_target_range = &get<position>(*target_range);
   const Vector<double, D> *pbegin_target =
       &get<position>(target_particles_begin)[0];
   const size_t index_target = pbegin_target_range - pbegin_target;
 
-  const Vector<double, D> *pbegin_source_range =
-      &get<position>(*source_range.begin());
+  const Vector<double, D> *pbegin_source_range = &get<position>(*source_range);
   const Vector<double, D> *pbegin_source =
       &get<position>(source_particles_begin)[0];
 
@@ -1011,9 +998,9 @@ void calculate_P2P(const Eigen::DenseBase<TargetDerived> &target_vector,
                                     Kernel>
       helper;
 
-  auto pi = target_range.begin();
+  auto pi = target_range;
   for (size_t i = index_target; i < index_target + n_target; ++i, ++pi) {
-    auto pj = source_range.begin();
+    auto pj = source_range;
     for (size_t j = index_source; j < index_source + n_source; ++j, ++pj) {
       const_cast<Eigen::DenseBase<TargetDerived> &>(target_vector)
           .template segment<helper::block_rows>(i * helper::block_rows) +=
@@ -1035,8 +1022,8 @@ template <typename Kernel, typename TargetIterator, typename SourceIterator,
                 std::is_same<SourceIterator, ranges_iterator<Traits>>::value)>>
 void calculate_P2P(const Eigen::DenseBase<TargetDerived> &target_vector,
                    const Eigen::DenseBase<SourceDerived> &source_vector,
-                   const iterator_range<TargetIterator> &target_range,
-                   const iterator_range<SourceIterator> &source_range,
+                   const TargetIterator &target_range,
+                   const SourceIterator &source_range,
                    const ParticleIterator &target_particles_begin,
                    const ParticleIterator &source_particles_begin,
                    const Kernel &kernel) {
@@ -1060,16 +1047,16 @@ void calculate_P2P(const Eigen::DenseBase<TargetDerived> &target_vector,
   static_assert(block_cols > 0,
                 "kernel function must return fixed size matrix");
 
-  for (auto &i : target_range) {
+  for (auto i = target_range; i != false; ++i) {
     const size_t target_index =
-        &get<position>(i) - &get<position>(target_particles_begin)[0];
-    for (auto &j : source_range) {
+        &get<position>(*i) - &get<position>(target_particles_begin)[0];
+    for (auto j = source_range; j != false; ++j) {
       const size_t source_index =
-          &get<position>(j) - &get<position>(source_particles_begin)[0];
+          &get<position>(*j) - &get<position>(source_particles_begin)[0];
       LOG(4, "calculate_P2P: i = " << target_index << " j = " << source_index);
       const_cast<Eigen::DenseBase<TargetDerived> &>(target_vector)
           .template segment<block_rows>(target_index * block_rows) +=
-          kernel(i, j) *
+          kernel(*i, *j) *
           source_vector.template segment<block_cols>(source_index * block_cols);
     }
   }

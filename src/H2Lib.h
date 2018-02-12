@@ -472,8 +472,8 @@ private:
     const uint dim = Particles::dimension;
     pcluster t;
     if (particles.get_query().is_leaf_node(*ci)) { // leaf node
-      const auto &prange = particles.get_query().get_bucket_particles(*ci);
-      for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
+      for (auto pit = particles.get_query().get_bucket_particles(*ci);
+           pit != false; ++pit) {
         const size_t pi = &(get<typename Particles::position>(*pit)) -
                           &get<typename Particles::position>(particles)[0];
         for (size_t i = 0; i < block_size; ++i, ++idx) {
@@ -726,9 +726,8 @@ private:
     const uint dim = Particles::dimension;
     pcluster t;
     if (particles.get_query().is_leaf_node(*ci)) { // leaf node
-      const auto &prange = particles.get_query().get_bucket_particles(*ci);
-      auto pit = prange.begin();
-      for (auto pit = prange.begin(); pit != prange.end(); ++pit) {
+      for (auto pit = particles.get_query().get_bucket_particles(*ci);
+           pit != false; ++pit) {
         const size_t pi = &(get<typename Particles::position>(*pit)) -
                           &get<typename Particles::position>(particles)[0];
         for (size_t i = 0; i < block_size; ++i, ++idx) {
