@@ -1,0 +1,281 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Using the spatial data structures</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.5">
+<link rel="up" href="../index.html" title="Aboria 0.5">
+<link rel="prev" href="neighbourhood_searching.html" title="Neighbourhood Searching">
+<link rel="next" href="id_searching.html" title="ID Searching">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="neighbourhood_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="id_searching.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.using_the_spatial_data_structure"></a><a class="link" href="using_the_spatial_data_structure.html" title="Using the spatial data structures">Using the spatial
+    data structures</a>
+</h2></div></div></div>
+<p>
+      The neighbour-searching functionality within Aboria uses the underlying spatial
+      data structure (i.e. cell list, octtree, kdtree) to perform its task. You can
+      directly access this underlying data structure as well, in order for you to
+      write your own spatial algorithms.
+    </p>
+<p>
+      Aboria uses iterators to provide a generic way to interact with the spatial
+      data structure, so that the code that you write is independent of the particlular
+      data structure that you use. An iterator is a generic C++ object that "iterates"
+      through a 1D container. For example, the classic iterator is the loop index
+      <code class="computeroutput"><span class="identifier">i</span></code> in the code below.
+    </p>
+<pre class="programlisting"><span class="identifier">size_t</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">10</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">v</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="identifier">v</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">i</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      The STL library abstracts away the particular type of <code class="computeroutput"><span class="identifier">i</span></code>,
+      and defines a set of iterators for each container. For example, the <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span></code>
+      class has its own iterator, which you can use as follows.
+    </p>
+<pre class="programlisting"><span class="identifier">size_t</span> <span class="identifier">index</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;::</span><span class="identifier">iterator</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">v</span><span class="special">.</span><span class="identifier">begin</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="identifier">v</span><span class="special">.</span><span class="identifier">end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="special">*</span><span class="identifier">i</span> <span class="special">=</span> <span class="identifier">index</span><span class="special">++;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      Or in more compact notation
+    </p>
+<pre class="programlisting"><span class="identifier">index</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">v</span><span class="special">.</span><span class="identifier">begin</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="identifier">v</span><span class="special">.</span><span class="identifier">end</span><span class="special">();</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="special">*</span><span class="identifier">i</span> <span class="special">=</span> <span class="identifier">index</span><span class="special">++;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      The iterators in Aboria are similar to STL iterators in that they can step
+      through a given range of objects using the <code class="computeroutput"><span class="special">++</span></code>
+      operator, with some slight differences that we will describe below.
+    </p>
+<p>
+      Before we can start using the data structure iterators in Aboria, we need a
+      particle set. Lets create a random set of points in 2D:
+    </p>
+<pre class="programlisting"><span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span> <span class="number">2</span><span class="special">&gt;</span> <span class="identifier">Particles_t</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">Particles_t</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
+<span class="identifier">Particles_t</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uniform</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="keyword">auto</span> <span class="special">&amp;</span><span class="identifier">gen</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">generator</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">];</span>
+  <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span> <span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+<span class="special">}</span>
+
+<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">),</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">1</span><span class="special">,</span> <span class="number">1</span><span class="special">),</span>
+                                <span class="identifier">vdouble2</span><span class="special">(</span><span class="keyword">false</span><span class="special">,</span> <span class="keyword">false</span><span class="special">));</span>
+</pre>
+<p>
+      In order to start interacting with the spatial data structures, we need to
+      get its query object from the particle set. A query object is a lightweight
+      object that has all the information neccessary to access either the particle
+      set itself or the underlying spatial data structures. It was designed because
+      the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> container
+      and the neighbour search classes (e.g. <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html" title="Struct template NeighbourQueryBase">Aboria::NeighbourQueryBase</a></code>)
+      were unsuitable for copying to a gpu in order to perform calculations there,
+      so a simpler class, the query class, was created with the required functionality.
+    </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles_t</span><span class="special">::</span><span class="identifier">query_type</span> <span class="identifier">Query_t</span><span class="special">;</span>
+<span class="identifier">Query_t</span> <span class="identifier">query</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">();</span>
+</pre>
+<p>
+      The base class for all the query objects is <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html" title="Struct template NeighbourQueryBase">Aboria::NeighbourQueryBase</a></code>,
+      and all the query classes for the individual data structures are derived from
+      this. Now that we have <code class="computeroutput"><span class="identifier">query</span></code>,
+      we can create a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/child_iterator.html" title="Struct child_iterator">Aboria::NeighbourQueryBase::child_iterator</a></code>.
+      This is the lowest level data structure iterator, and allows you to iterate
+      through a set of child nodes attached to a single parent node within a tree
+      structure. Note that all the spatial data structures in Aboria are considered
+      trees. For the octtree and kdtree data structures, this description is obvious,
+      but the cell list is also treated as a tree, in this case a tree with one root
+      node having N children, where N is the total number of buckets in the cell
+      list.
+    </p>
+<p>
+      You can create a child_iterator by using the <code class="computeroutput">const</code>
+      function. This creates a child_iterator that loops through the children of
+      the root node of the tree. We will use this iterator to loop through all these
+      children and print out the spatial bounds of each node. In order to determine
+      when we have reached the end of the children, we can compare the iterator to
+      <code class="computeroutput"><span class="keyword">false</span></code>. This pattern is widely
+      used in Aboria, rather than specific <code class="computeroutput"><span class="identifier">end</span></code>
+      iterators as used in the STL.
+    </p>
+<pre class="programlisting"><span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query</span><span class="special">.</span><span class="identifier">get_children</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">query</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      Above we use the <code class="computeroutput">Aboria::NeighbourQueryBase::get_bounds</code>
+      function to get the bounds of the child iterator. This returns a <code class="computeroutput">Aboria::detail::bbox</code> class that contains
+      the minimum and maximum spatial extents of the node pointed to by <code class="computeroutput"><span class="identifier">i</span></code>.
+    </p>
+<p>
+      Note that here we are using the default spatial data structure, a cell list
+      provided by <code class="computeroutput"><a class="link" href="../Aboria/CellList.html" title="Class template CellList">Aboria::CellList</a></code>,
+      so the "tree" here will only have 2 levels, and the loop above will
+      loop through the second (i.e. non-root) level. We can also create a proper
+      tree structure using the hyper oct-tree data structure given by <code class="computeroutput"><a class="link" href="../Aboria/octtree.html" title="Class template octtree">Aboria::octtree</a></code>, like so:
+    </p>
+<pre class="programlisting"><span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;&gt;,</span> <span class="number">2</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">,</span> <span class="identifier">octtree</span><span class="special">&gt;</span> <span class="identifier">ParticlesOcttree_t</span><span class="special">;</span>
+<span class="identifier">ParticlesOcttree_t</span> <span class="identifier">particles_octtree</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="keyword">auto</span> <span class="special">&amp;</span><span class="identifier">gen</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">generator</span><span class="special">&gt;(</span><span class="identifier">particles_octtree</span><span class="special">)[</span><span class="identifier">i</span><span class="special">];</span>
+  <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles_octtree</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span>
+      <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span> <span class="identifier">uniform</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+<span class="special">}</span>
+
+<span class="identifier">particles_octtree</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">),</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">1</span><span class="special">,</span> <span class="number">1</span><span class="special">),</span>
+                                        <span class="identifier">vdouble2</span><span class="special">(</span><span class="keyword">false</span><span class="special">,</span> <span class="keyword">false</span><span class="special">));</span>
+
+<span class="keyword">auto</span> <span class="identifier">query_octtree</span> <span class="special">=</span> <span class="identifier">particles_octtree</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">();</span>
+</pre>
+<p>
+      Now <code class="computeroutput"><span class="identifier">particles_octtree</span></code> contains
+      a full oct-tree, dividing the spatial domain into a hierarchical set of boxes
+      that make up our tree data structure. The simplest iteration we might want
+      to do on the tree is a depth-first iteration, which is easiest achieved by
+      recursion. The <code class="computeroutput">Aboria::NeighbourQueryBase::get_children</code>
+      function can be used to get the children of a <code class="computeroutput"><span class="identifier">child_iterator</span></code>,
+      and using a C++ lambda function to provide the recursion we can implement a
+      depth-first iteration like so
+    </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"recursive depth-first"</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_children</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">function</span><span class="special">&lt;</span><span class="keyword">void</span><span class="special">(</span><span class="keyword">decltype</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&amp;)&gt;</span> <span class="identifier">depth_first</span><span class="special">;</span>
+  <span class="identifier">depth_first</span> <span class="special">=</span> <span class="special">[&amp;](</span><span class="keyword">const</span> <span class="keyword">auto</span> <span class="special">&amp;</span><span class="identifier">parent</span><span class="special">)</span> <span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">parent</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_children</span><span class="special">(</span><span class="identifier">parent</span><span class="special">);</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+      <span class="identifier">depth_first</span><span class="special">(</span><span class="identifier">i</span><span class="special">);</span>
+    <span class="special">}</span>
+  <span class="special">};</span>
+  <span class="identifier">depth_first</span><span class="special">(</span><span class="identifier">i</span><span class="special">);</span>
+<span class="special">}</span>
+</pre>
+<p>
+      This construction might be a bit clumsy to use in practice however, so Aboria
+      provides a special depth-first iterator <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/all_iterator.html" title="Struct all_iterator">Aboria::NeighbourQueryBase::all_iterator</a></code>
+      to allow you to write a loop equivalent to the recursive depth-first code given
+      above.
+    </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"subtree depth-first"</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_subtree</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+      The <code class="computeroutput">Aboria::NeighbourQueryBase::get_subtree</code>
+      function returns a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/all_iterator.html" title="Struct all_iterator">Aboria::NeighbourQueryBase::all_iterator</a></code>
+      that performs a depth-first iteration over the tree. Note that you can also
+      pass in a child_iterator to <code class="computeroutput">Aboria::NeighbourQueryBase::get_subtree</code>
+      to iterate over the sub-tree below a particular node of the tree.
+    </p>
+<p>
+      You might also want to distinguish between leaf nodes (nodes with no children)
+      and non-leaf nodes. You can do this with the <code class="computeroutput">Aboria::NeighbourQueryBase:is_leaf_node</code>
+      function, which can be used like so
+    </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"subtree depth-first showing leaf nodes"</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_subtree</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="keyword">if</span> <span class="special">(</span><span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">is_leaf_node</span><span class="special">(*</span><span class="identifier">i</span><span class="special">))</span> <span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"leaf node with bounds = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span>
+              <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+  <span class="special">}</span> <span class="keyword">else</span> <span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"non-leaf node with bounds = "</span>
+              <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+  <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+      Leaf nodes in the tree are the only nodes that contain particles. You can loop
+      through all the particles in a given leaf node using the <code class="computeroutput">Aboria::NeighbourQueryBase::get_bucket_particles()</code>
+      function, which returns an iterator.
+    </p>
+<pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"subtree depth-first showing leaf nodes and particles"</span>
+          <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_subtree</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="keyword">if</span> <span class="special">(</span><span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">is_leaf_node</span><span class="special">(*</span><span class="identifier">i</span><span class="special">))</span> <span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"leaf node with bounds = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span>
+              <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bucket_particles</span><span class="special">(*</span><span class="identifier">i</span><span class="special">);</span> <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+      <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"\t has particle with position"</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(*</span><span class="identifier">j</span><span class="special">)</span>
+                <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+    <span class="special">}</span>
+  <span class="special">}</span> <span class="keyword">else</span> <span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"non-leaf node with bounds = "</span>
+              <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+  <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+<p>
+      Aboria also provides functions to query leaf nodes, or buckets, within a certain
+      distance of a point, and these are used internally for the neighbour search
+      functionality discussed in earlier sections. You can use the <code class="computeroutput">Aboria::NeighbourQueryBase::get_buckets_near_point()</code>
+      function, which returns a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/query_iterator.html" title="Struct template query_iterator">Aboria::NeighbourQueryBase::query_iterator</a></code>
+      of all the buckets with a given distance of a point. This function also takes
+      a template argument <code class="computeroutput"><span class="identifier">P</span></code>, which
+      refers to the p-norm distance that it uses (i.e. P=2 is the standard euclidean
+      distance)
+    </p>
+<pre class="programlisting"><span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">P</span> <span class="special">=</span> <span class="number">2</span><span class="special">;</span>
+<span class="keyword">const</span> <span class="identifier">vdouble2</span> <span class="identifier">search_point</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0.5</span><span class="special">,</span> <span class="number">0.5</span><span class="special">);</span>
+<span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">search_radius</span> <span class="special">=</span> <span class="number">0.1</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"searching within "</span> <span class="special">&lt;&lt;</span> <span class="identifier">search_point</span> <span class="special">&lt;&lt;</span> <span class="string">" of point "</span>
+          <span class="special">&lt;&lt;</span> <span class="identifier">search_point</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_buckets_near_point</span><span class="special">&lt;</span><span class="identifier">P</span><span class="special">&gt;(</span><span class="identifier">search_point</span><span class="special">,</span>
+                                                      <span class="identifier">search_radius</span><span class="special">);</span>
+     <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"\t found bucket at "</span> <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span>
+            <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+  <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bucket_particles</span><span class="special">(*</span><span class="identifier">i</span><span class="special">);</span> <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"\t\t found particle at "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(*</span><span class="identifier">j</span><span class="special">)</span>
+              <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+  <span class="special">}</span>
+<span class="special">}</span>
+</pre>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="neighbourhood_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="id_searching.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

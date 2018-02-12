@@ -6,7 +6,7 @@
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../index.html" title="Aboria 0.5">
 <link rel="up" href="../index.html" title="Aboria 0.5">
-<link rel="prev" href="neighbourhood_searching.html" title="Neighbourhood Searching">
+<link rel="prev" href="using_the_spatial_data_structure.html" title="Using the spatial data structures">
 <link rel="next" href="evaluating_and_solving_kernel_op.html" title="Evaluating and Solving Kernel Operators with Eigen">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="neighbourhood_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="evaluating_and_solving_kernel_op.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="using_the_spatial_data_structure.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="evaluating_and_solving_kernel_op.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
@@ -65,7 +65,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Note that each <code class="computeroutput"><span class="identifier">find</span></code> function
-      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp71010606623184-bb">Aboria::CellListQuery::find</a></code>)
+      (e.g. <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp70752039681600-bb">Aboria::CellListQuery::find</a></code>)
       returns an iterator to the particle set. If we try and search for an id which
       doesn't exist, then this iterator will point to the end of the particle vector
     </p>
@@ -75,7 +75,7 @@ MathJax.Hub.Config({
 <p>
       Finally, a note on performance: The id search is done by internally creating
       vectors of id and indicies ordered by id. Keeping these vectors ordered at
-      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp71010622699808-bb">Aboria::Particles::update_positions</a></code>
+      each call to <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp70752056368960-bb">Aboria::Particles::update_positions</a></code>
       takes O(Nlog(N)). The call to <code class="computeroutput"><span class="identifier">find</span></code>
       performs a binary search on the ordered vectors, with takes O(log(N)) time.
     </p>
@@ -86,7 +86,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="neighbourhood_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="evaluating_and_solving_kernel_op.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="using_the_spatial_data_structure.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="evaluating_and_solving_kernel_op.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
