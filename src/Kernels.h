@@ -408,7 +408,7 @@ public:
   }
 
   void update_row_positions() {
-    detail::bbox<dimension> row_box(this->m_row_elements.get_min(),
+    bbox<dimension> row_box(this->m_row_elements.get_min(),
                                     this->m_row_elements.get_max());
     detail::integrate_chebyshev<RowElements, BlockRows, QuadratureOrder>
         integrate(this->m_row_elements, m_order, row_box);
@@ -420,9 +420,9 @@ public:
   }
 
   void update_kernel_matrix() {
-    detail::bbox<dimension> row_box(this->m_row_elements.get_min(),
+    bbox<dimension> row_box(this->m_row_elements.get_min(),
                                     this->m_row_elements.get_max());
-    detail::bbox<dimension> col_box(this->m_col_elements.get_min(),
+    bbox<dimension> col_box(this->m_col_elements.get_min(),
                                     this->m_col_elements.get_max());
     detail::ChebyshevRn<dimension> col_Rn(m_order, row_box);
     detail::ChebyshevRn<dimension> row_Rn(m_order, col_box);
@@ -443,7 +443,7 @@ public:
   }
 
   void update_col_positions() {
-    detail::bbox<dimension> col_box(this->m_col_elements.get_min(),
+    bbox<dimension> col_box(this->m_col_elements.get_min(),
                                     this->m_col_elements.get_max());
     detail::integrate_chebyshev<ColElements, BlockCols, QuadratureOrder>
         integrate(this->m_col_elements, m_order, col_box);

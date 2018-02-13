@@ -49,10 +49,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Vector.h"
 #include "detail/Algorithms.h"
 #include "detail/Distance.h"
-#include "detail/SpatialUtil.h"
+#include "SpatialUtil.h"
 #include <stack>
 
 namespace Aboria {
+
+
 
 ///
 /// @brief lightweight object that holds two iterators to the beginning and end
@@ -601,7 +603,7 @@ protected:
   ///
   /// @brief the bounds (min->max) of the domain
   ///
-  detail::bbox<Traits::dimension> m_bounds;
+  bbox<Traits::dimension> m_bounds;
 
   ///
   /// @brief holds the set number of particles in each bucket
@@ -627,7 +629,7 @@ template <typename Traits> struct NeighbourQueryBase {
   typedef typename Traits::reference particle_reference;
   typedef typename Traits::const_reference particle_const_reference;
   const static unsigned int dimension = Traits::dimension;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
   template <int LNormNumber> struct query_iterator {
     struct reference;
@@ -713,14 +715,14 @@ template <typename Traits> struct NeighbourQueryBase {
   ///
   /// @brief returns the min/max bounds of the given child_iterator @p ci
   ///
-  /// @return a @detail::bbox containing the bounds
+  /// @return a @bbox containing the bounds
   ///
   const box_type get_bounds(const child_iterator &ci) const;
 
   ///
   /// @brief returns the min/max bounds of the given query_iterator @p ci
   ///
-  /// @return a @detail::bbox containing the bounds
+  /// @return a @bbox containing the bounds
   ///
   template <int LNormNumber>
   const box_type get_bounds(const query_iterator<LNormNumber> &ci) const;
@@ -728,7 +730,7 @@ template <typename Traits> struct NeighbourQueryBase {
   ///
   /// @brief returns the min/max bounds of the given all_iterator @p ci
   ///
-  /// @return a @detail::bbox containing the bounds
+  /// @return a @bbox containing the bounds
   ///
   const box_type get_bounds(const all_iterator &ci) const;
 
@@ -753,7 +755,7 @@ template <typename Traits> struct NeighbourQueryBase {
   ///
   /// @brief get min/max bounds of given bucket @p bucket
   ///
-  detail::bbox<dimension> get_bucket_bbox(const reference bucket) const;
+  bbox<dimension> get_bucket_bbox(const reference bucket) const;
 
   ///
   /// @brief given a @p position, returns a @p bucket and a min/max @p bounds
@@ -1258,7 +1260,7 @@ template <typename Query> class depth_first_iterator {
   static const unsigned int dimension = Query::dimension;
   typedef Vector<double, dimension> double_d;
   typedef Vector<int, dimension> int_d;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
 public:
   typedef typename child_iterator::value_type value_type;
@@ -1399,7 +1401,7 @@ template <typename Query, int LNormNumber> class tree_query_iterator {
   static const unsigned int dimension = Query::dimension;
   typedef Vector<double, dimension> double_d;
   typedef Vector<int, dimension> int_d;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
 public:
   typedef typename child_iterator::value_type value_type;

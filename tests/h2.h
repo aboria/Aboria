@@ -624,10 +624,10 @@ public:
       typedef typename Expansions::m2l_matrix_type m2l_matrix_type;
 
       // unit box
-      detail::bbox<D> parent(double_d(0.0),double_d(1.0));
-      detail::bbox<D> leaf1(double_d(0.0),double_d(1.0));
+      bbox<D> parent(double_d(0.0),double_d(1.0));
+      bbox<D> leaf1(double_d(0.0),double_d(1.0));
       leaf1.bmax[0] = 0.5;
-      detail::bbox<D> leaf2(double_d(0.0),double_d(1.0));
+      bbox<D> leaf2(double_d(0.0),double_d(1.0));
       leaf2.bmin[0] = 0.5;
       std::cout << "parent = "<<parent<<" leaf1 = "<<leaf1<<" leaf2 =
   "<<leaf2<<std::endl;

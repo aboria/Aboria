@@ -44,7 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Vector.h"
 #include "detail/Chebyshev.h"
 #include "detail/Kernels.h"
-#include "detail/SpatialUtil.h"
+#include "SpatialUtil.h"
 #include <iostream>
 
 #ifdef HAVE_H2LIB
@@ -59,7 +59,7 @@ namespace Aboria {
 namespace detail {
 
 template <unsigned int D, unsigned int N> struct MultiquadricExpansions {
-  typedef detail::bbox<D> box_type;
+  typedef bbox<D> box_type;
   static const size_t ncheb = std::pow(N, D);
   typedef std::array<double, ncheb> expansion_type;
 #ifdef HAVE_EIGEN
@@ -96,7 +96,7 @@ template <unsigned int D, unsigned int N> struct MultiquadricExpansions {
 template <size_t D, size_t N, typename Function, size_t BlockRows,
           size_t BlockCols>
 struct BlackBoxExpansions {
-  typedef detail::bbox<D> box_type;
+  typedef bbox<D> box_type;
   static constexpr size_t ncheb = ipow(N, D);
 
   static constexpr size_t block_rows = BlockRows;
@@ -370,7 +370,7 @@ struct BlackBoxExpansions {
 #ifdef HAVE_H2LIB
 template <size_t D, typename Function, size_t BlockRows, size_t BlockCols>
 struct H2LibBlackBoxExpansions {
-  typedef detail::bbox<D> box_type;
+  typedef bbox<D> box_type;
 
   static constexpr size_t block_rows = BlockRows;
   static constexpr size_t block_cols = BlockCols;
@@ -682,7 +682,7 @@ template <typename Expansions, typename Traits, typename T,
           typename VectorType = typename Expansions::expansion_type,
           typename SourceParticleIterator = typename Traits::raw_pointer,
           unsigned int D = Traits::dimension>
-void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
+void calculate_P2M(VectorType &sum, const bbox<D> &box,
                    const ranges_iterator<Traits> &range,
                    const std::vector<T> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
@@ -706,7 +706,7 @@ template <typename Expansions, typename Iterator, typename T,
           unsigned int D = Traits::dimension,
           typename = typename std::enable_if<
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
-void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
+void calculate_P2M(VectorType &sum, const bbox<D> &box,
                    const Iterator &range, const std::vector<T> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
                    const Expansions &expansions) {
@@ -746,7 +746,7 @@ template <typename Expansions, typename Traits, typename Derived,
           typename VectorType = typename Expansions::expansion_type,
           typename SourceParticleIterator = typename Traits::raw_pointer,
           unsigned int D = Traits::dimension>
-void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
+void calculate_P2M(VectorType &sum, const bbox<D> &box,
                    const ranges_iterator<Traits> &range,
                    const Eigen::DenseBase<Derived> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
@@ -774,7 +774,7 @@ template <typename Expansions, typename Iterator, typename Derived,
           unsigned int D = Traits::dimension,
           typename = typename std::enable_if<
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
-void calculate_P2M(VectorType &sum, const detail::bbox<D> &box,
+void calculate_P2M(VectorType &sum, const bbox<D> &box,
                    const Iterator &range,
                    const Eigen::DenseBase<Derived> &source_vector,
                    const SourceParticleIterator &source_particles_begin,
@@ -798,7 +798,7 @@ template <typename Expansions, typename Traits, typename T,
           typename ParticleIterator = typename Traits::raw_pointer,
           unsigned int D = Traits::dimension>
 void calculate_L2P(std::vector<T> &target_vector, const VectorType &source,
-                   const detail::bbox<D> &box,
+                   const bbox<D> &box,
                    const ranges_iterator<Traits> &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {
@@ -824,7 +824,7 @@ template <typename Expansions, typename Iterator, typename T,
           typename = typename std::enable_if<
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
 void calculate_L2P(std::vector<T> &target_vector, const VectorType &source,
-                   const detail::bbox<D> &box, const Iterator &range,
+                   const bbox<D> &box, const Iterator &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {
 
@@ -843,7 +843,7 @@ template <typename Expansions, typename Traits, typename Derived,
           typename ParticleIterator = typename Traits::raw_pointer,
           unsigned int D = Traits::dimension>
 void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
-                   const VectorType &source, const detail::bbox<D> &box,
+                   const VectorType &source, const bbox<D> &box,
                    const ranges_iterator<Traits> &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {
@@ -875,7 +875,7 @@ template <typename Expansions, typename Iterator, typename Derived,
           typename = typename std::enable_if<
               !std::is_same<Iterator, ranges_iterator<Traits>>::value>>
 void calculate_L2P(const Eigen::DenseBase<Derived> &target_vector,
-                   const VectorType &source, const detail::bbox<D> &box,
+                   const VectorType &source, const bbox<D> &box,
                    const Iterator &range,
                    const ParticleIterator &target_particles_begin,
                    const Expansions &expansions) {

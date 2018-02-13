@@ -134,14 +134,18 @@ public:
     create a [classref Aboria::NeighbourQueryBase::child_iterator]. This is the
     lowest level data structure iterator, and allows you to iterate through a
     set of child nodes attached to a single parent node within a tree structure.
-    Note that all the spatial data structures in Aboria are considered trees.
+
+    [note All the spatial data structures in Aboria are considered trees.
     For the octtree and kdtree data structures, this description is obvious, but
     the cell list is also treated as a tree, in this case a tree with one root
     node having N children, where N is the total number of buckets in the cell
-    list.
+    list.]
 
-    You can create a child_iterator by using the [funcref
-    Aboria::NeighbourQueryBase::get_children() const] function. This creates a
+    [note Aboria tends to use the terms nodes and buckets fairly interchangably.
+    ]
+
+    You can create a child_iterator by using the [memberref
+    Aboria::NeighbourQueryBase::get_children] function. This creates a
     child_iterator that loops through the children of the root node of the tree.
     We will use this iterator to loop through all these children and print out
     the spatial bounds of each node. In order to determine when we have reached
@@ -156,10 +160,10 @@ public:
     }
 
     /*`
-    Above we use the [funcref Aboria::NeighbourQueryBase::get_bounds]
-    function to get the bounds of the child iterator. This returns a [classref
-    Aboria::detail::bbox] class that contains the minimum and maximum spatial
-    extents of the node pointed to by `i`.
+    Above we use the [memberref Aboria::NeighbourQueryBase::get_bounds] function
+    to get the bounds of the child iterator. This returns a [classref
+    Aboria::bbox] class that contains the minimum and
+    maximum spatial extents of the node pointed to by `i`.
 
     Note that here we are using the default spatial data structure, a cell list
     provided by [classref Aboria::CellList], so the "tree" here will only have 2
@@ -187,9 +191,10 @@ public:
     domain into a hierarchical set of boxes that make up our tree data
     structure. The simplest iteration we might want to do on the tree is a
     depth-first iteration, which is easiest achieved by recursion. The
-    [classref Aboria::NeighbourQueryBase::get_children] function can be used to
-    get the children of a `child_iterator`, and using a C++ lambda function to
-    provide the recursion we can implement a depth-first iteration like so
+    [memberref Aboria::NeighbourQueryBase::get_children] function can be used to
+    get the children of a [classref Aboria::NeighbourQueryBase::child_iterator],
+    and using a C++ lambda function to provide the recursion we can implement a
+    depth-first iteration like so
     */
 
     std::cout << "recursive depth-first" << std::endl;
@@ -205,12 +210,16 @@ public:
     }
 
     /*`
-
     This construction might be a bit clumsy to use in practice however, so
     Aboria provides a special depth-first iterator
     [classref Aboria::NeighbourQueryBase::all_iterator] to allow you to write a
     loop equivalent to the recursive depth-first code given above.
 
+    The [memberref Aboria::NeighbourQueryBase::get_subtree] function returns a
+    [classref Aboria::NeighbourQueryBase::all_iterator] that performs a
+    depth-first iteration over the tree. Note that you can also pass in a
+    child_iterator to [memberref Aboria::NeighbourQueryBase::get_subtree] to
+    iterate over the sub-tree below a particular node of the tree.
     */
 
     std::cout << "subtree depth-first" << std::endl;
@@ -219,16 +228,10 @@ public:
     }
 
     /*`
-    The [funcref Aboria::NeighbourQueryBase::get_subtree] function returns a
-    [classref Aboria::NeighbourQueryBase::all_iterator] that performs a
-    depth-first iteration over the tree. Note that you can also pass in a
-    child_iterator to [funcref Aboria::NeighbourQueryBase::get_subtree] to
-    iterate over the sub-tree below a particular node of the tree.
-
     You might also want to distinguish between leaf nodes (nodes with no
-    children) and non-leaf nodes. You can do this with the [memberref
-    Aboria::NeighbourQueryBase:is_leaf_node] function, which can be used like
-    so
+    children) and non-leaf nodes. You can do this with the
+    [memberref Aboria::NeighbourQueryBase::is_leaf_node] function, which takes a
+    reference to a node (rather than an iterator), and can be used like so
     */
 
     std::cout << "subtree depth-first showing leaf nodes" << std::endl;
@@ -244,9 +247,11 @@ public:
 
     /*`
     Leaf nodes in the tree are the only nodes that contain particles. You can
-    loop through all the particles in a given leaf node using the [funcref
-    Aboria::NeighbourQueryBase::get_bucket_particles()] function, which returns
-    an iterator.
+    loop through all the particles in a given leaf node using the [memberref
+    Aboria::NeighbourQueryBase::get_bucket_particles] function, which returns
+    an iterator. Note for non-leaf nodes, the [memberref
+    Aboria::NeighbourQueryBase::get_bucket_particles] will return an iterator
+    that is immediatelly false, so this loop is safe even for non-leaf nodes.
     */
 
     std::cout << "subtree depth-first showing leaf nodes and particles"
@@ -266,15 +271,21 @@ public:
     }
 
     /*`
-
     Aboria also provides functions to query leaf nodes, or buckets, within a
     certain distance of a point, and these are used internally for the neighbour
-    search functionality discussed in earlier sections. You can use the [funcref
-    Aboria::NeighbourQueryBase::get_buckets_near_point()] function, which
-    returns a [classref Aboria::NeighbourQueryBase::query_iterator] of all the
-    buckets with a given distance of a point. This function also takes a
+    search functionality discussed in earlier sections. You can use the
+    [memberref Aboria::NeighbourQueryBase::get_buckets_near_point] function,
+    which returns a [classref Aboria::NeighbourQueryBase::query_iterator] of all
+    the buckets with a given distance of a point. This function also takes a
     template argument `P`, which refers to the p-norm distance that it uses
-    (i.e. P=2 is the standard euclidean distance)
+    (i.e. P=2 is the standard euclidean distance).
+
+    [caution The distance search provided by [memberref
+    Aboria::NeighbourQueryBase::get_buckets_near_point] does not respect the
+    periodicity of the domain, so if you did a search near a lhs edge of a
+    periodic domain, it would not pick up buckets on the neighbouring periodic
+    rhs edge.]
+
 
     */
 

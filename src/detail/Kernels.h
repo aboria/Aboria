@@ -390,7 +390,7 @@ struct integrate_chebyshev<
   typedef double_d const &const_position_reference;
   typedef typename Elements::const_reference const_reference;
   typedef typename Elements::position position;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
   typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> eigen_matrix;
   typedef Eigen::Matrix<double, Repeats, Repeats> Block;
 
@@ -433,7 +433,7 @@ struct integrate_chebyshev<
   typedef double_d const &const_position_reference;
   typedef typename Elements::const_reference const_reference;
   typedef typename particles_type::position position;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
   typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> eigen_matrix;
   typedef typename detail::GaussLegendre<QuadratureOrder> quadrature_type;
   typedef Eigen::Matrix<double, Repeats, Repeats> Block;

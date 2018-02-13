@@ -93,7 +93,7 @@ class ParH2Matrix {
 
   typedef typename Query::particle_iterator particle_iterator;
   typedef typename particle_iterator::reference particle_reference;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
   // vectors used to cache values
   mutable m_vectors_type m_W;

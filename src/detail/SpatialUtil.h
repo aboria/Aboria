@@ -1,6 +1,6 @@
 
-#ifndef SPATIAL_UTIL_H_ 
-#define SPATIAL_UTIL_H_ 
+#ifndef DETAIL_SPATIAL_UTIL_H_ 
+#define DETAIL_SPATIAL_UTIL_H_ 
 
 #include "Vector.h"
 #include "CudaInclude.h"
@@ -39,71 +39,7 @@ constexpr double get_max<double>() {
 #endif
 
 
-template<unsigned int D>
-struct bbox {
-    typedef Vector<double,D> double_d;
-    double_d bmin;
-    double_d bmax;
 
-    inline CUDA_HOST_DEVICE
-    bbox() : bmin(double_d::Constant(get_max<double>())), 
-             bmax(double_d::Constant(-get_max<double>()))
-    {}
-
-    inline CUDA_HOST_DEVICE
-    bbox(const double_d &p) : bmin(p),bmax(p)
-    {}
-
-    inline CUDA_HOST_DEVICE
-    bbox(const double_d &min, const double_d &max) : bmin(min),bmax(max)
-    {}
-
-    inline CUDA_HOST_DEVICE
-    bbox operator+(const bbox &arg) {
-        bbox bounds;
-        for (size_t i = 0; i < D;  ++i) {
-            bounds.bmin[i] = std::min(bmin[i], arg.bmin[i]);
-            bounds.bmax[i] = std::max(bmax[i], arg.bmax[i]);
-        }
-        return bounds;
-    }
-
-    inline CUDA_HOST_DEVICE
-    bool operator<(const bbox &arg) {
-        bbox bounds;
-        bool within = true;
-        for (size_t i = 0; i < D;  ++i) {
-            within |= bmin[i] >= arg.bmin[i];
-            within |= bmax[i] < arg.bmax[i];
-        }
-        return within;
-    }
-
-    inline CUDA_HOST_DEVICE
-    bool operator<=(const bbox &arg) {
-        bbox bounds;
-        bool within = true;
-        for (size_t i = 0; i < D;  ++i) {
-            within |= bmin[i] >= arg.bmin[i];
-            within |= bmax[i] <= arg.bmax[i];
-        }
-        return within;
-    }
-
-    inline CUDA_HOST_DEVICE
-    bool is_empty() {
-        for (size_t i = 0; i < D;  ++i) {
-            if (bmax[i] < bmin[i]) return true;
-        }
-        return false;
-    }
- 
-};
-
-template<unsigned int D>
-std::ostream& operator<< (std::ostream& out, const bbox<D>& b) {
-	return out << "bbox(" << b.bmin << "<->" << b.bmax << ")";
-}
 
 template<unsigned int D>
 struct bucket_index {

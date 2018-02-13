@@ -558,7 +558,7 @@ public:
   }
 
   template <typename Kernel, typename Query, unsigned int D = Query::dimension,
-            typename box_type = detail::bbox<D>>
+            typename box_type = bbox<D>>
   void analyze_domain(const Index start_row, const Kernel &kernel,
                       const Query &query, const box_type &bounds) {
     const size_t domain_index = m_domain_indicies.size();
@@ -606,7 +606,7 @@ public:
             typename Pair = std::pair<bool, size_t>,
             unsigned int D = Query::dimension,
             typename child_iterator = typename Query::child_iterator,
-            typename box_type = detail::bbox<D>>
+            typename box_type = bbox<D>>
   Pair analyze_dive(const Index start_row, const Kernel &kernel,
                     const Query &query, const child_iterator &ci) {
     size_t count = 0;
@@ -649,7 +649,7 @@ public:
     typedef Vector<double, dimension> double_d;
     typedef Vector<unsigned int, dimension> unsigned_int_d;
     typedef Vector<int, dimension> int_d;
-    typedef detail::bbox<dimension> box_type;
+    typedef bbox<dimension> box_type;
     typedef typename query_type::child_iterator child_iterator;
 
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,

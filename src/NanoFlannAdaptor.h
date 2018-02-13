@@ -41,7 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "NeighbourSearchBase.h"
 #include "Traits.h"
 #include "Vector.h"
-#include "detail/SpatialUtil.h"
+#include "SpatialUtil.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <iostream>
 #include <set>
@@ -281,7 +281,7 @@ template <typename Traits> class nanoflann_child_iterator {
   typedef Vector<double, D> double_d;
   typedef Vector<int, D> int_d;
   typedef Vector<bool, D> bool_d;
-  typedef detail::bbox<D> box_type;
+  typedef bbox<D> box_type;
 
   int m_high;
   const typename kd_tree_type::Node *m_index;
@@ -398,10 +398,10 @@ template <typename Traits> struct nanoflann_adaptor_query {
   typedef depth_first_iterator<nanoflann_adaptor_query> all_iterator;
   typedef nanoflann_child_iterator<Traits> child_iterator;
   typedef ranges_iterator<Traits> particle_iterator;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
   bool_d m_periodic;
-  detail::bbox<dimension> m_bounds;
+  bbox<dimension> m_bounds;
   raw_pointer m_particles_begin;
   raw_pointer m_particles_end;
   size_t m_number_of_buckets;

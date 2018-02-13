@@ -76,7 +76,7 @@ public:
     const unsigned int D = 3;
     vdouble3 min(0, 0, 0);
     vdouble3 max(1, 1, 1);
-    detail::bbox<D> bounds(min, max);
+    bbox<D> bounds(min, max);
     vint3 size(5, 5, 5);
     vdouble3 side_length = (max - min) / size;
     detail::point_to_bucket_index<3> ptob(size, side_length, bounds);

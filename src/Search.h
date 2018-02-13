@@ -48,7 +48,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Vector.h"
 #include "detail/Algorithms.h"
 #include "detail/Distance.h"
-#include "detail/SpatialUtil.h"
+#include "SpatialUtil.h"
 
 #include "Log.h"
 #include <cmath>

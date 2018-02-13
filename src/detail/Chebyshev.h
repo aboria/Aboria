@@ -36,8 +36,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef CHEBYSHEV_DETAIL_H_
 #define CHEBYSHEV_DETAIL_H_
 
-#include "Vector.h"
-#include "detail/SpatialUtil.h"
+#include "../Vector.h"
+#include "../SpatialUtil.h"
 #include <boost/math/constants/constants.hpp>
 #include <math.h>
 
@@ -161,7 +161,7 @@ template <unsigned int D> struct Chebyshev_Rn {
   vector_double_d Sn;
   unsigned int n;
   unsigned int N;
-  detail::bbox<D> box;
+  bbox<D> box;
   Chebyshev_Rn() {}
 
   template <typename PositionIterator>
@@ -201,7 +201,7 @@ template <unsigned int D> struct Chebyshev_Rn {
 
   template <typename PositionIterator>
   void calculate_Sn_with_bbox(const PositionIterator &positions,
-                              detail::bbox<D> &input_box,
+                              bbox<D> &input_box,
                               const unsigned int with_N,
                               const unsigned int with_n) {
     n = with_n;
@@ -247,8 +247,8 @@ template <unsigned int D, int N> struct ChebyshevRnSingle {
   typedef Vector<int, D> int_d;
   typedef std::array<double_d, N> vector_double_d;
   vector_double_d m_Sn;
-  const detail::bbox<D> &m_box;
-  ChebyshevRnSingle(const double_d &position, const detail::bbox<D> &box)
+  const bbox<D> &m_box;
+  ChebyshevRnSingle(const double_d &position, const bbox<D> &box)
       : m_box(box) {
 
     // if box width is zero in any direction set the shifted position
@@ -297,10 +297,10 @@ template <unsigned int D> struct ChebyshevRn {
   typedef Vector<double, D> double_d;
   typedef Vector<int, D> int_d;
   typedef std::vector<double_d> vector_double_d;
-  const detail::bbox<D> &m_box;
+  const bbox<D> &m_box;
   vector_double_d m_Sn;
 
-  ChebyshevRn(const size_t order, const detail::bbox<D> &box)
+  ChebyshevRn(const size_t order, const bbox<D> &box)
       : m_box(box), m_Sn(order) {}
 
   void set_position(const double_d &position) {

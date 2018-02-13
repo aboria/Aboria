@@ -76,7 +76,7 @@ protected:
   typedef typename traits_type::double_d double_d;
   typedef typename traits_type::position position;
   static const unsigned int dimension = traits_type::dimension;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
   mutable m_storage_type m_W;
   mutable l_storage_type m_g;

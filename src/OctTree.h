@@ -45,7 +45,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CudaInclude.h"
 #include "Particles.h"
 #include "detail/Algorithms.h"
-#include "detail/SpatialUtil.h"
+#include "SpatialUtil.h"
 
 namespace Aboria {
 
@@ -426,16 +426,16 @@ template <typename traits> void octtree<traits>::build_tree() {
 
 // Classify a point with respect to the bounding box.
 template <typename traits> struct octtree<traits>::classify_point {
-  detail::bbox<dimension> box;
+  bbox<dimension> box;
   int max_level;
 
   // Create the classifier
-  classify_point(const detail::bbox<dimension> &b, int lvl)
+  classify_point(const bbox<dimension> &b, int lvl)
       : box(b), max_level(lvl) {}
 
   // Classify a point
   inline CUDA_HOST_DEVICE int operator()(const double_d &p) {
-    return point_to_tag(p, box, max_level);
+    return detail::point_to_tag(p, box, max_level);
   }
 };
 
@@ -518,7 +518,7 @@ template <unsigned int D> class octtree_child_iterator {
   typedef Vector<double, D> double_d;
   typedef Vector<int, D> int_d;
   typedef Vector<bool, D> bool_d;
-  typedef detail::bbox<D> box_type;
+  typedef bbox<D> box_type;
 
   int m_high;
   const int *m_index;
@@ -661,7 +661,7 @@ template <typename Traits> struct octtree_query {
   typedef typename child_iterator::reference reference;
   typedef typename child_iterator::pointer pointer;
   typedef typename child_iterator::value_type value_type;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
   typedef ranges_iterator<Traits> particle_iterator;
 

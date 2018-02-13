@@ -41,7 +41,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "NeighbourSearchBase.h"
 #include "Traits.h"
 #include "Vector.h"
-#include "detail/SpatialUtil.h"
+#include "SpatialUtil.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <iostream>
 #include <set>
@@ -935,7 +935,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   typedef typename query_iterator<2>::pointer pointer;
   typedef typename query_iterator<2>::value_type value_type;
   typedef linked_list_iterator<Traits> particle_iterator;
-  typedef detail::bbox<dimension> box_type;
+  typedef bbox<dimension> box_type;
 
   ///
   /// @brief periodicity of domain
@@ -955,7 +955,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   ///
   /// @brief domain min/max bounds
   ///
-  detail::bbox<dimension> m_bounds;
+  bbox<dimension> m_bounds;
 
   ///
   /// @brief function object to calculate a bucket index from a position
@@ -1132,8 +1132,8 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  detail::bbox<dimension> get_bucket_bbox(const reference bucket) const {
-    return detail::bbox<dimension>(
+  bbox<dimension> get_bucket_bbox(const reference bucket) const {
+    return bbox<dimension>(
         bucket * m_bucket_side_length + m_bounds.bmin,
         (bucket + 1) * m_bucket_side_length + m_bounds.bmin);
   }
