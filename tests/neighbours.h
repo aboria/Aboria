@@ -96,18 +96,22 @@ public:
     /*`
 
     Once this is done you can begin using the neighbourhood search queries using
-    the [funcref Aboria::euclidean_search] function. This returns a lightweight
-    container with `begin()` and `end()` functions that return `const` forward
-    only iterators to the particles that satisfy the neighbour search. For
-    example, the following counts all the particles within a distance `radius`
-    of the point $(0,0,0)$.
+    the [funcref Aboria::euclidean_search] function. This returns an
+    forward-only iterator providing const access to a sequence of particles that
+    lie within a certain distance of a given point. This iterator can be
+    compared with a boolean to let you know when you have reached that last
+    particle.
+
+    For example, the following counts all the particles within a distance
+    `radius` of the point $(0,0,0)$.
 
     */
 
     double radius = 0.2;
     int count = 0;
-    for (const auto &i : euclidean_search(particles.get_query(),
-                                          vdouble3::Constant(0), radius)) {
+    for (auto i = euclidean_search(particles.get_query(), vdouble3::Constant(0),
+                                   radius);
+         i != false; ++i) {
       //<-
       (void)i;
       //->
@@ -125,17 +129,15 @@ public:
     you can use the generic [funcref Aboria::distance_search] for the $p$-norm
     ($(\sum_i^d x^n)^{1/n}$), where $p$ is any integer greater than 0.
 
-    When dereferenced, the neighbourhood iterator returns a tuple of size 2
-    containing
+    When dereferenced, the neighbourhood iterator returns a constant reference
+    to the found particle object, with type [classref
+    Aboria::Particles::const_reference]. You can also use the function
+    [Aboria::NeighbourQueryBase::query_iterator::dx] to access a vector
+    $\mathbf{dx}\_{ij}$ pointing to the found point from the query point. I.e.
+    if $\mathbf{x}\_i$ is the query point and $\mathbf{x}\_j$ is the found
+    point, then $\mathbf{dx}\_{ij} = \mathbf{x}\_j - \mathbf{x}\_i$.
 
-    # A constant reference to the found particle object, with type
-    `particle_type::const_reference`
-
-    # A vector $\mathbf{dx}\_{ij}$ pointing to the found point from the query
-    point. I.e. if $\mathbf{x}\_i$ is the query point and $\mathbf{x}\_j$ is the
-    found point, then $\mathbf{dx}\_{ij} = \mathbf{x}\_j - \mathbf{x}\_i$.
-
-    The latter is useful for periodic domains, the returned vector
+    The `dx` vector is useful for periodic domains, the returned vector
     $\mathbf{dx}\_{ij}$ takes periodic domains into account and returns the
     $\mathbf{dx}\_{ij}$ with the smallest length.
 
@@ -143,12 +145,11 @@ public:
 
     */
 
-    for (const auto &i : euclidean_search(particles.get_query(),
-                                          vdouble3::Constant(0), radius)) {
-      particle_type::const_reference b = std::get<0>(i);
-      const vdouble3 &dx = std::get<1>(i);
-      std::cout << "Found a particle with dx = " << dx
-                << " and id = " << get<id>(b) << "\n";
+    for (auto i = euclidean_search(particles.get_query(), vdouble3::Constant(0),
+                                   radius);
+         i != false; ++i) {
+      std::cout << "Found a particle with dx = " << i.dx()
+                << " and id = " << get<id>(*i) << "\n";
     }
 
     /*`
@@ -388,8 +389,6 @@ public:
     particle_kdtree_type particle_kd_tree;
 
     /*`
-
-
 
     [endsect]
 

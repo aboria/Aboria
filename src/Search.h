@@ -44,11 +44,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CudaInclude.h"
 #include "Get.h"
 #include "NeighbourSearchBase.h"
+#include "SpatialUtil.h"
 #include "Traits.h"
 #include "Vector.h"
 #include "detail/Algorithms.h"
 #include "detail/Distance.h"
-#include "SpatialUtil.h"
 
 #include "Log.h"
 #include <cmath>
@@ -89,13 +89,10 @@ template <typename Query, int LNormNumber> class search_iterator {
   particle_iterator m_current_particle;
 
 public:
-  typedef const typename Traits::template tuple<p_reference, const double_d &>
-      *pointer;
+  typedef p_pointer pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef const typename Traits::template tuple<p_reference, const double_d &>
-      reference;
-  typedef const typename Traits::template tuple<p_reference, const double_d &>
-      value_type;
+  typedef p_reference reference;
+  typedef p_value_type value_type;
   typedef std::ptrdiff_t difference_type;
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -177,6 +174,8 @@ public:
   CUDA_HOST_DEVICE
   search_iterator &operator=(const search_iterator &) = default;
 
+  const double_b &dx() const { return m_dx; }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
@@ -209,11 +208,20 @@ public:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator==(const search_iterator &rhs) { return equal(rhs); }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator!=(const search_iterator &rhs) {
     return !operator==(rhs);
   }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
 private:
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -222,6 +230,10 @@ private:
     return m_valid ? m_current_particle == other.m_current_particle
                    : !other.m_valid;
   }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_valid == other; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -322,7 +334,7 @@ private:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  reference dereference() const { return reference(*m_current_particle, m_dx); }
+  reference dereference() const { return *m_current_particle; }
 };
 
 template <typename Query> class bucket_pair_iterator {
@@ -598,36 +610,32 @@ detail::kd_tree_tag) {
 */
 
 template <typename Query, typename SearchIterator = search_iterator<Query, -1>>
-CUDA_HOST_DEVICE iterator_range<SearchIterator>
+CUDA_HOST_DEVICE SearchIterator
 chebyshev_search(const Query &query, const typename Query::double_d &centre,
                  const double max_distance) {
-  return iterator_range<SearchIterator>(
-      SearchIterator(query, centre, max_distance), SearchIterator());
+  return SearchIterator(query, centre, max_distance);
 }
 
 template <typename Query, typename SearchIterator = search_iterator<Query, 1>>
-CUDA_HOST_DEVICE iterator_range<SearchIterator>
+CUDA_HOST_DEVICE SearchIterator
 manhatten_search(const Query &query, const typename Query::double_d &centre,
                  const double max_distance) {
-  return iterator_range<SearchIterator>(
-      SearchIterator(query, centre, max_distance), SearchIterator());
+  return SearchIterator(query, centre, max_distance);
 }
 
 template <typename Query, typename SearchIterator = search_iterator<Query, 2>>
-CUDA_HOST_DEVICE iterator_range<SearchIterator>
+CUDA_HOST_DEVICE SearchIterator
 euclidean_search(const Query &query, const typename Query::double_d &centre,
                  const double max_distance) {
-  return iterator_range<SearchIterator>(
-      SearchIterator(query, centre, max_distance), SearchIterator());
+  return SearchIterator(query, centre, max_distance);
 }
 
 template <int LNormNumber, typename Query,
           typename SearchIterator = search_iterator<Query, LNormNumber>>
-CUDA_HOST_DEVICE iterator_range<SearchIterator>
+CUDA_HOST_DEVICE SearchIterator
 distance_search(const Query &query, const typename Query::double_d &centre,
                 const double max_distance) {
-  return iterator_range<SearchIterator>(
-      SearchIterator(query, centre, max_distance), SearchIterator());
+  return SearchIterator(query, centre, max_distance);
 }
 
 template <typename Query, typename Iterator = bucket_pair_iterator<Query>>
