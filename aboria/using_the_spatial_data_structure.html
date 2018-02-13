@@ -119,14 +119,31 @@ MathJax.Hub.Config({
       we can create a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/child_iterator.html" title="Struct child_iterator">Aboria::NeighbourQueryBase::child_iterator</a></code>.
       This is the lowest level data structure iterator, and allows you to iterate
       through a set of child nodes attached to a single parent node within a tree
-      structure. Note that all the spatial data structures in Aboria are considered
-      trees. For the octtree and kdtree data structures, this description is obvious,
-      but the cell list is also treated as a tree, in this case a tree with one root
-      node having N children, where N is the total number of buckets in the cell
-      list.
+      structure.
     </p>
+<div class="note"><table border="0" summary="Note">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="../images/note.png"></td>
+<th align="left">Note</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        All the spatial data structures in Aboria are considered trees. For the octtree
+        and kdtree data structures, this description is obvious, but the cell list
+        is also treated as a tree, in this case a tree with one root node having
+        N children, where N is the total number of buckets in the cell list.
+      </p></td></tr>
+</table></div>
+<div class="note"><table border="0" summary="Note">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="../images/note.png"></td>
+<th align="left">Note</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        Aboria tends to use the terms nodes and buckets fairly interchangably.
+      </p></td></tr>
+</table></div>
 <p>
-      You can create a child_iterator by using the <code class="computeroutput">const</code>
+      You can create a child_iterator by using the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794791424-bb">Aboria::NeighbourQueryBase::get_children</a></code>
       function. This creates a child_iterator that loops through the children of
       the root node of the tree. We will use this iterator to loop through all these
       children and print out the spatial bounds of each node. In order to determine
@@ -140,9 +157,9 @@ MathJax.Hub.Config({
 <span class="special">}</span>
 </pre>
 <p>
-      Above we use the <code class="computeroutput">Aboria::NeighbourQueryBase::get_bounds</code>
-      function to get the bounds of the child iterator. This returns a <code class="computeroutput">Aboria::detail::bbox</code> class that contains
-      the minimum and maximum spatial extents of the node pointed to by <code class="computeroutput"><span class="identifier">i</span></code>.
+      Above we use the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794799472-bb">Aboria::NeighbourQueryBase::get_bounds</a></code>
+      function to get the bounds of the child iterator. This returns a <code class="computeroutput">Aboria::bbox</code> class that contains the minimum
+      and maximum spatial extents of the node pointed to by <code class="computeroutput"><span class="identifier">i</span></code>.
     </p>
 <p>
       Note that here we are using the default spatial data structure, a cell list
@@ -170,8 +187,8 @@ MathJax.Hub.Config({
       a full oct-tree, dividing the spatial domain into a hierarchical set of boxes
       that make up our tree data structure. The simplest iteration we might want
       to do on the tree is a depth-first iteration, which is easiest achieved by
-      recursion. The <code class="computeroutput">Aboria::NeighbourQueryBase::get_children</code>
-      function can be used to get the children of a <code class="computeroutput"><span class="identifier">child_iterator</span></code>,
+      recursion. The <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794791424-bb">Aboria::NeighbourQueryBase::get_children</a></code>
+      function can be used to get the children of a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/child_iterator.html" title="Struct child_iterator">Aboria::NeighbourQueryBase::child_iterator</a></code>,
       and using a C++ lambda function to provide the recursion we can implement a
       depth-first iteration like so
     </p>
@@ -193,22 +210,23 @@ MathJax.Hub.Config({
       to allow you to write a loop equivalent to the recursive depth-first code given
       above.
     </p>
+<p>
+      The <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794848960-bb">Aboria::NeighbourQueryBase::get_subtree</a></code>
+      function returns a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/all_iterator.html" title="Struct all_iterator">Aboria::NeighbourQueryBase::all_iterator</a></code>
+      that performs a depth-first iteration over the tree. Note that you can also
+      pass in a child_iterator to <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794848960-bb">Aboria::NeighbourQueryBase::get_subtree</a></code>
+      to iterate over the sub-tree below a particular node of the tree.
+    </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"subtree depth-first"</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
 <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_subtree</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
   <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_bounds</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
 <span class="special">}</span>
 </pre>
 <p>
-      The <code class="computeroutput">Aboria::NeighbourQueryBase::get_subtree</code>
-      function returns a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/all_iterator.html" title="Struct all_iterator">Aboria::NeighbourQueryBase::all_iterator</a></code>
-      that performs a depth-first iteration over the tree. Note that you can also
-      pass in a child_iterator to <code class="computeroutput">Aboria::NeighbourQueryBase::get_subtree</code>
-      to iterate over the sub-tree below a particular node of the tree.
-    </p>
-<p>
       You might also want to distinguish between leaf nodes (nodes with no children)
-      and non-leaf nodes. You can do this with the <code class="computeroutput">Aboria::NeighbourQueryBase:is_leaf_node</code>
-      function, which can be used like so
+      and non-leaf nodes. You can do this with the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794784800-bb">Aboria::NeighbourQueryBase::is_leaf_node</a></code>
+      function, which takes a reference to a node (rather than an iterator), and
+      can be used like so
     </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"subtree depth-first showing leaf nodes"</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
 <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">query_octtree</span><span class="special">.</span><span class="identifier">get_subtree</span><span class="special">();</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
@@ -223,8 +241,10 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Leaf nodes in the tree are the only nodes that contain particles. You can loop
-      through all the particles in a given leaf node using the <code class="computeroutput">Aboria::NeighbourQueryBase::get_bucket_particles()</code>
-      function, which returns an iterator.
+      through all the particles in a given leaf node using the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794816528-bb">Aboria::NeighbourQueryBase::get_bucket_particles</a></code>
+      function, which returns an iterator. Note for non-leaf nodes, the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794816528-bb">Aboria::NeighbourQueryBase::get_bucket_particles</a></code>
+      will return an iterator that is immediatelly false, so this loop is safe even
+      for non-leaf nodes.
     </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"subtree depth-first showing leaf nodes and particles"</span>
           <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
@@ -245,13 +265,25 @@ MathJax.Hub.Config({
 <p>
       Aboria also provides functions to query leaf nodes, or buckets, within a certain
       distance of a point, and these are used internally for the neighbour search
-      functionality discussed in earlier sections. You can use the <code class="computeroutput">Aboria::NeighbourQueryBase::get_buckets_near_point()</code>
+      functionality discussed in earlier sections. You can use the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794831344-bb">Aboria::NeighbourQueryBase::get_buckets_near_point</a></code>
       function, which returns a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/query_iterator.html" title="Struct template query_iterator">Aboria::NeighbourQueryBase::query_iterator</a></code>
       of all the buckets with a given distance of a point. This function also takes
       a template argument <code class="computeroutput"><span class="identifier">P</span></code>, which
       refers to the p-norm distance that it uses (i.e. P=2 is the standard euclidean
-      distance)
+      distance).
     </p>
+<div class="caution"><table border="0" summary="Caution">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
+<th align="left">Caution</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+        The distance search provided by <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71601794831344-bb">Aboria::NeighbourQueryBase::get_buckets_near_point</a></code>
+        does not respect the periodicity of the domain, so if you did a search near
+        a lhs edge of a periodic domain, it would not pick up buckets on the neighbouring
+        periodic rhs edge.
+      </p></td></tr>
+</table></div>
 <pre class="programlisting"><span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">P</span> <span class="special">=</span> <span class="number">2</span><span class="special">;</span>
 <span class="keyword">const</span> <span class="identifier">vdouble2</span> <span class="identifier">search_point</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0.5</span><span class="special">,</span> <span class="number">0.5</span><span class="special">);</span>
 <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">search_radius</span> <span class="special">=</span> <span class="number">0.1</span><span class="special">;</span>
