@@ -968,8 +968,6 @@ public:
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, true, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, false, false);
-    helper_d_random<2, VectorType, SearchMethod>(1000, 0.1, 10, true, false);
-    helper_d_random<2, VectorType, SearchMethod>(1000, 0.1, 10, false, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, false, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 1, true, false);
@@ -980,13 +978,9 @@ public:
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 10, false, false);
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 1, true, false);
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 1, false, false);
-    helper_d_random<4, VectorType, SearchMethod>(1000, 0.2, 10, true, false);
-    helper_d_random<4, VectorType, SearchMethod>(1000, 0.2, 10, false, false);
 
     if (test_push_back) {
       helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, true);
-      helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, true);
-      helper_d_random<2, VectorType, SearchMethod>(1000, 0.1, 10, true, true);
       helper_d_random<2, VectorType, SearchMethod>(1000, 0.1, 10, false, true);
       helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, true);
       helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, false, true);
@@ -1015,10 +1009,6 @@ public:
                                                                    true, false);
     helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(
         1000, 0.1, false, false);
-    helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(1000, 0.1,
-                                                                   true, false);
-    helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(
-        1000, 0.1, false, false);
     helper_d_random_fast_bucketsearch<2, VectorType, SearchMethod>(1000, 0.1,
                                                                    true, false);
     helper_d_random_fast_bucketsearch<2, VectorType, SearchMethod>(
@@ -1039,14 +1029,6 @@ public:
                                                                    true, false);
     helper_d_random_fast_bucketsearch<3, VectorType, SearchMethod>(
         1000, 0.2, false, false);
-    helper_d_random_fast_bucketsearch<3, VectorType, SearchMethod>(1000, 0.2,
-                                                                   true, false);
-    helper_d_random_fast_bucketsearch<3, VectorType, SearchMethod>(
-        1000, 0.2, false, false);
-    helper_d_random_fast_bucketsearch<4, VectorType, SearchMethod>(1000, 0.2,
-                                                                   true, false);
-    helper_d_random_fast_bucketsearch<4, VectorType, SearchMethod>(
-        1000, 0.2, false, false);
 
     if (test_push_back) {
       helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(
@@ -1061,10 +1043,6 @@ public:
           1000, 0.5, true, true);
       helper_d_random_fast_bucketsearch<2, VectorType, SearchMethod>(
           1000, 0.5, false, true);
-      helper_d_random_fast_bucketsearch<3, VectorType, SearchMethod>(
-          1000, 0.2, true, true);
-      helper_d_random_fast_bucketsearch<3, VectorType, SearchMethod>(
-          1000, 0.2, false, true);
     }
   }
 
