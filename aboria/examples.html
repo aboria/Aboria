@@ -168,19 +168,9 @@ MathJax.Hub.Config({
          * loop over all neighbouring particles within a euclidean distance
          * of size "diameter"
          */</span>
-        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">tpl</span> <span class="special">:</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span>
-                                         <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">),</span> <span class="identifier">diameter</span><span class="special">))</span> <span class="special">{</span>
-
-          <span class="comment">/*
-           * tpl variable is a tuple containing:
-           *  (0) -&gt; neighbouring particle value_type
-           *  (1) -&gt; relative position of neighbouring particle
-           *         from query point
-           *  e.g.
-           *
-           *  const vdouble2&amp; dx = std::get&lt;1&gt;(tpl);
-           *  const typename container_type::value_type&amp; j = std::get&lt;0&gt;(tpl);
-           */</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">),</span>
+                                       <span class="identifier">diameter</span><span class="special">);</span>
+             <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
           <span class="identifier">free_position</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
           <span class="keyword">break</span><span class="special">;</span>
         <span class="special">}</span>
@@ -486,17 +476,10 @@ MathJax.Hub.Config({
         <span class="comment">/*
          * loop over all neighbouring particles within "dem_diameter" distance
          */</span>
-        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">tpl</span> <span class="special">:</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">dem</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">),</span>
-                                         <span class="identifier">dem_diameter</span><span class="special">))</span> <span class="special">{</span>
-          <span class="comment">/*
-           * tpl variable is a tuple containing:
-           *  (0) -&gt; neighbouring particle value_type
-           *  (1) -&gt; relative position of neighbouring particle
-           *         from query point
-           */</span>
-          <span class="keyword">const</span> <span class="identifier">vdouble3</span> <span class="special">&amp;</span><span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">1</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
-          <span class="keyword">const</span> <span class="identifier">dem_type</span><span class="special">::</span><span class="identifier">value_type</span> <span class="special">&amp;</span><span class="identifier">j</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">get</span><span class="special">&lt;</span><span class="number">0</span><span class="special">&gt;(</span><span class="identifier">tpl</span><span class="special">);</span>
-          <span class="keyword">if</span> <span class="special">(</span><span class="identifier">dx</span><span class="special">.</span><span class="identifier">norm</span><span class="special">()</span> <span class="special">&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">j</span><span class="special">)</span> <span class="special">+</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">))</span> <span class="special">{</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">dem</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">),</span>
+                                       <span class="identifier">dem_diameter</span><span class="special">);</span>
+             <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+          <span class="keyword">if</span> <span class="special">(</span><span class="identifier">j</span><span class="special">.</span><span class="identifier">dx</span><span class="special">().</span><span class="identifier">norm</span><span class="special">()</span> <span class="special">&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(*</span><span class="identifier">j</span><span class="special">)</span> <span class="special">+</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">radius</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">))</span> <span class="special">{</span>
             <span class="identifier">free_position</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
             <span class="keyword">break</span><span class="special">;</span>
           <span class="special">}</span>
