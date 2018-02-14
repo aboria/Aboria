@@ -296,21 +296,22 @@ public:
     Given this assumption, a fast neighbour search would be to simply look in
     all the possible pairs of neighbouring cells for possible neighbouring
     particle pairs. To enable this, Aboria provides the [funcref
-    Aboria::get_neighbouring_buckets] function, which returns an iterator range
-    containing all possible pairs of neighbouring buckets. The user can then
-    iterator over each bucket pair, looping through all the particle within in
-    bucket using either the [memberref
+    Aboria::get_neighbouring_buckets] function, which returns an iterator
+    that steps through all possible pairs of neighbouring buckets. The user can
+    then iterate over each bucket pair, looping through all the particle within
+    in bucket using either the [memberref
     Aboria::CellListQuery::get_bucket_particles] or [memberref
     Aboria::CellListOrderedQuery::get_bucket_particles] functions. For
     example, to count up the number of neighbours within a distance of `radius`,
     you might write:
 
     */
-    for (auto &ij : get_neighbouring_buckets(particles.get_query())) {
-      const auto &i = std::get<0>(ij); // bucket i
-      const auto &j = std::get<1>(ij); // bucket j
+    for (auto ij = get_neighbouring_buckets(particles.get_query()); ij != false;
+         ++ij) {
+      const auto &i = std::get<0>(*ij); // bucket i
+      const auto &j = std::get<1>(*ij); // bucket j
       // position offset to apply to particles in i (for periodic boundaries)
-      const auto &poffset = std::get<2>(ij);
+      const auto &poffset = std::get<2>(*ij);
       for (auto pi = particles.get_query().get_bucket_particles(i); pi != false;
            ++pi) {
         const Vector<double, 3> pi_position = get<position>(*pi) + poffset;
@@ -912,7 +913,7 @@ public:
     // Aboria search
     t0 = Clock::now();
     auto pair_it = get_neighbouring_buckets(particles.get_query());
-    detail::for_each(std::begin(pair_it), std::end(pair_it),
+    detail::for_each(pair_it, decltype(pair_it)(),
                      aboria_fast_bucketsearch_check_neighbour<query_type>(
                          particles.get_query(), r));
     auto self_it = particles.get_query().get_subtree();

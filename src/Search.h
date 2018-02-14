@@ -457,11 +457,20 @@ public:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator==(const bucket_pair_iterator &rhs) { return equal(rhs); }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator!=(const bucket_pair_iterator &rhs) {
     return !operator==(rhs);
   }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
 private:
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -470,6 +479,10 @@ private:
     return m_valid ? other.m_valid && m_i == other.m_i && m_j == other.m_j
                    : !other.m_valid;
   }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_valid == other; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -646,9 +659,8 @@ distance_search(const Query &query, const typename Query::double_d &centre,
 }
 
 template <typename Query, typename Iterator = bucket_pair_iterator<Query>>
-CUDA_HOST_DEVICE iterator_range<Iterator>
-get_neighbouring_buckets(const Query &query) {
-  return iterator_range<Iterator>(Iterator(query), Iterator());
+CUDA_HOST_DEVICE Iterator get_neighbouring_buckets(const Query &query) {
+  return Iterator(query);
 }
 
 } // namespace Aboria
