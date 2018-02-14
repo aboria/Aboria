@@ -709,8 +709,8 @@ public:
       for (auto pairj =
                euclidean_search(b.get_query(), get<position>(ai), radius);
            pairj != false; ++pairj) {
-        const_position_reference dx = *pairj;
-        const_col_reference bj = pairj.dx();
+        const_position_reference dx = pairj.dx();
+        const_col_reference bj = *pairj;
         const size_t j = &get<position>(bj) - get<position>(b).data();
         lhs[i] += m_dx_function(dx, ai, bj) * rhs[j];
       }
@@ -740,8 +740,8 @@ public:
       for (auto pairj =
                euclidean_search(b.get_query(), get<position>(ai), radius);
            pairj != false; ++pairj) {
-        const_position_reference dx = *pairj;
-        const_col_reference bj = pairj.dx();
+        const_position_reference dx = pairj.dx();
+        const_col_reference bj = *pairj;
         const size_t j = &get<position>(bj) - get<position>(b).data();
         lhs.template segment<BlockRows>(i * BlockRows) +=
             m_dx_function(dx, ai, bj) *
