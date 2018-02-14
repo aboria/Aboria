@@ -174,7 +174,7 @@ public:
   CUDA_HOST_DEVICE
   search_iterator &operator=(const search_iterator &) = default;
 
-  const double_b &dx() const { return m_dx; }
+  const double_d &dx() const { return m_dx; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -188,6 +188,7 @@ public:
     increment();
     return *this;
   }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator operator++(int) {
@@ -195,6 +196,7 @@ public:
     operator++();
     return tmp;
   }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t operator-(search_iterator start) const {
@@ -205,6 +207,11 @@ public:
     }
     return count;
   }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  const size_t distance_to_end() const { return search_iterator() - *this; }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator==(const search_iterator &rhs) { return equal(rhs); }

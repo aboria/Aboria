@@ -450,20 +450,21 @@ public:
     test.push_back(p);
 
     int count = 0;
-    for (auto tpl : euclidean_search(
-             test.get_query(), vdouble3(radius / 2, radius / 2, 0), radius)) {
-      (void)tpl;
+    for (auto i = euclidean_search(test.get_query(),
+                                   vdouble3(radius / 2, radius / 2, 0), radius);
+         i != false; ++i) {
+      (void)i;
       count++;
     }
     TS_ASSERT_EQUALS(count, 1);
 
-    auto tpl = euclidean_search(test.get_query(),
-                                vdouble3(radius / 2, radius / 2, 0), radius);
-    TS_ASSERT_EQUALS(std::distance(tpl.begin(), tpl.end()), 1);
+    auto search = euclidean_search(test.get_query(),
+                                   vdouble3(radius / 2, radius / 2, 0), radius);
+    TS_ASSERT_EQUALS(search.distance_to_end(), 1);
 
-    tpl =
+    search =
         euclidean_search(test.get_query(), vdouble3(2 * radius, 0, 0), radius);
-    TS_ASSERT_EQUALS(std::distance(tpl.begin(), tpl.end()), 0);
+    TS_ASSERT_EQUALS(search.distance_to_end(), 0);
   }
 
   template <template <typename, typename> class Vector,
@@ -485,29 +486,28 @@ public:
     get<position>(p) = vdouble3(radius / 2, 0, 0);
     test.push_back(p);
 
-    auto tpl = euclidean_search(test.get_query(), vdouble3(1.1 * radius, 0, 0),
-                                radius);
-    TS_ASSERT_EQUALS(std::distance(tpl.begin(), tpl.end()), 1);
+    auto search = euclidean_search(test.get_query(),
+                                   vdouble3(1.1 * radius, 0, 0), radius);
+    TS_ASSERT_EQUALS(search.distance_to_end(), 1);
 
-    typename Test_type::const_reference pfound =
-        detail::get_impl<0>(*tpl.begin());
+    typename Test_type::const_reference pfound = *search;
     TS_ASSERT_EQUALS(get<id>(pfound), get<id>(test[1]));
 
-    tpl = euclidean_search(test.get_query(), vdouble3(0.9 * radius, 0, 0),
-                           radius);
-    TS_ASSERT_EQUALS(std::distance(tpl.begin(), tpl.end()), 2);
+    search = euclidean_search(test.get_query(), vdouble3(0.9 * radius, 0, 0),
+                              radius);
+    TS_ASSERT_EQUALS(search.distance_to_end(), 2);
 
-    tpl = euclidean_search(test.get_query(), vdouble3(1.6 * radius, 0, 0),
-                           radius);
-    TS_ASSERT_EQUALS(std::distance(tpl.begin(), tpl.end()), 0);
+    search = euclidean_search(test.get_query(), vdouble3(1.6 * radius, 0, 0),
+                              radius);
+    TS_ASSERT_EQUALS(search.distance_to_end(), 0);
 
-    tpl = euclidean_search(test.get_query(),
-                           vdouble3(0.25 * radius, 0.9 * radius, 0), radius);
-    TS_ASSERT_EQUALS(std::distance(tpl.begin(), tpl.end()), 2);
+    search = euclidean_search(test.get_query(),
+                              vdouble3(0.25 * radius, 0.9 * radius, 0), radius);
+    TS_ASSERT_EQUALS(search.distance_to_end(), 2);
 
-    tpl = euclidean_search(test.get_query(),
-                           vdouble3(0.25 * radius, 0.99 * radius, 0), radius);
-    TS_ASSERT_EQUALS(std::distance(tpl.begin(), tpl.end()), 0);
+    search = euclidean_search(
+        test.get_query(), vdouble3(0.25 * radius, 0.99 * radius, 0), radius);
+    TS_ASSERT_EQUALS(search.distance_to_end(), 0);
   }
 
   template <typename Particles, int LNormNumber> struct has_n_neighbours {
@@ -524,9 +524,9 @@ public:
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
-      auto tpl =
+      auto search =
           distance_search<LNormNumber>(query, get<position>(i), max_distance);
-      TS_ASSERT_EQUALS(tpl.end() - tpl.begin(), n);
+      TS_ASSERT_EQUALS(search.distance_to_end(), n);
     }
   };
 
@@ -678,8 +678,9 @@ public:
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
       int count = 0;
-      for (auto tpl : euclidean_search(query, get<position>(i), r)) {
-        (void)tpl;
+      for (auto j = euclidean_search(query, get<position>(i), r); j != false;
+           ++j) {
+        (void)j;
         count++;
       }
       get<neighbours_aboria>(i) = count;
