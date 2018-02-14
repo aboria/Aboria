@@ -192,19 +192,19 @@ std::endl;
 #endif
       for (int i = 0; i < timesteps_per_out; i++) {
         const query_type &query = particles.get_query();
-        detail::for_each(particles.begin(), particles.end(),
-                         [=] CUDA_HOST_DEVICE(raw_reference i) {
-                           vdouble2 force_sum(0, 0);
-                           for (auto tpl : euclidean_search(
-                                    query, get<position>(i), diameter)) {
-                             const vdouble2 &dx = detail::get_impl<1>(tpl);
-                             const double r = dx.norm();
-                             if (r != 0) {
-                               force_sum -= k * (diameter / r - 1) * dx;
-                             }
-                           }
-                           get<velocity>(i) += dt * force_sum / mass;
-                         });
+        detail::for_each(
+            particles.begin(), particles.end(),
+            [=] CUDA_HOST_DEVICE(raw_reference i) {
+              vdouble2 force_sum(0, 0);
+              for (auto j = euclidean_search(query, get<position>(i), diameter);
+                   j != false; ++j) {
+                const double r = j.dx().norm();
+                if (r != 0) {
+                  force_sum -= k * (diameter / r - 1) * j.dx();
+                }
+              }
+              get<velocity>(i) += dt * force_sum / mass;
+            });
 
         detail::for_each(particles.begin(), particles.end(),
                          [=] CUDA_HOST_DEVICE(raw_reference i) {
@@ -218,9 +218,7 @@ std::endl;
   }
   //]
 
-  void test_std_vector_CellList(void) {
-    helper_md<std::vector, CellList>();
-  }
+  void test_std_vector_CellList(void) { helper_md<std::vector, CellList>(); }
 
   void test_std_vector_CellListOrdered(void) {
     helper_md<std::vector, CellListOrdered>();

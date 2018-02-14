@@ -135,22 +135,12 @@ public:
          * loop over all neighbouring particles within a euclidean distance
          * of size "diameter"
          */
-        for (auto tpl : euclidean_search(particles.get_query(),
-                                         get<position>(p), diameter)) {
+        for (auto j = euclidean_search(particles.get_query(), get<position>(p),
+                                       diameter);
+             j != false; ++j) {
           //<-
-          (void)tpl;
+          (void)j;
           //->
-
-          /*
-           * tpl variable is a tuple containing:
-           *  (0) -> neighbouring particle value_type
-           *  (1) -> relative position of neighbouring particle
-           *         from query point
-           *  e.g.
-           *
-           *  const vdouble2& dx = std::get<1>(tpl);
-           *  const typename container_type::value_type& j = std::get<0>(tpl);
-           */
           free_position = false;
           break;
         }

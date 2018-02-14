@@ -131,17 +131,10 @@ public:
         /*
          * loop over all neighbouring particles within "dem_diameter" distance
          */
-        for (auto tpl : euclidean_search(dem.get_query(), get<position>(p),
-                                         dem_diameter)) {
-          /*
-           * tpl variable is a tuple containing:
-           *  (0) -> neighbouring particle value_type
-           *  (1) -> relative position of neighbouring particle
-           *         from query point
-           */
-          const vdouble3 &dx = std::get<1>(tpl);
-          const dem_type::value_type &j = std::get<0>(tpl);
-          if (dx.norm() < get<radius>(j) + get<radius>(p)) {
+        for (auto j = euclidean_search(dem.get_query(), get<position>(p),
+                                       dem_diameter);
+             j != false; ++j) {
+          if (j.dx().norm() < get<radius>(*j) + get<radius>(p)) {
             free_position = false;
             break;
           }

@@ -409,7 +409,7 @@ public:
 
   void update_row_positions() {
     bbox<dimension> row_box(this->m_row_elements.get_min(),
-                                    this->m_row_elements.get_max());
+                            this->m_row_elements.get_max());
     detail::integrate_chebyshev<RowElements, BlockRows, QuadratureOrder>
         integrate(this->m_row_elements, m_order, row_box);
 
@@ -421,9 +421,9 @@ public:
 
   void update_kernel_matrix() {
     bbox<dimension> row_box(this->m_row_elements.get_min(),
-                                    this->m_row_elements.get_max());
+                            this->m_row_elements.get_max());
     bbox<dimension> col_box(this->m_col_elements.get_min(),
-                                    this->m_col_elements.get_max());
+                            this->m_col_elements.get_max());
     detail::ChebyshevRn<dimension> col_Rn(m_order, row_box);
     detail::ChebyshevRn<dimension> row_Rn(m_order, col_box);
 
@@ -444,7 +444,7 @@ public:
 
   void update_col_positions() {
     bbox<dimension> col_box(this->m_col_elements.get_min(),
-                                    this->m_col_elements.get_max());
+                            this->m_col_elements.get_max());
     detail::integrate_chebyshev<ColElements, BlockCols, QuadratureOrder>
         integrate(this->m_col_elements, m_order, col_box);
 
@@ -639,10 +639,11 @@ public:
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       const double radius = m_radius_function(ai);
-      for (auto pairj :
-           euclidean_search(b.get_query(), get<position>(ai), radius)) {
-        const_col_reference bj = detail::get_impl<0>(pairj);
-        const_position_reference dx = detail::get_impl<1>(pairj);
+      for (auto pairj =
+               euclidean_search(b.get_query(), get<position>(ai), radius);
+           pairj != false; ++pairj) {
+        const_col_reference bj = *pairj;
+        const_position_reference dx = pairj.dx();
         const size_t j = &get<position>(bj) - get<position>(b).data();
         const_cast<MatrixType &>(matrix).template block<BlockRows, BlockCols>(
             i * BlockRows, j * BlockCols) =
@@ -665,10 +666,11 @@ public:
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       const double radius = m_radius_function(ai);
-      for (auto pairj :
-           euclidean_search(b.get_query(), get<position>(ai), radius)) {
-        const_col_reference bj = detail::get_impl<0>(pairj);
-        const_position_reference dx = detail::get_impl<1>(pairj);
+      for (auto pairj =
+               euclidean_search(b.get_query(), get<position>(ai), radius);
+           pairj != false; ++pairj) {
+        const_col_reference bj = *pairj;
+        const_position_reference dx = pairj.dx();
         const size_t j = &get<position>(bj) - get<position>(b).data();
         const Block element = static_cast<Block>(m_dx_function(dx, ai, bj));
         for (size_t ii = 0; ii < BlockRows; ++ii) {
@@ -704,10 +706,11 @@ public:
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       const double radius = m_radius_function(ai);
-      for (auto pairj :
-           euclidean_search(b.get_query(), get<position>(ai), radius)) {
-        const_position_reference dx = detail::get_impl<1>(pairj);
-        const_col_reference bj = detail::get_impl<0>(pairj);
+      for (auto pairj =
+               euclidean_search(b.get_query(), get<position>(ai), radius);
+           pairj != false; ++pairj) {
+        const_position_reference dx = *pairj;
+        const_col_reference bj = pairj.dx();
         const size_t j = &get<position>(bj) - get<position>(b).data();
         lhs[i] += m_dx_function(dx, ai, bj) * rhs[j];
       }
@@ -734,10 +737,11 @@ public:
     for (size_t i = 0; i < na; ++i) {
       const_row_reference ai = a[i];
       const double radius = m_radius_function(ai);
-      for (auto pairj :
-           euclidean_search(b.get_query(), get<position>(ai), radius)) {
-        const_position_reference dx = detail::get_impl<1>(pairj);
-        const_col_reference bj = detail::get_impl<0>(pairj);
+      for (auto pairj =
+               euclidean_search(b.get_query(), get<position>(ai), radius);
+           pairj != false; ++pairj) {
+        const_position_reference dx = *pairj;
+        const_col_reference bj = pairj.dx();
         const size_t j = &get<position>(bj) - get<position>(b).data();
         lhs.template segment<BlockRows>(i * BlockRows) +=
             m_dx_function(dx, ai, bj) *
