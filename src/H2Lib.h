@@ -514,9 +514,9 @@ private:
   }
 
 public:
-  const ph2matrix get_ph2matrix() const { return m_h2.get(); }
+  ph2matrix get_ph2matrix() const { return m_h2.get(); }
 
-  const pblock get_pblock() const { return m_block.get(); }
+  pblock get_pblock() const { return m_block.get(); }
 
   H2Lib_LR_Decomposition lr(const double tol) const {
     return H2Lib_LR_Decomposition(get_ph2matrix(), m_block.get(), tol);
@@ -676,7 +676,7 @@ public:
         build_nonstrict_block(row_t, col_t, &eta, admissible_max_cluster),
         del_block);
 
-    static_assert(expansions.block_rows == expansions.block_cols,
+    static_assert(Expansions::block_rows == Expansions::block_cols,
                   "H Matrix only implemented for square kernel matrices");
     m_h = std::unique_ptr<hmatrix, decltype(&del_hmatrix)>(
         build_from_block_hmatrix(m_block.get(),
@@ -780,7 +780,7 @@ public:
     coarsen_hmatrix(m_h.get(), NULL, tol, true);
   }
 
-  const phmatrix get_phmatrix() const { return m_h.get(); }
+  phmatrix get_phmatrix() const { return m_h.get(); }
 
   HLib_LR_Decomposition lr(const double tol) const {
     return HLib_LR_Decomposition(get_phmatrix(), tol);

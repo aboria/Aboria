@@ -4,7 +4,11 @@ macro(aboria_cxx_test target target_file use_cuda_function)
     foreach(filename IN LISTS list_var)
         set(_test_files ${_test_files} ${CMAKE_CURRENT_SOURCE_DIR}/${filename})
     endforeach()
-    message("\t${_test_files}")
+    if (${use_cuda_function})
+        message("\t${_test_files} (CUDA)")
+    else()
+        message("\t${_test_files}")
+    endif()
     get_filename_component(CPP_FILE_NAME ${target_file} NAME)
     set(CPP_FULL_NAME "${CMAKE_CURRENT_BINARY_DIR}/${CPP_FILE_NAME}")
     add_custom_command(
@@ -82,6 +86,7 @@ if (Aboria_RUN_BENCHMARKS)
     set(benchmark_test_suites
             SpeedTest
             BenchmarkFMM
+            BenchmarkHPC
             )
     foreach(test_suite ${benchmark_test_suites})
         option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
@@ -100,6 +105,11 @@ set(DocGettingStartedTest
 set(BenchmarkFMMFile benchmark_fmm.h)
 set(BenchmarkFMM
     test_multiquadric
+    )
+
+set(BenchmarkHPCFile benchmark_hpc.h)
+set(BenchmarkHPC
+    test_md_step
     )
 
 set(SpeedTestFile speed_test.h)

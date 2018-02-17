@@ -39,9 +39,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Get.h"
 #include "Log.h"
 #include "NeighbourSearchBase.h"
+#include "SpatialUtil.h"
 #include "Traits.h"
 #include "Vector.h"
-#include "SpatialUtil.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <iostream>
 #include <set>
@@ -1081,9 +1081,9 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   template <int LNormNumber>
-  const box_type get_bounds(const query_iterator<LNormNumber> &qi) const {
+  CUDA_HOST_DEVICE const box_type
+  get_bounds(const query_iterator<LNormNumber> &qi) const {
     box_type bounds;
     bounds.bmin = (*qi) * m_bucket_side_length + m_bounds.bmin;
     bounds.bmax = ((*qi) + 1) * m_bucket_side_length + m_bounds.bmin;
@@ -1133,9 +1133,8 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bbox<dimension> get_bucket_bbox(const reference bucket) const {
-    return bbox<dimension>(
-        bucket * m_bucket_side_length + m_bounds.bmin,
-        (bucket + 1) * m_bucket_side_length + m_bounds.bmin);
+    return bbox<dimension>(bucket * m_bucket_side_length + m_bounds.bmin,
+                           (bucket + 1) * m_bucket_side_length + m_bounds.bmin);
   }
 
   ///

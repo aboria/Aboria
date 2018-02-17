@@ -44,8 +44,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "CudaInclude.h"
 #include "Particles.h"
-#include "detail/Algorithms.h"
 #include "SpatialUtil.h"
+#include "detail/Algorithms.h"
 
 namespace Aboria {
 
@@ -430,8 +430,7 @@ template <typename traits> struct octtree<traits>::classify_point {
   int max_level;
 
   // Create the classifier
-  classify_point(const bbox<dimension> &b, int lvl)
-      : box(b), max_level(lvl) {}
+  classify_point(const bbox<dimension> &b, int lvl) : box(b), max_level(lvl) {}
 
   // Classify a point
   inline CUDA_HOST_DEVICE int operator()(const double_d &p) {
@@ -738,8 +737,9 @@ template <typename Traits> struct octtree_query {
   ///
   /// @copydoc NeighbourQueryBase::get_bounds()
   ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN CUDA_HOST_DEVICE static const box_type
-  get_bounds(const child_iterator &ci) {
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  static box_type get_bounds(const child_iterator &ci) {
     return ci.get_bounds();
   }
 
@@ -747,9 +747,9 @@ template <typename Traits> struct octtree_query {
   /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   template <int LNormNumber>
-  static const box_type get_bounds(const query_iterator<LNormNumber> &qi) {
+  CUDA_HOST_DEVICE static const box_type
+  get_bounds(const query_iterator<LNormNumber> &qi) {
     return qi.get_bounds();
   }
 

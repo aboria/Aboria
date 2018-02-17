@@ -44,17 +44,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "CudaInclude.h"
 #include "Get.h"
 #include "Log.h"
+#include "SpatialUtil.h"
 #include "StaticVector.h"
 #include "Traits.h"
 #include "Vector.h"
 #include "detail/Algorithms.h"
 #include "detail/Distance.h"
-#include "SpatialUtil.h"
 #include <stack>
 
 namespace Aboria {
-
-
 
 ///
 /// @brief lightweight object that holds two iterators to the beginning and end
@@ -547,7 +545,7 @@ public:
   ///
   /// @return the number of particles in each bucket (average or maximum)
   ///
-  const double get_max_bucket_size() const { return m_n_particles_in_leaf; }
+  double get_max_bucket_size() const { return m_n_particles_in_leaf; }
 
 protected:
   ///

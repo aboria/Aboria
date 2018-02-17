@@ -33,96 +33,82 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef STATIC_VECTOR_H_
 #define STATIC_VECTOR_H_
 
-#include <type_traits>
 #include "CudaInclude.h"
+#include <type_traits>
 
 namespace Aboria {
 
-template<class T, std::size_t N>
-class static_vector
-{
-    // properly aligned uninitialized storage for N T's
-    typename std::aligned_storage<sizeof(T), alignof(T)>::type data[N];
-    size_t m_size = 0;
- 
+template <class T, std::size_t N> class static_vector {
+  // properly aligned uninitialized storage for N T's
+  typename std::aligned_storage<sizeof(T), alignof(T)>::type data[N];
+  size_t m_size = 0;
+
 public:
-    CUDA_HOST_DEVICE
-    void push_back (const T& val) {
-        ASSERT_CUDA(m_size < N);
-        new(data+m_size) T(val);
-        ++m_size;
-    }
+  CUDA_HOST_DEVICE
+  void push_back(const T &val) {
+    ASSERT_CUDA(m_size < N);
+    new (data + m_size) T(val);
+    ++m_size;
+  }
 
-    CUDA_HOST_DEVICE
-    void push_back (T&& val) {
-        ASSERT_CUDA(m_size < N);
-        new(data+m_size) T(val);
-        ++m_size;
-    }
+  CUDA_HOST_DEVICE
+  void push_back(T &&val) {
+    ASSERT_CUDA(m_size < N);
+    new (data + m_size) T(val);
+    ++m_size;
+  }
 
-    // Create an object in aligned storage
-    CUDA_HOST_DEVICE
-    template<typename ...Args> void emplace_back(Args&&... args) {
-        ASSERT_CUDA(m_size < N);
-        new(data+m_size) T(std::forward<Args>(args)...);
-        ++m_size;
-    }
+  // Create an object in aligned storage
+  template <typename... Args>
+  CUDA_HOST_DEVICE void emplace_back(Args &&... args) {
+    ASSERT_CUDA(m_size < N);
+    new (data + m_size) T(std::forward<Args>(args)...);
+    ++m_size;
+  }
 
-    CUDA_HOST_DEVICE
-    void resize (size_t n) {
-        m_size = n;
-    }
+  CUDA_HOST_DEVICE
+  void resize(size_t n) { m_size = n; }
 
-    CUDA_HOST_DEVICE
-    size_t size () const {
-        return m_size;
-    }
+  CUDA_HOST_DEVICE
+  size_t size() const { return m_size; }
 
-    CUDA_HOST_DEVICE
-    bool empty() const {
-        return m_size==0;
-    }
+  CUDA_HOST_DEVICE
+  bool empty() const { return m_size == 0; }
 
-    CUDA_HOST_DEVICE
-    void pop_back() {
-        --m_size;
-        reinterpret_cast<T*>(data+m_size)->~T();
-    }
+  CUDA_HOST_DEVICE
+  void pop_back() {
+    --m_size;
+    reinterpret_cast<T *>(data + m_size)->~T();
+  }
 
-    CUDA_HOST_DEVICE
-    T& back() {
-        return *reinterpret_cast<T*>(data+m_size-1);
-    }
+  CUDA_HOST_DEVICE
+  T &back() { return *reinterpret_cast<T *>(data + m_size - 1); }
 
-    CUDA_HOST_DEVICE
-    const T& back() const {
-        return *reinterpret_cast<const T*>(data+m_size-1);
-    }
+  CUDA_HOST_DEVICE
+  const T &back() const {
+    return *reinterpret_cast<const T *>(data + m_size - 1);
+  }
 
-    // Access an object in aligned storage
-    CUDA_HOST_DEVICE
-    const T& operator[](std::size_t pos) const {
-        return *reinterpret_cast<const T*>(data+pos);
-    }
+  // Access an object in aligned storage
+  CUDA_HOST_DEVICE
+  const T &operator[](std::size_t pos) const {
+    return *reinterpret_cast<const T *>(data + pos);
+  }
 
-    CUDA_HOST_DEVICE
-    T& operator[](std::size_t pos) {
-        return *reinterpret_cast<T*>(data+pos);
-    }
- 
-    // Delete objects from aligned storage
-    CUDA_HOST_DEVICE
-    ~static_vector() {
-        for(std::size_t pos = 0; pos < m_size; ++pos) {
-            reinterpret_cast<T*>(data+pos)->~T();
-        }
-    }
+  CUDA_HOST_DEVICE
+  T &operator[](std::size_t pos) { return *reinterpret_cast<T *>(data + pos); }
 
+  // Delete objects from aligned storage
+  CUDA_HOST_DEVICE
+  ~static_vector() {
+    for (std::size_t pos = 0; pos < m_size; ++pos) {
+      reinterpret_cast<T *>(data + pos)->~T();
+    }
+  }
 };
-}
+} // namespace Aboria
 
 #endif

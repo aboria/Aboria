@@ -210,7 +210,7 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  const size_t distance_to_end() const { return search_iterator() - *this; }
+  size_t distance_to_end() const { return search_iterator() - *this; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
