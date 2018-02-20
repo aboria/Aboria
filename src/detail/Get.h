@@ -16,6 +16,26 @@
 
 #if __aboria_have_thrust__
 namespace thrust {
+// provide specialisations of thrust::get and thrust::tuple_size
+
+/*
+template <int N, typename Tuple, typename mpl_vector_type>
+auto get<N>(Aboria::getter_type<Tuple, mpl_vector_type> &arg) {
+  return thrust::get<N>(arg);
+}
+
+template <int N, typename Tuple, typename mpl_vector_type>
+auto get<N>(const Aboria::getter_type<Tuple, mpl_vector_type> &arg) {
+  return thrust::get<N>(arg);
+}
+*/
+
+template <typename Tuple, typename mpl_vector_type>
+struct tuple_size<Aboria::getter_type<Tuple, mpl_vector_type>>
+    : public thrust::tuple_size<Tuple> {
+  typedef typename Tuple::blah test;
+};
+
 template <typename mpl_vector_type, typename tuple_type>
 struct iterator_system<Aboria::zip_iterator<tuple_type, mpl_vector_type>> {};
 
@@ -162,7 +182,6 @@ __host__ __device__ typename detail::enable_if_unwrappable<
         Aboria::getter_type<TUPLE, mpl_vector_type>>::type>::type
 raw_reference_cast(Aboria::getter_type<TUPLE, mpl_vector_type> t) {
   thrust::detail::aboria_addition::raw_reference_caster f;
-  thrust::detail::aboria_addition::raw_reference_caster::test g;
 
   // note that we pass raw_reference_tuple_helper, not raw_reference as the
   // unary metafunction the different way that raw_reference_tuple_helper
