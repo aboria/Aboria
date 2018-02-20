@@ -181,13 +181,14 @@ __host__ __device__ typename detail::enable_if_unwrappable<
     typename detail::raw_reference<
         Aboria::getter_type<TUPLE, mpl_vector_type>>::type>::type
 raw_reference_cast(Aboria::getter_type<TUPLE, mpl_vector_type> t) {
-  thrust::detail::aboria_addition::raw_reference_caster f;
+  thrust::detail::raw_reference_caster f;
 
   // note that we pass raw_reference_tuple_helper, not raw_reference as the
   // unary metafunction the different way that raw_reference_tuple_helper
   // unwraps tuples is important
   return thrust::detail::tuple_host_device_transform<
-      detail::raw_reference_detail::raw_reference_tuple_helper>(t, f);
+      detail::raw_reference_detail::raw_reference_tuple_helper>(t.get_tuple(),
+                                                                f);
 } // end raw_reference_cast
 
 } // namespace thrust
