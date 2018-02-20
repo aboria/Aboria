@@ -162,6 +162,7 @@ __host__ __device__ typename detail::enable_if_unwrappable<
         Aboria::getter_type<TUPLE, mpl_vector_type>>::type>::type
 raw_reference_cast(Aboria::getter_type<TUPLE, mpl_vector_type> t) {
   thrust::detail::aboria_addition::raw_reference_caster f;
+  thrust::detail::aboria_addition::raw_reference_caster::test g;
 
   // note that we pass raw_reference_tuple_helper, not raw_reference as the
   // unary metafunction the different way that raw_reference_tuple_helper
