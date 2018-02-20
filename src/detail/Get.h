@@ -16,25 +16,6 @@
 
 #if __aboria_have_thrust__
 namespace thrust {
-// provide specialisations of thrust::get and thrust::tuple_size
-
-/*
-template <int N, typename Tuple, typename mpl_vector_type>
-auto get<N>(Aboria::getter_type<Tuple, mpl_vector_type> &arg) {
-  return thrust::get<N>(arg);
-}
-
-template <int N, typename Tuple, typename mpl_vector_type>
-auto get<N>(const Aboria::getter_type<Tuple, mpl_vector_type> &arg) {
-  return thrust::get<N>(arg);
-}
-*/
-
-template <typename Tuple, typename mpl_vector_type>
-struct tuple_size<Aboria::getter_type<Tuple, mpl_vector_type>>
-    : public thrust::tuple_size<Tuple> {
-  typedef typename Tuple::blah test;
-};
 
 template <typename mpl_vector_type, typename tuple_type>
 struct iterator_system<Aboria::zip_iterator<tuple_type, mpl_vector_type>> {};
@@ -132,7 +113,10 @@ private:
 public:
   typedef typename eval_if<
       is_unwrappable<tuple_type>::value,
-      raw_reference_detail::raw_reference_tuple_helper<tuple_type>,
+      identity_<
+          Aboria::getter_type<typename raw_reference_detail::
+                                  raw_reference_tuple_helper<tuple_type>::type,
+                              mpl_vector_type>>,
       add_reference<Aboria::getter_type<TUPLE, mpl_vector_type>>>::type type;
 };
 
@@ -181,14 +165,17 @@ __host__ __device__ typename detail::enable_if_unwrappable<
     typename detail::raw_reference<
         Aboria::getter_type<TUPLE, mpl_vector_type>>::type>::type
 raw_reference_cast(Aboria::getter_type<TUPLE, mpl_vector_type> t) {
+  typedef typename detail::raw_reference<
+      Aboria::getter_type<TUPLE, mpl_vector_type>>::type return_type;
+
   thrust::detail::raw_reference_caster f;
 
   // note that we pass raw_reference_tuple_helper, not raw_reference as the
   // unary metafunction the different way that raw_reference_tuple_helper
   // unwraps tuples is important
-  return thrust::detail::tuple_host_device_transform<
-      detail::raw_reference_detail::raw_reference_tuple_helper>(t.get_tuple(),
-                                                                f);
+  return return_type(thrust::detail::tuple_host_device_transform<
+                     detail::raw_reference_detail::raw_reference_tuple_helper>(
+      t.get_tuple(), f));
 } // end raw_reference_cast
 
 } // namespace thrust
