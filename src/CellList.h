@@ -225,7 +225,6 @@ private:
            "m_dirty_buckets size inconsistent");
     for (size_t i = 0; i < m_linked_list.size(); ++i) {
       ASSERT(i < m_linked_list.size(), "i index too large");
-      ASSERT(i >= 0, "i index less than zero");
       ASSERT(m_dirty_buckets[i] < m_buckets.size(),
              "m_dirty_buckets not right");
       ASSERT(m_dirty_buckets[i] >= 0, "m_dirty_buckets not right");

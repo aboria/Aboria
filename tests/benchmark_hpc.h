@@ -151,8 +151,14 @@ public:
                  << "OPENMP_cell_list_ordered" + std::to_string(i);
       file_step << std::setw(25)
                 << "OPENMP_cell_list_ordered" + std::to_string(i);
+
       file_step << std::setw(25) << "OPENMP_octtree" + std::to_string(i);
       file_setup << std::setw(25) << "OPENMP_octtree" + std::to_string(i);
+
+#if not defined(__CUDACC__)
+      file_setup << std::setw(25) << "OPENMP_cell_list" + std::to_string(i);
+      file_step << std::setw(25) << "OPENMP_cell_list" + std::to_string(i);
+#endif
     }
 
     file_setup << std::endl;
@@ -178,7 +184,7 @@ public:
             generator.discard(idx * D);
             double_d p;
             for (size_t d = 0; d < D; ++d) {
-              p[i] = U(generator);
+              p[d] = U(generator);
             }
             return p;
           });
@@ -205,6 +211,13 @@ public:
             md_step<thrust::device_vector, octtree, D>(positions, repeatsN);
         file_setup << std::setw(25) << time_setup;
         file_step << std::setw(25) << time_step;
+
+#if not defined(__CUDACC__)
+        std::tie(time_setup, time_step) =
+            md_step<thrust::device_vector, CellList, D>(positions, repeatsN);
+        file_setup << std::setw(25) << time_setup;
+        file_step << std::setw(25) << time_step;
+#endif
       }
 
       file_setup << std::endl;

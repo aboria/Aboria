@@ -77,15 +77,58 @@ template <typename Query, int LNormNumber> class search_iterator {
   typedef typename particle_iterator::pointer p_pointer;
   typedef lattice_iterator<dimension> periodic_iterator_type;
 
+  ///
+  /// @brief true if the iterator has run out of particles within the search
+  /// distance
+  ///
   bool m_valid;
+
+  ///
+  /// @brief the central point for the distance search
+  ///
   double_d m_r;
+
+  ///
+  /// @brief a vector to store the distance between m_r and the current
+  /// candidate point
+  ///
   double_d m_dx;
+
+  ///
+  /// @brief pointer to the query object for the spatial data structure
+  ///
   const Query *m_query;
+
+  ///
+  /// @brief the search distance
+  ///
   double m_max_distance;
+
+  ///
+  /// @brief the search distance squared
+  ///
   double m_max_distance2;
+
+  ///
+  /// @brief iterator for searching periodic domains, iterates over the periodic
+  /// lattice
+  ///
   periodic_iterator_type m_current_periodic;
+
+  ///
+  /// @brief the current central search position, taking into account
+  /// periodicity
+  ///
   double_d m_current_point;
+
+  ///
+  /// @brief the current candidate bucket
+  ///
   query_iterator m_current_bucket;
+
+  ///
+  /// @brief current iterator into candidate bucket
+  ///
   particle_iterator m_current_particle;
 
 public:
@@ -95,6 +138,10 @@ public:
   typedef p_value_type value_type;
   typedef std::ptrdiff_t difference_type;
 
+  ///
+  /// @brief returns iterator for periodic lattice, given the periodicity of the
+  /// domain
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static periodic_iterator_type get_periodic_range(const bool_d is_periodic) {
@@ -106,18 +153,37 @@ public:
     return periodic_iterator_type(start, end);
   }
 
+  ///
+  /// @brief constructs an invalid iterator that can be used as an end()
+  /// iterator
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator() : m_valid(false) {}
 
+  ///
+  /// @brief copy constructor
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator(const search_iterator &) = default;
 
+  ///
+  /// @brief move constructor
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator(search_iterator &&) = default;
 
+  ///
+  /// @brief should generally use this constructor to make a search iterator.
+  /// Returns an iterator that will search around the given point, and iterate
+  /// through all the particles it finds within the given maximum distance
+  ///
+  /// @param query a query object for a spatial data structure
+  /// @param r the central point to search around
+  /// @param max_distance the maximum distance to search
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator(const Query &query, const double_d &r,
@@ -170,18 +236,40 @@ public:
 #endif
   }
 
+  ///
+  /// @brief assignment operator
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator &operator=(const search_iterator &) = default;
 
+  ///
+  /// @brief returns the distance $r_b-r_a$ between the current candidate
+  /// position $r_b$ an the central search point $r_a$
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
   const double_d &dx() const { return m_dx; }
 
+  ///
+  /// @brief dereference the iterator, returns a reference to the current
+  /// candidate particle
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
+
+  ///
+  /// @brief dereference the iterator, returns a reference to the current
+  /// candidate particle
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   reference operator->() { return dereference(); }
+
+  ///
+  /// @brief increment the iterator, i.e. move to the next candidate particle
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator &operator++() {
@@ -189,6 +277,10 @@ public:
     return *this;
   }
 
+  ///
+  /// @brief post increment the iterator, i.e. move to the next candidate
+  /// particle and return the original iterator
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator operator++(int) {
@@ -197,6 +289,9 @@ public:
     return tmp;
   }
 
+  ///
+  /// @brief returns the distance between start and this
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t operator-(search_iterator start) const {
@@ -208,29 +303,51 @@ public:
     return count;
   }
 
+  ///
+  /// @brief returns how many candidate particle to go until the iterator
+  /// becomes invalid
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t distance_to_end() const { return search_iterator() - *this; }
 
+  ///
+  /// @brief returns true if @p rhs is the same as this
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator==(const search_iterator &rhs) { return equal(rhs); }
 
+  ///
+  /// @brief returns true if @p rhs is not the same as this
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator!=(const search_iterator &rhs) {
     return !operator==(rhs);
   }
 
+  ///
+  /// @brief the search iterator can be converted to true if it is pointing to a
+  /// valid candidate point, false otherwise
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
+  ///
+  /// @brief the search iterator can be converted to true if it is pointing to a
+  /// valid candidate point, false otherwise
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
 private:
+  ///
+  /// @brief if both iterators are valid, and pointing to the same particle,
+  /// then they are equal
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool equal(search_iterator const &other) const {
@@ -238,10 +355,19 @@ private:
                    : !other.m_valid;
   }
 
+  ///
+  /// @brief if this->m_valid is true then the iterator is equal to true
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool equal(const bool other) const { return m_valid == other; }
 
+  ///
+  /// @brief to be called after incrementing m_current_bucket. If m_current
+  /// bucket is no longer valid, then move to the next periodic lattice. If not
+  /// more periodic lattices to search through, then the iterator becomes
+  /// invalid
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool get_valid_bucket() {
@@ -269,6 +395,10 @@ private:
     return true;
   }
 
+  ///
+  /// @brief to be called after incrementing m_current_particle. If
+  /// m_current_particle is invalid, then move to the next bucket
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool get_valid_candidate() {
@@ -285,6 +415,9 @@ private:
     return true;
   }
 
+  ///
+  /// @brief increments m_current_particle and deals with any invalid iterators
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool go_to_next_candidate() {
@@ -295,6 +428,10 @@ private:
     return get_valid_candidate();
   }
 
+  ///
+  /// @brief checks that the current particle in m_current_particle is within
+  /// the search distance
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool check_candidate() {
@@ -321,6 +458,10 @@ private:
     return !outside;
   }
 
+  ///
+  /// @brief main increment function, iterates internal iterators until a
+  /// candidate particle is found (i.e. one within the search distance)
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   void increment() {
@@ -339,6 +480,10 @@ private:
 #endif
   }
 
+  ///
+  /// @brief dereference the iterator, returns a reference to the current
+  /// candidate particle
+  ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   reference dereference() const { return *m_current_particle; }
@@ -629,27 +774,16 @@ detail::kd_tree_tag) {
 }
 */
 
-template <typename Query, typename SearchIterator = search_iterator<Query, -1>>
-CUDA_HOST_DEVICE SearchIterator
-chebyshev_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
-}
-
-template <typename Query, typename SearchIterator = search_iterator<Query, 1>>
-CUDA_HOST_DEVICE SearchIterator
-manhatten_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
-}
-
-template <typename Query, typename SearchIterator = search_iterator<Query, 2>>
-CUDA_HOST_DEVICE SearchIterator
-euclidean_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
-}
-
+///
+/// @brief returns a @ref search_iterator that iterates over all the particles
+/// within a given distance around a point
+///
+/// @tparam Query the query object type
+/// @tparam search_iterator<Query, 1> the search iterator type
+/// @param query the query object
+/// @param centre the central point of the search
+/// @param max_distance the maximum distance to search around @p centre
+///
 template <int LNormNumber, typename Query,
           typename SearchIterator = search_iterator<Query, LNormNumber>>
 CUDA_HOST_DEVICE SearchIterator
@@ -658,6 +792,57 @@ distance_search(const Query &query, const typename Query::double_d &centre,
   return SearchIterator(query, centre, max_distance);
 }
 
+///
+/// @copydoc distance_search()
+///
+/// Uses the chebyshev distance
+/// <https://en.wikipedia.org/wiki/Chebyshev_distance>
+///
+///
+template <typename Query, typename SearchIterator = search_iterator<Query, -1>>
+CUDA_HOST_DEVICE SearchIterator
+chebyshev_search(const Query &query, const typename Query::double_d &centre,
+                 const double max_distance) {
+  return SearchIterator(query, centre, max_distance);
+}
+
+///
+/// @copydoc distance_search()
+///
+/// Uses the manhatten distance
+/// <https://en.wikipedia.org/wiki/Taxicab_geometry>
+///
+///
+template <typename Query, typename SearchIterator = search_iterator<Query, 1>>
+CUDA_HOST_DEVICE SearchIterator
+manhatten_search(const Query &query, const typename Query::double_d &centre,
+                 const double max_distance) {
+  return SearchIterator(query, centre, max_distance);
+}
+///
+/// @copydoc distance_search()
+///
+/// Uses the euclidean distance
+/// <https://en.wikipedia.org/wiki/Euclidean_distance>
+///
+///
+template <typename Query, typename SearchIterator = search_iterator<Query, 2>>
+CUDA_HOST_DEVICE SearchIterator
+euclidean_search(const Query &query, const typename Query::double_d &centre,
+                 const double max_distance) {
+  return SearchIterator(query, centre, max_distance);
+}
+
+///
+/// @brief returns a @ref bucket_pair_iterator that iterates through all the
+/// neighbouring buckets (i.e. buckets that are touching) within a domain. Note
+/// that this will only work for cell list spatial data structures
+///
+/// @tparam Query query object type (must be @ref CellListQuery or @ref
+/// CellListOrderedQuery)
+/// @tparam bucket_pair_iterator<Query> iterator type returned
+/// @param query the query object
+///
 template <typename Query, typename Iterator = bucket_pair_iterator<Query>>
 CUDA_HOST_DEVICE Iterator get_neighbouring_buckets(const Query &query) {
   return Iterator(query);
