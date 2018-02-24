@@ -412,13 +412,13 @@ public:
     [$images/neighbour/octtree.svg]
 
     The relevant classes within Aboria are [classref Aboria::octtree] and
-    [classref Aboria::octtree_query]. You can create a particle set using a
+    [classref Aboria::HyperOctreeQuery]. You can create a particle set using a
     hyper oct-tree by setting the [classref Aboria::Particles] template
     arguments accordingly.
 
     */
 
-    typedef Particles<std::tuple<>, 3, std::vector, octtree>
+    typedef Particles<std::tuple<>, 3, std::vector, HyperOctree>
         particle_octtree_type;
     particle_octtree_type particle_octtree;
 
@@ -1084,9 +1084,9 @@ public:
 #endif
   }
 
-  void test_std_vector_octtree(void) {
-    helper_d_test_list_random<std::vector, octtree>();
-    helper_d_test_list_regular<std::vector, octtree>();
+  void test_std_vector_HyperOctree(void) {
+    helper_d_test_list_random<std::vector, HyperOctree>();
+    helper_d_test_list_regular<std::vector, HyperOctree>();
   }
 
   // void test_thrust_vector_CellList(void) {
@@ -1104,10 +1104,10 @@ public:
 #endif
   }
 
-  void test_thrust_vector_octtree(void) {
+  void test_thrust_vector_HyperOctree(void) {
 #if defined(__aboria_have_thrust__)
-    helper_d_test_list_regular<thrust::device_vector, octtree>();
-    helper_d_test_list_random<thrust::device_vector, octtree>();
+    helper_d_test_list_regular<thrust::device_vector, HyperOctree>();
+    helper_d_test_list_random<thrust::device_vector, HyperOctree>();
 #endif
   }
 };

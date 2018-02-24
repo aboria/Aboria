@@ -39,9 +39,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Get.h"
 #include "Log.h"
 #include "NeighbourSearchBase.h"
+#include "SpatialUtil.h"
 #include "Traits.h"
 #include "Vector.h"
-#include "SpatialUtil.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <iostream>
 #include <set>
@@ -375,8 +375,11 @@ private:
   void increment() { ++m_high; }
 };
 
-// this is NOT going to work from device code because we are adapting
-// a host code only library
+/// @copydetails NeighbourQueryBase
+///
+/// @brief This is a query object for the @ref nanoflann_adaptor spatial data
+/// structure
+///
 template <typename Traits> struct nanoflann_adaptor_query {
   const static unsigned int dimension = Traits::dimension;
   const static unsigned int m_max_tree_depth = 32 - 2;

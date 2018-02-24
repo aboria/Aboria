@@ -136,10 +136,10 @@ public:
     set of child nodes attached to a single parent node within a tree structure.
 
     [note All the spatial data structures in Aboria are considered trees.
-    For the octtree and kdtree data structures, this description is obvious, but
-    the cell list is also treated as a tree, in this case a tree with one root
-    node having N children, where N is the total number of buckets in the cell
-    list.]
+    For the HyperOctree and kdtree data structures, this description is obvious,
+    but the cell list is also treated as a tree, in this case a tree with one
+    root node having N children, where N is the total number of buckets in the
+    cell list.]
 
     [note Aboria tends to use the terms nodes and buckets fairly interchangably.
     ]
@@ -169,10 +169,11 @@ public:
     provided by [classref Aboria::CellList], so the "tree" here will only have 2
     levels, and the loop above will loop through the second (i.e. non-root)
     level. We can also create a proper tree structure using the hyper oct-tree
-    data structure given by [classref Aboria::octtree], like so:
+    data structure given by [classref Aboria::HyperOctree], like so:
     */
 
-    typedef Particles<std::tuple<>, 2, std::vector, octtree> ParticlesOcttree_t;
+    typedef Particles<std::tuple<>, 2, std::vector, HyperOctree>
+        ParticlesOcttree_t;
     ParticlesOcttree_t particles_octtree(N);
 
     for (size_t i = 0; i < N; ++i) {
@@ -389,9 +390,9 @@ public:
     std::cout << "CellListOrdered" << std::endl;
     helper_data_structure<std::vector, CellListOrdered>();
   }
-  void test_octtree() {
+  void test_HyperOctree() {
     std::cout << "Octtree" << std::endl;
-    helper_data_structure<std::vector, octtree>();
+    helper_data_structure<std::vector, HyperOctree>();
   }
   void test_kdtree() {
     std::cout << "kd tree" << std::endl;

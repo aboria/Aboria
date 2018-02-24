@@ -101,7 +101,7 @@ namespace Aboria {
 ///  \param SearchMethod (default `CellList`) an Aboria spatial
 ///         data structure. Valid options are `Aboria::CellList`,
 ///         `Aboria::CellListOrdered`, `Aboria::nanoflann_adaptor`, or
-///         `Aboria::octtree`
+///         `Aboria::HyperOctree`
 ///  \param TRAITS_USER the class Aboria::Traits must be specialised on VECTOR
 ///
 ///  \see #ABORIA_VARIABLE

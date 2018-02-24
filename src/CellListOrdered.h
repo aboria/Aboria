@@ -64,6 +64,20 @@ template <typename Traits> struct CellListOrdered_params {
 
 template <typename Traits> struct CellListOrderedQuery;
 
+/// @brief A cell list spatial data structure that is paired with a
+/// CellListOrderedQuery query type
+///
+/// This class implements neighbourhood searching using a cell list. That is,
+/// the domain is divided up into a regular grid of constant size
+/// "buckets", and particles are assigned to their containing bucket.
+///
+/// The main difference between this class and CellList is that the particle set
+/// is reordered according to which cell each particle belongs to. This
+/// correlates memory locality with spatial locality, and improves cache access
+/// if you are often looping over neighbouring particles. It also mean that
+/// particles within a given bucket are sequential in memory.
+///
+///
 template <typename Traits>
 class CellListOrdered
     : public neighbour_search_base<CellListOrdered<Traits>, Traits,
@@ -262,14 +276,9 @@ private:
   detail::point_to_bucket_index<Traits::dimension> m_point_to_bucket_index;
 };
 
-// assume that query functions, are only called from device code
-// TODO: most of this code shared with CellListQuery, need to
-// combine them
+/// @copydetails NeighbourQueryBase
 ///
-/// @brief a lightweight query object for @ref CellListOrdered that can be
-/// copied (e.g. to the gpu)
-///
-/// @tparam Traits the @ref TraitsCommon type
+/// @brief This is a query object for the CellListOrdered spatial data structure
 ///
 template <typename Traits>
 struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {

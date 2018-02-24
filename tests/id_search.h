@@ -326,8 +326,8 @@ O(log(N)) time.
 #endif
   }
 
-  void test_std_vector_octtree(void) {
-    helper_d_test_list_random<std::vector, octtree>();
+  void test_std_vector_HyperOctree(void) {
+    helper_d_test_list_random<std::vector, HyperOctree>();
   }
 
   void test_thrust_vector_CellList(void) {
@@ -342,9 +342,9 @@ O(log(N)) time.
 #endif
   }
 
-  void test_thrust_vector_octtree(void) {
+  void test_thrust_vector_HyperOctree(void) {
 #if defined(__aboria_have_thrust__)
-    helper_d_test_list_random<thrust::device_vector, octtree>();
+    helper_d_test_list_random<thrust::device_vector, HyperOctree>();
 #endif
   }
 };

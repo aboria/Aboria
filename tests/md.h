@@ -204,7 +204,7 @@ public:
 
   void test_nanoflann_adaptor() { helper_md<nanoflann_adaptor>(); }
 
-  void test_octtree() { helper_md<octtree>(); }
+  void test_HyperOctree() { helper_md<HyperOctree>(); }
 };
 
 #endif /* MD_TEST_H_ */

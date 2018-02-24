@@ -49,11 +49,59 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <typename Traits> struct octtree_query;
+template <typename Traits> struct HyperOctreeQuery;
 
+///
+/// @brief A hyper octree spatial data structure that is paired with a
+/// HyperOctreeQuery query type
+///
+/// An hyper octree is the general n-dimensional analog of an octree (aside: a
+/// normal octree is only defined for three dimensions). This data structure is
+/// a tree, where each level of the tree splits each bucket along the middle of
+/// each dimension. Each new bucket formed by this split becomes a child bucket
+/// for that bucket. Once the number of particles within  a box falls below a
+/// threshold value (default: 10) then it is a leaf of the tree with no children
+///
+/// For example, consider a certain level of the tree in two dimensions which
+/// has 3 buckets, one a leaf with 9 particles, the other two non-leafs with 44
+/// and 11 particles respectivly. The threshold value is set at 10.
+/// ~~~
+/// -----------------------------------------
+/// |                  |                    |
+/// |      leaf        |                    |
+/// |        9         |        44          |
+/// |                  |                    |
+/// |                  |                    |
+/// |------------------+--------------------|
+/// |                  |                    |
+/// |                  |                    |
+/// |        11        |                    |
+/// |                  |                    |
+/// |                  |                    |
+/// |                  |                    |
+/// -----------------------------------------
+/// ~~~
+/// The next level of the tree might look like this:
+/// ~~~
+/// -----------------------------------------
+/// |                  |   12    |   9      |
+/// |                  |         |  leaf    |
+/// |                  +---------+----------|
+/// |                  |   11    |   12     |
+/// |                  |         |          |
+/// |--------+---------|---------+----------|
+/// |   1    |   8     |                    |
+/// | leaf   |  leaf   |                    |
+/// |--------+---------|                    |
+/// |   0    |   2     |                    |
+/// | leaf   |  leaf   |                    |
+/// -----------------------------------------
+/// ~~~
+/// @tparam Traits an instatiation of TraitsCommon
+///
 template <typename Traits>
-class octtree : public neighbour_search_base<octtree<Traits>, Traits,
-                                             octtree_query<Traits>> {
+class HyperOctree : public neighbour_search_base<HyperOctree<Traits>, Traits,
+                                                 HyperOctreeQuery<Traits>> {
 
   typedef typename Traits::double_d double_d;
   typedef typename Traits::bool_d bool_d;
@@ -73,13 +121,14 @@ class octtree : public neighbour_search_base<octtree<Traits>, Traits,
 
   typedef typename Traits::iterator iterator;
 
-  typedef neighbour_search_base<octtree<Traits>, Traits, octtree_query<Traits>>
+  typedef neighbour_search_base<HyperOctree<Traits>, Traits,
+                                HyperOctreeQuery<Traits>>
       base_type;
 
   friend base_type;
 
 public:
-  octtree() : base_type(), m_max_level(32 / dimension - 2) {
+  HyperOctree() : base_type(), m_max_level(32 / dimension - 2) {
 
     // need to init a tree with 1 level (for 0 particles) in case
     // someone does a query on an empty data structure
@@ -247,9 +296,11 @@ private:
   }
   */
 
-  const octtree_query<Traits> &get_query_impl() const { return this->m_query; }
+  const HyperOctreeQuery<Traits> &get_query_impl() const {
+    return this->m_query;
+  }
 
-  octtree_query<Traits> &get_query_impl() { return m_query; }
+  HyperOctreeQuery<Traits> &get_query_impl() { return m_query; }
 
   /*
   void sort_by_tags() {
@@ -271,10 +322,10 @@ private:
   vector_int m_nodes;
   vector_int2 m_leaves;
 
-  octtree_query<Traits> m_query;
+  HyperOctreeQuery<Traits> m_query;
 };
 
-template <typename traits> void octtree<traits>::build_tree() {
+template <typename traits> void HyperOctree<traits>::build_tree() {
   m_nodes.clear();
   m_leaves.clear();
   vector_int active_nodes(1, 0);
@@ -425,7 +476,7 @@ template <typename traits> void octtree<traits>::build_tree() {
 }
 
 // Classify a point with respect to the bounding box.
-template <typename traits> struct octtree<traits>::classify_point {
+template <typename traits> struct HyperOctree<traits>::classify_point {
   bbox<dimension> box;
   int max_level;
 
@@ -438,7 +489,7 @@ template <typename traits> struct octtree<traits>::classify_point {
   }
 };
 
-template <typename traits> struct octtree<traits>::child_index_to_tag_mask {
+template <typename traits> struct HyperOctree<traits>::child_index_to_tag_mask {
   const int level, max_level;
 
   // mask for lower n bits, where n is the number of dimensions
@@ -458,7 +509,7 @@ template <typename traits> struct octtree<traits>::child_index_to_tag_mask {
   }
 };
 
-template <typename traits> struct octtree<traits>::classify_node {
+template <typename traits> struct HyperOctree<traits>::classify_node {
   const int threshold;
   const int last_level;
 
@@ -480,7 +531,7 @@ template <typename traits> struct octtree<traits>::classify_node {
   }
 };
 
-template <typename traits> struct octtree<traits>::write_nodes {
+template <typename traits> struct HyperOctree<traits>::write_nodes {
   int num_nodes, num_leaves;
 
   write_nodes(int num_nodes, int num_leaves)
@@ -502,7 +553,7 @@ template <typename traits> struct octtree<traits>::write_nodes {
   }
 };
 
-template <typename traits> struct octtree<traits>::make_leaf {
+template <typename traits> struct HyperOctree<traits>::make_leaf {
   typedef vint2 result_type;
   template <typename tuple_type>
   inline CUDA_HOST_DEVICE result_type operator()(const tuple_type &t) const {
@@ -513,7 +564,7 @@ template <typename traits> struct octtree<traits>::make_leaf {
   }
 };
 
-template <unsigned int D> class octtree_child_iterator {
+template <unsigned int D> class octree_child_iterator {
   typedef Vector<double, D> double_d;
   typedef Vector<int, D> int_d;
   typedef Vector<bool, D> bool_d;
@@ -531,10 +582,10 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   CUDA_HOST_DEVICE
-  octtree_child_iterator() : m_high(1 << D), m_index(nullptr) {}
+  octree_child_iterator() : m_high(1 << D), m_index(nullptr) {}
 
   CUDA_HOST_DEVICE
-  octtree_child_iterator(const int *start, const box_type &bounds)
+  octree_child_iterator(const int *start, const box_type &bounds)
       : m_high(0), m_index(start), m_bounds(bounds) {
     ASSERT_CUDA(start != nullptr);
     // Note: big change, octree iterators now visit empty leaves (for fmm)
@@ -589,25 +640,25 @@ public:
   reference operator->() const { return dereference(); }
 
   CUDA_HOST_DEVICE
-  octtree_child_iterator &operator++() {
+  octree_child_iterator &operator++() {
     increment();
     return *this;
   }
 
   CUDA_HOST_DEVICE
-  octtree_child_iterator operator++(int) {
-    octtree_child_iterator tmp(*this);
+  octree_child_iterator operator++(int) {
+    octree_child_iterator tmp(*this);
     operator++();
     return tmp;
   }
 
   CUDA_HOST_DEVICE
-  inline bool operator==(const octtree_child_iterator &rhs) const {
+  inline bool operator==(const octree_child_iterator &rhs) const {
     return equal(rhs);
   }
 
   CUDA_HOST_DEVICE
-  inline bool operator!=(const octtree_child_iterator &rhs) const {
+  inline bool operator!=(const octree_child_iterator &rhs) const {
     return !operator==(rhs);
   }
 
@@ -619,7 +670,7 @@ public:
 
 private:
   CUDA_HOST_DEVICE
-  bool equal(octtree_child_iterator const &other) const {
+  bool equal(octree_child_iterator const &other) const {
     return m_index == other.m_index;
   }
 
@@ -642,7 +693,11 @@ private:
   }
 };
 
-template <typename Traits> struct octtree_query {
+/// @copydetails NeighbourQueryBase
+///
+/// @brief This is a query object for the HyperOctree spatial data structure
+///
+template <typename Traits> struct HyperOctreeQuery {
   const static unsigned int dimension = Traits::dimension;
   const static unsigned int m_max_tree_depth = 32 / dimension - 2;
 
@@ -653,10 +708,10 @@ template <typename Traits> struct octtree_query {
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   template <int LNormNumber>
-  using query_iterator = tree_query_iterator<octtree_query, LNormNumber>;
-  typedef depth_first_iterator<octtree_query> root_iterator;
-  typedef depth_first_iterator<octtree_query> all_iterator;
-  typedef octtree_child_iterator<dimension> child_iterator;
+  using query_iterator = tree_query_iterator<HyperOctreeQuery, LNormNumber>;
+  typedef depth_first_iterator<HyperOctreeQuery> root_iterator;
+  typedef depth_first_iterator<HyperOctreeQuery> all_iterator;
+  typedef octree_child_iterator<dimension> child_iterator;
   typedef typename child_iterator::reference reference;
   typedef typename child_iterator::pointer pointer;
   typedef typename child_iterator::value_type value_type;

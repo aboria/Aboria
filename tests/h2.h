@@ -838,24 +838,24 @@ public:
 #endif
   }
 
-  void test_fast_methods_octtree(void) {
+  void test_fast_methods_HyperOctree(void) {
 #ifdef HAVE_H2LIB
     const size_t N = 1000;
     /*
     std::cout << "OCTTREE: testing extended matrix 1D..." << std::endl;
-    helper_extended_matrix<1,std::vector,octtree>(N);
+    helper_extended_matrix<1,std::vector,HyperOctree>(N);
     std::cout << "OCTTREE: testing extended matrix 2D..." << std::endl;
-    helper_extended_matrix<2,std::vector,octtree>(N);
+    helper_extended_matrix<2,std::vector,HyperOctree>(N);
     std::cout << "OCTTREE: testing extended matrix 3D..." << std::endl;
-    helper_extended_matrix<3,std::vector,octtree>(N);
+    helper_extended_matrix<3,std::vector,HyperOctree>(N);
     */
 
     std::cout << "OCTTREE: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, octtree>(N);
+    helper_fast_methods<1, std::vector, HyperOctree>(N);
     std::cout << "OCTTREE: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, octtree>(N);
+    helper_fast_methods<2, std::vector, HyperOctree>(N);
     std::cout << "OCTTREE: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, octtree>(N);
+    helper_fast_methods<3, std::vector, HyperOctree>(N);
 
 #endif
   }

@@ -96,11 +96,11 @@ Header: `<Aboria.h>`
     
         [This is the query object for the kd-tree data structure]]
 
-    [[[classref Aboria::octtree]]         
+    [[[classref Aboria::HyperOctree]]         
     
         [This implements a hyper oct-tree data structure]]
 
-    [[[classref Aboria::octtree_query]]         
+    [[[classref Aboria::HyperOctreeQuery]]         
     
         [This is the query object for the hyper oct-tree data structure]]
 

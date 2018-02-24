@@ -224,7 +224,7 @@ std::endl;
     helper_md<std::vector, CellListOrdered>();
   }
 
-  void test_std_vector_octtree(void) { helper_md<std::vector, octtree>(); }
+  void test_std_vector_HyperOctree(void) { helper_md<std::vector, HyperOctree>(); }
 
   // void test_thrust_vector_CellList(void) {
   //#if //defined(__aboria_have_thrust__)
@@ -238,9 +238,9 @@ std::endl;
 #endif
   }
 
-  void test_thrust_vector_octtree(void) {
+  void test_thrust_vector_HyperOctree(void) {
 #if defined(__aboria_have_thrust__)
-    helper_md<thrust::device_vector, octtree>();
+    helper_md<thrust::device_vector, HyperOctree>();
 #endif
   }
 };

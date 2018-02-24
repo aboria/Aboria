@@ -611,12 +611,40 @@ protected:
 };
 
 ///
-/// @brief Base type for query types
-////
-/// This implements the interface (and documents it) for all the query types
+/// @brief a lightweight query object that should be used for read-only access
+/// to the spatial data structures
 ///
-/// @tparam Traits A @ref TraitsCommon type
+/// This object is designed to be used within algorithms or gpu kernels, and can
+/// be obtained from a Particles type using the Particles::get_query() function
 ///
+/// @code
+/// auto query = particles.get_query();
+/// std::for_each(particles.begin(), particles.end(), [&] (auto i) {
+///   int count = 0;
+///   for (auto j = euclidean_search(query, get<position>(i), diameter);
+///                   j != false; ++j) {
+///     ++count;
+///   }
+/// });
+/// @endcode
+///
+/// Note that if you wish to run this on a gpu using Trust, you need to copy the
+/// query object to the kernel, and mark the lambda function as a device
+/// function
+///
+/// @code
+/// auto query = particles.get_query();
+/// thrust::for_each(particles.begin(), particles.end(),
+///   [=] __host__ __device__ (auto i) {
+///     int count = 0;
+///     for (auto j = euclidean_search(query, get<position>(i), diameter);
+///                   j != false; ++j) {
+///       ++count;
+///     }
+/// });
+/// @endcode
+///
+/// @tparam Traits the @ref TraitsCommon type
 template <typename Traits> struct NeighbourQueryBase {
 
   typedef typename Traits::raw_pointer raw_pointer;
@@ -689,7 +717,7 @@ template <typename Traits> struct NeighbourQueryBase {
   bool is_leaf_node(const value_type &bucket);
 
   ///
-  /// @return true if this data structure is a tree (e.g. kdtree, octtree)
+  /// @return true if this data structure is a tree (e.g. kdtree, HyperOctree)
   /// @return false if this data structure is not a tree (e.g. cell list)
   ///
   bool is_tree();

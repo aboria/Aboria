@@ -582,11 +582,11 @@ public:
     helper_compact<nanoflann_adaptor>();
   }
 
-  void test_octtree() {
+  void test_HyperOctree() {
     std::cout << "-------------------------------------------\n"
-              << "Running tests on octtree....\n"
+              << "Running tests on HyperOctree....\n"
               << "------------------------------------------" << std::endl;
-    helper_h2<octtree>();
+    helper_h2<HyperOctree>();
     helper_compact<nanoflann_adaptor>();
   }
 };

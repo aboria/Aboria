@@ -104,7 +104,7 @@ public:
           ("md_step_h2_kdtree" + std::to_string(N) + "_" + std::to_string(D))
               .c_str());
     } else if (std::is_same<SearchMethod<traits_type>,
-                            octtree<traits_type>>::value) {
+                            HyperOctree<traits_type>>::value) {
 
       ProfilerStart(
           ("md_step_octtree" + std::to_string(N) + "_" + std::to_string(D))
@@ -208,7 +208,7 @@ public:
         file_step << std::setw(25) << time_step;
 
         std::tie(time_setup, time_step) =
-            md_step<thrust::device_vector, octtree, D>(positions, repeatsN);
+            md_step<thrust::device_vector, HyperOctree, D>(positions, repeatsN);
         file_setup << std::setw(25) << time_setup;
         file_step << std::setw(25) << time_step;
 

@@ -282,14 +282,14 @@ public:
     helper_fast_methods<3, std::vector, nanoflann_adaptor>(N);
   }
 
-  void test_fast_methods_octtree(void) {
+  void test_fast_methods_HyperOctree(void) {
     const size_t N = 1000;
     std::cout << "OCTTREE: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, octtree>(N);
+    helper_fast_methods<1, std::vector, HyperOctree>(N);
     std::cout << "OCTTREE: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, octtree>(N);
+    helper_fast_methods<2, std::vector, HyperOctree>(N);
     std::cout << "OCTTREE: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, octtree>(N);
+    helper_fast_methods<3, std::vector, HyperOctree>(N);
   }
 
   void test_Rn_calculation(void) {

@@ -51,8 +51,8 @@ namespace Aboria {
 
 template <typename Traits> struct CellListQuery;
 
-/// \brief Implements neighbourhood searching using a bucket search algorithm,
-/// dividing the domain into constant size "buckets".
+/// @brief A cell list spatial data structure that is paired with a
+/// CellListQuery query type
 ///
 /// This class implements neighbourhood searching using a bucket search, or
 /// cell list algorithm. The domain is first divided up into a regular grid of
@@ -903,14 +903,9 @@ struct CellList<Traits>::copy_points_in_bucket_lambda {
   }
 };
 
-// assume that query functions, are only called from device code
-// TODO: most of this code shared with CellListOrderedQuery, need to
-// combine them
+/// @copydetails NeighbourQueryBase
 ///
-/// @brief a lightweight query object for @ref CellList that can be
-/// copied (e.g. to the gpu)
-///
-/// @tparam Traits the @ref TraitsCommon type
+/// @brief This is a query object for the CellList spatial data structure
 ///
 template <typename Traits>
 struct CellListQuery : public NeighbourQueryBase<Traits> {
