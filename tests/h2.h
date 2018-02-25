@@ -822,19 +822,19 @@ public:
     const size_t N = 1000;
     /*
     std::cout << "KD_TREE: testing extended matrix 1D..." << std::endl;
-    helper_extended_matrix<1,std::vector,nanoflann_adaptor>(N);
+    helper_extended_matrix<1,std::vector,Kdtree>(N);
     std::cout << "KD_TREE: testing extended matrix 2D..." << std::endl;
-    helper_extended_matrix<2,std::vector,nanoflann_adaptor>(N);
+    helper_extended_matrix<2,std::vector,Kdtree>(N);
     std::cout << "KD_TREE: testing extended matrix 3D..." << std::endl;
-    helper_extended_matrix<3,std::vector,nanoflann_adaptor>(N);
+    helper_extended_matrix<3,std::vector,Kdtree>(N);
     */
 
     std::cout << "KD_TREE: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<1, std::vector, Kdtree>(N);
     std::cout << "KD_TREE: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<2, std::vector, Kdtree>(N);
     std::cout << "KD_TREE: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<3, std::vector, Kdtree>(N);
 #endif
   }
 

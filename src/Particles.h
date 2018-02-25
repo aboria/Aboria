@@ -100,7 +100,7 @@ namespace Aboria {
 ///         are currently `std::vector` or `thrust::device_vector`.
 ///  \param SearchMethod (default `CellList`) an Aboria spatial
 ///         data structure. Valid options are `Aboria::CellList`,
-///         `Aboria::CellListOrdered`, `Aboria::nanoflann_adaptor`, or
+///         `Aboria::CellListOrdered`, `Aboria::Kdtree`, or
 ///         `Aboria::HyperOctree`
 ///  \param TRAITS_USER the class Aboria::Traits must be specialised on VECTOR
 ///

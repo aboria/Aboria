@@ -275,11 +275,11 @@ public:
   void test_fast_methods_kd_tree(void) {
     const size_t N = 1000;
     std::cout << "KD_TREE: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<1, std::vector, Kdtree>(N);
     std::cout << "KD_TREE: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<2, std::vector, Kdtree>(N);
     std::cout << "KD_TREE: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<3, std::vector, Kdtree>(N);
   }
 
   void test_fast_methods_HyperOctree(void) {

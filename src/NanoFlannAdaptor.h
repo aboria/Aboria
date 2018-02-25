@@ -49,9 +49,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <typename Traits> class nanoflann_adaptor;
+template <typename Traits> class Kdtree;
 
-template <typename Traits> struct nanoflann_adaptor_query;
+template <typename Traits> struct KdtreeQuery;
 
 template <typename Traits> class nanoflann_child_iterator;
 
@@ -64,8 +64,8 @@ namespace detail {
 
 template <typename Traits>
 using nanoflann_kd_tree_type = nanoflann::KDTreeSingleIndexAdaptor<
-    nanoflann::L_inf_Adaptor<double, nanoflann_adaptor<Traits>>,
-    nanoflann_adaptor<Traits>, Traits::dimension, int>;
+    nanoflann::L_inf_Adaptor<double, Kdtree<Traits>>,
+    Kdtree<Traits>, Traits::dimension, int>;
 }
 
 /// \brief Implements neighbourhood searching using a bucket search algorithm,
@@ -84,9 +84,9 @@ using nanoflann_kd_tree_type = nanoflann::KDTreeSingleIndexAdaptor<
 /// points in the same bucket or surrounding buckets of the given point.
 ///
 template <typename Traits>
-class nanoflann_adaptor
-    : public neighbour_search_base<nanoflann_adaptor<Traits>, Traits,
-                                   nanoflann_adaptor_query<Traits>> {
+class Kdtree
+    : public neighbour_search_base<Kdtree<Traits>, Traits,
+                                   KdtreeQuery<Traits>> {
 
   typedef typename Traits::double_d double_d;
   typedef typename Traits::position position;
@@ -95,8 +95,8 @@ class nanoflann_adaptor
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   static const unsigned int dimension = Traits::dimension;
 
-  typedef neighbour_search_base<nanoflann_adaptor<Traits>, Traits,
-                                nanoflann_adaptor_query<Traits>>
+  typedef neighbour_search_base<Kdtree<Traits>, Traits,
+                                KdtreeQuery<Traits>>
       base_type;
   friend base_type;
 
@@ -104,7 +104,7 @@ class nanoflann_adaptor
   typedef typename kd_tree_type::Node node_type;
 
 public:
-  nanoflann_adaptor() : base_type(), m_kd_tree(dimension, *this) {
+  Kdtree() : base_type(), m_kd_tree(dimension, *this) {
     // init an empty tree
     std::vector<int> empty;
     m_kd_tree.buildIndex(empty.begin());
@@ -120,7 +120,7 @@ public:
     this->m_query.m_number_of_levels = m_kd_tree.size_levels();
   }
 
-  //~nanoflann_adaptor() {}
+  //~Kdtree() {}
 
   static constexpr bool ordered() { return true; }
 
@@ -265,14 +265,14 @@ private:
   }
   */
 
-  const nanoflann_adaptor_query<Traits> &get_query_impl() const {
+  const KdtreeQuery<Traits> &get_query_impl() const {
     return m_query;
   }
 
-  nanoflann_adaptor_query<Traits> &get_query_impl() { return m_query; }
+  KdtreeQuery<Traits> &get_query_impl() { return m_query; }
 
   kd_tree_type m_kd_tree;
-  nanoflann_adaptor_query<Traits> m_query;
+  KdtreeQuery<Traits> m_query;
 };
 
 template <typename Traits> class nanoflann_child_iterator {
@@ -377,10 +377,10 @@ private:
 
 /// @copydetails NeighbourQueryBase
 ///
-/// @brief This is a query object for the @ref nanoflann_adaptor spatial data
+/// @brief This is a query object for the @ref Kdtree spatial data
 /// structure
 ///
-template <typename Traits> struct nanoflann_adaptor_query {
+template <typename Traits> struct KdtreeQuery {
   const static unsigned int dimension = Traits::dimension;
   const static unsigned int m_max_tree_depth = 32 - 2;
   typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
@@ -396,9 +396,9 @@ template <typename Traits> struct nanoflann_adaptor_query {
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   template <int LNormNumber>
   using query_iterator =
-      tree_query_iterator<nanoflann_adaptor_query, LNormNumber>;
+      tree_query_iterator<KdtreeQuery, LNormNumber>;
   typedef value_type *root_iterator;
-  typedef depth_first_iterator<nanoflann_adaptor_query> all_iterator;
+  typedef depth_first_iterator<KdtreeQuery> all_iterator;
   typedef nanoflann_child_iterator<Traits> child_iterator;
   typedef ranges_iterator<Traits> particle_iterator;
   typedef bbox<dimension> box_type;

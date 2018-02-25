@@ -366,7 +366,7 @@ public:
 
   void test_CellList() { helper_sph<CellList>(); }
 
-  void test_nanoflann_adaptor() { helper_sph<nanoflann_adaptor>(); }
+  void test_Kdtree() { helper_sph<Kdtree>(); }
 };
 
 #endif /* SPH_TEST_H_ */

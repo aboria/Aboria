@@ -188,7 +188,7 @@ set(NeighboursTest
     test_std_vector_CellList_fast_bucketsearch
     test_std_vector_CellListOrdered
     test_std_vector_CellListOrdered_fast_bucketsearch
-    test_std_vector_nanoflann_adaptor
+    test_std_vector_Kdtree
     test_std_vector_HyperOctree
     test_documentation
     )
@@ -203,7 +203,7 @@ set(IDSearchTestFile id_search.h)
 set(IDSearchTest
     test_std_vector_CellList
     test_std_vector_CellListOrdered
-    test_std_vector_nanoflann_adaptor
+    test_std_vector_Kdtree
     test_std_vector_HyperOctree
     test_documentation
     )
@@ -233,7 +233,7 @@ set(BDTestFile bd.h)
 set(BDTest
     test_CellList
     test_CellListOrdered
-    test_nanoflann_adaptor
+    test_Kdtree
     test_HyperOctree
     )
 
@@ -246,14 +246,14 @@ set(SPHTestFile sph.h)
 set(SPHTest
     test_CellList
     test_CellListOrdered
-    test_nanoflann_adaptor
+    test_Kdtree
     )
  
 set(MDTestFile md.h)
 set(MDTest
     test_CellList
     test_CellListOrdered
-    test_nanoflann_adaptor
+    test_Kdtree
     test_HyperOctree
     )
 
@@ -295,7 +295,7 @@ set(DiffusionAroundSpheresFile diffusion_around_spheres.h)
 set(DiffusionAroundSpheres 
     test_CellList
     test_CellListOrdered
-    test_nanoflann_adaptor
+    test_Kdtree
     )
 
 set(ChebyshevTestFile chebyshev.h)

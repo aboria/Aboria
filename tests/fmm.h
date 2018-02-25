@@ -505,11 +505,11 @@ public:
     ProfilerStart("fmm_kd_tree");
 #endif
     std::cout << "KD_TREE: testing 1D..." << std::endl;
-    helper_fast_methods<1, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<1, std::vector, Kdtree>(N);
     std::cout << "KD_TREE: testing 2D..." << std::endl;
-    helper_fast_methods<2, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<2, std::vector, Kdtree>(N);
     std::cout << "KD_TREE: testing 3D..." << std::endl;
-    helper_fast_methods<3, std::vector, nanoflann_adaptor>(N);
+    helper_fast_methods<3, std::vector, Kdtree>(N);
 #ifdef HAVE_GPERFTOOLS
     ProfilerStop();
 #endif

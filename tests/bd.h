@@ -154,9 +154,9 @@ public:
     helper_bd<CellList>();
   }
 
-  void test_nanoflann_adaptor() {
-    std::cout << "nanoflann_adaptor" << std::endl;
-    helper_bd<nanoflann_adaptor>();
+  void test_Kdtree() {
+    std::cout << "Kdtree" << std::endl;
+    helper_bd<Kdtree>();
   }
 
   void test_HyperOctree() {

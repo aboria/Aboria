@@ -637,8 +637,8 @@ public:
         std::cout << "-------------------------------------------\n"
                   << "Running tests on kdtree....\n"
                   << "------------------------------------------" << std::endl;
-        helper_compact<nanoflann_adaptor>();
-        helper_h2<nanoflann_adaptor>();
+        helper_compact<Kdtree>();
+        helper_h2<Kdtree>();
       }
 
       void test_HyperOctree() {
@@ -646,7 +646,7 @@ public:
                   << "Running tests on HyperOctree....\n"
                   << "------------------------------------------" << std::endl;
         helper_h2<HyperOctree>();
-        helper_compact<nanoflann_adaptor>();
+        helper_compact<Kdtree>();
       }
     };
 

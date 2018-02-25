@@ -99,7 +99,7 @@ public:
 #ifdef HAVE_GPERFTOOLS
     typedef typename particles_type::traits_type traits_type;
     if (std::is_same<SearchMethod<traits_type>,
-                     nanoflann_adaptor<traits_type>>::value) {
+                     Kdtree<traits_type>>::value) {
       ProfilerStart(
           ("md_step_h2_kdtree" + std::to_string(N) + "_" + std::to_string(D))
               .c_str());

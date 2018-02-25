@@ -86,13 +86,13 @@ Header: `<Aboria.h>`
     
         [This is the query object for the [classref Aboria::CellListOrdered] data structure]]
 
-    [[[classref Aboria::nanoflann_adaptor]]         
+    [[[classref Aboria::Kdtree]]         
     
         [This implements a kdtree spatial data structure. 
         Note that this wraps the Nanoflann library <https://github.com/jlblancoc/nanoflann> 
         for tree construction, but Aboria routines are used for all queries.]]
 
-    [[[classref Aboria::nanoflann_adaptor_query]]         
+    [[[classref Aboria::KdtreeQuery]]         
     
         [This is the query object for the kd-tree data structure]]
 

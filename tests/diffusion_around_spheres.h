@@ -212,8 +212,8 @@ public:
     helper_diffusion_around_spheres<CellList>();
   }
 
-  void test_nanoflann_adaptor() {
-    helper_diffusion_around_spheres<nanoflann_adaptor>();
+  void test_Kdtree() {
+    helper_diffusion_around_spheres<Kdtree>();
   }
 };
 

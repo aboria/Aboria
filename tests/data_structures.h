@@ -396,7 +396,7 @@ public:
   }
   void test_kdtree() {
     std::cout << "kd tree" << std::endl;
-    helper_data_structure<std::vector, nanoflann_adaptor>();
+    helper_data_structure<std::vector, Kdtree>();
   }
 };
 

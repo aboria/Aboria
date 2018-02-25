@@ -320,9 +320,9 @@ O(log(N)) time.
     helper_d_test_list_random<std::vector, CellListOrdered>();
   }
 
-  void test_std_vector_nanoflann_adaptor(void) {
+  void test_std_vector_Kdtree(void) {
 #if not defined(__CUDACC__)
-    helper_d_test_list_random<std::vector, nanoflann_adaptor>();
+    helper_d_test_list_random<std::vector, Kdtree>();
 #endif
   }
 

@@ -202,7 +202,7 @@ public:
 
   void test_CellList() { helper_md<CellList>(); }
 
-  void test_nanoflann_adaptor() { helper_md<nanoflann_adaptor>(); }
+  void test_Kdtree() { helper_md<Kdtree>(); }
 
   void test_HyperOctree() { helper_md<HyperOctree>(); }
 };

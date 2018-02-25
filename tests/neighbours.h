@@ -378,14 +378,14 @@ public:
     native neighbourhood queries are used instead of those provided with
     NanoFLANN.
 
-    The relevant classes within Aboria are [classref Aboria::nanoflann_adaptor]
-    and [classref Aboria::nanoflann_adaptor_query]. You can create a particle
+    The relevant classes within Aboria are [classref Aboria::Kdtree]
+    and [classref Aboria::KdtreeQuery]. You can create a particle
     set using a kd-tree by setting the [classref Aboria::Particles] template
     arguments accordingly.
 
     */
 
-    typedef Particles<std::tuple<>, 3, std::vector, nanoflann_adaptor>
+    typedef Particles<std::tuple<>, 3, std::vector, Kdtree>
         particle_kdtree_type;
     particle_kdtree_type particle_kd_tree;
 
@@ -1077,10 +1077,10 @@ public:
     helper_d_test_list_regular<std::vector, CellListOrdered>();
   }
 
-  void test_std_vector_nanoflann_adaptor(void) {
+  void test_std_vector_Kdtree(void) {
 #if not defined(__CUDACC__)
-    helper_d_test_list_random<std::vector, nanoflann_adaptor>();
-    helper_d_test_list_regular<std::vector, nanoflann_adaptor>();
+    helper_d_test_list_random<std::vector, Kdtree>();
+    helper_d_test_list_regular<std::vector, Kdtree>();
 #endif
   }
 

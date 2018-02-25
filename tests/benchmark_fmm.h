@@ -106,7 +106,7 @@ public:
 #ifdef HAVE_GPERFTOOLS
         typedef typename particles_type::traits_type traits_type;
         if (std::is_same<SearchMethod<traits_type>,
-                nanoflann_adaptor<traits_type>>::value) {
+                Kdtree<traits_type>>::value) {
             ProfilerStart(("multiquadric_h2_kdtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
         } else {
             ProfilerStart(("multiquadric_h2_octtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
@@ -181,7 +181,7 @@ public:
 #ifdef HAVE_GPERFTOOLS
         typedef typename particles_type::traits_type traits_type;
         if (std::is_same<SearchMethod<traits_type>,
-                nanoflann_adaptor<traits_type>>::value) {
+                Kdtree<traits_type>>::value) {
             ProfilerStart(("multiquadric_fmm_kdtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
         } else {
             ProfilerStart(("multiquadric_fmm_octtree"+std::to_string(N)+"_"+std::to_string(D)).c_str());
@@ -330,37 +330,37 @@ public:
             //{
             //    size_t i = nbucket_min;
                 file << std::setw(25) << 
-                    multiquadric_fmm<2,nanoflann_adaptor>(positions,source,
+                    multiquadric_fmm<2,Kdtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_fmm<2,octtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
-                    multiquadric_h2<2,nanoflann_adaptor>(positions,source,
+                    multiquadric_h2<2,Kdtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_h2<2,octtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
-                    multiquadric_fmm<3,nanoflann_adaptor>(positions,source,
+                    multiquadric_fmm<3,Kdtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_fmm<3,octtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
-                    multiquadric_h2<3,nanoflann_adaptor>(positions,source,
+                    multiquadric_h2<3,Kdtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_h2<3,octtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
-                    multiquadric_fmm<4,nanoflann_adaptor>(positions,source,
+                    multiquadric_fmm<4,Kdtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_fmm<4,octtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
-                    multiquadric_h2<4,nanoflann_adaptor>(positions,source,
+                    multiquadric_h2<4,Kdtree>(positions,source,
                             target,kernel,repeatsN,i);
                 file << std::setw(25) << 
                     multiquadric_h2<4,octtree>(positions,source,
