@@ -178,7 +178,7 @@ set(SpatialDataStructuresTest
     test_documentation
     test_CellList
     test_CellListOrdered
-    test_octtree
+    test_HyperOctree
     test_kdtree
     )
 
@@ -189,13 +189,13 @@ set(NeighboursTest
     test_std_vector_CellListOrdered
     test_std_vector_CellListOrdered_fast_bucketsearch
     test_std_vector_nanoflann_adaptor
-    test_std_vector_octtree
+    test_std_vector_HyperOctree
     test_documentation
     )
 if (Aboria_USE_THRUST)
     list(APPEND NeighboursTest
     test_thrust_vector_CellListOrdered
-    test_thrust_vector_octtree
+    test_thrust_vector_HyperOctree
     )
 endif()
 
@@ -204,14 +204,14 @@ set(IDSearchTest
     test_std_vector_CellList
     test_std_vector_CellListOrdered
     test_std_vector_nanoflann_adaptor
-    test_std_vector_octtree
+    test_std_vector_HyperOctree
     test_documentation
     )
 if (Aboria_USE_THRUST)
     list(APPEND IDSearchTest
         #test_thrust_vector_CellList
     test_thrust_vector_CellListOrdered
-    test_thrust_vector_octtree
+    test_thrust_vector_HyperOctree
     )
 endif()
 
@@ -234,7 +234,7 @@ set(BDTest
     test_CellList
     test_CellListOrdered
     test_nanoflann_adaptor
-    test_octtree
+    test_HyperOctree
     )
 
 set(DEMTestFile dem.h)
@@ -254,7 +254,7 @@ set(MDTest
     test_CellList
     test_CellListOrdered
     test_nanoflann_adaptor
-    test_octtree
+    test_HyperOctree
     )
 
 set(MDLevel1TestFile md_level1.h)
@@ -263,9 +263,9 @@ if (Aboria_USE_THRUST)
     list(APPEND MDLevel1Test
     test_std_vector_CellList
     test_std_vector_CellListOrdered
-    test_std_vector_octtree
+    test_std_vector_HyperOctree
     test_thrust_vector_CellListOrdered
-    test_thrust_vector_octtree
+    test_thrust_vector_HyperOctree
     )
 endif()
 
@@ -276,7 +276,7 @@ set(RbfInterpolationTest
     test_CellList
     test_CellListOrdered
     test_kdtree
-    test_octtree
+    test_HyperOctree
     )
     
 set(RbfPdeTestFile rbf_pde.h)
@@ -304,7 +304,7 @@ set(ChebyshevTest
     test_fast_methods_CellList
     test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
-    test_fast_methods_octtree
+    test_fast_methods_HyperOctree
     test_chebyshev_polynomial_calculation
     )
 
@@ -314,7 +314,7 @@ set(FMMTest
     test_fast_methods_CellList
     test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
-    test_fast_methods_octtree
+    test_fast_methods_HyperOctree
     test_fmm_operators
     )
 
@@ -323,7 +323,7 @@ set(H2Test
     test_fast_methods_CellList
     test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
-    test_fast_methods_octtree
+    test_fast_methods_HyperOctree
     test_fmm_matrix_operators
     )
 
