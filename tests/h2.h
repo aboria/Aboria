@@ -69,7 +69,8 @@ public:
             typename KernelFunction, typename P2PKernelFunction>
   void helper_fast_methods_calculate(ParticlesType &particles,
                                      const KernelFunction &kernel,
-                                     const P2PKernelFunction &p2pkernel) {
+                                     const P2PKernelFunction &p2pkernel,
+                                     const Eigen::MatrixXd &full) {
     const unsigned int dimension = ParticlesType::dimension;
     typedef typename TargetH2::value_type value_type;
     typedef detail::VectorTraits<value_type> scalar_traits;
@@ -205,6 +206,17 @@ public:
     // TODO: why doesn't d=1 or length>1 work?
     if (dimension != 1 && scalar_traits::length == 1)
       TS_ASSERT_LESS_THAN(L2_h2 / scale_source, 1e-8);
+
+    // compare with eigen chol det
+    Eigen::LLT<Eigen::MatrixXd> lltOfFull(full);
+    const double det_full = std::exp(
+        2 * lltOfFull.matrixL().toDenseMatrix().diagonal().array().log().sum());
+    std::cout << std::endl << det_full << std::endl;
+    // get determinant from compressed h2 mat
+    const double det_h2 = h2lib_chol_compress.determinant();
+    std::cout << std::endl << det_h2 << std::endl;
+
+    TS_ASSERT_DELTA(det_full, det_h2, 1e-6 * det_full);
 
     // invert target_manual to get the source
     t0 = Clock::now();
@@ -519,10 +531,12 @@ public:
         bool_d::Constant(false), num_particles_per_bucket);
 
     const double c = 1.0 / std::pow(0.01, 2);
+    const double pi = boost::math::constants::pi<double>();
+    const double kscale = std::sqrt(c / pi) / std::pow(2 * pi, D - 1);
     // const double c = std::pow(0.01,2);
-    auto kernel = [&c](const double_d &pa, const double_d &pb) {
+    auto kernel = [&c, &kscale](const double_d &pa, const double_d &pb) {
       // return std::sqrt((pb-pa).squaredNorm() + c);
-      return std::exp(-(pb - pa).squaredNorm() * c);
+      return kscale * std::exp(-(pb - pa).squaredNorm() * c);
     };
     auto p2pkernel = [&kernel](const_reference pa, const_reference pb) {
       return kernel(get<position>(pa), get<position>(pb));
@@ -551,11 +565,16 @@ public:
               << ". number of particles = " << N
               << ". time = " << time_manual.count() << std::endl;
 
+    // construct full matrix
+    Eigen::MatrixXd full(N, N);
+    auto dense_kernel = create_dense_operator(particles, particles, p2pkernel);
+    dense_kernel.assemble(full);
+
     // helper_fast_methods_calculate<1>(particles,kernel,scale);
     // helper_fast_methods_calculate<2>(particles,kernel,scale);
     helper_fast_methods_calculate<source, target_h2, target_manual,
-                                  inverted_source>(particles, kernel,
-                                                   p2pkernel);
+                                  inverted_source>(particles, kernel, p2pkernel,
+                                                   full);
 
 #ifdef HAVE_EIGEN
     if (D == 2) {
@@ -602,9 +621,15 @@ public:
                 << ". number of particles = " << N
                 << ". time = " << time_manual.count() << std::endl;
 
+      // construct full matrix
+      Eigen::MatrixXd vfull(2 * N, 2 * N);
+      auto vdense_kernel =
+          create_dense_operator(particles, particles, vp2pkernel);
+      vdense_kernel.assemble(vfull);
+
       helper_fast_methods_calculate<vsource, vtarget_h2, vtarget_manual,
                                     vinverted_source>(particles, vkernel,
-                                                      vp2pkernel);
+                                                      vp2pkernel, vfull);
     }
 #endif
   }

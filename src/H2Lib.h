@@ -194,6 +194,30 @@ public:
 
     cholsolve_h2matrix_avector(L, dest_avector);
   }
+
+  double determinant() const { return std::exp(log_determinant()); }
+  double log_determinant() const { return 2 * log_determinant_sum(L); }
+
+private:
+  double log_determinant_sum(ph2matrix h2) const {
+    ASSERT(h2->rsons == h2->csons, "L matrix not square!");
+    // sum up in log space
+    double ld = 0;
+    // inaccessible leaf
+    if (h2->f) {
+      ASSERT(h2->f->rows == h2->f->cols, "diagonal f matrix not square");
+      for (size_t i = 0; i < h2->f->rows; ++i) {
+        ld += std::log(getentry_amatrix(h2->f, i, i));
+      }
+    } else {
+      ASSERT(!h2->u, "found accessible leaf on diagonal!");
+      for (size_t i = 0; i < h2->rsons; ++i) {
+        ld += log_determinant_sum(h2->son[i + i * h2->rsons]);
+      }
+    }
+    std::cout << "ld = " << ld << std::endl;
+    return ld;
+  }
 };
 
 class HLib_LR_Decomposition {
