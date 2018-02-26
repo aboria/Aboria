@@ -50,35 +50,35 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span> <a name="Aboria.Accumulate.data_type"></a><span class="identifier">data_type</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="Accumulate.html#Aboria.Accumulateconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <span class="keyword">explicit</span> <a class="link" href="Accumulate.html#idp71137779313376-bb"><span class="identifier">Accumulate</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="Accumulate.html#idp71137779314560-bb"><span class="identifier">Accumulate</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="Accumulate.html#idp71358628430976-bb"><span class="identifier">Accumulate</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">explicit</span> <a class="link" href="Accumulate.html#idp71358628432160-bb"><span class="identifier">Accumulate</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Accumulate.html#idp71137779310848-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="Accumulate.html#idp71137779311248-bb"><span class="identifier">set_init</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="Accumulate.html#idp71358628428448-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="Accumulate.html#idp71358628428848-bb"><span class="identifier">set_init</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp70989126190736"></a><h2>Description</h2>
+<a name="idp71447234917632"></a><h2>Description</h2>
 <p>an accumulation expression, for example a sum or product over neighbouring particles 
 </p>
 <div class="refsect2">
-<a name="idp70989126191408"></a><h3>
+<a name="idp71447234918304"></a><h3>
 <a name="Aboria.Accumulateconstruct-copy-destruct"></a><code class="computeroutput">Accumulate</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">explicit</span> <a name="idp71137779313376-bb"></a><span class="identifier">Accumulate</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>empty constructor, makes an instantiation of the functor class <code class="computeroutput">T</code>
+<pre class="literallayout"><span class="keyword">explicit</span> <a name="idp71358628430976-bb"></a><span class="identifier">Accumulate</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>empty constructor, makes an instantiation of the functor class <code class="computeroutput">T</code>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idp71137779314560-bb"></a><span class="identifier">Accumulate</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>constructor that passes a single argument to the functor class <code class="computeroutput">T</code>
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">explicit</span> <a name="idp71358628432160-bb"></a><span class="identifier">Accumulate</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>constructor that passes a single argument to the functor class <code class="computeroutput">T</code>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp70989126208112"></a><h3>
-<a name="idp71137779310848-bb"></a><code class="computeroutput">Accumulate</code> public member functions</h3>
+<a name="idp71447234935136"></a><h3>
+<a name="idp71358628428448-bb"></a><code class="computeroutput">Accumulate</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp71137779311248-bb"></a><span class="identifier">set_init</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp71358628428848-bb"></a><span class="identifier">set_init</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
 <p>a function used to set the initial value of the accumulation 
 </p>
 </li></ol></div>
