@@ -403,7 +403,6 @@ public:
 
     vtkSmartPointer<vtkFloatArray> datas[dn];
 
-    const vtkIdType np = points->GetNumberOfPoints();
     const vtkIdType nc = cells->GetNumberOfCells();
 
     mpl::for_each<mpl::range_c<int, 1, dn>>(
@@ -411,7 +410,6 @@ public:
 
     this->clear();
 
-    const unsigned int max_d = std::min(3u, traits_type::dimension);
     for (int j = 0; j < nc; ++j) {
       value_type element;
       mpl::for_each<mpl::range_c<int, 1, dn>>(

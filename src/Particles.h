@@ -624,7 +624,7 @@ public:
     int j = 0;
 
     double write_point[3];
-    const unsigned int max_d = std::min(3u, dimension);
+    const unsigned int max_d = dimension < 3u ? 3u : dimension;
     for (auto i : *this) {
       const int index = j++;
       // std::cout <<"copying point at "<<i.get_position()<<" with id =
