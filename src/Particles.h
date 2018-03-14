@@ -448,7 +448,6 @@ public:
     LOG(2, "Particles:init_neighbour_search: low = "
                << low << " high = " << high << " periodic = " << periodic
                << " n_particles_in_leaf = " << n_particles_in_leaf);
-
     search.set_domain(low, high, periodic, n_particles_in_leaf);
     update_positions(begin(), end());
 

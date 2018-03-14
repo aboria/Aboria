@@ -426,6 +426,7 @@ public:
     //
     pcluster col_t;
     if (row_equals_col && expansions.block_rows == expansions.block_cols) {
+      LOG(2, "H2LibMatrix: row clusters the same as column clusters");
       col_t = row_t;
     } else {
       m_col_idx.resize(col_particles.size() * expansions.block_cols);
