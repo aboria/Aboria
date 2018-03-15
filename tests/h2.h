@@ -209,14 +209,12 @@ public:
 
     // compare with eigen chol det
     Eigen::LLT<Eigen::MatrixXd> lltOfFull(full);
-    const double det_full = std::exp(
-        2 * lltOfFull.matrixL().toDenseMatrix().diagonal().array().log().sum());
-    std::cout << std::endl << det_full << std::endl;
+    const double det_full =
+        2 * lltOfFull.matrixL().toDenseMatrix().diagonal().array().log().sum();
     // get determinant from compressed h2 mat
-    const double det_h2 = h2lib_chol_compress.determinant();
-    std::cout << std::endl << det_h2 << std::endl;
+    const double det_h2 = h2lib_chol_compress.log_determinant();
 
-    TS_ASSERT_DELTA(det_full, det_h2, 1e-6 * det_full);
+    TS_ASSERT_DELTA(det_full, det_h2, std::abs(1e-4 * det_full));
 
     // invert target_manual to get the source
     t0 = Clock::now();
@@ -539,7 +537,11 @@ public:
       return kscale * std::exp(-(pb - pa).squaredNorm() * c);
     };
     auto p2pkernel = [&kernel](const_reference pa, const_reference pb) {
-      return kernel(get<position>(pa), get<position>(pb));
+      if (get<id>(pa) == get<id>(pb)) {
+        return 1.0 + kernel(get<position>(pa), get<position>(pb));
+      } else {
+        return kernel(get<position>(pa), get<position>(pb));
+      }
       // return std::sqrt((get<position>(pb)-get<position>(pa)).squaredNorm() +
       // c); return
       // std::exp(-(get<position>(pb)-get<position>(pa)).squaredNorm()*c);
@@ -551,11 +553,9 @@ public:
 
     auto t0 = Clock::now();
     for (size_t i = 0; i < N; i++) {
-      const double_d pi = get<position>(particles)[i];
       for (size_t j = 0; j < N; j++) {
-        const double_d pj = get<position>(particles)[j];
         get<target_manual>(particles)[i] +=
-            kernel(pi, pj) * get<source>(particles)[j];
+            p2pkernel(particles[i], particles[j]) * get<source>(particles)[j];
       }
     }
     auto t1 = Clock::now();
@@ -582,19 +582,11 @@ public:
       auto vkernel = [&c](const double_d &pa, const double_d &pb) {
         const double_d x = pb - pa;
         const double r2 = x.squaredNorm();
-        const double exp = std::exp(-r2 * c * 100);
         Eigen::Matrix<double, 2, 2> ret;
-        if (r2 == 0) {
-          ret(0, 0) = (1.0 / std::sqrt(2.0) - 1.0) * exp;
-          ret(0, 1) = (1.0 / std::sqrt(2.0)) * exp;
-          ret(1, 0) = ret(0, 1);
-          ret(1, 1) = ret(0, 0);
-        } else {
-          ret(0, 0) = (x[0] * x[0] / r2 - 1) * exp;
-          ret(0, 1) = (x[0] * x[1] / r2) * exp;
-          ret(1, 0) = ret(0, 1);
-          ret(1, 1) = (x[1] * x[1] / r2 - 1) * exp;
-        }
+        ret(0, 0) = std::exp(-r2 * 2 * c);
+        ret(0, 1) = std::exp(-r2 * c * 3);
+        ret(1, 0) = ret(0, 1);
+        ret(1, 1) = 2 * std::exp(-r2 * c * 10);
         return ret;
       };
       auto vp2pkernel = [&](const_reference pa, const_reference pb) {

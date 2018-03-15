@@ -215,7 +215,7 @@ private:
         ld += log_determinant_sum(h2->son[i + i * h2->rsons]);
       }
     }
-    std::cout << "ld = " << ld << std::endl;
+    // std::cout << "ld = " << ld << std::endl;
     return ld;
   }
 };
@@ -311,13 +311,29 @@ class H2LibMatrix {
     const Particles &particles = *std::get<1>(data_cast);
     pclusterbasis rb = (pclusterbasis)rbc;
 
-    const uint k = expansions.m_ncheb * expansions.block_rows;
     if (rb->sons > 0) {
+      // find orders of sons
+      std::vector<size_t> orders(rb->sons);
+      size_t max_order = 0;
+      for (size_t i = 0; i < rb->sons; ++i) {
+        orders[i] = static_cast<size_t>(
+            std::round(std::pow(rb->son[i]->k / expansions.block_rows,
+                                1.0 / Expansions::dimension)));
+        if (orders[i] > max_order)
+          max_order = orders[i];
+      }
+      // increment max order by beta
+      const size_t order = max_order + expansions.m_beta;
+      const uint k =
+          std::pow(order, Expansions::dimension) * expansions.block_rows;
       resize_clusterbasis(rb, k);
       for (size_t i = 0; i < rb->sons; ++i) {
-        expansions.L2L_amatrix(&rb->son[i]->E, rb->son[i]->t, rb->t);
+        expansions.L2L_amatrix(&rb->son[i]->E, rb->son[i]->t, rb->t, orders[i],
+                               order);
       }
     } else {
+      const uint k = std::pow(expansions.m_order, Expansions::dimension) *
+                     expansions.block_rows;
       resize_amatrix(&rb->V, rb->t->size, k);
       expansions.L2P_amatrix(&rb->V, rb->t, rb->t->idx, rb->t->size, particles);
       rb->k = k;
@@ -335,14 +351,31 @@ class H2LibMatrix {
     const Particles &particles = *std::get<1>(data_cast);
     pclusterbasis rb = (pclusterbasis)rbc;
 
-    const uint k = expansions.m_ncheb * expansions.block_cols;
     if (rb->sons > 0) {
+      // find orders of sons
+      std::vector<size_t> orders(rb->sons);
+      size_t max_order = 0;
+      for (size_t i = 0; i < rb->sons; ++i) {
+        orders[i] = static_cast<size_t>(
+            std::round(std::pow(rb->son[i]->k / expansions.block_cols,
+                                1.0 / Expansions::dimension)));
+        if (orders[i] > max_order)
+          max_order = orders[i];
+      }
+      // increment max order by beta
+      const size_t order = max_order + expansions.m_beta;
+      const uint k =
+          std::pow(order, Expansions::dimension) * expansions.block_cols;
+
       resize_clusterbasis(rb, k);
       for (size_t i = 0; i < rb->sons; ++i) {
         // should this be transposed?
-        expansions.M2M_trans_amatrix(&rb->son[i]->E, rb->t, rb->son[i]->t);
+        expansions.M2M_trans_amatrix(&rb->son[i]->E, rb->t, rb->son[i]->t,
+                                     order, orders[i]);
       }
     } else {
+      const uint k = std::pow(expansions.m_order, Expansions::dimension) *
+                     expansions.block_cols;
       resize_amatrix(&rb->V, rb->t->size, k);
       expansions.P2M_trans_amatrix(&rb->V, rb->t, rb->t->idx, rb->t->size,
                                    particles);
@@ -369,8 +402,13 @@ class H2LibMatrix {
     if (h2->u) {
       const uint kr = h2->u->rb->k;
       const uint kc = h2->u->cb->k;
+      const size_t orderr = static_cast<size_t>(std::round(
+          std::pow(kr / expansions.block_rows, 1.0 / Expansions::dimension)));
+      const size_t orderc = static_cast<size_t>(std::round(
+          std::pow(kc / expansions.block_cols, 1.0 / Expansions::dimension)));
       resize_amatrix(&h2->u->S, kr, kc);
-      expansions.M2L_amatrix(&h2->u->S, h2->u->rb->t, h2->u->cb->t);
+      expansions.M2L_amatrix(&h2->u->S, h2->u->rb->t, h2->u->cb->t, orderr,
+                             orderc);
 
     } else if (h2->f) {
       detail::P2P_amatrix(h2->f, h2->rb->t->idx, h2->rb->t->size,
