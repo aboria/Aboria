@@ -448,7 +448,6 @@ public:
     LOG(2, "Particles:init_neighbour_search: low = "
                << low << " high = " << high << " periodic = " << periodic
                << " n_particles_in_leaf = " << n_particles_in_leaf);
-
     search.set_domain(low, high, periodic, n_particles_in_leaf);
     update_positions(begin(), end());
 
@@ -624,7 +623,7 @@ public:
     int j = 0;
 
     double write_point[3];
-    const unsigned int max_d = std::min(3u, dimension);
+    const unsigned int max_d = dimension < 3u ? 3u : dimension;
     for (auto i : *this) {
       const int index = j++;
       // std::cout <<"copying point at "<<i.get_position()<<" with id =

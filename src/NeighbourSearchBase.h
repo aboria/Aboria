@@ -349,8 +349,6 @@ public:
     m_particles_begin = begin;
     m_particles_end = end;
     const size_t dead_and_alive_n = end - begin;
-    CHECK(dead_and_alive_n >= previous_n,
-          "error, particles got deleted somehow");
 
     CHECK(!cast().ordered() || (update_begin == begin && update_end == end),
           "ordered search data structure can only update the entire particle "
@@ -360,7 +358,7 @@ public:
 
     // make sure update range covers new particles
     CHECK(
-        new_n == 0 || (update_end == end && update_end - update_begin >= new_n),
+        new_n <= 0 || (update_end == end && update_end - update_begin >= new_n),
         "detected " << new_n
                     << " new particles, which are not covered by update range");
 

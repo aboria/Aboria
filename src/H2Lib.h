@@ -53,19 +53,21 @@ extern "C" {
 namespace Aboria {
 
 class H2Lib_LR_Decomposition {
-  ph2matrix A;
-  ph2matrix L;
-  ph2matrix R;
+  std::unique_ptr<h2matrix, decltype(&del_h2matrix)> A;
+  std::unique_ptr<h2matrix, decltype(&del_h2matrix)> L;
+  std::unique_ptr<h2matrix, decltype(&del_h2matrix)> R;
   ptruncmode tm;
 
 public:
   H2Lib_LR_Decomposition(const ph2matrix h2mat, const pblock broot,
                          const double tol)
-      : tm(new_releucl_truncmode()) {
+      : A(nullptr, del_h2matrix), L(nullptr, del_h2matrix),
+        R(nullptr, del_h2matrix), tm(new_releucl_truncmode()) {
 
     pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
     pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
-    A = clone_h2matrix(h2mat, rbcopy, cbcopy);
+    A = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
+        clone_h2matrix(h2mat, rbcopy, cbcopy), del_h2matrix);
 
     pclusteroperator Arwf = prepare_row_clusteroperator(A->rb, A->cb, tm);
     pclusteroperator Acwf = prepare_col_clusteroperator(A->rb, A->cb, tm);
@@ -75,21 +77,18 @@ public:
     pclusterbasis Rrcb = build_from_cluster_clusterbasis(A->rb->t);
     pclusterbasis Rccb = build_from_cluster_clusterbasis(A->cb->t);
 
-    L = build_from_block_lower_h2matrix(broot, Lrcb, Lccb);
-    R = build_from_block_upper_h2matrix(broot, Rrcb, Rccb);
+    L = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
+        build_from_block_lower_h2matrix(broot, Lrcb, Lccb), del_h2matrix);
+    R = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
+        build_from_block_upper_h2matrix(broot, Rrcb, Rccb), del_h2matrix);
 
     pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
     pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
     pclusteroperator Rrwf = prepare_row_clusteroperator(R->rb, R->cb, tm);
     pclusteroperator Rcwf = prepare_col_clusteroperator(R->rb, R->cb, tm);
 
-    lrdecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, R, Rrwf, Rcwf, tm, tol);
-  }
-
-  ~H2Lib_LR_Decomposition() {
-    del_h2matrix(L);
-    del_h2matrix(R);
-    del_h2matrix(A);
+    lrdecomp_h2matrix(A.get(), Arwf, Acwf, L.get(), Lrwf, Lcwf, R.get(), Rrwf,
+                      Rcwf, tm, tol);
   }
 
   // TODO: match eigen's interface for solver
@@ -120,38 +119,41 @@ public:
         new_pointer_avector(reinterpret_cast<double *>(dest.data()),
                             dest.size() * traitsT2::length);
 
-    lrsolve_h2matrix_avector(L, R, dest_avector);
+    lrsolve_h2matrix_avector(L.get(), R.get(), dest_avector);
   }
 };
 
 class H2LibCholeskyDecomposition {
-  ph2matrix A;
-  ph2matrix L;
+  std::unique_ptr<h2matrix, decltype(&del_h2matrix)> A;
+  std::unique_ptr<h2matrix, decltype(&del_h2matrix)> L;
   ptruncmode tm;
 
 public:
   H2LibCholeskyDecomposition(const ph2matrix h2mat, const pblock broot,
                              const double tol)
-      : tm(new_releucl_truncmode()) {
+      : A(nullptr, del_h2matrix), L(nullptr, del_h2matrix),
+        tm(new_releucl_truncmode()) {
 
     pclusterbasis rbcopy = clone_clusterbasis(h2mat->rb);
     pclusterbasis cbcopy = clone_clusterbasis(h2mat->cb);
-    A = clone_h2matrix(h2mat, rbcopy, cbcopy);
+    A = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
+        clone_h2matrix(h2mat, rbcopy, cbcopy), del_h2matrix);
 
     pclusterbasis Lrcb = build_from_cluster_clusterbasis(h2mat->rb->t);
     pclusterbasis Lccb = build_from_cluster_clusterbasis(h2mat->rb->t);
     ASSERT_CUDA(h2mat->rb->t == h2mat->cb->t);
 
-    L = build_from_block_lower_h2matrix(broot, Lrcb, Lccb);
+    L = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
+        build_from_block_lower_h2matrix(broot, Lrcb, Lccb), del_h2matrix);
 
     pclusteroperator Lrwf = prepare_row_clusteroperator(L->rb, L->cb, tm);
     pclusteroperator Lcwf = prepare_col_clusteroperator(L->rb, L->cb, tm);
 
     pclusteroperator Arwf = nullptr;
     pclusteroperator Acwf = nullptr;
-    init_cholesky_h2matrix(A, &Arwf, &Acwf, tm);
+    init_cholesky_h2matrix(A.get(), &Arwf, &Acwf, tm);
 
-    choldecomp_h2matrix(A, Arwf, Acwf, L, Lrwf, Lcwf, tm, tol);
+    choldecomp_h2matrix(A.get(), Arwf, Acwf, L.get(), Lrwf, Lcwf, tm, tol);
 
     /*
     pclusteroperator rwfh2 = prepare_row_clusteroperator(A->rb, A->cb, tm);
@@ -161,11 +163,6 @@ public:
     std::cout << "error in factorisation is
     "<<norm2_h2matrix(A)/error<<std::endl;
     */
-  }
-
-  ~H2LibCholeskyDecomposition() {
-    del_h2matrix(L);
-    del_h2matrix(A);
   }
 
   // TODO: match eigen's interface for solver
@@ -192,11 +189,27 @@ public:
         new_pointer_avector(reinterpret_cast<double *>(dest.data()),
                             dest.size() * traitsT2::length);
 
-    cholsolve_h2matrix_avector(L, dest_avector);
+    cholsolve_h2matrix_avector(L.get(), dest_avector);
   }
 
+  ///
+  /// @brief returns the determinant of the H2 matrix that was used to make this
+  /// decomposition
+  ///
+  /// @return double
+  /// @return NaN if negative eigenvalues found (i.e. H2 matrix not positive
+  /// definite)
   double determinant() const { return std::exp(log_determinant()); }
-  double log_determinant() const { return 2 * log_determinant_sum(L); }
+
+  ///
+  /// @brief returns the log determinant of the H2 matrix that was used to make
+  /// this decomposition.
+  ///
+  /// @return double
+  /// @return NaN if negative eigenvalues found (i.e. H2 matrix not positive
+  /// definite)
+  /// @return -HUGE_VAL if zero eigenvalues found
+  double log_determinant() const { return 2 * log_determinant_sum(L.get()); }
 
 private:
   double log_determinant_sum(ph2matrix h2) const {
@@ -215,7 +228,6 @@ private:
         ld += log_determinant_sum(h2->son[i + i * h2->rsons]);
       }
     }
-    // std::cout << "ld = " << ld << std::endl;
     return ld;
   }
 };
@@ -452,6 +464,7 @@ public:
     //
     pcluster col_t;
     if (row_equals_col && expansions.block_rows == expansions.block_cols) {
+      LOG(2, "H2LibMatrix: row clusters the same as column clusters");
       col_t = row_t;
     } else {
       m_col_idx.resize(col_particles.size() * expansions.block_cols);
