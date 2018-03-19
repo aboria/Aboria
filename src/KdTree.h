@@ -154,48 +154,11 @@ private:
   KdtreeQuery<Traits> &get_query_impl() { return m_query; }
 
 private:
-  struct calculate_max_span {
-    const vector_d *position;
-    const int *sorted_indices[D];
-    const int *nodes_begin;
-    const int *nodes_end;
-    double *split;
-    int *split_d;
-    calculate_max_span(const vector_double_d &_position,
-                       const std::array<vector_int, D> &_sorted_indices,
-                       const vector_int &_nodes_begin,
-                       const vector_int &_nodes_end, vector_double &_split,
-                       vector_int &_split_d) {
-      position = iterator_to_raw_pointer(_position.begin());
-      nodes_begin = iterator_to_raw_pointer(_nodes_begin.begin());
-      nodes_end = iterator_to_raw_pointer(_nodes_end).begin());
-      split = iterator_to_raw_pointer(_split.begin());
-      split_d = iterator_to_raw_pointer(_split_d.begin());
-      for (size_t i = 0; i < D; ++i) {
-        sorted_indices[i] = make_raw_pointer(_sorted_indices[i]);
-      }
-    }
-    void operator(const int i) {
-      double max_span = position[m_sorted_indices[0][m_nodes_end[i]]][0] -
-                        position[m_sorted_indices[0][m_nodes_begin[i]]][0];
-      int max_d = 0;
-      for (size_t d = 1; d < D; ++d) {
-        const double span = position[m_sorted_indices[d][nodes_end[i]]][d] -
-                            position[m_sorted_indices[d][nodes_begin[i]]][d];
-        if (span > max_span) {
-          max_d = d;
-          max_span = span;
-        }
-      }
-      split[i] = m_sorted_indices[max_d][m_nodes_begin[i]] + max_span / 2;
-      split_d[i] = max_d;
-    }
-  };
   void build_tree() {
     const size_t num_points = this->m_alive_indices.size();
-    m_active_nodes.resize(1);
-    m_active_nodes[0] =
-        0; // >= 0 index of particle, < 0 index of 1st child node
+    vector_int active_nodes(1);
+    vector_int next_nodes(1);
+    active_nodes[0] = 0; // >= 0 index of particle, < 0 index of 1st child node
     vector_int node_mask(num_points, 0);
     while (!m_active_nodes.empty()) {
       m_nodes.append(m_active_nodes);
@@ -203,10 +166,11 @@ private:
       // get min bounds (TODO: can combine?)
       double_d_vector min_bounds(m_active_nodes.size());
       detail::reduce_by_key(
-          node_mask[i].begin(), node_mask[i].end(),
-          get<position>(this->m_particles_begin), m_active_nodes.begin(),
-          min_bounds.begin(), detail::equal_to<int>(),
-          [](const double_d &a, const double_d &b) { return a.min(b); });
+          node_mask[i].begin(), node_mask[i].end(), m_alive_indices.begin(),
+          m_active_nodes.begin(), min_bounds.begin(), detail::equal_to<int>(),
+          [_p =
+               iterator_to_raw_pointer(get<position>(this->m_particles_begin))](
+              const int &a, const int &b) { return _p[a].min(_p[b]); });
 
       // get max bounds
       double_d_vector max_bounds(m_active_nodes.size());
@@ -230,40 +194,77 @@ private:
                         });
 
       // partition m_sorted_indices by split
+      // TODO: refactor this to a separate algorithm in detail
+      //
       //(Sengupta, S., Harris, M., Zhang, Y., & Owens, J. D. (2007). Scan
       // primitives for GPU computing. Graphics …, 97–106.
       // http://doi.org/10.2312/EGGH/EGGH07/097-106)
-      vector_int e(m_sorted_indices[i].size());
-      vector_int f(m_sorted_indices[i].size());
-      vector_int addr(m_sorted_indices[i].size());
+      vector_int e(node_mask.size());
+      vector_int f(node_mask.size());
+      vector_int addr(node_mask.size());
       // [t f t f f t f] #in
       // [0 1 0 1 1 0 1] #e = set 1 in false elts.
-      detail::for_each_n(
-          m_sorted_indices[i].begin(), m_sorted_indices[i].end(),
-          [_position =
-               iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
-           _node_mask = iterator_to_raw_pointer(node_mask[i].begin()),
-           _split_d = iterator_to_raw_pointer(split_d),
-           _split = iterator_to_raw_pointer(split)](const int j) {
-            const int split_d = _split_d[_node_mask[j]];
-            const double split = _split[_node_mask[j]];
-            return static_cast<int>(_position[j][split_d] < split);
+      detail::transform(
+          detail::make_zip_iterator(
+              detail::make_tuple(m_alive_indices.begin(), node_mask.begin())),
+          detail::make_zip_iterator(
+              detail::make_tuple(m_alive_indices.end(), node_mask.end())),
+          e.begin(),
+          [_p = iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
+           _split = iterator_to_raw_pointer(split),
+           _split_d = iterator_to_raw_pointer(split_d)](const auto &i_m) {
+            const int &node_index = get<1>(i_m);
+            const double &p = _p[get<0>(i_m)][_split_d[node_index]];
+            const double &s = _split[node_index];
+            return static_cast<int>(p < s);
           });
+
       // [0 0 1 1 2 3 3] #f = enumerate with false=1
       detail::exclusive_scan_by_key(node_mask[i].begin(), node_mask[i].end(),
                                     e.begin(), f.begin());
-      //              4  # add two last elts. in e, f
-      detail::for_each_n(m_active_nodes.begin(), m_active_nodes.end(),
-                         calculate_max_span(m_sorted_indices, split, split_d));
-
+      // [4 4 4 4 4 4 4] # add two last elts. in e, f and scan copy to segment
       //                 # ==total # of falses
-      //                 # set as shared variable NF
+      // TODO: only need to copy last element in segment...
+      vector_int num_false(e.size());
+      detail::transform(detail::make_tuple(e.end(), f.end()), num_false.begin(),
+                        [](const auto &i) { return get<0>(i) + get<1>(i); });
+      detail::exclusive_scan_by_key(
+          node_mask[i].begin(), node_mask[i].end(),
+          detail::make_reverse_iterator(num_false.end()),
+          [](const auto &a, const auto &b) { return a; });
       //[0 1 2 3 4 5 6]  # each thread knows its id
       //[4 5 5 6 6 6 7]  # t = id - f + NF
       //[4 0 5 1 2 6 3]  # addr = e ? f : t
+      detail::for_each_n(node_mask.begin(), node_mask.end(),
+                         [_addr = iterator_to_raw_pointer(addr.begin()),
+                          _e = iterator_to_raw_pointer(e.begin()),
+                          _f = iterator_to_raw_pointer(f.begin()),
+                          _num_false = iterator_to_raw_pointer(
+                              num_false.begin())](const int i) {
+                           _addr[i] = _e[i] ? _f : i - _f[i] + _num_false[i];
+                         });
       //[f f f f t t t]  # out[addr] = in (scatter)
+      vector_int alive_indices_buffer(m_alive_indices.size());
+      detail::scatter(m_alive_indices.begin(), m_alive_indices.end(),
+                      addr.begin(), alive_indices_buffer.begin());
+      m_alive_indices.swap(alive_indices_buffer);
 
-      // remove leaf nodes from active_nodes
+      // setup new level nodes
+      next_nodes.resize(2 * active_nodes.size());
+      detail::tabulate(
+          active_nodes.begin(), active_nodes.end(), [](const int i) {
+            const int first_particle_index = _active_nodes[i];
+            const int last_particle_index = _active_nodes[i + 1];
+            const int first_node_size = _num_false[first_particle_index];
+            const int second_node_size =
+                (last_particle_index - first_particle_index) - first_node_size;
+            _next_nodes[2 * i] =
+                first_node_size > threshold ? first_particle_index: ;
+            _next_nodes[2 * i + 1] =
+                first_particle_index + _num_false[first_particle_index];
+          });
+      // remove leaf nodes
+      detail::remove_if(next_nodes.begin(), next_nodes.end(), )
       // add remainder to active_nodes
     }
   }
