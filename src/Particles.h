@@ -672,7 +672,7 @@ public:
       value_type particle;
       const double *r = points->GetPoint(j);
       for (size_t d = 0; d < dimension; ++d) {
-        get<position>(particle)[d] = d < 3 : r[d] : 0;
+        get<position>(particle)[d] = d < 3 ? r[d] : 0;
       }
       mpl::for_each<mpl::range_c<int, 1, dn>>(
           detail::read_into_tuple<reference>(particle.get_tuple(), j, datas));
