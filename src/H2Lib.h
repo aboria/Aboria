@@ -167,7 +167,7 @@ public:
 
   // TODO: match eigen's interface for solver
   /*
-  template <typename DerivedRHS>
+  template <typename DerivedRHSkk>
   void solve(const Eigen::DenseBase<DerivedRHS> &source,
                    Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
       ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take

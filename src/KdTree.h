@@ -156,42 +156,107 @@ private:
 private:
   void build_tree() {
     const size_t num_points = this->m_alive_indices.size();
-    vector_int active_nodes(1);
-    vector_int next_nodes(1);
-    active_nodes[0] = 0; // >= 0 index of particle, < 0 index of 1st child node
-    vector_int node_mask(num_points, 0);
-    while (!m_active_nodes.empty()) {
-      m_nodes.append(m_active_nodes);
+
+    // setup nodes
+    vector_int2     parents_leaf(1, vint2(0,num_points);
+    vector_double_d parents_bmin(1, this->m_bounds.bmin);
+    vector_double_d parents_bmax(1, this->m_bounds.bmax);
+
+    // setup particles
+    vector_int particle_node(num_points, 0);
+    vector_int particle_indicies(D*num_points);
+    for (size_t i = 0; i < D; ++i) {
+    detail::copy(this->m_alive_indices.begin(),this->m_alive_indices.end(),particle_indicies.begin + i*num_points);
+    }
+
+    // setup tree
+    m_nodes.clear();
+    m_nodes_split.clear();
+    m_nodes_dim.clear();
+    // m_nodes_child  int-> index of first child node (<0 is a leaf, gives index
+    // of 1st particle)
+    //
+    // m_nodes_split double-> (node) location of split (leaf) not used
+    //
+    // m_nodes_dim   int-> (node) dimension of split (leaf) -index of
+    // last+1 particle
+    // m_leafs int2 -> indicies of particles
+    while (!parents_leaf.empty()) {
+      // make a handy transform iterator that gets the particle positions
+      /*
+      auto positions_begin = detail::make_transform_iterator(
+          particle_indicies.begin(),
+          [_p = iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
+           _alive_indicies =
+               iterator_to_raw_pointer(this->m_alive_indices.begin())](
+              const int i) { return _p[_alive_indicies[i]]; });
 
       // get min bounds (TODO: can combine?)
-      double_d_vector min_bounds(m_active_nodes.size());
+      double_d_vector parents_pmin(num_parents);
+      const int num_parents = parents_leaf.size();
+      vector_int parents(num_parents);
       detail::reduce_by_key(
-          node_mask[i].begin(), node_mask[i].end(), m_alive_indices.begin(),
-          m_active_nodes.begin(), min_bounds.begin(), detail::equal_to<int>(),
-          [_p =
-               iterator_to_raw_pointer(get<position>(this->m_particles_begin))](
-              const int &a, const int &b) { return _p[a].min(_p[b]); });
+          node_mask[i].begin(), node_mask[i].end(), positions_begin,
+          parents.begin(), parents_pmin.begin(),
+          detail::equal_to<int>(),
+          [_p = iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
+           _alive_indicies =
+               iterator_to_raw_pointer(this->m_alive_indices.begin())](
+              const double_d &a, const double_d &b) { return a.min(b); });
 
       // get max bounds
-      double_d_vector max_bounds(m_active_nodes.size());
+      double_d_vector parents_pmax(num_parents);
       detail::reduce_by_key(
-          node_mask[i].begin(), node_mask[i].end(),
-          get<position>(this->m_particles_begin), m_active_nodes.begin(),
-          max_bounds.begin(), detail::equal_to<int>(),
+          node_mask[i].begin(), node_mask[i].end(), positions_begin,
+          parents.begin(), parents_pmax.begin(),
+          detail::equal_to<int>(),
           [](const double_d &a, const double_d &b) { return a.max(b); });
+          */
 
-      // calc split (median of largest dimension span)
-      vector_double split(min_bounds.size());
-      vector_int split_d(min_bounds.size());
-      detail::transform(detail::make_zip_iterator(detail::make_tuple(
-                            min_bounds.begin(), max_bounds.begin())),
-                        detail::make_zip_iterator(detail::make_tuple(
-                            min_bounds.end(), max_bounds.end())),
-                        detail::make_zip_iterator(
-                            detail::make_tuple(split_d.begin(), split.begin())),
-                        [](const auto &min_max) {
-
-                        });
+      // calc split ( median of longest dimension)
+      vector_double parents_split_pos(num_parents);
+      vector_int    parents_split_dim(num_parents);
+      detail::tabulate(
+              detail::make_zip_iterator(detail::make_tuple(
+          parents_split_pos.begin(), parents_split_dim.begin())),
+                detail::make_zip_iterator(detail::make_tuple(
+          parents_split_pos.end(), parents_split_dim.end())),
+                       [](const int i) {
+                         const double_d &minp = get<0>(tpl);
+                         const double_d &maxp = get<1>(tpl);
+                         const double_d &minb = get<2>(tpl);
+                         const double_d &maxb = get<3>(tpl);
+                         const int &split_d = get<4>(tpl);
+                         const int &split = get<5>(tpl);
+                         double max_span = -1;
+                         for (size_t i = 0; i < D; ++i) {
+                           const double span = maxb[i] - minb[i];
+                           if (span > max_span) {
+                             max_span = span;
+                           }
+                         }
+                         double max_spread = -1;
+                         int cut_d = 0;
+                         for (size_t i = 0; i < D; ++i) {
+                           const double span = maxb[i] - minb[i];
+                           if (span >= (1 - EPS) * max_span) {
+                             const double spread = maxp[i] - minp[i];
+                             if (spread > max_spread) {
+                               max_spread = spread;
+                               cut_d = i;
+                             }
+                           }
+                         }
+                         const double cut = 0.5 * (bmax[cut_d] + bmin[cut_d]);
+                         if (cut < minp[cut_d]) {
+                           split = minp[cut_d];
+                         } else if (cut > maxp[cut_d]) {
+                           split = maxp[cut_d];
+                         } else {
+                           split = cut;
+                         }
+                         split_d = cut_d;
+                       });
 
       // partition m_sorted_indices by split
       // TODO: refactor this to a separate algorithm in detail
@@ -206,9 +271,9 @@ private:
       // [0 1 0 1 1 0 1] #e = set 1 in false elts.
       detail::transform(
           detail::make_zip_iterator(
-              detail::make_tuple(m_alive_indices.begin(), node_mask.begin())),
+              detail::make_tuple(particle_indicies.begin(), node_mask.begin())),
           detail::make_zip_iterator(
-              detail::make_tuple(m_alive_indices.end(), node_mask.end())),
+              detail::make_tuple(particle_indicies.end(), node_mask.end())),
           e.begin(),
           [_p = iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
            _split = iterator_to_raw_pointer(split),
@@ -224,48 +289,135 @@ private:
                                     e.begin(), f.begin());
       // [4 4 4 4 4 4 4] # add two last elts. in e, f and scan copy to segment
       //                 # ==total # of falses
-      // TODO: only need to copy last element in segment...
-      vector_int num_false(e.size());
-      detail::transform(detail::make_tuple(e.end(), f.end()), num_false.begin(),
-                        [](const auto &i) { return get<0>(i) + get<1>(i); });
-      detail::exclusive_scan_by_key(
-          node_mask[i].begin(), node_mask[i].end(),
-          detail::make_reverse_iterator(num_false.end()),
-          [](const auto &a, const auto &b) { return a; });
+      vector_int parents_nf(num_parents);
+      detail::tabulate(parents_nf.begin, parents_nf.end(),
+                       [_e = iterator_to_raw_pointer(e.begin()),
+                        _f = iterator_to_raw_pointer(f.begin())](const int i) {
+                         const int last_particle_index =
+                             _parents_leaf[i][1];
+                         return e[last_particle_index] + f[last_particle_index];
+                       });
+
       //[0 1 2 3 4 5 6]  # each thread knows its id
       //[4 5 5 6 6 6 7]  # t = id - f + NF
       //[4 0 5 1 2 6 3]  # addr = e ? f : t
-      detail::for_each_n(node_mask.begin(), node_mask.end(),
-                         [_addr = iterator_to_raw_pointer(addr.begin()),
-                          _e = iterator_to_raw_pointer(e.begin()),
-                          _f = iterator_to_raw_pointer(f.begin()),
-                          _num_false = iterator_to_raw_pointer(
-                              num_false.begin())](const int i) {
-                           _addr[i] = _e[i] ? _f : i - _f[i] + _num_false[i];
-                         });
-      //[f f f f t t t]  # out[addr] = in (scatter)
-      vector_int alive_indices_buffer(m_alive_indices.size());
-      detail::scatter(m_alive_indices.begin(), m_alive_indices.end(),
-                      addr.begin(), alive_indices_buffer.begin());
-      m_alive_indices.swap(alive_indices_buffer);
-
-      // setup new level nodes
-      next_nodes.resize(2 * active_nodes.size());
       detail::tabulate(
-          active_nodes.begin(), active_nodes.end(), [](const int i) {
-            const int first_particle_index = _active_nodes[i];
-            const int last_particle_index = _active_nodes[i + 1];
-            const int first_node_size = _num_false[first_particle_index];
-            const int second_node_size =
-                (last_particle_index - first_particle_index) - first_node_size;
-            _next_nodes[2 * i] =
-                first_node_size > threshold ? first_particle_index: ;
-            _next_nodes[2 * i + 1] =
-                first_particle_index + _num_false[first_particle_index];
+          addr.begin(), addr.end(),
+          [_addr = iterator_to_raw_pointer(addr.begin()),
+           _e = iterator_to_raw_pointer(e.begin()),
+           _f = iterator_to_raw_pointer(f.begin()),
+           _num_false =
+               iterator_to_raw_pointer(num_false.begin())](const int i) {
+            const int node_index = _node_mask[i];
+            _addr[i] =
+                _e[i] ? _f : i - _f[i] + _parents_nf[node_index];
           });
-      // remove leaf nodes
-      detail::remove_if(next_nodes.begin(), next_nodes.end(), )
-      // add remainder to active_nodes
+
+      //[f f f f t t t]  # out[addr] = in (scatter)
+      vector_int particle_indicies_buffer(particle_indicies.size());
+      detail::scatter(particle_indicies.begin(), particle_indicies.end(),
+                      addr.begin(), particle_indicies_buffer.begin());
+      particle_indicies.swap(particle_indicies_buffer);
+      // scatter e to new positions (used to update node mask)
+      detail::scatter(e.begin(), e.end(), addr.begin(),
+                      particle_indicies_buffer.begin());
+      e.swap(particle_indicies_buffer);
+
+      // split the nodes on this level and classify them
+      const int num_children = 2*num_parents;
+      vector_int2 children_leaf(num_children);
+      vector_double_d children_bmin(num_children);
+      vector_double_d children_bmax(num_children);
+      vector_int children_type(next_nodes_leaf.size());
+
+      detail::tabulate(
+          detail::make_zip_iterator(detail::make_tuple(
+              children_leaf.begin(), children_bmin.begin(),
+              children_bmax.begin(), children_type.begin())),
+        detail::make_zip_iterator(detail::make_tuple(
+              children_leaf.end(), children_bmin.end(),
+              children_bmax.end(), children_type.end())),
+          [](const int i) {
+            const int active_node_index = i / 2 const int right_node = i % s;
+            const int2 leaf = _active_nodes_leaf[active_node_index];
+            const int split_d = _active_nodes_split_d[active_node_index];
+            const double split = _active_nodes_split[active_node_index];
+            const int nf = _active_nodes_n_false[active_node_index];
+            const double bmin = _active_nodes_bmin[active_node_index];
+            const double bmax = _active_nodes_bmax[active_node_index];
+            const int n = leaf[1] - leaf[0];
+            if (right_node) {
+              leaf[0] = leaf[1] - (n - nf);
+              bmin[splid_d] = split;
+            } else {
+              leaf[1] = leaf[0] + nf;
+              bmax[splid_d] = split;
+            }
+            const int is_node = static_cast<int>(leaf[1] - leaf[0] > threshold);
+            return detail::make_tuple(leaf, bmin, bmax, is_node);
+          });
+
+      // enumerate nodes and leafs
+      vector_int children_num_nodes(num_children);
+      detail::exclusive_scan(children_type.begin(), children_type.end(), 
+                             children_num_nodes.begin());
+
+      // update mask with children indicies
+      detail::transform(detail::make_zip_iterator(
+                            detail::make_tuple(node_mask.begin(), e.begin())),
+                        node_mask.end(), node_mask.begin(), [](const auto &i) {
+                          const int child_index = 2 * get<0>(i) + get<1>(i);
+                          return _children_num_nodes[child_index];
+                        });
+
+      // remove leaf nodes from node_mask, and particle_indicies
+      auto new_end =
+          detail::remove_if(
+              detail::make_zip_iterator(detail::make_tuple(
+                  particle_indicies.begin(), node_mask.begin())),
+              detail::make_zip_iterator(detail::make_tuple(
+                  particle_indicies.end(), node_mask.end())),
+              [](const auto &i) {
+                return get<1>(i) < 0;
+              })
+              .get_iterator_tuple();
+      particle_indicies.erase(get<0>(new_end), particle_indicies.end());
+      node_mask.erase(get<1>(new_end), node_mask.end());
+
+      // add children to tree
+      const int total_children_nodes = *(children_num_nodes.end()-1) 
+                                        + *children_type.end();
+      const int children_begin = m_nodes_child.size();
+      const int children_end = children_begin + num_children;
+      m_nodes_child.resize(children_end); 
+      detail::tabulate(m_nodes_child.begin()+children_end,m_nodes_child.end(),[](const int i) {
+              const int node_index = _num_nodes_and_leafs[i][0];
+              const int parent_index = static_cast<int>(std::floor(i/2.0));
+              const bool is_node = node_index >= 0;
+              const vint2 leaf = _next_nodes_leaf[i];
+              const int split_dim = _active_nodes_split_d[parent_index];
+
+                const int child = is_node ? children_end + 2*get<0>(i) : -leaf[0];
+              const double split = _active_nodes_split[parent_index];
+                const int dim = is_node ? split_dim : -leaf[1];
+                return detail::make_tuple(child,split,dim);
+              });
+
+      // setup parent nodes (don't copy leafs)
+      parent_leaf.resize(total_children_nodes);
+      parent_bmin.resize(total_children_nodes);
+      parent_bmax.resize(total_children_nodes);
+      detail::copy_if(
+              detail::make_zip_iterator(detail::make_tuple(
+                  children_leaf.begin(), children_bmin.begin(), children_bmax.begin())),
+                detail::make_zip_iterator(detail::make_tuple(
+                  children_leaf.end(), children_bmin.end(), children_bmax.end())),
+                detail::make_zip_iterator(detail::make_tuple(
+                  parent_leaf.begin(), parent_bmin.begin(), parent_bmax.begin())),
+                children_type.begin(),
+              [](const int i) {
+                return i == 1;
+              });
     }
   }
 
