@@ -206,6 +206,25 @@ template <typename RandomIt> void sort(RandomIt start, RandomIt end) {
   detail::sort(start, end, typename is_std_iterator<RandomIt>::type());
 }
 
+template <typename RandomIt, typename StrictWeakOrdering>
+void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp,
+          std::true_type) {
+  std::sort(start, end, comp);
+}
+
+#ifdef __aboria_have_thrust__
+template <typename RandomIt, typename StrictWeakOrdering>
+void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp,
+          std::false_type) {
+  thrust::sort(start, end, comp);
+}
+#endif
+
+template <typename RandomIt, typename StrictWeakOrdering>
+void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp) {
+  detail::sort(start, end, typename is_std_iterator<RandomIt>::type());
+}
+
 template <typename T1, typename T2>
 void sort_by_key(T1 start_keys, T1 end_keys, T2 start_data, std::true_type) {
   typedef zip_iterator<std::tuple<T1, T2>, mpl::vector<>> pair_zip_type;
@@ -642,6 +661,33 @@ exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1,
   return detail::exclusive_scan_by_key(
       first1, last1, first2, result, init,
       typename is_std_iterator<InputIterator1>::type());
+}
+
+template <typename InputIterator1, typename InputIterator2,
+          typename RandomAccessIterator>
+void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map,
+             RandomAccessIterator output, std::true_type) {
+  const size_t n = last - first;
+  for (size_t i = 0; i < n; ++i) {
+    output[map[i]] = first[i];
+  }
+}
+
+#ifdef __aboria_have_thrust__
+template <typename InputIterator1, typename InputIterator2,
+          typename RandomAccessIterator>
+void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map,
+             RandomAccessIterator output, std::false_type) {
+  thrust::scatter(first, last, map, output);
+}
+#endif
+
+template <typename InputIterator1, typename InputIterator2,
+          typename RandomAccessIterator, typename Predicate>
+void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map,
+             RandomAccessIterator output) {
+  detail::scatter(first, last, map, output,
+                  typename is_std_iterator<RandomAccessIterator>::type());
 }
 
 template <typename InputIterator1, typename InputIterator2,

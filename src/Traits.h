@@ -109,6 +109,7 @@ struct TraitsCommon<std::tuple<TYPES...>, DomainD, SelfD, traits>
   typedef typename traits::template vector_type<Vector<bool, DomainD>>::type
       vector_bool_d;
   typedef typename traits::template vector_type<int>::type vector_int;
+  typedef typename traits::template vector_type<double>::type vector_double;
   typedef typename traits::template vector_type<size_t>::type vector_size_t;
   typedef typename traits::template vector_type<unsigned int>::type
       vector_unsigned_int;

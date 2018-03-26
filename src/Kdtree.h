@@ -158,7 +158,7 @@ private:
     // copy sorted indicies from 1st dim back to m_alive_indicies
     detail::copy(m_particle_indicies.begin(),
                  m_particle_indicies.begin() + num_points,
-                 this->m_alive_indicies.begin());
+                 this->m_alive_indices.begin());
 
     this->m_query.m_nodes_child =
         iterator_to_raw_pointer(m_nodes_child.begin());
@@ -366,22 +366,23 @@ private:
                iterator_to_raw_pointer(parents_split_pos.begin()),
            _parents_bmin = iterator_to_raw_pointer(parents_bmin.begin()),
            _parents_bmax = iterator_to_raw_pointer(parents_bmax.begin()),
+           _parents_nf = iterator_to_raw_pointer(parents_nf.begin()),
            _threshold = this->m_n_particles_in_leaf](const int i) {
             const int node_index = i / 2;
-            const int right_node = i % s;
-            const int2 leaf = _parents_leaf[node_index];
+            const int right_node = i % 2;
             const int split_d = _parents_split_dim[node_index];
             const double split = _parents_split_pos[node_index];
             const int nf = _parents_nf[node_index];
-            const double bmin = _parents_bmin[node_index];
-            const double bmax = _parents_bmax[node_index];
-            const int n = leaf[1] - leaf[0];
+
+            vdouble3 bmin = _parents_bmin[node_index];
+            vdouble3 bmax = _parents_bmax[node_index];
+            vint2 leaf = _parents_leaf[node_index];
             if (right_node) {
-              leaf[0] = leaf[1] - (n - nf);
-              bmin[splid_d] = split;
+              leaf[0] = leaf[0] + nf;
+              bmin[split_d] = split;
             } else {
               leaf[1] = leaf[0] + nf;
-              bmax[splid_d] = split;
+              bmax[split_d] = split;
             }
             const int is_node =
                 static_cast<int>(leaf[1] - leaf[0] > _threshold);
@@ -390,15 +391,15 @@ private:
 
       // enumerate nodes and leafs
       detail::exclusive_scan(children_type.begin(), children_type.end(),
-                             children_num_nodes.begin());
+                             children_num_nodes.begin(), 0);
 
       // update mask with children indicies
       detail::transform(
           detail::make_zip_iterator(
-              detail::make_tuple(particle_node.begin(), e.begin())),
+              detail::make_tuple(m_particle_node.begin(), e.begin())),
           detail::make_zip_iterator(
-              detail::make_tuple(particle_node.end(), e.end())),
-          particle_node.begin(),
+              detail::make_tuple(m_particle_node.end(), e.end())),
+          m_particle_node.begin(),
           [_children_num_nodes =
                iterator_to_raw_pointer(children_num_nodes.begin()),
            _children_type =
@@ -426,21 +427,18 @@ private:
                              m_nodes_split_dim.begin()));
       detail::tabulate(
           tree_it + children_begin, tree_it + children_end,
-          [_children_num_nodes =
-               iterator_to_raw_pointer(children_num_nodes.begin()),
-           _children_type = iterator_to_raw_pointer(children_type.begin()),
+          [_children_type = iterator_to_raw_pointer(children_type.begin()),
            _children_leaf = iterator_to_raw_pointer(children_leaf.begin()),
            _parents_split_dim =
                iterator_to_raw_pointer(parents_split_dim.begin()),
            _parents_split_pos = iterator_to_raw_pointer(
                parents_split_pos.begin())](const int i) {
             const int parent_index = i / 2;
-            const int next_level_index = _children_num_nodes[i];
             const int is_node = _children_type[i];
             const vint2 leaf = _children_leaf[i];
             const int split_dim = _parents_split_dim[parent_index];
 
-            const int child = is_node ? children_end + 2 * get<0>(i) : -leaf[0];
+            const int child = is_node ? children_end + 2 * i : -leaf[0];
             const double split = _parents_split_pos[parent_index];
             const int dim = is_node ? split_dim : -leaf[1];
             return detail::make_tuple(child, split, dim);
@@ -453,13 +451,13 @@ private:
 #endif
 
       // setup new parent nodes (don't copy leafs)
-      parent_leaf.resize(total_children_nodes);
-      parent_bmin.resize(total_children_nodes);
-      parent_bmax.resize(total_children_nodes);
+      parents_leaf.resize(total_children_nodes);
+      parents_bmin.resize(total_children_nodes);
+      parents_bmax.resize(total_children_nodes);
       auto child_it = detail::make_zip_iterator(detail::make_tuple(
           children_leaf.begin(), children_bmin.begin(), children_bmax.begin()));
       detail::copy_if(child_it, child_it + num_children, children_type.begin(),
-                      parent_it);
+                      parents_it);
     }
   }
 
@@ -487,11 +485,10 @@ public:
   typedef const int &reference;
   typedef std::ptrdiff_t difference_type;
 
-  KdtreeChildIterator() : m_high(2), m_index(-1) {}
+  KdtreeChildIterator() : m_high(2), m_index(nullptr) {}
 
-  KdtreeChildIterator(const int start, const box_type &bounds,
-                      const Query *query)
-      : m_high(0), m_index(start), m_bounds(bounds), m_query(query) {
+  KdtreeChildIterator(const int *start, const box_type &bounds)
+      : m_high(0), m_index(start), m_bounds(bounds) {
     ASSERT(start != nullptr, "start pointer should not be null");
   }
 
@@ -608,7 +605,7 @@ template <typename Traits> struct KdtreeQuery {
     return child_iterator(0, m_bounds, this);
   }
 
-  static child_iterator get_children(const child_iterator &ci) {
+  child_iterator get_children(const child_iterator &ci) const {
     if (!is_leaf_node(*ci)) {
       return child_iterator((m_nodes_child + *ci + ci.is_high()),
                             get_bounds(ci));
@@ -617,13 +614,13 @@ template <typename Traits> struct KdtreeQuery {
     }
   }
 
-  static const box_type get_bounds(const child_iterator &ci) {
+  const box_type get_bounds(const child_iterator &ci) const {
     box_type ret = ci.m_bounds;
-    const int i = m_node_split_dim[ci.m_index - m_nodes_begin];
+    const int i = m_nodes_split_dim[ci.m_index - m_nodes_child];
     if (ci.is_high()) {
-      ret.bmin[i] = m_node_split_pos[ci.m_index - m_nodes_begin];
+      ret.bmin[i] = m_nodes_split_pos[ci.m_index - m_nodes_child];
     } else {
-      ret.bmax[i] = m_node_split_pos[ci.m_index - m_nodes_begin];
+      ret.bmax[i] = m_nodes_split_pos[ci.m_index - m_nodes_child];
     }
     return ret;
   }
@@ -653,9 +650,9 @@ template <typename Traits> struct KdtreeQuery {
   void go_to(const double_d &position, child_iterator &ci) {
     ASSERT(position[i] < ci.m_bounds.bmax[i], "position out of bounds");
     ASSERT(position[i] >= ci.m_bounds.bmin[i], "position out of bounds");
-    const int i = m_node_split_dim[ci.m_index - m_nodes_child];
+    const int i = m_nodes_split_dim[ci.m_index - m_nodes_child];
     const double diff =
-        position[i] - m_query->m_node_split_pos[ci.m_index - m_nodes_child];
+        position[i] - m_nodes_split_pos[ci.m_index - m_nodes_child];
     if (diff > 0)
       ++ci;
   }
@@ -663,11 +660,11 @@ template <typename Traits> struct KdtreeQuery {
   void get_bucket(const double_d &position, pointer &bucket,
                   box_type &bounds) const {
     child_iterator i = get_children();
-    go_to(position, ci);
+    go_to(position, i);
 
     while (!is_leaf_node(*i)) {
       i = get_children(i);
-      go_to(position, ci);
+      go_to(position, i);
     }
 
     bucket = &(*i);
@@ -675,7 +672,7 @@ template <typename Traits> struct KdtreeQuery {
   }
 
   size_t get_bucket_index(reference bucket) const {
-    return ci.m_index - m_nodes_child;
+    return &bucket - m_nodes_child;
   }
 
   size_t number_of_buckets() const { return m_number_of_buckets; }
