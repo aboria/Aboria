@@ -12,6 +12,7 @@
 #include <type_traits>
 
 #include "CudaInclude.h"
+#include "Get.h"
 #include "Log.h"
 
 #if __aboria_have_thrust__

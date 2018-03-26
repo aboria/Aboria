@@ -49,9 +49,9 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
-template <typename Traits> class Kdtree;
+template <typename Traits> class KdtreeNanoflann;
 
-template <typename Traits> struct KdtreeQuery;
+template <typename Traits> struct KdtreeNanoflannQuery;
 
 template <typename Traits> class nanoflann_child_iterator;
 
@@ -64,8 +64,8 @@ namespace detail {
 
 template <typename Traits>
 using nanoflann_kd_tree_type = nanoflann::KDTreeSingleIndexAdaptor<
-    nanoflann::L_inf_Adaptor<double, Kdtree<Traits>>,
-    Kdtree<Traits>, Traits::dimension, int>;
+    nanoflann::L_inf_Adaptor<double, KdtreeNanoflann<Traits>>,
+    KdtreeNanoflann<Traits>, Traits::dimension, int>;
 }
 
 /// \brief Implements neighbourhood searching using a bucket search algorithm,
@@ -84,9 +84,9 @@ using nanoflann_kd_tree_type = nanoflann::KDTreeSingleIndexAdaptor<
 /// points in the same bucket or surrounding buckets of the given point.
 ///
 template <typename Traits>
-class Kdtree
-    : public neighbour_search_base<Kdtree<Traits>, Traits,
-                                   KdtreeQuery<Traits>> {
+class KdtreeNanoflann
+    : public neighbour_search_base<KdtreeNanoflann<Traits>, Traits,
+                                   KdtreeNanoflannQuery<Traits>> {
 
   typedef typename Traits::double_d double_d;
   typedef typename Traits::position position;
@@ -95,8 +95,8 @@ class Kdtree
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   static const unsigned int dimension = Traits::dimension;
 
-  typedef neighbour_search_base<Kdtree<Traits>, Traits,
-                                KdtreeQuery<Traits>>
+  typedef neighbour_search_base<KdtreeNanoflann<Traits>, Traits,
+                                KdtreeNanoflannQuery<Traits>>
       base_type;
   friend base_type;
 
@@ -104,7 +104,7 @@ class Kdtree
   typedef typename kd_tree_type::Node node_type;
 
 public:
-  Kdtree() : base_type(), m_kd_tree(dimension, *this) {
+  KdtreeNanoflann() : base_type(), m_kd_tree(dimension, *this) {
     // init an empty tree
     std::vector<int> empty;
     m_kd_tree.buildIndex(empty.begin());
@@ -120,7 +120,7 @@ public:
     this->m_query.m_number_of_levels = m_kd_tree.size_levels();
   }
 
-  //~Kdtree() {}
+  //~KdtreeNanoflann() {}
 
   static constexpr bool ordered() { return true; }
 
@@ -265,14 +265,12 @@ private:
   }
   */
 
-  const KdtreeQuery<Traits> &get_query_impl() const {
-    return m_query;
-  }
+  const KdtreeNanoflannQuery<Traits> &get_query_impl() const { return m_query; }
 
-  KdtreeQuery<Traits> &get_query_impl() { return m_query; }
+  KdtreeNanoflannQuery<Traits> &get_query_impl() { return m_query; }
 
   kd_tree_type m_kd_tree;
-  KdtreeQuery<Traits> m_query;
+  KdtreeNanoflannQuery<Traits> m_query;
 };
 
 template <typename Traits> class nanoflann_child_iterator {
@@ -377,10 +375,10 @@ private:
 
 /// @copydetails NeighbourQueryBase
 ///
-/// @brief This is a query object for the @ref Kdtree spatial data
+/// @brief This is a query object for the @ref KdtreeNanoflann spatial data
 /// structure
 ///
-template <typename Traits> struct KdtreeQuery {
+template <typename Traits> struct KdtreeNanoflannQuery {
   const static unsigned int dimension = Traits::dimension;
   const static unsigned int m_max_tree_depth = 32 - 2;
   typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
@@ -395,10 +393,9 @@ template <typename Traits> struct KdtreeQuery {
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   template <int LNormNumber>
-  using query_iterator =
-      tree_query_iterator<KdtreeQuery, LNormNumber>;
+  using query_iterator = tree_query_iterator<KdtreeNanoflannQuery, LNormNumber>;
   typedef value_type *root_iterator;
-  typedef depth_first_iterator<KdtreeQuery> all_iterator;
+  typedef depth_first_iterator<KdtreeNanoflannQuery> all_iterator;
   typedef nanoflann_child_iterator<Traits> child_iterator;
   typedef ranges_iterator<Traits> particle_iterator;
   typedef bbox<dimension> box_type;
@@ -438,7 +435,6 @@ template <typename Traits> struct KdtreeQuery {
   /*
    * functions for tree_query_iterator
    */
-  static bool get_max_levels() { return 5; }
   static bool is_leaf_node(reference bucket) {
     return (bucket.child1 == NULL) && (bucket.child2 == NULL);
   }

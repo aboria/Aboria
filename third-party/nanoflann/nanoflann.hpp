@@ -826,8 +826,8 @@ template <typename T> struct array_or_vector_selector<-1, T> {
 template <typename Distance, class DatasetAdaptor, int DIM = -1,
           typename IndexType = size_t>
 class KDTreeSingleIndexAdaptor {
-  template <typename Traits> friend class Aboria::Kdtree;
-  template <typename Traits> friend struct Aboria::KdtreeQuery;
+  template <typename Traits> friend class Aboria::KdtreeNanoflann;
+  template <typename Traits> friend struct Aboria::KdtreeNanoflannQuery;
   template <typename Traits> friend class Aboria::nanoflann_child_iterator;
 
 private:

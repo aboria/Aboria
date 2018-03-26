@@ -1078,9 +1078,14 @@ public:
   }
 
   void test_std_vector_Kdtree(void) {
-#if not defined(__CUDACC__)
     helper_d_test_list_random<std::vector, Kdtree>();
     helper_d_test_list_regular<std::vector, Kdtree>();
+  }
+
+  void test_std_vector_KdtreeNanoflann(void) {
+#if not defined(__CUDACC__)
+    helper_d_test_list_random<std::vector, KdtreeNanoflann>();
+    helper_d_test_list_regular<std::vector, KdtreeNanoflann>();
 #endif
   }
 

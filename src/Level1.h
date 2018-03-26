@@ -33,7 +33,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef LEVEL1_H_
 #define LEVEL1_H_
 
@@ -41,20 +40,20 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <omp.h>
 #endif
 
-//Level1
-#include "CudaInclude.h"
-#include "Vector.h"
-#include "Variable.h"
-#include "Traits.h"
-#include "Get.h"
-#include "Particles.h"
-#include "Elements.h"
+// Level1
 #include "CellList.h"
 #include "CellListOrdered.h"
+#include "CudaInclude.h"
+#include "Elements.h"
+#include "Get.h"
+#include "Kdtree.h"
 #include "NanoFlannAdaptor.h"
 #include "OctTree.h"
+#include "Particles.h"
 #include "PrintTuple.h"
+#include "Traits.h"
 #include "Utils.h"
-
+#include "Variable.h"
+#include "Vector.h"
 
 #endif /* ABORIA_H_ */

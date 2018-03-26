@@ -9,6 +9,7 @@
 #include <boost/iterator/permutation_iterator.hpp>
 #include <boost/iterator/transform_iterator.hpp>
 #include <boost/iterator/zip_iterator.hpp>
+#include <random>
 
 namespace Aboria {
 
@@ -604,6 +605,43 @@ template <class InputIt, class OutputIt, class T>
 OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init) {
   return detail::exclusive_scan(first, last, d_first, init,
                                 typename is_std_iterator<InputIt>::type());
+}
+
+template <typename InputIterator1, typename InputIterator2,
+          typename OutputIterator, typename T>
+OutputIterator
+exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1,
+                      InputIterator2 first2, OutputIterator result, T init,
+                      std::true_type) {
+  for (; first1 != last1; ++first2) {
+    *result++ = init;
+    ++first1;
+    for (; first1 == first1 - 1 && first1 != last1;
+         ++first1, ++first2, ++result)
+      *result = *(result - 1) + *first2;
+  }
+  return result;
+}
+
+#ifdef __aboria_have_thrust__
+template <typename InputIterator1, typename InputIterator2,
+          typename OutputIterator, typename T>
+OutputIterator
+exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1,
+                      InputIterator2 first2, OutputIterator result, T init,
+                      std::false_type) {
+  return thrust::exclusive_scan_by_key(first, last, first2, result, init);
+}
+#endif
+
+template <typename InputIterator1, typename InputIterator2,
+          typename OutputIterator, typename T>
+OutputIterator
+exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1,
+                      InputIterator2 first2, OutputIterator result, T init) {
+  return detail::exclusive_scan_by_key(
+      first1, last1, first2, result, init,
+      typename is_std_iterator<InputIterator1>::type());
 }
 
 template <typename InputIterator1, typename InputIterator2,
