@@ -497,6 +497,12 @@ struct zip_pointer<std::tuple<Types *...>, MplVector> {
     return ret;
   }
 
+  zip_pointer operator-(const difference_type &n) const {
+    zip_pointer ret(*this);
+    ret.advance(-n);
+    return ret;
+  }
+
   zip_pointer &operator+=(const difference_type &n) {
     advance(n);
     return *this;

@@ -222,7 +222,7 @@ void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp,
 
 template <typename RandomIt, typename StrictWeakOrdering>
 void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp) {
-  detail::sort(start, end, typename is_std_iterator<RandomIt>::type());
+  detail::sort(start, end, comp, typename is_std_iterator<RandomIt>::type());
 }
 
 template <typename T1, typename T2>
@@ -635,7 +635,7 @@ exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1,
   for (; first1 != last1; ++first2) {
     *result++ = init;
     ++first1;
-    for (; first1 == first1 - 1 && first1 != last1;
+    for (; *first1 == *(first1 - 1) && first1 != last1;
          ++first1, ++first2, ++result)
       *result = *(result - 1) + *first2;
   }
@@ -683,7 +683,7 @@ void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map,
 #endif
 
 template <typename InputIterator1, typename InputIterator2,
-          typename RandomAccessIterator, typename Predicate>
+          typename RandomAccessIterator>
 void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map,
              RandomAccessIterator output) {
   detail::scatter(first, last, map, output,
@@ -825,6 +825,16 @@ OutputIterator copy_if(InputIterator1 first, InputIterator1 last,
                        Predicate pred) {
 
   return detail::copy_if(first, last, stencil, result, pred,
+                         typename is_std_iterator<InputIterator1>::type());
+}
+
+template <typename InputIterator1, typename InputIterator2,
+          typename OutputIterator>
+OutputIterator copy_if(InputIterator1 first, InputIterator1 last,
+                       InputIterator2 stencil, OutputIterator result) {
+
+  return detail::copy_if(first, last, stencil, result,
+                         [](auto i) { return static_cast<bool>(i); },
                          typename is_std_iterator<InputIterator1>::type());
 }
 

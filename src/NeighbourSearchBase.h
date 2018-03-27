@@ -1603,7 +1603,7 @@ private:
 #ifndef __CUDA_ARCH__
       LOG(3, "\tgo_to_next_leaf with child " << node.get_child_number()
                                              << " with bounds "
-                                             << node.get_bounds());
+                                             << m_query->get_bounds(node));
 #endif
       if (child_is_within_query(node)) { // could be in this child
 #ifndef __CUDA_ARCH__
