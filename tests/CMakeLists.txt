@@ -256,6 +256,7 @@ set(MDTest
     test_CellList
     test_CellListOrdered
     test_Kdtree
+    test_KdtreeNanoflann
     test_HyperOctree
     )
 

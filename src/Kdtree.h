@@ -214,13 +214,13 @@ private:
     while (!parents_leaf.empty()) {
       // calc split ( median of longest dimension)
       const int num_parents = parents_leaf.size();
-      auto parents_it = detail::make_zip_iterator(detail::make_tuple(
+      auto parents_it = Traits::make_zip_iterator(Traits::make_tuple(
           parents_leaf.begin(), parents_bmin.begin(), parents_bmax.begin()));
       vector_double parents_split_pos(num_parents);
       vector_int parents_split_dim(num_parents);
       detail::transform(
           parents_it, parents_it + parents_leaf.size(),
-          detail::make_zip_iterator(detail::make_tuple(
+          Traits::make_zip_iterator(Traits::make_tuple(
               parents_split_pos.begin(), parents_split_dim.begin())),
           [_num_points = num_points,
            _particle_indicies =
@@ -265,7 +265,7 @@ private:
             } else if (split > maxp[split_d]) {
               split = maxp[split_d];
             }
-            return detail::make_tuple(split, split_d);
+            return Traits::make_tuple(split, split_d);
           });
       /*
   std::cout << "parents" << std::endl;
@@ -280,8 +280,8 @@ private:
 
       // set split data for parents in tree
       if (prev_level_index >= 0) {
-        auto tree_it2 = detail::make_zip_iterator(
-            detail::make_tuple(m_nodes_child.begin(), m_nodes_split_pos.begin(),
+        auto tree_it2 = Traits::make_zip_iterator(
+            Traits::make_tuple(m_nodes_child.begin(), m_nodes_split_pos.begin(),
                                m_nodes_split_dim.begin()));
         detail::for_each(
             tree_it2 + prev_level_index, tree_it2 + m_nodes_child.size(),
@@ -322,9 +322,9 @@ private:
       // [t f t f f t f] #in
       // [0 1 0 1 1 0 1] #e = set 1 in false elts.
       detail::transform(
-          detail::make_zip_iterator(detail::make_tuple(
+          Traits::make_zip_iterator(Traits::make_tuple(
               m_particle_indicies.begin(), m_particle_node.begin())),
-          detail::make_zip_iterator(detail::make_tuple(
+          Traits::make_zip_iterator(Traits::make_tuple(
               m_particle_indicies.end(), m_particle_node.end())),
           e.begin(),
           [_p = iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
@@ -424,11 +424,11 @@ private:
       children_num_nodes.resize(num_children);
 
       detail::tabulate(
-          detail::make_zip_iterator(
-              detail::make_tuple(children_leaf.begin(), children_bmin.begin(),
+          Traits::make_zip_iterator(
+              Traits::make_tuple(children_leaf.begin(), children_bmin.begin(),
                                  children_bmax.begin(), children_type.begin())),
-          detail::make_zip_iterator(
-              detail::make_tuple(children_leaf.end(), children_bmin.end(),
+          Traits::make_zip_iterator(
+              Traits::make_tuple(children_leaf.end(), children_bmin.end(),
                                  children_bmax.end(), children_type.end())),
           [_parents_leaf = iterator_to_raw_pointer(parents_leaf.begin()),
            _parents_split_dim =
@@ -457,7 +457,7 @@ private:
             }
             const int is_node =
                 static_cast<int>(leaf[1] - leaf[0] > _threshold);
-            return detail::make_tuple(leaf, bmin, bmax, is_node);
+            return Traits::make_tuple(leaf, bmin, bmax, is_node);
           });
 
       // enumerate nodes and leafs
@@ -478,10 +478,10 @@ private:
 
       // update mask with children indicies
       detail::transform(
-          detail::make_zip_iterator(
-              detail::make_tuple(m_particle_node.begin(), e.begin())),
-          detail::make_zip_iterator(
-              detail::make_tuple(m_particle_node.end(), e.end())),
+          Traits::make_zip_iterator(
+              Traits::make_tuple(m_particle_node.begin(), e.begin())),
+          Traits::make_zip_iterator(
+              Traits::make_tuple(m_particle_node.end(), e.end())),
           m_particle_node.begin(),
           [_children_num_nodes =
                iterator_to_raw_pointer(children_num_nodes.begin()),
@@ -507,8 +507,8 @@ private:
       m_nodes_child.resize(children_end);
       m_nodes_split_pos.resize(children_end);
       m_nodes_split_dim.resize(children_end);
-      auto tree_it = detail::make_zip_iterator(
-          detail::make_tuple(m_nodes_child.begin(), m_nodes_split_dim.begin()));
+      auto tree_it = Traits::make_zip_iterator(
+          Traits::make_tuple(m_nodes_child.begin(), m_nodes_split_dim.begin()));
       detail::tabulate(
           tree_it + prev_level_index, tree_it + children_end,
           [_children_end = children_end,
@@ -518,11 +518,11 @@ private:
            _children_leaf =
                iterator_to_raw_pointer(children_leaf.begin())](const int i) {
             if (_children_type[i]) { // node
-              return detail::make_tuple(
+              return Traits::make_tuple(
                   _children_end + 2 * _children_num_nodes[i], 0);
             } else { // leaf
               const vint2 leaf = _children_leaf[i];
-              return detail::make_tuple(-leaf[0] - 1, -leaf[1] - 1);
+              return Traits::make_tuple(-leaf[0] - 1, -leaf[1] - 1);
             }
           });
 
@@ -530,9 +530,9 @@ private:
       parents_leaf.resize(total_children_nodes);
       parents_bmin.resize(total_children_nodes);
       parents_bmax.resize(total_children_nodes);
-      parents_it = detail::make_zip_iterator(detail::make_tuple(
+      parents_it = Traits::make_zip_iterator(Traits::make_tuple(
           parents_leaf.begin(), parents_bmin.begin(), parents_bmax.begin()));
-      auto child_it = detail::make_zip_iterator(detail::make_tuple(
+      auto child_it = Traits::make_zip_iterator(Traits::make_tuple(
           children_leaf.begin(), children_bmin.begin(), children_bmax.begin()));
       detail::copy_if(child_it, child_it + num_children, children_type.begin(),
                       parents_it);

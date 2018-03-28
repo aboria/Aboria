@@ -602,7 +602,12 @@ public:
       Vector<double, D> &p = get<position_d<D>>(arg);
       generator_type &gen = get<generator>(arg);
 
-      detail::uniform_real_distribution<float> dist(a, b);
+#if defined(__CUDACC__)
+      thrust::uniform_real_distribution<float> dist(a, b);
+#else
+      std::uniform_real_distribution<float> dist(a, b);
+#endif
+
       for (size_t d = 0; d < D; ++d) {
         p[d] = dist(gen);
       }
@@ -776,7 +781,12 @@ public:
     std::cout << "seed is " << seed1 << std::endl;
     particles.set_seed(seed1);
     generator_type gen(seed1);
-    detail::uniform_real_distribution<float> uniform(-1.0, 1.0);
+
+#if defined(__CUDACC__)
+    thrust::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#else
+    std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#endif
 
     if (push_back_construction) {
       particles.init_neighbour_search(min, max, periodic, neighbour_n);
@@ -798,7 +808,11 @@ public:
     }
 
     // delete random particle
-    detail::uniform_int_distribution<int> uniform_int_N(0, N - 1);
+#if defined(__CUDACC__)
+    thrust::uniform_int_distribution<int> uniform_int_N(0, N - 1);
+#else
+    std::uniform_int_distribution<int> uniform_int_N(0, N - 1);
+#endif
     get<alive>(particles)[uniform_int_N(gen)] = false;
 
     // delete first particle
@@ -806,7 +820,12 @@ public:
     particles.update_positions();
 
     // delete random particle
-    detail::uniform_int_distribution<int> uniform_int_N_minus_1(0, N - 3);
+#if defined(__CUDACC__)
+    thrust::uniform_int_distribution<int> uniform_int_N_minus_1(0, N - 3);
+#else
+    std::uniform_int_distribution<int> uniform_int_N_minus_1(0, N - 3);
+#endif
+
     const int random_index = uniform_int_N_minus_1(gen);
     particles.erase(particles.begin() + random_index);
 
@@ -879,7 +898,12 @@ public:
     std::cout << "seed is " << seed1 << std::endl;
     particles.set_seed(seed1);
     generator_type gen(seed1);
-    detail::uniform_real_distribution<float> uniform(-1.0, 1.0);
+
+#if defined(__CUDACC__)
+    thrust::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#else
+    std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#endif
 
     if (push_back_construction) {
       particles.init_neighbour_search(min, max, periodic,

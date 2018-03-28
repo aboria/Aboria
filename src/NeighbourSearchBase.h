@@ -410,12 +410,12 @@ public:
 #if defined(__CUDACC__)
     typedef typename thrust::detail::iterator_category_to_system<
         typename vector_int::iterator::iterator_category>::type system;
-    detail::counting_iterator<unsigned int, system> count_start(
+    thrust::counting_iterator<unsigned int, system> count_start(
         update_start_index);
-    detail::counting_iterator<unsigned int, system> count_end(update_end_index);
+    thrust::counting_iterator<unsigned int, system> count_end(update_end_index);
 #else
-    detail::counting_iterator<unsigned int> count_start(update_start_index);
-    detail::counting_iterator<unsigned int> count_end(update_end_index);
+    auto count_start = Traits::make_counting_iterator(update_start_index);
+    auto count_end = Traits::make_counting_iterator(update_end_index);
 #endif
 
     // scatter alive indicies to m_alive_indicies

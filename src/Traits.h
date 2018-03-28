@@ -8,9 +8,13 @@
 #include "Vector.h"
 #include <algorithm>
 #include <boost/iterator/counting_iterator.hpp>
+#include <boost/iterator/permutation_iterator.hpp>
+#include <boost/iterator/transform_iterator.hpp>
+#include <boost/iterator/zip_iterator.hpp>
 #include <boost/lambda/lambda.hpp>
 #include <boost/serialization/nvp.hpp>
 #include <boost/serialization/vector.hpp>
+#include <random>
 #include <tuple>
 #include <vector>
 
@@ -25,6 +29,40 @@ struct default_traits {
     typedef std::tuple_element<I, T> type;
   };
   template <class T> struct tuple_size { typedef std::tuple_size<T> type; };
+
+  template <typename T> using counting_iterator = boost::counting_iterator<T>;
+
+  template <typename T>
+  using uniform_real_distribution = std::uniform_real_distribution<T>;
+
+  template <typename T>
+  using uniform_int_distribution = std::uniform_int_distribution<T>;
+
+  template <typename T> using normal_distribution = std::normal_distribution<T>;
+
+  template <typename ElementIterator, typename IndexIterator>
+  static auto make_permutation_iterator(ElementIterator e, IndexIterator i) {
+    return boost::make_permutation_iterator(e, i);
+  }
+
+  template <class AdaptableUnaryFunction, class Iterator>
+  static auto make_transform_iterator(Iterator it, AdaptableUnaryFunction fun) {
+    return boost::make_transform_iterator(it, fun);
+  }
+
+  template <typename... T> static auto make_tuple(T... args) {
+    return boost::make_tuple(args...);
+  }
+
+  template <typename IteratorTuple>
+  static auto make_zip_iterator(IteratorTuple arg) {
+    return boost::make_zip_iterator(arg);
+  }
+
+  template <typename Incrementable>
+  static auto make_counting_iterator(Incrementable x) {
+    return boost::make_counting_iterator(x);
+  }
 };
 
 template <template <typename, typename> class VECTOR> struct Traits {};
@@ -48,6 +86,30 @@ template <> struct Traits<thrust::device_vector> : public default_traits {
     typedef thrust::tuple_element<I, T> type;
   };
   template <class T> struct tuple_size { typedef thrust::tuple_size<T> type; };
+
+  template <typename ElementIterator, typename IndexIterator>
+  static auto make_permutation_iterator(ElementIterator e, IndexIterator i) {
+    return thrust::make_permutation_iterator(e, i);
+  }
+
+  template <class AdaptableUnaryFunction, class Iterator>
+  static auto make_transform_iterator(Iterator it, AdaptableUnaryFunction fun) {
+    return thrust::make_transform_iterator(it, fun);
+  }
+
+  template <typename... T> static auto make_tuple(T... args) {
+    return thrust::make_tuple(args...);
+  }
+
+  template <typename IteratorTuple>
+  static auto make_zip_iterator(IteratorTuple arg) {
+    return thrust::make_zip_iterator(arg);
+  }
+
+  template <typename Incrementable>
+  static auto make_counting_iterator(Incrementable x) {
+    return thrust::make_counting_iterator(x);
+  }
 };
 
 template <> struct Traits<thrust::host_vector> : public default_traits {
@@ -66,6 +128,30 @@ template <> struct Traits<thrust::host_vector> : public default_traits {
     typedef thrust::tuple_element<I, T> type;
   };
   template <class T> struct tuple_size { typedef thrust::tuple_size<T> type; };
+
+  template <typename ElementIterator, typename IndexIterator>
+  static auto make_permutation_iterator(ElementIterator e, IndexIterator i) {
+    return thrust::make_permutation_iterator(e, i);
+  }
+
+  template <class AdaptableUnaryFunction, class Iterator>
+  static auto make_transform_iterator(Iterator it, AdaptableUnaryFunction fun) {
+    return thrust::make_transform_iterator(it, fun);
+  }
+
+  template <typename... T> static auto make_tuple(T... args) {
+    return thrust::make_tuple(args...);
+  }
+
+  template <typename IteratorTuple>
+  static auto make_zip_iterator(IteratorTuple arg) {
+    return thrust::make_zip_iterator(arg);
+  }
+
+  template <typename Incrementable>
+  static auto make_counting_iterator(Incrementable x) {
+    return thrust::make_counting_iterator(x);
+  }
 };
 #endif
 

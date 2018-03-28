@@ -417,9 +417,9 @@ private:
 #if defined(__CUDACC__)
     typedef typename thrust::detail::iterator_category_to_system<
         typename vector_int::iterator::iterator_category>::type system;
-    detail::counting_iterator<int, system> count(0);
+    thrust::counting_iterator<int, system> count(0);
 #else
-    detail::counting_iterator<int> count(0);
+    auto count = Traits::make_counting_iterator(0);
 #endif
 
     if (m_serial) { // running in serial
@@ -450,7 +450,7 @@ private:
         typename vector_int::iterator::iterator_category>::type system;
     detail::counting_iterator<int, system> count(0);
 #else
-    detail::counting_iterator<int> count(0);
+    auto count = Traits::make_counting_iterator(0);
 #endif
 
     if (m_serial) { // running in serial

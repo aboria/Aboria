@@ -190,10 +190,10 @@ private:
 
       } else {
         // m_alive_indicies contains all alive indicies
-        detail::transform(detail::make_permutation_iterator(
+        detail::transform(Traits::make_permutation_iterator(
                               get<position>(this->m_particles_begin),
                               this->m_alive_indices.begin()),
-                          detail::make_permutation_iterator(
+                          Traits::make_permutation_iterator(
                               get<position>(this->m_particles_begin),
                               this->m_alive_indices.end()),
                           m_tags.begin(),
@@ -325,7 +325,7 @@ private:
   HyperOctreeQuery<Traits> m_query;
 };
 
-template <typename traits> void HyperOctree<traits>::build_tree() {
+template <typename Traits> void HyperOctree<Traits>::build_tree() {
   m_nodes.clear();
   m_leaves.clear();
   vector_int active_nodes(1, 0);
@@ -367,8 +367,8 @@ template <typename traits> void HyperOctree<traits>::build_tree() {
     auto plus_length = [=] CUDA_HOST_DEVICE(const int i) { return i + length; };
     detail::upper_bound(
         m_tags.begin(), m_tags.end(),
-        detail::make_transform_iterator(children.begin(), plus_length),
-        detail::make_transform_iterator(children.end(), plus_length),
+        Traits::make_transform_iterator(children.begin(), plus_length),
+        Traits::make_transform_iterator(children.end(), plus_length),
         upper_bounds.begin());
 
     /******************************************
@@ -378,10 +378,10 @@ template <typename traits> void HyperOctree<traits>::build_tree() {
     // Mark each child as either empty, a node, or a leaf
     vector_int child_node_kind(children.size(), 0);
     detail::transform(
-        detail::make_zip_iterator(
-            detail::make_tuple(lower_bounds.begin(), upper_bounds.begin())),
-        detail::make_zip_iterator(
-            detail::make_tuple(lower_bounds.end(), upper_bounds.end())),
+        Traits::make_zip_iterator(
+            Traits::make_tuple(lower_bounds.begin(), upper_bounds.begin())),
+        Traits::make_zip_iterator(
+            Traits::make_tuple(lower_bounds.end(), upper_bounds.end())),
         child_node_kind.begin(),
         classify_node(this->m_n_particles_in_leaf, level == m_max_level));
 
@@ -394,16 +394,15 @@ template <typename traits> void HyperOctree<traits>::build_tree() {
     vector_int nodes_on_this_level(child_node_kind.size());
 
     // Enumerate nodes at this level
+    auto plus = [](auto a, auto b) { return a + b; };
     detail::transform_exclusive_scan(
         child_node_kind.begin(), child_node_kind.end(),
-        nodes_on_this_level.begin(), detail::is_a<detail::NODE>(), 0,
-        detail::plus<int>());
+        nodes_on_this_level.begin(), detail::is_a<detail::NODE>(), 0, plus);
 
     // Enumerate leaves at this level
     detail::transform_exclusive_scan(
         child_node_kind.begin(), child_node_kind.end(),
-        leaves_on_this_level.begin(), detail::is_a<detail::LEAF>(), 0,
-        detail::plus<int>());
+        leaves_on_this_level.begin(), detail::is_a<detail::LEAF>(), 0, plus);
 
     int num_nodes_on_this_level =
         nodes_on_this_level.back() +
@@ -421,10 +420,10 @@ template <typename traits> void HyperOctree<traits>::build_tree() {
     int children_begin = m_nodes.size();
     m_nodes.resize(m_nodes.size() + num_children);
 
-    detail::transform(detail::make_zip_iterator(detail::make_tuple(
+    detail::transform(Traits::make_zip_iterator(Traits::make_tuple(
                           child_node_kind.begin(), nodes_on_this_level.begin(),
                           leaves_on_this_level.begin())),
-                      detail::make_zip_iterator(detail::make_tuple(
+                      Traits::make_zip_iterator(Traits::make_tuple(
                           child_node_kind.end(), nodes_on_this_level.end(),
                           leaves_on_this_level.end())),
                       m_nodes.begin() + children_begin,
@@ -439,13 +438,13 @@ template <typename traits> void HyperOctree<traits>::build_tree() {
     m_leaves.resize(m_leaves.size() + num_leaves_on_this_level);
 
     detail::scatter_if(
-        detail::make_transform_iterator(
-            detail::make_zip_iterator(
-                detail::make_tuple(lower_bounds.begin(), upper_bounds.begin())),
+        Traits::make_transform_iterator(
+            Traits::make_zip_iterator(
+                Traits::make_tuple(lower_bounds.begin(), upper_bounds.begin())),
             make_leaf()),
-        detail::make_transform_iterator(
-            detail::make_zip_iterator(
-                detail::make_tuple(lower_bounds.end(), upper_bounds.end())),
+        Traits::make_transform_iterator(
+            Traits::make_zip_iterator(
+                Traits::make_tuple(lower_bounds.end(), upper_bounds.end())),
             make_leaf()),
         leaves_on_this_level.begin(), child_node_kind.begin(),
         m_leaves.begin() + children_begin, detail::is_a<detail::LEAF>());

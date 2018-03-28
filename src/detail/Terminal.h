@@ -126,7 +126,11 @@ struct normal {
   normal(){};
   normal(uint32_t seed) : generator(seed){};
   double operator()() {
-    detail::normal_distribution<double> normal_distribution;
+#if defined(__CUDACC__)
+    thrust::normal_distribution<double> normal_distribution;
+#else
+    std::normal_distribution<double> normal_distribution;
+#endif
     return normal_distribution(generator);
   }
   /*
@@ -137,7 +141,11 @@ struct normal {
      }
      */
   double operator()(generator_type &gen) const {
-    detail::normal_distribution<double> normal_distribution;
+#if defined(__CUDACC__)
+    thrust::normal_distribution<double> normal_distribution;
+#else
+    std::normal_distribution<double> normal_distribution;
+#endif
     return normal_distribution(gen);
   }
   generator_type generator;
@@ -148,7 +156,12 @@ struct uniform {
   uniform(){};
   uniform(uint32_t seed) : generator(seed){};
   double operator()() {
-    detail::uniform_real_distribution<double> uniform_distribution;
+
+#if defined(__CUDACC__)
+    thrust::uniform_real_distribution<double> uniform_distribution;
+#else
+    std::uniform_real_distribution<double> uniform_distribution;
+#endif
     return uniform_distribution(generator);
   }
   /*
@@ -159,7 +172,11 @@ struct uniform {
      }
      */
   double operator()(generator_type &gen) const {
-    detail::uniform_real_distribution<double> normal_distribution;
+#if defined(__CUDACC__)
+    thrust::uniform_real_distribution<double> normal_distribution;
+#else
+    std::uniform_real_distribution<double> normal_distribution;
+#endif
     return normal_distribution(gen);
   }
   generator_type generator;

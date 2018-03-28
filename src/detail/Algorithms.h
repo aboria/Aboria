@@ -6,9 +6,6 @@
 #include "Get.h"
 #include "Traits.h"
 #include <algorithm>
-#include <boost/iterator/permutation_iterator.hpp>
-#include <boost/iterator/transform_iterator.hpp>
-#include <boost/iterator/zip_iterator.hpp>
 #include <random>
 
 namespace Aboria {
@@ -58,8 +55,9 @@ template <typename Traits> size_t concurrent_processes() {
 template <typename T> struct is_std_iterator {
 #ifdef __aboria_have_thrust__
   typedef std::integral_constant<
-      bool, std::is_same<typename std::iterator_traits<T>::iterator_category,
-                         std::random_access_iterator_tag>::value>
+      bool,
+      std::is_convertible<typename std::iterator_traits<T>::iterator_category,
+                          std::random_access_iterator_tag>::value>
       type;
   // typedef std::integral_constant<bool,false> type;
 #else
@@ -96,62 +94,6 @@ template <typename T> struct upper_bound_impl {
                          std::upper_bound(values_first, values_last, search));
   }
 };
-
-#if defined(__CUDACC__)
-
-template <typename T, typename System = thrust::use_default>
-using counting_iterator = thrust::counting_iterator<T>;
-
-template <typename T>
-using uniform_real_distribution = thrust::uniform_real_distribution<T>;
-
-template <typename T>
-using uniform_int_distribution = thrust::uniform_int_distribution<T>;
-
-template <typename T>
-using normal_distribution = thrust::normal_distribution<T>;
-
-template <typename T> using plus = thrust::plus<T>;
-
-using thrust::make_permutation_iterator;
-using thrust::make_transform_iterator;
-using thrust::make_tuple;
-using thrust::make_zip_iterator;
-
-#else
-
-template <typename T> using counting_iterator = boost::counting_iterator<T>;
-
-template <typename T>
-using uniform_real_distribution = std::uniform_real_distribution<T>;
-
-template <typename T>
-using uniform_int_distribution = std::uniform_int_distribution<T>;
-
-template <typename T> using normal_distribution = std::normal_distribution<T>;
-
-template <class UnaryFunction, class Iterator>
-using transform_iterator = boost::transform_iterator<UnaryFunction, Iterator>;
-
-template <class ElementIterator, class IndexIterator>
-using permutation_iterator =
-    boost::permutation_iterator<ElementIterator, IndexIterator>;
-
-template <typename T> using plus = std::plus<T>;
-
-using boost::make_permutation_iterator;
-using boost::make_transform_iterator;
-using boost::make_tuple;
-using boost::make_zip_iterator;
-
-// template <class UnaryFunction, class Iterator>
-// transform_iterator<UnaryFunction, Iterator>
-// make_transform_iterator(Iterator&& it, UnaryFunction&& fun) {
-//    return boost::make_transform_iterator(
-//            std::forward<Iterator>(it),
-//            std::forward<UnaryFunction>(fun));
-//}
-#endif
 
 template <class ForwardIt, class T>
 void fill(ForwardIt first, ForwardIt last, const T &value, std::true_type) {
@@ -383,7 +325,7 @@ OutputIterator transform(InputIterator first, InputIterator last,
 
 template <class ForwardIterator>
 void sequence(ForwardIterator first, ForwardIterator last, std::true_type) {
-  counting_iterator<unsigned int> count(0);
+  boost::counting_iterator<unsigned int> count(0);
   std::transform(
       first, last, count, first,
       [](const typename std::iterator_traits<ForwardIterator>::reference,
@@ -393,7 +335,7 @@ void sequence(ForwardIterator first, ForwardIterator last, std::true_type) {
 template <class ForwardIterator, typename T>
 void sequence(ForwardIterator first, ForwardIterator last, T init,
               std::true_type) {
-  counting_iterator<unsigned int> count(init);
+  boost::counting_iterator<unsigned int> count(init);
   std::transform(
       first, last, count, first,
       [](const typename std::iterator_traits<ForwardIterator>::reference,
@@ -429,7 +371,7 @@ template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(ForwardIterator first, ForwardIterator last,
               UnaryOperation unary_op, std::true_type) {
 
-  counting_iterator<unsigned int> count(0);
+  boost::counting_iterator<unsigned int> count(0);
   std::transform(
       first, last, count, first,
       [&unary_op](

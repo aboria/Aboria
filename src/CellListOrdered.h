@@ -212,10 +212,10 @@ private:
                           m_bucket_indices.begin(), m_point_to_bucket_index);
       } else {
         // m_alive_indicies contains all alive indicies
-        detail::transform(detail::make_permutation_iterator(
+        detail::transform(Traits::make_permutation_iterator(
                               get<position>(this->m_particles_begin),
                               this->m_alive_indices.begin()),
-                          detail::make_permutation_iterator(
+                          Traits::make_permutation_iterator(
                               get<position>(this->m_particles_begin),
                               this->m_alive_indices.end()),
                           m_bucket_indices.begin(), m_point_to_bucket_index);
@@ -227,7 +227,7 @@ private:
     }
 
     // find the beginning of each bucket's list of points
-    detail::counting_iterator<unsigned int> search_begin(0);
+    auto search_begin = Traits::make_counting_iterator(0);
     detail::lower_bound(m_bucket_indices.begin(), m_bucket_indices.end(),
                         search_begin, search_begin + m_size.prod(),
                         m_bucket_begin.begin());
