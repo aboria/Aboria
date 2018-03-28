@@ -649,7 +649,7 @@ OutputIterator
 exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1,
                       InputIterator2 first2, OutputIterator result, T init,
                       std::false_type) {
-  return thrust::exclusive_scan_by_key(first, last, first2, result, init);
+  return thrust::exclusive_scan_by_key(first1, last1, first2, result, init);
 }
 #endif
 

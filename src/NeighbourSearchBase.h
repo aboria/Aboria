@@ -1333,8 +1333,6 @@ public:
     return *this;
   }
 
-  box_type get_bounds() const { return m_stack.back().get_bounds(); }
-
   const child_iterator &get_child_iterator() const { return m_stack.back(); }
 
   CUDA_HOST_DEVICE
@@ -1466,7 +1464,7 @@ public:
 #endif
     } else {
 #ifndef __CUDA_ARCH__
-      LOG(3, "\tocttree_query_iterator (constructor) with query pt = "
+      LOG(3, "\ttree_query_iterator (constructor) with query pt = "
                  << m_query_point
                  << "):  found bbox = " << m_query->get_bounds(m_stack.back()));
 #endif
@@ -1488,7 +1486,7 @@ public:
   ~tree_query_iterator() {}
 
   CUDA_HOST_DEVICE
-  box_type get_bounds() const { return m_stack.back().get_bounds(); }
+  box_type get_child_iterator() const { return m_stack.back(); }
 
   CUDA_HOST_DEVICE
   iterator &operator=(const iterator &copy) {

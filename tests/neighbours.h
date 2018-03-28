@@ -1115,6 +1115,13 @@ public:
     helper_d_test_list_random<thrust::device_vector, HyperOctree>();
 #endif
   }
+
+  void test_thrust_vector_Kdtree(void) {
+#if defined(__aboria_have_thrust__)
+    helper_d_test_list_random<thrust::device_vector, Kdtree>();
+    helper_d_test_list_regular<thrust::device_vector, Kdtree>();
+#endif
+  }
 };
 
 #endif /* NEIGHBOURS_H_ */

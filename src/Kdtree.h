@@ -144,6 +144,7 @@ private:
           [_p = iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
            _i = i](const int a, const int b) { return _p[a][_i] < _p[b][_i]; });
     }
+    /*
     for (size_t i = 0; i < dimension; ++i) {
       std::cout << "dimension " << i << std::endl;
       for (size_t j = i * num_points; j < (i + 1) * num_points; ++j) {
@@ -154,6 +155,7 @@ private:
                   << ")" << std::endl;
       }
     }
+    */
 
     // build the tree
     build_tree();
@@ -195,11 +197,12 @@ private:
     vector_int particle_indicies2(m_particle_indicies.size());
 
     // setup tree
-    m_nodes_child.clear();
-    m_nodes_split_pos.clear();
-    m_nodes_split_dim.clear();
-    m_number_of_levels = 0;
-    int prev_level_index = -1;
+    m_nodes_child.resize(1);
+    m_nodes_split_pos.resize(1);
+    m_nodes_split_dim.resize(1);
+    m_nodes_child[0] = 1;
+    m_number_of_levels = 1;
+    int prev_level_index = 0;
     // m_nodes_child  int-> index of first child node (<0 is a leaf, gives index
     // of 1st particle)
     //
@@ -264,14 +267,16 @@ private:
             }
             return detail::make_tuple(split, split_d);
           });
-      std::cout << "parents" << std::endl;
-      for (size_t i = 0; i < parents_leaf.size(); ++i) {
-        std::cout << i << "leaf =" << parents_leaf[i]
-                  << " bmin = " << parents_bmin[i]
-                  << " bmax = " << parents_bmax[i]
-                  << " split pos = " << parents_split_pos[i]
-                  << " split dim = " << parents_split_dim[i] << std::endl;
-      }
+      /*
+  std::cout << "parents" << std::endl;
+  for (size_t i = 0; i < parents_leaf.size(); ++i) {
+    std::cout << i << "leaf =" << parents_leaf[i]
+              << " bmin = " << parents_bmin[i]
+              << " bmax = " << parents_bmax[i]
+              << " split pos = " << parents_split_pos[i]
+              << " split dim = " << parents_split_dim[i] << std::endl;
+  }
+  */
 
       // set split data for parents in tree
       if (prev_level_index >= 0) {
@@ -369,7 +374,8 @@ private:
       //[4 0 5 1 2 6 3]  # addr = e ? leaf[0] + f : t
       detail::tabulate(
           addr.begin(), addr.end(),
-          [_addr = iterator_to_raw_pointer(addr.begin()),
+          [_num_points = static_cast<int>(num_points),
+           _addr = iterator_to_raw_pointer(addr.begin()),
            _e = iterator_to_raw_pointer(e.begin()),
            _f = iterator_to_raw_pointer(f.begin()),
            _parents_nf = iterator_to_raw_pointer(parents_nf.begin()),
@@ -378,23 +384,26 @@ private:
                iterator_to_raw_pointer(m_particle_node.begin())](const int i) {
             const int node_index = _particle_node[i];
             if (node_index >= 0) {
-              return _e[i] ? _parents_leaf[node_index][0] + _f[i]
+              return _e[i] ? (i / _num_points) * _num_points +
+                                 _parents_leaf[node_index][0] + _f[i]
                            : i - _f[i] + _parents_nf[node_index];
             } else {
               return i;
             }
           });
 
-      std::cout << "e" << std::endl;
-      for (size_t i = 0; i < e.size(); ++i) {
-        std::cout << i << "e = " << e[i] << " f = " << f[i]
-                  << " addr = " << addr[i]
-                  << " particle_indicies = " << m_particle_indicies[i]
-                  << " particle pos = "
-                  << get<position>(
-                         this->m_particles_begin)[m_particle_indicies[i]]
-                  << " node = " << m_particle_node[i] << std::endl;
-      }
+      /*
+            std::cout << "e" << std::endl;
+            for (size_t i = 0; i < e.size(); ++i) {
+              std::cout << i << "e = " << e[i] << " f = " << f[i]
+                        << " addr = " << addr[i]
+                        << " particle_indicies = " << m_particle_indicies[i]
+                        << " particle pos = "
+                        << get<position>(
+                               this->m_particles_begin)[m_particle_indicies[i]]
+                        << " node = " << m_particle_node[i] << std::endl;
+            }
+            */
 
       //[f f f f t t t]  # out[addr] = in (scatter)
       detail::scatter(m_particle_indicies.begin(), m_particle_indicies.end(),
@@ -455,14 +464,17 @@ private:
       detail::exclusive_scan(children_type.begin(), children_type.end(),
                              children_num_nodes.begin(), 0);
 
-      std::cout << "children" << std::endl;
-      for (size_t i = 0; i < children_leaf.size(); ++i) {
-        std::cout << i << "leaf =" << children_leaf[i]
-                  << " bmin = " << children_bmin[i]
-                  << " bmax = " << children_bmax[i] << " num nodes "
-                  << children_num_nodes[i] << " type = " << children_type[i]
-                  << std::endl;
-      }
+      /*
+            std::cout << "children" << std::endl;
+            for (size_t i = 0; i < children_leaf.size(); ++i) {
+              std::cout << i << "leaf =" << children_leaf[i]
+                        << " bmin = " << children_bmin[i]
+                        << " bmax = " << children_bmax[i] << " num nodes "
+                        << children_num_nodes[i] << " type = " <<
+         children_type[i]
+                        << std::endl;
+            }
+            */
 
       // update mask with children indicies
       detail::transform(
@@ -546,27 +558,29 @@ template <typename Query> class KdtreeChildIterator {
   typedef bbox<Query::dimension> box_type;
   template <typename Traits> friend struct KdtreeQuery;
 
-  int m_high;
-  const int *m_index;
-  box_type m_bounds;
-
 public:
-  typedef const int *pointer;
+  struct value_type {
+    int high;
+    const int *parent;
+    box_type bounds;
+  };
+  value_type m_data;
+
+  typedef const value_type *pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef const int value_type;
-  typedef const int &reference;
+  typedef const value_type &reference;
   typedef std::ptrdiff_t difference_type;
 
-  KdtreeChildIterator() : m_high(2), m_index(nullptr) {}
+  KdtreeChildIterator() : m_data{2, nullptr} {}
 
-  KdtreeChildIterator(const int *start, const box_type &bounds)
-      : m_high(0), m_index(start), m_bounds(bounds) {
-    ASSERT(start != nullptr, "start pointer should not be null");
+  KdtreeChildIterator(const int *parent, const box_type &bounds)
+      : m_data{0, parent, bounds} {
+    ASSERT(parent != nullptr, "start should not be null");
   }
 
-  bool is_high() const { return m_high > 0; }
+  bool is_high() const { return m_data.high > 0; }
 
-  int get_child_number() const { return m_high; }
+  int get_child_number() const { return m_data.high; }
 
   reference operator*() const { return dereference(); }
 
@@ -597,14 +611,15 @@ public:
 
 private:
   bool equal(KdtreeChildIterator const &other) const {
-    return m_index == other.m_index && m_high == other.m_high;
+    return m_data.parent == other.m_data.parent &&
+           m_data.high == other.m_data.high;
   }
 
-  bool equal(const bool other) const { return (m_high < 2) == other; }
+  bool equal(const bool other) const { return (m_data.high < 2) == other; }
 
-  reference dereference() const { return *m_index; }
+  reference dereference() const { return m_data; }
 
-  void increment() { ++m_high; }
+  void increment() { ++m_data.high; }
 };
 
 /// @copydetails NeighbourQueryBase
@@ -615,8 +630,6 @@ private:
 template <typename Traits> struct KdtreeQuery {
   const static unsigned int dimension = Traits::dimension;
   const static unsigned int m_max_tree_depth = 32 - 2;
-  typedef const int &reference;
-  typedef const int *pointer;
 
   typedef Traits traits_type;
   typedef typename Traits::raw_pointer raw_pointer;
@@ -624,11 +637,16 @@ template <typename Traits> struct KdtreeQuery {
   typedef typename Traits::bool_d bool_d;
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
+
   template <int LNormNumber>
   using query_iterator = tree_query_iterator<KdtreeQuery, LNormNumber>;
-  typedef pointer root_iterator;
+
   typedef depth_first_iterator<KdtreeQuery> all_iterator;
   typedef KdtreeChildIterator<KdtreeQuery> child_iterator;
+
+  typedef typename child_iterator::value_type value_type;
+  typedef typename child_iterator::reference reference;
+  typedef typename child_iterator::pointer pointer;
   typedef ranges_iterator<Traits> particle_iterator;
   typedef bbox<dimension> box_type;
 
@@ -649,6 +667,14 @@ template <typename Traits> struct KdtreeQuery {
   const box_type &get_bounds() const { return m_bounds; }
   const bool_d &get_periodic() const { return m_periodic; }
 
+private:
+  inline int get_parent_index(reference b) const {
+    return b.parent - m_nodes_child;
+  }
+
+  inline int get_child_index(reference b) const { return *b.parent + b.high; }
+
+public:
   /*
    * functions for id mapping
    */
@@ -668,7 +694,9 @@ template <typename Traits> struct KdtreeQuery {
   /*
    * functions for tree_query_iterator
    */
-  static bool is_leaf_node(reference bucket) { return bucket < 0; }
+  bool is_leaf_node(reference bucket) const {
+    return m_nodes_child[get_child_index(bucket)] < 0;
+  }
   static bool is_tree() { return true; }
 
   /*
@@ -681,7 +709,7 @@ template <typename Traits> struct KdtreeQuery {
 
   child_iterator get_children(const child_iterator &ci) const {
     if (!is_leaf_node(*ci)) {
-      return child_iterator((m_nodes_child + *ci + ci.is_high()),
+      return child_iterator((m_nodes_child + get_child_index(*ci)),
                             get_bounds(ci));
     } else {
       return child_iterator();
@@ -689,44 +717,38 @@ template <typename Traits> struct KdtreeQuery {
   }
 
   const box_type get_bounds(const child_iterator &ci) const {
-    box_type ret = ci.m_bounds;
-    const int i = m_nodes_split_dim[ci.m_index - m_nodes_child];
+    box_type ret = (*ci).bounds;
+    const int pindex = get_parent_index(*ci);
+    const int i = m_nodes_split_dim[pindex];
     if (ci.is_high()) {
-      ret.bmin[i] = m_nodes_split_pos[ci.m_index - m_nodes_child];
+      ret.bmin[i] = m_nodes_split_pos[pindex];
     } else {
-      ret.bmax[i] = m_nodes_split_pos[ci.m_index - m_nodes_child];
+      ret.bmax[i] = m_nodes_split_pos[pindex];
     }
     return ret;
   }
 
-  template <int LNormNumber>
-  static const box_type get_bounds(const query_iterator<LNormNumber> &qi) {
-    return qi.get_bounds();
-  }
-
-  static const box_type get_bounds(const all_iterator &ai) {
-    return ai.get_bounds();
-  }
-
   particle_iterator get_bucket_particles(reference bucket) const {
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tget_bucket_particles: looking in bucket with idx = " << bucket);
+    LOG(4, "\tget_bucket_particles: looking in bucket with idx = "
+               << *bucket.parent + bucket.high);
 #endif
     if (!is_leaf_node(bucket)) {
       return particle_iterator();
     }
 
-    return particle_iterator(
-        m_particles_begin - bucket - 1,
-        m_particles_begin - m_nodes_split_dim[&bucket - m_nodes_child] - 1);
+    const int cindex = get_child_index(bucket);
+
+    return particle_iterator(m_particles_begin - m_nodes_child[cindex] - 1,
+                             m_particles_begin - m_nodes_split_dim[cindex] - 1);
   }
 
   void go_to(const double_d &position, child_iterator &ci) {
-    const int i = m_nodes_split_dim[ci.m_index - m_nodes_child];
-    ASSERT(position[i] < ci.m_bounds.bmax[i], "position out of bounds");
-    ASSERT(position[i] >= ci.m_bounds.bmin[i], "position out of bounds");
-    const double diff =
-        position[i] - m_nodes_split_pos[ci.m_index - m_nodes_child];
+    const int pindex = get_parent_index(*ci);
+    const int i = m_nodes_split_dim[pindex];
+    ASSERT(position[i] < ci.m_data.bounds.bmax[i], "position out of bounds");
+    ASSERT(position[i] >= ci.m_data.bounds.bmin[i], "position out of bounds");
+    const double diff = position[i] - m_nodes_split_pos[pindex];
     if (diff > 0)
       ++ci;
   }

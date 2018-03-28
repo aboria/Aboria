@@ -197,6 +197,7 @@ if (Aboria_USE_THRUST)
     list(APPEND NeighboursTest
     test_thrust_vector_CellListOrdered
     test_thrust_vector_HyperOctree
+    test_thrust_vector_Kdtree
     )
 endif()
 
