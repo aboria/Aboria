@@ -797,25 +797,6 @@ template <typename Traits> struct HyperOctreeQuery {
     return ci.get_bounds();
   }
 
-  ///
-  /// @copydoc NeighbourQueryBase::get_bounds()
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber>
-  CUDA_HOST_DEVICE static const box_type
-  get_bounds(const query_iterator<LNormNumber> &qi) {
-    return qi.get_bounds();
-  }
-
-  ///
-  /// @copydoc NeighbourQueryBase::get_bounds()
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static const box_type get_bounds(const all_iterator &ai) {
-    return ai.get_bounds();
-  }
-
   ABORIA_HOST_DEVICE_IGNORE_WARN
   particle_iterator CUDA_HOST_DEVICE
   get_bucket_particles(reference bucket) const {
@@ -835,8 +816,7 @@ template <typename Traits> struct HyperOctreeQuery {
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  void get_bucket(const double_d &position, pointer &bucket,
-                  box_type &bounds) const {
+  child_iterator get_bucket(const double_d &position) const {
     child_iterator i = get_children();
     i.go_to(position);
 
@@ -845,8 +825,7 @@ template <typename Traits> struct HyperOctreeQuery {
       i.go_to(position);
     }
 
-    bucket = &(*i);
-    bounds = i.get_bounds();
+    return i;
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN

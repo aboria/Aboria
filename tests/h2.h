@@ -855,6 +855,27 @@ public:
 #endif
   }
 
+  void test_fast_methods_kd_tree_nanoflann(void) {
+#ifdef HAVE_H2LIB
+    const size_t N = 1000;
+    /*
+    std::cout << "KD_TREE: testing extended matrix 1D..." << std::endl;
+    helper_extended_matrix<1,std::vector,Kdtree>(N);
+    std::cout << "KD_TREE: testing extended matrix 2D..." << std::endl;
+    helper_extended_matrix<2,std::vector,Kdtree>(N);
+    std::cout << "KD_TREE: testing extended matrix 3D..." << std::endl;
+    helper_extended_matrix<3,std::vector,Kdtree>(N);
+    */
+
+    std::cout << "KD_TREE: testing 1D..." << std::endl;
+    helper_fast_methods<1, std::vector, KdtreeNanoflann>(N);
+    std::cout << "KD_TREE: testing 2D..." << std::endl;
+    helper_fast_methods<2, std::vector, KdtreeNanoflann>(N);
+    std::cout << "KD_TREE: testing 3D..." << std::endl;
+    helper_fast_methods<3, std::vector, KdtreeNanoflann>(N);
+#endif
+  }
+
   void test_fast_methods_HyperOctree(void) {
 #ifdef HAVE_H2LIB
     const size_t N = 1000;

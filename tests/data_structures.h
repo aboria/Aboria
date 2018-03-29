@@ -225,7 +225,8 @@ public:
 
     std::cout << "subtree depth-first" << std::endl;
     for (auto i = query_octtree.get_subtree(); i != false; ++i) {
-      std::cout << query_octtree.get_bounds(i) << std::endl;
+      std::cout << query_octtree.get_bounds(i.get_child_iterator())
+                << std::endl;
     }
 
     /*`
@@ -237,12 +238,13 @@ public:
 
     std::cout << "subtree depth-first showing leaf nodes" << std::endl;
     for (auto i = query_octtree.get_subtree(); i != false; ++i) {
-      if (query_octtree.is_leaf_node(*i)) {
-        std::cout << "leaf node with bounds = " << query_octtree.get_bounds(i)
+      auto ci = i.get_child_iterator();
+      if (query_octtree.is_leaf_node(*ci)) {
+        std::cout << "leaf node with bounds = " << query_octtree.get_bounds(ci)
                   << std::endl;
       } else {
         std::cout << "non-leaf node with bounds = "
-                  << query_octtree.get_bounds(i) << std::endl;
+                  << query_octtree.get_bounds(ci) << std::endl;
       }
     }
 
@@ -258,16 +260,18 @@ public:
     std::cout << "subtree depth-first showing leaf nodes and particles"
               << std::endl;
     for (auto i = query_octtree.get_subtree(); i != false; ++i) {
-      if (query_octtree.is_leaf_node(*i)) {
-        std::cout << "leaf node with bounds = " << query_octtree.get_bounds(i)
+      auto ci = i.get_child_iterator();
+      if (query_octtree.is_leaf_node(*ci)) {
+        std::cout << "leaf node with bounds = " << query_octtree.get_bounds(ci)
                   << std::endl;
-        for (auto j = query_octtree.get_bucket_particles(*i); j != false; ++j) {
+        for (auto j = query_octtree.get_bucket_particles(*ci); j != false;
+             ++j) {
           std::cout << "\t has particle with position" << get<position>(*j)
                     << std::endl;
         }
       } else {
         std::cout << "non-leaf node with bounds = "
-                  << query_octtree.get_bounds(i) << std::endl;
+                  << query_octtree.get_bounds(ci) << std::endl;
       }
     }
 
@@ -298,9 +302,10 @@ public:
     for (auto i = query_octtree.get_buckets_near_point<P>(search_point,
                                                           search_radius);
          i != false; ++i) {
-      std::cout << "\t found bucket at " << query_octtree.get_bounds(i)
+      auto ci = i.get_child_iterator();
+      std::cout << "\t found bucket at " << query_octtree.get_bounds(ci)
                 << std::endl;
-      for (auto j = query_octtree.get_bucket_particles(*i); j != false; ++j) {
+      for (auto j = query_octtree.get_bucket_particles(*ci); j != false; ++j) {
         std::cout << "\t\t found particle at " << get<position>(*j)
                   << std::endl;
       }
@@ -364,7 +369,7 @@ public:
     int child_count_subtree = 0;
     for (auto i = query.get_subtree(); i != false; ++i) {
       child_count_subtree++;
-      auto bounds = query.get_bounds(i);
+      auto bounds = query.get_bounds(i.get_child_iterator());
       int num_particles = 0;
       for (auto j = query.get_bucket_particles(*i); j != false; ++j) {
         num_particles++;

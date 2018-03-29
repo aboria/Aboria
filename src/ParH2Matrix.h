@@ -157,10 +157,8 @@ public:
       LOG(2, "\trow particles are different to column particles");
       for (size_t i = 0; i < row_particles.size(); ++i) {
         // get target index
-        pointer bucket;
-        box_type box;
-        m_query->get_bucket(get<position>(row_particles)[i], bucket, box);
-        const size_t index = m_query->get_bucket_index(*bucket);
+        auto ci = m_query->get_bucket(get<position>(row_particles)[i]);
+        const size_t index = m_query->get_bucket_index(*ci);
         m_row_indices[index].push_back(i);
       }
     }
@@ -262,10 +260,8 @@ public:
     } else {
       for (size_t i = 0; i < row_particles.size(); ++i) {
         // get target index
-        pointer bucket;
-        box_type box;
-        m_query->get_bucket(get<position>(row_particles)[i], bucket, box);
-        const size_t index = m_query->get_bucket_index(*bucket);
+        auto ci = m_query->get_bucket(get<position>(row_particles)[i]);
+        const size_t index = m_query->get_bucket_index(*ci);
         m_row_indices[index].push_back(i);
       }
     }

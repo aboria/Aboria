@@ -126,8 +126,13 @@ O(log(N)) time.
       Vector<double, D> &p = get<position_d<D>>(arg);
       generator_type &gen = get<generator>(arg);
 
-      detail::uniform_real_distribution<float> dist(a, b);
-      detail::uniform_int_distribution<int> dist_int(0, N - 1);
+#if defined(__CUDACC__)
+      thrust::uniform_real_distribution<float> dist(a, b);
+      thrust::uniform_int_distribution<int> dist_int(0, N - 1);
+#else
+      std::uniform_real_distribution<float> dist(a, b);
+      std::uniform_int_distribution<int> dist_int(0, N - 1);
+#endif
       for (size_t d = 0; d < D; ++d) {
         get<id_to_find>(arg) = dist_int(gen);
         p[d] = dist(gen);
@@ -213,8 +218,9 @@ O(log(N)) time.
     std::cout << "seed is " << seed1 << std::endl;
     particles.set_seed(seed1);
     generator_type gen(seed1);
-    detail::uniform_real_distribution<float> uniform(-1.0, 1.0);
-    detail::uniform_int_distribution<int> uniform_int(0, N - 1);
+
+    std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+    std::uniform_int_distribution<int> uniform_int(0, N - 1);
 
     if (push_back_construction) {
       particles.init_id_search();
@@ -252,14 +258,14 @@ O(log(N)) time.
     */
 
     // delete random particle
-    detail::uniform_int_distribution<int> uniform_int_N(0, N - 1);
+    std::uniform_int_distribution<int> uniform_int_N(0, N - 1);
     particles.erase(particles.begin() + uniform_int_N(gen));
 
     // delete last particle
     particles.erase(particles.begin() + particles.size() - 1);
 
     // delete random particle + last and call update on this range
-    detail::uniform_int_distribution<int> uniform_int_N_minus_2(0, N - 3);
+    std::uniform_int_distribution<int> uniform_int_N_minus_2(0, N - 3);
     const size_t random_index = uniform_int_N_minus_2(gen);
     get<alive>(particles)[random_index] = false;
     *get<alive>(particles.end() - 1) = false;

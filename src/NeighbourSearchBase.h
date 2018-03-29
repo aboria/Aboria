@@ -206,7 +206,14 @@ public:
     void operator()(Reference i) const {
       double_d r = Aboria::get<position>(i);
       for (unsigned int d = 0; d < dimension; ++d) {
-        if (periodic[d]) {
+        if (!std::isfinite(r[d])) {
+#ifdef __CUDA_ARCH__
+          LOG_CUDA(2, "removing particle");
+#else
+          LOG(2, "removing particle with r = " << r);
+#endif
+          Aboria::get<alive>(i) = uint8_t(false);
+        } else if (periodic[d]) {
           while (r[d] < low[d]) {
             r[d] += (high[d] - low[d]);
           }
@@ -742,21 +749,6 @@ template <typename Traits> struct NeighbourQueryBase {
   /// @return a @bbox containing the bounds
   ///
   const box_type get_bounds(const child_iterator &ci) const;
-
-  ///
-  /// @brief returns the min/max bounds of the given query_iterator @p ci
-  ///
-  /// @return a @bbox containing the bounds
-  ///
-  template <int LNormNumber>
-  const box_type get_bounds(const query_iterator<LNormNumber> &ci) const;
-
-  ///
-  /// @brief returns the min/max bounds of the given all_iterator @p ci
-  ///
-  /// @return a @bbox containing the bounds
-  ///
-  const box_type get_bounds(const all_iterator &ci) const;
 
   ///
   /// @brief returns entire domain min/max bounds
@@ -1486,7 +1478,7 @@ public:
   ~tree_query_iterator() {}
 
   CUDA_HOST_DEVICE
-  box_type get_child_iterator() const { return m_stack.back(); }
+  child_iterator get_child_iterator() const { return m_stack.back(); }
 
   CUDA_HOST_DEVICE
   iterator &operator=(const iterator &copy) {
@@ -1811,7 +1803,6 @@ public:
   size_t operator-(const iterator &start) const {
     int distance;
     if (!m_valid) {
-      const int_d test = minus(minus(start.m_max, 1), start.m_index);
       distance = start.collapse_index_vector(
                      minus(minus(start.m_max, 1), start.m_index)) +
                  1;

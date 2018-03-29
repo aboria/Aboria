@@ -442,19 +442,6 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber>
-  CUDA_HOST_DEVICE const box_type
-  get_bounds(const query_iterator<LNormNumber> &qi) const {
-    box_type bounds;
-    bounds.bmin = (*qi) * m_bucket_side_length + m_bounds.bmin;
-    bounds.bmax = ((*qi) + 1) * m_bucket_side_length + m_bounds.bmin;
-    return bounds;
-  }
-
-  ///
-  /// @copydoc NeighbourQueryBase::get_bounds()
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   const box_type &get_bounds() const { return m_bounds; }
 
@@ -506,11 +493,9 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  void get_bucket(const double_d &position, pointer &bucket,
-                  box_type &bounds) const {
-    bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
-    bounds.bmin = bucket * m_bucket_side_length + m_bounds.bmin;
-    bounds.bmax = (bucket + 1) * m_bucket_side_length + m_bounds.bmin;
+  child_iterator get_bucket(const double_d &position) const {
+    auto bucket = m_point_to_bucket_index.find_bucket_index_vector(position);
+    return child_iterator(bucket, bucket + 1);
   }
 
   ///

@@ -56,19 +56,22 @@ template <typename T> struct is_std_iterator {
 #ifdef __aboria_have_thrust__
   typedef std::integral_constant<
       bool,
-      std::is_convertible<typename std::iterator_traits<T>::iterator_category,
-                          std::random_access_iterator_tag>::value>
+      /*
+      !std::is_convertible<typename
+      std::iterator_traits<T>::iterator_category,
+                           thrust::random_access_device_iterator_tag>::value
+                         */
+      std::is_same<typename std::iterator_traits<T>::iterator_category,
+                   std::random_access_iterator_tag>::value ||
+          std::is_convertible<
+              typename std::iterator_traits<T>::iterator_category,
+              boost::random_access_traversal_tag>::value>
+
       type;
   // typedef std::integral_constant<bool,false> type;
 #else
   typedef std::integral_constant<bool, true> type;
 #endif
-};
-
-template <typename value_type> struct iter_comp {
-  bool operator()(const value_type &t1, const value_type &t2) {
-    return get<0>(t1.get_tuple()) < get<0>(t2.get_tuple());
-  }
 };
 
 template <typename T> struct lower_bound_impl {
@@ -170,12 +173,20 @@ void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp) {
 template <typename T1, typename T2>
 void sort_by_key(T1 start_keys, T1 end_keys, T2 start_data, std::true_type) {
   typedef zip_iterator<std::tuple<T1, T2>, mpl::vector<>> pair_zip_type;
-  typedef typename pair_zip_type::value_type value_type;
 
   std::sort(
       pair_zip_type(start_keys, start_data),
       pair_zip_type(end_keys, start_data + std::distance(start_keys, end_keys)),
-      detail::iter_comp<value_type>());
+      [](auto a, auto b) {
+        return std::get<0>(a.get_tuple()) < std::get<0>(b.get_tuple());
+      });
+  /*
+std::sort(
+  boost::make_zip_iterator(boost::make_tuple(start_keys, start_data)),
+  boost::make_zip_iterator(boost::make_tuple(
+      end_keys, start_data + std::distance(start_keys, end_keys))),
+  [](auto a, auto b) { return a.template get<0>() < b.template get<0>(); });
+  */
 }
 
 #ifdef __aboria_have_thrust__

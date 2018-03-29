@@ -80,7 +80,7 @@ public:
     /*
      * simulation parameters
      */
-    const int timesteps = 1000;
+    const int timesteps = 3000;
     const int nout = 200;
     const int timesteps_per_out = timesteps / nout;
     const double L = 31.0 / 1000.0;

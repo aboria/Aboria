@@ -72,7 +72,17 @@ class Kdtree : public neighbour_search_base<Kdtree<Traits>, Traits,
   friend base_type;
 
 public:
-  Kdtree() : base_type() {}
+  Kdtree() : base_type(), m_number_of_levels(0) {
+
+    this->m_query.m_nodes_child =
+        iterator_to_raw_pointer(m_nodes_child.begin());
+    this->m_query.m_nodes_split_dim =
+        iterator_to_raw_pointer(m_nodes_split_dim.begin());
+    this->m_query.m_nodes_split_pos =
+        iterator_to_raw_pointer(m_nodes_split_pos.begin());
+    this->m_query.m_number_of_buckets = m_nodes_child.size();
+    this->m_query.m_number_of_levels = m_number_of_levels;
+  }
 
   //~Kdtree() {}
 
@@ -91,7 +101,7 @@ private:
 
   void print_tree() const {
     int first_index = 0;
-    int i = first_index;
+    size_t i = first_index;
     while (i < m_nodes_child.size() && m_nodes_child[i] < 0)
       ++i;
     while (i < m_nodes_child.size()) {
@@ -107,7 +117,7 @@ private:
   }
 
   void print_level(int index, int level_size) const {
-    for (size_t i = index; i < index + level_size; ++i) {
+    for (int i = index; i < index + level_size; ++i) {
       if (m_nodes_child[i] >= 0) {
         std::cout << "|n(" << m_nodes_child[i] << "," << m_nodes_split_dim[i]
                   << "," << m_nodes_split_pos[i] << ")";
@@ -129,6 +139,7 @@ private:
     const size_t num_points = this->m_alive_indices.size();
 
     // setup particles
+    LOG(3, "update_positions_impl(kdtree): setup particles");
     m_particle_node.resize(dimension * num_points);
     detail::fill(m_particle_node.begin(), m_particle_node.end(), 0);
     m_particle_indicies.resize(dimension * num_points);
@@ -158,9 +169,11 @@ private:
     */
 
     // build the tree
+    LOG(3, "update_positions_impl(kdtree): build tree");
     build_tree();
 
     // copy sorted indicies from 1st dim back to m_alive_indicies
+    LOG(3, "update_positions_impl(kdtree): finished build tree");
     detail::copy(m_particle_indicies.begin(),
                  m_particle_indicies.begin() + num_points,
                  this->m_alive_indices.begin());
@@ -212,6 +225,7 @@ private:
     // last+1 particle
     // m_leafs int2 -> indicies of particles
     while (!parents_leaf.empty()) {
+      LOG(3, "build_tree(kdtree): building level " << m_number_of_levels);
       // calc split ( median of longest dimension)
       const int num_parents = parents_leaf.size();
       auto parents_it = Traits::make_zip_iterator(Traits::make_tuple(
@@ -257,6 +271,9 @@ private:
                   max_spread = spread;
                   split_d = i;
                 }
+              } else {
+                minp[i] = 0;
+                maxp[i] = 0;
               }
             }
             double split = 0.5 * (maxb[split_d] + minb[split_d]);
@@ -574,9 +591,7 @@ public:
   KdtreeChildIterator() : m_data{2, nullptr} {}
 
   KdtreeChildIterator(const int *parent, const box_type &bounds)
-      : m_data{0, parent, bounds} {
-    ASSERT(parent != nullptr, "start should not be null");
-  }
+      : m_data{parent != nullptr ? 0 : 2, parent, bounds} {}
 
   bool is_high() const { return m_data.high > 0; }
 
@@ -753,8 +768,7 @@ public:
       ++ci;
   }
 
-  void get_bucket(const double_d &position, pointer &bucket,
-                  box_type &bounds) const {
+  child_iterator get_bucket(const double_d &position) const {
     child_iterator i = get_children();
     go_to(position, i);
 
@@ -763,12 +777,11 @@ public:
       go_to(position, i);
     }
 
-    bucket = &(*i);
-    bounds = get_bounds(i);
+    return i;
   }
 
   size_t get_bucket_index(reference bucket) const {
-    return &bucket - m_nodes_child;
+    return get_child_index(bucket);
   }
 
   size_t number_of_buckets() const { return m_number_of_buckets; }

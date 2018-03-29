@@ -515,6 +515,22 @@ public:
 #endif
   }
 
+  void test_fast_methods_kd_tree_nanoflann(void) {
+    const size_t N = 1000;
+#ifdef HAVE_GPERFTOOLS
+    ProfilerStart("fmm_kd_tree");
+#endif
+    std::cout << "KD_TREE: testing 1D..." << std::endl;
+    helper_fast_methods<1, std::vector, KdtreeNanoflann>(N);
+    std::cout << "KD_TREE: testing 2D..." << std::endl;
+    helper_fast_methods<2, std::vector, KdtreeNanoflann>(N);
+    std::cout << "KD_TREE: testing 3D..." << std::endl;
+    helper_fast_methods<3, std::vector, KdtreeNanoflann>(N);
+#ifdef HAVE_GPERFTOOLS
+    ProfilerStop();
+#endif
+  }
+
   void test_fast_methods_HyperOctree(void) {
     const size_t N = 1000;
 #ifdef HAVE_GPERFTOOLS

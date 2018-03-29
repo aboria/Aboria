@@ -158,17 +158,18 @@ std::endl;
     /*
      * randomly set position for N particles
      */
-    detail::for_each(particles.begin(), particles.end(),
-                     [] CUDA_HOST_DEVICE(raw_reference i) {
+    Aboria::detail::for_each(particles.begin(), particles.end(),
+                             [] CUDA_HOST_DEVICE(raw_reference i) {
 #if defined(__CUDACC__)
-                       thrust::uniform_real_distribution<double> uni(0, 1);
+                               thrust::uniform_real_distribution<double> uni(0,
+                                                                             1);
 #else
-                       std::uniform_real_distribution<double> uni(0, 1);
+                               std::uniform_real_distribution<double> uni(0, 1);
 #endif
-                       generator_type &gen = get<generator>(i);
-                       get<position>(i) = vdouble2(uni(gen), uni(gen));
-                       get<velocity>(i) = vdouble2(0, 0);
-                     });
+                               generator_type &gen = get<generator>(i);
+                               get<position>(i) = vdouble2(uni(gen), uni(gen));
+                               get<velocity>(i) = vdouble2(0, 0);
+                             });
 
     /*
      * initiate neighbour search on a periodic 2d domain of side length L
@@ -192,7 +193,7 @@ std::endl;
 #endif
       for (int i = 0; i < timesteps_per_out; i++) {
         const query_type &query = particles.get_query();
-        detail::for_each(
+        Aboria::detail::for_each(
             particles.begin(), particles.end(),
             [=] CUDA_HOST_DEVICE(raw_reference i) {
               vdouble2 force_sum(0, 0);
@@ -206,10 +207,10 @@ std::endl;
               get<velocity>(i) += dt * force_sum / mass;
             });
 
-        detail::for_each(particles.begin(), particles.end(),
-                         [=] CUDA_HOST_DEVICE(raw_reference i) {
-                           get<position>(i) += dt * get<velocity>(i);
-                         });
+        Aboria::detail::for_each(particles.begin(), particles.end(),
+                                 [=] CUDA_HOST_DEVICE(raw_reference i) {
+                                   get<position>(i) += dt * get<velocity>(i);
+                                 });
 
         particles.update_positions();
       }
@@ -224,7 +225,9 @@ std::endl;
     helper_md<std::vector, CellListOrdered>();
   }
 
-  void test_std_vector_HyperOctree(void) { helper_md<std::vector, HyperOctree>(); }
+  void test_std_vector_HyperOctree(void) {
+    helper_md<std::vector, HyperOctree>();
+  }
 
   // void test_thrust_vector_CellList(void) {
   //#if //defined(__aboria_have_thrust__)

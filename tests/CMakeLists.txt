@@ -317,6 +317,7 @@ set(FMMTest
     test_fast_methods_CellList
     test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
+    test_fast_methods_kd_tree_nanoflann
     test_fast_methods_HyperOctree
     test_fmm_operators
     )
@@ -326,6 +327,7 @@ set(H2Test
     test_fast_methods_CellList
     test_fast_methods_CellListOrdered
     test_fast_methods_kd_tree
+    test_fast_methods_kd_tree_nanoflann
     test_fast_methods_HyperOctree
     test_fmm_matrix_operators
     )

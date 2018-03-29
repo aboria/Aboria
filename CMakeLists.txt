@@ -17,6 +17,9 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cxxtest/build_tools/cmake/"
 list(APPEND CMAKE_CXX_FLAGS "-Wall -Wno-deprecated -std=c++14 -ftemplate-backtrace-limit=0")
 #set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} "-Wno-deprecated -std=c++11"")
 
+
+
+
 option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
 if (Aboria_USE_THRUST)
     set(Aboria_USE_OPENMP ON CACHE BOOL "Use OpenMP for shared memory parallism" FORCE)
@@ -59,6 +62,9 @@ if (Aboria_USE_OPENMP)
     add_definitions(-DHAVE_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
+#    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
+#        add_definitions(-D_GLIBCXX_PARALLEL)
+#    endif()
 endif()
 
 

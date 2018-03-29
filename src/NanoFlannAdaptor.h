@@ -482,15 +482,6 @@ template <typename Traits> struct KdtreeNanoflannQuery {
     return ci.get_bounds();
   }
 
-  template <int LNormNumber>
-  static const box_type get_bounds(const query_iterator<LNormNumber> &qi) {
-    return qi.get_bounds();
-  }
-
-  static const box_type get_bounds(const all_iterator &ai) {
-    return ai.get_bounds();
-  }
-
   friend std::ostream &operator<<(std::ostream &os, reference bucket) {
     if (is_leaf_node(bucket)) {
       os << "Leaf node";
@@ -536,8 +527,7 @@ template <typename Traits> struct KdtreeNanoflannQuery {
   }
   */
 
-  void get_bucket(const double_d &position, pointer &bucket,
-                  box_type &bounds) const {
+  child_iterator get_bucket(const double_d &position) const {
     child_iterator i = get_children();
     i.go_to(position);
 
@@ -546,8 +536,7 @@ template <typename Traits> struct KdtreeNanoflannQuery {
       i.go_to(position);
     }
 
-    bucket = &(*i);
-    bounds = i.get_bounds();
+    return i;
   }
 
   size_t get_bucket_index(reference bucket) const { return bucket.index; }

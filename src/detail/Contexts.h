@@ -271,10 +271,10 @@ template <typename labels_type, typename dx_type> struct EvalCtx {
     for (auto b = distance_search<LNormNumber>(
              particlesb.get_query(), get<position>(ai), accum.max_distance);
          b != false; ++b) {
-
       EvalCtx<map_type, list_type> const new_ctx(
-          fusion::make_map<label_a_type, label_b_type>(ai, *b),
-          fusion::make_list(b.dx()));
+          // fusion::make_map<label_a_type, label_b_type>(ai, *b),
+          map_type(ai, *b),
+          list_type(b.dx())); // fusion::make_list(b.dx()));
 
       sum = accum.functor(sum, proto::eval(expr, new_ctx));
     }

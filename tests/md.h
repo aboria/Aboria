@@ -92,9 +92,9 @@ public:
     const double diameter = 0.0022;
     const double k = 1.0e01;
     const double dens = 1160.0;
-    const double mass = (1.0 / 6.0) * PI * std::pow(0.5 * diameter, 3) * dens;
+    const double mass = PI * std::pow(0.5 * diameter, 2) * dens;
     const double reduced_mass = 0.5 * mass;
-    const double dt = (1.0 / 50.0) * PI / sqrt(k / reduced_mass);
+    const double dt = (1.0 / 50.0) * PI / std::sqrt(k / reduced_mass);
     const double v0 = L / (timesteps * dt);
 
     /*
@@ -185,12 +185,12 @@ public:
         /*
          * leap frog integrator
          */
-        v[a] += dt * (
-                         // spring force between particles
-                         sum(b, if_else(id_[a] != id_[b],
-                                        -k * (diameter / norm(dx) - 1), 0.0) *
-                                    dx) /
-                         mass);
+        v[a] += dt *
+                // spring force between particles
+                sum(b, if_else(id_[a] != id_[b],
+                               -k * (diameter / norm(dx) - 1.0), 0.0) *
+                           dx) /
+                mass;
         p[a] += dt * v[a];
       }
     }
@@ -203,6 +203,8 @@ public:
   void test_CellList() { helper_md<CellList>(); }
 
   void test_Kdtree() { helper_md<Kdtree>(); }
+
+  void test_KdtreeNanoflann() { helper_md<KdtreeNanoflann>(); }
 
   void test_HyperOctree() { helper_md<HyperOctree>(); }
 };
