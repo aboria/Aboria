@@ -630,7 +630,7 @@ public:
       // "<<i.get_id()<<std::endl;
       const double_d &r = get<position>(i);
       for (size_t d = 0; d < max_d; ++d) {
-        write_point[d] = r[d];
+        write_point[d] = d < dimension ? r[d] : 0;
       }
       points->SetPoint(index, write_point);
       cells->InsertNextCell(1);
@@ -667,12 +667,11 @@ public:
 
     this->clear();
 
-    const unsigned int max_d = std::min(3u, traits_type::dimension);
     for (size_t j = 0; j < n; ++j) {
       value_type particle;
       const double *r = points->GetPoint(j);
-      for (size_t d = 0; d < max_d; ++d) {
-        get<position>(particle)[d] = r[d];
+      for (size_t d = 0; d < dimension; ++d) {
+        get<position>(particle)[d] = d < 3 ? r[d] : 0;
       }
       mpl::for_each<mpl::range_c<int, 1, dn>>(
           detail::read_into_tuple<reference>(particle.get_tuple(), j, datas));
