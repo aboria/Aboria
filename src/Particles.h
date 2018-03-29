@@ -702,7 +702,7 @@ private:
     if (n_alive > old_n / 2) {
       traits_type::resize(other_data, new_n);
       // copy non-update region to other data buffer
-      std::copy(begin(), update_begin, traits_type::begin(other_data));
+      detail::copy(begin(), update_begin, traits_type::begin(other_data));
       // gather update_region according to order to other data buffer
       detail::gather(order_start, order_end, traits_type::begin(data),
                      traits_type::begin(other_data) + (update_begin - begin()));
