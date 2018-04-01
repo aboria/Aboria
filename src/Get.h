@@ -676,6 +676,11 @@ struct zip_pointer<thrust::tuple<TT1, TT2, TT3, TT4, TT5, TT6, TT7, TT8, TT9>,
     return ret;
   }
 
+  zip_pointer &operator+=(const difference_type &n) {
+    advance(n);
+    return *this;
+  }
+
   CUDA_HOST_DEVICE
   zip_pointer operator-(const difference_type &n) const {
     zip_pointer ret(*this);

@@ -780,6 +780,14 @@ public:
     return i;
   }
 
+  size_t get_parent_index(const child_iterator &ci) const {
+    return get_parent_index(*ci);
+  }
+
+  const box_type &get_parent_bounds(const child_iterator &ci) const {
+    return ci.m_data.bounds;
+  }
+
   size_t get_bucket_index(reference bucket) const {
     return get_child_index(bucket);
   }

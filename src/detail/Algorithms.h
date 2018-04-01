@@ -54,18 +54,17 @@ template <typename Traits> size_t concurrent_processes() {
 
 template <typename T> struct is_std_iterator {
 #ifdef __aboria_have_thrust__
-  typedef std::integral_constant<
-      bool,
+  typedef std::integral_constant<bool, false>
       /*
       !std::is_convertible<typename
       std::iterator_traits<T>::iterator_category,
                            thrust::random_access_device_iterator_tag>::value
-                         */
       std::is_same<typename std::iterator_traits<T>::iterator_category,
                    std::random_access_iterator_tag>::value ||
           std::is_convertible<
               typename std::iterator_traits<T>::iterator_category,
               boost::random_access_traversal_tag>::value>
+                         */
 
       type;
   // typedef std::integral_constant<bool,false> type;

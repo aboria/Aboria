@@ -308,10 +308,11 @@ public:
     */
     for (auto ij = get_neighbouring_buckets(particles.get_query()); ij != false;
          ++ij) {
-      const auto &i = std::get<0>(*ij); // bucket i
-      const auto &j = std::get<1>(*ij); // bucket j
+      auto tpl = *ij;
+      auto i = tpl.get<0>(); // bucket i
+      auto j = tpl.get<1>(); // bucket j
       // position offset to apply to particles in i (for periodic boundaries)
-      const auto &poffset = std::get<2>(*ij);
+      auto poffset = tpl.get<2>();
       for (auto pi = particles.get_query().get_bucket_particles(i); pi != false;
            ++pi) {
         const Vector<double, 3> pi_position = get<position>(*pi) + poffset;
@@ -917,7 +918,7 @@ public:
       }
     } else {
       particles.resize(N);
-      detail::for_each(
+      std::for_each(
           std::begin(particles), std::end(particles),
           set_random_position<D, typename particles_type::raw_reference>(-1.0,
                                                                          1.0));
@@ -937,13 +938,13 @@ public:
     // Aboria search
     t0 = Clock::now();
     auto pair_it = get_neighbouring_buckets(particles.get_query());
-    detail::for_each(pair_it, decltype(pair_it)(),
-                     aboria_fast_bucketsearch_check_neighbour<query_type>(
-                         particles.get_query(), r));
+    std::for_each(pair_it, decltype(pair_it)(),
+                  aboria_fast_bucketsearch_check_neighbour<query_type>(
+                      particles.get_query(), r));
     auto self_it = particles.get_query().get_subtree();
-    detail::for_each(self_it, decltype(self_it)(),
-                     aboria_fast_bucketsearch_check_self<query_type>(
-                         particles.get_query(), r));
+    std::for_each(self_it, decltype(self_it)(),
+                  aboria_fast_bucketsearch_check_self<query_type>(
+                      particles.get_query(), r));
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria = t1 - t0;
     for (size_t i = 0; i < particles.size(); ++i) {

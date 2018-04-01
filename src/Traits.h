@@ -24,6 +24,46 @@ namespace mpl = boost::mpl;
 
 struct default_traits {
   template <typename T> struct vector_type { typedef std::vector<T> type; };
+
+#ifdef __aboria_have_thrust__
+  template <typename T1 = thrust::null_type, typename T2 = thrust::null_type,
+            typename T3 = thrust::null_type, typename T4 = thrust::null_type,
+            typename T5 = thrust::null_type, typename T6 = thrust::null_type,
+            typename T7 = thrust::null_type, typename T8 = thrust::null_type,
+            typename T9 = thrust::null_type>
+  struct tuple_type {
+    typedef thrust::tuple<T1, T2, T3, T4, T5, T6, T7, T8, T9> type;
+  };
+  template <std::size_t I, class T> struct tuple_element {
+    typedef thrust::tuple_element<I, T> type;
+  };
+  template <class T> struct tuple_size { typedef thrust::tuple_size<T> type; };
+
+  template <typename ElementIterator, typename IndexIterator>
+  static auto make_permutation_iterator(ElementIterator e, IndexIterator i) {
+    return thrust::make_permutation_iterator(e, i);
+  }
+
+  template <class AdaptableUnaryFunction, class Iterator>
+  static auto make_transform_iterator(Iterator it, AdaptableUnaryFunction fun) {
+    return thrust::make_transform_iterator(it, fun);
+  }
+
+  template <typename... T> static auto make_tuple(T... args) {
+    return thrust::make_tuple(args...);
+  }
+
+  template <typename IteratorTuple>
+  static auto make_zip_iterator(IteratorTuple arg) {
+    return thrust::make_zip_iterator(arg);
+  }
+
+  template <typename Incrementable>
+  static auto make_counting_iterator(Incrementable x) {
+    return thrust::make_counting_iterator(x);
+  }
+
+#else
   template <typename... T> struct tuple_type { typedef std::tuple<T...> type; };
   template <std::size_t I, class T> struct tuple_element {
     typedef std::tuple_element<I, T> type;
@@ -31,12 +71,6 @@ struct default_traits {
   template <class T> struct tuple_size { typedef std::tuple_size<T> type; };
 
   template <typename T> using counting_iterator = boost::counting_iterator<T>;
-
-  template <typename T>
-  using uniform_real_distribution = std::uniform_real_distribution<T>;
-
-  template <typename T>
-  using uniform_int_distribution = std::uniform_int_distribution<T>;
 
   template <typename T> using normal_distribution = std::normal_distribution<T>;
 
@@ -63,6 +97,7 @@ struct default_traits {
   static auto make_counting_iterator(Incrementable x) {
     return boost::make_counting_iterator(x);
   }
+#endif
 };
 
 template <template <typename, typename> class VECTOR> struct Traits {};

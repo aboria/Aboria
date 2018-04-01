@@ -124,102 +124,90 @@ protected:
     return W;
   }
 
-  /*
-    template <typename RowParticles>
-    void generate_levels(
-        const col_child_iterator_vector_type &parents_strong_connections,
-        const box_type &box_parent, const child_iterator &ci_parent,
-        const row_child_iterator &ci, const RowParticles &row_particles,
-        const ColParticles &col_particles, const size_t level, bool active) {
-
-      const box_type &target_box = m_query->get_bounds(ci);
-      size_t target_index = m_query->get_bucket_index(*ci);
-      LOG(3, "generate_levels with bucket " << target_box);
-
-      // add current iterator to level
-      if (level >= m_levels.size()) {
-        m_levels.resize(level + 1);
-      }
-
-      // setup theta condition test
-      detail::theta_condition<dimension> theta(target_box.bmin,
-    target_box.bmax);
-
-      // add strongly connected buckets to current connectivity list
-      if (parents_strong_connections.empty()) {
-        for (col_child_iterator cj = m_col_query->get_children(); cj != false;
-             ++cj) {
-          const box_type &source_box = m_query->get_bounds(cj);
-          if (theta.check(source_box.bmin, source_box.bmax)) {
-            // add strongly connected buckets to current connectivity list
-            m_strong_connectivity[target_index].push_back(cj);
+  template <typename VectorType>
+  void calculate_dive_P2M_and_M2M(const tree_t &tree,
+                                  const VectorType &source_vector) const {
+    for (auto level = tree.rbegin(); level != tree.rend(); ++level) {
+      detail::for_each(level.begin(), level.end(), [](child_iterator ci) {
+        const auto parent_box = m_col_query->get_parent_bounds(ci);
+        const size_t parent_index = m_col_query->get_parent_index(ci);
+        auto &parent_multipole = m_multipoles[parent_index];
+        for (; ci != false; ++ci) {
+          const auto box = m_col_query->get_bounds(ci);
+          LOG(3, "calculate_dive_P2M_and_M2M with bucket " << box);
+          const size_t index = m_col_query->get_bucket_index(*ci);
+          auto &multipole = m_multipoles[index];
+          if (m_col_query->is_leaf_node(*ci)) { // leaf node
+            detail::calculate_P2M(
+                multipole, box, m_col_query->get_bucket_particles(*ci),
+                source_vector, m_col_query->get_particles_begin(),
+                m_expansions);
           } else {
-            // add weakly connected buckets to current connectivity list
-            m_weak_connectivity[target_index].push_back(cj);
-            active = true;
+            m_expansions.M2M(parent_multipole, parent_box, box, multipole);
           }
         }
-      } else {
-        if (active) {
-          m_parent_connectivity[target_index] = ci_parent;
         }
-        for (const col_child_iterator &source : parents_strong_connections) {
-          if (m_col_query->is_leaf_node(*source)) {
-            m_strong_connectivity[target_index].push_back(source);
-          } else {
-            for (col_child_iterator cj = m_col_query->get_children(source);
-                 cj != false; ++cj) {
-              const box_type &source_box = m_col_query->get_bounds(cj);
-              if (theta.check(source_box.bmin, source_box.bmax)) {
-                m_strong_connectivity[target_index].push_back(cj);
-              } else {
-                m_weak_connectivity[target_index].push_back(cj);
-                active = true;
-              }
+    });
+  }
+}
+
+template <typename VectorTypeTarget, typename VectorTypeSource>
+void calculate_dive_M2L_and_L2L(const tree_t &source_tree,
+                                const tree_t &target_tree,
+                                VectorTypeTarget &target_vector,
+                                const VectorTypeSource &source_vector) const {
+  auto target_level = target_tree.begin();
+  auto source_level = source_tree.begin();
+  int2_vector_t current_level(1, vint2(0, 0));
+  for (; target_level != target_tree.end(); ++target_level, ++source_level) {
+    // count number of children
+    num_children.resize(current_level.size());
+    detail::exclusive_scan(
+        current_level.begin(), current_level.end(), num_children.begin(),
+        [](const vint2 &ij) {
+          int num_children = 0;
+          for (auto ci = target_level[ij[0]]; ci != false; ++ci) {
+            for (auto cj = source_level[ij[1]]; cj != false; ++cj) {
+              if (is_leaf(ci, cj))
+                ++num_children;
             }
           }
-        }
-      }
-      if (!m_row_query->is_leaf_node(*ci)) { // non leaf node
-        for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
-          generate_levels(m_strong_connectivity[target_index], target_box, ci,
-    cj, row_particles, col_particles, level + 1, active);
-        }
-      } else {
-        ASSERT(active == true,
-               "have a non-active leaf node, don't know what to do in this
-    case"); child_iterator_vector_type strong_copy =
-            m_strong_connectivity[target_index];
-        m_strong_connectivity[target_index].clear();
-        for (child_iterator &source : strong_copy) {
-          if (m_query->is_leaf_node(*source)) {
-            m_strong_connectivity[target_index].push_back(source);
-          } else {
-            auto range = m_query->get_subtree(source);
-            for (all_iterator i = range.begin(); i != range.end(); ++i) {
-              if (m_query->is_leaf_node(*i)) {
-                m_strong_connectivity[target_index].push_back(
-                    i.get_child_iterator());
-              }
-            }
-          }
-        }
-      }
+          return num_children;
+        });
 
-      if (active) {
-        m_levels[level].push_back(ci);
+    int num_children = *(m_num_children.end() - 1);
+    const vint2 &ij = *(current_level.end() - 1);
+    for (auto ci = target_level[ij[0]]; ci != false; ++ci) {
+      for (auto cj = source_level[ij[1]]; cj != false; ++cj) {
+        if (is_leaf(ci, cj))
+          ++num_children;
       }
     }
-    */
 
-  template <typename VectorTypeTarget, typename VectorTypeSource>
-  void calculate_dive_M2L_and_L2L(
-      VectorTypeTarget &target_vector,
-      const col_child_iterator_vector_type &connected_buckets_parent,
-      const l_expansion_type &g_parent, const box_type &box_parent,
-      const row_child_iterator &ci,
-      const VectorTypeSource &source_vector) const {
-    const box_type &target_box = m_row_query->get_bounds(ci);
+    for (auto ci = target_l; ci != false; ++ci)
+      if (!m_query->is_leaf_node(*ci))
+        ++num_children;
+
+    // create new level
+    m_next_level.resize(num_children);
+    detail::for_each(
+        traits_t::make_zip_iterator(traits_t::make_tuple(
+            m_current_level.begin(), m_num_children.begin())),
+        traits_t::make_zip_iterator(traits_t::make_tuple(
+            m_current_level.end(), m_num_children.end())) m_next_level.end(),
+        [_m_query = m_query, _m_next_level = iterator_to_raw_pointer(
+                                 m_next_level.begin())](auto i) {
+          for (auto ci = i.template get<0>(),
+                    int next_index = i.template get<1>();
+               ci != false; ++ci, ++next_index)
+            _m_next_level[next_index] = _m_query->get_child_iterator(ci);
+        });
+
+    // swap to current level
+    m_current_level.swap(m_next_level);
+
+    // expand parents
+    const box_type &source_box = m_row_query->get_bounds(ci);
     LOG(3, "calculate_dive_M2L_and_L2L with bucket " << target_box);
     size_t target_index = m_row_query->get_bucket_index(*ci);
     l_expansion_type &g = m_g[target_index];
@@ -300,211 +288,301 @@ protected:
         }
       }
     }
-  }
-};
 
-template <typename Expansions, typename Kernel, typename RowParticles,
-          typename ColParticles>
-class FastMultipoleMethod
-    : public FastMultipoleMethodBase<Expansions, Kernel, RowParticles,
-                                     ColParticles> {
-  typedef FastMultipoleMethodBase<Expansions, Kernel, RowParticles,
-                                  ColParticles>
-      base_type;
-  typedef typename base_type::row_child_iterator row_child_iterator;
-  typedef typename base_type::col_child_iterator col_child_iterator;
-  typedef typename base_type::col_child_iterator_vector_type
-      col_child_iterator_vector_type;
-  typedef typename base_type::l_expansion_type l_expansion_type;
-  typedef typename base_type::m_expansion_type m_expansion_type;
-  typedef typename base_type::box_type box_type;
-  typedef typename base_type::double_d double_d;
-  typedef typename base_type::position position;
-  static const unsigned int dimension = base_type::dimension;
+    template <typename VectorTypeTarget, typename VectorTypeSource>
+    void calculate_dive_M2L_and_L2L(
+        VectorTypeTarget & target_vector,
+        const col_child_iterator_vector_type &connected_buckets_parent,
+        const l_expansion_type &g_parent, const box_type &box_parent,
+        const row_child_iterator &ci, const VectorTypeSource &source_vector)
+        const {
+      const box_type &target_box = m_row_query->get_bounds(ci);
+      LOG(3, "calculate_dive_M2L_and_L2L with bucket " << target_box);
+      size_t target_index = m_row_query->get_bucket_index(*ci);
+      l_expansion_type &g = m_g[target_index];
+      typedef detail::VectorTraits<typename l_expansion_type::value_type>
+          vector_traits;
+      std::fill(std::begin(g), std::end(g), vector_traits::Zero());
+      typename connectivity_type::reference connected_buckets =
+          m_connectivity[target_index];
+      connected_buckets.clear();
 
-public:
-  FastMultipoleMethod(const RowParticles &row_particles,
-                      const ColParticles &col_particles,
-                      const Expansions &expansions, const Kernel &kernel)
-      : base_type(row_particles, col_particles, expansions, kernel) {}
+      detail::theta_condition<dimension> theta(target_box.bmin,
+                                               target_box.bmax);
 
-  // target_vector += A*source_vector
-  template <typename VectorTypeTarget, typename VectorTypeSource>
-  void matrix_vector_multiply(VectorTypeTarget &target_vector,
-                              const VectorTypeSource &source_vector) const {
-    CHECK(target_vector.size() == source_vector.size(),
-          "source and target vector not same length")
-    this->m_W.resize(this->m_col_query->number_of_buckets());
-    this->m_g.resize(this->m_row_query->number_of_buckets());
-    this->m_connectivity.resize(this->m_row_query->number_of_buckets());
-
-    // upward sweep of tree
-    //
-    for (col_child_iterator ci =
-             this->m_col_particles->get_query().get_children();
-         ci != false; ++ci) {
-      this->calculate_dive_P2M_and_M2M(ci, source_vector);
-    }
-
-    // downward sweep of tree.
-    //
-    for (row_child_iterator ci = this->m_row_query->get_children(); ci != false;
-         ++ci) {
-      col_child_iterator_vector_type dummy;
-      l_expansion_type g = {};
-      this->calculate_dive_M2L_and_L2L(target_vector, dummy, g, box_type(), ci,
-                                       source_vector);
-    }
-    /*
-    else {
-        for (child_iterator ci = this->m_query->get_children(); ci != false;
-    ++ci) { child_iterator_vector_type dummy; std::vector<double> dummy2;
-            expansion_type g = {};
-            this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
+      if (connected_buckets_parent.empty()) {
+        for (col_child_iterator cj = m_col_query->get_children(); cj != false;
+             ++cj) {
+          const box_type &source_box = m_col_query->get_bounds(cj);
+          if (theta.check(source_box.bmin, source_box.bmax)) {
+            connected_buckets.push_back(cj);
+          } else {
+            size_t source_index = m_col_query->get_bucket_index(*cj);
+            m_expansions.M2L(g, target_box, source_box, m_W[source_index]);
+          }
         }
+      } else {
+        // expansion from parent
+        m_expansions.L2L(g, target_box, box_parent, g_parent);
 
-        for (size_t i = 0; i < row_particles.size(); ++i) {
-            const double_d& p = get<position>(row_particles)[i];
-            pointer bucket;
-            box_type box;
-            this->m_query->get_bucket(p,bucket,box);
-            LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
-            const size_t index = this->m_query->get_bucket_index(*bucket);
-
-            double sum = Expansions::L2P(p,box,this->m_g[index]);
-            for (child_iterator& ci: this->m_connectivity[index]) {
-                if (this->m_query->is_leaf_node(*ci)) {
-                    sum += detail::calculate_P2P_position(p
-                        ,this->m_query->get_bucket_particles(*ci)
-                        ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
-                } else {
-                    for (reference subtree_reference:
-    this->m_query->get_subtree(ci)) { if
-    (this->m_query->is_leaf_node(subtree_reference)) { sum +=
-    detail::calculate_P2P_position(p
-                                    ,this->m_query->get_bucket_particles(subtree_reference)
-                                    ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
-                        }
-                    }
-                }
+        // expansions from weakly connected buckets on this level
+        // and store strongly connected buckets to connectivity list
+        for (const col_child_iterator &source : connected_buckets_parent) {
+          if (m_col_query->is_leaf_node(*source)) {
+            connected_buckets.push_back(source);
+          } else {
+            for (col_child_iterator cj = m_col_query->get_children(source);
+                 cj != false; ++cj) {
+              const box_type &source_box = m_col_query->get_bounds(cj);
+              if (theta.check(source_box.bmin, source_box.bmax)) {
+                connected_buckets.push_back(cj);
+              } else {
+                size_t source_index = m_col_query->get_bucket_index(*cj);
+                m_expansions.M2L(g, target_box, source_box, m_W[source_index]);
+              }
             }
-            target_vector[i] += sum;
+          }
         }
-    }
-        */
-  }
-};
+      }
+      if (!m_row_query->is_leaf_node(*ci)) { // leaf node
+        for (row_child_iterator cj = m_row_query->get_children(ci); cj != false;
+             ++cj) {
+          calculate_dive_M2L_and_L2L(target_vector, connected_buckets, g,
+                                     target_box, cj, source_vector);
+        }
+      } else if (target_vector.size() > 0) {
+        detail::calculate_L2P(target_vector, g, target_box,
+                              m_row_query->get_bucket_particles(*ci),
+                              m_row_query->get_particles_begin(), m_expansions);
 
-/*
-template <typename Expansions, typename Kernel, typename RowParticles,
-typename ColParticles> class FastMultipoleMethodWithSource: public
-FastMultipoleMethodBase<Expansions,Kernel,RowParticles,ColParticles> { typedef
-FastMultipoleMethodBase<Expansions,Kernel,RowParticles,ColParticles>
-base_type; typedef typename base_type::row_child_iterator row_child_iterator;
+        for (col_child_iterator &cj : connected_buckets) {
+          if (m_col_query->is_leaf_node(*cj)) {
+            LOG(3, "calculate_P2P: target = " << target_box << " source = "
+                                              << m_col_query->get_bounds(cj));
+            detail::calculate_P2P(target_vector, source_vector,
+                                  m_row_query->get_bucket_particles(*ci),
+                                  m_col_query->get_bucket_particles(*cj),
+                                  m_row_query->get_particles_begin(),
+                                  m_col_query->get_particles_begin(), m_kernel);
+          } else {
+            for (auto j = m_col_query->get_subtree(cj); j != false; ++j) {
+              if (m_col_query->is_leaf_node(*j)) {
+                detail::calculate_P2P(target_vector, source_vector,
+                                      m_row_query->get_bucket_particles(*ci),
+                                      m_col_query->get_bucket_particles(*j),
+                                      m_row_query->get_particles_begin(),
+                                      m_col_query->get_particles_begin(),
+                                      m_kernel);
+              }
+            }
+          }
+        }
+      }
+    }
+  }; // namespace Aboria
+
+  template <typename Expansions, typename Kernel, typename RowParticles,
+            typename ColParticles>
+  class FastMultipoleMethod
+      : public FastMultipoleMethodBase<Expansions, Kernel, RowParticles,
+                                       ColParticles> {
+    typedef FastMultipoleMethodBase<Expansions, Kernel, RowParticles,
+                                    ColParticles>
+        base_type;
+    typedef typename base_type::row_child_iterator row_child_iterator;
     typedef typename base_type::col_child_iterator col_child_iterator;
     typedef typename base_type::col_child_iterator_vector_type
-col_child_iterator_vector_type; typedef typename base_type::expansion_type
-expansion_type; typedef typename base_type::box_type box_type; typedef
-typename base_type::double_d double_d; typedef typename base_type::position
-position; static const unsigned int dimension = base_type::dimension; public:
-    template <typename VectorType>
-    FastMultipoleMethodWithSource(const RowParticles& col_particles,
-                        const ColParticles& col_particles,
-                        const Expansions& expansions,
-                        const Kernel& kernel,
-                        const VectorType& source_vector):
-        base_type(row_particles,col_particles,expansions,kernel)
-    {
-        this->m_W.resize(this->m_col_query->number_of_buckets());
-        this->m_g.resize(this->m_row_query->number_of_buckets());
-        this->m_connectivity.resize(this->m_row_query->number_of_buckets());
+        col_child_iterator_vector_type;
+    typedef typename base_type::l_expansion_type l_expansion_type;
+    typedef typename base_type::m_expansion_type m_expansion_type;
+    typedef typename base_type::box_type box_type;
+    typedef typename base_type::double_d double_d;
+    typedef typename base_type::position position;
+    static const unsigned int dimension = base_type::dimension;
 
-        // upward sweep of tree
-        //
-        for (col_child_iterator ci = this->m_col_query->get_children(); ci !=
-false; ++ci) { this->calculate_dive_P2M_and_M2M(ci,source_vector);
-        }
+  public:
+    FastMultipoleMethod(const RowParticles &row_particles,
+                        const ColParticles &col_particles,
+                        const Expansions &expansions, const Kernel &kernel)
+        : base_type(row_particles, col_particles, expansions, kernel) {}
 
-        // downward sweep of tree.
-        //
-        for (row_child_iterator ci = this->m_row_query->get_children(); ci !=
-false; ++ci) { col_child_iterator_vector_type dummy; VectorType dummy2;
-            expansion_type g = {};
-            this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
-        }
+    // target_vector += A*source_vector
+    template <typename VectorTypeTarget, typename VectorTypeSource>
+    void matrix_vector_multiply(VectorTypeTarget &target_vector,
+                                const VectorTypeSource &source_vector) const {
+      CHECK(target_vector.size() == source_vector.size(),
+            "source and target vector not same length")
+      this->m_W.resize(this->m_col_query->number_of_buckets());
+      this->m_g.resize(this->m_row_query->number_of_buckets());
+      this->m_connectivity.resize(this->m_row_query->number_of_buckets());
+
+      // upward sweep of tree
+      //
+      for (col_child_iterator ci =
+               this->m_col_particles->get_query().get_children();
+           ci != false; ++ci) {
+        this->calculate_dive_P2M_and_M2M(ci, source_vector);
+      }
+
+      // downward sweep of tree.
+      //
+      for (row_child_iterator ci = this->m_row_query->get_children();
+           ci != false; ++ci) {
+        col_child_iterator_vector_type dummy;
+        l_expansion_type g = {};
+        this->calculate_dive_M2L_and_L2L(target_vector, dummy, g, box_type(),
+                                         ci, source_vector);
+      }
+      /*
+      else {
+          for (child_iterator ci = this->m_query->get_children(); ci != false;
+      ++ci) { child_iterator_vector_type dummy; std::vector<double> dummy2;
+              expansion_type g = {};
+              this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
+          }
+
+          for (size_t i = 0; i < row_particles.size(); ++i) {
+              const double_d& p = get<position>(row_particles)[i];
+              pointer bucket;
+              box_type box;
+              this->m_query->get_bucket(p,bucket,box);
+              LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
+              const size_t index = this->m_query->get_bucket_index(*bucket);
+
+              double sum = Expansions::L2P(p,box,this->m_g[index]);
+              for (child_iterator& ci: this->m_connectivity[index]) {
+                  if (this->m_query->is_leaf_node(*ci)) {
+                      sum += detail::calculate_P2P_position(p
+                          ,this->m_query->get_bucket_particles(*ci)
+                          ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
+                  } else {
+                      for (reference subtree_reference:
+      this->m_query->get_subtree(ci)) { if
+      (this->m_query->is_leaf_node(subtree_reference)) { sum +=
+      detail::calculate_P2P_position(p
+                                      ,this->m_query->get_bucket_particles(subtree_reference)
+                                      ,this->m_expansions,source_vector,this->m_query->get_particles_begin());
+                          }
+                      }
+                  }
+              }
+              target_vector[i] += sum;
+          }
+      }
+          */
     }
+  };
+
+  /*
+  template <typename Expansions, typename Kernel, typename RowParticles,
+  typename ColParticles> class FastMultipoleMethodWithSource: public
+  FastMultipoleMethodBase<Expansions,Kernel,RowParticles,ColParticles> { typedef
+  FastMultipoleMethodBase<Expansions,Kernel,RowParticles,ColParticles>
+  base_type; typedef typename base_type::row_child_iterator row_child_iterator;
+      typedef typename base_type::col_child_iterator col_child_iterator;
+      typedef typename base_type::col_child_iterator_vector_type
+  col_child_iterator_vector_type; typedef typename base_type::expansion_type
+  expansion_type; typedef typename base_type::box_type box_type; typedef
+  typename base_type::double_d double_d; typedef typename base_type::position
+  position; static const unsigned int dimension = base_type::dimension; public:
+      template <typename VectorType>
+      FastMultipoleMethodWithSource(const RowParticles& col_particles,
+                          const ColParticles& col_particles,
+                          const Expansions& expansions,
+                          const Kernel& kernel,
+                          const VectorType& source_vector):
+          base_type(row_particles,col_particles,expansions,kernel)
+      {
+          this->m_W.resize(this->m_col_query->number_of_buckets());
+          this->m_g.resize(this->m_row_query->number_of_buckets());
+          this->m_connectivity.resize(this->m_row_query->number_of_buckets());
+
+          // upward sweep of tree
+          //
+          for (col_child_iterator ci = this->m_col_query->get_children(); ci !=
+  false; ++ci) { this->calculate_dive_P2M_and_M2M(ci,source_vector);
+          }
+
+          // downward sweep of tree.
+          //
+          for (row_child_iterator ci = this->m_row_query->get_children(); ci !=
+  false; ++ci) { col_child_iterator_vector_type dummy; VectorType dummy2;
+              expansion_type g = {};
+              this->calculate_dive_M2L_and_L2L(dummy2,dummy,g,box_type(),ci,source_vector);
+          }
+      }
 
 
-    // evaluate expansions for given point
-    template <typename ParticleRef, typename VectorType>
-    double evaluate_at_particle(const ParticleRef& p, const VectorType&
-source_vector) const { pointer bucket; box_type box;
-        this->m_query->get_bucket(p,bucket,box);
-        LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
-        const size_t index = this->m_query->get_bucket_index(*bucket);
+      // evaluate expansions for given point
+      template <typename ParticleRef, typename VectorType>
+      double evaluate_at_particle(const ParticleRef& p, const VectorType&
+  source_vector) const { pointer bucket; box_type box;
+          this->m_query->get_bucket(p,bucket,box);
+          LOG(3,"evaluating expansion at point "<<p<<" with box "<<box);
+          const size_t index = this->m_query->get_bucket_index(*bucket);
 
-        double sum = Expansions::L2P(p,box,this->m_g[index]);
-        for (child_iterator& ci: this->m_connectivity[index]) {
-            if (this->m_query->is_leaf_node(*ci)) {
-                sum += detail::calculate_P2P_position(p
-                    ,this->m_query->get_bucket_particles(*ci)
-                    ,this->m_kernel,source_vector,this->m_query->get_particles_begin());
-            } else {
-                for (reference subtree_reference:
-this->m_query->get_subtree(ci)) { if
-(this->m_query->is_leaf_node(subtree_reference)) { sum +=
-detail::calculate_P2P_position(p
-                                ,this->m_query->get_bucket_particles(subtree_reference)
-                                ,this->m_kernel,source_vector,this->m_query->get_particles_begin());
-                    }
-                }
-            }
-        }
-        return sum;
-    }
+          double sum = Expansions::L2P(p,box,this->m_g[index]);
+          for (child_iterator& ci: this->m_connectivity[index]) {
+              if (this->m_query->is_leaf_node(*ci)) {
+                  sum += detail::calculate_P2P_position(p
+                      ,this->m_query->get_bucket_particles(*ci)
+                      ,this->m_kernel,source_vector,this->m_query->get_particles_begin());
+              } else {
+                  for (reference subtree_reference:
+  this->m_query->get_subtree(ci)) { if
+  (this->m_query->is_leaf_node(subtree_reference)) { sum +=
+  detail::calculate_P2P_position(p
+                                  ,this->m_query->get_bucket_particles(subtree_reference)
+                                  ,this->m_kernel,source_vector,this->m_query->get_particles_begin());
+                      }
+                  }
+              }
+          }
+          return sum;
+      }
 
-};
-*/
+  };
+  */
 
 #ifdef HAVE_EIGEN
-template <unsigned int D, unsigned int N, typename Function,
-          typename KernelHelper = detail::position_kernel_helper<D, Function>,
-          typename Block = typename KernelHelper::Block>
-detail::BlackBoxExpansions<D, N, Function, Block::RowsAtCompileTime,
-                           Block::ColsAtCompileTime>
-make_black_box_expansion(const Function &function) {
-  return detail::BlackBoxExpansions<D, N, Function, Block::RowsAtCompileTime,
-                                    Block::ColsAtCompileTime>(function);
-}
+  template <unsigned int D, unsigned int N, typename Function,
+            typename KernelHelper = detail::position_kernel_helper<D, Function>,
+            typename Block = typename KernelHelper::Block>
+  detail::BlackBoxExpansions<D, N, Function, Block::RowsAtCompileTime,
+                             Block::ColsAtCompileTime>
+  make_black_box_expansion(const Function &function) {
+    return detail::BlackBoxExpansions<D, N, Function, Block::RowsAtCompileTime,
+                                      Block::ColsAtCompileTime>(function);
+  }
 #else
-template <unsigned int D, unsigned int N, typename Function>
-detail::BlackBoxExpansions<D, N, Function, 1, 1>
-make_black_box_expansion(const Function &function) {
-  return detail::BlackBoxExpansions<D, N, Function, 1, 1>(function);
-}
+  template <unsigned int D, unsigned int N, typename Function>
+  detail::BlackBoxExpansions<D, N, Function, 1, 1> make_black_box_expansion(
+      const Function &function) {
+    return detail::BlackBoxExpansions<D, N, Function, 1, 1>(function);
+  }
 #endif
 
-template <typename Expansions, typename Kernel, typename RowParticles,
-          typename ColParticles>
-FastMultipoleMethod<Expansions, Kernel, RowParticles, ColParticles>
-make_fmm(const RowParticles &row_particles, const ColParticles &col_particles,
-         const Expansions &expansions, const Kernel &kernel) {
-  return FastMultipoleMethod<Expansions, Kernel, RowParticles, ColParticles>(
-      row_particles, col_particles, expansions, kernel);
-}
+  template <typename Expansions, typename Kernel, typename RowParticles,
+            typename ColParticles>
+  FastMultipoleMethod<Expansions, Kernel, RowParticles, ColParticles> make_fmm(
+      const RowParticles &row_particles, const ColParticles &col_particles,
+      const Expansions &expansions, const Kernel &kernel) {
+    return FastMultipoleMethod<Expansions, Kernel, RowParticles, ColParticles>(
+        row_particles, col_particles, expansions, kernel);
+  }
 
-/*
-template <typename Expansions, typename Kernel, typename ColParticles,
-typename VectorType>
-FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
-make_fmm_with_source(const ColParticles &col_particles,
-                     const Expansions& expansions,
-                     const Kernel& kernel,
-                     const VectorType& source_vector) {
-    return FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
-                            (col_particles,expansions,kernel,source_vector);
-}
-*/
+  /*
+  template <typename Expansions, typename Kernel, typename ColParticles,
+  typename VectorType>
+  FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
+  make_fmm_with_source(const ColParticles &col_particles,
+                       const Expansions& expansions,
+                       const Kernel& kernel,
+                       const VectorType& source_vector) {
+      return FastMultipoleMethodWithSource<Expansions,Kernel,ColParticles>
+                              (col_particles,expansions,kernel,source_vector);
+  }
+  */
 
 } // namespace Aboria
 
