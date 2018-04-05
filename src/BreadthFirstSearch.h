@@ -111,33 +111,32 @@ private:
     LOG(4, "\tincrement (breadth_first_iterator) m_depth = " << m_depth);
 #endif
     // count number of children
+    auto count_children = [](child_iterator ci) {
+      return ci.number_of_children();
+    };
     m_num_children.resize(m_current_level.size());
-    detail::exclusive_scan(m_current_level.begin(), m_current_level.end(),
-                           m_num_children.begin(), [](child_iterator ci) {
-                             int num_children = 0;
-                             for (; ci != false; ++ci)
-                               if (!m_query->is_leaf_node(*ci))
-                                 ++num_children;
-                             return num_children;
-                           });
-    int num_children = *(m_num_children.end() - 1);
-    for (auto ci = *(m_current_level.end() - 1); ci != false; ++ci)
-      if (!m_query->is_leaf_node(*ci))
-        ++num_children;
+    detail::transform_exclusive_scan(
+        m_current_level.begin(), m_current_level.end(), m_num_children.begin(),
+        count_children, std::plus<int>());
+    int num_children = *(m_num_children.end() - 1) +
+                       count_children(*(m_current_level.end() - 1));
 
     // create new level
     m_next_level.resize(num_children);
     detail::for_each(
         traits_t::make_zip_iterator(traits_t::make_tuple(
             m_current_level.begin(), m_num_children.begin())),
-        traits_t::make_zip_iterator(traits_t::make_tuple(
-            m_current_level.end(), m_num_children.end())) m_next_level.end(),
+        traits_t::make_zip_iterator(
+            traits_t::make_tuple(m_current_level.end(), m_num_children.end())),
+        m_next_level.end(),
         [_m_query = m_query, _m_next_level = iterator_to_raw_pointer(
                                  m_next_level.begin())](auto i) {
-          for (auto ci = i.template get<0>(),
+          auto parent = i.template <0>();
+          for (auto ci = _m_query->get_child_iterator(parent),
                     int next_index = i.template get<1>();
-               ci != false; ++ci, ++next_index)
-            _m_next_level[next_index] = _m_query->get_child_iterator(ci);
+               ci != false; ++ci, ++next_index) {
+            _m_next_level[next_index] = ci;
+          }
         });
 
     // swap to current level
@@ -169,8 +168,10 @@ template <typename Query> auto make_flat_tree(const Query &query) {
   typedef typename traits_t::template vector_type<m_level_t>::type tree_t;
 
   tree_t tree;
-  for (auto bf_it = BreadthFirstSearchIterator(query); bf_it != false; ++bf_it)
-    tree.push_back(*bf_it);
+  for (auto bf_it = BreadthFirstSearchIterator(query); bf_it != false;
+       ++bf_it) {
+    tree.push_back(*bf_it)
+  }
   return tree;
 }
 

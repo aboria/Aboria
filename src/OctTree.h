@@ -778,6 +778,23 @@ template <typename Traits> struct HyperOctreeQuery {
     return child_iterator(m_nodes_begin, m_bounds);
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::num_children() const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  static size_t num_children() { return 1 << dimension; }
+
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  static size_t num_children(const child_iterator &ci) {
+    if (is_leaf_node(*ci)) {
+      return 0;
+    } else {
+      return (1 << dimension);
+    }
+  }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   child_iterator get_children(const child_iterator &ci) const {

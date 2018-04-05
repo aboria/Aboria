@@ -478,6 +478,27 @@ template <typename Traits> struct KdtreeNanoflannQuery {
     }
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::num_children() const
+  ///
+  size_t num_children() const {
+    if (m_root == nullptr) { // empty tree, return a false child iterator
+      return 0;
+    } else if (is_leaf_node(*m_root)) { // leaf root, return a child iterator
+      return 1;
+    } else {
+      return 2;
+    }
+  }
+
+  size_t num_children(const child_iterator &ci) const {
+    if (is_leaf_node(*ci)) {
+      return 0;
+    } else {
+      return 2;
+    }
+  }
+
   static const box_type get_bounds(const child_iterator &ci) {
     return ci.get_bounds();
   }

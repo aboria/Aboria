@@ -178,9 +178,8 @@ public:
     typedef Vector<int, D> int_d;
     const int num_particles_per_bucket = 10;
 
-    typedef Particles<std::tuple<source, target_manual, target_fmm, vsource,
-                                 vtarget_manual, vtarget_fmm>,
-                      D, StorageVector, SearchMethod>
+    typedef Particles<std::tuple<source, target_manual, target_fmm>, D,
+                      StorageVector, SearchMethod>
         ParticlesType;
     typedef typename ParticlesType::position position;
     typedef typename ParticlesType::const_reference const_reference;
@@ -254,7 +253,23 @@ public:
         particles, kernel, p2pkernel, scale);
 
 #ifdef HAVE_EIGEN
+
     if (D == 2) {
+      typedef Particles<std::tuple<vsource, vtarget_manual, vtarget_fmm>, D,
+                        StorageVector, SearchMethod>
+          vParticlesType;
+      vParticlesType vparticles(N);
+
+      for (size_t i = 0; i < N; i++) {
+        for (size_t d = 0; d < D; ++d) {
+          get<position>(vparticles)[i][d] = gen();
+        }
+      }
+
+      vparticles.init_neighbour_search(
+          int_d::Constant(pos_min), int_d::Constant(pos_max),
+          bool_d::Constant(false), num_particles_per_bucket);
+
       // generate a source vector using a smooth cosine
       auto vsource_fn = [&](const double_d &p) {
         // return (p-double_d(0)).norm();
@@ -266,9 +281,9 @@ public:
         }
         return ret / N;
       };
-      std::transform(std::begin(get<position>(particles)),
-                     std::end(get<position>(particles)),
-                     std::begin(get<vsource>(particles)), vsource_fn);
+      std::transform(std::begin(get<position>(vparticles)),
+                     std::end(get<position>(vparticles)),
+                     std::begin(get<vsource>(vparticles)), vsource_fn);
 
       const double c = 0.1;
       auto vkernel = [&c](const double_d &pa, const double_d &pb) {
@@ -289,29 +304,29 @@ public:
         }
         return ret;
       };
-      auto vp2pkernel = [&](const_reference pa, const_reference pb) {
+      auto vp2pkernel = [&](auto pa, auto pb) {
         return vkernel(get<position>(pa), get<position>(pb));
       };
 
       // perform the operation manually
-      std::fill(std::begin(get<vtarget_manual>(particles)),
-                std::end(get<vtarget_manual>(particles)), vdouble2::Zero());
+      std::fill(std::begin(get<vtarget_manual>(vparticles)),
+                std::end(get<vtarget_manual>(vparticles)), vdouble2::Zero());
 
       t0 = Clock::now();
       for (size_t i = 0; i < N; i++) {
-        const double_d pi = get<position>(particles)[i];
+        const double_d pi = get<position>(vparticles)[i];
         for (size_t j = 0; j < N; j++) {
-          const double_d pj = get<position>(particles)[j];
-          get<vtarget_manual>(particles)[i] +=
-              vkernel(pi, pj) * get<vsource>(particles)[j];
+          const double_d pj = get<position>(vparticles)[j];
+          get<vtarget_manual>(vparticles)[i] +=
+              vkernel(pi, pj) * get<vsource>(vparticles)[j];
         }
       }
       t1 = Clock::now();
       time_manual = t1 - t0;
 
       const double vscale = std::accumulate(
-          std::begin(get<vtarget_manual>(particles)),
-          std::end(get<vtarget_manual>(particles)), 0.0,
+          std::begin(get<vtarget_manual>(vparticles)),
+          std::end(get<vtarget_manual>(vparticles)), 0.0,
           [](const double t1, const vdouble2 t2) { return t1 + t2.dot(t2); });
 
       std::cout << "VECTOR-VALUED - MANUAL TIMING: dimension = " << D
@@ -320,11 +335,11 @@ public:
                 << std::endl;
 
       helper_fast_methods_calculate<1, vsource, vtarget_manual, vtarget_fmm>(
-          particles, vkernel, vp2pkernel, vscale);
+          vparticles, vkernel, vp2pkernel, vscale);
       helper_fast_methods_calculate<2, vsource, vtarget_manual, vtarget_fmm>(
-          particles, vkernel, vp2pkernel, vscale);
+          vparticles, vkernel, vp2pkernel, vscale);
       helper_fast_methods_calculate<3, vsource, vtarget_manual, vtarget_fmm>(
-          particles, vkernel, vp2pkernel, vscale);
+          vparticles, vkernel, vp2pkernel, vscale);
     }
 #endif
   }

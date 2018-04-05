@@ -731,6 +731,19 @@ public:
     }
   }
 
+  ///
+  /// @copydoc NeighbourQueryBase::num_children() const
+  ///
+  size_t num_children() const { return m_nodes_child != nullptr ? 2 : 0; }
+
+  size_t num_children(const child_iterator &ci) const {
+    if (is_leaf_node(*ci)) {
+      return 0;
+    } else {
+      return 2;
+    }
+  }
+
   const box_type get_bounds(const child_iterator &ci) const {
     box_type ret = (*ci).bounds;
     const int pindex = get_parent_index(*ci);

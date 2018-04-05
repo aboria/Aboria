@@ -744,6 +744,16 @@ template <typename Traits> struct NeighbourQueryBase {
   child_iterator get_children(const child_iterator &ci) const;
 
   ///
+  /// @brief returns the number of children of the root node
+  ///
+  size_t num_children() const;
+
+  ///
+  /// @brief returns the number of children of a given child iterator @p ci
+  ///
+  size_t num_children(const child_iterator &ci) const;
+
+  ///
   /// @brief returns the min/max bounds of the given child_iterator @p ci
   ///
   /// @return a @bbox containing the bounds

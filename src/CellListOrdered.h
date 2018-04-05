@@ -427,6 +427,16 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   }
 
   ///
+  /// @copydoc NeighbourQueryBase::num_children(const child_iterator&) const
+  ///
+  static size_t num_children(const child_iterator &ci) { return 0; }
+
+  ///
+  /// @copydoc NeighbourQueryBase::num_children() const
+  ///
+size_t num_children() const { return number_of_buckets(); }
+
+  ///
   /// @copydoc NeighbourQueryBase::get_bounds()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
