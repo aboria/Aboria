@@ -309,10 +309,10 @@ public:
     for (auto ij = get_neighbouring_buckets(particles.get_query()); ij != false;
          ++ij) {
       auto tpl = *ij;
-      auto i = tpl.get<0>(); // bucket i
-      auto j = tpl.get<1>(); // bucket j
+      auto i = std::get<0>(tpl); // bucket i
+      auto j = std::get<1>(tpl); // bucket j
       // position offset to apply to particles in i (for periodic boundaries)
-      auto poffset = tpl.get<2>();
+      auto poffset = std::get<2>(tpl);
       for (auto pi = particles.get_query().get_bucket_particles(i); pi != false;
            ++pi) {
         const Vector<double, 3> pi_position = get<position>(*pi) + poffset;

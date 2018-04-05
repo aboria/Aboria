@@ -508,13 +508,13 @@ template <typename Query> class bucket_pair_iterator {
   double_d m_position_offset;
 
 public:
-  typedef const typename Traits::template tuple<const int_d &, const int_d &,
+  typedef const std::tuple<const int_d &, const int_d &,
                                                 const double_d &> *pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef const typename Traits::template tuple<const int_d &, const int_d &,
+  typedef const std::tuple<const int_d &, const int_d &,
                                                 const double_d &>
       reference;
-  typedef const typename Traits::template tuple<const int_d, const int_d,
+  typedef const std::tuple<const int_d, const int_d,
                                                 const double_d>
       value_type;
   typedef std::ptrdiff_t difference_type;

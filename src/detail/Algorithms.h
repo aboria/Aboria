@@ -6,6 +6,7 @@
 #include "Get.h"
 #include "Traits.h"
 #include <algorithm>
+#include <omp.h>
 #include <random>
 
 namespace Aboria {
