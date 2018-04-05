@@ -76,6 +76,14 @@ struct is_tuple_of_iterator_references<
     */
     > : thrust::detail::true_type {};
 
+template <typename MplVector, typename... T>
+struct is_tuple_of_iterator_references<
+    Aboria::getter_type<std::tuple<
+                            // this seems dangerous, matches values as well,
+                            // swap to something like below?
+                            T...>,
+                        MplVector>> : thrust::detail::true_type {};
+
 // specialize is_unwrappable
 template <typename TUPLE, typename mpl_vector_type>
 struct is_unwrappable<Aboria::getter_type<TUPLE, mpl_vector_type>>
@@ -100,6 +108,15 @@ struct raw_reference_tuple_helper<Aboria::getter_type<
                     typename raw_reference_tuple_helper<T7>::type,
                     typename raw_reference_tuple_helper<T8>::type,
                     typename raw_reference_tuple_helper<T9>::type>,
+      mpl_vector_type>
+      type;
+};
+
+template <typename mpl_vector_type, typename... T>
+struct raw_reference_tuple_helper<
+    Aboria::getter_type<std::tuple<T...>, mpl_vector_type>> {
+  typedef Aboria::getter_type<
+      std::tuple<typename raw_reference_tuple_helper<T>::type...>,
       mpl_vector_type>
       type;
 };
