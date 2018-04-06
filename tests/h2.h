@@ -514,7 +514,7 @@ public:
 
     detail::for_each(particles.begin(), particles.end(),
                      [=](typename ParticlesType::raw_reference p) {
-                       detail::uniform_real_distribution<double> U(pos_min,
+                       std::uniform_real_distribution<double> U(pos_min,
                                                                    pos_max);
                        for (size_t d = 0; d < D; ++d) {
                          get<position>(p)[d] = U(get<generator>(p));

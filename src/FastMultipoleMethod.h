@@ -126,8 +126,8 @@ protected:
             const box_type &child_box = m_col_query->get_bounds(cj);
             m_expansions.M2M(localW, my_box, child_box, child_W);
             for (size_t i = 0; i < localW.size(); ++i) {
-#pragma omp atomic
-              W[i] += localW[i];
+              detail::VectorTraits<typename m_expansion_type::value_type>::
+                  AtomicIncrement(W[i], localW[i]);
             }
           }
         }

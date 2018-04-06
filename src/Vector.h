@@ -819,6 +819,10 @@ template <typename T> struct VectorTraits {
   static base_type Constant(const base_type &c) { return c; }
   static base_type &Index(base_type &arg, size_t) { return arg; }
   static const base_type &Index(const base_type &arg, size_t) { return arg; }
+  static void AtomicIncrement(base_type &arg1, const base_type &arg2) {
+#pragma omp atomic
+    arg1 += arg2;
+  }
 
   static base_type squaredNorm(const base_type &arg) {
     return std::pow(arg, 2);
@@ -832,6 +836,12 @@ template <typename T, unsigned int N> struct VectorTraits<Vector<T, N>> {
   static T &Index(Vector<T, N> &arg, size_t i) { return arg[i]; }
   static const T &Index(const Vector<T, N> &arg, size_t i) { return arg[i]; }
   static T squaredNorm(const Vector<T, N> &arg) { return arg.squaredNorm(); }
+  static void AtomicIncrement(Vector<T, N> &arg1, const Vector<T, N> &arg2) {
+    for (size_t i = 0; i < N; ++i) {
+#pragma omp atomic
+      arg1[i] += arg2[i];
+    }
+  }
 };
 
 template <typename T, unsigned int N>
