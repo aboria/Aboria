@@ -393,7 +393,7 @@ struct H2LibBlackBoxExpansions {
 
   H2LibBlackBoxExpansions(const size_t order, const Function &K,
                           const size_t beta = 1,
-                          const size_t max_tree_depth = 10)
+                          const size_t max_tree_depth = 30)
       : m_K(K), m_order(order), m_beta(beta),
         m_max_tree_depth(beta == 0 ? 1 : max_tree_depth) {
 
