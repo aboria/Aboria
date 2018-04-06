@@ -189,7 +189,7 @@ private:
 #pragma omp task default(none) firstprivate(cj)                                \
 shared(source_vector, W, my_box, m_W, m_col_query, m_expansions)
 */
-#pragma omp task firstprivate(cj) shared(source_vector, W)
+#pragma omp task firstprivate(cj) shared(source_vector, W, my_box)
           {
             m_expansion_type &child_W = calculate_dive_P2M_and_M2M(
                 cj, source_vector, num_tasks - nchildren);
