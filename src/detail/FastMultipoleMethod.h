@@ -414,7 +414,7 @@ struct H2LibBlackBoxExpansions {
   const std::vector<double_d> &get_cheb_points(const size_t order) const {
     const int level = (m_beta == 0) ? 0 : (order - m_order) / m_beta;
     ASSERT_CUDA(level >= 0);
-    ASSERT_CUDA(level < m_cheb_points.size());
+    ASSERT_CUDA(level < static_cast<int>(m_cheb_points.size()));
     ASSERT_CUDA(m_cheb_points[level].size() == std::pow(order, D));
     return m_cheb_points[level];
   }
