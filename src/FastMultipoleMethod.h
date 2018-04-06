@@ -118,7 +118,9 @@ public:
 
 // upward sweep of tree
 //
-#pragma omp parallel default(none) shared(source_vector, target_vector)
+#pragma omp parallel default(none)                                             \
+    shared(source_vector, target_vector, m_num_tasks, m_W, m_g, m_col_query,   \
+           m_row_query, m_expansions, m_kernel, m_connectivity)
     {
 #pragma omp single
       {
@@ -126,11 +128,13 @@ public:
         for (col_child_iterator ci =
                  m_col_particles->get_query().get_children();
              ci != false; ++ci) {
-#pragma omp task default(none) firstprivate(ci)                                \
-    shared(source_vector, m_num_tasks, nchild_col)
+#pragma omp task default(none) firstprivate(ci) shared(                        \
+    source_vector, m_num_tasks, nchild_col, m_W, m_col_query, m_expansions)
           calculate_dive_P2M_and_M2M(ci, source_vector,
                                      m_num_tasks - nchild_col);
         }
+
+#pragma omp taskwait
 
         // downward sweep of tree.
         //
@@ -138,10 +142,11 @@ public:
         for (row_child_iterator ci = m_row_query->get_children(); ci != false;
              ++ci) {
 #pragma omp task default(none) firstprivate(ci)                                \
-    shared(target_vector, source_vector, m_num_tasks, nchild_row)
+    shared(target_vector, source_vector, m_num_tasks, nchild_row, m_W, m_g,    \
+           m_col_query, m_row_query, m_expansions, m_kernel, m_connectivity)
           {
             col_child_iterator_vector_type dummy;
-            l_expansion_type g = {};
+            l_expansion_type g{};
             calculate_dive_M2L_and_L2L(target_vector, dummy, g, box_type(), ci,
                                        source_vector, m_num_tasks - nchild_row);
           }
@@ -171,7 +176,8 @@ private:
         const int nchildren = m_col_query->num_children(ci);
         for (col_child_iterator cj = m_col_query->get_children(ci); cj != false;
              ++cj) {
-#pragma omp task default(none) firstprivate(cj) shared(source_vector, W, my_box)
+#pragma omp task default(none) firstprivate(cj)                                \
+    shared(source_vector, W, my_box, m_W, m_col_query, m_expansions)
           {
             m_expansion_type &child_W = calculate_dive_P2M_and_M2M(
                 cj, source_vector, num_tasks - nchildren);
@@ -478,11 +484,14 @@ private:
         for (row_child_iterator cj = m_row_query->get_children(ci); cj != false;
              ++cj) {
 #pragma omp task default(none) firstprivate(cj)                                \
-    shared(target_vector, connected_buckets, g, target_box, source_vector)
+    shared(target_vector, connected_buckets, g, target_box, source_vector,     \
+           m_W, m_g, m_col_query, m_row_query, m_expansions, m_kernel,         \
+           m_connectivity, num_tasks, nchildren)
           calculate_dive_M2L_and_L2L(target_vector, connected_buckets, g,
                                      target_box, cj, source_vector,
                                      num_tasks - nchildren);
         }
+#pragma omp taskwait
       } else {
         for (row_child_iterator cj = m_row_query->get_children(ci); cj != false;
              ++cj) {
