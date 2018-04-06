@@ -493,7 +493,13 @@ public:
                       const ColParticles &col_particles,
                       const Expansions &expansions, const Kernel &kernel)
       : base_type(row_particles, col_particles, expansions, kernel),
-        m_num_tasks(omp_get_max_threads()) {}
+#ifdef HAVE_OPENMP
+        m_num_tasks(omp_get_max_threads())
+#else
+        m_num_tasks(1)
+#endif
+  {
+  }
 
   // target_vector += A*source_vector
   template <typename VectorTypeTarget, typename VectorTypeSource>
