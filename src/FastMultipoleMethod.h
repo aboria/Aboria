@@ -483,10 +483,9 @@ private:
         const int nchildren = m_row_query->num_children(ci);
         for (row_child_iterator cj = m_row_query->get_children(ci); cj != false;
              ++cj) {
-#pragma omp task default(none) firstprivate(cj)                                \
-    shared(target_vector, connected_buckets, g, target_box, source_vector,     \
-           m_W, m_g, m_col_query, m_row_query, m_expansions, m_kernel,         \
-           m_connectivity, num_tasks, nchildren)
+#pragma omp task default(none) firstprivate(cj) shared(                        \
+    target_vector, connected_buckets, g, target_box, source_vector, m_W, m_g,  \
+    m_col_query, m_row_query, m_expansions, m_kernel, m_connectivity)
           calculate_dive_M2L_and_L2L(target_vector, connected_buckets, g,
                                      target_box, cj, source_vector,
                                      num_tasks - nchildren);
