@@ -128,8 +128,8 @@ public:
         for (col_child_iterator ci =
                  m_col_particles->get_query().get_children();
              ci != false; ++ci) {
-#pragma omp task default(none) firstprivate(ci) shared(                        \
-    source_vector, m_num_tasks, nchild_col, m_W, m_col_query, m_expansions)
+#pragma omp task default(none) firstprivate(ci)                                \
+    shared(source_vector, m_num_tasks, m_W, m_col_query, m_expansions)
           calculate_dive_P2M_and_M2M(ci, source_vector,
                                      m_num_tasks - nchild_col);
         }
@@ -142,8 +142,8 @@ public:
         for (row_child_iterator ci = m_row_query->get_children(); ci != false;
              ++ci) {
 #pragma omp task default(none) firstprivate(ci)                                \
-    shared(target_vector, source_vector, m_num_tasks, nchild_row, m_W, m_g,    \
-           m_col_query, m_row_query, m_expansions, m_kernel, m_connectivity)
+    shared(target_vector, source_vector, m_num_tasks, m_W, m_g, m_col_query,   \
+           m_row_query, m_expansions, m_kernel, m_connectivity)
           {
             col_child_iterator_vector_type dummy;
             l_expansion_type g{};
