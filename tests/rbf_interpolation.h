@@ -341,22 +341,18 @@ public:
               << ", estimated error: " << cg_test.error() << std::endl;
 
     Eigen::ConjugateGradient<matrix_type, Eigen::Lower | Eigen::Upper,
-                             RASMPreconditioner<Eigen::HouseholderQR>>
+                             RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         cg;
     cg.setMaxIterations(max_iter);
-    cg.preconditioner().set_buffer_size(RASM_buffer);
-    cg.preconditioner().set_number_of_particles_per_domain(RASM_n);
     cg.preconditioner().analyzePattern(W);
     cg.compute(W_matrix);
     gamma = cg.solve(phi);
     std::cout << "CG-RASM:     #iterations: " << cg.iterations()
               << ", estimated error: " << cg.error() << std::endl;
 
-
-    Eigen::GMRES<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> gmres;
+    Eigen::GMRES<matrix_type, RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        gmres;
     gmres.setMaxIterations(max_iter);
-    gmres.preconditioner().set_buffer_size(RASM_buffer);
-    gmres.preconditioner().set_number_of_particles_per_domain(RASM_n);
     gmres.preconditioner().analyzePattern(W);
     gmres.set_restart(restart);
     gmres.compute(W_matrix);
@@ -364,10 +360,10 @@ public:
     std::cout << "GMRES-RASM:  #iterations: " << gmres.iterations()
               << ", estimated error: " << gmres.error() << std::endl;
 
-    Eigen::BiCGSTAB<matrix_type, RASMPreconditioner<Eigen::HouseholderQR>> bicg;
+    Eigen::BiCGSTAB<matrix_type,
+                    RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg;
     bicg.setMaxIterations(max_iter);
-    bicg.preconditioner().set_buffer_size(RASM_buffer);
-    bicg.preconditioner().set_number_of_particles_per_domain(RASM_n);
     bicg.preconditioner().analyzePattern(W);
     bicg.compute(W_matrix);
     gamma = bicg.solve(phi);
@@ -439,7 +435,7 @@ public:
     ParticlesType augment;
     ParticlesType test;
 
-    const double c = 1.0 / 0.10;
+    const double c = 1.0 / 0.50;
     const double c2 = std::pow(c, 2);
     vdouble2 min = vdouble2::Constant(0);
     vdouble2 max = vdouble2::Constant(1);
@@ -484,8 +480,12 @@ public:
 
     auto self_kernel = [&](const_particle_reference a,
                            const_particle_reference b) {
-      return std::exp(-(get<position>(b) - get<position>(a)).squaredNorm() *
-                      c2);
+      if (get<id>(a) == get<id>(b)) {
+        return 1.0 + 1e-4;
+      } else {
+        return std::exp(-(get<position>(b) - get<position>(a)).squaredNorm() *
+                        c2);
+      }
       // return kernel(get<position>(a),get<position>(b));
     };
 
@@ -507,6 +507,28 @@ public:
     gamma = dgmres.solve(phi);
     std::cout << "BiCGSTAB:  #iterations: " << dgmres.iterations()
               << ", estimated error: " << dgmres.error()
+              << " true error = " << (G * gamma - phi).norm() << std::endl;
+
+    Eigen::BiCGSTAB<decltype(G),
+                    RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg_rasm;
+    bicg_rasm.setMaxIterations(max_iter);
+    bicg_rasm.preconditioner().set_number_of_random_particles(100);
+    bicg_rasm.compute(G);
+    gamma = bicg_rasm.solve(phi);
+    std::cout << "BiCGSTAB-RASM:#iterations: " << bicg_rasm.iterations()
+              << ", estimated error: " << bicg_rasm.error()
+              << " true error = " << (G * gamma - phi).norm() << std::endl;
+
+    Eigen::GMRES<decltype(G), RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        gmres_rasm;
+    gmres_rasm.setMaxIterations(max_iter);
+    // gmres_rasm.set_restart(restart);
+    gmres_rasm.preconditioner().set_number_of_random_particles(100);
+    gmres_rasm.compute(G);
+    gamma = gmres_rasm.solve(phi);
+    std::cout << "GMRES-RASM:  #iterations: " << gmres_rasm.iterations()
+              << ", estimated error: " << gmres_rasm.error()
               << " true error = " << (G * gamma - phi).norm() << std::endl;
 
     /*

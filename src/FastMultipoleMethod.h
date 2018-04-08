@@ -160,6 +160,7 @@ shared(target_vector, source_vector, m_num_tasks, m_W, m_g, m_col_query,   \
                                        source_vector, m_num_tasks - nchild_row);
           }
         }
+#pragma omp taskwait
       }
     }
   }

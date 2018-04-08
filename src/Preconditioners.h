@@ -507,13 +507,12 @@ class ExtMatrixPreconditioner {
 };
 #endif
 
-template <template <typename> class Solver = Eigen::HouseholderQR>
-class RASMPreconditioner {
+template <typename Solver> class RASMPreconditioner {
   typedef double Scalar;
   typedef size_t Index;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
-  typedef Solver<matrix_type> solver_type;
+  typedef Solver solver_type;
   typedef std::vector<size_t> storage_vector_type;
   typedef std::vector<storage_vector_type> connectivity_type;
 
@@ -522,11 +521,9 @@ protected:
 
 private:
   Scalar m_buffer;
-  size_t m_goal;
   size_t m_random;
   connectivity_type m_domain_indicies;
   connectivity_type m_domain_buffer;
-  connectivity_type m_domain_random;
   std::vector<solver_type> m_domain_factorized_matrix;
   Index m_rows;
   Index m_cols;
@@ -538,8 +535,7 @@ public:
     MaxColsAtCompileTime = Eigen::Dynamic
   };
 
-  RASMPreconditioner()
-      : m_isInitialized(false), m_buffer(0), m_goal(10), m_random(0) {}
+  RASMPreconditioner() : m_isInitialized(false), m_random(0) {}
 
   template <typename MatType> explicit RASMPreconditioner(const MatType &mat) {
     compute(mat);
@@ -548,109 +544,13 @@ public:
   Index rows() const { return m_rows; }
   Index cols() const { return m_cols; }
 
-  void set_buffer_size(double size) { m_buffer = size; }
-
-  void set_number_of_particles_per_domain(size_t n) { m_goal = n; }
-
-  void set_number_of_random_particles(size_t n) {
-    ERROR("RASM Preconditioner random support not working")
-    m_random = n;
-  }
-
-  template <typename Kernel, typename Query, unsigned int D = Query::dimension,
-            typename box_type = bbox<D>>
-  void analyze_domain(const Index start_row, const Kernel &kernel,
-                      const Query &query, const box_type &bounds) {
-    const size_t domain_index = m_domain_indicies.size();
-    m_domain_indicies.push_back(connectivity_type::value_type());
-    m_domain_buffer.push_back(connectivity_type::value_type());
-    storage_vector_type &buffer = m_domain_buffer[domain_index];
-    storage_vector_type &indicies = m_domain_indicies[domain_index];
-
-    // TODO: cant use chebyshev search function as does not yet
-    // support anisotropic distance measures, need to add this then
-    // remove hack below
-    auto it = query.template get_buckets_near_point<-1>(
-        0.5 * (bounds.bmax - bounds.bmin) + bounds.bmin,
-        0.5 * (bounds.bmax - bounds.bmin) + m_buffer);
-
-    typedef typename Query::traits_type::position position;
-    for (; it != false; ++it) {
-      for (auto particle = query.get_bucket_particles(*it); particle != false;
-           ++particle) {
-        const size_t index = &(get<position>(*particle)) -
-                             get<position>(query.get_particles_begin());
-        if ((get<position>(*particle) >= bounds.bmin - m_buffer).all() &&
-            (get<position>(*particle) < bounds.bmax + m_buffer).all()) {
-          if ((get<position>(*particle) < bounds.bmin).any() ||
-              (get<position>(*particle) >= bounds.bmax).any()) {
-            buffer.push_back(start_row + index);
-          } else {
-            indicies.push_back(start_row + index);
-          }
-        }
-      }
-    }
-    ASSERT(buffer.size() > 0, "no particles in buffer");
-    ASSERT(indicies.size() > 0, "no particles in domain");
-    // std::cout << "analyze_domain with bounds = "<<bounds<<" indicies =
-    // "<<indicies.size()<<" buffer = "<<buffer.size() << " volume =
-    // "<<(bounds.bmax-bounds.bmin).prod()<<std::endl;
-  }
-
-  // dive tree accumulating a count of particles in each bucket
-  // if the count >= goal, then factorize the bucket
-  // if a child is factorized, then factorize the other children
-  template <typename Kernel, typename Query,
-            typename Reference = typename Query::reference,
-            typename Pair = std::pair<bool, size_t>,
-            unsigned int D = Query::dimension,
-            typename child_iterator = typename Query::child_iterator,
-            typename box_type = bbox<D>>
-  Pair analyze_dive(const Index start_row, const Kernel &kernel,
-                    const Query &query, const child_iterator &ci) {
-    size_t count = 0;
-    bool done = false;
-    if (query.is_leaf_node(*ci)) {
-      count = query.get_bucket_particles(*ci).distance_to_end();
-    } else {
-      std::vector<child_iterator> not_done;
-      for (child_iterator cj = query.get_children(ci); cj != false; ++cj) {
-        Pair child = analyze_dive(start_row, kernel, query, cj);
-        done |= child.first;
-        if (!child.first) {
-          not_done.push_back(cj);
-        }
-        count += child.second;
-      }
-      // if any child is done, need to analyze domain for siblings
-      if (done) {
-        for (child_iterator &cj : not_done) {
-          analyze_domain(start_row, kernel, query, query.get_bounds(cj));
-        }
-      }
-    }
-    if (count >= m_goal && !done) {
-      analyze_domain(start_row, kernel, query, query.get_bounds(ci));
-      done = true;
-    }
-    // std::cout << "analyze_dive bounds "<< query.get_bounds(ci) << std::endl;
-    // std::cout << "leaf = "<<query.is_leaf_node(*ci)<<" count = "<<count<<"
-    // done = "<<done << std::endl;
-    return Pair(done, count);
-  }
+  void set_number_of_random_particles(size_t n) { m_random = n; }
 
   template <typename Kernel>
   void analyze_impl_block(const Index start_row, const Kernel &kernel) {
     typedef typename Kernel::row_elements_type row_elements_type;
     typedef typename Kernel::col_elements_type col_elements_type;
     typedef typename row_elements_type::query_type query_type;
-    static const unsigned int dimension = query_type::dimension;
-    typedef Vector<double, dimension> double_d;
-    typedef Vector<unsigned int, dimension> unsigned_int_d;
-    typedef Vector<int, dimension> int_d;
-    typedef bbox<dimension> box_type;
-    typedef typename query_type::child_iterator child_iterator;
 
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,
                   "RASM preconditioner restricted to identical row and col "
@@ -660,38 +560,58 @@ public:
           "RASM preconditioner restricted to identical row and col particle "
           "sets");
     const query_type &query = a.get_query();
-    if (query.is_tree()) {
-      // for a tree, use data structure to find a good division
-      for (child_iterator ci = query.get_children(); ci != false; ++ci) {
-        if (query.is_leaf_node(*ci)) {
-          // no tree!, just accept this one I guess
-          analyze_domain(start_row, kernel, query, query.get_bounds(ci));
-        } else {
-          // dive tree, find bucket with given number of particles
-          analyze_dive(start_row, kernel, query, ci);
+    for (auto i = query.get_subtree(); i != false; ++i) {
+      if (query.is_leaf_node(*i)) {
+        auto ci = i.get_child_iterator();
+        auto bounds = query.get_bounds(ci);
+
+        const size_t domain_index = m_domain_indicies.size();
+        m_domain_indicies.push_back(connectivity_type::value_type());
+        m_domain_buffer.push_back(connectivity_type::value_type());
+        storage_vector_type &buffer = m_domain_buffer[domain_index];
+        storage_vector_type &indicies = m_domain_indicies[domain_index];
+
+        // search for all neighbouring buckets
+        auto it = query.template get_buckets_near_point<-1>(
+            0.5 * (bounds.bmax - bounds.bmin) + bounds.bmin,
+            0.5 * (bounds.bmax - bounds.bmin) +
+                1e5 * std::numeric_limits<double>::epsilon());
+
+        // add indicies and buffer indicies
+        typedef typename query_type::traits_type::position position;
+        for (; it != false; ++it) {
+          for (auto particle = query.get_bucket_particles(*it);
+               particle != false; ++particle) {
+            const size_t index = &(get<position>(*particle)) -
+                                 get<position>(query.get_particles_begin());
+            if ((get<position>(*particle) < bounds.bmin).any() ||
+                (get<position>(*particle) >= bounds.bmax).any()) {
+              buffer.push_back(start_row + index);
+            } else {
+              indicies.push_back(start_row + index);
+            }
+          }
         }
-      }
-    } else {
-      // for a regular grid, assume particles are evenly distributed
-      const box_type &bounds = query.get_bounds();
-      const size_t N = a.size();
-      const double total_volume = (bounds.bmax - bounds.bmin).prod();
-      const double box_volume = double(m_goal) / double(N) * total_volume;
-      const double box_side_length = std::pow(box_volume, 1.0 / dimension);
-      unsigned_int_d size = floor((bounds.bmax - bounds.bmin) / box_side_length)
-                                .template cast<unsigned int>();
-      for (size_t i = 0; i < dimension; ++i) {
-        if (size[i] == 0) {
-          size[i] = 1;
+
+        // now add some random indicies
+        std::uniform_int_distribution<int> uniform_index(0, a.size() - 1);
+        std::default_random_engine generator;
+        for (size_t d = 0; d < m_random; ++d) {
+          bool in_buffer, in_indicies;
+          size_t proposed_index;
+          do {
+            proposed_index = uniform_index(generator) + start_row;
+            in_buffer = buffer.end() !=
+                        std::find(buffer.begin(), buffer.end(), proposed_index);
+            in_indicies =
+                indicies.end() !=
+                std::find(indicies.begin(), indicies.end(), proposed_index);
+          } while (in_buffer || in_indicies);
+          buffer.push_back(proposed_index);
         }
-      }
-      const double_d side_length = (bounds.bmax - bounds.bmin) / size;
-      iterator_range<lattice_iterator<dimension>> range(
-          lattice_iterator<dimension>(int_d::Zero(), size),
-          lattice_iterator<dimension>());
-      for (typename lattice_iterator<dimension>::reference box : range) {
-        analyze_domain(start_row, kernel, query,
-                       box_type(box * side_length, (box + 1) * side_length));
+
+        ASSERT(buffer.size() > 0, "no particles in buffer");
+        ASSERT(indicies.size() > 0, "no particles in domain");
       }
     }
   }
@@ -719,42 +639,30 @@ public:
     m_cols = mat.cols();
     analyze_impl(mat, detail::make_index_sequence<NI>());
 
-    const size_t n = m_domain_indicies.size();
-    generator_type generator(time(NULL));
-    std::uniform_int_distribution<size_t> uniform_domain(0, n - 1);
-
-    m_domain_random.resize(n);
-    for (size_t domain_index = 0; domain_index < n; ++domain_index) {
-      storage_vector_type &random = m_domain_random[domain_index];
-      random.resize(m_random);
-      for (size_t d = 0; d < m_random; ++d) {
-        do {
-          size_t other_domain = uniform_domain(generator);
-          while (other_domain == domain_index)
-            other_domain = uniform_domain(generator);
-          std::uniform_int_distribution<int> uniform_index(
-              0, m_domain_indicies[other_domain].size() - 1);
-          random[d] = m_domain_indicies[other_domain][uniform_index(generator)];
-        } while ((random.begin() + d) !=
-                 std::find(random.begin(), random.begin() + d, random[d]));
-      }
-    }
-
     int count = 0;
-    int minsize = 1000;
-    int maxsize = 0;
+    int minsize_buffer = 1000;
+    int maxsize_buffer = 0;
+    int minsize_indicies = 1000;
+    int maxsize_indicies = 0;
     for (size_t domain_index = 0; domain_index < m_domain_indicies.size();
          ++domain_index) {
-      const int size = m_domain_indicies[domain_index].size();
-      count += size;
-      if (size < minsize)
-        minsize = size;
-      if (size > maxsize)
-        maxsize = size;
+      const int size_indicies = m_domain_indicies[domain_index].size();
+      const int size_buffer = m_domain_buffer[domain_index].size();
+      count += size_indicies;
+      if (size_buffer < minsize_buffer)
+        minsize_buffer = size_buffer;
+      if (size_buffer > maxsize_buffer)
+        maxsize_buffer = size_buffer;
+      if (size_indicies < minsize_indicies)
+        minsize_indicies = size_indicies;
+      if (size_indicies > maxsize_indicies)
+        maxsize_indicies = size_indicies;
     }
     LOG(2, "RASMPreconditioner: finished analysis, found "
-               << m_domain_indicies.size() << " domains, with " << minsize
-               << "--" << maxsize << " particles (" << count << " total).");
+               << m_domain_indicies.size() << " domains, with "
+               << minsize_indicies << "--" << maxsize_indicies << " particles ("
+               << count << " total), and " << minsize_buffer << "--"
+               << maxsize_buffer << " buffer particles")
     return *this;
   }
 
@@ -762,7 +670,8 @@ public:
   RASMPreconditioner &analyzePattern(
       const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex> &mat) {
     CHECK(m_domain_indicies.size() > 0,
-          "RASMPreconditioner::analyzePattern(): cannot analyze sparse matrix, "
+          "RASMPreconditioner::analyzePattern(): cannot analyze sparse "
+          "matrix, "
           "call analyzePattern using a Aboria MatrixReplacement class first");
     return *this;
   }
@@ -774,7 +683,8 @@ public:
                  const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex>,
                  RefOptions, RefStrideType> &mat) {
     CHECK(m_domain_indicies.size() > 0,
-          "RASMPreconditioner::analyzePattern(): cannot analyze sparse matrix, "
+          "RASMPreconditioner::analyzePattern(): cannot analyze sparse "
+          "matrix, "
           "call analyzePattern using a Aboria MatrixReplacement class first");
     return *this;
   }
@@ -782,7 +692,8 @@ public:
   template <typename Derived>
   RASMPreconditioner &analyzePattern(const Eigen::DenseBase<Derived> &mat) {
     CHECK(m_domain_indicies.size() > 0,
-          "RASMPreconditioner::analyzePattern(): cannot analyze dense matrix, "
+          "RASMPreconditioner::analyzePattern(): cannot analyze dense "
+          "matrix, "
           "call analyzePattern need to pass a Aboria MatrixReplacement class "
           "first");
     return *this;
@@ -804,12 +715,12 @@ public:
          domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
       const storage_vector_type &buffer = m_domain_buffer[domain_index];
       const storage_vector_type &indicies = m_domain_indicies[domain_index];
-      const storage_vector_type &random = m_domain_random[domain_index];
       solver_type &solver = m_domain_factorized_matrix[domain_index];
 
-      const size_t size = indicies.size() + buffer.size() + random.size();
-      // std::cout << "domain "<<domain_index<<"indicies = "<<indicies.size()<<"
-      // buffer =  "<<buffer.size()<<" random = "<<random.size()<<std::endl;
+      const size_t size = indicies.size() + buffer.size();
+      // std::cout << "domain "<<domain_index<<"indicies =
+      // "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random =
+      // "<<random.size()<<std::endl;
 
       domain_matrix.resize(size, size);
 
@@ -822,9 +733,6 @@ public:
         for (const size_t &big_index_j : buffer) {
           domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
         }
-        for (const size_t &big_index_j : random) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
         ++i;
       }
       for (const size_t &big_index_i : buffer) {
@@ -835,25 +743,17 @@ public:
         for (const size_t &big_index_j : buffer) {
           domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
         }
-        for (const size_t &big_index_j : random) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
         ++i;
       }
-      for (const size_t &big_index_i : random) {
-        size_t j = 0;
-        for (const size_t &big_index_j : indicies) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        for (const size_t &big_index_j : buffer) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        for (const size_t &big_index_j : random) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        ++i;
-      }
+
       solver.compute(domain_matrix);
+
+      Eigen::VectorXd b = Eigen::VectorXd::Random(domain_matrix.rows());
+      Eigen::VectorXd x = solver.solve(b);
+      double relative_error = (domain_matrix * x - b).norm() / b.norm();
+      if (relative_error > 1e-3) {
+        std::cout << "relative error = " << relative_error << std::endl;
+      }
     }
 
     m_isInitialized = true;
@@ -880,9 +780,8 @@ public:
 
       const storage_vector_type &buffer = m_domain_buffer[i];
       const storage_vector_type &indicies = m_domain_indicies[i];
-      const storage_vector_type &random = m_domain_random[i];
 
-      const size_t nb = indicies.size() + buffer.size() + random.size();
+      const size_t nb = indicies.size() + buffer.size();
       domain_x.resize(nb);
       domain_b.resize(nb);
 
@@ -893,9 +792,6 @@ public:
       }
       for (size_t j = 0; j < buffer.size(); ++j) {
         domain_b[sub_index++] = b[buffer[j]];
-      }
-      for (size_t j = 0; j < random.size(); ++j) {
-        domain_b[sub_index++] = b[random[j]];
       }
 
       // solve domain
