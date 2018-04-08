@@ -507,7 +507,7 @@ class ExtMatrixPreconditioner {
 };
 #endif
 
-template <typename Solver> class RASMPreconditioner {
+template <typename Solver> class SchwartzPreconditioner {
   typedef double Scalar;
   typedef size_t Index;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
@@ -520,8 +520,10 @@ protected:
   bool m_isInitialized;
 
 private:
-  Scalar m_buffer;
   size_t m_random;
+  bool m_kernel_sampling;
+  double m_neighbourhood_buffer;
+
   connectivity_type m_domain_indicies;
   connectivity_type m_domain_buffer;
   std::vector<solver_type> m_domain_factorized_matrix;
@@ -535,35 +537,50 @@ public:
     MaxColsAtCompileTime = Eigen::Dynamic
   };
 
-  RASMPreconditioner() : m_isInitialized(false), m_random(0) {}
+  SchwartzPreconditioner()
+      : m_isInitialized(false), m_random(0), m_kernel_sampling(false),
+        m_neighbourhood_buffer(1e5 * std::numeric_limits<double>::epsilon()) {}
 
-  template <typename MatType> explicit RASMPreconditioner(const MatType &mat) {
+  template <typename MatType>
+  explicit SchwartzPreconditioner(const MatType &mat) {
     compute(mat);
   }
 
   Index rows() const { return m_rows; }
   Index cols() const { return m_cols; }
 
+  void set_neighbourhood_buffer_size(double arg) {
+    m_neighbourhood_buffer = arg;
+  }
   void set_number_of_random_particles(size_t n) { m_random = n; }
+  void set_kernel_sampling(bool value) { m_kernel_sampling = value; }
 
   template <typename Kernel>
   void analyze_impl_block(const Index start_row, const Kernel &kernel) {
     typedef typename Kernel::row_elements_type row_elements_type;
     typedef typename Kernel::col_elements_type col_elements_type;
     typedef typename row_elements_type::query_type query_type;
+    typedef typename query_type::traits_type traits_type;
+    typedef typename traits_type::double_d double_d;
+    typedef typename traits_type::position position;
 
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,
-                  "RASM preconditioner restricted to identical row and col "
+                  "Schwartz preconditioner restricted to identical row and col "
                   "particle sets");
     const row_elements_type &a = kernel.get_row_elements();
-    CHECK(&a == &(kernel.get_col_elements()),
-          "RASM preconditioner restricted to identical row and col particle "
-          "sets");
+    CHECK(
+        &a == &(kernel.get_col_elements()),
+        "Schwartz preconditioner restricted to identical row and col particle "
+        "sets");
     const query_type &query = a.get_query();
     for (auto i = query.get_subtree(); i != false; ++i) {
       if (query.is_leaf_node(*i)) {
         auto ci = i.get_child_iterator();
         auto bounds = query.get_bounds(ci);
+
+        // skip over empty buckets
+        if (query.get_bucket_particles(*ci) == false)
+          continue;
 
         const size_t domain_index = m_domain_indicies.size();
         m_domain_indicies.push_back(connectivity_type::value_type());
@@ -572,41 +589,73 @@ public:
         storage_vector_type &indicies = m_domain_indicies[domain_index];
 
         // search for all neighbouring buckets
-        auto it = query.template get_buckets_near_point<-1>(
-            0.5 * (bounds.bmax - bounds.bmin) + bounds.bmin,
-            0.5 * (bounds.bmax - bounds.bmin) +
-                1e5 * std::numeric_limits<double>::epsilon());
+        double_d middle = 0.5 * (bounds.bmax - bounds.bmin) + bounds.bmin;
+        double_d radius = 0.5 * (bounds.bmax - bounds.bmin);
+        if (m_neighbourhood_buffer > 0) {
+          auto it = query.template get_buckets_near_point<-1>(
+              middle, radius + m_neighbourhood_buffer);
 
-        // add indicies and buffer indicies
-        typedef typename query_type::traits_type::position position;
-        for (; it != false; ++it) {
-          for (auto particle = query.get_bucket_particles(*it);
+          // add indicies and buffer indicies
+          typedef typename query_type::traits_type::position position;
+          for (; it != false; ++it) {
+            for (auto particle = query.get_bucket_particles(*it);
+                 particle != false; ++particle) {
+              const size_t index = &(get<position>(*particle)) -
+                                   get<position>(query.get_particles_begin());
+              if ((get<position>(*particle) < bounds.bmin).any() ||
+                  (get<position>(*particle) >= bounds.bmax).any()) {
+                buffer.push_back(start_row + index);
+              } else {
+                indicies.push_back(start_row + index);
+              }
+            }
+          }
+        } else {
+          for (auto particle = query.get_bucket_particles(*ci);
                particle != false; ++particle) {
             const size_t index = &(get<position>(*particle)) -
                                  get<position>(query.get_particles_begin());
-            if ((get<position>(*particle) < bounds.bmin).any() ||
-                (get<position>(*particle) >= bounds.bmax).any()) {
-              buffer.push_back(start_row + index);
-            } else {
-              indicies.push_back(start_row + index);
-            }
+            indicies.push_back(start_row + index);
           }
         }
 
         // now add some random indicies
         std::uniform_int_distribution<int> uniform_index(0, a.size() - 1);
+        std::uniform_real_distribution<double> uniform(0, a.size() - 1);
         std::default_random_engine generator;
+
+        // just using first particle in indicies?
+        const double kernel_scale =
+            m_kernel_sampling ? 1.01 * kernel.coeff(indicies[0], indicies[0])
+                              : std::numeric_limits<double>::epsilon();
+        const double inv_kernel_scale = 1.0 / kernel_scale;
         for (size_t d = 0; d < m_random; ++d) {
-          bool in_buffer, in_indicies;
+          bool in_buffer, in_indicies, rejected;
           size_t proposed_index;
           do {
             proposed_index = uniform_index(generator) + start_row;
-            in_buffer = buffer.end() !=
-                        std::find(buffer.begin(), buffer.end(), proposed_index);
-            in_indicies =
-                indicies.end() !=
-                std::find(indicies.begin(), indicies.end(), proposed_index);
-          } while (in_buffer || in_indicies);
+
+            // just using first particle in buffer?
+            const double kernel_eval =
+                kernel.coeff(indicies[0], proposed_index);
+            ASSERT(!m_kernel_sampling || kernel_eval < kernel_scale,
+                   "SwartzPreconditioner assumes "
+                   "diagonal dominant kernel function");
+            rejected = uniform(generator) > kernel_eval * inv_kernel_scale;
+
+            // check not in indicies
+            if (!rejected)
+              in_indicies =
+                  indicies.end() !=
+                  std::find(indicies.begin(), indicies.end(), proposed_index);
+
+            // check not in buffer
+            if (!rejected && !in_indicies)
+              in_buffer =
+                  buffer.end() !=
+                  std::find(buffer.begin(), buffer.end(), proposed_index);
+
+          } while (rejected || in_buffer || in_indicies);
           buffer.push_back(proposed_index);
         }
 
@@ -631,10 +680,10 @@ public:
   }
 
   template <unsigned int NI, unsigned int NJ, typename Blocks>
-  RASMPreconditioner &
+  SchwartzPreconditioner &
   analyzePattern(const MatrixReplacement<NI, NJ, Blocks> &mat) {
 
-    LOG(2, "RASMPreconditioner: analyze pattern");
+    LOG(2, "SchwartzPreconditioner: analyze pattern");
     m_rows = mat.rows();
     m_cols = mat.cols();
     analyze_impl(mat, detail::make_index_sequence<NI>());
@@ -658,7 +707,7 @@ public:
       if (size_indicies > maxsize_indicies)
         maxsize_indicies = size_indicies;
     }
-    LOG(2, "RASMPreconditioner: finished analysis, found "
+    LOG(2, "SchwartzPreconditioner: finished analysis, found "
                << m_domain_indicies.size() << " domains, with "
                << minsize_indicies << "--" << maxsize_indicies << " particles ("
                << count << " total), and " << minsize_buffer << "--"
@@ -667,10 +716,10 @@ public:
   }
 
   template <int _Options, typename _StorageIndex>
-  RASMPreconditioner &analyzePattern(
+  SchwartzPreconditioner &analyzePattern(
       const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex> &mat) {
     CHECK(m_domain_indicies.size() > 0,
-          "RASMPreconditioner::analyzePattern(): cannot analyze sparse "
+          "SchwartzPreconditioner::analyzePattern(): cannot analyze sparse "
           "matrix, "
           "call analyzePattern using a Aboria MatrixReplacement class first");
     return *this;
@@ -678,21 +727,21 @@ public:
 
   template <int _Options, typename _StorageIndex, int RefOptions,
             typename RefStrideType>
-  RASMPreconditioner &
+  SchwartzPreconditioner &
   analyzePattern(const Eigen::Ref<
                  const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex>,
                  RefOptions, RefStrideType> &mat) {
     CHECK(m_domain_indicies.size() > 0,
-          "RASMPreconditioner::analyzePattern(): cannot analyze sparse "
+          "SchwartzPreconditioner::analyzePattern(): cannot analyze sparse "
           "matrix, "
           "call analyzePattern using a Aboria MatrixReplacement class first");
     return *this;
   }
 
   template <typename Derived>
-  RASMPreconditioner &analyzePattern(const Eigen::DenseBase<Derived> &mat) {
+  SchwartzPreconditioner &analyzePattern(const Eigen::DenseBase<Derived> &mat) {
     CHECK(m_domain_indicies.size() > 0,
-          "RASMPreconditioner::analyzePattern(): cannot analyze dense "
+          "SchwartzPreconditioner::analyzePattern(): cannot analyze dense "
           "matrix, "
           "call analyzePattern need to pass a Aboria MatrixReplacement class "
           "first");
@@ -700,12 +749,14 @@ public:
   }
 
   template <typename MatType>
-  RASMPreconditioner &factorize(const MatType &mat) {
-    LOG(2, "RASMPreconditioner: factorizing domain");
-    eigen_assert(static_cast<typename MatType::Index>(m_rows) == mat.rows() &&
-                 "RASMPreconditioner::solve(): invalid number of rows of mat");
-    eigen_assert(static_cast<typename MatType::Index>(m_cols) == mat.cols() &&
-                 "RASMPreconditioner::solve(): invalid number of rows of mat");
+  SchwartzPreconditioner &factorize(const MatType &mat) {
+    LOG(2, "SchwartzPreconditioner: factorizing domain");
+    eigen_assert(
+        static_cast<typename MatType::Index>(m_rows) == mat.rows() &&
+        "SchwartzPreconditioner::solve(): invalid number of rows of mat");
+    eigen_assert(
+        static_cast<typename MatType::Index>(m_cols) == mat.cols() &&
+        "SchwartzPreconditioner::solve(): invalid number of rows of mat");
 
     m_domain_factorized_matrix.resize(m_domain_indicies.size());
 
@@ -761,7 +812,8 @@ public:
     return *this;
   }
 
-  template <typename MatType> RASMPreconditioner &compute(const MatType &mat) {
+  template <typename MatType>
+  SchwartzPreconditioner &compute(const MatType &mat) {
     analyzePattern(mat);
     return factorize(mat);
   }
@@ -798,24 +850,282 @@ public:
       domain_x = m_domain_factorized_matrix[i].solve(domain_b);
 
       // copy accumulate b values to big vector
+      sub_index = 0;
       for (size_t j = 0; j < indicies.size(); ++j) {
-        x[indicies[j]] = domain_x[j];
+        x[indicies[j]] = domain_x[sub_index++];
       }
     }
   }
 
   template <typename Rhs>
-  inline const Eigen::Solve<RASMPreconditioner, Rhs>
+  inline const Eigen::Solve<SchwartzPreconditioner, Rhs>
   solve(const Eigen::MatrixBase<Rhs> &b) const {
-    eigen_assert(static_cast<typename Rhs::Index>(m_rows) == b.rows() &&
-                 "RASMPreconditioner::solve(): invalid number of rows of the "
-                 "right hand side matrix b");
-    eigen_assert(m_isInitialized && "RASMPreconditioner is not initialized.");
-    return Eigen::Solve<RASMPreconditioner, Rhs>(*this, b.derived());
+    eigen_assert(
+        static_cast<typename Rhs::Index>(m_rows) == b.rows() &&
+        "SchwartzPreconditioner::solve(): invalid number of rows of the "
+        "right hand side matrix b");
+    eigen_assert(m_isInitialized &&
+                 "SchwartzPreconditioner is not initialized.");
+    return Eigen::Solve<SchwartzPreconditioner, Rhs>(*this, b.derived());
   }
 
   Eigen::ComputationInfo info() { return Eigen::Success; }
-};
+}; // namespace Aboria
+
+template <typename Solver> class NystromPreconditioner {
+  typedef double Scalar;
+  typedef size_t Index;
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
+  typedef Solver solver_type;
+  typedef std::vector<size_t> storage_vector_type;
+  typedef std::vector<storage_vector_type> connectivity_type;
+
+protected:
+  bool m_isInitialized;
+
+private:
+  size_t m_random;
+  double m_lambda;
+
+  std::vector<storage_vector_type> m_domain_indicies;
+  std::vector<solver_type> m_domain_factorized_matrix;
+  std::vector<matrix_type> m_domain_Kux;
+  std::vector<vint2> m_domain_range;
+  Index m_rows;
+  Index m_cols;
+
+public:
+  typedef typename vector_type::StorageIndex StorageIndex;
+  enum {
+    ColsAtCompileTime = Eigen::Dynamic,
+    MaxColsAtCompileTime = Eigen::Dynamic
+  };
+
+  NystromPreconditioner()
+      : m_isInitialized(false), m_random(0), m_lambda(1e-8) {}
+
+  template <typename MatType>
+  explicit NystromPreconditioner(const MatType &mat) {
+    compute(mat);
+  }
+
+  Index rows() const { return m_rows; }
+  Index cols() const { return m_cols; }
+
+  void set_number_of_random_particles(size_t n) { m_random = n; }
+  void set_lambda(double val) { m_lambda = val; }
+
+  template <typename Kernel>
+  void analyze_impl_block(const Index start_row, const Kernel &kernel) {
+    typedef typename Kernel::row_elements_type row_elements_type;
+    typedef typename Kernel::col_elements_type col_elements_type;
+    typedef typename row_elements_type::query_type query_type;
+    typedef typename query_type::traits_type traits_type;
+
+    static_assert(std::is_same<row_elements_type, col_elements_type>::value,
+                  "Nystrom preconditioner restricted to identical row and col "
+                  "particle sets");
+    const row_elements_type &a = kernel.get_row_elements();
+    CHECK(&a == &(kernel.get_col_elements()),
+          "Nystrom preconditioner restricted to identical row and col particle "
+          "sets");
+
+    const size_t domain_index = m_domain_indicies.size();
+    m_domain_indicies.push_back(connectivity_type::value_type());
+    m_domain_range.push_back(vint2(start_row, start_row + a.size()));
+    m_domain_Kux.push_back(matrix_type());
+    storage_vector_type &indicies = m_domain_indicies[domain_index];
+
+    // now add some random indicies
+    std::uniform_int_distribution<int> uniform_index(0, a.size() - 1);
+    std::default_random_engine generator;
+
+    for (size_t d = 0; d < m_random; ++d) {
+      bool in_indicies;
+      size_t proposed_index;
+      do {
+        proposed_index = uniform_index(generator) + start_row;
+
+        // check not in indicies
+        in_indicies =
+            indicies.end() !=
+            std::find(indicies.begin(), indicies.end(), proposed_index);
+
+      } while (in_indicies);
+      indicies.push_back(proposed_index);
+    }
+    ASSERT(indicies.size() > 0, "no particles in domain");
+  }
+
+  template <typename RowParticles, typename ColParticles>
+  void
+  analyze_impl_block(const Index start_row,
+                     const KernelZero<RowParticles, ColParticles> &kernel) {}
+
+  template <unsigned int NI, unsigned int NJ, typename Blocks, std::size_t... I>
+  void analyze_impl(const MatrixReplacement<NI, NJ, Blocks> &mat,
+                    detail::index_sequence<I...>) {
+    int dummy[] = {0, (analyze_impl_block(mat.template start_row<I>(),
+                                          std::get<I * NJ + I>(mat.m_blocks)),
+                       0)...};
+    static_cast<void>(dummy);
+  }
+
+  template <unsigned int NI, unsigned int NJ, typename Blocks>
+  NystromPreconditioner &
+  analyzePattern(const MatrixReplacement<NI, NJ, Blocks> &mat) {
+
+    LOG(2, "NystromPreconditioner: analyze pattern");
+    m_rows = mat.rows();
+    m_cols = mat.cols();
+    analyze_impl(mat, detail::make_index_sequence<NI>());
+
+    int count = 0;
+    int minsize_indicies = 1000;
+    int maxsize_indicies = 0;
+    for (size_t domain_index = 0; domain_index < m_domain_indicies.size();
+         ++domain_index) {
+      const int size_indicies = m_domain_indicies[domain_index].size();
+      count += size_indicies;
+      if (size_indicies < minsize_indicies)
+        minsize_indicies = size_indicies;
+      if (size_indicies > maxsize_indicies)
+        maxsize_indicies = size_indicies;
+    }
+    LOG(2, "NystromPreconditioner: finished analysis, found "
+               << m_domain_indicies.size() << " domains, with "
+               << minsize_indicies << "--" << maxsize_indicies << " particles ("
+               << count << " total)")
+    return *this;
+  }
+
+  template <int _Options, typename _StorageIndex>
+  NystromPreconditioner &analyzePattern(
+      const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex> &mat) {
+    CHECK(m_domain_indicies.size() > 0,
+          "NystromPreconditioner::analyzePattern(): cannot analyze sparse "
+          "matrix, "
+          "call analyzePattern using a Aboria MatrixReplacement class first");
+    return *this;
+  }
+
+  template <int _Options, typename _StorageIndex, int RefOptions,
+            typename RefStrideType>
+  NystromPreconditioner &
+  analyzePattern(const Eigen::Ref<
+                 const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex>,
+                 RefOptions, RefStrideType> &mat) {
+    CHECK(m_domain_indicies.size() > 0,
+          "NystromPreconditioner::analyzePattern(): cannot analyze sparse "
+          "matrix, "
+          "call analyzePattern using a Aboria MatrixReplacement class first");
+    return *this;
+  }
+
+  template <typename Derived>
+  NystromPreconditioner &analyzePattern(const Eigen::DenseBase<Derived> &mat) {
+    CHECK(m_domain_indicies.size() > 0,
+          "NystromPreconditioner::analyzePattern(): cannot analyze dense "
+          "matrix, "
+          "call analyzePattern need to pass a Aboria MatrixReplacement class "
+          "first");
+    return *this;
+  }
+
+  template <typename MatType>
+  NystromPreconditioner &factorize(const MatType &mat) {
+    LOG(2, "NystromPreconditioner: factorizing domain");
+    eigen_assert(
+        static_cast<typename MatType::Index>(m_rows) == mat.rows() &&
+        "SchwartzPreconditioner::solve(): invalid number of rows of mat");
+    eigen_assert(
+        static_cast<typename MatType::Index>(m_cols) == mat.cols() &&
+        "SchwartzPreconditioner::solve(): invalid number of rows of mat");
+
+    m_domain_factorized_matrix.resize(m_domain_indicies.size());
+
+    matrix_type Kuu;
+
+    for (size_t domain_index = 0;
+         domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
+      const storage_vector_type &indicies = m_domain_indicies[domain_index];
+      solver_type &solver = m_domain_factorized_matrix[domain_index];
+      vint2 &range = m_domain_range[domain_index];
+      matrix_type &Kux = m_domain_Kux[domain_index];
+
+      const size_t size = indicies.size();
+      // std::cout << "domain "<<domain_index<<"indicies =
+      // "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random =
+      // "<<random.size()<<std::endl;
+
+      Kuu.resize(size, size);
+      Kux.resize(size, range[1] - range[0]);
+
+      size_t i = 0;
+      for (const size_t &big_index_i : indicies) {
+        size_t j = 0;
+        for (const size_t &big_index_j : indicies) {
+          Kuu(i, j++) = mat.coeff(big_index_i, big_index_j);
+        }
+        j = 0;
+        for (size_t big_index_j = range[0]; big_index_j < range[1];
+             ++big_index_j) {
+          Kux(i, j++) = mat.coeff(big_index_i, big_index_j);
+        }
+        ++i;
+      }
+      Kuu += Kux * (Kux.transpose());
+      solver.compute(Kuu);
+
+      Eigen::VectorXd b = Eigen::VectorXd::Random(Kuu.rows());
+      Eigen::VectorXd x = solver.solve(b);
+      double relative_error = (Kuu * x - b).norm() / b.norm();
+      if (relative_error > 1e-3) {
+        std::cout << "relative error = " << relative_error << std::endl;
+      }
+    }
+
+    m_isInitialized = true;
+
+    return *this;
+  }
+
+  template <typename MatType>
+  NystromPreconditioner &compute(const MatType &mat) {
+    analyzePattern(mat);
+    return factorize(mat);
+  }
+
+  /** \internal */
+  template <typename Rhs, typename Dest>
+  void _solve_impl(const Rhs &b, Dest &x) const {
+    x = b;
+    for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
+      auto range = m_domain_range[i];
+      auto Kux = m_domain_Kux[i];
+      auto solver = m_domain_factorized_matrix[i];
+
+      x.segment(range[0], range[1]) =
+          matrix_type::Identity(range[1] - range[0], range[1] - range[0]) -
+          (Kux.transpose()) * solver.solve(Kux * b.segment(range[0], range[1]));
+    }
+  }
+
+  template <typename Rhs>
+  inline const Eigen::Solve<NystromPreconditioner, Rhs>
+  solve(const Eigen::MatrixBase<Rhs> &b) const {
+    eigen_assert(
+        static_cast<typename Rhs::Index>(m_rows) == b.rows() &&
+        "NystromPreconditioner::solve(): invalid number of rows of the "
+        "right hand side matrix b");
+    eigen_assert(m_isInitialized &&
+                 "NystromPreconditioner is not initialized.");
+    return Eigen::Solve<NystromPreconditioner, Rhs>(*this, b.derived());
+  }
+
+  Eigen::ComputationInfo info() { return Eigen::Success; }
+}; // namespace Aboria
 
 } // namespace Aboria
 

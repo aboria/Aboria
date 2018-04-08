@@ -340,8 +340,9 @@ public:
     std::cout << "CG:          #iterations: " << cg_test.iterations()
               << ", estimated error: " << cg_test.error() << std::endl;
 
-    Eigen::ConjugateGradient<matrix_type, Eigen::Lower | Eigen::Upper,
-                             RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+    Eigen::ConjugateGradient<
+        matrix_type, Eigen::Lower | Eigen::Upper,
+        SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         cg;
     cg.setMaxIterations(max_iter);
     cg.preconditioner().analyzePattern(W);
@@ -350,7 +351,8 @@ public:
     std::cout << "CG-RASM:     #iterations: " << cg.iterations()
               << ", estimated error: " << cg.error() << std::endl;
 
-    Eigen::GMRES<matrix_type, RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+    Eigen::GMRES<matrix_type,
+                 SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         gmres;
     gmres.setMaxIterations(max_iter);
     gmres.preconditioner().analyzePattern(W);
@@ -361,7 +363,7 @@ public:
               << ", estimated error: " << gmres.error() << std::endl;
 
     Eigen::BiCGSTAB<matrix_type,
-                    RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+                    SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         bicg;
     bicg.setMaxIterations(max_iter);
     bicg.preconditioner().analyzePattern(W);
@@ -510,25 +512,27 @@ public:
               << " true error = " << (G * gamma - phi).norm() << std::endl;
 
     Eigen::BiCGSTAB<decltype(G),
-                    RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+                    SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         bicg_rasm;
     bicg_rasm.setMaxIterations(max_iter);
-    bicg_rasm.preconditioner().set_number_of_random_particles(100);
+    bicg_rasm.preconditioner().set_number_of_random_particles(200);
+    bicg_rasm.preconditioner().set_neighbourhood_buffer_size(0);
+    bicg_rasm.preconditioner().set_kernel_sampling(true);
     bicg_rasm.compute(G);
     gamma = bicg_rasm.solve(phi);
     std::cout << "BiCGSTAB-RASM:#iterations: " << bicg_rasm.iterations()
               << ", estimated error: " << bicg_rasm.error()
               << " true error = " << (G * gamma - phi).norm() << std::endl;
 
-    Eigen::GMRES<decltype(G), RASMPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
-        gmres_rasm;
-    gmres_rasm.setMaxIterations(max_iter);
-    // gmres_rasm.set_restart(restart);
-    gmres_rasm.preconditioner().set_number_of_random_particles(100);
-    gmres_rasm.compute(G);
-    gamma = gmres_rasm.solve(phi);
-    std::cout << "GMRES-RASM:  #iterations: " << gmres_rasm.iterations()
-              << ", estimated error: " << gmres_rasm.error()
+    Eigen::BiCGSTAB<decltype(G),
+                    NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg_nystrom;
+    bicg_nystrom.setMaxIterations(max_iter);
+    bicg_nystrom.preconditioner().set_number_of_random_particles(200);
+    bicg_nystrom.compute(G);
+    gamma = bicg_nystrom.solve(phi);
+    std::cout << "BiCGSTAB-Nystrom:#iterations: " << bicg_nystrom.iterations()
+              << ", estimated error: " << bicg_nystrom.error()
               << " true error = " << (G * gamma - phi).norm() << std::endl;
 
     /*
