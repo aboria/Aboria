@@ -573,6 +573,7 @@ public:
         "Schwartz preconditioner restricted to identical row and col particle "
         "sets");
     const query_type &query = a.get_query();
+    std::vector<bool> chosen(a.size());
     for (auto i = query.get_subtree(); i != false; ++i) {
       if (query.is_leaf_node(*i)) {
         auto ci = i.get_child_iterator();
@@ -587,6 +588,110 @@ public:
         m_domain_buffer.push_back(connectivity_type::value_type());
         storage_vector_type &buffer = m_domain_buffer[domain_index];
         storage_vector_type &indicies = m_domain_indicies[domain_index];
+
+        // add particles in bucket to indicies
+        for (auto particle = query.get_bucket_particles(*it); particle != false;
+             ++particle) {
+          const size_t index = &(get<position>(*particle)) -
+                               get<position>(query.get_particles_begin());
+          indicies.push_back(start_row + index);
+        }
+
+        // add buffer particles through random sampling
+        buffer.resize(m_random);
+        std::fill(chosen.begin(), chosen.end(), false);
+        std::uniform_real_distribution<double> uniform(0, 1);
+        std::normal_distribution<double> normal(0, m_sigma);
+        std::default_random_engine generator;
+
+        const double inv_kernel_scale = 1.0 / m_M;
+        std::vector<child_iterator> buckets(m_random);
+        if (m_normal) {
+          std::generate(m_random.begin(), m_random.end(), []() {
+            for (size_t i = 0; i < D; i++) {
+              sp[i] = 0.5 * (max[i] - min[i]) * normal(generator) + min[i];
+            }
+            auto ci = query.get_bucket(sp);
+          });
+        } else {
+          std::generate(m_random.begin(), m_random.end(), []() {
+            for (size_t i = 0; i < D; i++) {
+              sp[i] = 0.5 * (max[i] - min[i]) * uniform(generator) + min[i];
+            }
+            auto ci = query.get_bucket(sp);
+          });
+        }
+
+        std::unordered_map<child_iterator, int> counts;
+        for (int i = 0; i < buckets.size(); ++i) {
+          auto it = counts.find(buckets[i]);
+          if (it != counts.end()) {
+            it->second++;
+          } else {
+            counts[buckets[i]] = 1;
+          }
+        }
+
+        int out_index = 0;
+        std::for_each(counts.begin, counts.end(), [&out_index](auto i) {
+          auto ci = i->first;
+          auto count = i->second;
+          auto pit = query.get_bucket_particles(*ci);
+          auto num_particles = pit.distance_to_end();
+          std::vector<int> bucket_indices(num_particles);
+          std::iota(bucket_indicies.begin(), bucket_indicies.end());
+          std::random_shuffle(bucket_indicies.begin(), bucket_indicies.end());
+          const int trunc_count = std::min(count, bucket_indicies.size());
+          std::transform(
+              bucket_indicies.begin(),
+              bucket_indicies.begin() + trunc_count),
+              [](const int i) {
+            return &(get<position>(pit[i])) - &(get<position>(a)[0]) +
+                   start_row;
+              });
+          out_index += trunc_count;
+        });
+
+        for (size_t d = 0; d < m_random; ++d) {
+          bool in_buffer, in_indicies, rejected;
+          size_t proposed_index;
+          do {
+            double_d sp;
+            if (m_normal) {
+              for (size_t i = 0; i < D; i++) {
+                sp[i] = 0.5 * (max[i] - min[i]) * normal(generator) + min[i];
+              }
+            } else {
+              for (size_t i = 0; i < D; i++) {
+                sp[i] = 0.5 * (max[i] - min[i]) * uniform(generator) + min[i];
+              }
+            }
+            auto ci = query.get_bucket(sp);
+            proposed_index = uniform_index(generator) + start_row;
+
+            // just using first particle in buffer?
+            const double kernel_eval =
+                kernel.coeff(indicies[0], proposed_index);
+            ASSERT(!m_kernel_sampling || kernel_eval < kernel_scale,
+                   "SwartzPreconditioner assumes "
+                   "diagonal dominant kernel function");
+            rejected = uniform(generator) > kernel_eval * inv_kernel_scale;
+
+            // check not in indicies
+            if (!rejected)
+              in_indicies =
+                  indicies.end() !=
+                  std::find(indicies.begin(), indicies.end(), proposed_index);
+
+            // check not in buffer
+            if (!rejected && !in_indicies)
+              in_buffer =
+                  buffer.end() !=
+                  std::find(buffer.begin(), buffer.end(), proposed_index);
+
+          } while (rejected || in_buffer || in_indicies);
+          buffer.push_back(proposed_index);
+        }
 
         // search for all neighbouring buckets
         double_d middle = 0.5 * (bounds.bmax - bounds.bmin) + bounds.bmin;
@@ -920,15 +1025,14 @@ public:
   void analyze_impl_block(const Index start_row, const Kernel &kernel) {
     typedef typename Kernel::row_elements_type row_elements_type;
     typedef typename Kernel::col_elements_type col_elements_type;
-    typedef typename row_elements_type::query_type query_type;
-    typedef typename query_type::traits_type traits_type;
 
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,
                   "Nystrom preconditioner restricted to identical row and col "
                   "particle sets");
     const row_elements_type &a = kernel.get_row_elements();
     CHECK(&a == &(kernel.get_col_elements()),
-          "Nystrom preconditioner restricted to identical row and col particle "
+          "Nystrom preconditioner restricted to identical row and col "
+          "particle "
           "sets");
 
     const size_t domain_index = m_domain_indicies.size();
@@ -1107,8 +1211,10 @@ public:
       auto solver = m_domain_factorized_matrix[i];
 
       x.segment(range[0], range[1]) =
-          matrix_type::Identity(range[1] - range[0], range[1] - range[0]) -
-          (Kux.transpose()) * solver.solve(Kux * b.segment(range[0], range[1]));
+          (1.0 / m_lambda) *
+          (matrix_type::Identity(range[1] - range[0], range[1] - range[0]) -
+           (Kux.transpose()) *
+               solver.solve(Kux * b.segment(range[0], range[1])));
     }
   }
 

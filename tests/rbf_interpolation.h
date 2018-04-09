@@ -437,7 +437,7 @@ public:
     ParticlesType augment;
     ParticlesType test;
 
-    const double c = 1.0 / 0.50;
+    const double c = 1.0 / 0.10;
     const double c2 = std::pow(c, 2);
     vdouble2 min = vdouble2::Constant(0);
     vdouble2 max = vdouble2::Constant(1);
@@ -470,8 +470,8 @@ public:
     }
 
     const size_t order = 8;
-    knots.init_neighbour_search(min, max, periodic, 10);
-    test.init_neighbour_search(min, max, periodic, 10);
+    knots.init_neighbour_search(min, max, periodic, 64);
+    test.init_neighbour_search(min, max, periodic, 64);
 
     augment.push_back(p);
 
@@ -516,8 +516,8 @@ public:
         bicg_rasm;
     bicg_rasm.setMaxIterations(max_iter);
     bicg_rasm.preconditioner().set_number_of_random_particles(200);
-    bicg_rasm.preconditioner().set_neighbourhood_buffer_size(0);
-    bicg_rasm.preconditioner().set_kernel_sampling(true);
+    bicg_rasm.preconditioner().set_neighbourhood_buffer_size(1e-5);
+    bicg_rasm.preconditioner().set_kernel_sampling(false);
     bicg_rasm.compute(G);
     gamma = bicg_rasm.solve(phi);
     std::cout << "BiCGSTAB-RASM:#iterations: " << bicg_rasm.iterations()
@@ -528,7 +528,7 @@ public:
                     NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         bicg_nystrom;
     bicg_nystrom.setMaxIterations(max_iter);
-    bicg_nystrom.preconditioner().set_number_of_random_particles(200);
+    bicg_nystrom.preconditioner().set_number_of_random_particles(500);
     bicg_nystrom.compute(G);
     gamma = bicg_nystrom.solve(phi);
     std::cout << "BiCGSTAB-Nystrom:#iterations: " << bicg_nystrom.iterations()
