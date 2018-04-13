@@ -771,7 +771,7 @@ public:
                              m_particles_begin - m_nodes_split_dim[cindex] - 1);
   }
 
-  void go_to(const double_d &position, child_iterator &ci) {
+  void go_to(const double_d &position, child_iterator &ci) const {
     const int pindex = get_parent_index(*ci);
     const int i = m_nodes_split_dim[pindex];
     ASSERT(position[i] < ci.m_data.bounds.bmax[i], "position out of bounds");

@@ -433,6 +433,7 @@ public:
     typedef position_d<2> position;
     typedef typename ParticlesType::const_reference const_particle_reference;
     typedef Eigen::Matrix<double, Eigen::Dynamic, 1> vector_type;
+    typedef Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
     ParticlesType knots;
     ParticlesType augment;
     ParticlesType test;
@@ -443,7 +444,7 @@ public:
     vdouble2 max = vdouble2::Constant(1);
     vbool2 periodic = vbool2::Constant(false);
 
-    const int N = 1000;
+    const int N = 10000;
 
     // const double RASM_size = 0.3 / c;
     // const int RASM_n = N * std::pow(RASM_size, 2) / (max - min).prod();
@@ -493,6 +494,8 @@ public:
 
     auto G = create_h2_operator(knots, knots, order, kernel, self_kernel, 1.0);
     G.get_first_kernel().compress(1e-10);
+    matrix_type G_matrix(N, N);
+    G.assemble(G_matrix);
     auto Gtest = create_fmm_operator<order>(test, knots, kernel, self_kernel);
 
     vector_type phi(N), gamma(N);
@@ -509,31 +512,157 @@ public:
     gamma = dgmres.solve(phi);
     std::cout << "BiCGSTAB:  #iterations: " << dgmres.iterations()
               << ", estimated error: " << dgmres.error()
-              << " true error = " << (G * gamma - phi).norm() << std::endl;
+              << " h2 error = " << (G * gamma - phi).norm()
+              << " true error = " << (G_matrix * gamma - phi).norm()
+              << std::endl;
+
+    Eigen::BiCGSTAB<decltype(G_matrix), Eigen::DiagonalPreconditioner<double>>
+        dgmres_matrix;
+    dgmres_matrix.setMaxIterations(max_iter);
+    dgmres_matrix.compute(G_matrix);
+    gamma = dgmres_matrix.solve(phi);
+    std::cout << "BiCGSTAB-matrix:  #iterations: " << dgmres_matrix.iterations()
+              << ", estimated error: " << dgmres_matrix.error()
+              << " h2 error = " << (G * gamma - phi).norm()
+              << " true error = " << (G_matrix * gamma - phi).norm()
+              << std::endl;
+
+    vector_type phi_test = G * gamma;
+    double rms_error = 0;
+    double scale = 0;
+    for (size_t i = 0; i < knots.size(); ++i) {
+      const double x = get<position>(knots[i])[0];
+      const double y = get<position>(knots[i])[1];
+      const double truth = funct(x, y);
+      const double eval_value = phi_test[i];
+      rms_error += std::pow(eval_value - truth, 2);
+      scale += std::pow(truth, 2);
+      // TS_ASSERT_DELTA(eval_value,truth,2e-3);
+    }
+
+    std::cout << "rms_error for global support, at centers  = "
+              << std::sqrt(rms_error / scale) << std::endl;
+    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 2e-4);
+
+    rms_error = 0;
+    scale = 0;
+    phi_test = Gtest * gamma;
+    for (size_t i = 0; i < test.size(); ++i) {
+      const vdouble2 p = get<position>(test)[i];
+      const double eval_value = phi_test[i];
+      const double truth = funct(p[0], p[1]);
+      rms_error += std::pow(eval_value - truth, 2);
+      scale += std::pow(truth, 2);
+      // TS_ASSERT_DELTA(eval_value,truth,2e-3);
+    }
+    std::cout << "rms_error for global support, away from centers  = "
+              << std::sqrt(rms_error / scale) << std::endl;
+    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 1e-3);
 
     Eigen::BiCGSTAB<decltype(G),
-                    SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+                    SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         bicg_rasm;
     bicg_rasm.setMaxIterations(max_iter);
-    bicg_rasm.preconditioner().set_number_of_random_particles(200);
-    bicg_rasm.preconditioner().set_neighbourhood_buffer_size(1e-5);
-    bicg_rasm.preconditioner().set_kernel_sampling(false);
+    bicg_rasm.preconditioner().set_number_of_random_particles(300);
+    bicg_rasm.preconditioner().set_sigma(1.0 / c);
+    bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
     bicg_rasm.compute(G);
     gamma = bicg_rasm.solve(phi);
     std::cout << "BiCGSTAB-RASM:#iterations: " << bicg_rasm.iterations()
               << ", estimated error: " << bicg_rasm.error()
-              << " true error = " << (G * gamma - phi).norm() << std::endl;
+              << " h2 error = " << (G * gamma - phi).norm()
+              << " true error = " << (G_matrix * gamma - phi).norm()
+              << std::endl;
+
+    phi_test = G * gamma;
+    rms_error = 0;
+    scale = 0;
+    for (size_t i = 0; i < knots.size(); ++i) {
+      const double x = get<position>(knots[i])[0];
+      const double y = get<position>(knots[i])[1];
+      const double truth = funct(x, y);
+      const double eval_value = phi_test[i];
+      rms_error += std::pow(eval_value - truth, 2);
+      scale += std::pow(truth, 2);
+      // TS_ASSERT_DELTA(eval_value,truth,2e-3);
+    }
+
+    std::cout << "rms_error for global support, at centers  = "
+              << std::sqrt(rms_error / scale) << std::endl;
+    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 2e-4);
+
+    rms_error = 0;
+    scale = 0;
+    phi_test = Gtest * gamma;
+    for (size_t i = 0; i < test.size(); ++i) {
+      const vdouble2 p = get<position>(test)[i];
+      const double eval_value = phi_test[i];
+      const double truth = funct(p[0], p[1]);
+      rms_error += std::pow(eval_value - truth, 2);
+      scale += std::pow(truth, 2);
+      // TS_ASSERT_DELTA(eval_value,truth,2e-3);
+    }
+    std::cout << "rms_error for global support, away from centers  = "
+              << std::sqrt(rms_error / scale) << std::endl;
+    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 1e-3);
+
+    Eigen::BiCGSTAB<decltype(G),
+                    SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg_rasm2;
+    bicg_rasm2.setMaxIterations(max_iter);
+    bicg_rasm2.compute(G);
+    gamma = bicg_rasm2.solve(phi);
+    std::cout << "BiCGSTAB-RASM-local:#iterations: " << bicg_rasm2.iterations()
+              << ", estimated error: " << bicg_rasm2.error()
+              << " h2 error = " << (G * gamma - phi).norm()
+              << " true error = " << (G_matrix * gamma - phi).norm()
+              << std::endl;
+
+    phi_test = G * gamma;
+    rms_error = 0;
+    scale = 0;
+    for (size_t i = 0; i < knots.size(); ++i) {
+      const double x = get<position>(knots[i])[0];
+      const double y = get<position>(knots[i])[1];
+      const double truth = funct(x, y);
+      const double eval_value = phi_test[i];
+      rms_error += std::pow(eval_value - truth, 2);
+      scale += std::pow(truth, 2);
+      // TS_ASSERT_DELTA(eval_value,truth,2e-3);
+    }
+
+    std::cout << "rms_error for global support, at centers  = "
+              << std::sqrt(rms_error / scale) << std::endl;
+    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 2e-4);
+
+    rms_error = 0;
+    scale = 0;
+    phi_test = Gtest * gamma;
+    for (size_t i = 0; i < test.size(); ++i) {
+      const vdouble2 p = get<position>(test)[i];
+      const double eval_value = phi_test[i];
+      const double truth = funct(p[0], p[1]);
+      rms_error += std::pow(eval_value - truth, 2);
+      scale += std::pow(truth, 2);
+      // TS_ASSERT_DELTA(eval_value,truth,2e-3);
+    }
+    std::cout << "rms_error for global support, away from centers  = "
+              << std::sqrt(rms_error / scale) << std::endl;
+    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 1e-3);
 
     Eigen::BiCGSTAB<decltype(G),
                     NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         bicg_nystrom;
     bicg_nystrom.setMaxIterations(max_iter);
     bicg_nystrom.preconditioner().set_number_of_random_particles(500);
+    bicg_nystrom.preconditioner().set_lambda(1e-4);
     bicg_nystrom.compute(G);
     gamma = bicg_nystrom.solve(phi);
     std::cout << "BiCGSTAB-Nystrom:#iterations: " << bicg_nystrom.iterations()
               << ", estimated error: " << bicg_nystrom.error()
-              << " true error = " << (G * gamma - phi).norm() << std::endl;
+              << " h2 error = " << (G * gamma - phi).norm()
+              << " true error = " << (G_matrix * gamma - phi).norm()
+              << std::endl;
 
     /*
     Eigen::BiCGSTAB<decltype(G),
@@ -547,14 +676,14 @@ public:
     "<<(G*gamma-phi).norm() << std::endl;
     */
 
-    phi = G * gamma;
-    double rms_error = 0;
-    double scale = 0;
+    phi_test = G * gamma;
+    rms_error = 0;
+    scale = 0;
     for (size_t i = 0; i < knots.size(); ++i) {
       const double x = get<position>(knots[i])[0];
       const double y = get<position>(knots[i])[1];
       const double truth = funct(x, y);
-      const double eval_value = phi[i];
+      const double eval_value = phi_test[i];
       rms_error += std::pow(eval_value - truth, 2);
       scale += std::pow(truth, 2);
       // TS_ASSERT_DELTA(eval_value,truth,2e-3);
@@ -566,7 +695,7 @@ public:
 
     rms_error = 0;
     scale = 0;
-    vector_type phi_test = Gtest * gamma;
+    phi_test = Gtest * gamma;
     for (size_t i = 0; i < test.size(); ++i) {
       const vdouble2 p = get<position>(test)[i];
       const double eval_value = phi_test[i];
