@@ -33,85 +33,85 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-
 #ifndef DOC_GETTING_STARTED_H_
 #define DOC_GETTING_STARTED_H_
 
 #include <cxxtest/TestSuite.h>
 
-    //[getting_started
-    /*`
+//[getting_started
+/*`
 
-      
-    [section Installation and Getting Started]
-    [section Getting prerequisites]
 
-    This software is tested on Ubuntu 14.04LTS with the GCC compiler (version 
-    5.4.1), and Clang compiler (version 3.8.0). See our 
-    [@https://travis-ci.org/martinjrobins/Aboria Travis CI page] for more details.
+[section Installation and Getting Started]
+[section Getting prerequisites]
 
-    You will need to install a C++ compiler with C++11 support, and the 
-    [@https://cmake.org/ CMake] build software prior to using Aboria, which you can 
-    do on a Debian-based OS using
+This software is tested on Ubuntu 14.04LTS with the GCC compiler (version
+5.4.1), and Clang compiler (version 3.8.0). See our
+[@https://travis-ci.org/martinjrobins/Aboria Travis CI page] for more details.
 
-    ``
-    sudo apt-get install build-essential cmake
-    ``
+You will need to install a C++ compiler with C++11 support, and the
+[@https://cmake.org/ CMake] build software prior to using Aboria, which you can
+do on a Debian-based OS using
 
-    The only required dependency is the [@http://www.boost.org Boost] library.  
-    Optional dependencies are [@http://www.vtk.org/ The Visualization Toolkit] and 
-    [@http://eigen.tuxfamily.org Eigen] (version >= 3.3~beta1), both of which add 
-    extra functionality.  To install all these dependencies in a Debian-based OS you 
-    can type
+``
+sudo apt-get install build-essential cmake
+``
 
-    ``
-    sudo apt-get install libboost-dev libvtk5-dev libeigen3-dev
-    ``
+The only required dependency is the [@http://www.boost.org Boost] library.
+Optional dependencies are [@http://www.vtk.org/ The Visualization Toolkit] and
+[@http://eigen.tuxfamily.org Eigen] (version >= 3.3~beta1), both of which add
+extra functionality.  To install all these dependencies in a Debian-based OS you
+can type
 
-    [endsect]
+``
+sudo apt-get install libboost-dev libvtk5-dev libeigen3-dev
+``
 
-    [section Compiling a program using Aboria]
+[endsect]
 
-    Aboria is a header-only library, so at a minimum you will need to add the 
-    `Aboria/src` directory to your include path and include the `Aboria.h` header, e.g.
+[section Compiling a program using Aboria]
 
-    ``
-    #include <Aboria.h>
-    ``
+Aboria is a header-only library, so at a minimum you will need to add the
+`Aboria/src` directory to your include path and include the `Aboria.h` header,
+e.g.
 
-    The following provides a step-by-step guide on compiling your first Aboria program
+``
+#include <Aboria.h>
+``
 
-    First clone the Aboria GitHub repository like so
+The following provides a step-by-step guide on compiling your first Aboria
+program
 
-    [teletype]
-    ```
-    $ git clone https://github.com/martinjrobins/Aboria
-    ```
-    [c++]
+First clone the Aboria GitHub repository like so
 
-    Then copy and paste the code below into a C++ source file named `getting_started.cpp`.
+[teletype]
+```
+$ git clone https://github.com/martinjrobins/Aboria
+```
+[c++]
 
-    */
+Then copy and paste the code below into a C++ source file named
+`getting_started.cpp`.
+
+*/
 
 #include "Aboria.h"
 
 using namespace Aboria;
 
-
 //<-
 class DocGettingStartedTest : public CxxTest::TestSuite {
 public:
-
-void test_getting_started(void) {
-//->
-//=int main() {
+  void test_getting_started(void) {
+    //->
+    //=int main() {
     /*
-     * Create a 2d particle container type with one 
-     * additional variable "velocity", represented 
+     * Create a 2d particle container type with one
+     * additional variable "velocity", represented
      * by a 2d double vector
      */
-    ABORIA_VARIABLE(velocity,vdouble2,"velocity")
-    typedef Particles<std::tuple<velocity>,2> container_type;
+    ABORIA_VARIABLE(velocity, vdouble2, "velocity")
+    typedef Particles<std::tuple<velocity>, 2> container_type;
     typedef typename container_type::position position;
 
     /*
@@ -120,14 +120,14 @@ void test_getting_started(void) {
     const int N = 100;
     container_type particles(N);
 
-    std::uniform_real_distribution<double> uni(0,1);
+    std::uniform_real_distribution<double> uni(0, 1);
     std::default_random_engine gen;
     for (int i = 0; i < N; ++i) {
-        /*
-         * set a random position, and initialise velocity
-         */
-        get<position>(particles)[i] = vdouble2(uni(gen),uni(gen));
-        get<velocity>(particles)[i] = vdouble2(0,0);
+      /*
+       * set a random position, and initialise velocity
+       */
+      get<position>(particles)[i] = vdouble2(uni(gen), uni(gen));
+      get<velocity>(particles)[i] = vdouble2(0, 0);
     }
 
     /*
@@ -136,17 +136,17 @@ void test_getting_started(void) {
      */
 //<-
 #ifdef HAVE_VTK
-//->
-    vtkWriteGrid("aboria",0,particles.get_grid(true));
+    //->
+    vtkWriteGrid("aboria", 0, particles.get_grid(true));
 //<-
 #endif
-//->
+    //->
 
-//=}
+    //=}
     /*`
 
     Now copy and paste the CMake config file below into another file called
-    `CMakeLists.txt`. Note that this assumes that the Aboria repository is in 
+    `CMakeLists.txt`. Note that this assumes that the Aboria repository is in
     your current directory, which it will be if you just cloned the repo using
     the git command above.
 
@@ -160,7 +160,7 @@ void test_getting_started(void) {
     list(APPEND LIBRARIES ${Boost_LIBRARIES})
     list(APPEND INCLUDES ${Boost_INCLUDE_DIRS})
 
-    # VTK 
+    # VTK
     find_package(VTK REQUIRED)
     if (VTK_FOUND)
         add_definitions(-DHAVE_VTK)
@@ -187,8 +187,9 @@ void test_getting_started(void) {
     ```
 
     If you wish to use [@http://www.vtk.org/ The Visualisation Toolkit] or
-    [@http://eigen.tuxfamily.org Eigen] with Aboria then you will need to define the 
-    `HAVE_VTK` and `HAVE_EIGEN` compiler definitions, as done using the above `CMakeLists.txt`
+    [@http://eigen.tuxfamily.org Eigen] with Aboria then you will need to define
+    the `HAVE_VTK` and `HAVE_EIGEN` compiler definitions, as done using the
+    above `CMakeLists.txt`
 
 
     Finally, configure and compile `getting_started.cpp`, then run it like so
@@ -205,10 +206,97 @@ void test_getting_started(void) {
     grid format (such as Paraview)
 
     [endsect]
+
+    [section Compiling with Eigen]
+
+    Aboria interfaces with the [@http://eigen.tuxfamily.org Eigen] library to
+    provide matrix-free linear operators, linear solvers and preconditioners.
+    See [link aboria.evaluating_and_solving_kernel_op] for
+    more details.
+
+    Assuming you are using CMake as per the instructions above, you can include
+    Eigen in the build process by inserting the following into your
+    `CMakeLists.txt`
+
+    [teletype]
+    ```
+    # optional if you already have a `FindEigen3.cmake` on your system
+    set(CMAKE_MODULE_PATH  "${CMAKE_SOURCE_DIR}/Aboria/cmake"
+                           ${CMAKE_MODULE_PATH})
+    # end optional
+
+    find_package(Eigen3 REQUIRED)
+    list(APPEND INCLUDES ${EIGEN3_INCLUDE_DIR})
+    add_definitions(-DHAVE_EIGEN)
+    ```
+
+    The first line sets the `CMAKE_MODULE_PATH` to search in the Aboria `cmake`
+    directory for additional `.cmake` files. This is only necessary if you
+    don't already have a `FindEigen3.cmake` module or config file on your system
+    and wish to use the one bundled with Aboria.
+
+    The most important line for using the Eigen functionality within Aboria is
+    the `add_definitions` instruction, which adds the `HAVE_EIGEN` compiler
+    definition. This definition is used to "turn on" all Eigen functionality
+    within Aboria.
+
+    [endsect]
+    [section Compiling with VTK]
+
+    Aboria uses [@http://www.vtk.org/ The Visualisation Toolkit] to allow it to
+    write out or read in particle data as a `vtkUnstructuredGrid`. The example
+    `CMakeLists.txt` above shows how you can add VTK to the build process. The
+    important lines are:
+
+    ```
+    find_package(VTK REQUIRED)
+    add_definitions(-DHAVE_VTK)
+    list(APPEND LIBRARIES ${VTK_LIBRARIES})
+    list(APPEND INCLUDES ${VTK_INCLUDE_DIRS})
+    ```
+
+    [endsect]
+
+
+
+    [section Compiling with H2Lib]
+
+    Aboria uses [@http://www.h2lib.org H2Lib] for storing, evaluating and
+    solving hierarchical matrices. You can use the bundled `FindH2Lib.cmake` to
+    find H2Lib on your system. Note that you will need to download and compile
+    H2Lib first, according to their instructions. You will also need to enable
+    OpenMP, see below for more details on how to do this.
+
+    ```
+    find_package(H2Lib REQUIRED)
+    list(APPEND Aboria_LIBRARIES ${H2Lib_LIBRARIES})
+    list(APPEND Aboria_INCLUDES ${H2Lib_INCLUDE_DIRS})
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
+    ${H2Lib_LINKER_FLAGS}") add_definitions(-DHAVE_H2LIB)
+    ```
+
+    [endsect]
+    [section Compiling with OpenMP]
+
+    Aboria can be run using multiple cores using OpenMP. To add OpenMP to the
+    build process, add the following to your `CMakeLists.txt`
+
+
+    ```
+    find_package(OpenMP REQUIRED)
+    add_definitions(-DHAVE_OPENMP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
+    ${OpenMP_EXE_LINKER_FLAGS}")
+    ```
+
+    [endsect] [section Compiling with CUDA/Thrust] [endsect]
+
+
     [endsect]
     */
     //]
-    }
+  }
 };
 
 #endif /* DOC_GETTING_STARTED_H_ */
