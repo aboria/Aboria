@@ -155,10 +155,10 @@ public:
     ```
     cmake_minimum_required(VERSION 2.8)
 
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++14")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
     # Boost
-    find_package(Boost 1.50.0 REQUIRED)
+    find_package(Boost 1.50.0 REQUIRED serialization)
     list(APPEND LIBRARIES ${Boost_LIBRARIES})
     list(APPEND INCLUDES ${Boost_INCLUDE_DIRS})
 
@@ -309,31 +309,30 @@ public:
 //<-
 #ifdef HAVE_THRUST
     //->
+
+    //=#include "Aboria.h"
+    //=using namespace Aboria;
+    //=ABORIA_VARIABLE(cu_velocity, vdouble2, "velocity")
+    //=
     //=int main() {
-    //=    ABORIA_VARIABLE(velocity, vdouble2, "velocity")
-    typedef Particles<std::tuple<velocity>, 2,thrust::device_vector,CellListOrdered> cu_container_t;
+
+    typedef Particles<std::tuple<cu_velocity>, 2,thrust::device_vector,CellListOrdered> cu_container_t;
     typedef typename cu_container_t::position cu_position;
 
     /*
      * create a particle set with size N
      */
-    cu_container_t particles(N);
+    cu_container_t cu_particles(N);
 
-    thrust::transform(particles.begin(),particles.end(),
-    __device__ [=](int idx) {
-      /*
-       * setup random number generator
-       */
-      thrust::default_random_engine gen;
-      thrust::uniform_real_distribution<float> uni(0,1);
-      gen.discard(idx);
-
+    thrust::for_each(cu_particles.begin(),cu_particles.end(),
+    [] __device__ (auto i) {
       /*
        * set a random position, and initialise velocity
        */
-      get<position>(particles)[i] = vdouble2(uni(gen), uni(gen));
-      get<velocity>(particles)[i] = vdouble2(0, 0);
-
+      auto gen = get<generator>(i);
+      thrust::uniform_real_distribution<float> uni(0,1);
+      get<cu_position>(i) = vdouble2(uni(gen), uni(gen));
+      get<cu_velocity>(i) = vdouble2(0, 0);
     });
 
     /*
@@ -359,7 +358,9 @@ public:
 
     ```
     find_package(CUDA REQUIRED)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}  --expt-relaxed-constexpr 
+                                             --expt-extended-lambda 
+                                             -std=c++14")
 
     set(SOURCE_CU
         getting_started.cu
@@ -377,10 +378,13 @@ public:
     ```
     cmake_minimum_required(VERSION 2.8)
 
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++14")
+    set(CMAKE_MODULE_PATH  "${CMAKE_SOURCE_DIR}/Aboria/cmake"
+                           ${CMAKE_MODULE_PATH})
+
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
 
     # Boost
-    find_package(Boost 1.50.0 REQUIRED)
+    find_package(Boost 1.50.0 REQUIRED serialization)
     list(APPEND LIBRARIES ${Boost_LIBRARIES})
     list(APPEND INCLUDES ${Boost_INCLUDE_DIRS})
 

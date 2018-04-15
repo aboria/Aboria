@@ -448,7 +448,7 @@ private:
 #if defined(__CUDACC__)
     typedef typename thrust::detail::iterator_category_to_system<
         typename vector_int::iterator::iterator_category>::type system;
-    detail::counting_iterator<int, system> count(0);
+    thrust::counting_iterator<int, system> count(0);
 #else
     auto count = Traits::make_counting_iterator(0);
 #endif

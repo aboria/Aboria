@@ -58,10 +58,6 @@ struct default_traits {
 
 #else
 
-  template <typename T> using counting_iterator = boost::counting_iterator<T>;
-
-  template <typename T> using normal_distribution = std::normal_distribution<T>;
-
   template <typename ElementIterator, typename IndexIterator>
   static auto make_permutation_iterator(ElementIterator e, IndexIterator i) {
     return boost::make_permutation_iterator(e, i);
