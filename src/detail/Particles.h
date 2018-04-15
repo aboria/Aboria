@@ -163,7 +163,7 @@ struct write_from_tuple<getter_type<std::tuple<Types...>, MplVector>> {
   uint32_t seed;
 };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename MplVector, typename TT1, typename TT2, typename TT3,
           typename TT4, typename TT5, typename TT6, typename TT7, typename TT8,
           typename TT9>
@@ -349,7 +349,7 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>, MplVector>> {
   bool particles;
 };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename MplVector, typename TT1, typename TT2, typename TT3,
           typename TT4, typename TT5, typename TT6, typename TT7, typename TT8,
           typename TT9>

@@ -31,7 +31,7 @@ struct default_traits {
   };
   template <class T> struct tuple_size { typedef std::tuple_size<T> type; };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
   template <typename ElementIterator, typename IndexIterator>
   static auto make_permutation_iterator(ElementIterator e, IndexIterator i) {
     return thrust::make_permutation_iterator(e, i);
@@ -92,7 +92,7 @@ template <template <typename, typename> class VECTOR> struct Traits {};
 
 template <> struct Traits<std::vector> : public default_traits {};
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <> struct Traits<thrust::device_vector> : public default_traits {
   template <typename T> struct vector_type {
     typedef thrust::device_vector<T> type;

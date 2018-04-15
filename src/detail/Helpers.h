@@ -7,7 +7,7 @@
 
 #include "../CudaInclude.h"
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 #include <thrust/iterator/iterator_traits.h>
 
 namespace thrust {
@@ -86,7 +86,7 @@ struct get_elem_by_index {
 template<typename tuple_type>
 struct getter_helper {};
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 
 template<typename T>
 struct is_thrust_device_reference : std::false_type { };
@@ -175,7 +175,7 @@ struct remove_pointer_or_reference_for_null_type {
     typedef T type;
 };
 
-#if __aboria_have_thrust__
+#if HAVE_THRUST
 template<>
 struct remove_pointer_or_reference_for_null_type<thrust::null_type*> {
     typedef thrust::null_type type;
@@ -259,7 +259,7 @@ typedef std::tuple<
 };
 
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename T0,
           typename T1,
           typename T2,

@@ -337,19 +337,19 @@ O(log(N)) time.
   }
 
   void test_thrust_vector_CellList(void) {
-#if defined(__aboria_have_thrust__)
+#if defined(HAVE_THRUST)
     // helper_d_test_list_random<thrust::device_vector,CellList>();
 #endif
   }
 
   void test_thrust_vector_CellListOrdered(void) {
-#if defined(__aboria_have_thrust__)
+#if defined(HAVE_THRUST)
     helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
 #endif
   }
 
   void test_thrust_vector_HyperOctree(void) {
-#if defined(__aboria_have_thrust__)
+#if defined(HAVE_THRUST)
     helper_d_test_list_random<thrust::device_vector, HyperOctree>();
 #endif
   }

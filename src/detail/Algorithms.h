@@ -14,7 +14,7 @@ namespace Aboria {
 namespace detail {
 
 // TODO: this is a complicated mass of preprocessor, can I improve?
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename Traits>
 size_t concurrent_processes(
     typename std::enable_if<
@@ -54,7 +54,7 @@ template <typename Traits> size_t concurrent_processes() {
 #endif
 
 template <typename T> struct is_std_iterator {
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
   typedef std::integral_constant<bool, false>
       /*
       !std::is_convertible<typename
@@ -103,7 +103,7 @@ void fill(ForwardIt first, ForwardIt last, const T &value, std::true_type) {
   std::fill(first, last, value);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class ForwardIt, class T>
 void fill(ForwardIt first, ForwardIt last, const T &value, std::false_type) {
   thrust::fill(first, last, value);
@@ -121,7 +121,7 @@ UnaryFunction for_each(InputIt first, InputIt last, UnaryFunction f,
   return std::for_each(first, last, f);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class InputIt, class UnaryFunction>
 UnaryFunction for_each(InputIt first, InputIt last, UnaryFunction f,
                        std::false_type) {
@@ -140,7 +140,7 @@ void sort(RandomIt start, RandomIt end, std::true_type) {
   std::sort(start, end);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename RandomIt>
 void sort(RandomIt start, RandomIt end, std::false_type) {
   thrust::sort(start, end);
@@ -157,7 +157,7 @@ void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp,
   std::sort(start, end, comp);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename RandomIt, typename StrictWeakOrdering>
 void sort(RandomIt start, RandomIt end, StrictWeakOrdering comp,
           std::false_type) {
@@ -189,7 +189,7 @@ std::sort(
   */
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename T1, typename T2>
 void sort_by_key(T1 start_keys, T1 end_keys, T2 start_data, std::false_type) {
   thrust::sort_by_key(start_keys, end_keys, start_data);
@@ -214,7 +214,7 @@ void lower_bound(ForwardIterator first, ForwardIterator last,
                  detail::lower_bound_impl<ForwardIterator>(first, last));
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename ForwardIterator, typename InputIterator,
           typename OutputIterator>
 void lower_bound(ForwardIterator first, ForwardIterator last,
@@ -241,7 +241,7 @@ ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last,
   return std::lower_bound(first, last, value);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename ForwardIterator, typename LessThanComparable>
 ForwardIterator lower_bound(ForwardIterator first, ForwardIterator last,
                             const LessThanComparable &value, std::false_type) {
@@ -268,7 +268,7 @@ void upper_bound(ForwardIterator first, ForwardIterator last,
                  detail::upper_bound_impl<ForwardIterator>(first, last));
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename ForwardIterator, typename InputIterator,
           typename OutputIterator>
 void upper_bound(ForwardIterator first, ForwardIterator last,
@@ -295,7 +295,7 @@ T reduce(InputIt first, InputIt last, T init, BinaryOperation op,
   return std::accumulate(first, last, init, op);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class InputIt, class T, class BinaryOperation>
 T reduce(InputIt first, InputIt last, T init, BinaryOperation op,
          std::false_type) {
@@ -318,7 +318,7 @@ OutputIterator transform(InputIterator first, InputIterator last,
   return std::transform(first, last, result, op);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class InputIterator, class OutputIterator, class UnaryOperation>
 OutputIterator transform(InputIterator first, InputIterator last,
                          OutputIterator result, UnaryOperation op,
@@ -353,7 +353,7 @@ void sequence(ForwardIterator first, ForwardIterator last, T init,
          const unsigned int i) { return i; });
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class ForwardIterator>
 void sequence(ForwardIterator first, ForwardIterator last, std::false_type) {
   thrust::sequence(first, last);
@@ -390,7 +390,7 @@ void tabulate(ForwardIterator first, ForwardIterator last,
           const unsigned int i) { return unary_op(i); });
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename ForwardIterator, typename UnaryOperation>
 void tabulate(ForwardIterator first, ForwardIterator last,
               UnaryOperation unary_op, std::false_type) {
@@ -411,7 +411,7 @@ ForwardIt partition(ForwardIt first, ForwardIt last, UnaryPredicate p,
   return std::partition(first, last, p);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class ForwardIt, class UnaryPredicate>
 ForwardIt partition(ForwardIt first, ForwardIt last, UnaryPredicate p,
                     std::false_type) {
@@ -431,7 +431,7 @@ ForwardIt stable_partition(ForwardIt first, ForwardIt last, UnaryPredicate p,
   return std::stable_partition(first, last, p);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class ForwardIt, class UnaryPredicate>
 ForwardIt stable_partition(ForwardIt first, ForwardIt last, UnaryPredicate p,
                            std::false_type) {
@@ -450,7 +450,7 @@ ForwardIt unique(ForwardIt first, ForwardIt last, std::true_type) {
   return std::unique(first, last);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class ForwardIt>
 ForwardIt unique(ForwardIt first, ForwardIt last, std::false_type) {
   return thrust::unique(first, last);
@@ -468,7 +468,7 @@ OutputIterator copy(InputIterator first, InputIterator last,
   return std::copy(first, last, result);
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator, typename OutputIterator>
 OutputIterator copy(InputIterator first, InputIterator last,
                     OutputIterator result, std::false_type) {
@@ -498,7 +498,7 @@ transform_exclusive_scan(InputIterator first, InputIterator last,
   return result + n;
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator, typename OutputIterator,
           typename UnaryFunction, typename T, typename AssociativeOperator>
 OutputIterator
@@ -534,7 +534,7 @@ OutputIt inclusive_scan(InputIt first, InputIt last, OutputIt d_first,
 #endif
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class InputIt, class OutputIt>
 OutputIt inclusive_scan(InputIt first, InputIt last, OutputIt d_first,
                         std::false_type) {
@@ -565,7 +565,7 @@ OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
 #endif
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <class InputIt, class OutputIt, class T>
 OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
                         std::false_type) {
@@ -595,7 +595,7 @@ exclusive_scan_by_key(InputIterator1 first1, InputIterator1 last1,
   return result;
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator1, typename InputIterator2,
           typename OutputIterator, typename T>
 OutputIterator
@@ -626,7 +626,7 @@ void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map,
   }
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator1, typename InputIterator2,
           typename RandomAccessIterator>
 void scatter(InputIterator1 first, InputIterator1 last, InputIterator2 map,
@@ -658,7 +658,7 @@ void scatter_if(InputIterator1 first, InputIterator1 last, InputIterator2 map,
   }
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator1, typename InputIterator2,
           typename InputIterator3, typename RandomAccessIterator,
           typename Predicate>
@@ -695,7 +695,7 @@ void scatter_if(InputIterator1 first, InputIterator1 last, InputIterator2 map,
   }
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator1, typename InputIterator2,
           typename InputIterator3, typename RandomAccessIterator>
 void scatter_if(InputIterator1 first, InputIterator1 last, InputIterator2 map,
@@ -726,7 +726,7 @@ void gather(InputIterator map_first, InputIterator map_last,
                  });
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator, typename RandomAccessIterator,
           typename OutputIterator>
 void gather(InputIterator map_first, InputIterator map_last,
@@ -760,7 +760,7 @@ OutputIterator copy_if(InputIterator1 first, InputIterator1 last,
   return result;
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename InputIterator1, typename InputIterator2,
           typename OutputIterator, typename Predicate>
 OutputIterator copy_if(InputIterator1 first, InputIterator1 last,

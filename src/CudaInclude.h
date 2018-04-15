@@ -1,7 +1,7 @@
 #ifndef CUDA_INCLUDE_H_
 #define CUDA_INCLUDE_H_
 
-#if defined(__aboria_have_thrust__)
+#if defined(HAVE_THRUST)
 #if defined(__CUDACC__)
 #undef THRUST_DEVICE_SYSTEM
 #undef THRUST_HOST_SYSTEM

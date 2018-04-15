@@ -49,7 +49,7 @@ This software is tested on Ubuntu 14.04LTS with the GCC compiler (version
 5.4.1), and Clang compiler (version 3.8.0). See our
 [@https://travis-ci.org/martinjrobins/Aboria Travis CI page] for more details.
 
-You will need to install a C++ compiler with C++11 support, and the
+You will need to install a C++ compiler with C++14 support, and the
 [@https://cmake.org/ CMake] build software prior to using Aboria, which you can
 do on a Debian-based OS using
 
@@ -111,14 +111,14 @@ public:
      * by a 2d double vector
      */
     ABORIA_VARIABLE(velocity, vdouble2, "velocity")
-    typedef Particles<std::tuple<velocity>, 2> container_type;
-    typedef typename container_type::position position;
+    typedef Particles<std::tuple<velocity>, 2> container_t;
+    typedef typename container_t::position position;
 
     /*
      * create a particle set with size N
      */
     const int N = 100;
-    container_type particles(N);
+    container_t particles(N);
 
     std::uniform_real_distribution<double> uni(0, 1);
     std::default_random_engine gen;
@@ -155,6 +155,8 @@ public:
     ```
     cmake_minimum_required(VERSION 2.8)
 
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++14")
+
     # Boost
     find_package(Boost 1.50.0 REQUIRED)
     list(APPEND LIBRARIES ${Boost_LIBRARIES})
@@ -167,8 +169,6 @@ public:
     endif(VTK_FOUND)
     list(APPEND LIBRARIES ${VTK_LIBRARIES})
     list(APPEND INCLUDES ${VTK_INCLUDE_DIRS})
-
-    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++11")
 
     # Aboria
     set(Aboria_LOG_LEVEL 1 CACHE STRING "Logging level (1 = least, 3 = most)")
@@ -211,8 +211,7 @@ public:
 
     Aboria interfaces with the [@http://eigen.tuxfamily.org Eigen] library to
     provide matrix-free linear operators, linear solvers and preconditioners.
-    See [link aboria.evaluating_and_solving_kernel_op] for
-    more details.
+    See [link aboria.evaluating_and_solving_kernel_op] for more details.
 
     Assuming you are using CMake as per the instructions above, you can include
     Eigen in the build process by inserting the following into your
@@ -231,17 +230,16 @@ public:
     ```
 
     The first line sets the `CMAKE_MODULE_PATH` to search in the Aboria `cmake`
-    directory for additional `.cmake` files. This is only necessary if you
-    don't already have a `FindEigen3.cmake` module or config file on your system
-    and wish to use the one bundled with Aboria.
+    directory for additional `.cmake` files. This is only necessary if you don't
+    already have a `FindEigen3.cmake` module or config file on your system and
+    wish to use the one bundled with Aboria.
 
     The most important line for using the Eigen functionality within Aboria is
     the `add_definitions` instruction, which adds the `HAVE_EIGEN` compiler
     definition. This definition is used to "turn on" all Eigen functionality
     within Aboria.
 
-    [endsect]
-    [section Compiling with VTK]
+    [endsect] [section Compiling with VTK]
 
     Aboria uses [@http://www.vtk.org/ The Visualisation Toolkit] to allow it to
     write out or read in particle data as a `vtkUnstructuredGrid`. The example
@@ -255,11 +253,7 @@ public:
     list(APPEND INCLUDES ${VTK_INCLUDE_DIRS})
     ```
 
-    [endsect]
-
-
-
-    [section Compiling with H2Lib]
+    [endsect] [section Compiling with H2Lib]
 
     Aboria uses [@http://www.h2lib.org H2Lib] for storing, evaluating and
     solving hierarchical matrices. You can use the bundled `FindH2Lib.cmake` to
@@ -268,29 +262,182 @@ public:
     OpenMP, see below for more details on how to do this.
 
     ```
+    set(H2Lib_ROOT $ENV{HOME}/git/H2Lib)
     find_package(H2Lib REQUIRED)
-    list(APPEND Aboria_LIBRARIES ${H2Lib_LIBRARIES})
-    list(APPEND Aboria_INCLUDES ${H2Lib_INCLUDE_DIRS})
+    list(APPEND LIBRARIES ${H2Lib_LIBRARIES})
+    list(APPEND INCLUDES ${H2Lib_INCLUDE_DIRS})
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
     ${H2Lib_LINKER_FLAGS}") add_definitions(-DHAVE_H2LIB)
     ```
+    [endsect] [section Compiling with OpenMP]
 
-    [endsect]
-    [section Compiling with OpenMP]
+    Aboria can be run using multiple cores using OpenMP. The majority of
+    parallel regions in Aboria are implemented using the OpenMP backend of
+    Thrust, not raw OpenMP, so to get the best parallel performance Thrust
+    should also be used.
 
-    Aboria can be run using multiple cores using OpenMP. To add OpenMP to the
-    build process, add the following to your `CMakeLists.txt`
-
+    To add OpenMP and Thrust to the build process, add the following to your
+    `CMakeLists.txt`
 
     ```
+    # OpenMP
     find_package(OpenMP REQUIRED)
     add_definitions(-DHAVE_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
     set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
     ${OpenMP_EXE_LINKER_FLAGS}")
+
+    # Thrust
+    find_package(Thrust REQUIRED)
+    add_definitions(-DHAVE_THRUST)
     ```
 
-    [endsect] [section Compiling with CUDA/Thrust] [endsect]
+    [endsect] [section Compiling with CUDA]
+
+    The parallel STL-like algorithms provided with Thrust are used to provide
+    the majority of parallism in Aboria. It is possible to also use the native
+    CUDA backend of Thrust to run code on the GPU. 
+
+    [caution This mode is experimental at the moment, and has not been
+    thoroughly tested.]
+
+    There are a few restrictions on the code that you can write while using the
+    CUDA backend, and these are detailed in [link X] (basically if you are already familiar with Thrust you should be comfortable using the CUDA backend for Aboria). For now, just copy the
+    following into a `getting_started.cu` file
+    */
+
+//<-
+#ifdef HAVE_THRUST
+    //->
+    //=int main() {
+    //=    ABORIA_VARIABLE(velocity, vdouble2, "velocity")
+    typedef Particles<std::tuple<velocity>, 2,thrust::device_vector,CellListOrdered> cu_container_t;
+    typedef typename cu_container_t::position cu_position;
+
+    /*
+     * create a particle set with size N
+     */
+    cu_container_t particles(N);
+
+    thrust::transform(particles.begin(),particles.end(),
+    __device__ [=](int idx) {
+      /*
+       * setup random number generator
+       */
+      thrust::default_random_engine gen;
+      thrust::uniform_real_distribution<float> uni(0,1);
+      gen.discard(idx);
+
+      /*
+       * set a random position, and initialise velocity
+       */
+      get<position>(particles)[i] = vdouble2(uni(gen), uni(gen));
+      get<velocity>(particles)[i] = vdouble2(0, 0);
+
+    });
+
+    /*
+     * write particle container to a vtk
+     * unstructured grid file
+     */
+//<-
+#ifdef HAVE_VTK
+    //->
+    vtkWriteGrid("aboria", 0, particles.get_grid(true));
+//<-
+#endif
+    //->
+
+//<-
+#endif
+    //->
+
+    /*`
+
+    To enable the CUDA backend and compile the getting started source with the
+    CUDA compiler `nvcc`, add the following
+
+    ```
+    find_package(CUDA REQUIRED)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14)
+
+    set(SOURCE_CU
+        getting_started.cu
+        )
+
+    cuda_add_executable(getting_started_cu ${SOURCE_CU})
+    target_link_libraries(getting_started_cu ${LIBRARIES})
+    ```
+
+    [endsect] [section Putting it all together] [endsect]
+
+    For completness, here is a possible `CMakeLists.txt` file combining all the
+    options shown above
+
+    ```
+    cmake_minimum_required(VERSION 2.8)
+
+    set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++14")
+
+    # Boost
+    find_package(Boost 1.50.0 REQUIRED)
+    list(APPEND LIBRARIES ${Boost_LIBRARIES})
+    list(APPEND INCLUDES ${Boost_INCLUDE_DIRS})
+
+    # VTK
+    find_package(VTK REQUIRED)
+    if (VTK_FOUND)
+        add_definitions(-DHAVE_VTK)
+    endif(VTK_FOUND)
+    list(APPEND LIBRARIES ${VTK_LIBRARIES})
+    list(APPEND INCLUDES ${VTK_INCLUDE_DIRS})
+
+    # H2Lib
+    set(H2Lib_ROOT $ENV{HOME}/git/H2Lib)
+    find_package(H2Lib REQUIRED)
+    list(APPEND LIBRARIES ${H2Lib_LIBRARIES})
+    list(APPEND INCLUDES ${H2Lib_INCLUDE_DIRS})
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
+    ${H2Lib_LINKER_FLAGS}") add_definitions(-DHAVE_H2LIB)
+
+    # OpenMP
+    find_package(OpenMP REQUIRED)
+    add_definitions(-DHAVE_OPENMP)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
+    ${OpenMP_EXE_LINKER_FLAGS}")
+
+    # CUDA
+    find_package(CUDA REQUIRED)
+    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14)
+
+    # Thrust
+    find_package(Thrust REQUIRED)
+    add_definitions(-DHAVE_THRUST)
+
+    # Aboria
+    set(Aboria_LOG_LEVEL 1 CACHE STRING "Logging level (1 = least, 3 = most)")
+    add_definitions(-DABORIA_LOG_LEVEL=${Aboria_LOG_LEVEL})
+    list(APPEND INCLUDES Aboria/src)
+    list(APPEND INCLUDES Aboria/third-party)
+
+    include_directories(src ${INCLUDES})
+
+    set(SOURCE
+        getting_started.cpp
+        )
+
+    add_executable(getting_started ${SOURCE})
+    target_link_libraries(getting_started ${LIBRARIES})
+
+    set(SOURCE_CU
+        getting_started.cu
+        )
+
+    cuda_add_executable(getting_started_cu ${SOURCE_CU})
+    target_link_libraries(getting_started_cu ${LIBRARIES})
+    ```
+
 
 
     [endsect]

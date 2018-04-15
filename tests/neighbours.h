@@ -1120,14 +1120,14 @@ public:
   }
 
   // void test_thrust_vector_CellList(void) {
-  //#if //defined(__aboria_have_thrust__)
+  //#if //defined(HAVE_THRUST)
   //    helper_d_test_list_regular<thrust::device_vector,CellList>();
   //    helper_d_test_list_random<thrust::device_vector,CellList>();
   //#end//if
   //}
 
   void test_thrust_vector_CellListOrdered(void) {
-#if defined(__aboria_have_thrust__)
+#if defined(HAVE_THRUST)
     // helper_d_test_list_random_fast_bucketsearch<std::vector,CellListOrdered>();
     helper_d_test_list_regular<thrust::device_vector, CellListOrdered>();
     helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
@@ -1135,14 +1135,14 @@ public:
   }
 
   void test_thrust_vector_HyperOctree(void) {
-#if defined(__aboria_have_thrust__)
+#if defined(HAVE_THRUST)
     helper_d_test_list_regular<thrust::device_vector, HyperOctree>();
     helper_d_test_list_random<thrust::device_vector, HyperOctree>();
 #endif
   }
 
   void test_thrust_vector_Kdtree(void) {
-#if defined(__aboria_have_thrust__)
+#if defined(HAVE_THRUST)
     helper_d_test_list_random<thrust::device_vector, Kdtree>();
     helper_d_test_list_regular<thrust::device_vector, Kdtree>();
 #endif

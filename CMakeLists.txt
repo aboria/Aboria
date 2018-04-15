@@ -26,7 +26,7 @@ if (Aboria_USE_THRUST)
     find_package(Thrust REQUIRED)
     find_package(CUDA REQUIRED)
 
-    add_definitions(-D__aboria_have_thrust__)
+    add_definitions(-DHAVE_THRUST)
 
     option(Aboria_THRUST_TEST_NVCC "Turn on tests using nvcc" OFF)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")

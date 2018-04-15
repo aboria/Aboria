@@ -209,7 +209,7 @@ struct getter_type<std::tuple<Types...>, MplVector> {
   tuple_type data;
 };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 ///
 /// @brief specialisation of @ref getter_type for `thrust::tuple`
 ///
@@ -569,7 +569,7 @@ struct zip_pointer<std::tuple<Types *...>, MplVector> {
   tuple_type data;
 };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 ///
 /// @brief specialisation of @ref zip_pointer for `thrust::tuple`
 ///
@@ -925,7 +925,7 @@ private:
   friend typename detail::zip_helper<iterator_tuple_type>::iterator_core_access;
 };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 ///
 /// @brief specialisation of @ref zip_iterator for `thrust::tuple`
 ///

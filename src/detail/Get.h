@@ -15,7 +15,7 @@
 #include "Get.h"
 #include "Log.h"
 
-#if __aboria_have_thrust__
+#if HAVE_THRUST
 namespace thrust {
 
 template <typename mpl_vector_type, typename tuple_type>
@@ -219,7 +219,7 @@ template <typename T> struct is_thrust_getter_type {
   typedef std::false_type type;
 };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename M, typename... T>
 struct is_thrust_getter_type<getter_type<thrust::tuple<T...>, M>> {
   const static bool value = true;
@@ -243,7 +243,7 @@ template <typename T> struct is_thrust_zip_iterator {
   typedef std::false_type type;
 };
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename M, typename... T>
 struct is_thrust_zip_iterator<zip_iterator<thrust::tuple<T...>, M>> {
   const static bool value = true;
@@ -287,7 +287,7 @@ get_impl(std::tuple<T...> &&arg) {
 #endif
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 /*
 ABORIA_HOST_DEVICE_IGNORE_WARN
 template<size_t I, typename ... T>
@@ -369,7 +369,7 @@ public:
 
 }; // end zip_iterator_base
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename mpl_vector_type, typename... Types>
 struct zip_iterator_base<thrust::tuple<Types...>, mpl_vector_type> {
   typedef thrust::tuple<Types...> iterator_tuple_type;
@@ -422,7 +422,7 @@ single_iterator_to_raw_pointer(const Iterator &arg,
   return &*arg;
 }
 
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
 template <typename Iterator>
 typename std::iterator_traits<Iterator>::value_type *
 single_iterator_to_raw_pointer(const Iterator &arg,
@@ -434,7 +434,7 @@ single_iterator_to_raw_pointer(const Iterator &arg,
 template <typename Iterator>
 typename std::iterator_traits<Iterator>::value_type *
 iterator_to_raw_pointer(const Iterator &arg, std::false_type) {
-#ifdef __aboria_have_thrust__
+#ifdef HAVE_THRUST
   return thrust::raw_pointer_cast(&*arg);
 #else
   return &*arg;
