@@ -42,8 +42,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 /*`
 
 
-[section Installation and Getting Started]
-[section Getting prerequisites]
+[section Installation and Getting Started] [section Getting prerequisites]
 
 This software is tested on Ubuntu 14.04LTS with the GCC compiler (version
 5.4.1), and Clang compiler (version 3.8.0). See our
@@ -58,14 +57,20 @@ sudo apt-get install build-essential cmake
 ``
 
 The only required dependency is the [@http://www.boost.org Boost] library.
-Optional dependencies are [@http://www.vtk.org/ The Visualization Toolkit] and
-[@http://eigen.tuxfamily.org Eigen] (version >= 3.3~beta1), both of which add
-extra functionality.  To install all these dependencies in a Debian-based OS you
-can type
+Optional dependencies are [@http://www.vtk.org/ The Visualization Toolkit],
+[@http://eigen.tuxfamily.org Eigen] (version >= 3.3~beta1),
+[@http://www.h2lib.org H2Lib], [@http://thrust.github.io Trust] and
+[@http://www.openmp.org OpenMP], all of which add extra functionality. To
+install all these dependencies (except for H2Lib) in a Debian-based OS you can
+type
 
 ``
-sudo apt-get install libboost-dev libvtk5-dev libeigen3-dev
+sudo apt-get install libboost-dev libvtk5-dev libeigen3-dev libthrust-dev
 ``
+[note replace `libvtk5-dev` with `libvtk6-dev` if necessary]
+
+[note If you wish to use H2Lib you will need to download and compile the source
+manually]
 
 [endsect]
 
@@ -79,8 +84,20 @@ e.g.
 #include <Aboria.h>
 ``
 
+If you wish to use any of the optional dependencies you will need to install,
+include and/or link the required library as normal, and include one of the
+following compiler definitions to "turn on" this functionality within Aboria
+
+[table Optional dependencies compiler definitions [[Library Name] [Compiler
+definition]] [[VTK] [HAVE_VTK]] [[Eigen] [HAVE_EIGEN]] [[H2Lib]
+[HAVE_H2LIB]] [[Thrust] [HAVE_THRUST]]
+]
+
+If you are familiar with compiling C++ projects, this might be all the
+information you need, as a header-only library Aboria is relatively easy to
+incorporate into whatever build system you desire. If you wish for more details,
 The following provides a step-by-step guide on compiling your first Aboria
-program
+program, using the popular CMake build system.
 
 First clone the Aboria GitHub repository like so
 
@@ -104,7 +121,7 @@ class DocGettingStartedTest : public CxxTest::TestSuite {
 public:
   void test_getting_started(void) {
     //->
-    //=int main() {
+//=int main() {
     /*
      * Create a 2d particle container type with one
      * additional variable "velocity", represented
@@ -142,7 +159,7 @@ public:
 #endif
     //->
 
-    //=}
+//=}
     /*`
 
     Now copy and paste the CMake config file below into another file called
@@ -262,12 +279,14 @@ public:
     OpenMP, see below for more details on how to do this.
 
     ```
+    set(CMAKE_MODULE_PATH  "${CMAKE_SOURCE_DIR}/Aboria/cmake"
+                           ${CMAKE_MODULE_PATH})
     set(H2Lib_ROOT $ENV{HOME}/git/H2Lib)
     find_package(H2Lib REQUIRED)
     list(APPEND LIBRARIES ${H2Lib_LIBRARIES})
     list(APPEND INCLUDES ${H2Lib_INCLUDE_DIRS})
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
-    ${H2Lib_LINKER_FLAGS}") add_definitions(-DHAVE_H2LIB)
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${H2Lib_LINKER_FLAGS}") 
+    add_definitions(-DHAVE_H2LIB)
     ```
     [endsect] [section Compiling with OpenMP]
 
@@ -284,8 +303,7 @@ public:
     find_package(OpenMP REQUIRED)
     add_definitions(-DHAVE_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
-    ${OpenMP_EXE_LINKER_FLAGS}")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
 
     # Thrust
     find_package(Thrust REQUIRED)
@@ -295,28 +313,31 @@ public:
     [endsect] [section Compiling with CUDA]
 
     The parallel STL-like algorithms provided with Thrust are used to provide
-    the majority of parallism in Aboria. It is possible to also use the native
-    CUDA backend of Thrust to run code on the GPU. 
+    the majority of parallism in Aboria. It is possible to use the native CUDA
+    backend of Thrust to run code on the GPU. 
 
     [caution This mode is experimental at the moment, and has not been
     thoroughly tested.]
 
     There are a few restrictions on the code that you can write while using the
-    CUDA backend, and these are detailed in [link X] (basically if you are already familiar with Thrust you should be comfortable using the CUDA backend for Aboria). For now, just copy the
-    following into a `getting_started.cu` file
+    CUDA backend, and these are detailed in [link X] (basically if you are
+    already familiar with Thrust you should be comfortable using the CUDA
+    backend for Aboria). For now, just copy the following into a
+    `getting_started.cu` file
     */
 
 //<-
 #ifdef HAVE_THRUST
     //->
 
-    //=#include "Aboria.h"
-    //=using namespace Aboria;
-    //=ABORIA_VARIABLE(cu_velocity, vdouble2, "velocity")
-    //=
-    //=int main() {
+//=#include "Aboria.h"
+//=using namespace Aboria;
+//=ABORIA_VARIABLE(cu_velocity, vdouble2, "velocity")
+//=
+//=int main() {
 
-    typedef Particles<std::tuple<cu_velocity>, 2,thrust::device_vector,CellListOrdered> cu_container_t;
+    typedef Particles<std::tuple<cu_velocity>, 2,
+                      thrust::device_vector,CellListOrdered> cu_container_t;
     typedef typename cu_container_t::position cu_position;
 
     /*
@@ -347,14 +368,15 @@ public:
 #endif
     //->
 
+//=}
 //<-
 #endif
     //->
 
     /*`
 
-    To enable the CUDA backend and compile the getting started source with the
-    CUDA compiler `nvcc`, add the following
+    To enable the CUDA backend and compile the above source with the
+    CUDA compiler `nvcc`, add the following to your `CMakeLists.txt`
 
     ```
     find_package(CUDA REQUIRED)
@@ -370,7 +392,7 @@ public:
     target_link_libraries(getting_started_cu ${LIBRARIES})
     ```
 
-    [endsect] [section Putting it all together] [endsect]
+    [endsect] [section Putting it all together] 
 
     For completness, here is a possible `CMakeLists.txt` file combining all the
     options shown above
@@ -413,7 +435,9 @@ public:
 
     # CUDA
     find_package(CUDA REQUIRED)
-    set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-std=c++14)
+    set(CUDA_NVCC_FLAGS "${CUDA_NVCC_FLAGS}  --expt-relaxed-constexpr 
+                                             --expt-extended-lambda 
+                                             -std=c++14")
 
     # Thrust
     find_package(Thrust REQUIRED)
@@ -442,7 +466,7 @@ public:
     target_link_libraries(getting_started_cu ${LIBRARIES})
     ```
 
-
+    [endsect]
 
     [endsect]
     */
