@@ -42,6 +42,7 @@ if (Aboria_RUN_TESTS)
         ChebyshevTest
         FMMTest
         DocGettingStartedTest
+        ParallelTest 
         H2Test
         )
     set(releaseonly_test_suites
@@ -101,6 +102,10 @@ set(DocGettingStartedTest
     test_getting_started
     )
 
+set(ParallelTestFile parallel.h)
+set(ParallelTest
+    test_documentation
+    )
 
 set(BenchmarkFMMFile benchmark_fmm.h)
 set(BenchmarkFMM
