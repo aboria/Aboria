@@ -99,10 +99,7 @@ public:
 
   // req: 26.5.1.3 Uniform random number generator requirements, p.906, table
   // 116, row 3 & 4
-#if defined(__CUDACC__)
-  static const result_type min = 0;
-  static const result_type max = 0xFFFFFFFF;
-#elif __cplusplus <= 199711L
+#if __cplusplus <= 199711L
   static result_type(min)() { return 0; }
   static result_type(max)() { return 0xFFFFFFFF; }
 #else

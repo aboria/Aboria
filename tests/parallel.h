@@ -173,28 +173,18 @@ public:
     `zip_iterator` (except, unlike Thrust's `zip_iterator`, we can take
     advantage of Aboria's tagged `reference` and `value_types`).
 
-    We can use Thrust's `for_each` algorithm to loop through the particles and
+    We can use Thrust's `tabulate` algorithm to loop through the particles and
     set their initial positions randomly.
 
-    [note Aboria uses its own internal random generators, which don't seem to
-    work with both the standard library and Thrust random distributions without
-    modifications. The code below uses Thrust distributions when compiling with
-    `nvcc`, and standard library distributions when compiling with another
-    compilers, which works.]
     */
 
-    thrust::for_each(thrust_particles.begin(), thrust_particles.end(),
-                     [] __device__(thrust_particle_t::raw_reference i) {
-                       /*
-                        * set a random position, and initialise velocity
-                        */
-                       auto gen = get<generator>(i);
-#if defined(__CUDACC__)
+    thrust::tabulate(thrust_particles.begin(), thrust_particles.end(),
+                     [particles = iterator_to_raw_pointer(
+                          thrust_particles.begin())] __device__(const int i) {
+                       thrust::default_random_engine gen;
                        thrust::uniform_real_distribution<float> uni(0, 1);
-#else
-                       std::uniform_real_distribution<float> uni(0, 1);
-#endif
-                       get<position>(i) = vdouble2(uni(gen), uni(gen));
+                       gen.discard(i);
+                       particles[i] = vdouble2(uni(gen), uni(gen));
                      });
 
     /*`
