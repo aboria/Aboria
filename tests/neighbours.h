@@ -68,9 +68,9 @@ public:
 
     const size_t N = 100;
     ABORIA_VARIABLE(neighbours_count, int, "number of neighbours")
-    typedef Particles<std::tuple<neighbours_count>> particle_type;
-    typedef particle_type::position position;
-    particle_type particles(N);
+    typedef Particles<std::tuple<neighbours_count>> particle_t;
+    typedef particle_t::position position;
+    particle_t particles(N);
     std::default_random_engine gen;
     std::uniform_real_distribution<double> uniform(-1, 1);
     for (size_t i = 0; i < N; ++i) {
@@ -242,8 +242,8 @@ public:
     */
 
     typedef Particles<std::tuple<>, 3, std::vector, CellList>
-        particle_bs_serial_type;
-    particle_bs_serial_type particle_bs_serial;
+        particle_bs_serial_t;
+    particle_bs_serial_t particle_bs_serial;
 
     /*`
 
@@ -264,8 +264,8 @@ public:
     */
 
     typedef Particles<std::tuple<>, 3, std::vector, CellListOrdered>
-        particle_bs_parallel_type;
-    particle_bs_parallel_type particle_bs_parallel;
+        particle_bs_parallel_t;
+    particle_bs_parallel_t particle_bs_parallel;
 
     /*`
 
@@ -391,16 +391,15 @@ public:
 
     */
 
-    typedef Particles<std::tuple<>, 3, std::vector, Kdtree>
-        particle_kdtree_type;
-    particle_kdtree_type particle_kd_tree;
+    typedef Particles<std::tuple<>, 3, std::vector, Kdtree> particle_kdtree_t;
+    particle_kdtree_t particle_kd_tree;
 
     /*`
     or
     */
     typedef Particles<std::tuple<>, 3, std::vector, KdtreeNanoflann>
-        particle_kdtree_type;
-    particle_kdtree_type particle_kd_tree;
+        particle_kdtree_nanoflann_t;
+    particle_kdtree_nanoflann_t particle_kd_tree_nanoflann;
 
     /*`
 
@@ -434,8 +433,8 @@ public:
     */
 
     typedef Particles<std::tuple<>, 3, std::vector, HyperOctree>
-        particle_octtree_type;
-    particle_octtree_type particle_octtree;
+        particle_octtree_t;
+    particle_octtree_t particle_octtree;
 
 /*`
 
