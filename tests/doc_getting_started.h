@@ -117,6 +117,8 @@ using namespace Aboria;
 //<-
 class DocGettingStartedTest : public CxxTest::TestSuite {
 public:
+  ABORIA_VARIABLE(cu_velocity, vdouble2, "velocity")
+
   void test_getting_started(void) {
     //->
     //=int main() {
@@ -345,16 +347,23 @@ public:
      */
     cu_container_t cu_particles(N);
 
-    thrust::for_each(cu_particles.begin(), cu_particles.end(),
-                     [] __device__(auto i) {
-                       /*
-                        * set a random position, and initialise velocity
-                        */
-                       auto gen = get<generator>(i);
+    /*
+     * set a random position
+     */
+    thrust::tabulate(get<cu_position>(cu_particles).begin(),
+                     get<cu_position>(cu_particles).end(),
+                     [] __device__(const int i) {
+                       thrust::default_random_engine gen;
                        thrust::uniform_real_distribution<float> uni(0, 1);
-                       get<cu_position>(i) = vdouble2(uni(gen), uni(gen));
-                       get<cu_velocity>(i) = vdouble2(0, 0);
+                       gen.discard(i);
+                       return vdouble2(uni(gen), uni(gen));
                      });
+
+    /*
+     * init velocity
+     */
+    thrust::fill(get<cu_velocity>(cu_particles).begin(),
+                 get<cu_velocity>(cu_particles).end(), vdouble2(0, 0));
 
     /*
      * write particle container to a vtk
