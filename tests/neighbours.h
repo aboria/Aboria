@@ -359,30 +359,35 @@ public:
 
     [endsect]
 
-    [section Kd-Tree]
+    [section Kd-Trees]
 
     A kd-tree builds up a hierarchical tree of cells, with only the leaf cells
     actually containing particles. It is an efficient data structure to use if
-    your particles are clustered in certain regions of the domain, and so you
-    wish to adapt the size of your cells with the local particle density.
+    you have a high number of dimensions or if your particles are clustered in
+    certain regions of the domain, and so you wish to adapt the size of your
+    cells with the local particle density.
 
-    Each level of the tree divides the cells in the parent level in half along a
-    certain dimension (the dimension is chosen based on the distribution of
-    particles within the cell). Any cells that contain a number of particles
-    that is smaller than a given threshold (set in [memberref
+    Each level of the tree divides the cells in the parent level along a certain
+    dimension (the dimension is chosen based on the distribution of particles
+    within the cell). Any cells that contain a number of particles that is
+    smaller than a given threshold (set in [memberref
     Aboria::Particles::init_neighbour_search]) are marked as leaf cells, and are
     not divided on subsequent levels.
 
-    The construction of the kd-tree in Aboria simply wraps the popular NanoFLANN
-    library [@https://github.com/jlblancoc/nanoflann], and reorders the particle
-    set according to which leaf cell a particle belongs to. However, Aboria's
-    native neighbourhood queries are used instead of those provided with
-    NanoFLANN.
+    There are two possible kd-trees in Aboria. The first is a custom
+    implementation, the second wraps the popular NanoFLANN library
+    [@https://github.com/jlblancoc/nanoflann]. However, Aboria's native
+    neighbourhood queries are used instead of those provided with NanoFLANN. The
+    NanoFLANN kd-tree is fastest for running in serial (the construction and
+    updates for this data structure are not done in parallel), where-as the
+    custom kd-tree is best if you are running in parallel, and is the only
+    option if you are using a GPU.
 
-    The relevant classes within Aboria are [classref Aboria::Kdtree]
-    and [classref Aboria::KdtreeQuery]. You can create a particle
-    set using a kd-tree by setting the [classref Aboria::Particles] template
-    arguments accordingly.
+    The relevant classes within Aboria are [classref Aboria::Kdtree] and
+    [classref Aboria::KdtreeQuery] for the custom implementation, and [classref
+    Aboria::KdtreeNanoflann] and [classref Aboria::KdtreeNanoflannQuery] for the
+    NanoFLANN implementation. You can create a particle set using a kd-tree by
+    setting the [classref Aboria::Particles] template arguments accordingly.
 
     */
 
@@ -391,6 +396,15 @@ public:
     particle_kdtree_type particle_kd_tree;
 
     /*`
+    or
+    */
+    typedef Particles<std::tuple<>, 3, std::vector, KdtreeNanoflann>
+        particle_kdtree_type;
+    particle_kdtree_type particle_kd_tree;
+
+    /*`
+
+
 
     [endsect]
 

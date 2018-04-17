@@ -69,12 +69,6 @@ Header: `<Aboria.h>`
         the space into a regular grid of cells, or buckets, that contain particles.
         This is the default spatial data structure used within [classref Aboria::Particles]]]
 
-    [[[classref Aboria::CellListQuery]]         
-    
-        [[memberref Aboria::Particles::get_query] returns a query object that 
-        can be used to query the spatial data structure for that particle set.  
-        This is the query object for the serial cell lists data structure]]
-
     [[[classref Aboria::CellListOrdered]]         
     
         [This is similar to [classref CellList], but uses the ordering of the particles
@@ -82,23 +76,37 @@ Header: `<Aboria.h>`
         This makes it more suitable for parallel computation, but not suitable for particles
         that change their positions rapidly]]
 
-    [[[classref Aboria::CellListOrderedQuery]]         
-    
-        [This is the query object for the [classref Aboria::CellListOrdered] data structure]]
-
     [[[classref Aboria::Kdtree]]         
+    
+        [This implements a kdtree spatial data structure.]]
+
+    [[[classref Aboria::KdtreeNanoflann]]         
     
         [This implements a kdtree spatial data structure. 
         Note that this wraps the Nanoflann library <https://github.com/jlblancoc/nanoflann> 
         for tree construction, but Aboria routines are used for all queries.]]
 
+    [[[classref Aboria::HyperOctree]]         
+    
+        [This implements a hyper oct-tree data structure]]
+
+    [[[classref Aboria::CellListQuery]]         
+    
+        [[memberref Aboria::Particles::get_query] returns a query object that 
+        can be used to query the spatial data structure for that particle set.  
+        This is the query object for the serial cell lists data structure]]
+
+    [[[classref Aboria::CellListOrderedQuery]]         
+    
+        [This is the query object for the [classref Aboria::CellListOrdered] data structure]]
+
     [[[classref Aboria::KdtreeQuery]]         
     
         [This is the query object for the kd-tree data structure]]
 
-    [[[classref Aboria::HyperOctree]]         
+    [[[classref Aboria::KdtreeNanoflannQuery]]         
     
-        [This implements a hyper oct-tree data structure]]
+        [This is the query object for the kd-tree data structure]]
 
     [[[classref Aboria::HyperOctreeQuery]]         
     
@@ -130,7 +138,7 @@ Header: `<Aboria.h>`
     [[[funcref Aboria::manhatten_search]]
         [performs a distance search around a given point, using manhatten 
         distance]]
-    [[[funcref Aboria::manhatten_search]]
+    [[[funcref Aboria::chebyshev_search]]
         [performs a distance search around a given point, using chebyshev 
         distance]]
 ]
@@ -145,23 +153,19 @@ Header: `<Aboria.h>`
         expansions that are used to approximate the kernel function]]
     [[[funcref Aboria::make_fmm]]
         [Helper class that returns a [classref Aboria::FastMultipoleMethod]]]
-    [[[classref Aboria::FastMultipoleMethodWithSource]]
-        [Class used to perform a fast multipole method using an constant source 
-        particle set and source vector. Takes a set of expansions, a source 
-        vector and a source particle set. After this the user can evaluate the
-        kernel at any given point]]
-    [[[funcref Aboria::make_fmm_with_source]]
-        [Helper class that returns a [classref 
-        Aboria::FastMultipoleMethodWithSource]]]
     [[[funcref Aboria::make_black_box_expansion]]
         [Returns a set of expansions for the black box fast multipole method.  
         Uses chebyshev interpolation to approximate a kernel function]]
-    [[[classref Aboria::H2Matrix]]
-        [Same as [classref Aboria::FastMultipoleMethod], but stores the action 
-        of the kernel operator as a hierarchical matrix, for repeated 
-        applications]]
-    [[[funcref Aboria::make_h2_matrix]]
-        [Helper class that returns a [classref Aboria::H2Matrix]]]
+    [[[classref Aboria::H2LibMatrix]]
+        [Same as [classref Aboria::FastMultipoleMethod], but stores the action
+        of the kernel operator as a hierarchical H2 matrix using H2Lib, for
+        repeated applications]]
+    [[[funcref Aboria::make_h2lib_matrix]]
+        [Helper class that returns a [classref Aboria::H2LibMatrix]]]
+    [[[funcref Aboria::make_h2lib_black_box_expansion]]
+        [Returns a set of expansions for the black box fast multipole method, 
+        designed to be used in conjunction with [classref Aboria::H2LibMatrix]]]
+
 ]
 
 
@@ -219,11 +223,11 @@ Header: `<Aboria.h>`
 
     [[[funcref Aboria::create_h2_operator]]         
     
-        [Creates an instance of [classref Aboria::MatrixReplacement]. When 
-        multiplied by a vector, the result is approximated using the black-box
-        fast multipole method. Unlike [funcref Aboria::create_fmm_operator], 
-        this operator assumes that the row and column particle sets do not 
-        change]]
+        [Creates an instance of [classref Aboria::MatrixReplacement] that wraps
+        a H2 hierarchical matrix. When multiplied by a vector, the result is
+        approximated using the black-box fast multipole method. Unlike [funcref
+        Aboria::create_fmm_operator], this operator assumes that the row and
+        column particle sets do not change]]
 
     [[[funcref Aboria::create_block_operator]]         
     
