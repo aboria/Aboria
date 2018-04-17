@@ -111,7 +111,7 @@ public:
     const double radius = 0.1;
 
 #pragma omp parallel for
-    for (int i = 0; i < particles.size(); ++i) {
+    for (size_t i = 0; i < particles.size(); ++i) {
       for (auto j = euclidean_search(particles.get_query(),
                                      get<position>(particles)[i], radius);
            j != false; ++j) {
@@ -171,7 +171,7 @@ public:
                        /*
                         * set a random position, and initialise velocity
                         */
-                       auto gen = get<generator>(i);
+                       generator_type &gen = get<generator>(i);
                        thrust::uniform_real_distribution<float> uni(0, 1);
                        get<position>(i) = vdouble2(uni(gen), uni(gen));
                      });
