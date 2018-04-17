@@ -178,13 +178,13 @@ public:
 
     */
 
-    thrust::tabulate(thrust_particles.begin(), thrust_particles.end(),
-                     [particles = iterator_to_raw_pointer(
-                          thrust_particles.begin())] __device__(const int i) {
+    thrust::tabulate(get<position>(thrust_particles).begin(),
+                     get<position>(thrust_particles).end(),
+                     [] __device__(const int i) {
                        thrust::default_random_engine gen;
                        thrust::uniform_real_distribution<float> uni(0, 1);
                        gen.discard(i);
-                       particles[i] = vdouble2(uni(gen), uni(gen));
+                       return vdouble2(uni(gen), uni(gen));
                      });
 
     /*`
