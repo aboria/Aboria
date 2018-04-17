@@ -46,7 +46,7 @@ using namespace Aboria;
 
 class ParallelTest : public CxxTest::TestSuite {
 public:
-  ABORIA_VARIABLE(thrust_neighbour_count, int, "thrust_neighbour_count");
+  ABORIA_VARIABLE(thrust_neighbour_count, int, "thrust_neighbour_count")
 
   void test_documentation(void) {
     //[parallel

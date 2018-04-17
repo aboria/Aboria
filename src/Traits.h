@@ -235,6 +235,7 @@ struct TraitsCommon<std::tuple<TYPES...>, DomainD, SelfD, traits>
   typedef alive::value_type alive_value_type;
   typedef id::value_type id_value_type;
   typedef generator::value_type random_value_type;
+
   typedef typename traits::template vector_type<position_value_type>::type
       position_vector_type;
   typedef typename traits::template vector_type<alive_value_type>::type
