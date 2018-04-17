@@ -164,6 +164,12 @@ public:
 
     We can use Thrust's `for_each` algorithm to loop through the particles and
     set their initial positions randomly.
+
+    [note Aboria uses its own internal random generators, which don't seem to
+    work with both the standard library and Thrust random distributions without
+    modifications. The code below uses Thrust distributions when compiling with
+    `nvcc`, and standard library distributions when compiling with another
+    compilers, which works.]
     */
 
     thrust::for_each(thrust_particles.begin(), thrust_particles.end(),
@@ -172,7 +178,11 @@ public:
                         * set a random position, and initialise velocity
                         */
                        auto gen = get<generator>(i);
+#if defined(__CUDACC__)
                        thrust::uniform_real_distribution<float> uni(0, 1);
+#else
+                       std::uniform_real_distribution<float> uni(0, 1);
+#endif
                        get<position>(i) = vdouble2(uni(gen), uni(gen));
                      });
 
