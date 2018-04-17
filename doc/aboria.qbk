@@ -16,21 +16,20 @@
 [import ../tests/doc_getting_started.h]
 [getting_started]
 
-[/ import documentation from particle_container.h]
 [import ../tests/particle_container.h]
 [particle_container]
 
-[/ import documentation from neighbours.h]
 [import ../tests/neighbours.h]
 [neighbour_search]
 
-[/ import documentation from data_structures.h]
 [import ../tests/data_structures.h]
 [spatial_data_structures]
 
-[/ import documentation from id_search.h]
 [import ../tests/id_search.h]
 [id_search]
+
+[import ../tests/parallel.h]
+[parallel]
 
 [/ import documentation from operators.h]
 [import ../tests/operators.h]

@@ -46,11 +46,10 @@ using namespace Aboria;
 
 class ParallelTest : public CxxTest::TestSuite {
 public:
-
   void test_documentation(void) {
     //[parallel
     /*`
-    [section High Performance Aboria]
+    [section Parallelism in Aboria]
 
     Aboria can use OpenMP or CUDA to utilise multiple cores or Nvidia GPUs that
     you might have. In general, Aboria uses the parallel algorithms and vectors
@@ -78,7 +77,7 @@ public:
 
     */
     const size_t N = 100;
-    ABORIA_VARIABLE(neighbour_count,int,"neighbour_count");
+    ABORIA_VARIABLE(neighbour_count, int, "neighbour_count");
     typedef Particles<std::tuple<neighbour_count>> particle_t;
     typedef particle_t::position position;
     particle_type particles(N);
@@ -86,14 +85,14 @@ public:
     /*`
     Now we will loop through the particles and set their initial positions
     randomly. We will use an index-based loop for this purpose so use can use an
-    OpenMP parallel loop, like so 
+    OpenMP parallel loop, like so
     */
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < particles.size(); ++i) {
-      std::uniform_real_distribution<double> uniform(0,1);
+      std::uniform_real_distribution<double> uniform(0, 1);
       auto gen = get<generator>(particles)[i];
-      get<position>(particles)[i] = vdouble2(uniform(gen),uniform(gen));
+      get<position>(particles)[i] = vdouble2(uniform(gen), uniform(gen));
     }
 
     /*`
@@ -101,9 +100,8 @@ public:
     creation and updates to the spatial data structures are run in parallel.
     */
 
-    particles.init_neighbour_search(vdouble2::Constant(0),
-                                    vdouble2::Constant(1),
-                                    vbool2::Constant(false));
+    particles.init_neighbour_search(
+        vdouble2::Constant(0), vdouble2::Constant(1), vbool2::Constant(false));
 
     /*`
 
@@ -113,75 +111,140 @@ public:
     */
     const double radius = 0.1;
 
-    #pragma omp parallel for
+#pragma omp parallel for
     for (int i = 0; i < particles.size(); ++i) {
-      for (auto i = euclidean_search(particles.get_query(), 
-                                  get<position>(particles)[i],
-                                   radius);
-         i != false; ++i) {
-           ++get<neighbour_count>(particles)[i];
-         }
+      for (auto i = euclidean_search(particles.get_query(),
+                                     get<position>(particles)[i], radius);
+           i != false; ++i) {
+        ++get<neighbour_count>(particles)[i];
+      }
     }
 
     /*`
     In general, that is 90% of what you need to know, just add a couple of
-    OpenMP pragmas to your loops and you are ready to go.
+    OpenMP pragmas to your loops and you are ready to go!
+
+    [endsect]
+
+    */
+//<-
+#ifdef HAVE_THRUST
+    //->
+    /*`
+
+    [section CUDA]
+
+    [caution CUDA support in Aboria is experimental, and is not tested
+    regularly. We welcome feedback by any CUDA users if anything doesn't
+    work for you]
+
+    Writing CUDA compatible code is slightly more involved. Aboria uses the
+    Thrust library for CUDA parallism, and follows similar patterns (i.e.
+    STL-like).
+
+    Firstly, we need to make sure that all the particle data is contained in
+    vectors that are stored on the GPU. To do this we use a
+    `thrust::device_vector` as the base storage vector for our particles
+    class
+
+    */
+
+    typedef Particles<std::tuple<neighbour_count>, 2, thrust::device_vector,
+                      CellListOrdered>
+        thrust_particle_t;
+    thrust_particle_t thrust_particles(N);
+
+    /*`
+    Since all our data is on the device, we cannot use raw for loops to access
+    this data without copying it back to the host, an expensive operation.
+    Instead, Thrust provides a wide variety of parallel algorithms to manipulate
+    the data. Aboria's zip_iterators are compatible with the Thrust framework,
+    so can be used in a similar fashion to Thrust's own zip_iterators (except,
+    unlike Thrust's `zip_iterator`, we can take advantage of Aboria's tagged
+    `reference` and `value_types`).
+
+    We can use Thrust's `for_each` algorithm to loop through the particles and
+    set their initial positions randomly.
+    */
+
+    thrust::for_each(thrust_particles.begin(), thrust_particles.end(),
+                     [] __device__(auto i) {
+                       /*
+                        * set a random position, and initialise velocity
+                        */
+                       auto gen = get<generator>(i);
+                       thrust::uniform_real_distribution<float> uni(0, 1);
+                       get<thrust_position>(i) = vdouble2(uni(gen), uni(gen));
+                     });
+
+    /*`
+    Now we can initialise the neighbourhood search data structure. Note that we
+    are using Aboria's `CellListOrdered` data structure, which is similar to
+    `CellList` but instead relies on reordering the particles to arrange them
+    into cells, which is more amenable to parallelisation using a GPU.
+    */
+
+    thrust_particles.init_neighbour_search(
+        vdouble2::Constant(0), vdouble2::Constant(1), vbool2::Constant(false));
+
+    /*`
+
+    We can use any of Aboria's range searches within a Thrust algorithm. Once
+    again we will implement a range search around each particle, counting all
+    neighbours within range. Note that we need to copy all of the variables from
+    the outer scope to the lambda function, since the lambda will run on the
+    device, and won't be able to access any host memory.
+
+    [note The NeighbourQueryBase class for each spatial data structure is
+    designed to be copyable to the GPU, but the Particles class is not, so while
+    the `query` variable is copyable to the device, the `thrust_particles`
+    variable is not.]
+
+    [note The type of variable `i` in the lambda will be deduced as
+    Particles::raw_reference. This is different to Particles::reference when
+    using `thrust::device_vector`, but acts in a similar fashion]
+    */
+
+    thrust::for_each(
+        thrust_particles.begin(), thrust_particles.end(),
+        [radius, query = thrust_particles.get_query()] __device__(auto i) {
+          get<neighbour_count>(i) = 0;
+          for (auto j = euclidean_search(query, get<position>(i), radius);
+               j != false; ++j) {
+            ++get<neighbour_count>(i);
+          }
+        });
+
+    /*`
+
+    While we have exclusively used `thrust::for_each` above, the iterators that
+    Aboria provides for the Particles container should work with all of Thrust's
+    algorithms. For example, you might wish to restructure the previous code as
+    a transform:
+     */
+
+    thrust::transform(
+        thrust_particles.begin(), thrust_particles.end(),
+        get<neighbour_count>(thrust_particles).begin(),
+        [radius, query = thrust_particles.get_query()] __device__(auto i) {
+          int sum =
+              0 for (auto j = euclidean_search(query, get<position>(i), radius);
+                     j != false; ++j) {
+            ++sum;
+          }
+          return sum;
+        });
+
+/*`
 [endsect]
-[section CUDA]
-    First, let's create a set of `N` particles as usual
-
-    */
-    const size_t N = 100;
-    ABORIA_VARIABLE(neighbour_count,int,"neighbour_count");
-    typedef Particles<std::tuple<neighbour_count>> particle_t;
-    typedef particle_t::position position;
-    particle_type particles(N);
-
-    /*`
-    Now we will loop through the particles and set their initial positions
-    randomly. We will use an index-based loop for this purpose so use can use an
-    OpenMP parallel loop, like so 
-    */
-
-    #pragma omp parallel for
-    for (int i = 0; i < particles.size(); ++i) {
-      std::uniform_real_distribution<double> uniform(0,1);
-      auto gen = get<generator>(particles)[i];
-      get<position>(particles)[i] = vdouble2(uniform(gen),uniform(gen));
-    }
-
-    /*`
-    Now we can initialise the neighbourhood search data structure. Note that all
-    creation and updates to the spatial data structures are run in parallel.
-    */
-
-    particles.init_neighbour_search(vdouble2::Constant(0),
-                                    vdouble2::Constant(1),
-                                    vbool2::Constant(false));
-
-    /*`
-
-    We will use Aboria's range search to look for neighbouring pairs within a
-    cutoff, and once again use OpenMPs parallel loop. All queries to the spatial
-    data structures are thread-safe and can be used in parallel.
-    */
-    const double radius = 0.1;
-
-    #pragma omp parallel for
-    for (int i = 0; i < particles.size(); ++i) {
-      for (auto i = euclidean_search(particles.get_query(), 
-                                  get<position>(particles)[i],
-                                   radius);
-         i != false; ++i) {
-           ++get<neighbour_count>(particles)[i];
-         }
-    }
-
-
-
-    */
-
-//]
+*/
+//<-
+#endif // HAVE_THRUST
+       //->
+       /*`
+       [endsect]
+       */
+    //]
   }
 
   template <unsigned int D, typename Reference> struct set_random {
