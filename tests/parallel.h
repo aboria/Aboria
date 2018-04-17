@@ -167,11 +167,11 @@ public:
     */
 
     thrust::for_each(thrust_particles.begin(), thrust_particles.end(),
-                     [] __device__(auto i) {
+                     [] __device__(thrust_particle_t::raw_reference i) {
                        /*
                         * set a random position, and initialise velocity
                         */
-                       generator_type &gen = get<generator>(i);
+                       auto gen = get<generator>(i);
                        thrust::uniform_real_distribution<float> uni(0, 1);
                        get<position>(i) = vdouble2(uni(gen), uni(gen));
                      });
