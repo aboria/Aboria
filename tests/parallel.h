@@ -57,12 +57,7 @@ public:
     can either use Thrust's OpenMP or CUDA backends to provide the type of
     parallelism you wish. However, there are a few parts of Aboria that are
     OpenMP only (notably the entirety of the [link aboria.symbolic_expressions
-    symbolic] and [link aboria evaluating_and_solving_kernel_op kernel] APIs ,
-    the [link
-    aboria.evaluating_and_solving_kernel_op.creating_fast_multipole_method_o
-    fast multipole method] and [link
-    aboria.evaluating_and_solving_kernel_op.creating_hierarchical_matrix_ope H2
-    matrices]).
+    symbolic] and [link aboria.evaluating_and_solving_kernel_op kernel] APIs).
 
     [section OpenMP]
 
@@ -84,8 +79,8 @@ public:
 
     /*`
     Now we will loop through the particles and set their initial positions
-    randomly. We will use an index-based loop for this purpose so use can use an
-    OpenMP parallel loop, like so
+    randomly. In order to use an OpenMP parallel for loop, we will stick to a
+    simple index-based loop for loop to iterate through the particles, like so
     */
 
 #pragma omp parallel for
@@ -98,6 +93,10 @@ public:
     /*`
     Now we can initialise the neighbourhood search data structure. Note that all
     creation and updates to the spatial data structures are run in parallel.
+
+    [note currently the only data structure that is created or updated in serial
+    is [classref Aboria::KdtreeNanoflann]. All the rest are done in parallel
+    using either OpenMP or CUDA]
     */
 
     particles.init_neighbour_search(
@@ -142,8 +141,8 @@ public:
     Thrust library for CUDA parallism, and follows similar patterns (i.e.
     STL-like).
 
-    Firstly, we need to make sure that all the particle data is contained in
-    vectors that are stored on the GPU. To do this we use a
+    Most importantly, we need to make sure that all the particle data is
+    contained in vectors that are stored on the GPU. To do this we use a
     `thrust::device_vector` as the base storage vector for our particles
     class
 
@@ -158,10 +157,10 @@ public:
     Since all our data is on the device, we cannot use raw for loops to access
     this data without copying it back to the host, an expensive operation.
     Instead, Thrust provides a wide variety of parallel algorithms to manipulate
-    the data. Aboria's zip_iterators are compatible with the Thrust framework,
-    so can be used in a similar fashion to Thrust's own zip_iterators (except,
-    unlike Thrust's `zip_iterator`, we can take advantage of Aboria's tagged
-    `reference` and `value_types`).
+    the data. Aboria's [classref Aboria::zip_iterator] is compatible with the
+    Thrust framework, so can be used in a similar fashion to Thrust's own
+    `zip_iterator` (except, unlike Thrust's `zip_iterator`, we can take
+    advantage of Aboria's tagged `reference` and `value_types`).
 
     We can use Thrust's `for_each` algorithm to loop through the particles and
     set their initial positions randomly.
@@ -179,9 +178,10 @@ public:
 
     /*`
     Now we can initialise the neighbourhood search data structure. Note that we
-    are using Aboria's `CellListOrdered` data structure, which is similar to
-    `CellList` but instead relies on reordering the particles to arrange them
-    into cells, which is more amenable to parallelisation using a GPU.
+    are using [classref Aboria::CellListOrdered] data structure, which is
+    similar to [classref Aboria::CellList] but instead relies on reordering the
+    particles to arrange them into cells, which is more amenable to
+    parallelisation using a GPU.
     */
 
     thrust_particles.init_neighbour_search(
@@ -189,20 +189,21 @@ public:
 
     /*`
 
-    We can use any of Aboria's range searches within a Thrust algorithm. Once
-    again we will implement a range search around each particle, counting all
+    We can use any of Aboria's range searches within a Thrust algorithm. Below
+    we will implement a range search around each particle, counting all
     neighbours within range. Note that we need to copy all of the variables from
     the outer scope to the lambda function, since the lambda will run on the
     device, and won't be able to access any host memory.
 
-    [note The NeighbourQueryBase class for each spatial data structure is
-    designed to be copyable to the GPU, but the Particles class is not, so while
-    the `query` variable is copyable to the device, the `thrust_particles`
-    variable is not.]
+    [note The [classref Aboria::NeighbourQueryBase] class for each spatial data
+    structure is designed to be copyable to the GPU, but the [classref
+    Aboria::Particles] class is not, so while the `query` variable is copyable
+    to the device, the `thrust_particles` variable is not.]
 
-    [note The type of variable `i` in the lambda will be deduced as
-    Particles::raw_reference. This is different to Particles::reference when
-    using `thrust::device_vector`, but acts in a similar fashion]
+    [note The type of variable `i` in the lambda will be deduced as [classref
+    Aboria::Particles::raw_reference]. This is different to [classref
+    Aboria::Particles::reference] when using `thrust::device_vector`, but acts
+    in a similar fashion]
     */
 
     thrust::for_each(
@@ -218,9 +219,9 @@ public:
     /*`
 
     While we have exclusively used `thrust::for_each` above, the iterators that
-    Aboria provides for the Particles container should work with all of Thrust's
-    algorithms. For example, you might wish to restructure the previous code as
-    a transform:
+    Aboria provides for the [classref Aboria::Particles] container should work
+    with all of Thrust's algorithms. For example, you might wish to restructure
+    the previous code as a transform:
      */
 
     thrust::transform(
