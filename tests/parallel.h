@@ -75,7 +75,7 @@ public:
     ABORIA_VARIABLE(neighbour_count, int, "neighbour_count");
     typedef Particles<std::tuple<neighbour_count>> particle_t;
     typedef particle_t::position position;
-    particle_type particles(N);
+    particle_t particles(N);
 
     /*`
     Now we will loop through the particles and set their initial positions
@@ -173,7 +173,7 @@ public:
                         */
                        auto gen = get<generator>(i);
                        thrust::uniform_real_distribution<float> uni(0, 1);
-                       get<thrust_position>(i) = vdouble2(uni(gen), uni(gen));
+                       get<position>(i) = vdouble2(uni(gen), uni(gen));
                      });
 
     /*`
@@ -228,9 +228,9 @@ public:
         thrust_particles.begin(), thrust_particles.end(),
         get<neighbour_count>(thrust_particles).begin(),
         [radius, query = thrust_particles.get_query()] __device__(auto i) {
-          int sum =
-              0 for (auto j = euclidean_search(query, get<position>(i), radius);
-                     j != false; ++j) {
+          int sum = 0;
+          for (auto j = euclidean_search(query, get<position>(i), radius);
+               j != false; ++j) {
             ++sum;
           }
           return sum;
