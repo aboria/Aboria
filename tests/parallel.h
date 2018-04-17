@@ -46,6 +46,8 @@ using namespace Aboria;
 
 class ParallelTest : public CxxTest::TestSuite {
 public:
+  ABORIA_VARIABLE(thrust_neighbour_count, int, "thrust_neighbour_count");
+
   void test_documentation(void) {
     //[parallel
     /*`
@@ -146,14 +148,23 @@ public:
     `thrust::device_vector` as the base storage vector for our particles
     class
 
+    [note we want to use the type `thrust_neighbour_count` within a device
+    function, so we need to define this type outside any host functions
+    (including main).]
+
     */
 
-    typedef Particles<std::tuple<neighbour_count>, 2, thrust::device_vector,
-                      CellListOrdered>
+    //=ABORIA_VARIABLE(thrust_neighbour_count, int, "thrust_neighbour_count");
+    //=
+    //=int main() {
+
+    typedef Particles<std::tuple<thrust_neighbour_count>, 2,
+                      thrust::device_vector, CellListOrdered>
         thrust_particle_t;
     thrust_particle_t thrust_particles(N);
 
     /*`
+
     Since all our data is on the device, we cannot use raw for loops to access
     this data without copying it back to the host, an expensive operation.
     Instead, Thrust provides a wide variety of parallel algorithms to manipulate
@@ -219,10 +230,10 @@ public:
     thrust::for_each(
         thrust_particles.begin(), thrust_particles.end(),
         [radius, query = thrust_particles.get_query()] __device__(auto i) {
-          get<neighbour_count>(i) = 0;
+          get<thrust_neighbour_count>(i) = 0;
           for (auto j = euclidean_search(query, get<position>(i), radius);
                j != false; ++j) {
-            ++get<neighbour_count>(i);
+            ++get<thrust_neighbour_count>(i);
           }
         });
 
@@ -236,7 +247,7 @@ public:
 
     thrust::transform(
         thrust_particles.begin(), thrust_particles.end(),
-        get<neighbour_count>(thrust_particles).begin(),
+        get<thrust_neighbour_count>(thrust_particles).begin(),
         [radius, query = thrust_particles.get_query()] __device__(auto i) {
           int sum = 0;
           for (auto j = euclidean_search(query, get<position>(i), radius);
@@ -245,6 +256,7 @@ public:
           }
           return sum;
         });
+//=}
 
 /*`
 [endsect]
