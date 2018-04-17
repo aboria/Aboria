@@ -73,7 +73,7 @@ public:
     */
     const size_t N = 100;
     ABORIA_VARIABLE(neighbour_count, int, "neighbour_count");
-    typedef Particles<std::tuple<neighbour_count>> particle_t;
+    typedef Particles<std::tuple<neighbour_count>, 2> particle_t;
     typedef particle_t::position position;
     particle_t particles(N);
 
@@ -84,7 +84,7 @@ public:
     */
 
 #pragma omp parallel for
-    for (int i = 0; i < particles.size(); ++i) {
+    for (size_t i = 0; i < particles.size(); ++i) {
       std::uniform_real_distribution<double> uniform(0, 1);
       auto gen = get<generator>(particles)[i];
       get<position>(particles)[i] = vdouble2(uniform(gen), uniform(gen));
