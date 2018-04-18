@@ -515,7 +515,7 @@ public:
     detail::for_each(particles.begin(), particles.end(),
                      [=](typename ParticlesType::raw_reference p) {
                        std::uniform_real_distribution<double> U(pos_min,
-                                                                   pos_max);
+                                                                pos_max);
                        for (size_t d = 0; d < D; ++d) {
                          get<position>(p)[d] = U(get<generator>(p));
                          get<source>(p) = U(get<generator>(p));
@@ -892,8 +892,10 @@ public:
     helper_fast_methods<1, std::vector, HyperOctree>(N);
     std::cout << "OCTTREE: testing 2D..." << std::endl;
     helper_fast_methods<2, std::vector, HyperOctree>(N);
+    /*
     std::cout << "OCTTREE: testing 3D..." << std::endl;
     helper_fast_methods<3, std::vector, HyperOctree>(N);
+    */
 
 #endif
   }

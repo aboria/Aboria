@@ -1020,12 +1020,12 @@ public:
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 1, false, false);
 
     if (test_push_back) {
-      helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, true);
-      helper_d_random<2, VectorType, SearchMethod>(1000, 0.1, 10, false, true);
-      helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, true);
-      helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, false, true);
-      helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 10, true, true);
-      helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 10, false, true);
+      helper_d_random<1, VectorType, SearchMethod>(100, 0.1, 10, true, true);
+      helper_d_random<2, VectorType, SearchMethod>(100, 0.1, 10, false, true);
+      helper_d_random<2, VectorType, SearchMethod>(100, 0.5, 10, true, true);
+      helper_d_random<2, VectorType, SearchMethod>(100, 0.5, 10, false, true);
+      helper_d_random<3, VectorType, SearchMethod>(100, 0.2, 10, true, true);
+      helper_d_random<3, VectorType, SearchMethod>(100, 0.2, 10, false, true);
     }
   }
 
