@@ -74,7 +74,7 @@ const int N = particles.size();
 Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(N, 0, 1.0);
 Eigen::VectorXd c = K * b;
 
-// matrix-vector multiply (matrix)
+// matrix-vector multiply (assemble to a matrix first)
 Eigen::MatrixXd K_eigen(N, N);
 K.assemble(K_eigen);
 c = K_eigen * b;
