@@ -22,13 +22,12 @@ const int DIM = 2;
 using Particles_t = Particles<std::tuple<scalar>,DIM>;
 using position = Particles_t::position;
 Particles_t particles(100);
+
 std::normal_distribution<double> normal(0.5, 0.2);
 std::default_random_engine gen;
 for (auto i: particles) {
   get<position>(i) = vdouble2(normal(gen), normal(gen));
   get<scalar>(i) = normal(gen);
-  std::cout << "created particle at position " << get<position>(i) << 
-               " with scalar "<<get<scalar>(i) << std::endl;
 }
 ```
 
