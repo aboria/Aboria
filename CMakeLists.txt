@@ -19,6 +19,13 @@ list(APPEND CMAKE_CXX_FLAGS "-Wall -Wno-deprecated -std=c++14 -ftemplate-backtra
 
 
 
+option(Aboria_USE_CAIRO "Use Cairo 2d graphics library" OFF)
+if (Aboria_USE_CAIRO)
+    find_package(Cairo REQUIRED)
+    add_definitions(-DHAVE_CAIRO)
+    list(APPEND Aboria_LIBRARIES ${CAIRO_LIBRARIES})
+    list(APPEND Aboria_INCLUDES ${CAIRO_INCLUDE_DIRS})
+endif()
 
 option(Aboria_USE_THRUST "Use CUDA Thrust library" OFF)
 if (Aboria_USE_THRUST)

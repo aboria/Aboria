@@ -38,6 +38,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <chrono>
 #include <cxxtest/TestSuite.h>
+
+#ifdef HAVE_H2LIB
+//#include <cairo.h>
+#include <cairo-svg.h>
+#endif
 typedef std::chrono::system_clock Clock;
 
 #include "Aboria.h"
@@ -385,6 +390,78 @@ public:
     }
 
     TS_ASSERT_EQUALS(child_count_recurse, child_count_subtree);
+  }
+
+  template <template <typename> class SearchMethod> void draw_data_structure() {
+    using Particles_t = Particles<std::tuple<>, 2, std::vector, SearchMethod>;
+    Particles_t particles(100);
+// use h2lib to get cairo
+#ifdef HAVE_CAIRO
+    std::string search_name(typeid(typename Particles_t::search_type).name());
+    std::string extension(".svg");
+    const int image_size = 512;
+#ifdef CAIRO_HAS_SVG_SURFACE
+    cairo_surface_t *surface = cairo_svg_surface_create(
+        (search_name + extension).c_str(), image_size, image_size);
+    cairo_svg_surface_restrict_to_version(surface, CAIRO_SVG_VERSION_1_2);
+#endif
+    cairo_t *cr = cairo_create(surface);
+
+    cairo_scale(cr, image_size, image_size);
+    particles.init_neighbour_search(vdouble2::Constant(0),
+                                    vdouble2::Constant(1),
+                                    vdouble2::Constant(false));
+    auto query = particles.get_query();
+
+    for (auto i = query.get_subtree(); i != false; ++i) {
+      auto ci = i.get_child_iterator();
+      if (query.is_leaf_node(*ci)) {
+        // draw its outline
+        auto bounds = query.get_bounds(ci);
+        cairo_move_to(cr, bounds.bmin[0], bounds.bmin[1]);
+        cairo_line_to(cr, bounds.bmax[0], bounds.bmin[1]);
+        cairo_line_to(cr, bounds.bmax[0], bounds.bmax[1]);
+        cairo_line_to(cr, bounds.bmin[0], bounds.bmax[1]);
+        cairo_line_to(cr, bounds.bmin[0], bounds.bmin[1]);
+        cairo_stroke(cr);
+      }
+    }
+
+    const vdouble2 search_point = vdouble2(0.5, 0.5);
+    const double search_radius = 0.2;
+
+    // draw search region and point
+    const double PI = boost::math::constants::pi<double>();
+    cairo_move_to(cr, search_point[0], search_point[1]);
+    cairo_arc(cr, search_point[0], search_point[1], search_radius, 0, 2 * PI);
+    cairo_stroke(cr);
+
+    for (auto i = query.template get_buckets_near_point<2>(search_point,
+                                                           search_radius);
+         i != false; ++i) {
+      auto ci = i.get_child_iterator();
+      auto bounds = query.get_bounds(ci);
+      // colour in search buckets
+      cairo_set_source_rgba(cr, 1, 0.2, 0.2, 0.6);
+      cairo_move_to(cr, bounds.bmin[0], bounds.bmin[1]);
+      cairo_line_to(cr, bounds.bmax[0], bounds.bmin[1]);
+      cairo_line_to(cr, bounds.bmax[0], bounds.bmax[1]);
+      cairo_line_to(cr, bounds.bmin[0], bounds.bmax[1]);
+      cairo_line_to(cr, bounds.bmin[0], bounds.bmin[1]);
+      cairo_fill(cr);
+    }
+
+    cairo_destroy(cr);
+    cairo_surface_destroy(surface);
+#endif // HAVE_CAIRO
+  }
+
+  void test_visualise_data_structures() {
+    draw_data_structure<CellList>();
+    draw_data_structure<CellListOrdered>();
+    draw_data_structure<Kdtree>();
+    draw_data_structure<KdtreeNanoflann>();
+    draw_data_structure<HyperOctree>();
   }
 
   void test_CellList() {
