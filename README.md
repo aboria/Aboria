@@ -69,10 +69,12 @@ auto K = create_sparse_operator(
       return (get<scalar>(i) * get<scalar>(j)) / (dx.norm() + epsilon);
     });
 
+// matrix-vector multiply (matrix-free)
 const int N = particles.size();
 Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(N, 0, 1.0);
 Eigen::VectorXd c = K * b;
 
+// matrix-vector multiply (matrix)
 Eigen::MatrixXd K_eigen(N, N);
 K.assemble(K_eigen);
 c = K_eigen * b;
