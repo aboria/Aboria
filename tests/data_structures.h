@@ -39,10 +39,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <chrono>
 #include <cxxtest/TestSuite.h>
 
-#ifdef HAVE_H2LIB
-//#include <cairo.h>
+#ifdef HAVE_CAIRO
 #include <cairo-svg.h>
 #endif
+
 typedef std::chrono::system_clock Clock;
 
 #include "Aboria.h"
@@ -401,7 +401,6 @@ public:
       auto &gen = get<generator>(particles)[i];
       get<position>(particles)[i] = vdouble2(normal(gen), normal(gen));
     }
-// use h2lib to get cairo
 #ifdef HAVE_CAIRO
     std::string search_name(typeid(typename Particles_t::search_type).name());
     std::string extension(".svg");
