@@ -36,7 +36,7 @@ can be a [cell list](https://en.wikipedia.org/wiki/Cell_lists),
 [kd-tree](https://en.wikipedia.org/wiki/K-d_tree) or hyper
 [oct-tree](https://en.wikipedia.org/wiki/Octree).
 
-<img src="doc/images/celllist.svg" width="200" height="200">&nbsp<img src="doc/images/kdtree.svg" width="200" height="200">&nbsp<img src="doc/images/hyperoctree.svg" width="200" height="200">
+<img src="doc/images/celllist.svg" width="200" height="200">&nbsp;<img src="doc/images/kdtree.svg" width="200" height="200">&nbsp;<img src="doc/images/hyperoctree.svg" width="200" height="200">
 
 These data structures provide flexible neighbourhood queries that return
 iterators, and can use any integer
