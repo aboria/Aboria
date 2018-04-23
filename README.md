@@ -22,9 +22,13 @@ const int DIM = 2;
 using Particles_t = Particles<std::tuple<scalar>,DIM>;
 using position = Particles_t::position;
 Particles_t particles(100);
+std::normal_distribution<double> normal(0.5, 0.2);
+std::default_random_engine gen;
 for (auto i: particles) {
-  std::cout << "found particle at position " << get<position>(i) << 
-               " with scalar "<<get<scalar>(i);
+  get<position>(i) = vdouble2(normal(gen), normal(gen));
+  get<scalar>(i) = normal(gen);
+  std::cout << "created particle at position " << get<position>(i) << 
+               " with scalar "<<get<scalar>(i) << std::endl;
 }
 ```
 
@@ -41,8 +45,7 @@ Aboria gives you the ability to embed each particle set within a hypercube
 These data structures provide flexible neighbourhood queries that return
 iterators, and can use any integer
 [p-norm](https://en.wikipedia.org/wiki/Norm_(mathematics)) distance measure for
-`p > 0` (`p == 1`: Manhattan distance, `p == 2`: Euclidean distance, ... ,  `p
--> inf`:  Chebyshev distance)
+`p > 0`. 
 
 ```cpp
 for (auto i = euclidean_search(particles.get_query(),
