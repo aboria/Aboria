@@ -394,7 +394,13 @@ public:
 
   template <template <typename> class SearchMethod> void draw_data_structure() {
     using Particles_t = Particles<std::tuple<>, 2, std::vector, SearchMethod>;
-    Particles_t particles(100);
+    Particles_t particles(500);
+    using position = typename Particles_t::position;
+    std::normal_distribution<double> normal(0.5, 0.2);
+    for (size_t i = 0; i < particles.size(); ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] = vdouble2(normal(gen), normal(gen));
+    }
 // use h2lib to get cairo
 #ifdef HAVE_CAIRO
     std::string search_name(typeid(typename Particles_t::search_type).name());
@@ -410,9 +416,14 @@ public:
     cairo_scale(cr, image_size, image_size);
     particles.init_neighbour_search(vdouble2::Constant(0),
                                     vdouble2::Constant(1),
-                                    vdouble2::Constant(false));
+                                    vdouble2::Constant(false), 5);
+
     auto query = particles.get_query();
 
+    cairo_set_source_rgba(cr, 0.5, 0, 0, 0.5);
+    vdouble2 lw(0.005, 0.005);
+    // cairo_device_to_user_distance(cr, &lw[0], &lw[1]);
+    cairo_set_line_width(cr, lw[0]);
     for (auto i = query.get_subtree(); i != false; ++i) {
       auto ci = i.get_child_iterator();
       if (query.is_leaf_node(*ci)) {
@@ -422,33 +433,47 @@ public:
         cairo_line_to(cr, bounds.bmax[0], bounds.bmin[1]);
         cairo_line_to(cr, bounds.bmax[0], bounds.bmax[1]);
         cairo_line_to(cr, bounds.bmin[0], bounds.bmax[1]);
-        cairo_line_to(cr, bounds.bmin[0], bounds.bmin[1]);
+        cairo_close_path(cr);
         cairo_stroke(cr);
       }
     }
 
-    const vdouble2 search_point = vdouble2(0.5, 0.5);
+    cairo_set_source_rgba(cr, 0, 0, 0, 1.0);
+    const double PI = boost::math::constants::pi<double>();
+    for (size_t i = 0; i < particles.size(); ++i) {
+      const auto &pos = get<position>(particles)[i];
+      cairo_arc(cr, pos[0], pos[1], lw[0], 0, 2 * PI);
+      cairo_fill(cr);
+    }
+
+    const vdouble2 search_point = vdouble2(0.75, 0.57);
     const double search_radius = 0.2;
 
     // draw search region and point
-    const double PI = boost::math::constants::pi<double>();
-    cairo_move_to(cr, search_point[0], search_point[1]);
+    cairo_set_source_rgba(cr, 0, 0, 0.5, 0.5);
     cairo_arc(cr, search_point[0], search_point[1], search_radius, 0, 2 * PI);
     cairo_stroke(cr);
+    cairo_arc(cr, search_point[0], search_point[1], lw[0], 0, 2 * PI);
+    cairo_fill(cr);
 
+    cairo_set_source_rgba(cr, 0, 0, 0.5, 0.2);
     for (auto i = query.template get_buckets_near_point<2>(search_point,
                                                            search_radius);
          i != false; ++i) {
       auto ci = i.get_child_iterator();
       auto bounds = query.get_bounds(ci);
       // colour in search buckets
-      cairo_set_source_rgba(cr, 1, 0.2, 0.2, 0.6);
       cairo_move_to(cr, bounds.bmin[0], bounds.bmin[1]);
       cairo_line_to(cr, bounds.bmax[0], bounds.bmin[1]);
       cairo_line_to(cr, bounds.bmax[0], bounds.bmax[1]);
       cairo_line_to(cr, bounds.bmin[0], bounds.bmax[1]);
-      cairo_line_to(cr, bounds.bmin[0], bounds.bmin[1]);
+      cairo_close_path(cr);
       cairo_fill(cr);
+      for (auto j = query.get_bucket_particles(*ci); j != false; ++j) {
+        const auto &pos = get<position>(*j);
+        cairo_arc(cr, pos[0], pos[1], lw[0], 0, 2 * PI);
+        cairo_fill(cr);
+      }
     }
 
     cairo_destroy(cr);

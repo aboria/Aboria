@@ -5,33 +5,80 @@
 [![AppVeyor](https://ci.appveyor.com/api/projects/status/6aimud6e8tvxfwgm?svg=true)](https://ci.appveyor.com/project/martinjrobins/aboria)
 -->
 
-Aboria implements an Embedded Domain Specific Language (eDSL) in C++ for 
-specifying expressions over particles and their neighbours in N dimensional 
-space, with the aim of providing a useful library for implementing 
-particle-based numerical algorithms, for example Molecular Dynamics, Smoothed 
-Particle Hydrodynamics or Radial Basis Functions. 
+Aboria is a C++ library that enables computations over a set of particles or
+points in N-dimensional space, with the aim of providing a useful library for
+implementing particle-based numerical algorithms, for example Molecular
+Dynamics, Smoothed Particle Hydrodynamics or Radial Basis Functions. 
 
-Aboria gives you:
-* an STL compatible container class to store a particle set containing
-  a position and unique id for each particle, as well as any number of 
-  user-defined variables with arbitrary types.
-* the ability to embed each particle set within a hypercube N-dimensional
-  domain with arbitrary periodicity. The underlying data structure can be a 
-  [cell list](https://en.wikipedia.org/wiki/Cell_lists), 
-  [kd-tree](https://en.wikipedia.org/wiki/K-d_tree) or hyper 
-  [oct-tree](https://en.wikipedia.org/wiki/Octree).
-* flexible neighbourhood queries that return iterators, and can use any integer 
-  [p-norm](https://en.wikipedia.org/wiki/Norm_(mathematics)) distance measure 
-  for `p > 0` (`p == 1`: Manhattan distance, `p == 2`: Euclidean distance, ... , 
-  `p -> inf`:  Chebyshev distance)
-* an expression template API for forming non-linear operators over the 
-  particles. This can be used, for example, to implement interaction forces
-  in Molecular Dynamics.
-* an API for forming linear kernel operators from C++ lambda functions, This
-  can be used, for example, to implement Radial Basis Function kernels. These 
-  can be wrapped as [Eigen](eigen.tuxfamily.org) matrices in order to solve 
-  linear systems based on kernel operators.
-    
+## A STL compatible container of particles
+
+The library gives you a STL compatible container class to store a particle set
+containing a position and unique id for each particle, as well as any number of
+user-defined variables with arbitrary types.
+
+```cpp
+ABORIA_VARIABLE(scalar, double, "an example scalar variable")
+const int DIM = 2;
+using Particles_t = Particles<std::tuple<scalar>,DIM>;
+using position = Particles_t::position;
+Particles_t particles(100);
+for (auto i: particles) {
+  std::cout << "found particle at position " << get<position>(i) << 
+               " with scalar "<<get<scalar>(i);
+}
+```
+
+## Spatial data structures and spatial queries
+
+Aboria gives you the ability to embed each particle set within a hypercube
+N-dimensional domain with arbitrary periodicity. The underlying data structure
+can be a [cell list](https://en.wikipedia.org/wiki/Cell_lists),
+[kd-tree](https://en.wikipedia.org/wiki/K-d_tree) or hyper
+[oct-tree](https://en.wikipedia.org/wiki/Octree).
+
+![](doc/images/celllist.svg)
+![](doc/images/kdtree.svg)
+![](doc/images/hyperoctree.svg)
+
+These data structures provide flexible neighbourhood queries that return
+iterators, and can use any integer
+[p-norm](https://en.wikipedia.org/wiki/Norm_(mathematics)) distance measure for
+`p > 0` (`p == 1`: Manhattan distance, `p == 2`: Euclidean distance, ... ,  `p
+-> inf`:  Chebyshev distance)
+
+```cpp
+for (auto i = euclidean_search(particles.get_query(),
+                               vdouble2::Constant(0), radius);
+         i != false; ++i) {
+  std::cout << "Found a particle with dx = " << i.dx()
+            << " and id = " << get<id>(*i) << "\n";
+}
+```
+
+## An API for forming linear kernel operators 
+
+Aboria gives you an API for forming linear kernel operators from C++ lambda
+functions, This can be used, for example, to implement Radial Basis Function
+kernels. These can be wrapped as [Eigen](eigen.tuxfamily.org) matrices in order
+to solve linear systems.
+
+```cpp
+auto K = create_sparse_operator(
+    particles, particles, radius,
+    [epsilon](const vdouble2 &dx, auto i, auto j) {
+      return (get<scalar>(i) * get<scalar>(j)) / (dx.norm() + epsilon);
+    });
+
+const int N = particles.size();
+Eigen::VectorXd b = Eigen::VectorXd::LinSpaced(N, 0, 1.0);
+Eigen::VectorXd c = K * b;
+
+Eigen::MatrixXd K_eigen(N, N);
+K.assemble(K_eigen);
+c = K_eigen * b;
+```
+
+## License and Contact
     
 Aboria is distributed under a BSD 3-Clause License, see LICENCE for more 
 details. For documentation see the [Aboria 
