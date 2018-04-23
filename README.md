@@ -10,7 +10,7 @@ points in N-dimensional space, with the aim of providing a useful library for
 implementing particle-based numerical algorithms, for example Molecular
 Dynamics, Smoothed Particle Hydrodynamics or Radial Basis Functions. 
 
-## A STL compatible container of particles
+### A standards-compliant particle container
 
 The library gives you a STL compatible container class to store a particle set
 containing a position and unique id for each particle, as well as any number of
@@ -28,13 +28,13 @@ for (auto i: particles) {
 }
 ```
 
-## Spatial data structures and spatial queries
+### Spatial data structures and queries
 
 Aboria gives you the ability to embed each particle set within a hypercube
-N-dimensional domain with arbitrary periodicity. The underlying data structure
-can be a [cell list](https://en.wikipedia.org/wiki/Cell_lists),
-[kd-tree](https://en.wikipedia.org/wiki/K-d_tree) or hyper
-[oct-tree](https://en.wikipedia.org/wiki/Octree).
+ domain with arbitrary periodicity. The underlying data structure can be a [cell
+ list](https://en.wikipedia.org/wiki/Cell_lists),
+ [kd-tree](https://en.wikipedia.org/wiki/K-d_tree) or hyper
+ [oct-tree](https://en.wikipedia.org/wiki/Octree).
 
 <img src="doc/images/celllist.svg" width="200" height="200">&nbsp;&nbsp;&nbsp;<img src="doc/images/kdtree.svg" width="200" height="200">&nbsp;&nbsp;&nbsp;<img src="doc/images/hyperoctree.svg" width="200" height="200">
 
@@ -53,7 +53,7 @@ for (auto i = euclidean_search(particles.get_query(),
 }
 ```
 
-## An API for forming linear kernel operators 
+### An API for forming linear kernel operators 
 
 Aboria gives you an API for forming linear kernel operators from C++ lambda
 functions, This can be used, for example, to implement Radial Basis Function
