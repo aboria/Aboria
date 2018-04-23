@@ -36,7 +36,7 @@ can be a [cell list](https://en.wikipedia.org/wiki/Cell_lists),
 [kd-tree](https://en.wikipedia.org/wiki/K-d_tree) or hyper
 [oct-tree](https://en.wikipedia.org/wiki/Octree).
 
-![](doc/images/celllist.svg)
+<img src="doc/images/celllist.svg" width="100" height="100">
 ![](doc/images/kdtree.svg)
 ![](doc/images/hyperoctree.svg)
 
