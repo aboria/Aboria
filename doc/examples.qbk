@@ -1,13 +1,26 @@
 
 [section Examples]
 
+
+[section Container/Iterator API]
+
 [section Molecular Dynamics (Linear Spring) (MD)]
-
-Simple Molecular Dynamics of $N$ particles interacting via a linear spring 
-potential. 
-
 [import ../tests/md.h]
-[md]
+[md_iterator]
+[endsect]
+
+[section 1955 FPUT Experiment]
+[import ../tests/fput.h]
+[fput]
+[endsect]
+
+[endsect]
+
+
+[section Symbolic API]
+
+[section Molecular Dynamics (Linear Spring) (MD)]
+[md_symbolic]
 [endsect]
 
 [section Brownian Dynamics (BD)]
@@ -36,6 +49,10 @@ no-slip boundary. The *x* and *y* directions are periodic.
 
 [endsect]
 
+[endsect]
+
+[section Kernel Operator API]
+
 [section Radial Basis Function (RBF) Interpolation]
 
 [import ../tests/rbf_interpolation.h]
@@ -46,6 +63,8 @@ no-slip boundary. The *x* and *y* directions are periodic.
 
 [import ../tests/rbf_pde.h]
 [rbf_pde]
+
+[endsect]
 
 [endsect]
 

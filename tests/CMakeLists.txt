@@ -48,6 +48,7 @@ if (Aboria_RUN_TESTS)
     set(releaseonly_test_suites
         BDTest
         DEMTest
+        FPUTTest
         SPHTest
         MDTest
         MDLevel1Test
@@ -234,8 +235,6 @@ if (Aboria_USE_THRUST)
     )
 endif()
 
-
-
 set(BDTestFile bd.h)
 set(BDTest
     test_CellList
@@ -247,6 +246,11 @@ set(BDTest
 set(DEMTestFile dem.h)
 set(DEMTest
     test_dem
+    )
+
+set(FPUTTestFile fput.h)
+set(FPUTTest
+    test_fput
     )
 
 set(SPHTestFile sph.h)

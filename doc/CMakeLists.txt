@@ -67,6 +67,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         ../tests/md.h
         ../tests/bd.h
         ../tests/dem.h
+        ../tests/fput.h
         ../tests/sph.h
         ../tests/rbf_interpolation.h
         ../tests/rbf_pde.h
@@ -148,6 +149,7 @@ MathJax.Hub.Config({
     images/note.png
     images/neighbour/cell_lists.svg
     images/neighbour/octtree.svg
+    images/fput/fput999.svg
     css/boostbook.css
   )
 

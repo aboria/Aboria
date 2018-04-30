@@ -2000,6 +2000,12 @@ public:
     return m_query->m_point_to_bucket_index.collapse_index_vector(m_index);
   }
 
+  lattice_iterator<dimension> get_child_iterator() const {
+    lattice_iterator<dimension> ret = m_query->get_subtree();
+    ret = m_index;
+    return ret;
+  }
+
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
 

@@ -405,11 +405,9 @@ public:
     std::string search_name(typeid(typename Particles_t::search_type).name());
     std::string extension(".svg");
     const int image_size = 512;
-#ifdef CAIRO_HAS_SVG_SURFACE
     cairo_surface_t *surface = cairo_svg_surface_create(
         (search_name + extension).c_str(), image_size, image_size);
     cairo_svg_surface_restrict_to_version(surface, CAIRO_SVG_VERSION_1_2);
-#endif
     cairo_t *cr = cairo_create(surface);
 
     cairo_scale(cr, image_size, image_size);

@@ -80,7 +80,7 @@ K.assemble(K_eigen);
 c = K_eigen * b;
 ```
 
-## License and Contact
+### License and Contact
     
 Aboria is distributed under a BSD 3-Clause License, see LICENCE for more 
 details. For documentation see the [Aboria 

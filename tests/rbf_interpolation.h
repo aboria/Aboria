@@ -438,13 +438,13 @@ public:
     ParticlesType augment;
     ParticlesType test;
 
-    const double c = 1.0 / 0.30;
+    const double c = 1.0 / 0.50;
     const double c2 = std::pow(c, 2);
     vdouble2 min = vdouble2::Constant(0);
     vdouble2 max = vdouble2::Constant(1);
     vbool2 periodic = vbool2::Constant(false);
 
-    const int N = 2000;
+    const int N = 20000;
 
     // const double RASM_size = 0.3 / c;
     // const int RASM_n = N * std::pow(RASM_size, 2) / (max - min).prod();
@@ -470,9 +470,9 @@ public:
       test.push_back(p);
     }
 
-    const size_t order = 4;
-    knots.init_neighbour_search(min, max, periodic, 16);
-    test.init_neighbour_search(min, max, periodic, 16);
+    const size_t order = 6;
+    knots.init_neighbour_search(min, max, periodic, 36);
+    test.init_neighbour_search(min, max, periodic, 36);
 
     augment.push_back(p);
 
@@ -484,7 +484,7 @@ public:
     auto self_kernel = [&](const_particle_reference a,
                            const_particle_reference b) {
       if (get<id>(a) == get<id>(b)) {
-        return 1.0 + 1e-4;
+        return 1.0 + 1e-5;
       } else {
         return std::exp(-(get<position>(b) - get<position>(a)).squaredNorm() *
                         c2);
@@ -497,6 +497,7 @@ public:
     matrix_type G_matrix(N, N);
     G.assemble(G_matrix);
     auto Gtest = create_fmm_operator<order>(test, knots, kernel, self_kernel);
+    // knots.init_neighbour_search(min, max, periodic, 35);
 
     vector_type phi(N), gamma(N);
     for (size_t i = 0; i < knots.size(); ++i) {
@@ -559,6 +560,34 @@ public:
               << std::sqrt(rms_error / scale) << std::endl;
     TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 1e-3);
 
+    /*
+        Eigen::BiCGSTAB<decltype(G), CardinalFunctionsPreconditioner> bicg_card;
+        bicg_card.setMaxIterations(max_iter);
+        bicg_card.preconditioner().set_number_of_random_particles(50);
+        bicg_card.preconditioner().set_sigma(1.0 / c);
+        bicg_card.preconditioner().set_rejection_sampling_scale(1.0);
+        bicg_card.compute(G);
+        gamma = bicg_card.solve(phi);
+        std::cout << "BiCGSTAB-RASM:#iterations: " << bicg_card.iterations()
+                  << ", estimated error: " << bicg_card.error()
+                  << " h2 error = " << (G * gamma - phi).norm()
+                  << " true error = " << (G_matrix * gamma - phi).norm()
+                  << std::endl;
+                  */
+
+    Eigen::BiCGSTAB<decltype(G),
+                    ChebyshevPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg_cheb;
+    bicg_cheb.setMaxIterations(max_iter);
+    bicg_cheb.preconditioner().set_order(10);
+    bicg_cheb.compute(G);
+    gamma = bicg_cheb.solve(phi);
+    std::cout << "BiCGSTAB-CHEB:#iterations: " << bicg_cheb.iterations()
+              << ", estimated error: " << bicg_cheb.error()
+              << " h2 error = " << (G * gamma - phi).norm()
+              << " true error = " << (G_matrix * gamma - phi).norm()
+              << std::endl;
+
     Eigen::BiCGSTAB<decltype(G),
                     SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         bicg_rasm;
@@ -570,6 +599,23 @@ public:
     gamma = bicg_rasm.solve(phi);
     std::cout << "BiCGSTAB-RASM:#iterations: " << bicg_rasm.iterations()
               << ", estimated error: " << bicg_rasm.error()
+              << " h2 error = " << (G * gamma - phi).norm()
+              << " true error = " << (G_matrix * gamma - phi).norm()
+              << std::endl;
+
+    Eigen::BiCGSTAB<decltype(G_matrix),
+                    SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        dgmres_rasm_matrix;
+    dgmres_rasm_matrix.setMaxIterations(max_iter);
+    dgmres_rasm_matrix.preconditioner().set_number_of_random_particles(200);
+    dgmres_rasm_matrix.preconditioner().set_sigma(1.0 / c);
+    dgmres_rasm_matrix.preconditioner().set_rejection_sampling_scale(1.0);
+    dgmres_rasm_matrix.preconditioner().analyzePattern(G);
+    dgmres_rasm_matrix.compute(G_matrix);
+    gamma = dgmres_rasm_matrix.solve(phi);
+    std::cout << "BiCGSTAB-rasm-matrix:  #iterations: "
+              << dgmres_rasm_matrix.iterations()
+              << ", estimated error: " << dgmres_rasm_matrix.error()
               << " h2 error = " << (G * gamma - phi).norm()
               << " true error = " << (G_matrix * gamma - phi).norm()
               << std::endl;
@@ -608,6 +654,7 @@ public:
                     SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
         bicg_rasm2;
     bicg_rasm2.setMaxIterations(max_iter);
+    bicg_rasm2.preconditioner().set_coarse_grid_n(10);
     bicg_rasm2.compute(G);
     gamma = bicg_rasm2.solve(phi);
     std::cout << "BiCGSTAB-RASM-local:#iterations: " << bicg_rasm2.iterations()
@@ -705,6 +752,183 @@ public:
 //=}
 //]
 #endif // HAVE_H2LIB
+  }
+
+  template <template <typename> class SearchMethod>
+  void helper_param_sweep(const double sigma, const int N,
+                          std::ofstream &out_it, std::ofstream &out_err) {
+#ifdef HAVE_H2LIB
+
+    out_it << N << " " << sigma;
+    out_err << N << " " << sigma;
+
+    auto funct = [](const double x, const double y) {
+      return std::exp(-9 * std::pow(x - 0.5, 2) - 9 * std::pow(y - 0.25, 2));
+      // return x;
+    };
+
+    ABORIA_VARIABLE(alpha, double, "alpha value")
+    ABORIA_VARIABLE(interpolated, double, "interpolated value")
+
+    typedef Particles<std::tuple<alpha, interpolated>, 2, std::vector,
+                      SearchMethod>
+        ParticlesType;
+    typedef position_d<2> position;
+    typedef typename ParticlesType::const_reference const_particle_reference;
+    typedef Eigen::Matrix<double, Eigen::Dynamic, 1> vector_type;
+    ParticlesType knots(N);
+
+    const double c = 1.0 / sigma;
+    vdouble2 min = vdouble2::Constant(0);
+    vdouble2 max = vdouble2::Constant(1);
+    vbool2 periodic = vbool2::Constant(false);
+
+    const int max_iter = 1000;
+
+    std::default_random_engine generator(0);
+    std::uniform_real_distribution<double> distribution(0.0, 1.0);
+    for (int i = 0; i < N; ++i) {
+      get<position>(knots)[i] =
+          vdouble2(distribution(generator), distribution(generator));
+    }
+
+    const size_t order = 4;
+    knots.init_neighbour_search(min, max, periodic, 16);
+
+    const double jitter = 1e-5;
+
+    const double gscale = std::pow(c, 2);
+    auto gaussian_kernel = [&](const vdouble2 &a, const vdouble2 &b) {
+      return std::exp(-(b - a).squaredNorm() * gscale);
+    };
+
+    const double mscale = std::sqrt(3.0) * c;
+    auto matern_kernel = [&](const vdouble2 &a, const vdouble2 &b) {
+      const double r = (b - a).norm();
+      return (1.0 + mscale * r) * std::exp(-r * mscale);
+    };
+
+    auto matern_self_kernel = [&](const_particle_reference a,
+                                  const_particle_reference b) {
+      double ret = matern_kernel(get<position>(a), get<position>(b));
+      if (get<id>(a) == get<id>(b)) {
+        ret += jitter;
+      }
+      return ret;
+    };
+
+    auto gaussian_self_kernel = [&](const_particle_reference a,
+                                    const_particle_reference b) {
+      double ret = gaussian_kernel(get<position>(a), get<position>(b));
+      if (get<id>(a) == get<id>(b)) {
+        ret += jitter;
+      }
+      return ret;
+    };
+
+    auto Ggaussian = create_h2_operator(knots, knots, order, gaussian_kernel,
+                                        gaussian_self_kernel, 1.0);
+    Ggaussian.get_first_kernel().compress(1e-10);
+
+    auto Gmatern = create_h2_operator(knots, knots, order, matern_kernel,
+                                      matern_self_kernel, 1.0);
+    Gmatern.get_first_kernel().compress(1e-10);
+
+    vector_type phi(N), gamma(N);
+    for (size_t i = 0; i < knots.size(); ++i) {
+      const double x = get<position>(knots[i])[0];
+      const double y = get<position>(knots[i])[1];
+      phi[i] = funct(x, y);
+    }
+
+    Eigen::BiCGSTAB<decltype(Ggaussian), Eigen::DiagonalPreconditioner<double>>
+        bicg;
+    bicg.setMaxIterations(max_iter);
+    bicg.compute(Ggaussian);
+    gamma = bicg.solve(phi);
+    out_it << " " << bicg.iterations();
+    out_err << " " << bicg.error();
+
+    knots.init_neighbour_search(min, max, periodic, 200);
+
+    Eigen::BiCGSTAB<decltype(Ggaussian), CardinalFunctionsPreconditioner>
+        bicg_card;
+    bicg_card.setMaxIterations(max_iter);
+    bicg_card.preconditioner().set_number_of_random_particles(30);
+    bicg_card.preconditioner().set_sigma(1.0 / c);
+    bicg_card.preconditioner().set_rejection_sampling_scale(1.0);
+    bicg_card.compute(Ggaussian);
+    gamma = bicg_card.solve(phi);
+    out_it << " " << bicg_card.iterations();
+    out_err << " " << bicg_card.error();
+
+    Eigen::BiCGSTAB<decltype(Ggaussian),
+                    SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg_rasm;
+    bicg_rasm.setMaxIterations(max_iter);
+    bicg_rasm.preconditioner().set_number_of_random_particles(200);
+    bicg_rasm.preconditioner().set_sigma(1.0 / c);
+    bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
+    bicg_rasm.compute(Ggaussian);
+    gamma = bicg_rasm.solve(phi);
+    out_it << " " << bicg_rasm.iterations();
+    out_err << " " << bicg_rasm.error();
+
+    Eigen::BiCGSTAB<decltype(Ggaussian),
+                    SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg_rasm2;
+    bicg_rasm2.setMaxIterations(max_iter);
+    bicg_rasm2.compute(Ggaussian);
+    gamma = bicg_rasm2.solve(phi);
+    out_it << " " << bicg_rasm2.iterations();
+    out_err << " " << bicg_rasm2.error();
+
+    Eigen::BiCGSTAB<decltype(Ggaussian),
+                    NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        bicg_nystrom;
+    bicg_nystrom.setMaxIterations(max_iter);
+    bicg_nystrom.preconditioner().set_number_of_random_particles(500);
+    bicg_nystrom.preconditioner().set_lambda(1e-4);
+    bicg_nystrom.compute(Ggaussian);
+    gamma = bicg_nystrom.solve(phi);
+    out_it << " " << bicg_nystrom.iterations();
+    out_err << " " << bicg_nystrom.error();
+
+    /*
+        Eigen::BiCGSTAB<decltype(Ggaussian),
+                        ReducedOrderPreconditioner<H2LibCholeskyDecomposition>>
+            bicg_pre;
+        bicg_pre.preconditioner().set_tolerance(1e-2);
+        bicg_pre.setMaxIterations(max_iter);
+        bicg_pre.compute(Ggaussian);
+        gamma = bicg_pre.solve(phi);
+        out_it << " " << bicg_pre.iterations();
+        out_err << " " << bicg_pre.error();
+        */
+    out_it << std::endl;
+    out_err << std::endl;
+
+#endif // HAVE_H2LIB
+  }
+
+  void test_param_sweep(void) {
+    std::cout << "-------------------------------------------\n"
+              << "Running precon param sweep             ....\n"
+              << "------------------------------------------" << std::endl;
+    std::ofstream out_it;
+    out_it.open("iterations.txt", std::ios::out);
+    std::ofstream out_error;
+    out_error.open("error.txt", std::ios::out);
+
+    out_it << "N sigma diagonal cardinal swartzsampling swartz nystrom "
+              "reducedorder"
+           << std::endl;
+    const int N = 2000;
+    for (double sigma = 0.001; sigma < 2.0; sigma += 0.01) {
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error);
+    }
+    out_it.close();
+    out_error.close();
   }
 
   void test_CellListOrdered() {
