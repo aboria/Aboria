@@ -158,18 +158,18 @@ std::endl;
     /*
      * randomly set position for N particles
      */
-    Aboria::detail::for_each(particles.begin(), particles.end(),
-                             [] CUDA_HOST_DEVICE(raw_reference i) {
-#if defined(__CUDACC__)
-                               thrust::uniform_real_distribution<double> uni(0,
-                                                                             1);
-#else
-                               std::uniform_real_distribution<double> uni(0, 1);
-#endif
-                               generator_type &gen = get<generator>(i);
-                               get<position>(i) = vdouble2(uni(gen), uni(gen));
-                               get<velocity>(i) = vdouble2(0, 0);
-                             });
+    thrust::tabulate(get<position>(particles).begin(),
+                     get<position>(particles).end(),
+                     [] __device__(const int i) {
+                       thrust::default_random_engine gen;
+                       thrust::uniform_real_distribution<float> uni(0, 1);
+                       gen.discard(i);
+                       return vdouble2(uni(gen), uni(gen));
+                     });
+
+    // initialise velocity to zero
+    thrust::fill(get<velocity>(particles).begin(),
+                 get<velocity>(particles).end(), vdouble2(0, 0));
 
     /*
      * initiate neighbour search on a periodic 2d domain of side length L
