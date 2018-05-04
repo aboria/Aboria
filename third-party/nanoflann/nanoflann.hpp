@@ -970,7 +970,7 @@ public:
       return;
     computeBoundingBox(root_bbox);
     // ensure root node is not counted in number of nodes
-    m_number_of_nodes = -1;
+    m_number_of_nodes = std::numeric_limits<size_t>::max();
     root_node = divideTree(0, m_size, root_bbox, 0); // construct the tree
   }
 

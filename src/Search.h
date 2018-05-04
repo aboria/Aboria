@@ -162,20 +162,6 @@ public:
   search_iterator() : m_valid(false) {}
 
   ///
-  /// @brief copy constructor
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  search_iterator(const search_iterator &) = default;
-
-  ///
-  /// @brief move constructor
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  search_iterator(search_iterator &&) = default;
-
-  ///
   /// @brief should generally use this constructor to make a search iterator.
   /// Returns an iterator that will search around the given point, and iterate
   /// through all the particles it finds within the given maximum distance
@@ -235,13 +221,6 @@ public:
 
 #endif
   }
-
-  ///
-  /// @brief assignment operator
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  search_iterator &operator=(const search_iterator &) = default;
 
   ///
   /// @brief returns the distance $r_b-r_a$ between the current candidate

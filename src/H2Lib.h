@@ -166,16 +166,15 @@ public:
   }
 
   // TODO: match eigen's interface for solver
-  /*
-  template <typename DerivedRHSkk>
+  template <typename DerivedRHS>
   void solve(const Eigen::DenseBase<DerivedRHS> &source,
                    Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
-      ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take
-  vectors"); dest = source; pavector x = new_pointer_avector( dest.data(),
-                         dest.size());
-      cholsolve_h2matrix_avector(L,x);
+      ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors"); 
+      dest = source; 
+      pavector dest_avector = new_pointer_avector(reinterpret_cast<double *>(dest.data()), dest.size());
+
+      cholsolve_h2matrix_avector(L.get(),dest_avector);
   }
-  */
 
   template <typename T1, typename T2>
   void solve(const std::vector<T1> &source, std::vector<T2> &dest) {

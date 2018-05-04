@@ -65,6 +65,7 @@ template <typename IteratorType> struct iterator_range {
   IteratorType m_begin;
   IteratorType m_end;
 
+  /*
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range() {}
@@ -80,6 +81,7 @@ template <typename IteratorType> struct iterator_range {
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range &operator=(const iterator_range &) = default;
+  */
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -183,7 +185,6 @@ public:
     typedef Vector<double, D> double_d;
     typedef Vector<bool, D> bool_d;
     typedef position_d<D> position;
-    static const unsigned int dimension = D;
     const double_d low, high;
     const bool_d periodic;
 
@@ -205,7 +206,7 @@ public:
     CUDA_HOST_DEVICE
     void operator()(Reference i) const {
       double_d r = Aboria::get<position>(i);
-      for (unsigned int d = 0; d < dimension; ++d) {
+      for (unsigned int d = 0; d < D; ++d) {
         if (!std::isfinite(r[d])) {
 #ifdef __CUDA_ARCH__
           LOG_CUDA(2, "removing particle");
@@ -377,6 +378,7 @@ public:
 
     // enforce domain
     if (m_domain_has_been_set) {
+        std::cout << "enforce domain"<<std::endl;
       detail::for_each(update_begin, update_end,
                        enforce_domain_lambda<Traits::dimension, raw_reference>(
                            get_min(), get_max(), get_periodic()));
@@ -388,8 +390,10 @@ public:
     int num_dead = 0;
     m_alive_sum.resize(update_n);
     if (delete_dead_particles) {
+        std::cout << "deleting dead particles n = "<<get<alive>(update_end)-get<alive>(update_begin)<<" m_alive_sum size = "<<m_alive_sum.size()<<std::endl;
       detail::exclusive_scan(get<alive>(update_begin), get<alive>(update_end),
                              m_alive_sum.begin(), 0);
+        std::cout << "finished deleting dead particles"<<std::endl;
       const int num_alive =
           m_alive_sum.back() + static_cast<int>(*get<alive>(update_end - 1));
       num_dead = update_n - num_alive;
@@ -402,6 +406,7 @@ public:
       }
       */
     } else {
+        std::cout << "not deleting dead particles"<<std::endl;
       detail::sequence(m_alive_sum.begin(), m_alive_sum.end());
     }
 

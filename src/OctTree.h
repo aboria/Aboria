@@ -394,7 +394,7 @@ template <typename Traits> void HyperOctree<Traits>::build_tree() {
     vector_int nodes_on_this_level(child_node_kind.size());
 
     // Enumerate nodes at this level
-    auto plus = [] CUDA_HOST_DEVICE(auto a, auto b) { return a + b; };
+    auto plus = [] CUDA_HOST_DEVICE(const int a, const int b) { return a + b; };
     detail::transform_exclusive_scan(
         child_node_kind.begin(), child_node_kind.end(),
         nodes_on_this_level.begin(), detail::is_a<detail::NODE>(), 0, plus);

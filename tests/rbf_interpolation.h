@@ -37,6 +37,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define RBF_INTERPOLATION_TEST_H_
 
 #include <cxxtest/TestSuite.h>
+#include <chrono>
+typedef std::chrono::system_clock Clock;
 
 //[rbf_interpolation_global
 /*`
@@ -756,11 +758,14 @@ public:
 
   template <template <typename> class SearchMethod>
   void helper_param_sweep(const double sigma, const int N,
-                          std::ofstream &out_it, std::ofstream &out_err) {
+                          std::ofstream &out_it, std::ofstream &out_err, std::ofstream &out_setup, std::ofstream &out_solve, int which) {
 #ifdef HAVE_H2LIB
+    const int width = 11;
 
-    out_it << N << " " << sigma;
-    out_err << N << " " << sigma;
+    out_it << std::setw(width) << N << " " << std::setw(width) << sigma;
+    out_err << std::setw(width) << N << " " << std::setw(width) << sigma;
+    out_setup << std::setw(width) << N << " " << std::setw(width) << sigma;
+    out_solve << std::setw(width) << N << " " << std::setw(width) << sigma;
 
     auto funct = [](const double x, const double y) {
       return std::exp(-9 * std::pow(x - 0.5, 2) - 9 * std::pow(y - 0.25, 2));
@@ -792,10 +797,11 @@ public:
           vdouble2(distribution(generator), distribution(generator));
     }
 
-    const size_t order = 4;
-    knots.init_neighbour_search(min, max, periodic, 16);
+    const size_t order = 5;
+    knots.init_neighbour_search(min, max, periodic, 30);
 
     const double jitter = 1e-5;
+
 
     const double gscale = std::pow(c, 2);
     auto gaussian_kernel = [&](const vdouble2 &a, const vdouble2 &b) {
@@ -806,6 +812,15 @@ public:
     auto matern_kernel = [&](const vdouble2 &a, const vdouble2 &b) {
       const double r = (b - a).norm();
       return (1.0 + mscale * r) * std::exp(-r * mscale);
+    };
+
+    auto wendland_kernel = [&](const vdouble2 &a, const vdouble2 &b) {
+      const double r = (b - a).norm();
+      if (r < 2*sigma) {
+        return std::pow(2.0 - r*c, 4) * (1.0 + 2.0 * r*c);
+      } else {
+        return 0.0;
+      }
     };
 
     auto matern_self_kernel = [&](const_particle_reference a,
@@ -826,6 +841,17 @@ public:
       return ret;
     };
 
+    auto wendland_self_kernel = [&](const_particle_reference a,
+                                    const_particle_reference b) {
+      double ret = wendland_kernel(get<position>(a), get<position>(b));
+      if (get<id>(a) == get<id>(b)) {
+        ret += jitter;
+      }
+      return ret;
+    };
+
+
+
     auto Ggaussian = create_h2_operator(knots, knots, order, gaussian_kernel,
                                         gaussian_self_kernel, 1.0);
     Ggaussian.get_first_kernel().compress(1e-10);
@@ -834,6 +860,13 @@ public:
                                       matern_self_kernel, 1.0);
     Gmatern.get_first_kernel().compress(1e-10);
 
+    auto Gwendland = create_h2_operator(knots, knots, order, wendland_kernel,
+                                      wendland_self_kernel, 1.0);
+    Gwendland.get_first_kernel().compress(1e-10);
+
+    //const int nleaf = std::pow(sigma,2)*N;
+    //knots.init_neighbour_search(min, max, periodic, nleaf);
+
     vector_type phi(N), gamma(N);
     for (size_t i = 0; i < knots.size(); ++i) {
       const double x = get<position>(knots[i])[0];
@@ -841,58 +874,338 @@ public:
       phi[i] = funct(x, y);
     }
 
-    Eigen::BiCGSTAB<decltype(Ggaussian), Eigen::DiagonalPreconditioner<double>>
-        bicg;
-    bicg.setMaxIterations(max_iter);
-    bicg.compute(Ggaussian);
-    gamma = bicg.solve(phi);
-    out_it << " " << bicg.iterations();
-    out_err << " " << bicg.error();
+    if (which == 0) {
+        //Eigen::BiCGSTAB<decltype(Ggaussian), Eigen::DiagonalPreconditioner<double>>
+        Eigen::BiCGSTAB<decltype(Ggaussian), Eigen::IdentityPreconditioner>
+            bicg;
+        bicg.setMaxIterations(max_iter);
+        auto t0 = Clock::now();
+        bicg.compute(Ggaussian);
+        auto t1 = Clock::now();
+        gamma = bicg.solve(phi);
+        auto t2 = Clock::now();
+        std::chrono::duration<double> dt = t1 - t0;
+        out_it << " " << std::setw(width) << bicg.iterations();
+        out_err << " " << std::setw(width) << bicg.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else if (which == 1) {
+        //Eigen::BiCGSTAB<decltype(Gmatern), Eigen::DiagonalPreconditioner<double>>
+        Eigen::BiCGSTAB<decltype(Gmatern), Eigen::IdentityPreconditioner>
+            bicg;
+        bicg.setMaxIterations(max_iter);
+        auto t0 = Clock::now();
+        bicg.compute(Gmatern);
+        auto t1 = Clock::now();
+        gamma = bicg.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg.iterations();
+        out_err << " " << std::setw(width) << bicg.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else {
+        //Eigen::BiCGSTAB<decltype(Gwendland), Eigen::DiagonalPreconditioner<double>>
+        Eigen::BiCGSTAB<decltype(Gwendland), Eigen::IdentityPreconditioner>
+            bicg;
+        bicg.setMaxIterations(max_iter);
+        auto t0 = Clock::now();
+        bicg.compute(Gwendland);
+        auto t1 = Clock::now();
+        gamma = bicg.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg.iterations();
+        out_err << " " << std::setw(width) << bicg.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    }
 
-    knots.init_neighbour_search(min, max, periodic, 200);
+    if (which == 0) {
+        Eigen::BiCGSTAB<decltype(Ggaussian),
+                        SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_rasm;
+        bicg_rasm.setMaxIterations(max_iter);
+        bicg_rasm.preconditioner().set_number_of_random_particles(300);
+        bicg_rasm.preconditioner().set_sigma(1.0 / c);
+        bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
+        auto t0 = Clock::now();
+        bicg_rasm.compute(Ggaussian);
+        auto t1 = Clock::now();
+        gamma = bicg_rasm.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_rasm.iterations();
+        out_err << " " << std::setw(width) << bicg_rasm.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else if (which == 1) {
+        Eigen::BiCGSTAB<decltype(Gmatern),
+                        SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_rasm;
+        bicg_rasm.setMaxIterations(max_iter);
+        bicg_rasm.preconditioner().set_number_of_random_particles(300);
+        bicg_rasm.preconditioner().set_sigma(1.0 / (2*c));
+        bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
+        auto t0 = Clock::now();
+        bicg_rasm.compute(Gmatern);
+        auto t1 = Clock::now();
+        gamma = bicg_rasm.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_rasm.iterations();
+        out_err << " " << std::setw(width) << bicg_rasm.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else {
+        Eigen::BiCGSTAB<decltype(Gwendland),
+                        SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_rasm;
+        bicg_rasm.setMaxIterations(max_iter);
+        bicg_rasm.preconditioner().set_number_of_random_particles(300);
+        bicg_rasm.preconditioner().set_sigma(1.0 / c);
+        bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
+        auto t0 = Clock::now();
+        bicg_rasm.compute(Gwendland);
+        auto t1 = Clock::now();
+        gamma = bicg_rasm.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_rasm.iterations();
+        out_err << " " << std::setw(width) << bicg_rasm.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    }
 
-    Eigen::BiCGSTAB<decltype(Ggaussian), CardinalFunctionsPreconditioner>
-        bicg_card;
-    bicg_card.setMaxIterations(max_iter);
-    bicg_card.preconditioner().set_number_of_random_particles(30);
-    bicg_card.preconditioner().set_sigma(1.0 / c);
-    bicg_card.preconditioner().set_rejection_sampling_scale(1.0);
-    bicg_card.compute(Ggaussian);
-    gamma = bicg_card.solve(phi);
-    out_it << " " << bicg_card.iterations();
-    out_err << " " << bicg_card.error();
 
-    Eigen::BiCGSTAB<decltype(Ggaussian),
-                    SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
-        bicg_rasm;
-    bicg_rasm.setMaxIterations(max_iter);
-    bicg_rasm.preconditioner().set_number_of_random_particles(200);
-    bicg_rasm.preconditioner().set_sigma(1.0 / c);
-    bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
-    bicg_rasm.compute(Ggaussian);
-    gamma = bicg_rasm.solve(phi);
-    out_it << " " << bicg_rasm.iterations();
-    out_err << " " << bicg_rasm.error();
+    if (which == 0) {
+        Eigen::BiCGSTAB<decltype(Ggaussian),
+                        SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_rasm2;
+        bicg_rasm2.setMaxIterations(max_iter);
+        //bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
+        //bicg_rasm2.preconditioner().set_coarse_grid_n(20);
+        auto t0 = Clock::now();
+        bicg_rasm2.compute(Ggaussian);
+        auto t1 = Clock::now();
+        gamma = bicg_rasm2.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_rasm2.iterations();
+        out_err << " " << std::setw(width) << bicg_rasm2.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else if (which == 1) {
+        Eigen::BiCGSTAB<decltype(Gmatern),
+                        SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_rasm2;
+        bicg_rasm2.setMaxIterations(max_iter);
+        //bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
+        //bicg_rasm2.preconditioner().set_coarse_grid_n(20);
+        auto t0 = Clock::now();
+        bicg_rasm2.compute(Gmatern);
+        auto t1 = Clock::now();
+        gamma = bicg_rasm2.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_rasm2.iterations();
+        out_err << " " << std::setw(width) << bicg_rasm2.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else {
+        Eigen::BiCGSTAB<decltype(Gwendland),
+                        SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_rasm2;
+        bicg_rasm2.setMaxIterations(max_iter);
+        //bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
+        //bicg_rasm2.preconditioner().set_coarse_grid_n(20);
+        auto t0 = Clock::now();
+        bicg_rasm2.compute(Gwendland);
+        auto t1 = Clock::now();
+        gamma = bicg_rasm2.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_rasm2.iterations();
+        out_err << " " << std::setw(width) << bicg_rasm2.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
 
-    Eigen::BiCGSTAB<decltype(Ggaussian),
-                    SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
-        bicg_rasm2;
-    bicg_rasm2.setMaxIterations(max_iter);
-    bicg_rasm2.compute(Ggaussian);
-    gamma = bicg_rasm2.solve(phi);
-    out_it << " " << bicg_rasm2.iterations();
-    out_err << " " << bicg_rasm2.error();
+    }
 
-    Eigen::BiCGSTAB<decltype(Ggaussian),
-                    NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
-        bicg_nystrom;
-    bicg_nystrom.setMaxIterations(max_iter);
-    bicg_nystrom.preconditioner().set_number_of_random_particles(500);
-    bicg_nystrom.preconditioner().set_lambda(1e-4);
-    bicg_nystrom.compute(Ggaussian);
-    gamma = bicg_nystrom.solve(phi);
-    out_it << " " << bicg_nystrom.iterations();
-    out_err << " " << bicg_nystrom.error();
+    /*
+
+    if (which == 0) {
+        Eigen::BiCGSTAB<decltype(Ggaussian),
+                        NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_nystrom;
+        bicg_nystrom.setMaxIterations(max_iter);
+        bicg_nystrom.preconditioner().set_number_of_random_particles(500);
+        bicg_nystrom.preconditioner().set_lambda(1e-4);
+        auto t0 = Clock::now();
+        bicg_nystrom.compute(Ggaussian);
+        auto t1 = Clock::now();
+        gamma = bicg_nystrom.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_nystrom.iterations();
+        out_err << " " << std::setw(width) << bicg_nystrom.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else if (which == 1) {
+        Eigen::BiCGSTAB<decltype(Gmatern),
+                        NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_nystrom;
+        bicg_nystrom.setMaxIterations(max_iter);
+        bicg_nystrom.preconditioner().set_number_of_random_particles(500);
+        bicg_nystrom.preconditioner().set_lambda(1e-4);
+        auto t0 = Clock::now();
+        bicg_nystrom.compute(Gmatern);
+        auto t1 = Clock::now();
+        gamma = bicg_nystrom.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_nystrom.iterations();
+        out_err << " " << std::setw(width) << bicg_nystrom.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else {
+        Eigen::BiCGSTAB<decltype(Gwendland),
+                        NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_nystrom;
+        bicg_nystrom.setMaxIterations(max_iter);
+        bicg_nystrom.preconditioner().set_number_of_random_particles(500);
+        bicg_nystrom.preconditioner().set_lambda(1e-4);
+        auto t0 = Clock::now();
+        bicg_nystrom.compute(Gwendland);
+        auto t1 = Clock::now();
+        gamma = bicg_nystrom.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_nystrom.iterations();
+        out_err << " " << std::setw(width) << bicg_nystrom.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    }
+
+    if (which == 0) {
+        Eigen::BiCGSTAB<decltype(Ggaussian),
+                        ChebyshevPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_cheb;
+        bicg_cheb.setMaxIterations(max_iter);
+        bicg_cheb.preconditioner().set_order(30);
+        auto t0 = Clock::now();
+        bicg_cheb.compute(Ggaussian);
+        auto t1 = Clock::now();
+        gamma = bicg_cheb.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_cheb.iterations();
+        out_err << " " << std::setw(width) << bicg_cheb.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else if (which == 1) {
+        Eigen::BiCGSTAB<decltype(Gmatern),
+                        ChebyshevPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_cheb;
+        bicg_cheb.setMaxIterations(max_iter);
+        bicg_cheb.preconditioner().set_order(22);
+        auto t0 = Clock::now();
+        bicg_cheb.compute(Gmatern);
+        auto t1 = Clock::now();
+        gamma = bicg_cheb.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_cheb.iterations();
+        out_err << " " << std::setw(width) << bicg_cheb.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else {
+        Eigen::BiCGSTAB<decltype(Gwendland),
+                        ChebyshevPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg_cheb;
+        bicg_cheb.setMaxIterations(max_iter);
+        bicg_cheb.preconditioner().set_order(22);
+        auto t0 = Clock::now();
+        bicg_cheb.compute(Gwendland);
+        auto t1 = Clock::now();
+        gamma = bicg_cheb.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_cheb.iterations();
+        out_err << " " << std::setw(width) << bicg_cheb.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    }
+
+    if (which == 0) {
+        Eigen::BiCGSTAB<decltype(Ggaussian),
+                        ReducedOrderPreconditioner<H2LibCholeskyDecomposition>>
+            bicg_ro;
+        bicg_ro.setMaxIterations(max_iter);
+        bicg_ro.preconditioner().set_tolerance(1e-6);
+        auto t0 = Clock::now();
+        bicg_ro.compute(Ggaussian);
+        auto t1 = Clock::now();
+        gamma = bicg_ro.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_ro.iterations();
+        out_err << " " << std::setw(width) << bicg_ro.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else if (which == 1) {
+        Eigen::BiCGSTAB<decltype(Gmatern),
+                        ReducedOrderPreconditioner<H2LibCholeskyDecomposition>>
+            bicg_ro;
+        bicg_ro.setMaxIterations(max_iter);
+        bicg_ro.preconditioner().set_tolerance(1e-6);
+        auto t0 = Clock::now();
+        bicg_ro.compute(Gmatern);
+        auto t1 = Clock::now();
+        gamma = bicg_ro.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_ro.iterations();
+        out_err << " " << std::setw(width) << bicg_ro.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    } else {
+        Eigen::BiCGSTAB<decltype(Gwendland),
+                        ReducedOrderPreconditioner<H2LibCholeskyDecomposition>>
+            bicg_ro;
+        bicg_ro.setMaxIterations(max_iter);
+        bicg_ro.preconditioner().set_tolerance(1e-6);
+        auto t0 = Clock::now();
+        bicg_ro.compute(Gwendland);
+        auto t1 = Clock::now();
+        gamma = bicg_ro.solve(phi);
+        auto t2 = Clock::now();
+        out_it << " " << std::setw(width) << bicg_ro.iterations();
+        out_err << " " << std::setw(width) << bicg_ro.error();
+        out_setup << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+        out_solve << " " << std::setw(width) 
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+    }
+    */
 
     /*
         Eigen::BiCGSTAB<decltype(Ggaussian),
@@ -907,6 +1220,8 @@ public:
         */
     out_it << std::endl;
     out_err << std::endl;
+    out_setup << std::endl;
+    out_solve << std::endl;
 
 #endif // HAVE_H2LIB
   }
@@ -916,20 +1231,151 @@ public:
               << "Running precon param sweep             ....\n"
               << "------------------------------------------" << std::endl;
     std::ofstream out_it;
-    out_it.open("iterations.txt", std::ios::out);
+    out_it.open("iterations_gaussian.txt", std::ios::out);
     std::ofstream out_error;
-    out_error.open("error.txt", std::ios::out);
+    out_error.open("error_gaussian.txt", std::ios::out);
+    std::ofstream out_setup;
+    out_setup.open("setup_gaussian.txt", std::ios::out);
+    std::ofstream out_solve;
+    out_solve.open("solve_gaussian.txt", std::ios::out);
 
-    out_it << "N sigma diagonal cardinal swartzsampling swartz nystrom "
-              "reducedorder"
+    const int width = 12;
+    auto header = [](auto& out) {
+        out<< std::setw(width) << "N "
+           << std::setw(width) << "sigma "
+           << std::setw(width) << "diag "
+           << std::setw(width) << "srtsamp "
+           << std::setw(width) << "srtz "
+           << std::setw(width) << "nystrom "
+           << std::setw(width) << "cheby "
+           << std::setw(width) << "reduce "
            << std::endl;
+    };
+
+    header(out_it);
+    header(out_error);
+    header(out_setup);
+    header(out_solve);
     const int N = 2000;
-    for (double sigma = 0.001; sigma < 2.0; sigma += 0.01) {
-      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error);
+    for (double sigma = 0.001; sigma < -0.1; sigma += 0.02) {
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,0);
     }
     out_it.close();
     out_error.close();
+    out_setup.close();
+    out_solve.close();
+
+    out_it.open("iterations_matern.txt", std::ios::out);
+    out_error.open("error_matern.txt", std::ios::out);
+    out_setup.open("setup_matern.txt", std::ios::out);
+    out_solve.open("solve_matern.txt", std::ios::out);
+
+    header(out_it);
+    header(out_error);
+    header(out_setup);
+    header(out_solve);
+    for (double sigma = 0.001; sigma < 1.0; sigma += 0.02) {
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,1);
+    }
+    out_it.close();
+    out_error.close();
+    out_setup.close();
+    out_solve.close();
+
+    out_it.open("iterations_wendland.txt", std::ios::out);
+    out_error.open("error_wendland.txt", std::ios::out);
+    out_setup.open("setup_wendland.txt", std::ios::out);
+    out_solve.open("solve_wendland.txt", std::ios::out);
+
+    header(out_it);
+    header(out_error);
+    header(out_setup);
+    header(out_solve);
+    for (double sigma = 0.001; sigma < 1.0; sigma += 0.02) {
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,2);
+    }
+    out_it.close();
+    out_error.close();
+    out_setup.close();
+    out_solve.close();
+
   }
+
+  void test_n_sweep(void) {
+    std::cout << "-------------------------------------------\n"
+              << "Running precon n sweep             ....\n"
+              << "------------------------------------------" << std::endl;
+    std::ofstream out_it;
+    out_it.open("iterations_gaussian_n.txt", std::ios::out);
+    std::ofstream out_error;
+    out_error.open("error_gaussian_n.txt", std::ios::out);
+    std::ofstream out_setup;
+    out_setup.open("setup_gaussian_n.txt", std::ios::out);
+    std::ofstream out_solve;
+    out_solve.open("solve_gaussian_n.txt", std::ios::out);
+
+    const int width = 12;
+    auto header = [](auto& out) {
+        out<< std::setw(width) << "N "
+           << std::setw(width) << "sigma "
+           << std::setw(width) << "diag "
+           << std::setw(width) << "srtsamp "
+           << std::setw(width) << "srtz "
+           << std::setw(width) << "nystrom "
+           << std::setw(width) << "cheby "
+           << std::setw(width) << "reduce "
+           << std::endl;
+    };
+
+    header(out_it);
+    header(out_error);
+    header(out_setup);
+    header(out_solve);
+    const double sigma = 0.1;
+    for (int N = 1000; N < -1e6; N *= 2) {
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,0);
+    }
+    out_it.close();
+    out_error.close();
+    out_setup.close();
+    out_solve.close();
+
+    out_it.open("iterations_matern_n.txt", std::ios::out);
+    out_error.open("error_matern_n.txt", std::ios::out);
+    out_setup.open("setup_matern_n.txt", std::ios::out);
+    out_solve.open("solve_matern_n.txt", std::ios::out);
+
+    header(out_it);
+    header(out_error);
+    header(out_setup);
+    header(out_solve);
+    for (int N = 1000; N < 1e6; N *= 2) {
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,1);
+    }
+    out_it.close();
+    out_error.close();
+    out_setup.close();
+    out_solve.close();
+
+    out_it.open("iterations_wendland_n.txt", std::ios::out);
+    out_error.open("error_wendland_n.txt", std::ios::out);
+    out_setup.open("setup_wendland_n.txt", std::ios::out);
+    out_solve.open("solve_wendland_n.txt", std::ios::out);
+
+    header(out_it);
+    header(out_error);
+    header(out_setup);
+    header(out_solve);
+    for (int N = 1000; N < 1e6; N *= 2) {
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,2);
+    }
+    out_it.close();
+    out_error.close();
+    out_setup.close();
+    out_solve.close();
+
+  }
+
 
   void test_CellListOrdered() {
     std::cout << "-------------------------------------------\n"
