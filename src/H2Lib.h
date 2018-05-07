@@ -40,15 +40,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_H2LIB
 
-//#include <GL/glut.h>
-extern "C" {
-#include <h2arith.h>
-#include <h2matrix.h>
-#include <h2update.h>
-#include <harith.h>
-#include <hcoarsen.h>
-#undef I
-}
+#include "detail/H2Lib.h"
 
 namespace Aboria {
 
@@ -313,121 +305,6 @@ class H2LibMatrix {
   std::vector<uint> m_row_idx;
   std::vector<uint> m_col_idx;
 
-  template <typename Particles, typename Expansions>
-  static void assemble_h2matrix_row_clusterbasis(pcclusterbasis rbc, uint rname,
-                                                 void *data) {
-    auto &data_cast =
-        *static_cast<std::tuple<Expansions *, Particles *> *>(data);
-
-    const Expansions &expansions = *std::get<0>(data_cast);
-    const Particles &particles = *std::get<1>(data_cast);
-    pclusterbasis rb = (pclusterbasis)rbc;
-
-    if (rb->sons > 0) {
-      // find orders of sons
-      std::vector<size_t> orders(rb->sons);
-      size_t max_order = 0;
-      for (size_t i = 0; i < rb->sons; ++i) {
-        orders[i] = static_cast<size_t>(
-            std::round(std::pow(rb->son[i]->k / expansions.block_rows,
-                                1.0 / Expansions::dimension)));
-        if (orders[i] > max_order)
-          max_order = orders[i];
-      }
-      // increment max order by beta
-      const size_t order = max_order + expansions.m_beta;
-      const uint k =
-          std::pow(order, Expansions::dimension) * expansions.block_rows;
-      resize_clusterbasis(rb, k);
-      for (size_t i = 0; i < rb->sons; ++i) {
-        expansions.L2L_amatrix(&rb->son[i]->E, rb->son[i]->t, rb->t, orders[i],
-                               order);
-      }
-    } else {
-      const uint k = std::pow(expansions.m_order, Expansions::dimension) *
-                     expansions.block_rows;
-      resize_amatrix(&rb->V, rb->t->size, k);
-      expansions.L2P_amatrix(&rb->V, rb->t, rb->t->idx, rb->t->size, particles);
-      rb->k = k;
-      update_clusterbasis(rb);
-    }
-  }
-
-  template <typename Particles, typename Expansions>
-  static void assemble_h2matrix_col_clusterbasis(pcclusterbasis rbc, uint rname,
-                                                 void *data) {
-    auto &data_cast =
-        *static_cast<std::tuple<Expansions *, Particles *> *>(data);
-
-    const Expansions &expansions = *std::get<0>(data_cast);
-    const Particles &particles = *std::get<1>(data_cast);
-    pclusterbasis rb = (pclusterbasis)rbc;
-
-    if (rb->sons > 0) {
-      // find orders of sons
-      std::vector<size_t> orders(rb->sons);
-      size_t max_order = 0;
-      for (size_t i = 0; i < rb->sons; ++i) {
-        orders[i] = static_cast<size_t>(
-            std::round(std::pow(rb->son[i]->k / expansions.block_cols,
-                                1.0 / Expansions::dimension)));
-        if (orders[i] > max_order)
-          max_order = orders[i];
-      }
-      // increment max order by beta
-      const size_t order = max_order + expansions.m_beta;
-      const uint k =
-          std::pow(order, Expansions::dimension) * expansions.block_cols;
-
-      resize_clusterbasis(rb, k);
-      for (size_t i = 0; i < rb->sons; ++i) {
-        // should this be transposed?
-        expansions.M2M_trans_amatrix(&rb->son[i]->E, rb->t, rb->son[i]->t,
-                                     order, orders[i]);
-      }
-    } else {
-      const uint k = std::pow(expansions.m_order, Expansions::dimension) *
-                     expansions.block_cols;
-      resize_amatrix(&rb->V, rb->t->size, k);
-      expansions.P2M_trans_amatrix(&rb->V, rb->t, rb->t->idx, rb->t->size,
-                                   particles);
-      rb->k = k;
-      update_clusterbasis(rb);
-    }
-  }
-
-  template <typename RowParticles, typename ColParticles, typename Expansions,
-            typename Kernel>
-  static void assemble_block_h2matrix(pcblock b, uint bname, uint rname,
-                                      uint cname, uint pardepth, void *data) {
-    auto &data_cast =
-        *static_cast<std::tuple<Expansions *, Kernel *, RowParticles *,
-                                ColParticles *, ph2matrix *> *>(data);
-
-    const Expansions &expansions = *std::get<0>(data_cast);
-    const Kernel &kernel = *std::get<1>(data_cast);
-    const RowParticles &row_particles = *std::get<2>(data_cast);
-    const ColParticles &col_particles = *std::get<3>(data_cast);
-    ph2matrix *enum_h2 = std::get<4>(data_cast);
-    ph2matrix h2 = enum_h2[bname];
-
-    if (h2->u) {
-      const uint kr = h2->u->rb->k;
-      const uint kc = h2->u->cb->k;
-      const size_t orderr = static_cast<size_t>(std::round(
-          std::pow(kr / expansions.block_rows, 1.0 / Expansions::dimension)));
-      const size_t orderc = static_cast<size_t>(std::round(
-          std::pow(kc / expansions.block_cols, 1.0 / Expansions::dimension)));
-      resize_amatrix(&h2->u->S, kr, kc);
-      expansions.M2L_amatrix(&h2->u->S, h2->u->rb->t, h2->u->cb->t, orderr,
-                             orderc);
-
-    } else if (h2->f) {
-      detail::P2P_amatrix(h2->f, h2->rb->t->idx, h2->rb->t->size,
-                          h2->cb->t->idx, h2->cb->t->size, row_particles,
-                          col_particles, kernel);
-    }
-  }
 
 public:
   template <typename RowParticles, typename ColParticles, typename Expansions,
@@ -456,7 +333,7 @@ public:
     auto data_row = std::make_tuple(&expansions, &row_particles);
     iterate_parallel_clusterbasis(
         row_cb, 0, max_pardepth, NULL,
-        assemble_h2matrix_row_clusterbasis<RowParticles, Expansions>,
+        detail::assemble_h2matrix_row_clusterbasis<RowParticles, Expansions>,
         &data_row);
 
     //
@@ -475,7 +352,7 @@ public:
     auto data_col = std::make_tuple(&expansions, &col_particles);
     iterate_parallel_clusterbasis(
         col_cb, 0, max_pardepth, NULL,
-        assemble_h2matrix_col_clusterbasis<ColParticles, Expansions>,
+        detail::assemble_h2matrix_col_clusterbasis<ColParticles, Expansions>,
         &data_col);
 
     //
@@ -483,7 +360,7 @@ public:
     //
     double eta_copy = eta;
     m_block = std::unique_ptr<block, decltype(&del_block)>(
-        build_strict_block(row_t, col_t, &eta_copy, admissible_max_cluster),
+        build_strict_block(row_t, col_t, &eta_copy, detail::admissible_max_cluster),
         del_block);
 
     /*
@@ -502,7 +379,7 @@ public:
                                    &col_particles, enum_h2mat);
     iterate_byrow_block(
         m_block.get(), 0, 0, 0, max_pardepth, NULL,
-        assemble_block_h2matrix<RowParticles, ColParticles, Expansions, Kernel>,
+        detail::assemble_block_h2matrix<RowParticles, ColParticles, Expansions, Kernel>,
         &data_h2);
     freemem(enum_h2mat);
   }
@@ -659,6 +536,8 @@ public:
                          target_avector);
   }
 };
+
+
 
 class HLibMatrix {
 
