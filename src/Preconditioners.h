@@ -1409,10 +1409,12 @@ public:
 
     m_domain_factorized_matrix.resize(m_domain_indicies.size());
 
-    matrix_type domain_matrix;
-
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
     for (size_t domain_index = 0;
          domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
+
       const storage_vector_type &buffer = m_domain_buffer[domain_index];
       const storage_vector_type &indicies = m_domain_indicies[domain_index];
       solver_type &solver = m_domain_factorized_matrix[domain_index];
@@ -1422,6 +1424,7 @@ public:
       // "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random =
       // "<<random.size()<<std::endl;
 
+      matrix_type domain_matrix;
       domain_matrix.resize(size, size);
 
       size_t i = 0;
@@ -1472,17 +1475,20 @@ public:
   void _solve_impl(const Rhs &b, Dest &x) const {
     // loop over domains and invert relevent sub-matricies in
     // mat
-    vector_type domain_x;
-    vector_type domain_b;
-    x = b;
+    // TODO: do I need this? x = b;
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
     for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
       if (m_domain_indicies.size() == 0)
         continue;
-
       const storage_vector_type &buffer = m_domain_buffer[i];
       const storage_vector_type &indicies = m_domain_indicies[i];
 
       const size_t nb = indicies.size() + buffer.size();
+
+      vector_type domain_x;
+      vector_type domain_b;
       domain_x.resize(nb);
       domain_b.resize(nb);
 
