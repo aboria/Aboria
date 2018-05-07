@@ -553,7 +553,7 @@ OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
                         std::true_type) {
 #if __cplusplus >= 201703L
   // C++17 code here
-  return std::exclusive_scan(first, last, d_first);
+  return std::exclusive_scan(first, last, d_first,init);
 #else
   if (first != last) {
     *d_first++ = init;
@@ -569,7 +569,7 @@ OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
 template <class InputIt, class OutputIt, class T>
 OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
                         std::false_type) {
-  return thrust::exclusive_scan(first, last, d_first);
+  return thrust::exclusive_scan(first, last, d_first,init);
 }
 #endif
 

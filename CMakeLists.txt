@@ -35,6 +35,11 @@ if (Aboria_USE_THRUST)
 
     add_definitions(-DHAVE_THRUST)
 
+    option(Aboria_THRUST_USE_THRUST_TUPLE "Use thrust tuple everywhere, even for std::vector" OFF)
+    if (Aboria_THRUST_USE_THRUST_TUPLE)
+        add_definitions(-DABORIA_THRUST_USE_THRUST_TUPLE)
+    endif()
+
     option(Aboria_THRUST_TEST_NVCC "Turn on tests using nvcc" OFF)
     if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
         option(Aboria_THRUST_TEST_CUDA_CLANG "Turn on tests using cuda clang" OFF)
@@ -47,15 +52,17 @@ if (Aboria_USE_THRUST)
     ${CUDA_NVCC_FLAGS};
     --expt-relaxed-constexpr
     -std=c++14
+    -G
+    -g
     #--keep
     #-lineinfo
     --expt-extended-lambda
     -ftemplate-backtrace-limit=0
     #-gencode arch=compute_30,code=sm_30 
-    -gencode arch=compute_35,code=sm_35 
+    #-gencode arch=compute_35,code=sm_35 
     #-gencode arch=compute_50,code=sm_50 
     #-gencode arch=compute_52,code=sm_52 
-    #-gencode arch=compute_50,code=compute_50
+    -gencode arch=compute_50,code=compute_50
     )
 #   if (CMAKE_BUILD_TYPE STREQUAL Debug)
 #       set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)

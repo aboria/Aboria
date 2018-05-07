@@ -156,7 +156,11 @@ public:
   }
 
   CUDA_HOST_DEVICE
-  Vector(const Vector<T, N> &arg) = default;
+  Vector(const Vector<T, N> &arg) {
+    for (size_t i = 0; i < N; ++i) {
+      mem[i] = arg.mem[i];
+    }
+  };
 
 #ifdef HAVE_EIGEN
   /// Eigen copy constructor
@@ -396,7 +400,7 @@ public:
   CUDA_HOST_DEVICE
   T maxCoeff() const {
     T max = mem[0];
-    for (int i = 1; i < N; ++i) {
+    for (size_t i = 1; i < N; ++i) {
       if (mem[i] > max) {
         max = mem[i];
       }

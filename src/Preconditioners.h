@@ -161,7 +161,7 @@ public:
     detail::ChebyshevRn<dimension> row_Rn(m_order, row_bounds);
     detail::ChebyshevRn<dimension> col_Rn(m_order, col_bounds);
 
-    const int ncheb = std::pow(m_order, dimension);
+    const size_t ncheb = std::pow(m_order, dimension);
     LOG(2,
         "ChebyshevPreconditioner:analyzing_impl_block with ncheb = " << ncheb);
 
@@ -402,14 +402,14 @@ public:
           m_h2mats[i]->get_ph2matrix(), m_h2mats[i]->get_pblock(), m_tol);
       std::vector<double> b(m_col_sizes[i]);
       std::vector<double> b2(m_row_sizes[i]);
-      for (int ii = 0; ii < m_col_sizes[i]; ++ii) {
+      for (size_t ii = 0; ii < m_col_sizes[i]; ++ii) {
         b[ii] = 1.0;
       }
       m_h2mats[i]->matrix_vector_multiply(b2, 1, false, b);
       m_solvers[i]->solve(b2, b2);
       double sum = 0;
       double sum2 = 0;
-      for (int ii = 0; ii < m_row_sizes[i]; ++ii) {
+      for (size_t ii = 0; ii < m_row_sizes[i]; ++ii) {
         sum += std::pow(b2[ii] - b[ii], 2);
         sum2 += std::pow(b[ii], 2);
       }
@@ -1409,10 +1409,12 @@ public:
 
     m_domain_factorized_matrix.resize(m_domain_indicies.size());
 
-    matrix_type domain_matrix;
-
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
     for (size_t domain_index = 0;
          domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
+
       const storage_vector_type &buffer = m_domain_buffer[domain_index];
       const storage_vector_type &indicies = m_domain_indicies[domain_index];
       solver_type &solver = m_domain_factorized_matrix[domain_index];
@@ -1422,6 +1424,7 @@ public:
       // "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random =
       // "<<random.size()<<std::endl;
 
+      matrix_type domain_matrix;
       domain_matrix.resize(size, size);
 
       size_t i = 0;
@@ -1472,17 +1475,20 @@ public:
   void _solve_impl(const Rhs &b, Dest &x) const {
     // loop over domains and invert relevent sub-matricies in
     // mat
-    vector_type domain_x;
-    vector_type domain_b;
-    x = b;
+    // TODO: do I need this? x = b;
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
     for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
       if (m_domain_indicies.size() == 0)
         continue;
-
       const storage_vector_type &buffer = m_domain_buffer[i];
       const storage_vector_type &indicies = m_domain_indicies[i];
 
       const size_t nb = indicies.size() + buffer.size();
+
+      vector_type domain_x;
+      vector_type domain_b;
       domain_x.resize(nb);
       domain_b.resize(nb);
 
@@ -1716,7 +1722,7 @@ public:
         }
 
         std::unordered_map<size_t, std::pair<child_iterator, size_t>> counts;
-        for (int i = 0; i < buckets.size(); ++i) {
+        for (size_t i = 0; i < buckets.size(); ++i) {
           auto bucket_index = query.get_bucket_index(*(buckets[i]));
           auto it = counts.find(bucket_index);
           if (it != counts.end()) {
@@ -2076,23 +2082,29 @@ public:
     m_domain_Kux.push_back(matrix_type());
     storage_vector_type &indicies = m_domain_indicies[domain_index];
 
-    // now add some random indicies
-    std::uniform_int_distribution<int> uniform_index(0, a.size() - 1);
-    std::default_random_engine generator;
+    if (m_random >= a.size()) {
+        // add all indicies
+        indicies.resize(a.size());
+        std::iota(indicies.begin(),indicies.end(),0);
+    } else {
+        // add some random indicies
+        std::uniform_int_distribution<int> uniform_index(0, a.size() - 1);
+        std::default_random_engine generator;
 
-    for (size_t d = 0; d < m_random; ++d) {
-      bool in_indicies;
-      size_t proposed_index;
-      do {
-        proposed_index = uniform_index(generator) + start_row;
+        for (size_t d = 0; d < m_random; ++d) {
+          bool in_indicies;
+          size_t proposed_index;
+          do {
+            proposed_index = uniform_index(generator) + start_row;
 
-        // check not in indicies
-        in_indicies =
-            indicies.end() !=
-            std::find(indicies.begin(), indicies.end(), proposed_index);
+            // check not in indicies
+            in_indicies =
+                indicies.end() !=
+                std::find(indicies.begin(), indicies.end(), proposed_index);
 
-      } while (in_indicies);
-      indicies.push_back(proposed_index);
+          } while (in_indicies);
+          indicies.push_back(proposed_index);
+        }
     }
     ASSERT(indicies.size() > 0, "no particles in domain");
   }
@@ -2208,7 +2220,7 @@ public:
           Kuu(i, j++) = mat.coeff(big_index_i, big_index_j);
         }
         j = 0;
-        for (size_t big_index_j = range[0]; big_index_j < range[1];
+        for (int big_index_j = range[0]; big_index_j < range[1];
              ++big_index_j) {
           Kux(i, j++) = mat.coeff(big_index_i, big_index_j);
         }
