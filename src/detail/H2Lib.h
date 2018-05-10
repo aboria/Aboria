@@ -59,7 +59,17 @@ bool admissible_max_cluster(pcluster rc, pcluster cc, void *data) {
   double eta = *static_cast<double *>(data);
 
   if (eta < 0) {
-    return true;
+    double vol = 1.0;
+    for (size_t i = 0; i < rc->dim; i++) {
+        const double side = std::max(rc->bmax[i] - cc->bmin[i],
+                                     cc->bmax[i] - rc->bmin[i]);
+        vol *= side > 0 ? side : 0;
+    }
+    if (vol > std::numeric_limits<double>::epsilon()) {
+        return false;
+    } else {
+        return true;
+    }
   }
 
   const double diamt = getdiam_max_cluster(rc);

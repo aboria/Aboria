@@ -876,16 +876,17 @@ public:
     };
 
 
+    const double eta = D > 3?-1:1;
     auto Ggaussian = create_h2_operator(knots[0], knots[0], order, gaussian_kernel,
-                                        gaussian_self_kernel, 1.0);
+                                        gaussian_self_kernel, eta);
     Ggaussian.get_first_kernel().compress(1e-10);
 
     auto Gmatern = create_h2_operator(knots[1], knots[1], order, matern_kernel,
-                                      matern_self_kernel, 1.0);
+                                      matern_self_kernel, eta);
     Gmatern.get_first_kernel().compress(1e-10);
 
     auto Gwendland = create_h2_operator(knots[2], knots[2], order, wendland_kernel,
-                                      wendland_self_kernel, 1.0);
+                                      wendland_self_kernel, eta);
     Gwendland.get_first_kernel().compress(1e-10);
 
     //const int nleaf = std::pow(sigma,2)*N;
@@ -977,6 +978,7 @@ public:
         out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
     }
 
+    if (D < 3) {
     if (which == 0) {
         Eigen::BiCGSTAB<decltype(Ggaussian),
                         SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
@@ -1039,9 +1041,15 @@ public:
         out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
 
     }
+    } else {
+        out_it << " " << std::setw(width) << " ";
+        out_err << " " << std::setw(width) << " ";
+        out_setup << " " << std::setw(width) << " ";
+        out_solve << " " << std::setw(width) << " ";
+        out_mem << " " << std::setw(width) << " ";
+    }
 
 
-    /*
     if (which == 0) {
         Eigen::BiCGSTAB<decltype(Ggaussian),
                         SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
@@ -1103,6 +1111,7 @@ public:
 
 
     
+    /*
     if (which == 0) {
         Eigen::BiCGSTAB<decltype(Ggaussian),
                         NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
@@ -1311,7 +1320,7 @@ public:
            << std::setw(width) << "order "
            << std::setw(width) << "diag "
            << std::setw(width) << "srtz "
-           //<< std::setw(width) << "srtsamp "
+           << std::setw(width) << "srtsamp "
            //<< std::setw(width) << "nystrom "
            //<< std::setw(width) << "cheby "
            //<< std::setw(width) << "reduce "
