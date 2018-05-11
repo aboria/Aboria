@@ -350,17 +350,26 @@ private:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool get_valid_bucket() {
-#ifndef __CUDA_ARCH__
-    LOG(4, "\tget_valid_bucket:");
-#endif
+    LOG_CUDA(4, "\tget_valid_bucket:");
+
     while (m_current_bucket == false) {
-#ifndef __CUDA_ARCH__
+#ifdef __CUDA_ARCH__
+        if (3 <= ABORIA_LOG_LEVEL) {                                             \
+            printf("\t\tgo_to_next periodic (search_iterator): m_current_periodic = (");
+            for (int i = 0; i < Traits::dimension; ++i) {
+                printf("%d,",(*m_current_periodic)[i]);
+            }
+            printf("\n,");
+        }
+#else
       LOG(3, "\tgo_to_next periodic (search_iterator): m_current_periodic = "
                  << *m_current_periodic);
 #endif
       ++m_current_periodic;
       if (m_current_periodic == false) {
-#ifndef __CUDA_ARCH__
+#ifdef __CUDA_ARCH__
+        LOG_CUDA(4, "\tran out of buckets to search (search_iterator):");
+#else
         LOG(4, "\tran out of buckets to search (search_iterator):");
 #endif
         return false;
@@ -381,8 +390,11 @@ private:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool get_valid_candidate() {
+    LOG_CUDA(4, "\tget_valid_candidate:");
     while (m_current_particle == false) {
-#ifndef __CUDA_ARCH__
+#ifdef __CUDA_ARCH__
+      LOG_CUDA(4, "\tgo_to_next bucket (search_iterator):");
+#else
       LOG(4, "\tgo_to_next bucket (search_iterator):");
 #endif
       ++m_current_bucket;
@@ -414,6 +426,7 @@ private:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   bool check_candidate() {
+    LOG_CUDA(4, "\tcheck_candidate:");
     // const double_d& p = get<position>(*m_current_particle) +
     // m_particle_range.get_transpose();
     const double_d &p = get<position>(*m_current_particle);
@@ -429,7 +442,19 @@ private:
         break;
       }
     }
-#ifndef __CUDA_ARCH__
+#ifdef __CUDA_ARCH__
+    if (3 <= ABORIA_LOG_LEVEL) {                                             \
+        printf("\tcheck_candidate: m_r = (");
+        for (int i = 0; i < Traits::dimension; ++i) {
+            printf("%d,",m_current_point[i]);
+        }
+        printf(") other r = (");
+        for (int i = 0; i < Traits::dimension; ++i) {
+            printf("%d,",get<position>(*m_current_particle)[i]);
+        }
+        printf("). outside = %d",outside);
+    } 
+#else
     LOG(3, "\tcheck_candidate: m_r = " << m_current_point << " other r = "
                                        << get<position>(*m_current_particle)
                                        << ". outside = " << outside);

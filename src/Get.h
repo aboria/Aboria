@@ -706,18 +706,22 @@ struct zip_pointer<thrust::tuple<TT1, TT2, TT3, TT4, TT5, TT6, TT7, TT8, TT9>,
     return temp; // return saved state
   }
 
+  CUDA_HOST_DEVICE
   bool operator<(const zip_pointer &other) const {
     return distance_to(other) > 0;
   }
 
+  CUDA_HOST_DEVICE
   bool operator<=(const zip_pointer &other) const {
     return distance_to(other) >= 0;
   }
 
+  CUDA_HOST_DEVICE
   bool operator>(const zip_pointer &other) const {
     return distance_to(other) < 0;
   }
 
+  CUDA_HOST_DEVICE
   bool operator>=(const zip_pointer &other) const {
     return distance_to(other) <= 0;
   }

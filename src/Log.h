@@ -111,6 +111,17 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
     printf("%s\n", message);                                                   \
   }
 
+#define LOG_CUDA1(level, message, variable)                                    \
+  if (level <= ABORIA_LOG_LEVEL) {                                             \
+    printf("%s %f\n", message, variable);                                                \
+  }
+
+#define LOG_CUDA2(level, message, variable1, variable2)                                   \
+  if (level <= ABORIA_LOG_LEVEL) {                                             \
+    printf("%s %f %f\n", message, variable, variable2);                        \
+  }
+
+
 // char color[] =  { 0x1b, '[', '1', ';', '3', '7', 'm', 0 };
 
 #define LOG_BOLD(level, message)                                               \

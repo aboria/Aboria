@@ -378,7 +378,6 @@ public:
 
     // enforce domain
     if (m_domain_has_been_set) {
-        std::cout << "enforce domain"<<std::endl;
       detail::for_each(update_begin, update_end,
                        enforce_domain_lambda<Traits::dimension, raw_reference>(
                            get_min(), get_max(), get_periodic()));
@@ -390,10 +389,8 @@ public:
     int num_dead = 0;
     m_alive_sum.resize(update_n);
     if (delete_dead_particles) {
-        std::cout << "deleting dead particles n = "<<get<alive>(update_end)-get<alive>(update_begin)<<" m_alive_sum size = "<<m_alive_sum.size()<<std::endl;
       detail::exclusive_scan(get<alive>(update_begin), get<alive>(update_end),
                              m_alive_sum.begin(), 0);
-        std::cout << "finished deleting dead particles"<<std::endl;
       const int num_alive =
           m_alive_sum.back() + static_cast<int>(*get<alive>(update_end - 1));
       num_dead = update_n - num_alive;
@@ -406,7 +403,6 @@ public:
       }
       */
     } else {
-        std::cout << "not deleting dead particles"<<std::endl;
       detail::sequence(m_alive_sum.begin(), m_alive_sum.end());
     }
 
@@ -978,9 +974,11 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
+  CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
@@ -996,6 +994,7 @@ private:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
+  CUDA_HOST_DEVICE
   bool equal(const bool other) const {
     return (m_current_p < m_end_p) == other;
   }
@@ -1007,9 +1006,11 @@ private:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
+  CUDA_HOST_DEVICE
   void increment() { ++m_current_p; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   void increment(const int n) { m_current_p += n; }
 

@@ -162,9 +162,9 @@ std::endl;
     std::cout << "randomly set positions" << std::endl;
     thrust::tabulate(get<position>(particles).begin(),
                      get<position>(particles).end(),
-                     [] CUDA_HOST_DEVICE (const int i) {
+                     [=] CUDA_HOST_DEVICE (const int i) {
                        thrust::default_random_engine gen;
-                       thrust::uniform_real_distribution<float> uni(0, 1);
+                       thrust::uniform_real_distribution<float> uni(0, L);
                        gen.discard(i);
                        return vdouble2(uni(gen), uni(gen));
                      });
@@ -197,7 +197,7 @@ std::endl;
       vtkWriteGrid("particles", io, particles.get_grid(true));
 #endif
       for (int i = 0; i < timesteps_per_out; i++) {
-        const query_type &query = particles.get_query();
+        const query_type query = particles.get_query();
         Aboria::detail::for_each(
             particles.begin(), particles.end(),
             [=] CUDA_HOST_DEVICE(raw_reference i) {
@@ -205,6 +205,15 @@ std::endl;
               for (auto j = euclidean_search(query, get<position>(i), diameter);
                    j != false; ++j) {
                 const double r = j.dx().norm();
+                /*
+                printf("found pair at (%f,%f) and (%f,%f) with dx = (%f,%f)\n"
+                                                               ,get<position>(i)[0],
+                                                               get<position>(i)[1],
+                                                               get<position>(*j)[0],
+                                                               get<position>(*j)[1],
+                                                               j.dx()[0],
+                                                               j.dx()[1]);
+                                                               */
                 if (r != 0) {
                   force_sum -= k * (diameter / r - 1) * j.dx();
                 }

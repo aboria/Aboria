@@ -190,7 +190,6 @@ private:
   void update_positions_impl(iterator update_begin, iterator update_end,
                              const int new_n,
                              const bool call_set_domain = true) {
-    std::cout << "update_positions_impl in CellListOrdered"<<std::endl;
 
     ASSERT(update_begin == this->m_particles_begin &&
                update_end == this->m_particles_end,

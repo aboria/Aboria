@@ -62,7 +62,7 @@ if (Aboria_USE_THRUST)
     #-gencode arch=compute_35,code=sm_35 
     #-gencode arch=compute_50,code=sm_50 
     #-gencode arch=compute_52,code=sm_52 
-    -gencode arch=compute_50,code=compute_50
+    -gencode arch=compute_50,code=sm_50
     )
 #   if (CMAKE_BUILD_TYPE STREQUAL Debug)
 #       set(CUDA_NVCC_FLAGS ${CUDA_NVCC_FLAGS};-G)
