@@ -824,7 +824,9 @@ template <typename T> struct VectorTraits {
   static base_type &Index(base_type &arg, size_t) { return arg; }
   static const base_type &Index(const base_type &arg, size_t) { return arg; }
   static void AtomicIncrement(base_type &arg1, const base_type &arg2) {
+#ifdef HAVE_OPENMP
 #pragma omp atomic
+#endif
     arg1 += arg2;
   }
 

@@ -164,7 +164,7 @@ public:
           // use a range search with radius `diameter` to
           // accelerate velocity update
           for (auto j = euclidean_search(particles.get_query(),
-                                         get<position>(p), diameter);
+                                         get<position>(i), diameter);
                j != false; ++j) {
             const double r = j.dx().norm();
             if (r != 0) {
@@ -273,7 +273,6 @@ public:
     const double mass = PI * std::pow(0.5 * diameter, 2) * dens;
     const double reduced_mass = 0.5 * mass;
     const double dt = (1.0 / 50.0) * PI / std::sqrt(k / reduced_mass);
-    const double v0 = L / (timesteps * dt);
 
     // create N particles
     container_type particles(N);
@@ -283,6 +282,7 @@ public:
     Symbol<velocity> v;
     Symbol<id> id_;
     Uniform uniform;
+    VectorSymbolic<double, 2> vector;
     Label<0, container_type> a(particles);
     Label<1, container_type> b(particles);
 
@@ -294,7 +294,7 @@ public:
     AccumulateWithinDistance<std::plus<vdouble2>> sum(diameter);
 
     // initialise particles to a uniform distribution
-    p[i] = L * vdouble2(uniform[i], uniform[i]);
+    p[a] = L * vector(uniform[a], uniform[a]);
 
     // initiate neighbour search on a periodic 2d domain of side length
     // L set average number of particles per cell to 1
