@@ -844,7 +844,9 @@ template <typename T, unsigned int N> struct VectorTraits<Vector<T, N>> {
   static T squaredNorm(const Vector<T, N> &arg) { return arg.squaredNorm(); }
   static void AtomicIncrement(Vector<T, N> &arg1, const Vector<T, N> &arg2) {
     for (size_t i = 0; i < N; ++i) {
+#ifdef HAVE_OPENMP
 #pragma omp atomic
+#endif
       arg1[i] += arg2[i];
     }
   }

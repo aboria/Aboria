@@ -114,6 +114,7 @@ std::endl;
 };
 */
 
+#if defined(HAVE_THRUST)
   template <template <typename, typename> class Vector,
             template <typename> class SearchMethod>
   void helper_md(void) {
@@ -162,7 +163,7 @@ std::endl;
     std::cout << "randomly set positions" << std::endl;
     thrust::tabulate(get<position>(particles).begin(),
                      get<position>(particles).end(),
-                     [=] CUDA_HOST_DEVICE (const int i) {
+                     [=] CUDA_HOST_DEVICE(const int i) {
                        thrust::default_random_engine gen;
                        thrust::uniform_real_distribution<float> uni(0, L);
                        gen.discard(i);
@@ -233,21 +234,23 @@ std::endl;
   }
   //]
 
-  void test_std_vector_CellList(void) { 
-      // nvcc bug cant compile with std::tuple
-      //
-      // workaround - define ABORIA_THRUST_USE_THRUST_TUPLE 
-      //  
-      // https://devtalk.nvidia.com/default/topic/1028112/cuda-setup-and-installation/nvcc-bug-related-to-gcc-6-lt-tuple-gt-header-/
-      //helper_md<std::vector, CellList>(); 
+#endif
+
+  void test_std_vector_CellList(void) {
+    // nvcc bug cant compile with std::tuple
+    //
+    // workaround - define ABORIA_THRUST_USE_THRUST_TUPLE
+    //
+    // https://devtalk.nvidia.com/default/topic/1028112/cuda-setup-and-installation/nvcc-bug-related-to-gcc-6-lt-tuple-gt-header-/
+    // helper_md<std::vector, CellList>();
   }
 
   void test_std_vector_CellListOrdered(void) {
-    //helper_md<std::vector, CellListOrdered>();
+    // helper_md<std::vector, CellListOrdered>();
   }
 
   void test_std_vector_HyperOctree(void) {
-    //helper_md<std::vector, HyperOctree>();
+    // helper_md<std::vector, HyperOctree>();
   }
 
   // void test_thrust_vector_CellList(void) {
