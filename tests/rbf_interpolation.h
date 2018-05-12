@@ -36,11 +36,12 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef RBF_INTERPOLATION_TEST_H_
 #define RBF_INTERPOLATION_TEST_H_
 
-#include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/time.h>
 
-#include <cxxtest/TestSuite.h>
 #include <chrono>
+#include <cxxtest/TestSuite.h>
+#include <fstream>
 typedef std::chrono::system_clock Clock;
 
 //[rbf_interpolation_global
@@ -761,7 +762,10 @@ public:
 
   template <unsigned int D, template <typename> class SearchMethod>
   void helper_param_sweep(const double sigma, const int N, const size_t order,
-                          std::ofstream &out_it, std::ofstream &out_err, std::ofstream &out_setup, std::ofstream &out_solve, std::ofstream &out_h2_error, std::ofstream &out_mem, int which) {
+                          std::ofstream &out_it, std::ofstream &out_err,
+                          std::ofstream &out_setup, std::ofstream &out_solve,
+                          std::ofstream &out_h2_error, std::ofstream &out_mem,
+                          int which) {
 #ifdef HAVE_H2LIB
 
     struct rusage usage;
@@ -770,25 +774,34 @@ public:
 
     const int width = 11;
     char *argv[] = {"program name", NULL};
-    int argc = sizeof(argv) / sizeof(char*) - 1;
+    int argc = sizeof(argv) / sizeof(char *) - 1;
     char **argv2 = &argv[0];
     init_h2lib(&argc, &argv2);
 
-    out_it << std::setw(width) << N << " " << std::setw(width) << sigma << " "  << std::setw(width) << D << " "  << std::setw(width) << order;
-    out_err << std::setw(width) << N << " " << std::setw(width) << sigma << " "  << std::setw(width) << D << " "  << std::setw(width) << order;
-    out_setup << std::setw(width) << N << " " << std::setw(width) << sigma << " "  << std::setw(width) << D << " "  << std::setw(width) << order;
-    out_solve << std::setw(width) << N << " " << std::setw(width) << sigma << " "  << std::setw(width) << D << " "  << std::setw(width) << order;
-    out_h2_error << std::setw(width) << N << " " << std::setw(width) << sigma << " "  << std::setw(width) << D << " "  << std::setw(width) << order;
-    out_mem << std::setw(width) << N << " " << std::setw(width) << sigma << " "  << std::setw(width) << D << " "  << std::setw(width) << order;
+    out_it << std::setw(width) << N << " " << std::setw(width) << sigma << " "
+           << std::setw(width) << D << " " << std::setw(width) << order;
+    out_err << std::setw(width) << N << " " << std::setw(width) << sigma << " "
+            << std::setw(width) << D << " " << std::setw(width) << order;
+    out_setup << std::setw(width) << N << " " << std::setw(width) << sigma
+              << " " << std::setw(width) << D << " " << std::setw(width)
+              << order;
+    out_solve << std::setw(width) << N << " " << std::setw(width) << sigma
+              << " " << std::setw(width) << D << " " << std::setw(width)
+              << order;
+    out_h2_error << std::setw(width) << N << " " << std::setw(width) << sigma
+                 << " " << std::setw(width) << D << " " << std::setw(width)
+                 << order;
+    out_mem << std::setw(width) << N << " " << std::setw(width) << sigma << " "
+            << std::setw(width) << D << " " << std::setw(width) << order;
 
-    auto funct = [](const auto& x) {
-        //rosenbrock functions, need even D
-        double ret = 0;
-        for (size_t i = 0; i < D/2; ++i) {
-            ret += 100*std::pow(std::pow(x[2*i],2) - x[2*i+1],2) 
-                        + std::pow(x[2*i]-1,2);
-        }
-        return ret;
+    auto funct = [](const auto &x) {
+      // rosenbrock functions, need even D
+      double ret = 0;
+      for (size_t i = 0; i < D / 2; ++i) {
+        ret += 100 * std::pow(std::pow(x[2 * i], 2) - x[2 * i + 1], 2) +
+               std::pow(x[2 * i] - 1, 2);
+      }
+      return ret;
     };
 
     ABORIA_VARIABLE(alpha, double, "alpha value")
@@ -805,28 +818,26 @@ public:
     knots[which].resize(N);
 
     const double c = 1.0 / sigma;
-    auto min = Vector<double,D>::Constant(0);
-    auto max = Vector<double,D>::Constant(1);
-    auto periodic = Vector<bool,D>::Constant(false);
+    auto min = Vector<double, D>::Constant(0);
+    auto max = Vector<double, D>::Constant(1);
+    auto periodic = Vector<bool, D>::Constant(false);
 
     const int max_iter = 1000;
 
     std::default_random_engine generator(0);
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
     for (int i = 0; i < N; ++i) {
-        for (size_t d = 0; d < D; ++d) {
-            get<position>(knots[which])[i][d] = distribution(generator);
-        }
+      for (size_t d = 0; d < D; ++d) {
+        get<position>(knots[which])[i][d] = distribution(generator);
+      }
     }
 
-
-    //const size_t n_subdomain = static_cast<size_t>(std::pow(0.12,D)*N);
-    //const size_t order = static_cast<size_t>(std::pow(n_subdomain,1.0/D));
-    const size_t n_subdomain = std::pow(order,D); 
+    // const size_t n_subdomain = static_cast<size_t>(std::pow(0.12,D)*N);
+    // const size_t order = static_cast<size_t>(std::pow(n_subdomain,1.0/D));
+    const size_t n_subdomain = std::pow(order, D);
     knots[which].init_neighbour_search(min, max, periodic, n_subdomain);
 
     const double jitter = 1e-5;
-
 
     const double gscale = std::pow(c, 2);
     auto gaussian_kernel = [&](const auto &a, const auto &b) {
@@ -841,8 +852,8 @@ public:
 
     auto wendland_kernel = [&](const auto &a, const auto &b) {
       const double r = (b - a).norm();
-      if (r < 2*sigma) {
-        return std::pow(2.0 - r*c, 4) * (1.0 + 2.0 * r*c);
+      if (r < 2 * sigma) {
+        return std::pow(2.0 - r * c, 4) * (1.0 + 2.0 * r * c);
       } else {
         return 0.0;
       }
@@ -875,117 +886,120 @@ public:
       return ret;
     };
 
-
-    const double eta = D > 3?-1:1;
-    auto Ggaussian = create_h2_operator(knots[0], knots[0], order, gaussian_kernel,
-                                        gaussian_self_kernel, eta);
+    const double eta = D > 3 ? -1 : 1;
+    auto Ggaussian = create_h2_operator(
+        knots[0], knots[0], order, gaussian_kernel, gaussian_self_kernel, eta);
     Ggaussian.get_first_kernel().compress(1e-10);
 
     auto Gmatern = create_h2_operator(knots[1], knots[1], order, matern_kernel,
                                       matern_self_kernel, eta);
     Gmatern.get_first_kernel().compress(1e-10);
 
-    auto Gwendland = create_h2_operator(knots[2], knots[2], order, wendland_kernel,
-                                      wendland_self_kernel, eta);
+    auto Gwendland = create_h2_operator(
+        knots[2], knots[2], order, wendland_kernel, wendland_self_kernel, eta);
     Gwendland.get_first_kernel().compress(1e-10);
 
-    //const int nleaf = std::pow(sigma,2)*N;
-    //knots.init_neighbour_search(min, max, periodic, nleaf);
-    
+    // const int nleaf = std::pow(sigma,2)*N;
+    // knots.init_neighbour_search(min, max, periodic, nleaf);
+
     vector_type phi(N), phi_matrix(N), gamma(N);
     gamma = vector_type::Random(N);
     if (N < 5000) {
-        matrix_type Gmatrix(N,N);
-        if (which == 0) {
-            Ggaussian.assemble(Gmatrix);
-            phi = Ggaussian*gamma;
-        } else if (which == 1) {
-            Gmatern.assemble(Gmatrix);
-            phi = Gmatern*gamma;
-        } else {
-            Gwendland.assemble(Gmatrix);
-            phi = Gwendland*gamma;
-        }
-        phi_matrix = Gmatrix*gamma;
-        out_h2_error << " " << std::setw(width) << (phi-phi_matrix).norm()/phi_matrix.norm() << std::endl;
+      matrix_type Gmatrix(N, N);
+      if (which == 0) {
+        Ggaussian.assemble(Gmatrix);
+        phi = Ggaussian * gamma;
+      } else if (which == 1) {
+        Gmatern.assemble(Gmatrix);
+        phi = Gmatern * gamma;
+      } else {
+        Gwendland.assemble(Gmatrix);
+        phi = Gwendland * gamma;
+      }
+      phi_matrix = Gmatrix * gamma;
+      out_h2_error << " " << std::setw(width)
+                   << (phi - phi_matrix).norm() / phi_matrix.norm()
+                   << std::endl;
     } else {
-        out_h2_error << std::endl;
+      out_h2_error << std::endl;
     }
-
 
     for (size_t i = 0; i < knots[which].size(); ++i) {
       const auto x = get<position>(knots[which][i]);
       phi[i] = funct(x);
     }
 
-
-
     if (which == 0) {
-        //Eigen::BiCGSTAB<decltype(Ggaussian), Eigen::DiagonalPreconditioner<double>>
-        Eigen::BiCGSTAB<decltype(Ggaussian), Eigen::IdentityPreconditioner>
-            bicg;
-        bicg.setMaxIterations(max_iter);
-        auto t0 = Clock::now();
-        bicg.compute(Ggaussian);
-        auto t1 = Clock::now();
-        gamma = bicg.solve(phi);
-        auto t2 = Clock::now();
-        std::chrono::duration<double> dt = t1 - t0;
-        out_it << " " << std::setw(width) << bicg.iterations();
-        out_err << " " << std::setw(width) << bicg.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+      // Eigen::BiCGSTAB<decltype(Ggaussian),
+      // Eigen::DiagonalPreconditioner<double>>
+      Eigen::BiCGSTAB<decltype(Ggaussian), Eigen::IdentityPreconditioner> bicg;
+      bicg.setMaxIterations(max_iter);
+      auto t0 = Clock::now();
+      bicg.compute(Ggaussian);
+      auto t1 = Clock::now();
+      gamma = bicg.solve(phi);
+      auto t2 = Clock::now();
+      out_it << " " << std::setw(width) << bicg.iterations();
+      out_err << " " << std::setw(width) << bicg.error();
+      out_setup
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+      out_solve
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
 
-        getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
+      getrusage(RUSAGE_SELF, &usage);
+      out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
     } else if (which == 1) {
-        //Eigen::BiCGSTAB<decltype(Gmatern), Eigen::DiagonalPreconditioner<double>>
-        Eigen::BiCGSTAB<decltype(Gmatern), Eigen::IdentityPreconditioner>
-            bicg;
-        bicg.setMaxIterations(max_iter);
-        auto t0 = Clock::now();
-        bicg.compute(Gmatern);
-        auto t1 = Clock::now();
-        gamma = bicg.solve(phi);
-        auto t2 = Clock::now();
-        out_it << " " << std::setw(width) << bicg.iterations();
-        out_err << " " << std::setw(width) << bicg.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-        getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
+      // Eigen::BiCGSTAB<decltype(Gmatern),
+      // Eigen::DiagonalPreconditioner<double>>
+      Eigen::BiCGSTAB<decltype(Gmatern), Eigen::IdentityPreconditioner> bicg;
+      bicg.setMaxIterations(max_iter);
+      auto t0 = Clock::now();
+      bicg.compute(Gmatern);
+      auto t1 = Clock::now();
+      gamma = bicg.solve(phi);
+      auto t2 = Clock::now();
+      out_it << " " << std::setw(width) << bicg.iterations();
+      out_err << " " << std::setw(width) << bicg.error();
+      out_setup
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+      out_solve
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+      getrusage(RUSAGE_SELF, &usage);
+      out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
     } else {
-        //Eigen::BiCGSTAB<decltype(Gwendland), Eigen::DiagonalPreconditioner<double>>
-        Eigen::BiCGSTAB<decltype(Gwendland), Eigen::IdentityPreconditioner>
-            bicg;
-        bicg.setMaxIterations(max_iter);
-        auto t0 = Clock::now();
-        bicg.compute(Gwendland);
-        auto t1 = Clock::now();
-        gamma = bicg.solve(phi);
-        auto t2 = Clock::now();
-        out_it << " " << std::setw(width) << bicg.iterations();
-        out_err << " " << std::setw(width) << bicg.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-        getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
+      // Eigen::BiCGSTAB<decltype(Gwendland),
+      // Eigen::DiagonalPreconditioner<double>>
+      Eigen::BiCGSTAB<decltype(Gwendland), Eigen::IdentityPreconditioner> bicg;
+      bicg.setMaxIterations(max_iter);
+      auto t0 = Clock::now();
+      bicg.compute(Gwendland);
+      auto t1 = Clock::now();
+      gamma = bicg.solve(phi);
+      auto t2 = Clock::now();
+      out_it << " " << std::setw(width) << bicg.iterations();
+      out_err << " " << std::setw(width) << bicg.error();
+      out_setup
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+      out_solve
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+      getrusage(RUSAGE_SELF, &usage);
+      out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
     }
 
     if (D < 3) {
-    if (which == 0) {
+      if (which == 0) {
         Eigen::BiCGSTAB<decltype(Ggaussian),
                         SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg_rasm2;
         bicg_rasm2.setMaxIterations(max_iter);
-        //bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
-        //bicg_rasm2.preconditioner().set_coarse_grid_n(20);
+        // bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
+        // bicg_rasm2.preconditioner().set_coarse_grid_n(20);
         auto t0 = Clock::now();
         bicg_rasm2.compute(Ggaussian);
         auto t1 = Clock::now();
@@ -993,19 +1007,21 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_rasm2.iterations();
         out_err << " " << std::setw(width) << bicg_rasm2.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        out_setup << " " << std::setw(width)
+                  << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0)
+                         .count();
+        out_solve << " " << std::setw(width)
+                  << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1)
+                         .count();
         getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
-    } else if (which == 1) {
+        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
+      } else if (which == 1) {
         Eigen::BiCGSTAB<decltype(Gmatern),
                         SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg_rasm2;
         bicg_rasm2.setMaxIterations(max_iter);
-        //bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
-        //bicg_rasm2.preconditioner().set_coarse_grid_n(20);
+        // bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
+        // bicg_rasm2.preconditioner().set_coarse_grid_n(20);
         auto t0 = Clock::now();
         bicg_rasm2.compute(Gmatern);
         auto t1 = Clock::now();
@@ -1013,19 +1029,21 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_rasm2.iterations();
         out_err << " " << std::setw(width) << bicg_rasm2.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        out_setup << " " << std::setw(width)
+                  << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0)
+                         .count();
+        out_solve << " " << std::setw(width)
+                  << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1)
+                         .count();
         getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
-    } else {
+        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
+      } else {
         Eigen::BiCGSTAB<decltype(Gwendland),
                         SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg_rasm2;
         bicg_rasm2.setMaxIterations(max_iter);
-        //bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
-        //bicg_rasm2.preconditioner().set_coarse_grid_n(20);
+        // bicg_rasm2.preconditioner().set_neighbourhood_buffer_size(sigma);
+        // bicg_rasm2.preconditioner().set_coarse_grid_n(20);
         auto t0 = Clock::now();
         bicg_rasm2.compute(Gwendland);
         auto t1 = Clock::now();
@@ -1033,84 +1051,88 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_rasm2.iterations();
         out_err << " " << std::setw(width) << bicg_rasm2.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        out_setup << " " << std::setw(width)
+                  << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0)
+                         .count();
+        out_solve << " " << std::setw(width)
+                  << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1)
+                         .count();
         getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem)/1000;
-
-    }
+        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
+      }
     } else {
-        out_it << " " << std::setw(width) << " ";
-        out_err << " " << std::setw(width) << " ";
-        out_setup << " " << std::setw(width) << " ";
-        out_solve << " " << std::setw(width) << " ";
-        out_mem << " " << std::setw(width) << " ";
+      out_it << " " << std::setw(width) << " ";
+      out_err << " " << std::setw(width) << " ";
+      out_setup << " " << std::setw(width) << " ";
+      out_solve << " " << std::setw(width) << " ";
+      out_mem << " " << std::setw(width) << " ";
     }
-
 
     if (which == 0) {
-        Eigen::BiCGSTAB<decltype(Ggaussian),
-                        SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
-            bicg_rasm;
-        bicg_rasm.setMaxIterations(max_iter);
-        bicg_rasm.preconditioner().set_number_of_random_particles(300);
-        bicg_rasm.preconditioner().set_sigma(1.0 / c);
-        bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
-        auto t0 = Clock::now();
-        bicg_rasm.compute(Ggaussian);
-        auto t1 = Clock::now();
-        gamma = bicg_rasm.solve(phi);
-        auto t2 = Clock::now();
-        out_it << " " << std::setw(width) << bicg_rasm.iterations();
-        out_err << " " << std::setw(width) << bicg_rasm.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+      Eigen::BiCGSTAB<decltype(Ggaussian), SchwartzSamplingPreconditioner<
+                                               Eigen::LLT<Eigen::MatrixXd>>>
+          bicg_rasm;
+      bicg_rasm.setMaxIterations(max_iter);
+      bicg_rasm.preconditioner().set_number_of_random_particles(300);
+      bicg_rasm.preconditioner().set_sigma(1.0 / c);
+      bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
+      auto t0 = Clock::now();
+      bicg_rasm.compute(Ggaussian);
+      auto t1 = Clock::now();
+      gamma = bicg_rasm.solve(phi);
+      auto t2 = Clock::now();
+      out_it << " " << std::setw(width) << bicg_rasm.iterations();
+      out_err << " " << std::setw(width) << bicg_rasm.error();
+      out_setup
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+      out_solve
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
     } else if (which == 1) {
-        Eigen::BiCGSTAB<decltype(Gmatern),
-                        SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
-            bicg_rasm;
-        bicg_rasm.setMaxIterations(max_iter);
-        bicg_rasm.preconditioner().set_number_of_random_particles(300);
-        bicg_rasm.preconditioner().set_sigma(1.0 / (2*c));
-        bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
-        auto t0 = Clock::now();
-        bicg_rasm.compute(Gmatern);
-        auto t1 = Clock::now();
-        gamma = bicg_rasm.solve(phi);
-        auto t2 = Clock::now();
-        out_it << " " << std::setw(width) << bicg_rasm.iterations();
-        out_err << " " << std::setw(width) << bicg_rasm.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+      Eigen::BiCGSTAB<decltype(Gmatern), SchwartzSamplingPreconditioner<
+                                             Eigen::LLT<Eigen::MatrixXd>>>
+          bicg_rasm;
+      bicg_rasm.setMaxIterations(max_iter);
+      bicg_rasm.preconditioner().set_number_of_random_particles(300);
+      bicg_rasm.preconditioner().set_sigma(1.0 / (2 * c));
+      bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
+      auto t0 = Clock::now();
+      bicg_rasm.compute(Gmatern);
+      auto t1 = Clock::now();
+      gamma = bicg_rasm.solve(phi);
+      auto t2 = Clock::now();
+      out_it << " " << std::setw(width) << bicg_rasm.iterations();
+      out_err << " " << std::setw(width) << bicg_rasm.error();
+      out_setup
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+      out_solve
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
     } else {
-        Eigen::BiCGSTAB<decltype(Gwendland),
-                        SchwartzSamplingPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
-            bicg_rasm;
-        bicg_rasm.setMaxIterations(max_iter);
-        bicg_rasm.preconditioner().set_number_of_random_particles(300);
-        bicg_rasm.preconditioner().set_sigma(1.0 / c);
-        bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
-        auto t0 = Clock::now();
-        bicg_rasm.compute(Gwendland);
-        auto t1 = Clock::now();
-        gamma = bicg_rasm.solve(phi);
-        auto t2 = Clock::now();
-        out_it << " " << std::setw(width) << bicg_rasm.iterations();
-        out_err << " " << std::setw(width) << bicg_rasm.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+      Eigen::BiCGSTAB<decltype(Gwendland), SchwartzSamplingPreconditioner<
+                                               Eigen::LLT<Eigen::MatrixXd>>>
+          bicg_rasm;
+      bicg_rasm.setMaxIterations(max_iter);
+      bicg_rasm.preconditioner().set_number_of_random_particles(300);
+      bicg_rasm.preconditioner().set_sigma(1.0 / c);
+      bicg_rasm.preconditioner().set_rejection_sampling_scale(1.0);
+      auto t0 = Clock::now();
+      bicg_rasm.compute(Gwendland);
+      auto t1 = Clock::now();
+      gamma = bicg_rasm.solve(phi);
+      auto t2 = Clock::now();
+      out_it << " " << std::setw(width) << bicg_rasm.iterations();
+      out_err << " " << std::setw(width) << bicg_rasm.error();
+      out_setup
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
+      out_solve
+          << " " << std::setw(width)
+          << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
     }
 
-
-    
     /*
     if (which == 0) {
         Eigen::BiCGSTAB<decltype(Ggaussian),
@@ -1126,12 +1148,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_nystrom.iterations();
         out_err << " " << std::setw(width) << bicg_nystrom.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    } else if (which == 1) {
-        Eigen::BiCGSTAB<decltype(Gmatern),
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count(); } else if (which == 1) { Eigen::BiCGSTAB<decltype(Gmatern),
                         NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg_nystrom;
         bicg_nystrom.setMaxIterations(max_iter);
@@ -1144,12 +1165,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_nystrom.iterations();
         out_err << " " << std::setw(width) << bicg_nystrom.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    } else {
-        Eigen::BiCGSTAB<decltype(Gwendland),
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count(); } else { Eigen::BiCGSTAB<decltype(Gwendland),
                         NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg_nystrom;
         bicg_nystrom.setMaxIterations(max_iter);
@@ -1162,10 +1182,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_nystrom.iterations();
         out_err << " " << std::setw(width) << bicg_nystrom.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count();
     }
 
     if (which == 0) {
@@ -1181,12 +1202,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_cheb.iterations();
         out_err << " " << std::setw(width) << bicg_cheb.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    } else if (which == 1) {
-        Eigen::BiCGSTAB<decltype(Gmatern),
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count(); } else if (which == 1) { Eigen::BiCGSTAB<decltype(Gmatern),
                         ChebyshevPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg_cheb;
         bicg_cheb.setMaxIterations(max_iter);
@@ -1198,12 +1218,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_cheb.iterations();
         out_err << " " << std::setw(width) << bicg_cheb.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    } else {
-        Eigen::BiCGSTAB<decltype(Gwendland),
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count(); } else { Eigen::BiCGSTAB<decltype(Gwendland),
                         ChebyshevPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg_cheb;
         bicg_cheb.setMaxIterations(max_iter);
@@ -1215,10 +1234,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_cheb.iterations();
         out_err << " " << std::setw(width) << bicg_cheb.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count();
     }
 
     if (which == 0) {
@@ -1234,12 +1254,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_ro.iterations();
         out_err << " " << std::setw(width) << bicg_ro.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    } else if (which == 1) {
-        Eigen::BiCGSTAB<decltype(Gmatern),
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count(); } else if (which == 1) { Eigen::BiCGSTAB<decltype(Gmatern),
                         ReducedOrderPreconditioner<H2LibCholeskyDecomposition>>
             bicg_ro;
         bicg_ro.setMaxIterations(max_iter);
@@ -1251,12 +1270,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_ro.iterations();
         out_err << " " << std::setw(width) << bicg_ro.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-    } else {
-        Eigen::BiCGSTAB<decltype(Gwendland),
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count(); } else { Eigen::BiCGSTAB<decltype(Gwendland),
                         ReducedOrderPreconditioner<H2LibCholeskyDecomposition>>
             bicg_ro;
         bicg_ro.setMaxIterations(max_iter);
@@ -1268,10 +1286,11 @@ public:
         auto t2 = Clock::now();
         out_it << " " << std::setw(width) << bicg_ro.iterations();
         out_err << " " << std::setw(width) << bicg_ro.error();
-        out_setup << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t1 - t0).count();
-        out_solve << " " << std::setw(width) 
-                         << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
+        out_setup << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t1
+    - t0).count(); out_solve << " " << std::setw(width)
+                         << std::chrono::duration_cast<std::chrono::seconds>(t2
+    - t1).count();
     }
     */
 
@@ -1313,18 +1332,16 @@ public:
     out_mem.open("mem_gaussian.txt", std::ios::out);
 
     const int width = 12;
-    auto header = [](auto& out) {
-        out<< std::setw(width) << "N "
-           << std::setw(width) << "sigma "
-           << std::setw(width) << "D "
-           << std::setw(width) << "order "
-           << std::setw(width) << "diag "
-           << std::setw(width) << "srtz "
-           << std::setw(width) << "srtsamp "
-           //<< std::setw(width) << "nystrom "
-           //<< std::setw(width) << "cheby "
-           //<< std::setw(width) << "reduce "
-           << std::endl;
+    auto header = [](auto &out) {
+      out << std::setw(width) << "N " << std::setw(width) << "sigma "
+          << std::setw(width) << "D " << std::setw(width) << "order "
+          << std::setw(width) << "diag " << std::setw(width) << "srtz "
+          << std::setw(width)
+          << "srtsamp "
+          //<< std::setw(width) << "nystrom "
+          //<< std::setw(width) << "cheby "
+          //<< std::setw(width) << "reduce "
+          << std::endl;
     };
 
     header(out_it);
@@ -1334,16 +1351,20 @@ public:
     header(out_h2_error);
     header(out_mem);
     for (int N = 1000; N < -300000; N *= 2) {
-        for (double sigma = 0.001; sigma < -0.1; sigma += 0.1) {
-            for (size_t order = 2; order < 8; order += 2) {
-                helper_param_sweep<2,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,0);
-                if (order < 6) 
-                    helper_param_sweep<4,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,0);
-                //if (order < 4) 
-                //    helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,2);
-
-            }
+      for (double sigma = 0.001; sigma < -0.1; sigma += 0.1) {
+        for (size_t order = 2; order < 8; order += 2) {
+          helper_param_sweep<2, KdtreeNanoflann>(
+              sigma, N, order, out_it, out_error, out_setup, out_solve,
+              out_h2_error, out_mem, 0);
+          if (order < 6)
+            helper_param_sweep<4, KdtreeNanoflann>(
+                sigma, N, order, out_it, out_error, out_setup, out_solve,
+                out_h2_error, out_mem, 0);
+          // if (order < 4)
+          //    helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it,
+          //    out_error,out_setup,out_solve,out_h2_error,out_mem,2);
         }
+      }
     }
     out_it.close();
     out_error.close();
@@ -1366,15 +1387,20 @@ public:
     header(out_h2_error);
     header(out_mem);
     for (int N = 1000; N < 300000; N *= 2) {
-        for (double sigma = 0.1; sigma < 2.0; sigma += 0.2) {
-            for (size_t order = 2; order < 8; order += 2) {
-                helper_param_sweep<2,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,1);
-                if (order < 6) 
-                    helper_param_sweep<4,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,1);
-                //if (order < 4) 
-                //    helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,1);
-            }
+      for (double sigma = 0.1; sigma < 2.0; sigma += 0.2) {
+        for (size_t order = 2; order < 8; order += 2) {
+          helper_param_sweep<2, KdtreeNanoflann>(
+              sigma, N, order, out_it, out_error, out_setup, out_solve,
+              out_h2_error, out_mem, 1);
+          if (order < 6)
+            helper_param_sweep<4, KdtreeNanoflann>(
+                sigma, N, order, out_it, out_error, out_setup, out_solve,
+                out_h2_error, out_mem, 1);
+          // if (order < 4)
+          //    helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it,
+          //    out_error,out_setup,out_solve,out_h2_error,out_mem,1);
         }
+      }
     }
     out_it.close();
     out_error.close();
@@ -1397,15 +1423,20 @@ public:
     header(out_h2_error);
     header(out_mem);
     for (int N = 1000; N < 300000; N *= 2) {
-        for (double sigma = 0.1; sigma < 2.0; sigma += 0.2) {
-            for (size_t order = 2; order < 8; order += 2) {
-                helper_param_sweep<2,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,2);
-                if (order < 6) 
-                    helper_param_sweep<4,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,2);
-                //if (order < 4) 
-                    //helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it, out_error,out_setup,out_solve,out_h2_error,out_mem,2);
-            }
+      for (double sigma = 0.1; sigma < 2.0; sigma += 0.2) {
+        for (size_t order = 2; order < 8; order += 2) {
+          helper_param_sweep<2, KdtreeNanoflann>(
+              sigma, N, order, out_it, out_error, out_setup, out_solve,
+              out_h2_error, out_mem, 2);
+          if (order < 6)
+            helper_param_sweep<4, KdtreeNanoflann>(
+                sigma, N, order, out_it, out_error, out_setup, out_solve,
+                out_h2_error, out_mem, 2);
+          // if (order < 4)
+          // helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it,
+          // out_error,out_setup,out_solve,out_h2_error,out_mem,2);
         }
+      }
     }
     out_it.close();
     out_error.close();
@@ -1448,7 +1479,8 @@ public:
     header(out_solve);
     const double sigma = 0.1;
     for (int N = 1000; N < -1e6; N *= 2) {
-      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,0);
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it,
+  out_error,out_setup,out_solve,0);
     }
     out_it.close();
     out_error.close();
@@ -1465,7 +1497,8 @@ public:
     header(out_setup);
     header(out_solve);
     for (int N = 1000; N < 1e6; N *= 2) {
-      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,1);
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it,
+  out_error,out_setup,out_solve,1);
     }
     out_it.close();
     out_error.close();
@@ -1482,7 +1515,8 @@ public:
     header(out_setup);
     header(out_solve);
     for (int N = 1000; N < 1e6; N *= 2) {
-      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it, out_error,out_setup,out_solve,2);
+      helper_param_sweep<KdtreeNanoflann>(sigma, N, out_it,
+  out_error,out_setup,out_solve,2);
     }
     out_it.close();
     out_error.close();
@@ -1491,7 +1525,6 @@ public:
 
   }
   */
-
 
   void test_CellListOrdered() {
     std::cout << "-------------------------------------------\n"
@@ -1527,4 +1560,4 @@ public:
 };
 
 #endif /* RBF_INTERPOLATION_TEST_H_ */
-//->
+       //->
