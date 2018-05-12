@@ -142,7 +142,7 @@ std::endl;
     const int nout = 200;
     const int timesteps_per_out = timesteps / nout;
     const double L = 31.0 / 1000.0;
-    const int N = 2000;
+    const int N = 10000;
     const double diameter = 0.0022;
     const double k = 1.0e01;
     const double dens = 1160.0;

@@ -52,8 +52,8 @@ if (Aboria_USE_THRUST)
     ${CUDA_NVCC_FLAGS};
     --expt-relaxed-constexpr
     -std=c++14
-    -G
-    -g
+    #-G
+    #-g
     #--keep
     #-lineinfo
     --expt-extended-lambda
