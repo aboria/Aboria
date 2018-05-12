@@ -296,6 +296,9 @@ public:
     // initialise particles to a uniform distribution
     p[a] = L * vector(uniform[a], uniform[a]);
 
+    // zero initial velocity
+    v[a] = vector(0, 0);
+
     // initiate neighbour search on a periodic 2d domain of side length
     // L set average number of particles per cell to 1
     particles.init_neighbour_search(vdouble2(0, 0), vdouble2(L, L),
