@@ -159,7 +159,7 @@ public:
 #endif
     //->
 
-//=}
+    //=}
     /*`
 
     Now copy and paste the CMake config file below into another file called
@@ -317,8 +317,8 @@ public:
     the majority of parallism in Aboria. It is possible to use the native CUDA
     backend of Thrust to run code on the GPU.
 
-    [caution This mode is experimental at the moment, and has not been
-    thoroughly tested.]
+    [caution This mode is experimental, and has not been thoroughly tested. It
+    is also quite slow, so any pull requests to fix this are most welcome!]
 
     There are a few restrictions on the code that you can write while using the
     CUDA backend, and these are detailed in
