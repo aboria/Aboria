@@ -789,10 +789,11 @@ public:
         "Cardinal Functions preconditioner restricted to identical row and col "
         "particle sets");
     const row_elements_type &a = kernel.get_row_elements();
-    CHECK(&a == &(kernel.get_col_elements()),
-          "Schwartz preconditioner restricted to identical row and col "
-          "particle "
-          "sets");
+    CHECK(
+        &a == &(kernel.get_col_elements()),
+        "Cardinal Functions preconditioner restricted to identical row and col "
+        "particle "
+        "sets");
     const query_type &query = a.get_query();
     m_domain_buffer.resize(a.size());
     for (size_t i = 0; i < a.size(); ++i) {
@@ -1479,6 +1480,13 @@ public:
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
+    for (size_t i = 0; i < x.size(); ++i) {
+      x[i] = b[i];
+    }
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
     for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
       if (m_domain_indicies.size() == 0)
         continue;
@@ -2083,28 +2091,28 @@ public:
     storage_vector_type &indicies = m_domain_indicies[domain_index];
 
     if (m_random >= a.size()) {
-        // add all indicies
-        indicies.resize(a.size());
-        std::iota(indicies.begin(),indicies.end(),0);
+      // add all indicies
+      indicies.resize(a.size());
+      std::iota(indicies.begin(), indicies.end(), 0);
     } else {
-        // add some random indicies
-        std::uniform_int_distribution<int> uniform_index(0, a.size() - 1);
-        std::default_random_engine generator;
+      // add some random indicies
+      std::uniform_int_distribution<int> uniform_index(0, a.size() - 1);
+      std::default_random_engine generator;
 
-        for (size_t d = 0; d < m_random; ++d) {
-          bool in_indicies;
-          size_t proposed_index;
-          do {
-            proposed_index = uniform_index(generator) + start_row;
+      for (size_t d = 0; d < m_random; ++d) {
+        bool in_indicies;
+        size_t proposed_index;
+        do {
+          proposed_index = uniform_index(generator) + start_row;
 
-            // check not in indicies
-            in_indicies =
-                indicies.end() !=
-                std::find(indicies.begin(), indicies.end(), proposed_index);
+          // check not in indicies
+          in_indicies =
+              indicies.end() !=
+              std::find(indicies.begin(), indicies.end(), proposed_index);
 
-          } while (in_indicies);
-          indicies.push_back(proposed_index);
-        }
+        } while (in_indicies);
+        indicies.push_back(proposed_index);
+      }
     }
     ASSERT(indicies.size() > 0, "no particles in domain");
   }
