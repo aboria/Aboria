@@ -4,7 +4,7 @@
 <title>Struct template AccumulateWithinDistance</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.5">
+<link rel="home" href="../index.html" title="Aboria 0.7">
 <link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Symbolic_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Symbolic.h&gt;">
 <link rel="prev" href="Accumulate.html" title="Struct template Accumulate">
 <link rel="next" href="min.html" title="Struct template min">
@@ -51,50 +51,51 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">proto</span><span class="special">::</span><span class="identifier">terminal</span><span class="special">&lt;</span> <span class="identifier">data_type</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">type</span> <a name="Aboria.AccumulateWithinDistance.expr_type"></a><span class="identifier">expr_type</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="AccumulateWithinDistance.html#Aboria.AccumulateWithinDistanceconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idp70810677688304-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idp71348813870576-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> 
-    <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idp70810677690464-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <span class="keyword">explicit</span> <a class="link" href="AccumulateWithinDistance.html#idp71348813872736-bb"><span class="identifier">AccumulateWithinDistance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="AccumulateWithinDistance.html#idp70810677684128-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idp70810677684528-bb"><span class="identifier">set_init</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idp70810677686656-bb"><span class="identifier">set_max_distance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="AccumulateWithinDistance.html#idp71348813866400-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idp71348813866800-bb"><span class="identifier">set_init</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="AccumulateWithinDistance.html#idp71348813868928-bb"><span class="identifier">set_max_distance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp71884740138336"></a><h2>Description</h2>
+<a name="idp71023168420880"></a><h2>Description</h2>
 <p>an accumulation expression, for example a sum or product, over neighbouring particles within a given radius 
 </p>
 <div class="refsect2">
-<a name="idp71884740139136"></a><h3>
+<a name="idp71023168421680"></a><h3>
 <a name="Aboria.AccumulateWithinDistanceconstruct-copy-destruct"></a><code class="computeroutput">AccumulateWithinDistance</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">explicit</span> <a name="idp70810677688304-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span></pre>empty constructor, makes an instantiation of the functor class <code class="computeroutput">T</code>
+<pre class="literallayout"><span class="keyword">explicit</span> <a name="idp71348813870576-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance <span class="special">=</span> <span class="number">1</span><span class="special">)</span><span class="special">;</span></pre>empty constructor, makes an instantiation of the functor class <code class="computeroutput">T</code>
 </li>
 <li class="listitem">
 <pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> 
-  <span class="keyword">explicit</span> <a name="idp70810677690464-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>constructor that passes a single argument to the functor class <code class="computeroutput">T</code>
+  <span class="keyword">explicit</span> <a name="idp71348813872736-bb"></a><span class="identifier">AccumulateWithinDistance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">T2</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>constructor that passes a single argument to the functor class <code class="computeroutput">T</code>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp71884740160608"></a><h3>
-<a name="idp70810677684128-bb"></a><code class="computeroutput">AccumulateWithinDistance</code> public member functions</h3>
+<a name="idp71023168443296"></a><h3>
+<a name="idp71348813866400-bb"></a><code class="computeroutput">AccumulateWithinDistance</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp70810677684528-bb"></a><span class="identifier">set_init</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp71348813866800-bb"></a><span class="identifier">set_init</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">typename</span> <span class="identifier">data_type</span><span class="special">::</span><span class="identifier">init_type</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
 <p>a function used to set the initial value of the accumulation 
 </p>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810677686656-bb"></a><span class="identifier">set_max_distance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348813868928-bb"></a><span class="identifier">set_max_distance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">

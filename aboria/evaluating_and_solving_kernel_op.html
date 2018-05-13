@@ -4,9 +4,9 @@
 <title>Evaluating and Solving Kernel Operators with Eigen</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.5">
-<link rel="up" href="../index.html" title="Aboria 0.5">
-<link rel="prev" href="id_searching.html" title="ID Searching">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../index.html" title="Aboria 0.7">
+<link rel="prev" href="parallelism_in_aboria.html" title="Parallelism in Aboria">
 <link rel="next" href="symbolic_expressions.html" title="Symbolic Expressions">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="id_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="symbolic_expressions.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="parallelism_in_aboria.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="symbolic_expressions.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h2 class="title" style="clear: both">
@@ -224,7 +224,7 @@ MathJax.Hub.Config({
 </table></div>
 <p>
         If we wish to perform the same operator, but using a traditional matrix,
-        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp70810677148976-bb">Aboria::MatrixReplacement::assemble</a></code>
+        we can use <code class="computeroutput"><span class="identifier">K</span></code>'s <code class="computeroutput"><a class="link" href="../Aboria/MatrixReplacement.html#idp71348813336608-bb">Aboria::MatrixReplacement::assemble</a></code>
         member function to fill in a normal Eigen matrix with the values of the kernel
         function $K(\mathbf{x}_i,a_i,\mathbf{x}_j,a_j)$. This might be useful if
         you wish to perform the same operation repeatedly, or in one of Eigen's direct
@@ -633,11 +633,12 @@ MathJax.Hub.Config({
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="id_searching.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="symbolic_expressions.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="parallelism_in_aboria.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="symbolic_expressions.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

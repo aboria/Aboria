@@ -4,10 +4,10 @@
 <title>Class template Kdtree</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.5">
-<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NanoFlannAdaptor.h&gt;">
-<link rel="prev" href="../LOG_BOLD.html" title="Macro LOG_BOLD">
-<link rel="next" href="KdtreeQuery.html" title="Struct template KdtreeQuery">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Kdtree_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Kdtree.h&gt;">
+<link rel="prev" href="KdtreeQuery.html" title="Struct template KdtreeQuery">
+<link rel="next" href="KdtreeChildIterator.html" title="Class template KdtreeChildIterator">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,96 +32,85 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../LOG_BOLD.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="KdtreeQuery.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="KdtreeQuery.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Kdtree_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="KdtreeChildIterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.Kdtree"></a><div class="titlepage"></div>
 <div class="refnamediv">
 <h2><span class="refentrytitle">Class template Kdtree</span></h2>
-<p>Aboria::Kdtree &#8212; Implements neighbourhood searching using a bucket search algorithm, dividing the domain into constant size "buckets". </p>
+<p>Aboria::Kdtree &#8212; KdTree. </p>
 </div>
 <h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
-<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NanoFlannAdaptor.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NanoFlannAdaptor.h</a>&gt;
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Kdtree_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Kdtree.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Kdtree.h</a>&gt;
 
 </span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Traits<span class="special">&gt;</span> 
 <span class="keyword">class</span> <a class="link" href="Kdtree.html" title="Class template Kdtree">Kdtree</a> <span class="special">:</span> <span class="keyword">public</span> Aboria::neighbour_search_base&lt; Kdtree&lt; Traits &gt;, Traits, KdtreeQuery&lt; Traits &gt; &gt;
 <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// <a class="link" href="Kdtree.html#Aboria.Kdtreeconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="Kdtree.html#idp70810676342096-bb"><span class="identifier">Kdtree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Kdtree.html#idp71348812262608-bb"><span class="identifier">Kdtree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Kdtree.html#idp70810676331920-bb">public member functions</a></span>
-  <span class="identifier">size_t</span> <a class="link" href="Kdtree.html#idp70810676332320-bb"><span class="identifier">kdtree_get_point_count</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">double</span> <a class="link" href="Kdtree.html#idp70810676333280-bb"><span class="identifier">kdtree_distance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">double</span> <a class="link" href="Kdtree.html#idp70810676336304-bb"><span class="identifier">kdtree_get_pt</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> BBOX<span class="special">&gt;</span> <span class="keyword">bool</span> <a class="link" href="Kdtree.html#idp70810676338640-bb"><span class="identifier">kdtree_get_bbox</span></a><span class="special">(</span><span class="identifier">BBOX</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp70810676341136-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="Kdtree.html#idp71348812261248-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp71348812261648-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Kdtree.html#idp70810676342224-bb">public static functions</a></span>
-  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="Kdtree.html#idp70810676342624-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="Kdtree.html#idp71348812262736-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="Kdtree.html#idp71348812263136-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="Kdtree.html#idp70810676343584-bb">private member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp70810676344000-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp70810676344960-bb"><span class="identifier">end_list_of_copies_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp70810676345920-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp70810676346880-bb"><span class="identifier">print_tree</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp70810676348528-bb"><span class="identifier">print_level</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp70810676350192-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="Kdtree.html#idp70810676354192-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="Kdtree.html#idp70810676356048-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="Kdtree.html#idp71348812264096-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp71348812264512-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp71348812265472-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp71348812266432-bb"><span class="identifier">print_tree</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp71348812267392-bb"><span class="identifier">print_level</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp71348812269728-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="Kdtree.html#idp71348812273728-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="Kdtree.html#idp71348812275584-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Kdtree.html#idp71348812277280-bb"><span class="identifier">build_tree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp71884730087024"></a><h2>Description</h2>
-<p>This class implements neighbourhood searching using a bucket search algorithm. The domain is first divided up into a regular grid of constant size "buckets", either by using the class constructor to initialise the domain extents, bucket size etc., or by using the reset() member function to reset these parameters.</p>
-<p>After the buckets are created, a set of 3D points can be assigned to their respective buckets using the embed_points() member function. After this, neighbourhood queries around a given point can be performed using find_broadphase_neighbours(), which returns a const iterator to all the points in the same bucket or surrounding buckets of the given point. </p>
+<a name="idp71023156422560"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp71884730088656"></a><h3>
+<a name="idp71023156422976"></a><h3>
 <a name="Aboria.Kdtreeconstruct-copy-destruct"></a><code class="computeroutput">Kdtree</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp70810676342096-bb"></a><span class="identifier">Kdtree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp71348812262608-bb"></a><span class="identifier">Kdtree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp71884730094544"></a><h3>
-<a name="idp70810676331920-bb"></a><code class="computeroutput">Kdtree</code> public member functions</h3>
+<a name="idp71023156428864"></a><h3>
+<a name="idp71348812261248-bb"></a><code class="computeroutput">Kdtree</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812261648-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp71023156436048"></a><h3>
+<a name="idp71348812262736-bb"></a><code class="computeroutput">Kdtree</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp71348812263136-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp71023156443968"></a><h3>
+<a name="idp71348812264096-bb"></a><code class="computeroutput">Kdtree</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp70810676332320-bb"></a><span class="identifier">kdtree_get_point_count</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idp70810676333280-bb"></a><span class="identifier">kdtree_distance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">*</span> p1<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">size_t</span> idx_p2<span class="special">,</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idp70810676336304-bb"></a><span class="identifier">kdtree_get_pt</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> idx<span class="special">,</span> <span class="keyword">int</span> dim<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> BBOX<span class="special">&gt;</span> <span class="keyword">bool</span> <a name="idp70810676338640-bb"></a><span class="identifier">kdtree_get_bbox</span><span class="special">(</span><span class="identifier">BBOX</span> <span class="special">&amp;</span> bb<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676341136-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-</ol></div>
-</div>
-<div class="refsect2">
-<a name="idp71884730133648"></a><h3>
-<a name="idp70810676342224-bb"></a><code class="computeroutput">Kdtree</code> public static functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp70810676342624-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
-</div>
-<div class="refsect2">
-<a name="idp71884730141568"></a><h3>
-<a name="idp70810676343584-bb"></a><code class="computeroutput">Kdtree</code> private member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676344000-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676344960-bb"></a><span class="identifier">end_list_of_copies_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676345920-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676346880-bb"></a><span class="identifier">print_tree</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span> nodes<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676348528-bb"></a><span class="identifier">print_level</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span> <span class="special">&gt;</span> <span class="special">&amp;</span> nodes<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676350192-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812264512-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812265472-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812266432-bb"></a><span class="identifier">print_tree</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812267392-bb"></a><span class="identifier">print_level</span><span class="special">(</span><span class="keyword">int</span> index<span class="special">,</span> <span class="keyword">int</span> level_size<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812269728-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">int</span> new_n<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">bool</span> call_set_domain <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp70810676354192-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp70810676356048-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp71348812273728-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="KdtreeQuery.html" title="Struct template KdtreeQuery">KdtreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp71348812275584-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812277280-bb"></a><span class="identifier">build_tree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="../LOG_BOLD.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="KdtreeQuery.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="KdtreeQuery.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Kdtree_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="KdtreeChildIterator.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

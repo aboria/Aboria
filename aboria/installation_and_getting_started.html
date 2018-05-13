@@ -4,8 +4,8 @@
 <title>Installation and Getting Started</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.5">
-<link rel="up" href="../index.html" title="Aboria 0.5">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../index.html" title="Aboria 0.7">
 <link rel="prev" href="introduction.html" title="Introduction">
 <link rel="next" href="particle_container.html" title="Particle Container">
 <script type="text/x-mathjax-config">
@@ -44,6 +44,18 @@ MathJax.Hub.Config({
       prerequisites</a></span></dt>
 <dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_a_program_using_aboria">Compiling
       a program using Aboria</a></span></dt>
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_eigen">Compiling
+      with Eigen</a></span></dt>
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_vtk">Compiling
+      with VTK</a></span></dt>
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_h2lib">Compiling
+      with H2Lib</a></span></dt>
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_openmp">Compiling
+      with OpenMP</a></span></dt>
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_cuda">Compiling
+      with CUDA</a></span></dt>
+<dt><span class="section"><a href="installation_and_getting_started.html#aboria.installation_and_getting_started.putting_it_all_together">Putting
+      it all together</a></span></dt>
 </dl></div>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
@@ -56,7 +68,7 @@ MathJax.Hub.Config({
         CI page</a> for more details.
       </p>
 <p>
-        You will need to install a C++ compiler with C++11 support, and the <a href="https://cmake.org/" target="_top">CMake</a> build software prior to using Aboria,
+        You will need to install a C++ compiler with C++14 support, and the <a href="https://cmake.org/" target="_top">CMake</a> build software prior to using Aboria,
         which you can do on a Debian-based OS using
       </p>
 <pre class="programlisting"><span class="identifier">sudo</span> <span class="identifier">apt</span><span class="special">-</span><span class="identifier">get</span> <span class="identifier">install</span> <span class="identifier">build</span><span class="special">-</span><span class="identifier">essential</span> <span class="identifier">cmake</span>
@@ -64,12 +76,33 @@ MathJax.Hub.Config({
 <p>
         The only required dependency is the <a href="http://www.boost.org" target="_top">Boost</a>
         library. Optional dependencies are <a href="http://www.vtk.org/" target="_top">The Visualization
-        Toolkit</a> and <a href="http://eigen.tuxfamily.org" target="_top">Eigen</a>
-        (version &gt;= 3.3~beta1), both of which add extra functionality. To install
-        all these dependencies in a Debian-based OS you can type
+        Toolkit</a>, <a href="http://eigen.tuxfamily.org" target="_top">Eigen</a> (version
+        &gt;= 3.3~beta1), <a href="http://www.h2lib.org" target="_top">H2Lib</a>, <a href="http://thrust.github.io" target="_top">Trust</a> and <a href="http://www.openmp.org" target="_top">OpenMP</a>,
+        all of which add extra functionality. To install all these dependencies in
+        a Debian-based OS you can type
       </p>
-<pre class="programlisting"><span class="identifier">sudo</span> <span class="identifier">apt</span><span class="special">-</span><span class="identifier">get</span> <span class="identifier">install</span> <span class="identifier">libboost</span><span class="special">-</span><span class="identifier">dev</span> <span class="identifier">libvtk5</span><span class="special">-</span><span class="identifier">dev</span> <span class="identifier">libeigen3</span><span class="special">-</span><span class="identifier">dev</span>
+<pre class="programlisting"><span class="identifier">sudo</span> <span class="identifier">apt</span><span class="special">-</span><span class="identifier">get</span> <span class="identifier">install</span> <span class="identifier">libboost</span><span class="special">-</span><span class="identifier">dev</span> <span class="identifier">libvtk5</span><span class="special">-</span><span class="identifier">dev</span> <span class="identifier">libeigen3</span><span class="special">-</span><span class="identifier">dev</span> <span class="identifier">libthrust</span><span class="special">-</span><span class="identifier">dev</span>
 </pre>
+<div class="note"><table border="0" summary="Note">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="../images/note.png"></td>
+<th align="left">Note</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+          replace <code class="computeroutput"><span class="identifier">libvtk5</span><span class="special">-</span><span class="identifier">dev</span></code> with <code class="computeroutput"><span class="identifier">libvtk6</span><span class="special">-</span><span class="identifier">dev</span></code>
+          if necessary
+        </p></td></tr>
+</table></div>
+<div class="note"><table border="0" summary="Note">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Note]" src="../images/note.png"></td>
+<th align="left">Note</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+          If you wish to use H2Lib you will need to download and compile the source
+          manually
+        </p></td></tr>
+</table></div>
 </div>
 <div class="section">
 <div class="titlepage"><div><div><h3 class="title">
@@ -84,8 +117,87 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">Aboria</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span>
 </pre>
 <p>
-        The following provides a step-by-step guide on compiling your first Aboria
-        program
+        If you wish to use any of the optional dependencies you will need to install,
+        include and/or link the required library as normal, and define one or more
+        of the following compiler definitions to "turn on" this functionality
+        within Aboria
+      </p>
+<div class="table">
+<a name="aboria.installation_and_getting_started.compiling_a_program_using_aboria.optional_dependencies_compiler_d"></a><p class="title"><b>Table&#160;1.&#160;Optional dependencies compiler definitions</b></p>
+<div class="table-contents"><table class="table" summary="Optional dependencies compiler definitions">
+<colgroup>
+<col>
+<col>
+</colgroup>
+<thead><tr>
+<th>
+                <p>
+                  Library Name
+                </p>
+              </th>
+<th>
+                <p>
+                  Compiler definition
+                </p>
+              </th>
+</tr></thead>
+<tbody>
+<tr>
+<td>
+                <p>
+                  VTK
+                </p>
+              </td>
+<td>
+                <p>
+                  HAVE_VTK
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  Eigen
+                </p>
+              </td>
+<td>
+                <p>
+                  HAVE_EIGEN
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  H2Lib
+                </p>
+              </td>
+<td>
+                <p>
+                  HAVE_H2LIB
+                </p>
+              </td>
+</tr>
+<tr>
+<td>
+                <p>
+                  Thrust
+                </p>
+              </td>
+<td>
+                <p>
+                  HAVE_THRUST
+                </p>
+              </td>
+</tr>
+</tbody>
+</table></div>
+</div>
+<br class="table-break"><p>
+        If you are familiar with compiling C++ projects, this might be all the information
+        you need to incorporate Aboria into your own build system. If you wish for
+        more details, the following provides a step-by-step guide on compiling your
+        first Aboria program, using the popular CMake build system.
       </p>
 <p>
         First clone the Aboria GitHub repository like so
@@ -99,40 +211,39 @@ MathJax.Hub.Config({
 
 <span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
 
-
-<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
+    <span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
     <span class="comment">/*
      * Create a 2d particle container type with one
      * additional variable "velocity", represented
      * by a 2d double vector
      */</span>
-    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span><span class="identifier">vdouble2</span><span class="special">,</span><span class="string">"velocity"</span><span class="special">)</span>
-    <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;,</span><span class="number">2</span><span class="special">&gt;</span> <span class="identifier">container_type</span><span class="special">;</span>
-    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">container_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span> <span class="identifier">vdouble2</span><span class="special">,</span> <span class="string">"velocity"</span><span class="special">)</span>
+    <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;,</span> <span class="number">2</span><span class="special">&gt;</span> <span class="identifier">container_t</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">container_t</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
 
     <span class="comment">/*
      * create a particle set with size N
      */</span>
     <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
-    <span class="identifier">container_type</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+    <span class="identifier">container_t</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
 
-    <span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
     <span class="identifier">std</span><span class="special">::</span><span class="identifier">default_random_engine</span> <span class="identifier">gen</span><span class="special">;</span>
     <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
-        <span class="comment">/*
-         * set a random position, and initialise velocity
-         */</span>
-        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
-        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">);</span>
+      <span class="comment">/*
+       * set a random position, and initialise velocity
+       */</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span> <span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">);</span>
     <span class="special">}</span>
 
     <span class="comment">/*
      * write particle container to a vtk
      * unstructured grid file
      */</span>
-    <span class="identifier">vtkWriteGrid</span><span class="special">(</span><span class="string">"aboria"</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_grid</span><span class="special">(</span><span class="keyword">true</span><span class="special">));</span>
+    <span class="identifier">vtkWriteGrid</span><span class="special">(</span><span class="string">"aboria"</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_grid</span><span class="special">(</span><span class="keyword">true</span><span class="special">));</span>
 
-<span class="special">}</span>
+    <span class="special">}</span>
 </pre>
 <p>
         Now copy and paste the CMake config file below into another file called
@@ -142,8 +253,10 @@ MathJax.Hub.Config({
       </p>
 <pre class="programlisting">cmake_minimum_required(VERSION 2.8)
 
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++14")
+
 # Boost
-find_package(Boost 1.50.0 REQUIRED)
+find_package(Boost 1.50.0 REQUIRED serialization)
 list(APPEND LIBRARIES ${Boost_LIBRARIES})
 list(APPEND INCLUDES ${Boost_INCLUDE_DIRS})
 
@@ -154,8 +267,6 @@ if (VTK_FOUND)
 endif(VTK_FOUND)
 list(APPEND LIBRARIES ${VTK_LIBRARIES})
 list(APPEND INCLUDES ${VTK_INCLUDE_DIRS})
-
-set(CMAKE_CXX_FLAGS ${CMAKE_CXX_FLAGS} "-std=c++11")
 
 # Aboria
 set(Aboria_LOG_LEVEL 1 CACHE STRING "Logging level (1 = least, 3 = most)")
@@ -192,10 +303,279 @@ $ ./getting_started
         the VTK unstructured grid format (such as Paraview)
       </p>
 </div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.compiling_with_eigen"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_eigen" title="Compiling with Eigen">Compiling
+      with Eigen</a>
+</h3></div></div></div>
+<p>
+        Aboria interfaces with the <a href="http://eigen.tuxfamily.org" target="_top">Eigen</a>
+        library to provide matrix-free linear operators, linear solvers and preconditioners.
+        See <a class="link" href="evaluating_and_solving_kernel_op.html" title="Evaluating and Solving Kernel Operators with Eigen">aboria.evaluating_and_solving_kernel_op</a>
+        for more details.
+      </p>
+<p>
+        Assuming you are using CMake as per the instructions above, you can include
+        Eigen in the build process by inserting the following into your <code class="computeroutput"><span class="identifier">CMakeLists</span><span class="special">.</span><span class="identifier">txt</span></code>
+      </p>
+<pre class="programlisting"># optional if you already have a `FindEigen3.cmake` on your system
+set(CMAKE_MODULE_PATH  "${CMAKE_SOURCE_DIR}/Aboria/cmake"
+                       ${CMAKE_MODULE_PATH})
+# end optional
+
+find_package(Eigen3 REQUIRED)
+list(APPEND INCLUDES ${EIGEN3_INCLUDE_DIR})
+add_definitions(-DHAVE_EIGEN)
+</pre>
+<p>
+        The first line sets the <code class="computeroutput">CMAKE_MODULE_PATH</code> to search in the Aboria
+        <code class="computeroutput">cmake</code> directory for additional <code class="computeroutput">.cmake</code> files. This
+        is only necessary if you don't already have a <code class="computeroutput">FindEigen3.cmake</code>
+        module or config file on your system and wish to use the one bundled with
+        Aboria.
+      </p>
+<p>
+        The most important line for using the Eigen functionality within Aboria is
+        the <code class="computeroutput">add_definitions</code> instruction, which adds the <code class="computeroutput">HAVE_EIGEN</code>
+        compiler definition. This definition is used to "turn on" all Eigen
+        functionality within Aboria.
+      </p>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.compiling_with_vtk"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_vtk" title="Compiling with VTK">Compiling
+      with VTK</a>
+</h3></div></div></div>
+<p>
+        Aboria uses <a href="http://www.vtk.org/" target="_top">The Visualisation Toolkit</a>
+        to allow it to write out or read in particle data as a <code class="computeroutput">vtkUnstructuredGrid</code>.
+        The example <code class="computeroutput">CMakeLists.txt</code> above shows how you can add VTK to
+        the build process. The important lines are:
+      </p>
+<pre class="programlisting">find_package(VTK REQUIRED)
+add_definitions(-DHAVE_VTK)
+list(APPEND LIBRARIES ${VTK_LIBRARIES})
+list(APPEND INCLUDES ${VTK_INCLUDE_DIRS})
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.compiling_with_h2lib"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_h2lib" title="Compiling with H2Lib">Compiling
+      with H2Lib</a>
+</h3></div></div></div>
+<p>
+        Aboria uses <a href="http://www.h2lib.org" target="_top">H2Lib</a> for storing,
+        evaluating and solving hierarchical matrices. You can use the bundled <code class="computeroutput">FindH2Lib.cmake</code>
+        to find H2Lib on your system. Note that you will need to download and compile
+        H2Lib first, according to their instructions. You will also need to enable
+        OpenMP, see below for more details on how to do this.
+      </p>
+<pre class="programlisting">set(CMAKE_MODULE_PATH  "${CMAKE_SOURCE_DIR}/Aboria/cmake"
+                       ${CMAKE_MODULE_PATH})
+set(H2Lib_ROOT $ENV{HOME}/git/H2Lib)
+find_package(H2Lib REQUIRED)
+list(APPEND LIBRARIES ${H2Lib_LIBRARIES})
+list(APPEND INCLUDES ${H2Lib_INCLUDE_DIRS})
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
+${H2Lib_LINKER_FLAGS}") add_definitions(-DHAVE_H2LIB)
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.compiling_with_openmp"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_openmp" title="Compiling with OpenMP">Compiling
+      with OpenMP</a>
+</h3></div></div></div>
+<p>
+        Aboria can be run using multiple cores using OpenMP. The majority of parallel
+        regions in Aboria are implemented using the OpenMP backend of Thrust, not
+        raw OpenMP, so to get the best parallel performance Thrust should also be
+        used.
+      </p>
+<p>
+        To add OpenMP and Thrust to the build process, add the following to your
+        <code class="computeroutput">CMakeLists.txt</code>
+      </p>
+<pre class="programlisting"># OpenMP
+find_package(OpenMP REQUIRED)
+add_definitions(-DHAVE_OPENMP)
+set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
+${OpenMP_EXE_LINKER_FLAGS}")
+
+# Thrust
+find_package(Thrust REQUIRED)
+add_definitions(-DHAVE_THRUST)
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.compiling_with_cuda"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_cuda" title="Compiling with CUDA">Compiling
+      with CUDA</a>
+</h3></div></div></div>
+<p>
+        The parallel STL-like algorithms provided with Thrust are used to provide
+        the majority of parallism in Aboria. It is possible to use the native CUDA
+        backend of Thrust to run code on the GPU.
+      </p>
+<div class="caution"><table border="0" summary="Caution">
+<tr>
+<td rowspan="2" align="center" valign="top" width="25"><img alt="[Caution]" src="../images/caution.png"></td>
+<th align="left">Caution</th>
+</tr>
+<tr><td align="left" valign="top"><p>
+          This mode is experimental, and has not been thoroughly tested. It is also
+          quite slow, so any pull requests to fix this are most welcome!
+        </p></td></tr>
+</table></div>
+<p>
+        There are a few restrictions on the code that you can write while using the
+        CUDA backend, and these are detailed in <a class="link" href="parallelism_in_aboria.html#aboria.parallelism_in_aboria.cuda" title="CUDA">aboria.parallelism_in_aboria.cuda</a>
+        (basically if you are already familiar with Thrust you should be comfortable
+        using the CUDA backend for Aboria). For now, just copy the following into
+        a <code class="computeroutput">getting_started.cu</code> file
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
+<span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
+<span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">cu_velocity</span><span class="special">,</span> <span class="identifier">vdouble2</span><span class="special">,</span> <span class="string">"velocity"</span><span class="special">)</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
+
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">cu_velocity</span><span class="special">&gt;,</span> <span class="number">2</span><span class="special">,</span> <span class="identifier">thrust</span><span class="special">::</span><span class="identifier">device_vector</span><span class="special">,</span>
+                  <span class="identifier">CellListOrdered</span><span class="special">&gt;</span>
+    <span class="identifier">cu_container_t</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">cu_container_t</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">cu_position</span><span class="special">;</span>
+
+<span class="comment">/*
+ * create a particle set with size N
+ */</span>
+<span class="identifier">cu_container_t</span> <span class="identifier">cu_particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+
+<span class="comment">/*
+ * set a random position
+ */</span>
+<span class="identifier">thrust</span><span class="special">::</span><span class="identifier">tabulate</span><span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">cu_position</span><span class="special">&gt;(</span><span class="identifier">cu_particles</span><span class="special">).</span><span class="identifier">begin</span><span class="special">(),</span>
+                 <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">cu_position</span><span class="special">&gt;(</span><span class="identifier">cu_particles</span><span class="special">).</span><span class="identifier">end</span><span class="special">(),</span>
+                 <span class="special">[]</span> <span class="identifier">__device__</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+                   <span class="identifier">thrust</span><span class="special">::</span><span class="identifier">default_random_engine</span> <span class="identifier">gen</span><span class="special">;</span>
+                   <span class="identifier">thrust</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">float</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
+                   <span class="identifier">gen</span><span class="special">.</span><span class="identifier">discard</span><span class="special">(</span><span class="identifier">i</span><span class="special">);</span>
+                   <span class="keyword">return</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span> <span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+                 <span class="special">});</span>
+
+<span class="comment">/*
+ * init velocity
+ */</span>
+<span class="identifier">thrust</span><span class="special">::</span><span class="identifier">fill</span><span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">cu_velocity</span><span class="special">&gt;(</span><span class="identifier">cu_particles</span><span class="special">).</span><span class="identifier">begin</span><span class="special">(),</span>
+             <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">cu_velocity</span><span class="special">&gt;(</span><span class="identifier">cu_particles</span><span class="special">).</span><span class="identifier">end</span><span class="special">(),</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">));</span>
+
+<span class="comment">/*
+ * write particle container to a vtk
+ * unstructured grid file
+ */</span>
+<span class="identifier">vtkWriteGrid</span><span class="special">(</span><span class="string">"aboria"</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_grid</span><span class="special">(</span><span class="keyword">true</span><span class="special">));</span>
+
+<span class="special">}</span>
+</pre>
+<p>
+        To enable the CUDA backend and compile the above source with the CUDA compiler
+        <code class="computeroutput"><span class="identifier">nvcc</span></code>, add the following to
+        your <code class="computeroutput"><span class="identifier">CMakeLists</span><span class="special">.</span><span class="identifier">txt</span></code>
+      </p>
+<pre class="programlisting"><span class="identifier">find_package</span><span class="special">(</span><span class="identifier">CUDA</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">CUDA_NVCC_FLAGS</span> <span class="string">"${CUDA_NVCC_FLAGS}  --expt-relaxed-constexpr
+                                         --expt-extended-lambda
+                                         -std=c++14"</span><span class="special">)</span>
+
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">SOURCE_CU</span>
+    <span class="identifier">getting_started</span><span class="special">.</span><span class="identifier">cu</span>
+    <span class="special">)</span>
+
+<span class="identifier">cuda_add_executable</span><span class="special">(</span><span class="identifier">getting_started_cu</span> <span class="error">$</span><span class="special">{</span><span class="identifier">SOURCE_CU</span><span class="special">})</span>
+<span class="identifier">target_link_libraries</span><span class="special">(</span><span class="identifier">getting_started_cu</span> <span class="error">$</span><span class="special">{</span><span class="identifier">LIBRARIES</span><span class="special">})</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.installation_and_getting_started.putting_it_all_together"></a><a class="link" href="installation_and_getting_started.html#aboria.installation_and_getting_started.putting_it_all_together" title="Putting it all together">Putting
+      it all together</a>
+</h3></div></div></div>
+<p>
+        For completness, here is a possible <code class="computeroutput"><span class="identifier">CMakeLists</span><span class="special">.</span><span class="identifier">txt</span></code> file
+        combining all the options shown above
+      </p>
+<pre class="programlisting"><span class="identifier">cmake_minimum_required</span><span class="special">(</span><span class="identifier">VERSION</span> <span class="number">2.8</span><span class="special">)</span>
+
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">CMAKE_MODULE_PATH</span>  <span class="string">"${CMAKE_SOURCE_DIR}/Aboria/cmake"</span>
+                       <span class="error">$</span><span class="special">{</span><span class="identifier">CMAKE_MODULE_PATH</span><span class="special">})</span>
+
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">CMAKE_CXX_FLAGS</span> <span class="string">"${CMAKE_CXX_FLAGS} -std=c++14"</span><span class="special">)</span>
+
+<span class="preprocessor"># Boost</span>
+<span class="identifier">find_package</span><span class="special">(</span><span class="identifier">Boost</span> <span class="number">1.50</span><span class="special">.</span><span class="number">0</span> <span class="identifier">REQUIRED</span> <span class="identifier">serialization</span><span class="special">)</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">LIBRARIES</span> <span class="error">$</span><span class="special">{</span><span class="identifier">Boost_LIBRARIES</span><span class="special">})</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">INCLUDES</span> <span class="error">$</span><span class="special">{</span><span class="identifier">Boost_INCLUDE_DIRS</span><span class="special">})</span>
+
+<span class="preprocessor"># VTK</span>
+<span class="identifier">find_package</span><span class="special">(</span><span class="identifier">VTK</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
+<span class="keyword">if</span> <span class="special">(</span><span class="identifier">VTK_FOUND</span><span class="special">)</span>
+    <span class="identifier">add_definitions</span><span class="special">(-</span><span class="identifier">DHAVE_VTK</span><span class="special">)</span>
+<span class="identifier">endif</span><span class="special">(</span><span class="identifier">VTK_FOUND</span><span class="special">)</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">LIBRARIES</span> <span class="error">$</span><span class="special">{</span><span class="identifier">VTK_LIBRARIES</span><span class="special">})</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">INCLUDES</span> <span class="error">$</span><span class="special">{</span><span class="identifier">VTK_INCLUDE_DIRS</span><span class="special">})</span>
+
+<span class="preprocessor"># H2Lib</span>
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">H2Lib_ROOT</span> <span class="error">$</span><span class="identifier">ENV</span><span class="special">{</span><span class="identifier">HOME</span><span class="special">}/</span><span class="identifier">git</span><span class="special">/</span><span class="identifier">H2Lib</span><span class="special">)</span>
+<span class="identifier">find_package</span><span class="special">(</span><span class="identifier">H2Lib</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">LIBRARIES</span> <span class="error">$</span><span class="special">{</span><span class="identifier">H2Lib_LIBRARIES</span><span class="special">})</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">INCLUDES</span> <span class="error">$</span><span class="special">{</span><span class="identifier">H2Lib_INCLUDE_DIRS</span><span class="special">})</span>
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">CMAKE_EXE_LINKER_FLAGS</span> <span class="string">"${CMAKE_EXE_LINKER_FLAGS}
+${H2Lib_LINKER_FLAGS}"</span><span class="special">)</span> <span class="identifier">add_definitions</span><span class="special">(-</span><span class="identifier">DHAVE_H2LIB</span><span class="special">)</span>
+
+<span class="preprocessor"># OpenMP</span>
+<span class="identifier">find_package</span><span class="special">(</span><span class="identifier">OpenMP</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
+<span class="identifier">add_definitions</span><span class="special">(-</span><span class="identifier">DHAVE_OPENMP</span><span class="special">)</span>
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">CMAKE_CXX_FLAGS</span> <span class="string">"${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}"</span><span class="special">)</span>
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">CMAKE_EXE_LINKER_FLAGS</span> <span class="string">"${CMAKE_EXE_LINKER_FLAGS}
+${OpenMP_EXE_LINKER_FLAGS}"</span><span class="special">)</span>
+
+<span class="preprocessor"># CUDA</span>
+<span class="identifier">find_package</span><span class="special">(</span><span class="identifier">CUDA</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">CUDA_NVCC_FLAGS</span> <span class="string">"${CUDA_NVCC_FLAGS}  --expt-relaxed-constexpr
+                                         --expt-extended-lambda
+                                         -std=c++14"</span><span class="special">)</span>
+
+<span class="preprocessor"># Thrust</span>
+<span class="identifier">find_package</span><span class="special">(</span><span class="identifier">Thrust</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
+<span class="identifier">add_definitions</span><span class="special">(-</span><span class="identifier">DHAVE_THRUST</span><span class="special">)</span>
+
+<span class="preprocessor"># Aboria</span>
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">Aboria_LOG_LEVEL</span> <span class="number">1</span> <span class="identifier">CACHE</span> <span class="identifier">STRING</span> <span class="string">"Logging level (1 = least, 3 = most)"</span><span class="special">)</span>
+<span class="identifier">add_definitions</span><span class="special">(-</span><span class="identifier">DABORIA_LOG_LEVEL</span><span class="special">=</span><span class="error">$</span><span class="special">{</span><span class="identifier">Aboria_LOG_LEVEL</span><span class="special">})</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">INCLUDES</span> <span class="identifier">Aboria</span><span class="special">/</span><span class="identifier">src</span><span class="special">)</span>
+<span class="identifier">list</span><span class="special">(</span><span class="identifier">APPEND</span> <span class="identifier">INCLUDES</span> <span class="identifier">Aboria</span><span class="special">/</span><span class="identifier">third</span><span class="special">-</span><span class="identifier">party</span><span class="special">)</span>
+
+<span class="identifier">include_directories</span><span class="special">(</span><span class="identifier">src</span> <span class="error">$</span><span class="special">{</span><span class="identifier">INCLUDES</span><span class="special">})</span>
+
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">SOURCE</span>
+    <span class="identifier">getting_started</span><span class="special">.</span><span class="identifier">cpp</span>
+    <span class="special">)</span>
+
+<span class="identifier">add_executable</span><span class="special">(</span><span class="identifier">getting_started</span> <span class="error">$</span><span class="special">{</span><span class="identifier">SOURCE</span><span class="special">})</span>
+<span class="identifier">target_link_libraries</span><span class="special">(</span><span class="identifier">getting_started</span> <span class="error">$</span><span class="special">{</span><span class="identifier">LIBRARIES</span><span class="special">})</span>
+
+<span class="identifier">set</span><span class="special">(</span><span class="identifier">SOURCE_CU</span>
+    <span class="identifier">getting_started</span><span class="special">.</span><span class="identifier">cu</span>
+    <span class="special">)</span>
+
+<span class="identifier">cuda_add_executable</span><span class="special">(</span><span class="identifier">getting_started_cu</span> <span class="error">$</span><span class="special">{</span><span class="identifier">SOURCE_CU</span><span class="special">})</span>
+<span class="identifier">target_link_libraries</span><span class="special">(</span><span class="identifier">getting_started_cu</span> <span class="error">$</span><span class="special">{</span><span class="identifier">LIBRARIES</span><span class="special">})</span>
+</pre>
+</div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">

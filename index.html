@@ -1,10 +1,10 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
-<title>Aboria 0.5</title>
+<title>Aboria 0.7</title>
 <link rel="stylesheet" href="css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="index.html" title="Aboria 0.5">
+<link rel="home" href="index.html" title="Aboria 0.7">
 <link rel="next" href="aboria/introduction.html" title="Introduction">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
@@ -34,11 +34,12 @@ MathJax.Hub.Config({
 <div class="titlepage">
 <div>
 <div><h2 class="title">
-<a name="aboria"></a>Aboria 0.5</h2></div>
+<a name="aboria"></a>Aboria 0.7</h2></div>
 <div><div class="authorgroup"><div class="author"><h3 class="author">
 <span class="firstname">Martin</span> <span class="surname">Robinson</span>
 </h3></div></div></div>
-<div><p class="copyright">Copyright &#169; 2015-2017 Martin Robinson</p></div>
+<div><p class="copyright">Copyright &#169; 2015-2018 Martin
+      Robinson</p></div>
 </div>
 <hr>
 </div>
@@ -54,6 +55,18 @@ MathJax.Hub.Config({
       prerequisites</a></span></dt>
 <dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_a_program_using_aboria">Compiling
       a program using Aboria</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_eigen">Compiling
+      with Eigen</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_vtk">Compiling
+      with VTK</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_h2lib">Compiling
+      with H2Lib</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_openmp">Compiling
+      with OpenMP</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.compiling_with_cuda">Compiling
+      with CUDA</a></span></dt>
+<dt><span class="section"><a href="aboria/installation_and_getting_started.html#aboria.installation_and_getting_started.putting_it_all_together">Putting
+      it all together</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/particle_container.html">Particle Container</a></span></dt>
 <dd><dl>
@@ -77,13 +90,18 @@ MathJax.Hub.Config({
 <dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.cell_lists">Cell Lists</a></span></dt>
 <dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.fast_cell_list_neighbour_search">Fast
       Cell-list Neighbour Search</a></span></dt>
-<dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.kd_tree">Kd-Tree</a></span></dt>
+<dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.kd_trees">Kd-Trees</a></span></dt>
 <dt><span class="section"><a href="aboria/neighbourhood_searching.html#aboria.neighbourhood_searching.hyper_oct_tree">Hyper
       Oct-Tree</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/using_the_spatial_data_structure.html">Using the spatial
     data structures</a></span></dt>
 <dt><span class="section"><a href="aboria/id_searching.html">ID Searching</a></span></dt>
+<dt><span class="section"><a href="aboria/parallelism_in_aboria.html">Parallelism in Aboria</a></span></dt>
+<dd><dl>
+<dt><span class="section"><a href="aboria/parallelism_in_aboria.html#aboria.parallelism_in_aboria.openmp">OpenMP</a></span></dt>
+<dt><span class="section"><a href="aboria/parallelism_in_aboria.html#aboria.parallelism_in_aboria.cuda">CUDA</a></span></dt>
+</dl></dd>
 <dt><span class="section"><a href="aboria/evaluating_and_solving_kernel_op.html">Evaluating and
     Solving Kernel Operators with Eigen</a></span></dt>
 <dd><dl>
@@ -114,18 +132,11 @@ MathJax.Hub.Config({
 </dl></dd>
 <dt><span class="section"><a href="aboria/examples.html">Examples</a></span></dt>
 <dd><dl>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.molecular_dynamics_linear_spring">Molecular
-      Dynamics (Linear Spring) (MD)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.brownian_dynamics_bd">Brownian Dynamics
-      (BD)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.discrete_element_model_dem">Discrete
-      Element Model (DEM)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.smoothed_particle_hydrodynamics_">Smoothed
-      Particle Hydrodynamics (SPH)</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.radial_basis_function_rbf_interp">Radial
-      Basis Function (RBF) Interpolation</a></span></dt>
-<dt><span class="section"><a href="aboria/examples.html#aboria.examples.kansa_method_for_pdes">Kansa Method for
-      PDEs</a></span></dt>
+<dt><span class="section"><a href="aboria/examples.html#aboria.examples.container_iterator_api">Container/Iterator
+      API</a></span></dt>
+<dt><span class="section"><a href="aboria/examples.html#aboria.examples.symbolic_api">Symbolic API</a></span></dt>
+<dt><span class="section"><a href="aboria/examples.html#aboria.examples.kernel_operator_api">Kernel Operator
+      API</a></span></dt>
 </dl></dd>
 <dt><span class="section"><a href="aboria/benchmarks.html">Benchmarks</a></span></dt>
 <dd><dl>
@@ -175,7 +186,7 @@ MathJax.Hub.Config({
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
-<td align="left"><p><small>Last revised: March 23, 2018 at 12:17:54 GMT</small></p></td>
+<td align="left"><p><small>Last revised: May 13, 2018 at 07:59:10 GMT</small></p></td>
 <td align="right"><div class="copyright-footer"></div></td>
 </tr></table>
 <hr>

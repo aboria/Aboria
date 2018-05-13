@@ -1,0 +1,137 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class H2LibCholeskyDecomposition</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.H2Lib_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/H2Lib.h&gt;">
+<link rel="prev" href="H2Lib_LR_Decomposition.html" title="Class H2Lib_LR_Decomposition">
+<link rel="next" href="HLib_LR_Decomposition.html" title="Class HLib_LR_Decomposition">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: { 
+    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="H2Lib_LR_Decomposition.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.H2Lib_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="HLib_LR_Decomposition.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.H2LibCholeskyDecomposition"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class H2LibCholeskyDecomposition</span></h2>
+<p>Aboria::H2LibCholeskyDecomposition</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.H2Lib_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/H2Lib.h&gt;">/home/travis/build/martinjrobins/Aboria/src/H2Lib.h</a>&gt;
+
+</span>
+<span class="keyword">class</span> <a class="link" href="H2LibCholeskyDecomposition.html" title="Class H2LibCholeskyDecomposition">H2LibCholeskyDecomposition</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// <a class="link" href="H2LibCholeskyDecomposition.html#Aboria.H2LibCholeskyDecompositionconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812073840-bb"><span class="identifier">H2LibCholeskyDecomposition</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">ph2matrix</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">pblock</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812061152-bb">public member functions</a></span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> DerivedRHS<span class="special">&gt;</span> 
+    <span class="keyword">void</span> <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812061552-bb"><span class="identifier">solve</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">DerivedRHS</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> 
+               <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Matrix</span><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Dynamic</span><span class="special">,</span> <span class="number">1</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T1<span class="special">,</span> <span class="keyword">typename</span> T2<span class="special">&gt;</span> 
+    <span class="keyword">void</span> <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812064784-bb"><span class="identifier">solve</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">T1</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812068544-bb"><span class="identifier">determinant</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812071040-bb"><span class="identifier">log_determinant</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812076032-bb">private member functions</a></span>
+  <span class="keyword">double</span> <a class="link" href="H2LibCholeskyDecomposition.html#idp71348812076448-bb"><span class="identifier">log_determinant_sum</span></a><span class="special">(</span><span class="identifier">ph2matrix</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp71023154981600"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idp71023154982016"></a><h3>
+<a name="Aboria.H2LibCholeskyDecompositionconstruct-copy-destruct"></a><code class="computeroutput">H2LibCholeskyDecomposition</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp71348812073840-bb"></a><span class="identifier">H2LibCholeskyDecomposition</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">ph2matrix</span> h2mat<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">pblock</span> broot<span class="special">,</span> 
+                           <span class="keyword">const</span> <span class="keyword">double</span> tol<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp71023154993568"></a><h3>
+<a name="idp71348812061152-bb"></a><code class="computeroutput">H2LibCholeskyDecomposition</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> DerivedRHS<span class="special">&gt;</span> 
+  <span class="keyword">void</span> <a name="idp71348812061552-bb"></a><span class="identifier">solve</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">DerivedRHS</span> <span class="special">&gt;</span> <span class="special">&amp;</span> source<span class="special">,</span> 
+             <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Matrix</span><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">Dynamic</span><span class="special">,</span> <span class="number">1</span> <span class="special">&gt;</span> <span class="special">&amp;</span> dest<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T1<span class="special">,</span> <span class="keyword">typename</span> T2<span class="special">&gt;</span> 
+  <span class="keyword">void</span> <a name="idp71348812064784-bb"></a><span class="identifier">solve</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">T1</span> <span class="special">&gt;</span> <span class="special">&amp;</span> source<span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="identifier">T2</span> <span class="special">&gt;</span> <span class="special">&amp;</span> dest<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp71348812068544-bb"></a><span class="identifier">determinant</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the determinant of the H2 matrix that was used to make this decomposition <p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td>
+<p>double </p>
+<p>NaN if negative eigenvalues found (i.e. H2 matrix not positive definite) </p>
+</td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp71348812071040-bb"></a><span class="identifier">log_determinant</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the log determinant of the H2 matrix that was used to make this decomposition. <p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td>
+<p>double </p>
+<p>NaN if negative eigenvalues found (i.e. H2 matrix not positive definite) </p>
+<p>-HUGE_VAL if zero eigenvalues found </p>
+</td>
+</tr></tbody>
+</table></div>
+</li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp71023155049504"></a><h3>
+<a name="idp71348812076032-bb"></a><code class="computeroutput">H2LibCholeskyDecomposition</code> private member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idp71348812076448-bb"></a><span class="identifier">log_determinant_sum</span><span class="special">(</span><span class="identifier">ph2matrix</span> h2<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li></ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="H2Lib_LR_Decomposition.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.H2Lib_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="HLib_LR_Decomposition.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

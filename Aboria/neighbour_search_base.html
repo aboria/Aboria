@@ -4,7 +4,7 @@
 <title>Class template neighbour_search_base</title>
 <link rel="stylesheet" href="../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
-<link rel="home" href="../index.html" title="Aboria 0.5">
+<link rel="home" href="../index.html" title="Aboria 0.7">
 <link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">
 <link rel="prev" href="iterator_range.html" title="Struct template iterator_range">
 <link rel="next" href="neighbour_search_base/enforce_domain_lambda.html" title="Struct template enforce_domain_lambda">
@@ -69,52 +69,51 @@ MathJax.Hub.Config({
     <span class="keyword">typedef</span> <span class="identifier">position_d</span><span class="special">&lt;</span> <span class="identifier">D</span> <span class="special">&gt;</span>     <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#Aboria.neighbour_search_base.enforce_domain_lambda.position"><span class="identifier">position</span></a><span class="special">;</span>
 
     <span class="comment">// <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#Aboria.neighbour_search_base.enforce_domain_lambdaconstruct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#idp70810676501600-bb"><span class="identifier">enforce_domain_lambda</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#idp71348812700976-bb"><span class="identifier">enforce_domain_lambda</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#idp70810676496752-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#idp70810676497152-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">Reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#idp71348812696128-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="neighbour_search_base/enforce_domain_lambda.html#idp71348812696528-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="identifier">Reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
-    <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="identifier">dimension</span><span class="special">;</span>
     <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="identifier">low</span><span class="special">;</span>
     <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="identifier">high</span><span class="special">;</span>
     <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="identifier">periodic</span><span class="special">;</span>
   <span class="special">}</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="neighbour_search_base.html#Aboria.neighbour_search_baseconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="neighbour_search_base.html#idp70810676565216-bb"><span class="identifier">neighbour_search_base</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="neighbour_search_base.html#idp71348812764592-bb"><span class="identifier">neighbour_search_base</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="neighbour_search_base.html#idp70810676510000-bb">public member functions</a></span>
-  <span class="keyword">const</span> <span class="identifier">Derived</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp70810676510400-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">Derived</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp70810676511360-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp70810676512320-bb"><span class="identifier">set_domain</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">,</span> 
+  <span class="comment">// <a class="link" href="neighbour_search_base.html#idp71348812709376-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">Derived</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp71348812709776-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">Derived</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp71348812710736-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp71348812711696-bb"><span class="identifier">set_domain</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span><span class="special">,</span> 
                   <span class="keyword">const</span> <span class="keyword">double</span> <span class="special">=</span> <span class="number">10</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="neighbour_search_base.html#idp70810676520304-bb"><span class="identifier">find_id_map</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp70810676523552-bb"><span class="identifier">init_id_map</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp70810676527504-bb"><span class="identifier">print_id_map</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp70810676528784-bb"><span class="identifier">update_positions</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> 
+  <span class="identifier">size_t</span> <a class="link" href="neighbour_search_base.html#idp71348812719680-bb"><span class="identifier">find_id_map</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp71348812722928-bb"><span class="identifier">init_id_map</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp71348812726880-bb"><span class="identifier">print_id_map</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp71348812728160-bb"><span class="identifier">update_positions</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> 
                         <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp70810676542592-bb"><span class="identifier">update_iterators</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp70810676548336-bb"><span class="identifier">get_query</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">vector_int</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp70810676550128-bb"><span class="identifier">get_alive_indicies</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp70810676553152-bb"><span class="identifier">get_id_map</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp70810676554976-bb"><span class="identifier">get_min</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp70810676556800-bb"><span class="identifier">get_max</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp70810676558624-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp70810676560432-bb"><span class="identifier">domain_has_been_set</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">double</span> <a class="link" href="neighbour_search_base.html#idp70810676563376-bb"><span class="identifier">get_max_bucket_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="neighbour_search_base.html#idp71348812741968-bb"><span class="identifier">update_iterators</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp71348812747712-bb"><span class="identifier">get_query</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">vector_int</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp71348812749504-bb"><span class="identifier">get_alive_indicies</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp71348812752528-bb"><span class="identifier">get_id_map</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp71348812754352-bb"><span class="identifier">get_min</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp71348812756176-bb"><span class="identifier">get_max</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="neighbour_search_base.html#idp71348812758000-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp71348812759808-bb"><span class="identifier">domain_has_been_set</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="neighbour_search_base.html#idp71348812762752-bb"><span class="identifier">get_max_bucket_size</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="neighbour_search_base.html#idp70810676566672-bb">public static functions</a></span>
-  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp70810676567072-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="neighbour_search_base.html#idp71348812766048-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="neighbour_search_base.html#idp71348812766448-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp71884731477600"></a><h2>Description</h2>
+<a name="idp71023159857824"></a><h2>Description</h2>
 <p>It implements generic functionality such as setting up the spatial domain, logging, and the find-by-id map. In particular see </p>
 <p><span style="color: red">&lt;xrefsect&gt;<span style="color: red">&lt;xreftitle&gt;Todo&lt;/xreftitle&gt;</span><span style="color: red">&lt;xrefdescription&gt;<p>it uses curiously recurring template pattern (CRTP) to implement compile-time polymorphism for historical reasons, but I don't think this is neccessary anymore as all the member functions are quite slow</p>&lt;/xrefdescription&gt;</span>&lt;/xrefsect&gt;</span></p>
 <p>
 </p>
 <div class="refsect2">
-<a name="idp71884731480240"></a><h3>Template Parameters</h3>
+<a name="idp71023159860416"></a><h3>Template Parameters</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
 <pre class="literallayout"><span class="keyword">typename</span> Derived</pre>
@@ -131,22 +130,22 @@ MathJax.Hub.Config({
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp71884731487552"></a><h3>
+<a name="idp71023159867728"></a><h3>
 <a name="Aboria.neighbour_search_baseconstruct-copy-destruct"></a><code class="computeroutput">neighbour_search_base</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><a name="idp70810676565216-bb"></a><span class="identifier">neighbour_search_base</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>constructs a new spatial data structure <p>The spatial domain is set to 1/3 of the maximum and minimum extents possible using the <code class="computeroutput">double</code> type. All periodicity is turned off, and the number of particle per bucket is set to 10 </p>
+<pre class="literallayout"><a name="idp71348812764592-bb"></a><span class="identifier">neighbour_search_base</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>constructs a new spatial data structure <p>The spatial domain is set to 1/3 of the maximum and minimum extents possible using the <code class="computeroutput">double</code> type. All periodicity is turned off, and the number of particle per bucket is set to 10 </p>
 </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp71884731494832"></a><h3>
-<a name="idp70810676510000-bb"></a><code class="computeroutput">neighbour_search_base</code> public member functions</h3>
+<a name="idp71023159875008"></a><h3>
+<a name="idp71348812709376-bb"></a><code class="computeroutput">neighbour_search_base</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">Derived</span> <span class="special">&amp;</span> <a name="idp70810676510400-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">Derived</span> <span class="special">&amp;</span> <a name="idp70810676511360-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">Derived</span> <span class="special">&amp;</span> <a name="idp71348812709776-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">Derived</span> <span class="special">&amp;</span> <a name="idp71348812710736-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676512320-bb"></a><span class="identifier">set_domain</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> min_in<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> max_in<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812711696-bb"></a><span class="identifier">set_domain</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> min_in<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> max_in<span class="special">,</span> 
                 <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> periodic_in<span class="special">,</span> 
                 <span class="keyword">const</span> <span class="keyword">double</span> n_particles_in_leaf <span class="special">=</span> <span class="number">10</span><span class="special">,</span> 
                 <span class="keyword">const</span> <span class="keyword">bool</span> not_in_constructor <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>resets the domain extents, periodicity and number of particles within each bucket <p>
@@ -190,7 +189,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp70810676520304-bb"></a><span class="identifier">find_id_map</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> id<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns an index into the particle set given a particle id <p>
+<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp71348812719680-bb"></a><span class="identifier">find_id_map</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> id<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns an index into the particle set given a particle id <p>
 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -220,16 +219,16 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676523552-bb"></a><span class="identifier">init_id_map</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>This function initialises the find-by-id functionality. <p>Find-by-id works using a key and value vector pair that act as a map between ids and particle indicies. This pair is sorted by id for quick(ish) searching, especially in parallel. It is not as good as <code class="computeroutput">std::map</code> on a (single-core) CPU, but can be done on a GPU using <code class="computeroutput">thrust::vector</code></p>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812722928-bb"></a><span class="identifier">init_id_map</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>This function initialises the find-by-id functionality. <p>Find-by-id works using a key and value vector pair that act as a map between ids and particle indicies. This pair is sorted by id for quick(ish) searching, especially in parallel. It is not as good as <code class="computeroutput">std::map</code> on a (single-core) CPU, but can be done on a GPU using <code class="computeroutput">thrust::vector</code></p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
 <p>find_id_map </p>
 <p>
 </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676527504-bb"></a><span class="identifier">print_id_map</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>print to stdout the find-by-id id-index map </li>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812726880-bb"></a><span class="identifier">print_id_map</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>print to stdout the find-by-id id-index map </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">bool</span> <a name="idp70810676528784-bb"></a><span class="identifier">update_positions</span><span class="special">(</span><span class="identifier">iterator</span> begin<span class="special">,</span> <span class="identifier">iterator</span> end<span class="special">,</span> <span class="identifier">iterator</span> update_begin<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp71348812728160-bb"></a><span class="identifier">update_positions</span><span class="special">(</span><span class="identifier">iterator</span> begin<span class="special">,</span> <span class="identifier">iterator</span> end<span class="special">,</span> <span class="identifier">iterator</span> update_begin<span class="special">,</span> 
                       <span class="identifier">iterator</span> update_end<span class="special">,</span> 
                       <span class="keyword">const</span> <span class="keyword">bool</span> delete_dead_particles <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>This is the base function for updates to any of the spatial data structures. It handles the domain enforcement, the deletion or addition of particles, and the find-by-id map. It also calls the <code class="computeroutput">update_positions_impl</code> of the Derived class. <p>One of the key responsibilities of this function is to set m_alive_indices, which is a vector of indices that are still alive after taking into account the <code class="computeroutput">alive</code> flags and the position of the particles within the domain. The Particles::update_positions() function uses this vector to delete and reorder the particles in the container</p>
 <p>
@@ -283,7 +282,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp70810676542592-bb"></a><span class="identifier">update_iterators</span><span class="special">(</span><span class="identifier">iterator</span> begin<span class="special">,</span> <span class="identifier">iterator</span> end<span class="special">)</span><span class="special">;</span></pre>updates the internal copies held of the <code class="computeroutput">begin</code> and <code class="computeroutput">end</code> iterators of the particle set <p>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp71348812741968-bb"></a><span class="identifier">update_iterators</span><span class="special">(</span><span class="identifier">iterator</span> begin<span class="special">,</span> <span class="identifier">iterator</span> end<span class="special">)</span><span class="special">;</span></pre>updates the internal copies held of the <code class="computeroutput">begin</code> and <code class="computeroutput">end</code> iterators of the particle set <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -312,7 +311,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a name="idp70810676548336-bb"></a><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">query_type</span> <span class="special">&amp;</span> <a name="idp71348812747712-bb"></a><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -327,7 +326,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">vector_int</span> <span class="special">&amp;</span> <a name="idp70810676550128-bb"></a><span class="identifier">get_alive_indicies</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">vector_int</span> <span class="special">&amp;</span> <a name="idp71348812749504-bb"></a><span class="identifier">get_alive_indicies</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
@@ -346,7 +345,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">bool</span> <a name="idp70810676553152-bb"></a><span class="identifier">get_id_map</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp71348812752528-bb"></a><span class="identifier">get_id_map</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -361,7 +360,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp70810676554976-bb"></a><span class="identifier">get_min</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp71348812754352-bb"></a><span class="identifier">get_min</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -376,7 +375,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp70810676556800-bb"></a><span class="identifier">get_max</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> <a name="idp71348812756176-bb"></a><span class="identifier">get_max</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -391,7 +390,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp70810676558624-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp71348812758000-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -406,7 +405,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">bool</span> <a name="idp70810676560432-bb"></a><span class="identifier">domain_has_been_set</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp71348812759808-bb"></a><span class="identifier">domain_has_been_set</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <p><span class="bold"><strong>See Also:</strong></span></p>
@@ -425,7 +424,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">double</span> <a name="idp70810676563376-bb"></a><span class="identifier">get_max_bucket_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp71348812762752-bb"></a><span class="identifier">get_max_bucket_size</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -442,10 +441,10 @@ MathJax.Hub.Config({
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp71884731664848"></a><h3>
-<a name="idp70810676566672-bb"></a><code class="computeroutput">neighbour_search_base</code> public static functions</h3>
+<a name="idp71023160045024"></a><h3>
+<a name="idp71348812766048-bb"></a><code class="computeroutput">neighbour_search_base</code> public static functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp70810676567072-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Returns true if this spatial data structure relies on the order of particles in the <code class="computeroutput"><a class="link" href="Particles.html" title="Class template Particles">Particles</a></code> container. This is overloaded by the Derived class. <p>
+<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp71348812766448-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Returns true if this spatial data structure relies on the order of particles in the <code class="computeroutput"><a class="link" href="Particles.html" title="Class template Particles">Particles</a></code> container. This is overloaded by the Derived class. <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -463,7 +462,8 @@ MathJax.Hub.Config({
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
 <td align="left"></td>
-<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2017 Martin Robinson</div></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
 </tr></table>
 <hr>
 <div class="spirit-nav">
