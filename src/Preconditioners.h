@@ -1213,10 +1213,10 @@ public:
             const double_d &p = get<position>(*particle);
             const size_t index =
                 &p - get<position>(query.get_particles_begin());
-            if ((p < bounds.bmin).any() || (p >= bounds.bmax).any()) {
-              buffer.push_back(start_row + index);
-            } else {
+            if (bucket.get_child_iterator() == ci) {
               indicies.push_back(start_row + index);
+            } else {
+              buffer.push_back(start_row + index);
             }
           }
         }
@@ -1627,7 +1627,8 @@ public:
         }
 
         // add buffer particles through random sampling
-        int nspecial = std::pow(3, query_type::dimension);
+        // int nspecial = std::pow(3, query_type::dimension);
+        int nspecial = 0;
         // const int nspecial = 0;
         buffer.resize(m_random + nspecial);
         std::vector<child_iterator> buckets(m_random + nspecial);
@@ -1637,6 +1638,7 @@ public:
 
         // add special points
         // updates nspecial with actual number of special points
+        /*
         lattice_iterator<query_type::dimension> special_it(
             int_d::Constant(0), int_d::Constant(3), int_d::Constant(0));
         for (nspecial = 0; special_it != false; ++special_it, ++nspecial) {
@@ -1656,11 +1658,12 @@ public:
           }
         }
         buffer.resize(m_random + nspecial);
+        */
 
         const double_d middle = 0.5 * (bounds.bmin + bounds.bmax);
         if (m_sigma > 0) {
           const double_d w = bounds.bmax - bounds.bmin;
-          if (m_sigma < 0.1 * w.maxCoeff()) {
+          if (m_sigma < 0.2 * w.maxCoeff()) {
             std::vector<child_iterator> pot_buckets;
             for (auto it =
                      query.template get_buckets_near_point<-1>(middle, 0.6 * w);

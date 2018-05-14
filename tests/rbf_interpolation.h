@@ -576,10 +576,6 @@ public:
                           int which) {
 #ifdef HAVE_H2LIB
 
-    struct rusage usage;
-    getrusage(RUSAGE_SELF, &usage);
-    long mem = usage.ru_maxrss;
-
     const int width = 11;
     char *argv[] = {"program name", NULL};
     int argc = sizeof(argv) / sizeof(char *) - 1;
@@ -643,7 +639,10 @@ public:
     // const size_t n_subdomain = static_cast<size_t>(std::pow(0.12,D)*N);
     // const size_t order = static_cast<size_t>(std::pow(n_subdomain,1.0/D));
     const size_t n_subdomain = std::pow(order, D);
-    knots[which].init_neighbour_search(min, max, periodic, n_subdomain);
+    for (int i = 0; i < 3; ++i) {
+      knots[i].init_neighbour_search(min, max, periodic, n_subdomain);
+    }
+    std::cout << "FINISHED INIT NEIGHBOUR" << std::endl;
 
     const double jitter = 1e-5;
 
@@ -694,18 +693,25 @@ public:
       return ret;
     };
 
-    const double eta = D > 3 ? -1 : 1;
-    auto Ggaussian = create_h2_operator(
-        knots[0], knots[0], order, gaussian_kernel, gaussian_self_kernel, eta);
-    Ggaussian.get_first_kernel().compress(1e-10);
+    std::cout << "MAKING GAUSSIAN H2" << std::endl;
+    // const double eta = D > 6 ? -1 : 1;
+    const double eta = 1.0;
+    const double beta = 2.0 / D;
+    auto Ggaussian =
+        create_h2_operator(knots[0], knots[0], order, gaussian_kernel,
+                           gaussian_self_kernel, eta, beta);
+    // Ggaussian.get_first_kernel().compress(1e-10);
 
+    std::cout << "MAKING MATERN H2" << std::endl;
     auto Gmatern = create_h2_operator(knots[1], knots[1], order, matern_kernel,
-                                      matern_self_kernel, eta);
-    Gmatern.get_first_kernel().compress(1e-10);
+                                      matern_self_kernel, eta, beta);
+    // Gmatern.get_first_kernel().compress(1e-10);
 
-    auto Gwendland = create_h2_operator(
-        knots[2], knots[2], order, wendland_kernel, wendland_self_kernel, eta);
-    Gwendland.get_first_kernel().compress(1e-10);
+    std::cout << "MAKING WENDLAND H2" << std::endl;
+    auto Gwendland =
+        create_h2_operator(knots[2], knots[2], order, wendland_kernel,
+                           wendland_self_kernel, eta, beta);
+    // Gwendland.get_first_kernel().compress(1e-10);
 
     // const int nleaf = std::pow(sigma,2)*N;
     // knots.init_neighbour_search(min, max, periodic, nleaf);
@@ -755,9 +761,11 @@ public:
       out_solve
           << " " << std::setw(width)
           << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-
-      getrusage(RUSAGE_SELF, &usage);
-      out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
+      auto size = Ggaussian.get_first_kernel().get_h2_matrix().get_size();
+      auto near_size =
+          Ggaussian.get_first_kernel().get_h2_matrix().get_near_size();
+      out_mem << " " << std::setw(width / 2) << size / 1e9 << "|"
+              << std::setw(width / 2) << static_cast<double>(near_size) / size;
     } else if (which == 1) {
       // Eigen::BiCGSTAB<decltype(Gmatern),
       // Eigen::DiagonalPreconditioner<double>>
@@ -776,8 +784,12 @@ public:
       out_solve
           << " " << std::setw(width)
           << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-      getrusage(RUSAGE_SELF, &usage);
-      out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
+      auto size = Gmatern.get_first_kernel().get_h2_matrix().get_size();
+      auto near_size =
+          Gmatern.get_first_kernel().get_h2_matrix().get_near_size();
+      out_mem << " " << std::setw(width / 2) << size / 1e9 << "|"
+              << std::setw(width / 2) << static_cast<double>(near_size) / size;
+
     } else {
       // Eigen::BiCGSTAB<decltype(Gwendland),
       // Eigen::DiagonalPreconditioner<double>>
@@ -796,11 +808,15 @@ public:
       out_solve
           << " " << std::setw(width)
           << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1).count();
-      getrusage(RUSAGE_SELF, &usage);
-      out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
+
+      auto size = Gwendland.get_first_kernel().get_h2_matrix().get_size();
+      auto near_size =
+          Gwendland.get_first_kernel().get_h2_matrix().get_near_size();
+      out_mem << " " << std::setw(width / 2) << size / 1e9 << "|"
+              << std::setw(width / 2) << static_cast<double>(near_size) / size;
     }
 
-    if (D < 3) {
+    if (D < 5) {
       if (which == 0) {
         Eigen::BiCGSTAB<decltype(Ggaussian),
                         SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
@@ -821,8 +837,6 @@ public:
         out_solve << " " << std::setw(width)
                   << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1)
                          .count();
-        getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
       } else if (which == 1) {
         Eigen::BiCGSTAB<decltype(Gmatern),
                         SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
@@ -843,8 +857,6 @@ public:
         out_solve << " " << std::setw(width)
                   << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1)
                          .count();
-        getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
       } else {
         Eigen::BiCGSTAB<decltype(Gwendland),
                         SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
@@ -865,8 +877,6 @@ public:
         out_solve << " " << std::setw(width)
                   << std::chrono::duration_cast<std::chrono::seconds>(t2 - t1)
                          .count();
-        getrusage(RUSAGE_SELF, &usage);
-        out_mem << " " << std::setw(width) << (usage.ru_maxrss - mem) / 1000;
       }
     } else {
       out_it << " " << std::setw(width) << " ";
@@ -1161,16 +1171,23 @@ public:
     for (int N = 1000; N < -300000; N *= 2) {
       for (double sigma = 0.001; sigma < -0.1; sigma += 0.1) {
         for (size_t order = 2; order < 8; order += 2) {
-          helper_param_sweep<2, KdtreeNanoflann>(
-              sigma, N, order, out_it, out_error, out_setup, out_solve,
-              out_h2_error, out_mem, 0);
-          if (order < 6)
-            helper_param_sweep<4, KdtreeNanoflann>(
-                sigma, N, order, out_it, out_error, out_setup, out_solve,
-                out_h2_error, out_mem, 0);
-          // if (order < 4)
-          //    helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it,
-          //    out_error,out_setup,out_solve,out_h2_error,out_mem,2);
+          if (order < 3)
+            helper_param_sweep<8, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 0);
+
+          if (order < 5)
+            helper_param_sweep<6, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 0);
+          if (order < 7)
+            helper_param_sweep<4, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 0);
+
+          helper_param_sweep<2, Kdtree>(sigma, N, order, out_it, out_error,
+                                        out_setup, out_solve, out_h2_error,
+                                        out_mem, 0);
         }
       }
     }
@@ -1197,16 +1214,24 @@ public:
     for (int N = 1000; N < 300000; N *= 2) {
       for (double sigma = 0.1; sigma < 2.0; sigma += 0.2) {
         for (size_t order = 2; order < 8; order += 2) {
-          helper_param_sweep<2, KdtreeNanoflann>(
-              sigma, N, order, out_it, out_error, out_setup, out_solve,
-              out_h2_error, out_mem, 1);
-          if (order < 6)
-            helper_param_sweep<4, KdtreeNanoflann>(
-                sigma, N, order, out_it, out_error, out_setup, out_solve,
-                out_h2_error, out_mem, 1);
-          // if (order < 4)
-          //    helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it,
-          //    out_error,out_setup,out_solve,out_h2_error,out_mem,1);
+          if (order < 3)
+            helper_param_sweep<8, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 1);
+
+          if (order < 5)
+            helper_param_sweep<6, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 1);
+
+          if (order < 7)
+            helper_param_sweep<4, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 1);
+
+          helper_param_sweep<2, Kdtree>(sigma, N, order, out_it, out_error,
+                                        out_setup, out_solve, out_h2_error,
+                                        out_mem, 1);
         }
       }
     }
@@ -1233,16 +1258,24 @@ public:
     for (int N = 1000; N < 300000; N *= 2) {
       for (double sigma = 0.1; sigma < 2.0; sigma += 0.2) {
         for (size_t order = 2; order < 8; order += 2) {
-          helper_param_sweep<2, KdtreeNanoflann>(
-              sigma, N, order, out_it, out_error, out_setup, out_solve,
-              out_h2_error, out_mem, 2);
-          if (order < 6)
-            helper_param_sweep<4, KdtreeNanoflann>(
-                sigma, N, order, out_it, out_error, out_setup, out_solve,
-                out_h2_error, out_mem, 2);
-          // if (order < 4)
-          // helper_param_sweep<6,KdtreeNanoflann>(sigma, N, order, out_it,
-          // out_error,out_setup,out_solve,out_h2_error,out_mem,2);
+          if (order < 3)
+            helper_param_sweep<8, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 2);
+
+          if (order < 5)
+            helper_param_sweep<6, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 2);
+
+          if (order < 7)
+            helper_param_sweep<4, Kdtree>(sigma, N, order, out_it, out_error,
+                                          out_setup, out_solve, out_h2_error,
+                                          out_mem, 2);
+
+          helper_param_sweep<2, Kdtree>(sigma, N, order, out_it, out_error,
+                                        out_setup, out_solve, out_h2_error,
+                                        out_mem, 2);
         }
       }
     }

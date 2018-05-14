@@ -508,11 +508,14 @@ public:
 
   KernelH2(const RowElements &row_elements, const ColElements &col_elements,
            const int order, const PositionF &position_function,
-           const F &function, const double eta)
+           const F &function, const double eta, const double beta,
+           const int max_tree_depth)
       : base_type(row_elements, col_elements, function),
         m_position_function(position_function),
-        m_h2_matrix(row_elements, col_elements,
-                    expansions_type(order, position_function), function, eta) {}
+        m_h2_matrix(
+            row_elements, col_elements,
+            expansions_type(order, position_function, beta, max_tree_depth),
+            function, eta) {}
 
   const h2_matrix_type &get_h2_matrix() const { return m_h2_matrix; }
 

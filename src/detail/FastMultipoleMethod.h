@@ -392,22 +392,21 @@ struct H2LibBlackBoxExpansions {
   size_t m_max_tree_depth;
 
   H2LibBlackBoxExpansions(const size_t order, const Function &K,
-                          const size_t beta = 1,
+                          const double beta = 1.0,
                           const size_t max_tree_depth = 30)
       : m_K(K), m_order(order), m_beta(beta),
         m_max_tree_depth(beta == 0 ? 1 : max_tree_depth) {
 
     // precalculate cheb_points
     m_cheb_points.resize(m_max_tree_depth);
-    size_t curr_order = m_order;
-    for (auto &cheb_points : m_cheb_points) {
-      cheb_points.resize(std::pow(curr_order, D));
-      lattice_iterator<dimension> mi(int_d::Constant(0),
+    for (int i = 0; i < m_max_tree_depth; ++i) {
+      const size_t curr_order = m_order + beta * i;
+      m_cheb_points[i].resize(std::pow(curr_order, D));
+      lattice_iterator<dimension> mj(int_d::Constant(0),
                                      int_d::Constant(curr_order));
-      for (size_t i = 0; i < cheb_points.size(); ++i, ++mi) {
-        cheb_points[i] = detail::chebyshev_node_nd(*mi, curr_order);
+      for (size_t j = 0; j < m_cheb_points[i].size(); ++j, ++mj) {
+        m_cheb_points[i][j] = detail::chebyshev_node_nd(*mj, curr_order);
       }
-      curr_order += m_beta;
     }
   }
 

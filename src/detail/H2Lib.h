@@ -59,16 +59,37 @@ bool admissible_max_cluster(pcluster rc, pcluster cc, void *data) {
   double eta = *static_cast<double *>(data);
 
   if (eta < 0) {
+    /*
+  std::cout << "rc = (";
+  for (size_t i = 0; i < rc->dim; i++) {
+    std::cout << rc->bmin[i] << ",";
+  }
+  std::cout << ") -- (";
+  for (size_t i = 0; i < rc->dim; i++) {
+    std::cout << rc->bmax[i] << ",";
+  }
+  std::cout << ") cc = (";
+  for (size_t i = 0; i < rc->dim; i++) {
+    std::cout << cc->bmin[i] << ",";
+  }
+  std::cout << ") -- (";
+  for (size_t i = 0; i < rc->dim; i++) {
+    std::cout << cc->bmax[i] << ",";
+  }
+  std::cout << ")";
+  */
     double vol = 1.0;
     for (size_t i = 0; i < rc->dim; i++) {
-        const double side = std::max(rc->bmax[i] - cc->bmin[i],
-                                     cc->bmax[i] - rc->bmin[i]);
-        vol *= side > 0 ? side : 0;
+      const double side =
+          std::min(rc->bmax[i] - cc->bmin[i], cc->bmax[i] - rc->bmin[i]);
+      vol *= side > 0 ? side : 0;
     }
     if (vol > std::numeric_limits<double>::epsilon()) {
-        return false;
+      // std::cout << "NOT ADMISSIBLE" << std::endl;
+      return false;
     } else {
-        return true;
+      // std::cout << "ADMISSIBLE" << std::endl;
+      return true;
     }
   }
 
