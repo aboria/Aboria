@@ -160,12 +160,13 @@ public:
   // TODO: match eigen's interface for solver
   template <typename DerivedRHS>
   void solve(const Eigen::DenseBase<DerivedRHS> &source,
-                   Eigen::Matrix<double,Eigen::Dynamic,1> &dest) {
-      ASSERT(source.cols() == 1 || source.rows() == 1,"solve must take vectors"); 
-      dest = source; 
-      pavector dest_avector = new_pointer_avector(reinterpret_cast<double *>(dest.data()), dest.size());
+             Eigen::Matrix<double, Eigen::Dynamic, 1> &dest) {
+    ASSERT(source.cols() == 1 || source.rows() == 1, "solve must take vectors");
+    dest = source;
+    pavector dest_avector = new_pointer_avector(
+        reinterpret_cast<double *>(dest.data()), dest.size());
 
-      cholsolve_h2matrix_avector(L.get(),dest_avector);
+    cholsolve_h2matrix_avector(L.get(), dest_avector);
   }
 
   template <typename T1, typename T2>
@@ -304,7 +305,6 @@ class H2LibMatrix {
   std::vector<uint> m_row_idx;
   std::vector<uint> m_col_idx;
 
-
 public:
   template <typename RowParticles, typename ColParticles, typename Expansions,
             typename Kernel>
@@ -340,7 +340,7 @@ public:
     //
     pcluster col_t;
     if (row_equals_col && expansions.block_rows == expansions.block_cols) {
-      LOG(2, "H2LibMatrix: row clusters the same as column clusters");
+      LOG(2, "H2LibMatrix: \trow clusters the same as column clusters");
       col_t = row_t;
     } else {
       m_col_idx.resize(col_particles.size() * expansions.block_cols);
@@ -357,9 +357,11 @@ public:
     //
     // create h2 block
     //
+    LOG(2, "H2LibMatrix: \tbuilding block structure");
     double eta_copy = eta;
     m_block = std::unique_ptr<block, decltype(&del_block)>(
-        build_strict_block(row_t, col_t, &eta_copy, detail::admissible_max_cluster),
+        build_strict_block(row_t, col_t, &eta_copy,
+                           detail::admissible_max_cluster),
         del_block);
 
     /*
@@ -371,6 +373,7 @@ public:
     view_block(m_block.get());
     */
 
+    LOG(2, "H2LibMatrix: \tbuilding h2 matrices");
     m_h2 = std::unique_ptr<h2matrix, decltype(&del_h2matrix)>(
         build_from_block_h2matrix(m_block.get(), row_cb, col_cb), del_h2matrix);
     ph2matrix *enum_h2mat = enumerate_h2matrix(m_block.get(), m_h2.get());
@@ -378,16 +381,24 @@ public:
                                    &col_particles, enum_h2mat);
     iterate_byrow_block(
         m_block.get(), 0, 0, 0, max_pardepth, NULL,
-        detail::assemble_block_h2matrix<RowParticles, ColParticles, Expansions, Kernel>,
+        detail::assemble_block_h2matrix<RowParticles, ColParticles, Expansions,
+                                        Kernel>,
         &data_h2);
+    LOG(2, "H2LibMatrix: \tfree tmp memory");
     freemem(enum_h2mat);
+    LOG(2, "H2LibMatrix: \tdone");
   }
 
   void compress(const double tol) {
     // ptruncmode tm = new_releucl_truncmode();
+    LOG(2, "H2LibMatrix: compressing h2 matrix with tol = " << tol);
     ptruncmode tm = new_blockreleucl_truncmode();
     recompress_inplace_h2matrix(m_h2.get(), tm, tol);
   }
+
+  size_t get_near_size() const { return getnearsize_h2matrix(m_h2.get()); }
+  size_t get_far_size() const { return getfarsize_h2matrix(m_h2.get()); }
+  size_t get_size() const { return getsize_h2matrix(m_h2.get()); }
 
 private:
   template <typename Particles>
@@ -535,8 +546,6 @@ public:
                          target_avector);
   }
 };
-
-
 
 class HLibMatrix {
 
