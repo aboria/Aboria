@@ -249,8 +249,8 @@ public:
 
     [section Working with particles within the container]
 
-    You can use the indexing operator `Operator[]` to simply loop through the
-    container
+    You can use the indexing operator [memberref
+    Aboria::Particles::operator\[\]] to simply loop through the container
     */
 
     for (size_t i = 0; i < particles.size(); i++) {
@@ -259,13 +259,14 @@ public:
     }
 
     /*`
-    Note that the index operator `operator[]` returns a
-    [classref Aboria::Particles::reference], which is defined as a tuple
-    containing references to each of the variables. This is different from
+    Note that the index operator [memberref Aboria::Particles::operator\[\]]
+    returns a [classref Aboria::Particles::reference], which is defined as a
+    tuple containing references to each of the variables. This is different from
     a reference to [classref Aboria::Particles::value_type].
 
-    Or you can use the normal STL `begin()` and `end()` functions that return
-    random access iterators to the beginning and end of the container.
+    Or you can use the normal STL [memberref Aboria::Particles::begin()] and
+    [memberref Aboria::Particles::end()] functions that return random access
+    iterators to the beginning and end of the container.
     */
 
     for (auto i = particles.begin(); i != particles.end(); i++) {
@@ -287,7 +288,7 @@ public:
     */
 
     typedef MyParticles::reference reference;
-    std::for_each(particles.begin(), particles.end(), [](reference i) {
+    std::for_each(particles.begin(), particles.end(), [](auto &i) {
       std::cout << "Accessing particle with id = " << get<id>(i) << "\n";
     });
 
@@ -313,19 +314,20 @@ public:
 
     [section Particle's `value_type` versus `reference`]
 
-    When you index an individual particle using the bracket operator `[]`, it
-    returns a [classref Aboria::getter_type getter_type], which is essentially a
-    tuple of references to the variables for that particle. This [classref
-    Aboria::getter_type getter_type] is `typedef`-ed to [classref
-    Aboria::Particles::reference], and acts as the reference type for the
-    container. Similarly, the [classref Aboria::Particles::value_type
-    value_type] for the continer is also a [classref Aboria::getter_type], but
-    instead holds a tuple of values instead of references.
+    When you index an individual particle using the bracket operator [memberref
+    Aboria::Particles::operator\[\]], it returns a [classref Aboria::getter_type
+    getter_type], which is essentially a tuple of references to the variables
+    for that particle. This [classref Aboria::getter_type getter_type] is
+    `typedef`-ed to [classref Aboria::Particles::reference], and acts as the
+    reference type for the container. Similarly, the [classref
+    Aboria::Particles::value_type value_type] for the continer is also a
+    [classref Aboria::getter_type], but instead holds a tuple of values instead
+    of references.
 
     Reading the above paragraph, you will note the fundamental difference from
     normal STL containers, in that [classref Aboria::Particles::value_type
     value_type]& is *not the same* as [classref Aboria::Particles::value_type
-    reference].  This is relevant when writing functors for STL algorithms,
+    reference]. This can be relevant when writing functors for STL algorithms,
     where you will need to be sure if you need a [classref
     Aboria::Particles::value_type value_type]& or a [classref
     Aboria::Particles::value_type reference].
@@ -347,6 +349,9 @@ public:
 
     Which is more efficient than `value_type&`, since dereferencing the iterator
     will result in a `reference`.
+
+    [note Fortunatelly, c++14 makes all this a lot easier, since you can just
+    use the `auto` keyword and let the compiler deduce the correct type!]
 
     [endsect]
 

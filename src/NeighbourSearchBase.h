@@ -664,8 +664,14 @@ template <typename Traits> struct NeighbourQueryBase {
   typedef bbox<dimension> box_type;
 
   template <int LNormNumber> struct query_iterator {
+    ///
+    /// A reference type to a bucket
     struct reference;
+    ///
+    /// A pointer type to a bucket
     struct pointer;
+    ///
+    /// The value_type of a bucket
     struct value_type;
   };
 

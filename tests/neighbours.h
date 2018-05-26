@@ -131,8 +131,9 @@ public:
 
     When dereferenced, the neighbourhood iterator returns a constant reference
     to the found particle object, with type [classref
-    Aboria::Particles::const_reference]. You can also use the function
-    [Aboria::NeighbourQueryBase::query_iterator::dx] to access a vector
+    Aboria::Particles::const_reference] or [classref
+    Aboria::search_iterator::reference]. You can also use the function
+    [memberref Aboria::search_iterator::dx()] to access a vector
     $\mathbf{dx}\_{ij}$ pointing to the found point from the query point. I.e.
     if $\mathbf{x}\_i$ is the query point and $\mathbf{x}\_j$ is the found
     point, then $\mathbf{dx}\_{ij} = \mathbf{x}\_j - \mathbf{x}\_i$.
