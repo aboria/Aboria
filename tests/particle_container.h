@@ -237,9 +237,9 @@ public:
 
     /*`
     There are a number of predefined `double`, `int`, and `bool` vector types,
-    up to dimension 7, and typedefed by the pattern <type><dim>. E.g. [classref
-    Aboria::vdouble3], [classref Aboria::double6], [classref Aboria::int2],
-    [classref Aboria::bool5]...
+    up to dimension 7, and typedefed by the pattern v<type><dim>. E.g. [classref
+    Aboria::vdouble3], [classref Aboria::vdouble6], [classref Aboria::vint2],
+    [classref Aboria::vbool5]...
 
     [endsect]
 
@@ -415,8 +415,7 @@ public:
 #if defined(__CUDACC__)
     helper_add_particle1<thrust::device_vector, CellListOrdered>();
     helper_add_particle2<thrust::device_vector, CellListOrdered>();
-    helper_add_particle2_dimensions<thrust::device_vector,
-                                    CellListOrdered>();
+    helper_add_particle2_dimensions<thrust::device_vector, CellListOrdered>();
     helper_add_delete_particle<thrust::device_vector, CellListOrdered>();
 #endif
   }
