@@ -56,42 +56,54 @@ namespace detail {
 
 bool admissible_max_cluster(pcluster rc, pcluster cc, void *data) {
 
-  double eta = *static_cast<double *>(data);
+  auto &data_cast =
+      *static_cast<std::tuple<const double &, std::default_random_engine &> *>(
+          data);
+  const auto &eta = std::get<0>(data_cast);
 
-  if (eta < 0) {
-    /*
-  std::cout << "rc = (";
+  /*
+if (eta < 0) {
+std::cout << "rc = (";
+for (size_t i = 0; i < rc->dim; i++) {
+  std::cout << rc->bmin[i] << ",";
+}
+std::cout << ") -- (";
+for (size_t i = 0; i < rc->dim; i++) {
+  std::cout << rc->bmax[i] << ",";
+}
+std::cout << ") cc = (";
+for (size_t i = 0; i < rc->dim; i++) {
+  std::cout << cc->bmin[i] << ",";
+}
+std::cout << ") -- (";
+for (size_t i = 0; i < rc->dim; i++) {
+  std::cout << cc->bmax[i] << ",";
+}
+std::cout << ")";
+  double vol = 1.0;
+  int overlapping = 0;
   for (size_t i = 0; i < rc->dim; i++) {
-    std::cout << rc->bmin[i] << ",";
+    const double side =
+        std::min(rc->bmax[i] - cc->bmin[i], cc->bmax[i] - rc->bmin[i]);
+    vol *= side > 0 ? side : 0;
+    overlapping += side > 0;
   }
-  std::cout << ") -- (";
-  for (size_t i = 0; i < rc->dim; i++) {
-    std::cout << rc->bmax[i] << ",";
+
+  if (overlapping < rc->dim-1) {
+    // std::cout << "ADMISSIBLE" << std::endl;
+    return true;
   }
-  std::cout << ") cc = (";
-  for (size_t i = 0; i < rc->dim; i++) {
-    std::cout << cc->bmin[i] << ",";
+
+  if (vol > std::numeric_limits<double>::epsilon()) {
+    // std::cout << "NOT ADMISSIBLE" << std::endl;
+    return false;
+  } else {
+    // std::cout << "ADMISSIBLE" << std::endl;
+    return true;
   }
-  std::cout << ") -- (";
-  for (size_t i = 0; i < rc->dim; i++) {
-    std::cout << cc->bmax[i] << ",";
-  }
-  std::cout << ")";
-  */
-    double vol = 1.0;
-    for (size_t i = 0; i < rc->dim; i++) {
-      const double side =
-          std::min(rc->bmax[i] - cc->bmin[i], cc->bmax[i] - rc->bmin[i]);
-      vol *= side > 0 ? side : 0;
-    }
-    if (vol > std::numeric_limits<double>::epsilon()) {
-      // std::cout << "NOT ADMISSIBLE" << std::endl;
-      return false;
-    } else {
-      // std::cout << "ADMISSIBLE" << std::endl;
-      return true;
-    }
-  }
+}
+*/
+  // eta = 1.0;
 
   const double diamt = getdiam_max_cluster(rc);
   const double diams = getdiam_max_cluster(cc);
@@ -100,9 +112,27 @@ bool admissible_max_cluster(pcluster rc, pcluster cc, void *data) {
   const double a = REAL_MAX(diamt, diams);
 
   bool i;
-  if (a <= eta * dist) {
+  // std::cout << "eta = " << eta << std::endl;
+  if (a <= std::abs(eta) * dist) {
+    // std::cout << "not within distance, accepting" << std::endl;
     i = true;
   } else {
+    /*
+    bool is_same_cluster = true;
+    for (size_t i = 0; i < rc->dim; i++) {
+      is_same_cluster &=
+          rc->bmin[i] == cc->bmin[i] && rc->bmax[i] == cc->bmax[i];
+    }
+    double accept;
+    if (is_same_cluster) {
+      accept = 1.0;
+    } else {
+      accept = 0.7; // 8.0 / (std::pow(3, rc->dim) - 1);
+    }
+    i = std::uniform_real_distribution<double>(0, 1)(generator) > accept;
+    std::cout << "within distance, rejecting with probability " << accept
+              << std::endl;
+    */
     i = false;
   }
 

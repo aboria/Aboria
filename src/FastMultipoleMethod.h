@@ -112,9 +112,14 @@ public:
                               const VectorTypeSource &source_vector) const {
     CHECK(target_vector.size() == source_vector.size(),
           "source and target vector not same length")
+    LOG(2, "FMM: matrix_vector_multiply: row particle data structure has "
+               << m_row_query->number_of_buckets() << " buckets");
+    LOG(2, "FMM: matrix_vector_multiply: col particle data structure has "
+               << m_col_query->number_of_buckets() << " buckets");
     m_W.resize(m_col_query->number_of_buckets());
     m_g.resize(m_row_query->number_of_buckets());
     m_connectivity.resize(m_row_query->number_of_buckets());
+    LOG(2, "FMM: matrix_vector_multiply: upward sweep of tree");
 
 // upward sweep of tree
 //
@@ -142,6 +147,7 @@ public:
 
 #pragma omp taskwait
 
+        LOG(2, "FMM: matrix_vector_multiply: downward sweep of tree");
         // downward sweep of tree.
         //
         const int nchild_row = m_row_query->num_children();
@@ -164,6 +170,7 @@ shared(target_vector, source_vector, m_num_tasks, m_W, m_g, m_col_query,   \
 #pragma omp taskwait
       }
     }
+    LOG(2, "FMM: matrix_vector_multiply: complete");
   }
 
 private:

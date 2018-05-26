@@ -341,6 +341,8 @@ set(H2Test
     test_fmm_matrix_operators
     )
 
+add_library(hilbert ../third-party/hilbert/hilbert.c)
+
 
 message("-- Adding test suites:")
 foreach(test_suite ${test_suites})
@@ -358,7 +360,7 @@ foreach(test_suite ${test_suites})
 
 
     aboria_cxx_test(${test_suite} ${test_suite}.cpp OFF ${${test_suite}File})
-    target_link_libraries(${test_suite} ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
+    target_link_libraries(${test_suite} hilbert ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
     
     foreach(test_name ${${test_suite}})
         add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})

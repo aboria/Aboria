@@ -795,6 +795,7 @@ public:
         "particle "
         "sets");
     const query_type &query = a.get_query();
+    std::default_random_engine generator;
     m_domain_buffer.resize(a.size());
     for (size_t i = 0; i < a.size(); ++i) {
       storage_vector_type &buffer = m_domain_buffer[i];
@@ -806,7 +807,6 @@ public:
       std::vector<child_iterator> buckets(m_random + nspecial);
       std::uniform_real_distribution<double> uniform(0, 1);
       std::normal_distribution<double> normal(0, m_sigma);
-      std::default_random_engine generator;
 
       // add special points
       // updates nspecial with actual number of special points
@@ -891,7 +891,7 @@ public:
         auto num_particles = pit.distance_to_end();
         std::vector<int> bucket_indices(num_particles);
         std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-        std::random_shuffle(bucket_indices.begin(), bucket_indices.end());
+        std::shuffle(bucket_indices.begin(), bucket_indices.end(),generator);
         const int trunc_count = std::min(count, bucket_indices.size());
         std::transform(
             bucket_indices.begin(), bucket_indices.begin() + trunc_count,
@@ -1132,6 +1132,7 @@ protected:
 
 private:
   double m_neighbourhood_buffer;
+  double m_max_buffer_n;
   double m_coarse_grid_n;
 
   connectivity_type m_domain_indicies;
@@ -1150,6 +1151,7 @@ public:
   SchwartzPreconditioner()
       : m_isInitialized(false),
         m_neighbourhood_buffer(1e5 * std::numeric_limits<double>::epsilon()),
+        m_max_buffer_n(300),
         m_coarse_grid_n(0) {}
 
   template <typename MatType>
@@ -1165,6 +1167,7 @@ public:
   }
 
   void set_coarse_grid_n(int arg) { m_coarse_grid_n = arg; }
+  void set_max_buffer_n(int arg) { m_max_buffer_n = arg; }
 
   template <typename Kernel>
   void analyze_impl_block(const Index start_row, const Kernel &kernel) {
@@ -1185,6 +1188,7 @@ public:
         &a == &(kernel.get_col_elements()),
         "Schwartz preconditioner restricted to identical row and col particle "
         "sets");
+    std::default_random_engine generator;
     const query_type &query = a.get_query();
     for (auto i = query.get_subtree(); i != false; ++i) {
       if (query.is_leaf_node(*i)) {
@@ -1221,7 +1225,12 @@ public:
           }
         }
 
-        ASSERT(buffer.size() > 0, "no particles in buffer");
+        if (buffer.size() > m_max_buffer_n) {
+            std::shuffle(buffer.begin(),buffer.end(),generator);
+            buffer.resize(m_max_buffer_n);
+        }
+
+        //ASSERT(buffer.size() > 0, "no particles in buffer");
         ASSERT(indicies.size() > 0, "no particles in domain");
       }
     }
@@ -1264,7 +1273,7 @@ public:
         auto num_particles = pit.distance_to_end();
         std::vector<int> bucket_indices(num_particles);
         std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-        std::random_shuffle(bucket_indices.begin(), bucket_indices.end());
+        std::shuffle(bucket_indices.begin(), bucket_indices.end(),generator);
         const int trunc_count = std::min(count, bucket_indices.size());
         std::transform(
             bucket_indices.begin(), bucket_indices.begin() + trunc_count,
@@ -1588,7 +1597,6 @@ public:
     typedef typename query_type::traits_type traits_type;
     typedef typename query_type::child_iterator child_iterator;
     typedef typename traits_type::double_d double_d;
-    typedef typename traits_type::int_d int_d;
     typedef typename traits_type::position position;
 
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,
@@ -1599,6 +1607,7 @@ public:
           "Schwartz preconditioner restricted to identical row and col "
           "particle "
           "sets");
+    std::default_random_engine generator;
     const query_type &query = a.get_query();
     for (auto i = query.get_subtree(); i != false; ++i) {
       if (query.is_leaf_node(*i)) {
@@ -1634,7 +1643,6 @@ public:
         std::vector<child_iterator> buckets(m_random + nspecial);
         std::uniform_real_distribution<double> uniform(0, 1);
         std::normal_distribution<double> normal(0, m_sigma);
-        std::default_random_engine generator;
 
         // add special points
         // updates nspecial with actual number of special points
@@ -1756,7 +1764,7 @@ public:
           auto num_particles = pit.distance_to_end();
           std::vector<int> bucket_indices(num_particles);
           std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-          std::random_shuffle(bucket_indices.begin(), bucket_indices.end());
+          std::shuffle(bucket_indices.begin(), bucket_indices.end(),generator);
           const int trunc_count = std::min(count, bucket_indices.size());
           std::transform(
               bucket_indices.begin(), bucket_indices.begin() + trunc_count,
@@ -1810,7 +1818,7 @@ public:
         cairo_surface_destroy(surface);
 #endif
 
-        ASSERT(buffer.size() > 0, "no particles in buffer");
+        //ASSERT(buffer.size() > 0, "no particles in buffer");
         ASSERT(indicies.size() > 0, "no particles in domain");
       }
     }
