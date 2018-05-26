@@ -143,7 +143,7 @@ MathJax.Hub.Config({
       </p></td></tr>
 </table></div>
 <p>
-      You can create a child_iterator by using the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812800800-bb">Aboria::NeighbourQueryBase::get_children</a></code>
+      You can create a child_iterator by using the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229399424-bb">Aboria::NeighbourQueryBase::get_children</a></code>
       function. This creates a child_iterator that loops through the children of
       the root node of the tree. We will use this iterator to loop through all these
       children and print out the spatial bounds of each node. In order to determine
@@ -157,7 +157,7 @@ MathJax.Hub.Config({
 <span class="special">}</span>
 </pre>
 <p>
-      Above we use the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812813008-bb">Aboria::NeighbourQueryBase::get_bounds</a></code>
+      Above we use the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229411632-bb">Aboria::NeighbourQueryBase::get_bounds</a></code>
       function to get the bounds of the child iterator. This returns a <code class="computeroutput">Aboria::bbox</code> class that contains the minimum
       and maximum spatial extents of the node pointed to by <code class="computeroutput"><span class="identifier">i</span></code>.
     </p>
@@ -188,7 +188,7 @@ MathJax.Hub.Config({
       a full oct-tree, dividing the spatial domain into a hierarchical set of boxes
       that make up our tree data structure. The simplest iteration we might want
       to do on the tree is a depth-first iteration, which is easiest achieved by
-      recursion. The <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812800800-bb">Aboria::NeighbourQueryBase::get_children</a></code>
+      recursion. The <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229399424-bb">Aboria::NeighbourQueryBase::get_children</a></code>
       function can be used to get the children of a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/child_iterator.html" title="Struct child_iterator">Aboria::NeighbourQueryBase::child_iterator</a></code>,
       and using a C++ lambda function to provide the recursion we can implement a
       depth-first iteration like so
@@ -212,10 +212,10 @@ MathJax.Hub.Config({
       above.
     </p>
 <p>
-      The <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812852432-bb">Aboria::NeighbourQueryBase::get_subtree</a></code>
+      The <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229451056-bb">Aboria::NeighbourQueryBase::get_subtree</a></code>
       function returns a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/all_iterator.html" title="Struct all_iterator">Aboria::NeighbourQueryBase::all_iterator</a></code>
       that performs a depth-first iteration over the tree. Note that you can also
-      pass in a child_iterator to <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812852432-bb">Aboria::NeighbourQueryBase::get_subtree</a></code>
+      pass in a child_iterator to <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229451056-bb">Aboria::NeighbourQueryBase::get_subtree</a></code>
       to iterate over the sub-tree below a particular node of the tree.
     </p>
 <pre class="programlisting"><span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"subtree depth-first"</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
@@ -226,7 +226,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       You might also want to distinguish between leaf nodes (nodes with no children)
-      and non-leaf nodes. You can do this with the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812793472-bb">Aboria::NeighbourQueryBase::is_leaf_node</a></code>
+      and non-leaf nodes. You can do this with the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229392096-bb">Aboria::NeighbourQueryBase::is_leaf_node</a></code>
       function, which takes a reference to a node (rather than an iterator), and
       can be used like so
     </p>
@@ -244,8 +244,8 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Leaf nodes in the tree are the only nodes that contain particles. You can loop
-      through all the particles in a given leaf node using the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812820000-bb">Aboria::NeighbourQueryBase::get_bucket_particles</a></code>
-      function, which returns an iterator. Note for non-leaf nodes, the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812820000-bb">Aboria::NeighbourQueryBase::get_bucket_particles</a></code>
+      through all the particles in a given leaf node using the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229418624-bb">Aboria::NeighbourQueryBase::get_bucket_particles</a></code>
+      function, which returns an iterator. Note for non-leaf nodes, the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229418624-bb">Aboria::NeighbourQueryBase::get_bucket_particles</a></code>
       will return an iterator that is immediatelly false, so this loop is safe even
       for non-leaf nodes.
     </p>
@@ -270,7 +270,7 @@ MathJax.Hub.Config({
 <p>
       Aboria also provides functions to query leaf nodes, or buckets, within a certain
       distance of a point, and these are used internally for the neighbour search
-      functionality discussed in earlier sections. You can use the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812834816-bb">Aboria::NeighbourQueryBase::get_buckets_near_point</a></code>
+      functionality discussed in earlier sections. You can use the <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229433440-bb">Aboria::NeighbourQueryBase::get_buckets_near_point</a></code>
       function, which returns a <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase/query_iterator.html" title="Struct template query_iterator">Aboria::NeighbourQueryBase::query_iterator</a></code>
       of all the buckets with a given distance of a point. This function also takes
       a template argument <code class="computeroutput"><span class="identifier">P</span></code>, which
@@ -283,7 +283,7 @@ MathJax.Hub.Config({
 <th align="left">Caution</th>
 </tr>
 <tr><td align="left" valign="top"><p>
-        The distance search provided by <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71348812834816-bb">Aboria::NeighbourQueryBase::get_buckets_near_point</a></code>
+        The distance search provided by <code class="computeroutput"><a class="link" href="../Aboria/NeighbourQueryBase.html#idp71438229433440-bb">Aboria::NeighbourQueryBase::get_buckets_near_point</a></code>
         does not respect the periodicity of the domain, so if you did a search near
         a lhs edge of a periodic domain, it would not pick up buckets on the neighbouring
         periodic rhs edge.
