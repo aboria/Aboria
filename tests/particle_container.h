@@ -48,8 +48,10 @@ public:
             template <typename> class SearchMethod>
   void helper_add_particle1(void) {
     typedef Particles<std::tuple<>, 3, V, SearchMethod> Test_type;
+    typedef typename Test_type::position position;
     Test_type test;
     typename Test_type::value_type p;
+    get<position>(p) = vdouble3::Constant(0);
     test.push_back(p);
     TS_ASSERT_EQUALS(test.size(), 1);
   }
@@ -60,8 +62,10 @@ public:
     ABORIA_VARIABLE(scalar, double, "scalar")
     typedef std::tuple<scalar> variables_type;
     typedef Particles<variables_type, 3, V, SearchMethod> Test_type;
+    typedef typename Test_type::position position;
     Test_type test;
     typename Test_type::value_type p;
+    get<position>(p) = vdouble3::Constant(0);
     test.push_back(p);
     TS_ASSERT_EQUALS(test.size(), 1);
   }
@@ -287,8 +291,7 @@ public:
     parallel
     */
 
-    typedef MyParticles::reference reference;
-    std::for_each(particles.begin(), particles.end(), [](auto &i) {
+    std::for_each(particles.begin(), particles.end(), [](auto i) {
       std::cout << "Accessing particle with id = " << get<id>(i) << "\n";
     });
 
