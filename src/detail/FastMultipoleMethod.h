@@ -399,7 +399,7 @@ struct H2LibBlackBoxExpansions {
 
     // precalculate cheb_points
     m_cheb_points.resize(m_max_tree_depth);
-    for (int i = 0; i < m_max_tree_depth; ++i) {
+    for (size_t i = 0; i < m_max_tree_depth; ++i) {
       const size_t curr_order = m_order + beta * i;
       m_cheb_points[i].resize(std::pow(curr_order, D));
       lattice_iterator<dimension> mj(int_d::Constant(0),

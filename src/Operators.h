@@ -445,9 +445,9 @@ Operator create_h2_operator(const RowParticles &row_particles,
   const int max_tree_depth =
       std::max(row_particles.get_query().number_of_levels(),
                col_particles.get_query().number_of_levels());
-  LOG(2,
-      "Create h2 Operator: eta = " << eta << " beta = " << beta
-                                   << " max_tree_depth = " << max_tree_depth);
+  LOG(2, "Create h2 Operator: order = "
+             << order << " eta = " << eta << " beta = " << beta
+             << " max_tree_depth = " << max_tree_depth);
   return Operator(std::make_tuple(Kernel(row_particles, col_particles, order,
                                          position_function, function, eta, beta,
                                          max_tree_depth)));

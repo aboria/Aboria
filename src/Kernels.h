@@ -224,6 +224,29 @@ public:
     CHECK(static_cast<size_t>(rhs.size()) == this->cols(),
           "rhs size is inconsistent");
 
+#ifdef HAVE_THRUST
+    if (m_evalute_on_gpu) {
+      thrust::device_vector<double> rhs_gpu(rhs.data(),
+                                            rhs.data() + rhs.size());
+      thrust::device_vector<double> lhs_gpu(lhs.size());
+      thrust::counting_iterator<int> count(0);
+      thrust::for_each(count, count + lhs.size(),
+                       [rhs = iterator_to_raw_pointer(rhs_gpu),
+                        lhs = iterator_to_raw_pointer(lhs_gpu),
+                        aptr = iterator_to_raw_pointer(a.begin()),
+                        bptr = iterator_to_raw_pointer(b.begin()), nb = nb,
+                        f = this->m_function] CUDA_HOST_DEVICE(const int i) {
+                         const_row_reference ai = aptr[i];
+                         for (size_t j = 0; j < nb; ++j) {
+                           const_col_reference bj = bptr[j];
+                           lhs.template segment<BlockRows>(i * BlockRows) +=
+                               this->m_function(ai, bj) *
+                               rhs.template segment<BlockCols>(j * BlockCols);
+                         }
+                       });
+    }
+#endif
+
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
@@ -351,7 +374,7 @@ public:
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
     ASSERT(lhs.size() == this->rows(), "lhs size not consistent")
     ASSERT(rhs.size() == this->cols(), "lhs size not consistent")
-    lhs += m_matrix * rhs;
+    lhs.derived() += m_matrix * rhs.derived();
   }
 };
 

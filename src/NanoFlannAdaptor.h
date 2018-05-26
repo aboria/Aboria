@@ -380,7 +380,8 @@ private:
 ///
 template <typename Traits> struct KdtreeNanoflannQuery {
   const static unsigned int dimension = Traits::dimension;
-  const static unsigned int m_max_tree_depth = 32 - 2;
+  // const static unsigned int m_max_tree_depth = 32 - 2;
+  const static unsigned int m_max_tree_depth = 50;
   typedef detail::nanoflann_kd_tree_type<Traits> kd_tree_type;
   typedef typename kd_tree_type::Node value_type;
   typedef const value_type &reference;

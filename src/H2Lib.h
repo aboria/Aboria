@@ -358,9 +358,10 @@ public:
     // create h2 block
     //
     LOG(2, "H2LibMatrix: \tbuilding block structure");
-    double eta_copy = eta;
+    std::default_random_engine generator;
+    auto data_admissible = std::tie(eta, generator);
     m_block = std::unique_ptr<block, decltype(&del_block)>(
-        build_strict_block(row_t, col_t, &eta_copy,
+        build_strict_block(row_t, col_t, &data_admissible,
                            detail::admissible_max_cluster),
         del_block);
 
