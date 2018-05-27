@@ -316,6 +316,8 @@ public:
     assemble_matrix();
   };
 
+  matrix_type &get_matrix() { return m_matrix; }
+
   void assemble_matrix() {
     const RowElements &a = this->m_row_elements;
     const ColElements &b = this->m_col_elements;
