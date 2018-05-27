@@ -57,6 +57,12 @@ if (Aboria_RUN_TESTS)
         RbfPdeTest
         #RbfStokesTest
         )
+    set(default_off_test_suites
+        RbfParamSweepTest
+        SpeedTest
+        BenchmarkFMM
+        BenchmarkHPC
+        )
 
     foreach(test_suite ${all_test_suites})
         option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
@@ -75,23 +81,9 @@ if (Aboria_RUN_TESTS)
             set(test_suites ${test_suites} ${test_suite})
         endif()
     endforeach()
-endif()
 
-option(Aboria_RUN_BENCHMARKS "run benchmarks during testing" OFF)
-if (Aboria_RUN_BENCHMARKS)
-    find_package(Gromacs)
-    if (GROMACS_FOUND)
-        add_definitions(-DHAVE_GROMACS)
-        list(APPEND Aboria_LIBRARIES "${GROMACS_LIBRARIES}")
-        include_directories(${GROMACS_INCLUDE_DIRS})
-    endif()
-    set(benchmark_test_suites
-            SpeedTest
-            BenchmarkFMM
-            BenchmarkHPC
-            )
-    foreach(test_suite ${benchmark_test_suites})
-        option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" ON)
+    foreach(test_suite ${default_off_test_suites})
+    option(Aboria_RUN_TEST_${test_suite} "run ${test_suite} test suite with ctest" OFF)
         if (Aboria_RUN_TEST_${test_suite})
             set(test_suites ${test_suites} ${test_suite})
         endif()
@@ -281,7 +273,10 @@ if (Aboria_USE_THRUST)
     )
 endif()
 
-
+set(RbfParamSweepTestFile rbf_param_sweep.h)
+set(RbfParamSweepTest
+    test_param_sweep
+    )
  
 set(RbfInterpolationTestFile rbf_interpolation.h)
 set(RbfInterpolationTest 

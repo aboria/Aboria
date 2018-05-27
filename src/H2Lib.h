@@ -359,10 +359,9 @@ public:
     //
     LOG(2, "H2LibMatrix: \tbuilding block structure");
     std::default_random_engine generator;
-    auto data_admissible = std::tie(eta, generator);
+    double eta_copy = eta;
     m_block = std::unique_ptr<block, decltype(&del_block)>(
-        build_strict_block(row_t, col_t, &data_admissible,
-                           detail::admissible_max_cluster),
+        build_strict_block(row_t, col_t, &eta_copy, admissible_max_cluster),
         del_block);
 
     /*
@@ -434,9 +433,21 @@ private:
     uint *old_idx = idx;
     const uint dim = Particles::dimension;
     pcluster t;
-    if (particles.get_query().is_leaf_node(*ci)) { // leaf node
+
+    const unsigned int D = Particles::dimension;
+    typedef Vector<double, D> double_d;
+    typedef position_d<D> position;
+    bbox<D> box;
+
+    if (particles.get_query().is_leaf_node(*ci)) { // reached leaf node
       for (auto pit = particles.get_query().get_bucket_particles(*ci);
            pit != false; ++pit) {
+
+        // update bounding box
+        const double_d &pos = get<position>(*pit);
+        box = box + bbox<D>(pos);
+
+        // add particle index to idx
         const size_t pi = &(get<typename Particles::position>(*pit)) -
                           &get<typename Particles::position>(particles)[0];
         for (size_t i = 0; i < block_size; ++i, ++idx) {
@@ -445,7 +456,8 @@ private:
       }
       // if (idx-old_idx == 0) std::cout << "HAVE EMPTY LEAF" <<std::endl;
       t = new_cluster(idx - old_idx, old_idx, 0, dim);
-    } else {
+
+    } else { // non-leaf node
       size_t sons = 0;
       for (auto ci_child = particles.get_query().get_children(ci);
            ci_child != false; ++ci_child, ++sons) {
@@ -458,6 +470,9 @@ private:
         if (child_t->size > 0) {
           t->son[i] = child_t;
           idx += child_t->size;
+
+          // update bounding box
+          box = box + bbox<D>(t->bmin, t->bmax);
         } else {
           del_cluster(child_t);
           --i;
@@ -467,10 +482,10 @@ private:
       t->size = idx - old_idx;
     }
     // bounding box
-    const auto &bbox = particles.get_query().get_bounds(ci);
+    // const auto &bbox = particles.get_query().get_bounds(ci);
     for (size_t i = 0; i < dim; ++i) {
-      t->bmin[i] = bbox.bmin[i];
-      t->bmax[i] = bbox.bmax[i];
+      t->bmin[i] = box.bmin[i];
+      t->bmax[i] = box.bmax[i];
     }
     update_cluster(t);
     return t;

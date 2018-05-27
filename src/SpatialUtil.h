@@ -43,7 +43,7 @@ template <unsigned int D> struct bbox;
 #include "detail/SpatialUtil.h"
 
 namespace Aboria {
-    
+
 ///
 /// @brief Contains the minimum and maximum extents of a hypercube in @p D
 /// dimensional space
@@ -67,10 +67,18 @@ template <unsigned int D> struct bbox {
       : bmin(double_d::Constant(detail::get_max<double>())),
         bmax(double_d::Constant(-detail::get_max<double>())) {}
 
-  inline CUDA_HOST_DEVICE bbox(const double_d &p) : bmin(p), bmax(p) {}
+  inline CUDA_HOST_DEVICE bbox(const double_d &p)
+      : bmin(p), bmax(p + std::numeric_limits<double>::epsilon()) {}
 
   inline CUDA_HOST_DEVICE bbox(const double_d &min, const double_d &max)
       : bmin(min), bmax(max) {}
+
+  inline CUDA_HOST_DEVICE bbox(const double *min, const double *max) {
+    for (size_t i = 0; i < D; ++i) {
+      bmin[i] = min[i];
+      bmax[i] = max[i];
+    }
+  }
 
   ///
   /// @return the bounding box covering both input boxes
@@ -134,7 +142,49 @@ std::ostream &operator<<(std::ostream &out, const bbox<D> &b) {
   return out << "bbox(" << b.bmin << "<->" << b.bmax << ")";
 }
 
-}
+///
+/// @brief Contains the middle and radius of a hypersphere in @p D
+/// dimensional space
+///
+/// @tparam D the number of spatial dimensions
+///
+/// TODO: NOT IMPLEMENTED
+template <unsigned int D> struct bsphere {
+  typedef Vector<double, D> double_d;
+
+  ///
+  /// @brief middle point in the sphere
+  ///
+  double_d m_middle;
+
+  ///
+  /// @brief radius of the sphere
+  ///
+  double m_radius;
+
+  inline CUDA_HOST_DEVICE bsphere()
+      : m_middle(double_d::Constant(0)), m_radius(-1) {}
+
+  inline CUDA_HOST_DEVICE bsphere(const double_d &p)
+      : m_middle(p), m_radius(0) {}
+
+  inline CUDA_HOST_DEVICE bsphere(const double_d &middle, const double &radius)
+      : m_middle(middle), m_radius(radius) {}
+
+  ///
+  /// @return the sphere covering both input spheres
+  ///
+  inline CUDA_HOST_DEVICE bsphere operator+(const bsphere &arg) {
+    // TODO: NOT IMPLEMENTED
+    return arg;
+  }
+
+  ///
+  /// @return true if sphere is empty
+  ///
+  inline CUDA_HOST_DEVICE bool is_empty() { return m_radius < 0; }
+};
+
+} // namespace Aboria
 
 #endif
-
