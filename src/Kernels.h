@@ -374,8 +374,10 @@ public:
   template <typename DerivedLHS, typename DerivedRHS>
   void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
-    ASSERT(lhs.size() == this->rows(), "lhs size not consistent")
-    ASSERT(rhs.size() == this->cols(), "lhs size not consistent")
+    ASSERT(lhs.size() == static_cast<int>(this->rows()),
+           "lhs size not consistent")
+    ASSERT(rhs.size() == static_cast<int>(this->cols()),
+           "lhs size not consistent")
     lhs.derived() += m_matrix * rhs.derived();
   }
 };

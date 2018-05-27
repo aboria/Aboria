@@ -71,18 +71,20 @@ public:
     std::ofstream out_op_setup_time;
     std::ofstream out_op_apply_time;
     std::ofstream out_op_apply_error;
+    std::ofstream out_op_memory;
 
     const int width = 12;
     static const int Nops = 2;
     std::ofstream out_solve_setup_time[Nops];
     std::ofstream out_solve_solve_time[Nops];
+    std::ofstream out_solve_solve_memory[Nops];
     std::ofstream out_solve_iterations[Nops];
     std::ofstream out_solve_error[Nops];
     std::ofstream out_solve_test_error[Nops];
 
     output_files(const std::string &name) {
 
-      auto solve_header = [&](auto &out) {
+      auto solve_header = [width = width + 1](auto &out) {
         out << std::setw(width) << "N " << std::setw(width) << "sigma "
             << std::setw(width) << "D " << std::setw(width) << "order "
             << std::setw(width) << "chol " << std::setw(width) << "diag "
@@ -90,7 +92,7 @@ public:
             << std::endl;
       };
 
-      auto op_header = [&](auto &out) {
+      auto op_header = [width = width + 1](auto &out) {
         out << std::setw(width) << "N " << std::setw(width) << "sigma "
             << std::setw(width) << "D " << std::setw(width) << "order "
             << std::setw(width) << "matrix " << std::setw(width) << "dense "
@@ -104,6 +106,8 @@ public:
       op_header(out_op_apply_time);
       out_op_apply_error.open(name + "_op_apply_error.txt", std::ios::out);
       op_header(out_op_apply_error);
+      out_op_memory.open(name + "_op_memory.txt", std::ios::out);
+      op_header(out_op_memory);
 
       std::string op_names[2] = {"_matrix_", "_h2_"};
       for (int i = 0; i < Nops; ++i) {
@@ -113,6 +117,10 @@ public:
         out_solve_solve_time[i].open(
             name + op_names[i] + "solve_solve_time.txt", std::ios::out);
         solve_header(out_solve_solve_time[i]);
+        out_solve_solve_memory[i].open(
+            name + op_names[i] + "solve_solve_memory.txt", std::ios::out);
+        solve_header(out_solve_solve_memory[i]);
+
         out_solve_iterations[i].open(
             name + op_names[i] + "solve_iterations.txt", std::ios::out);
         solve_header(out_solve_iterations[i]);
@@ -129,9 +137,11 @@ public:
       out_op_setup_time << std::endl;
       out_op_apply_time << std::endl;
       out_op_apply_error << std::endl;
+      out_op_memory << std::endl;
       for (int i = 0; i < Nops; ++i) {
         out_solve_setup_time[i] << std::endl;
         out_solve_solve_time[i] << std::endl;
+        out_solve_solve_memory[i] << std::endl;
         out_solve_iterations[i] << std::endl;
         out_solve_error[i] << std::endl;
         out_solve_test_error[i] << std::endl;
@@ -148,9 +158,11 @@ public:
       start(out_op_setup_time);
       start(out_op_apply_time);
       start(out_op_apply_error);
+      start(out_op_memory);
       for (int i = 0; i < Nops; ++i) {
         start(out_solve_setup_time[i]);
         start(out_solve_solve_time[i]);
+        start(out_solve_solve_memory[i]);
         start(out_solve_iterations[i]);
         start(out_solve_error[i]);
         start(out_solve_test_error[i]);
@@ -161,9 +173,11 @@ public:
       out_op_setup_time.close();
       out_op_apply_time.close();
       out_op_apply_error.close();
+      out_op_memory.close();
       for (int i = 0; i < Nops; ++i) {
         out_solve_setup_time[i].close();
         out_solve_solve_time[i].close();
+        out_solve_solve_memory[i].close();
         out_solve_iterations[i].close();
         out_solve_error[i].close();
         out_solve_test_error[i].close();
@@ -225,6 +239,9 @@ public:
             << " " << std::setw(out.width)
             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
                    .count();
+        out.out_solve_solve_memory[i]
+            << " " << std::setw(out.width)
+            << G.rows() * G.cols() * sizeof(double) / 1e9;
       }
     } else {
       for (int i = 0; i < 2; ++i) {
@@ -232,6 +249,7 @@ public:
         out.out_solve_error[i] << " " << std::setw(out.width) << -1;
         out.out_solve_setup_time[i] << " " << std::setw(out.width) << -1;
         out.out_solve_solve_time[i] << " " << std::setw(out.width) << -1;
+        out.out_solve_solve_memory[i] << " " << std::setw(out.width) << -1;
       }
     }
   }
@@ -242,6 +260,7 @@ public:
                        const Eigen::VectorXd &phi_test, const int max_iter,
                        const size_t Nbuffer, output_files &out, int do_solve) {
 
+    const size_t N = G.cols();
     Eigen::VectorXd gamma = Eigen::VectorXd::Random(N);
     auto t0 = Clock::now();
     Eigen::VectorXd phi_random = G * gamma;
@@ -282,6 +301,8 @@ public:
           << " " << std::setw(out.width)
           << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
                  .count();
+      out.out_solve_solve_memory[do_solve - 1]
+          << " " << std::setw(out.width) << G.rows() * sizeof(double) / 1e9;
 
       Eigen::VectorXd phi_proposed = Gtest * gamma;
 
@@ -312,6 +333,12 @@ public:
           << " " << std::setw(out.width)
           << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
                  .count();
+      auto &knots = G.get_first_kernel().get_row_elements();
+      const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+      const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
+      out.out_solve_solve_memory[do_solve - 1]
+          << " " << std::setw(out.width)
+          << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
 
       phi_proposed = Gtest * gamma;
 
@@ -322,8 +349,11 @@ public:
       Eigen::BiCGSTAB<Op, NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
           bicg3;
       bicg3.setMaxIterations(max_iter);
-      bicg3.preconditioner().set_number_of_random_particles(Nbuffer *
-                                                            std::sqrt(N));
+      const size_t Ninducing =
+          0.5 * (-2.0 * knots.size() +
+                 std::sqrt(4.0 * std::pow(knots.size(), 2) +
+                           4.0 * ndomains * std::pow(domain_size, 2)));
+      bicg3.preconditioner().set_number_of_random_particles(Ninducing);
       bicg3.preconditioner().set_lambda(1e-5);
       t0 = Clock::now();
       bicg3.compute(G);
@@ -343,6 +373,10 @@ public:
           << " " << std::setw(out.width)
           << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
                  .count();
+      out.out_solve_solve_memory[do_solve - 1]
+          << " " << std::setw(out.width)
+          << (Ninducing * G.rows() + std::pow(Ninducing, 2)) * sizeof(double) /
+                 1e9;
 
       phi_proposed = Gtest * gamma;
 
@@ -358,7 +392,6 @@ public:
                           output_files &out) {
 #ifdef HAVE_EIGEN
 
-    const int width = 11;
     char name[50] = "program name";
     char *argv[] = {name, NULL};
     int argc = sizeof(argv) / sizeof(char *) - 1;
@@ -369,9 +402,9 @@ public:
                        Particles_t::dimension, Order);
 
     const int max_iter = 1000;
-    const size_t n_subdomain = 200;
-    const int Nbuffer = 4 * n_subdomain;
     const unsigned int D = Particles_t::dimension;
+    const size_t n_subdomain = std::pow(Order, D);
+    const int Nbuffer = 4 * n_subdomain;
     typedef position_d<D> position;
 
     Particles_t knots(particles.size() - Ntest);
@@ -411,9 +444,11 @@ public:
     auto Gmatrix = create_matrix_operator(knots, knots, self_kernel);
     auto t1 = Clock::now();
     out.out_op_setup_time
-        << " " << std::setw(width)
+        << " " << std::setw(out.width)
         << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
                .count();
+    out.out_op_memory << " " << std::setw(out.width)
+                      << std::pow(knots.size(), 2) * sizeof(double) / 1e9;
     auto Gmatrix_test = create_matrix_operator(test, knots, self_kernel);
 
     std::cout << "APPLYING MATRIX OPERATOR" << std::endl;
@@ -427,9 +462,10 @@ public:
     auto Gdense = create_dense_operator(knots, knots, self_kernel);
     t1 = Clock::now();
     out.out_op_setup_time
-        << " " << std::setw(width)
+        << " " << std::setw(out.width)
         << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
                .count();
+    out.out_op_memory << " " << std::setw(out.width) << 0;
 
     auto Gdense_test = create_dense_operator(test, knots, self_kernel);
 
@@ -437,36 +473,51 @@ public:
     helper_operator(Gdense, Gmatrix, phi, Gdense_test, phi_test, max_iter,
                     Nbuffer, out, 0);
 
-    std::cout << "CREATING FMM OPERATOR" << std::endl;
-    t0 = Clock::now();
-    auto G_FMM = create_fmm_operator<Order>(knots, knots, kernel, self_kernel);
-    t1 = Clock::now();
-    out.out_op_setup_time
-        << " " << std::setw(width)
-        << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
-               .count();
+    if (D < 10) {
+      std::cout << "CREATING FMM OPERATOR" << std::endl;
+      t0 = Clock::now();
+      auto G_FMM =
+          create_fmm_operator<Order>(knots, knots, kernel, self_kernel);
+      t1 = Clock::now();
+      out.out_op_setup_time
+          << " " << std::setw(out.width)
+          << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                 .count();
+      out.out_op_memory << " " << std::setw(out.width) << 0;
 
-    auto G_FMM_test =
-        create_fmm_operator<Order>(test, knots, kernel, self_kernel);
+      auto G_FMM_test =
+          create_fmm_operator<Order>(test, knots, kernel, self_kernel);
 
-    std::cout << "APPLYING FMM OPERATOR" << std::endl;
-    helper_operator(G_FMM, Gmatrix, phi, G_FMM_test, phi_test, max_iter,
-                    Nbuffer, out, 0);
+      std::cout << "APPLYING FMM OPERATOR" << std::endl;
+      helper_operator(G_FMM, Gmatrix, phi, G_FMM_test, phi_test, max_iter,
+                      Nbuffer, out, 0);
 
-    std::cout << "CREATING H2 OPERATOR" << std::endl;
-    t0 = Clock::now();
-    auto G_H2 = create_h2_operator(knots, knots, Order, kernel, self_kernel);
-    t1 = Clock::now();
-    out.out_op_setup_time
-        << " " << std::setw(width)
-        << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
-               .count();
+      std::cout << "CREATING H2 OPERATOR" << std::endl;
+      const double eta = 2.0;
+      const double beta = 2.0 / D;
+      t0 = Clock::now();
+      auto G_H2 = create_h2_operator(knots, knots, Order, kernel, self_kernel,
+                                     eta, beta);
+      t1 = Clock::now();
+      out.out_op_setup_time
+          << " " << std::setw(out.width)
+          << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                 .count();
 
-    auto G_H2_test =
-        create_h2_operator(test, knots, Order, kernel, self_kernel);
+      size_t size = G_H2.get_first_kernel().get_h2_matrix().get_size();
+      /*
+      auto near_size =
+          GmaternH2.get_first_kernel().get_h2_matrix().get_near_size();
+          out.out_op_memory << " " << std::setw(out.width) << 0;
+          */
+      out.out_op_memory << " " << std::setw(out.width) << size / 1e9;
 
-    helper_operator(G_H2, Gmatrix, phi, G_H2_test, phi_test, max_iter, Nbuffer,
-                    out, 2);
+      auto G_H2_test = create_h2_operator(test, knots, Order, kernel,
+                                          self_kernel, eta, beta);
+
+      helper_operator(G_H2, Gmatrix, phi, G_H2_test, phi_test, max_iter,
+                      Nbuffer, out, 2);
+    }
 
     out.new_line_end();
 
@@ -490,13 +541,16 @@ public:
     const size_t Ntest = 1000;
     const double jitter = 1e-5;
 
-    for (int N = 1000; N < 300000; N *= 2) {
+    for (int N = 1000; N < 30000; N *= 2) {
       for (double sigma = 0.1; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
-
+        helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
+                              out);
+        helper_param_sweep<2>(rosenbrock<10>(N, Ntest), Ntest, kernel, jitter,
+                              out);
         helper_param_sweep<2>(rosenbrock<8>(N, Ntest), Ntest, kernel, jitter,
                               out);
-        helper_param_sweep<2>(rosenbrock<6>(N, Ntest), Ntest, kernel, jitter,
+        helper_param_sweep<3>(rosenbrock<5>(N, Ntest), Ntest, kernel, jitter,
                               out);
         helper_param_sweep<4>(rosenbrock<4>(N, Ntest), Ntest, kernel, jitter,
                               out);
