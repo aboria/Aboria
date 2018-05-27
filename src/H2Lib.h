@@ -472,7 +472,7 @@ private:
           idx += child_t->size;
 
           // update bounding box
-          box = box + bbox<D>(t->bmin, t->bmax);
+          box = box + bbox<D>(child_t->bmin, child_t->bmax);
         } else {
           del_cluster(child_t);
           --i;
@@ -481,12 +481,27 @@ private:
       }
       t->size = idx - old_idx;
     }
-    // bounding box
-    // const auto &bbox = particles.get_query().get_bounds(ci);
+
+    // make sure bounding box at least 100 eps
+    const auto &bucket_box = particles.get_query().get_bounds(ci);
+    for (size_t i = 0; i < D; ++i) {
+      const double size_threshold =
+          1e3 * std::numeric_limits<double>::epsilon(); // 0.5 * bucket_diam;
+      const double box_diam = box.bmax[i] - box.bmin[i];
+      if (box_diam < size_threshold) {
+        box.bmin[i] = std::max(bucket_box.bmin[i],
+                               box.bmin[i] - 0.5 * (size_threshold - box_diam));
+        box.bmax[i] = std::min(bucket_box.bmax[i],
+                               box.bmax[i] + 0.5 * (size_threshold - box_diam));
+      }
+    }
+
+    // set cluster to bounding box
     for (size_t i = 0; i < dim; ++i) {
       t->bmin[i] = box.bmin[i];
       t->bmax[i] = box.bmax[i];
     }
+
     update_cluster(t);
     return t;
   }

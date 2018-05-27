@@ -123,7 +123,7 @@ template <unsigned int D> struct bbox {
   ///
   inline CUDA_HOST_DEVICE bool is_empty() {
     for (size_t i = 0; i < D; ++i) {
-      if (bmax[i] < bmin[i])
+      if (bmax[i] < bmin[i] + 3 * std::numeric_limits<double>::epsilon())
         return true;
     }
     return false;

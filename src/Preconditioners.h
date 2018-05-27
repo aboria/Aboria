@@ -891,7 +891,7 @@ public:
         auto num_particles = pit.distance_to_end();
         std::vector<int> bucket_indices(num_particles);
         std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-        std::shuffle(bucket_indices.begin(), bucket_indices.end(),generator);
+        std::shuffle(bucket_indices.begin(), bucket_indices.end(), generator);
         const int trunc_count = std::min(count, bucket_indices.size());
         std::transform(
             bucket_indices.begin(), bucket_indices.begin() + trunc_count,
@@ -1151,8 +1151,7 @@ public:
   SchwartzPreconditioner()
       : m_isInitialized(false),
         m_neighbourhood_buffer(1e5 * std::numeric_limits<double>::epsilon()),
-        m_max_buffer_n(300),
-        m_coarse_grid_n(0) {}
+        m_max_buffer_n(300), m_coarse_grid_n(0) {}
 
   template <typename MatType>
   explicit SchwartzPreconditioner(const MatType &mat) {
@@ -1226,11 +1225,11 @@ public:
         }
 
         if (buffer.size() > m_max_buffer_n) {
-            std::shuffle(buffer.begin(),buffer.end(),generator);
-            buffer.resize(m_max_buffer_n);
+          std::shuffle(buffer.begin(), buffer.end(), generator);
+          buffer.resize(m_max_buffer_n);
         }
 
-        //ASSERT(buffer.size() > 0, "no particles in buffer");
+        // ASSERT(buffer.size() > 0, "no particles in buffer");
         ASSERT(indicies.size() > 0, "no particles in domain");
       }
     }
@@ -1273,7 +1272,7 @@ public:
         auto num_particles = pit.distance_to_end();
         std::vector<int> bucket_indices(num_particles);
         std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-        std::shuffle(bucket_indices.begin(), bucket_indices.end(),generator);
+        std::shuffle(bucket_indices.begin(), bucket_indices.end(), generator);
         const int trunc_count = std::min(count, bucket_indices.size());
         std::transform(
             bucket_indices.begin(), bucket_indices.begin() + trunc_count,
@@ -1764,7 +1763,7 @@ public:
           auto num_particles = pit.distance_to_end();
           std::vector<int> bucket_indices(num_particles);
           std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-          std::shuffle(bucket_indices.begin(), bucket_indices.end(),generator);
+          std::shuffle(bucket_indices.begin(), bucket_indices.end(), generator);
           const int trunc_count = std::min(count, bucket_indices.size());
           std::transform(
               bucket_indices.begin(), bucket_indices.begin() + trunc_count,
@@ -1818,7 +1817,7 @@ public:
         cairo_surface_destroy(surface);
 #endif
 
-        //ASSERT(buffer.size() > 0, "no particles in buffer");
+        // ASSERT(buffer.size() > 0, "no particles in buffer");
         ASSERT(indicies.size() > 0, "no particles in domain");
       }
     }
@@ -2152,8 +2151,8 @@ public:
     analyze_impl(mat, detail::make_index_sequence<NI>());
 
     int count = 0;
-    int minsize_indicies = 1000;
-    int maxsize_indicies = 0;
+    int minsize_indicies = std::numeric_limits<int>::max();
+    int maxsize_indicies = std::numeric_limits<int>::min();
     for (size_t domain_index = 0; domain_index < m_domain_indicies.size();
          ++domain_index) {
       const int size_indicies = m_domain_indicies[domain_index].size();
@@ -2278,7 +2277,7 @@ public:
 
       x.segment(range[0], range[1]) =
           (1.0 / m_lambda) *
-          (matrix_type::Identity(range[1] - range[0], range[1] - range[0]) -
+          (b.segment(range[0], range[1]) -
            (Kux.transpose()) *
                solver.solve(Kux * b.segment(range[0], range[1])));
     }
