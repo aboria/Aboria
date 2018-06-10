@@ -75,10 +75,6 @@ if (Aboria_USE_OPENMP)
     find_package(OpenMP REQUIRED)
     add_definitions(-DHAVE_OPENMP)
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${OpenMP_EXE_LINKER_FLAGS}")
-#    if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "GNU")
-#        add_definitions(-D_GLIBCXX_PARALLEL)
-#    endif()
 endif()
 
 
