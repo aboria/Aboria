@@ -399,8 +399,6 @@ ${H2Lib_LINKER_FLAGS}") add_definitions(-DHAVE_H2LIB)
 find_package(OpenMP REQUIRED)
 add_definitions(-DHAVE_OPENMP)
 set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS}
-${OpenMP_EXE_LINKER_FLAGS}")
 
 # Thrust
 find_package(Thrust REQUIRED)
@@ -535,8 +533,6 @@ ${H2Lib_LINKER_FLAGS}"</span><span class="special">)</span> <span class="identif
 <span class="identifier">find_package</span><span class="special">(</span><span class="identifier">OpenMP</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
 <span class="identifier">add_definitions</span><span class="special">(-</span><span class="identifier">DHAVE_OPENMP</span><span class="special">)</span>
 <span class="identifier">set</span><span class="special">(</span><span class="identifier">CMAKE_CXX_FLAGS</span> <span class="string">"${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}"</span><span class="special">)</span>
-<span class="identifier">set</span><span class="special">(</span><span class="identifier">CMAKE_EXE_LINKER_FLAGS</span> <span class="string">"${CMAKE_EXE_LINKER_FLAGS}
-${OpenMP_EXE_LINKER_FLAGS}"</span><span class="special">)</span>
 
 <span class="preprocessor"># CUDA</span>
 <span class="identifier">find_package</span><span class="special">(</span><span class="identifier">CUDA</span> <span class="identifier">REQUIRED</span><span class="special">)</span>
