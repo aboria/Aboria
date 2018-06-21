@@ -67,11 +67,74 @@ public:
     };
   };
 
+  struct gaussian_kernel {
+    double m_scale;
+    double m_sigma;
+    static constexpr const char *m_name = "gaussian";
+    void set_sigma(const double sigma) {
+      m_sigma = sigma;
+      m_scale = 1.0 / std::pow(sigma, 2);
+    }
+    template <unsigned int D>
+    double operator()(const Vector<double, D> &a,
+                      const Vector<double, D> &b) const {
+      return std::exp(-(b - a).squaredNorm() * m_scale);
+    };
+  };
+
+  struct exponential_kernel {
+    double m_scale;
+    double m_sigma;
+    static constexpr const char *m_name = "exp";
+    void set_sigma(const double sigma) {
+      m_sigma = sigma;
+      m_scale = 1.0 / std::pow(sigma, 2);
+    }
+    template <unsigned int D>
+    double operator()(const Vector<double, D> &a,
+                      const Vector<double, D> &b) const {
+      return std::exp(-(b - a).norm() * m_scale);
+    };
+  };
+
+  struct rational_quadratic_kernel {
+    double m_scale;
+    double m_sigma;
+    static constexpr const char *m_name = "rational";
+    void set_sigma(const double sigma) {
+      m_sigma = sigma;
+      m_scale = std::pow(sigma, 2);
+    }
+    template <unsigned int D>
+    double operator()(const Vector<double, D> &a,
+                      const Vector<double, D> &b) const {
+      const double r2 = (b - a).squaredNorm();
+      return 1.0 - r2 / (r2 + m_scale);
+    };
+  };
+
+  struct inverse_multiquadric_kernel {
+    double m_scale;
+    double m_sigma;
+    static constexpr const char *m_name = "inv_mq";
+    void set_sigma(const double sigma) {
+      m_sigma = sigma;
+      m_scale = std::pow(sigma, 2);
+    }
+    template <unsigned int D>
+    double operator()(const Vector<double, D> &a,
+                      const Vector<double, D> &b) const {
+      const double r2 = (b - a).squaredNorm();
+      return 1.0 / std::sqrt(r2 + m_scale);
+    };
+  };
+
   struct output_files {
     std::ofstream out_op_setup_time;
     std::ofstream out_op_apply_time;
     std::ofstream out_op_apply_error;
     std::ofstream out_op_memory;
+    std::ofstream out_ds_setup_time;
 
     const int width = 12;
     static const int Nops = 2;
@@ -87,17 +150,24 @@ public:
       auto solve_header = [width = width + 1](auto &out) {
         out << std::setw(width) << "N " << std::setw(width) << "sigma "
             << std::setw(width) << "D " << std::setw(width) << "order "
-            << std::setw(width) << "chol " << std::setw(width) << "diag "
-            << std::setw(width) << "srtz " << std::setw(width) << "nystrom "
-            << std::endl;
+            << std::setw(width) << "Nsubdomain " << std::setw(width) << "chol "
+            << std::setw(width) << "diag " << std::setw(width) << "srtz "
+            << std::setw(width) << "nystrom " << std::endl;
       };
 
       auto op_header = [width = width + 1](auto &out) {
         out << std::setw(width) << "N " << std::setw(width) << "sigma "
             << std::setw(width) << "D " << std::setw(width) << "order "
-            << std::setw(width) << "matrix " << std::setw(width) << "dense "
-            << std::setw(width) << "fmm " << std::setw(width) << "h2 "
-            << std::endl;
+            << std::setw(width) << "Nsubdomain " << std::setw(width)
+            << "matrix " << std::setw(width) << "dense " << std::setw(width)
+            << "fmm " << std::setw(width) << "h2 " << std::endl;
+      };
+
+      auto ds_header = [width = width + 1](auto &out) {
+        out << std::setw(width) << "N " << std::setw(width) << "sigma "
+            << std::setw(width) << "D " << std::setw(width) << "order "
+            << std::setw(width) << "Nsubdomain " << std::setw(width) << "kdree "
+            << std::setw(width) << std::endl;
       };
 
       out_op_setup_time.open(name + "_op_setup_time.txt", std::ios::out);
@@ -108,6 +178,9 @@ public:
       op_header(out_op_apply_error);
       out_op_memory.open(name + "_op_memory.txt", std::ios::out);
       op_header(out_op_memory);
+
+      out_ds_setup_time.open(name + "_ds_setup_time.txt", std::ios::out);
+      ds_header(out_ds_setup_time);
 
       std::string op_names[2] = {"_matrix_", "_h2_"};
       for (int i = 0; i < Nops; ++i) {
@@ -138,6 +211,7 @@ public:
       out_op_apply_time << std::endl;
       out_op_apply_error << std::endl;
       out_op_memory << std::endl;
+      out_ds_setup_time << std::endl;
       for (int i = 0; i < Nops; ++i) {
         out_solve_setup_time[i] << std::endl;
         out_solve_solve_time[i] << std::endl;
@@ -149,16 +223,18 @@ public:
     }
 
     void new_line_start(const size_t N, const double sigma, const size_t D,
-                        const size_t order) {
+                        const size_t order, const size_t Nsubdomain) {
       auto start = [&](auto &out) {
         out << std::setw(width) << N << " " << std::setw(width) << sigma << " "
-            << std::setw(width) << D << " " << std::setw(width) << order;
+            << std::setw(width) << D << " " << std::setw(width) << order << " "
+            << std::setw(width) << Nsubdomain;
       };
 
       start(out_op_setup_time);
       start(out_op_apply_time);
       start(out_op_apply_error);
       start(out_op_memory);
+      start(out_ds_setup_time);
       for (int i = 0; i < Nops; ++i) {
         start(out_solve_setup_time[i]);
         start(out_solve_solve_time[i]);
@@ -174,6 +250,7 @@ public:
       out_op_apply_time.close();
       out_op_apply_error.close();
       out_op_memory.close();
+      out_ds_setup_time.close();
       for (int i = 0; i < Nops; ++i) {
         out_solve_setup_time[i].close();
         out_solve_solve_time[i].close();
@@ -202,14 +279,23 @@ public:
       return ret;
     };
 
+    auto funct1d = [](const auto &x) { return std::pow(1.0 - x[0], 2); };
+
     std::default_random_engine generator(0);
     std::uniform_real_distribution<double> distribution(0.0, 1.0);
-
     for (size_t i = 0; i < N + Ntest; ++i) {
       for (size_t d = 0; d < D; ++d) {
         get<position>(knots)[i][d] = distribution(generator);
       }
-      get<function>(knots)[i] = funct(get<position>(knots)[i]);
+    }
+    if (D == 1) {
+      for (size_t i = 0; i < N + Ntest; ++i) {
+        get<function>(knots)[i] = funct1d(get<position>(knots)[i]);
+      }
+    } else {
+      for (size_t i = 0; i < N + Ntest; ++i) {
+        get<function>(knots)[i] = funct(get<position>(knots)[i]);
+      }
     }
     return knots;
   }
@@ -242,6 +328,12 @@ public:
         out.out_solve_solve_memory[i]
             << " " << std::setw(out.width)
             << G.rows() * G.cols() * sizeof(double) / 1e9;
+
+        Eigen::VectorXd phi_proposed = Gtest * gamma;
+
+        out.out_solve_test_error[i]
+            << " " << std::setw(out.width)
+            << (phi_proposed - phi_test).norm() / phi_test.norm();
       }
     } else {
       for (int i = 0; i < 2; ++i) {
@@ -250,6 +342,7 @@ public:
         out.out_solve_setup_time[i] << " " << std::setw(out.width) << -1;
         out.out_solve_solve_time[i] << " " << std::setw(out.width) << -1;
         out.out_solve_solve_memory[i] << " " << std::setw(out.width) << -1;
+        out.out_solve_test_error[i] << " " << std::setw(out.width) << -1;
       }
     }
   }
@@ -389,7 +482,7 @@ public:
   template <size_t Order, typename Particles_t, typename Kernel>
   void helper_param_sweep(const Particles_t &particles, const size_t Ntest,
                           const Kernel &kernel, const double jitter,
-                          output_files &out) {
+                          const size_t Nsubdomain, output_files &out) {
 #ifdef HAVE_EIGEN
 
     char name[50] = "program name";
@@ -399,11 +492,11 @@ public:
     init_h2lib(&argc, &argv2);
 
     out.new_line_start(particles.size() - Ntest, kernel.m_sigma,
-                       Particles_t::dimension, Order);
+                       Particles_t::dimension, Order, Nsubdomain);
 
     const int max_iter = 1000;
     const unsigned int D = Particles_t::dimension;
-    const size_t n_subdomain = std::pow(Order, D);
+    const size_t n_subdomain = Nsubdomain;
     const int Nbuffer = 4 * n_subdomain;
     typedef position_d<D> position;
 
@@ -422,8 +515,15 @@ public:
       test_box = test_box + bbox<D>(get<position>(test)[i]);
     }
 
+    auto t0 = Clock::now();
     knots.init_neighbour_search(knots_box.bmin, knots_box.bmax,
                                 Vector<bool, D>::Constant(false), n_subdomain);
+    auto t1 = Clock::now();
+    out.out_ds_setup_time
+        << " " << std::setw(out.width)
+        << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+               .count();
+
     test.init_neighbour_search(test_box.bmin, test_box.bmax,
                                Vector<bool, D>::Constant(false), n_subdomain);
     std::cout << "FINISHED INIT NEIGHBOUR" << std::endl;
@@ -440,9 +540,9 @@ public:
     map_type phi(get<function>(knots).data(), knots.size());
     map_type phi_test(get<function>(test).data(), test.size());
 
-    auto t0 = Clock::now();
+    t0 = Clock::now();
     auto Gmatrix = create_matrix_operator(knots, knots, self_kernel);
-    auto t1 = Clock::now();
+    t1 = Clock::now();
     out.out_op_setup_time
         << " " << std::setw(out.width)
         << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
@@ -473,7 +573,24 @@ public:
     helper_operator(Gdense, Gmatrix, phi, Gdense_test, phi_test, max_iter,
                     Nbuffer, out, 0);
 
-    if (D < 10) {
+    if (D < 4) {
+      const size_t n_subdomain = std::pow(Order, D);
+      const int Nbuffer = 4 * n_subdomain;
+
+      knots.init_neighbour_search(knots_box.bmin, knots_box.bmax,
+                                  Vector<bool, D>::Constant(false),
+                                  n_subdomain);
+      test.init_neighbour_search(test_box.bmin, test_box.bmax,
+                                 Vector<bool, D>::Constant(false), n_subdomain);
+      std::cout << "FINISHED FMM and H2 INIT NEIGHBOUR" << std::endl;
+
+      // need to recreate Gmatrix as order has changed
+      auto Gmatrix = create_matrix_operator(knots, knots, self_kernel);
+
+      // need to remap phi and phi_test as the order has probably changed
+      map_type phi(get<function>(knots).data(), knots.size());
+      map_type phi_test(get<function>(test).data(), test.size());
+
       std::cout << "CREATING FMM OPERATOR" << std::endl;
       t0 = Clock::now();
       auto G_FMM =
@@ -494,7 +611,7 @@ public:
 
       std::cout << "CREATING H2 OPERATOR" << std::endl;
       const double eta = 2.0;
-      const double beta = 2.0 / D;
+      const double beta = 1.0; // std::max(2.0 / D, 1.0);
       t0 = Clock::now();
       auto G_H2 = create_h2_operator(knots, knots, Order, kernel, self_kernel,
                                      eta, beta);
@@ -524,18 +641,14 @@ public:
 #endif // HAVE_EIGEN
   }
 
-  void test_param_sweep(void) {
+  template <typename Kernel> void helper_param_sweep_per_kernel() {
+    Kernel kernel;
+
     std::cout << "-------------------------------------------\n"
-              << "Running precon param sweep             ....\n"
+              << "Running precon param sweep with kernel = " << kernel.m_name
+              << "....\n"
               << "------------------------------------------" << std::endl;
 
-    /*
-    double gscale = std::pow(0.1, 2);
-    auto gaussian_kernel = [&](const auto &a, const auto &b) {
-      return std::exp(-(b - a).squaredNorm() * gscale);
-    };
-    */
-    matern_kernel kernel;
     output_files out(kernel.m_name);
 
     const size_t Ntest = 1000;
@@ -544,36 +657,46 @@ public:
     for (int N = 1000; N < 30000; N *= 2) {
       for (double sigma = 0.1; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
-        helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
-                              out);
-        helper_param_sweep<2>(rosenbrock<10>(N, Ntest), Ntest, kernel, jitter,
-                              out);
-        helper_param_sweep<2>(rosenbrock<8>(N, Ntest), Ntest, kernel, jitter,
-                              out);
-        helper_param_sweep<3>(rosenbrock<5>(N, Ntest), Ntest, kernel, jitter,
-                              out);
-        helper_param_sweep<4>(rosenbrock<4>(N, Ntest), Ntest, kernel, jitter,
-                              out);
-        helper_param_sweep<5>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
-                              out);
-        helper_param_sweep<8>(rosenbrock<2>(N, Ntest), Ntest, kernel, jitter,
-                              out);
+        for (size_t n_subdomain = 50; n_subdomain < 400; n_subdomain += 100) {
+          helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<2>(rosenbrock<10>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<2>(rosenbrock<8>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<3>(rosenbrock<5>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<4>(rosenbrock<4>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<5>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<4>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<10>(rosenbrock<2>(N, Ntest), Ntest, kernel, jitter,
+                                 n_subdomain, out);
+          helper_param_sweep<8>(rosenbrock<2>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<6>(rosenbrock<2>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, out);
+          helper_param_sweep<10>(rosenbrock<1>(N, Ntest), Ntest, kernel, jitter,
+                                 n_subdomain, out);
+        }
       }
     }
-    out.close();
+  }
 
-    /*
-    double c = 1.0 / 0.1;
-    double invc = 1.0 / c;
-    auto wendland_kernel = [&](const auto &a, const auto &b) {
-      const double r = (b - a).norm();
-      if (r < 2 * invc) {
-        return std::pow(2.0 - r * c, 4) * (1.0 + 2.0 * r * c);
-      } else {
-        return 0.0;
-      }
-    };
-    */
+  void test_gaussian(void) { helper_param_sweep_per_kernel<gaussian_kernel>(); }
+  void test_matern(void) { helper_param_sweep_per_kernel<matern_kernel>(); }
+  void test_exponential(void) {
+    helper_param_sweep_per_kernel<exponential_kernel>();
+  }
+  void test_rational_quadratic(void) {
+    helper_param_sweep_per_kernel<rational_quadratic_kernel>();
+  }
+  void test_inverse_multiquadric(void) {
+    helper_param_sweep_per_kernel<inverse_multiquadric_kernel>();
   }
 };
 
