@@ -2296,7 +2296,96 @@ public:
   }
 
   Eigen::ComputationInfo info() { return Eigen::Success; }
-}; // namespace Aboria
+};
+
+template <typename Solver> class NystromSwartzPreconditioner {
+  typedef double Scalar;
+  typedef size_t Index;
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
+  typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
+  typedef Solver solver_type;
+  typedef std::vector<size_t> storage_vector_type;
+  typedef std::vector<storage_vector_type> connectivity_type;
+
+protected:
+  bool m_isInitialized;
+
+private:
+  NystromPreconditioner<Solver> m_nystrom;
+  SchwartzPreconditioner<Solver> m_swartz;
+
+  Index m_rows;
+  Index m_cols;
+
+public:
+  typedef typename vector_type::StorageIndex StorageIndex;
+  enum {
+    ColsAtCompileTime = Eigen::Dynamic,
+    MaxColsAtCompileTime = Eigen::Dynamic
+  };
+
+  NystromSwartzPreconditioner() : m_isInitialized(false) {}
+
+  template <typename MatType>
+  explicit NystromSwartzPreconditioner(const MatType &mat) {
+    compute(mat);
+  }
+
+  Index rows() const { return m_rows; }
+  Index cols() const { return m_cols; }
+
+  NystromPreconditioner<Solver> &nystrom() { return m_nystrom; }
+  SchwartzPreconditioner<Solver> &swartz() { return m_swartz; }
+
+  template <typename MatType>
+  NystromSwartzPreconditioner &analyzePattern(const MatType &mat) {
+    m_rows = mat.rows();
+    m_cols = mat.cols();
+    m_nystrom.analyzePattern(mat);
+    m_swartz.analyzePattern(mat);
+    return *this;
+  }
+
+  template <typename MatType>
+  NystromSwartzPreconditioner &factorize(const MatType &mat) {
+    LOG(2, "NystromSwartzPreconditioner: factorizing domain");
+    m_nystrom.factorize(mat);
+    m_swartz.factorize(mat);
+
+    m_isInitialized = true;
+
+    return *this;
+  }
+
+  template <typename MatType>
+  NystromSwartzPreconditioner &compute(const MatType &mat) {
+    analyzePattern(mat);
+    return factorize(mat);
+  }
+
+  /** \internal */
+  template <typename Rhs, typename Dest>
+  void _solve_impl(const Rhs &b, Dest &x) const {
+    m_nystrom._solve_impl(b, x);
+    vector_type x_tmp(x.size());
+    m_swartz._solve_impl(b, x_tmp);
+    x += x_tmp;
+  }
+
+  template <typename Rhs>
+  inline const Eigen::Solve<NystromSwartzPreconditioner, Rhs>
+  solve(const Eigen::MatrixBase<Rhs> &b) const {
+    eigen_assert(
+        static_cast<typename Rhs::Index>(m_rows) == b.rows() &&
+        "NystromSwartzPreconditioner::solve(): invalid number of rows of the "
+        "right hand side matrix b");
+    eigen_assert(m_isInitialized &&
+                 "NystromSwartzPreconditioner is not initialized.");
+    return Eigen::Solve<NystromSwartzPreconditioner, Rhs>(*this, b.derived());
+  }
+
+  Eigen::ComputationInfo info() { return Eigen::Success; }
+};
 
 } // namespace Aboria
 
