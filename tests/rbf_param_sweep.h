@@ -88,7 +88,7 @@ public:
     static constexpr const char *m_name = "exp";
     void set_sigma(const double sigma) {
       m_sigma = sigma;
-      m_scale = 1.0 / std::pow(sigma, 2);
+      m_scale = 1.0 / sigma;
     }
     template <unsigned int D>
     double operator()(const Vector<double, D> &a,
@@ -152,7 +152,10 @@ public:
             << std::setw(width) << "D " << std::setw(width) << "order "
             << std::setw(width) << "Nsubdomain " << std::setw(width) << "chol "
             << std::setw(width) << "diag " << std::setw(width) << "srtz "
-            << std::setw(width) << "nystrom " << std::endl;
+            << std::setw(width)
+            << "nystrom "
+            //<< std::setw(width) << "nys_srtz "
+            << std::endl;
       };
 
       auto op_header = [width = width + 1](auto &out) {
@@ -313,10 +316,11 @@ public:
       auto t1 = Clock::now();
       Eigen::VectorXd gamma = solver.solve(phi);
       auto t2 = Clock::now();
+      const double solve_error = (G * gamma - phi).norm() / phi.norm();
 
       for (int i = 0; i < 2; ++i) {
         out.out_solve_iterations[i] << " " << std::setw(out.width) << 1;
-        out.out_solve_error[i] << " " << std::setw(out.width) << 0;
+        out.out_solve_error[i] << " " << std::setw(out.width) << solve_error;
         out.out_solve_setup_time[i]
             << " " << std::setw(out.width)
             << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
@@ -377,6 +381,7 @@ public:
       Eigen::BiCGSTAB<Op, Eigen::IdentityPreconditioner> bicg;
 
       bicg.setMaxIterations(max_iter);
+      // bicg.setTolerance(X);
       t0 = Clock::now();
       bicg.compute(G);
       t1 = Clock::now();
@@ -439,6 +444,7 @@ public:
           << " " << std::setw(out.width)
           << (phi_proposed - phi_test).norm() / phi_test.norm();
 
+      std::cout << "SOLVING Nystrom" << std::endl;
       Eigen::BiCGSTAB<Op, NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
           bicg3;
       bicg3.setMaxIterations(max_iter);
@@ -476,6 +482,47 @@ public:
       out.out_solve_test_error[do_solve - 1]
           << " " << std::setw(out.width)
           << (phi_proposed - phi_test).norm() / phi_test.norm();
+
+      /*
+      std::cout << "SOLVING Nystrom Swartz" << std::endl;
+      Eigen::BiCGSTAB<Op,
+                      NystromSwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+          bicg4;
+      bicg4.setMaxIterations(max_iter);
+      bicg4.preconditioner().nystrom().set_number_of_random_particles(
+          Ninducing);
+      bicg4.preconditioner().nystrom().set_lambda(1e-5);
+      bicg4.preconditioner().swartz().set_max_buffer_n(Nbuffer);
+      t0 = Clock::now();
+      bicg4.compute(G);
+      t1 = Clock::now();
+      gamma = bicg4.solve(phi);
+      t2 = Clock::now();
+
+      out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                             << bicg4.iterations();
+      out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                        << bicg4.error();
+      out.out_solve_setup_time[do_solve - 1]
+          << " " << std::setw(out.width)
+          << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                 .count();
+      out.out_solve_solve_time[do_solve - 1]
+          << " " << std::setw(out.width)
+          << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                 .count();
+      out.out_solve_solve_memory[do_solve - 1]
+          << " " << std::setw(out.width)
+          << (Ninducing * G.rows() + std::pow(Ninducing, 2)) * sizeof(double) /
+                     1e9 +
+                 ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+
+      phi_proposed = Gtest * gamma;
+
+      out.out_solve_test_error[do_solve - 1]
+          << " " << std::setw(out.width)
+          << (phi_proposed - phi_test).norm() / phi_test.norm();
+          */
     }
   }
 
@@ -655,7 +702,7 @@ public:
     const double jitter = 1e-5;
 
     for (int N = 1000; N < 30000; N *= 2) {
-      for (double sigma = 0.1; sigma < 2.0; sigma += 0.4) {
+      for (double sigma = 0.9; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
         for (size_t n_subdomain = 50; n_subdomain < 400; n_subdomain += 100) {
           helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
