@@ -145,6 +145,7 @@ protected:
   typedef typename base_type::int_d int_d;
   typedef typename base_type::const_row_reference const_row_reference;
   typedef typename base_type::const_col_reference const_col_reference;
+  bool m_evalute_on_gpu;
 
 public:
   typedef typename base_type::Block Block;
@@ -155,7 +156,10 @@ public:
 
   KernelDense(const RowElements &row_elements, const ColElements &col_elements,
               const F &function)
-      : base_type(row_elements, col_elements, function){};
+      : base_type(row_elements, col_elements, function),
+        m_evalute_on_gpu(false){};
+
+  void evaluate_on_gpu() { m_evalute_on_gpu = true; }
 
   template <typename Derived>
   void assemble(const Eigen::DenseBase<Derived> &matrix) const {
@@ -224,39 +228,22 @@ public:
     CHECK(static_cast<size_t>(rhs.size()) == this->cols(),
           "rhs size is inconsistent");
 
-#ifdef HAVE_THRUST
     if (m_evalute_on_gpu) {
-      thrust::device_vector<double> rhs_gpu(rhs.data(),
-                                            rhs.data() + rhs.size());
-      thrust::device_vector<double> lhs_gpu(lhs.size());
-      thrust::counting_iterator<int> count(0);
-      thrust::for_each(count, count + lhs.size(),
-                       [rhs = iterator_to_raw_pointer(rhs_gpu),
-                        lhs = iterator_to_raw_pointer(lhs_gpu),
-                        aptr = iterator_to_raw_pointer(a.begin()),
-                        bptr = iterator_to_raw_pointer(b.begin()), nb = nb,
-                        f = this->m_function] CUDA_HOST_DEVICE(const int i) {
-                         const_row_reference ai = aptr[i];
-                         for (size_t j = 0; j < nb; ++j) {
-                           const_col_reference bj = bptr[j];
-                           lhs.template segment<BlockRows>(i * BlockRows) +=
-                               this->m_function(ai, bj) *
-                               rhs.template segment<BlockCols>(j * BlockCols);
-                         }
-                       });
-    }
-#endif
+      gpu_eval(lhs.derived().data(), lhs.size(), rhs.derived().data(),
+               rhs.size());
+    } else {
 
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < na; ++i) {
-      const_row_reference ai = a[i];
-      for (size_t j = 0; j < nb; ++j) {
-        const_col_reference bj = b[j];
-        lhs.template segment<BlockRows>(i * BlockRows) +=
-            this->m_function(ai, bj) *
-            rhs.template segment<BlockCols>(j * BlockCols);
+      for (size_t i = 0; i < na; ++i) {
+        const_row_reference ai = a[i];
+        for (size_t j = 0; j < nb; ++j) {
+          const_col_reference bj = b[j];
+          lhs.template segment<BlockRows>(i * BlockRows) +=
+              this->m_function(ai, bj) *
+              rhs.template segment<BlockCols>(j * BlockCols);
+        }
       }
     }
   }
@@ -277,16 +264,58 @@ public:
     CHECK(lhs.size() == na, "lhs size is inconsistent");
     CHECK(rhs.size() == nb, "rhs size is inconsistent");
 
+    if (m_evalute_on_gpu) {
+      gpu_eval(lhs.data(), lhs.size(), rhs.data(), rhs.size());
+    } else {
+
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < na; ++i) {
-      const_row_reference ai = a[i];
-      for (size_t j = 0; j < nb; ++j) {
-        const_col_reference bj = b[j];
-        lhs[i] += this->m_function(ai, bj) * rhs[j];
+      for (size_t i = 0; i < na; ++i) {
+        const_row_reference ai = a[i];
+        for (size_t j = 0; j < nb; ++j) {
+          const_col_reference bj = b[j];
+          lhs[i] += this->m_function(ai, bj) * rhs[j];
+        }
       }
     }
+  }
+
+private:
+  void gpu_eval(double *lhs, size_t lhs_size, const double *rhs,
+                size_t rhs_size) const {
+    const RowElements &a = this->m_row_elements;
+    const ColElements &b = this->m_col_elements;
+
+    const size_t na = a.size();
+    const size_t nb = b.size();
+
+#ifdef HAVE_THRUST
+    thrust::device_vector<double> rhs_gpu(rhs, rhs + rhs_size);
+    thrust::device_vector<double> lhs_gpu(lhs_size);
+    thrust::counting_iterator<int> count(0);
+    thrust::for_each(count, count + na,
+                     [rhsptr = iterator_to_raw_pointer(rhs_gpu.begin()),
+                      lhsptr = iterator_to_raw_pointer(lhs_gpu.begin()),
+                      aptr = iterator_to_raw_pointer(a.begin()),
+                      bptr = iterator_to_raw_pointer(b.begin()), nb = nb,
+                      f = this->m_function] CUDA_HOST_DEVICE(const int i) {
+                       const_row_reference ai = *(aptr + i);
+                       for (size_t j = 0; j < nb; ++j) {
+                         const_col_reference bj = *(bptr + j);
+                         Block feval(f(ai, bj));
+                         for (size_t ii = 0; ii < BlockRows; ++ii) {
+                           for (size_t jj = 0; jj < BlockCols; ++jj) {
+                             lhsptr[i * BlockRows + ii] +=
+                                 feval(ii, jj) * rhsptr[j * BlockCols + jj];
+                           }
+                         }
+                       }
+                     });
+    thrust::copy(lhs_gpu.begin(), lhs_gpu.end(), lhs);
+#else
+    CHECK(false, "need to compile with thrust to evaluate on gpu");
+#endif
   }
 };
 

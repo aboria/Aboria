@@ -60,8 +60,8 @@ public:
       m_scale = std::sqrt(3.0) / sigma;
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       const double r = (b - a).norm();
       return (1.0 + m_scale * r) * std::exp(-r * m_scale);
     };
@@ -76,8 +76,8 @@ public:
       m_scale = 1.0 / std::pow(sigma, 2);
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       return std::exp(-(b - a).squaredNorm() * m_scale);
     };
   };
@@ -91,8 +91,8 @@ public:
       m_scale = 1.0 / sigma;
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       return std::exp(-(b - a).norm() * m_scale);
     };
   };
@@ -106,8 +106,8 @@ public:
       m_scale = std::pow(sigma, 2);
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       const double r2 = (b - a).squaredNorm();
       return 1.0 - r2 / (r2 + m_scale);
     };
@@ -122,8 +122,8 @@ public:
       m_scale = std::pow(sigma, 2);
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       const double r2 = (b - a).squaredNorm();
       return 1.0 / std::sqrt(r2 + m_scale);
     };
@@ -304,8 +304,8 @@ public:
   }
 
   template <typename Op, typename TrueOp, typename TestOp>
-  void helper_operator_matrix(const Op &G, const TrueOp &Gtrue,
-                              const Eigen::VectorXd &phi, const TestOp &Gtest,
+  void helper_operator_matrix(Op &G, const TrueOp &Gtrue,
+                              const Eigen::VectorXd &phi, TestOp &Gtest,
                               const Eigen::VectorXd &phi_test,
                               output_files &out, bool do_solve) {
 
@@ -531,6 +531,7 @@ public:
                           const Kernel &kernel, const double jitter,
                           const size_t Nsubdomain, output_files &out) {
 #ifdef HAVE_EIGEN
+    typedef typename Particles_t::raw_const_reference raw_const_reference;
 
     char name[50] = "program name";
     char *argv[] = {name, NULL};
@@ -575,7 +576,8 @@ public:
                                Vector<bool, D>::Constant(false), n_subdomain);
     std::cout << "FINISHED INIT NEIGHBOUR" << std::endl;
 
-    auto self_kernel = [&](auto a, auto b) {
+    auto self_kernel = [=] CUDA_HOST_DEVICE(raw_const_reference a,
+                                            raw_const_reference b) {
       double ret = kernel(get<position>(a), get<position>(b));
       if (get<id>(a) == get<id>(b)) {
         ret += jitter;
@@ -707,6 +709,7 @@ public:
         for (size_t n_subdomain = 50; n_subdomain < 400; n_subdomain += 100) {
           helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
+          /*
           helper_param_sweep<2>(rosenbrock<10>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
           helper_param_sweep<2>(rosenbrock<8>(N, Ntest), Ntest, kernel, jitter,
@@ -729,6 +732,7 @@ public:
                                 n_subdomain, out);
           helper_param_sweep<10>(rosenbrock<1>(N, Ntest), Ntest, kernel, jitter,
                                  n_subdomain, out);
+                                 */
         }
       }
     }
