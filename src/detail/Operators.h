@@ -40,21 +40,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <limits>
 #include <type_traits>
 
-#define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
+//#define EIGEN_YES_I_KNOW_SPARSE_MODULE_IS_NOT_STABLE_YET
 #include <Eigen/Core>
 #include <Eigen/Dense>
 #include <Eigen/IterativeLinearSolvers>
-#include <Eigen/Sparse>
+//#include <Eigen/Sparse>
+
 #include <unsupported/Eigen/IterativeSolvers>
 
 namespace Eigen {
-namespace internal {
-// MatrixReplacement looks-like a SparseMatrix, so let's inherits its traits:
-template <unsigned int NI, unsigned int NJ, typename Blocks>
-struct traits<Aboria::MatrixReplacement<NI, NJ, Blocks>>
-    : public Eigen::internal::traits<Eigen::SparseMatrix<double>> {};
-} // namespace internal
-
 template <typename T, unsigned int N> struct NumTraits<Aboria::Vector<T, N>> {
   typedef Aboria::Vector<T, N> Scalar;
   typedef Aboria::Vector<T, N> Real;
@@ -199,38 +193,4 @@ void evalTo_impl(Dest &y, const MatrixReplacement<NI, NJ, Blocks> &lhs,
 } // namespace detail
 } // namespace Aboria
 
-// Implementation of MatrixReplacement * Eigen::DenseVector though a
-// specialization of internal::generic_product_impl:
-namespace Eigen {
-namespace internal {
-template <typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks>
-struct generic_product_impl<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
-                            SparseShape, DenseShape,
-                            GemvProduct> // GEMV stands for matrix-vector
-    : generic_product_impl_base<
-          Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
-          generic_product_impl<Aboria::MatrixReplacement<NI, NJ, Blocks>,
-                               Rhs>> {
-
-  typedef
-      typename Product<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs>::Scalar
-          Scalar;
-  template <typename Dest>
-  CUDA_HOST_DEVICE static void
-  scaleAndAddTo(Dest &y, const Aboria::MatrixReplacement<NI, NJ, Blocks> &lhs,
-                const Rhs &rhs, const Scalar &alpha) {
-    // This method should implement "y += alpha * lhs * rhs" inplace,
-    // however, for iterative solvers, alpha is always equal to 1, so let's not
-    // bother about it.
-#ifdef __CUDA_ARCH__
-    ERROR_CUDA("MatrixReplacement class unusable from device code");
-#else
-    assert(alpha == Scalar(1) && "scaling is not implemented");
-    evalTo_impl(y, lhs, rhs, Aboria::detail::make_index_sequence<NI * NJ>());
-#endif
-  }
-};
-} // namespace internal
-} // namespace Eigen
-
-#endif // OPERATORS_H_
+#endif // OPERATORS_DETAIL_H_
