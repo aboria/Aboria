@@ -1133,7 +1133,6 @@ protected:
 private:
   double m_neighbourhood_buffer;
   double m_max_buffer_n;
-  double m_coarse_grid_n;
 
   connectivity_type m_domain_indicies;
   connectivity_type m_domain_buffer;
@@ -1151,7 +1150,7 @@ public:
   SchwartzPreconditioner()
       : m_isInitialized(false),
         m_neighbourhood_buffer(1e5 * std::numeric_limits<double>::epsilon()),
-        m_max_buffer_n(300), m_coarse_grid_n(0) {}
+        m_max_buffer_n(300) {}
 
   template <typename MatType>
   explicit SchwartzPreconditioner(const MatType &mat) {
@@ -1165,7 +1164,6 @@ public:
     m_neighbourhood_buffer = arg;
   }
 
-  void set_coarse_grid_n(int arg) { m_coarse_grid_n = arg; }
   void set_max_buffer_n(int arg) { m_max_buffer_n = arg; }
 
   template <typename Kernel>
@@ -1232,93 +1230,6 @@ public:
         // ASSERT(buffer.size() > 0, "no particles in buffer");
         ASSERT(indicies.size() > 0, "no particles in domain");
       }
-    }
-
-    // add coarse grid
-    if (m_coarse_grid_n > 0) {
-      m_domain_indicies.push_back(connectivity_type::value_type());
-      m_domain_buffer.push_back(connectivity_type::value_type());
-      storage_vector_type &indicies = m_domain_indicies.back();
-      auto bounds = query.get_bounds();
-      indicies.resize(std::pow(m_coarse_grid_n + 1, query_type::dimension));
-      const double_d dx = (bounds.bmax - bounds.bmin) / m_coarse_grid_n -
-                          std::numeric_limits<double>::epsilon();
-      lattice_iterator<query_type::dimension> it(
-          int_d::Constant(0), int_d::Constant(m_coarse_grid_n + 1),
-          int_d::Constant(0));
-      std::unordered_map<size_t, std::pair<child_iterator, size_t>> counts;
-      for (; it != false; ++it) {
-        const double_d point = (*it) * dx + bounds.bmin;
-        const child_iterator ci = query.get_bucket(point);
-        auto bucket_index = query.get_bucket_index(*ci);
-        auto cit = counts.find(bucket_index);
-        if (cit != counts.end()) {
-          cit->second.second++;
-        } else {
-          counts[bucket_index] = std::make_pair(ci, 1);
-        }
-      }
-      // for (auto i : counts) {
-      // std::cout << "bucket index " << i.first << " with bounds "
-      //<< query.get_bounds(i.second.first) << " has " << i.second.second
-      //<< " counts" << std::endl;
-      //}
-
-      int out_index = 0;
-      std::for_each(counts.begin(), counts.end(), [&](auto i) {
-        const child_iterator &ci = i.second.first;
-        size_t count = i.second.second;
-        auto pit = query.get_bucket_particles(*ci);
-        auto num_particles = pit.distance_to_end();
-        std::vector<int> bucket_indices(num_particles);
-        std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-        std::shuffle(bucket_indices.begin(), bucket_indices.end(), generator);
-        const int trunc_count = std::min(count, bucket_indices.size());
-        std::transform(
-            bucket_indices.begin(), bucket_indices.begin() + trunc_count,
-            indicies.begin() + out_index, [&](const int j) {
-              return (&get<position>(*(pit + j)) - &get<position>(a)[0]) +
-                     start_row;
-            });
-        // std::cout << "looking for " << count
-        //<< " samples in buffer. Found at indicies ";
-        // for (size_t i = out_index; i < out_index + trunc_count; ++i) {
-        //  std::cout << buffer[i] << " ";
-        //}
-        // std::cout << std::endl;
-        out_index += trunc_count;
-      });
-      indicies.resize(out_index);
-      ASSERT(indicies.size() > 0, "no particles in domain");
-
-#ifdef HAVE_CAIRO_TURN_OFF
-      const int image_size = 512;
-      cairo_surface_t *surface =
-          cairo_svg_surface_create("coarse_grid.svg", image_size, image_size);
-      cairo_svg_surface_restrict_to_version(surface, CAIRO_SVG_VERSION_1_2);
-      cairo_t *cr = cairo_create(surface);
-      const double lw = 0.007;
-
-      cairo_scale(cr, image_size, image_size);
-      cairo_set_line_width(cr, lw);
-      cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
-      cairo_move_to(cr, bounds.bmin[0], bounds.bmin[1]);
-      cairo_line_to(cr, bounds.bmax[0], bounds.bmin[1]);
-      cairo_line_to(cr, bounds.bmax[0], bounds.bmax[1]);
-      cairo_line_to(cr, bounds.bmin[0], bounds.bmax[1]);
-      cairo_close_path(cr);
-      cairo_stroke(cr);
-
-      const double PI = boost::math::constants::pi<double>();
-      cairo_set_source_rgba(cr, 0.5, 0, 0, 0.5);
-      for (auto i : indicies) {
-        auto &pos = get<position>(a)[i];
-        cairo_arc(cr, pos[0], pos[1], lw, 0, 2 * PI);
-        cairo_fill(cr);
-      }
-      cairo_destroy(cr);
-      cairo_surface_destroy(surface);
-#endif
     }
   }
 
