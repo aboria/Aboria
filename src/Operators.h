@@ -542,14 +542,17 @@ create_block_operator(const MatrixReplacement<1, 1, T> &... operators) {
 // specialization of internal::generic_product_impl:
 namespace Eigen {
 namespace internal {
-template <typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks>
+// FIXME: nvcc does not detect mat-vec producs as GemvProduct, so template on
+// this so that this specialisation is used for *all* products with
+// MatrixReplacement
+template <typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks,
+          int ProductType>
 struct generic_product_impl<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
-                            SparseShape, DenseShape,
-                            GemvProduct> // GEMV stands for matrix-vector
+                            SparseShape, DenseShape, ProductType>
     : generic_product_impl_base<
           Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
           generic_product_impl<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
-                               SparseShape, DenseShape, GemvProduct>> {
+                               SparseShape, DenseShape, ProductType>> {
 
   typedef
       typename Product<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs>::Scalar
