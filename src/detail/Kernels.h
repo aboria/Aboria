@@ -89,6 +89,184 @@ struct kernel_helper {
   static_assert(BlockCols >= 0, "element type cols must be fixed");
 };
 
+template <typename RowElements, typename ColElements, typename F>
+struct gemv_helper;
+
+// gemv_helper for std::vector containers
+template <typename RowVar, template <typename> class RowSearch, typename ColVar,
+          template <typename> class ColSearch, unsigned int Dim, typename F>
+struct gemv_helper<Particles<RowVar, Dim, std::vector, RowSearch>,
+                   Particles<ColVar, Dim, std::vector, ColSearch>, F> {
+  typedef Particles<RowVar, Dim, std::vector, RowSearch> RowElements;
+  typedef Particles<ColVar, Dim, std::vector, ColSearch> ColElements;
+  typedef typename RowElements::raw_const_reference const_row_reference;
+  typedef typename ColElements::raw_const_reference const_col_reference;
+  typedef typename kernel_helper<RowElements, ColElements, F>::Block Block;
+  static const int BlockRows =
+      kernel_helper<RowElements, ColElements, F>::BlockRows;
+  static const int BlockCols =
+      kernel_helper<RowElements, ColElements, F>::BlockCols;
+
+  template <typename DerivedLHS, typename DerivedRHS>
+  static void evaluate(const RowElements &a, const ColElements &b, const F &f,
+                       Eigen::DenseBase<DerivedLHS> &lhs,
+                       const Eigen::DenseBase<DerivedRHS> &rhs) {
+
+    const size_t na = a.size();
+    const size_t nb = b.size();
+
+    CHECK(static_cast<size_t>(lhs.size()) == na * BlockRows,
+          "lhs size is inconsistent");
+    CHECK(static_cast<size_t>(rhs.size()) == nb * BlockCols,
+          "rhs size is inconsistent");
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < na; ++i) {
+      const_row_reference ai = a[i];
+      for (size_t j = 0; j < nb; ++j) {
+        const_col_reference bj = b[j];
+        lhs.template segment<BlockRows>(i * BlockRows) +=
+            f(ai, bj) * rhs.template segment<BlockCols>(j * BlockCols);
+      }
+    }
+  }
+
+  template <typename LHSType, typename RHSType>
+  static void evaluate(const RowElements &a, const ColElements &b, const F &f,
+                       std::vector<LHSType> &lhs,
+                       const std::vector<RHSType> &rhs) {
+
+    const size_t na = a.size();
+    const size_t nb = b.size();
+
+    CHECK(lhs.size() == na, "lhs size is inconsistent");
+    CHECK(rhs.size() == nb, "rhs size is inconsistent");
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < na; ++i) {
+      const_row_reference ai = a[i];
+      for (size_t j = 0; j < nb; ++j) {
+        const_col_reference bj = b[j];
+        lhs[i] += f(ai, bj) * rhs[j];
+      }
+    }
+  }
+};
+
+#ifdef HAVE_THRUST
+// gemv_helper for device::vector containers
+template <typename RowVar, template <typename> class RowSearch, typename ColVar,
+          template <typename> class ColSearch, unsigned int Dim, typename F>
+struct gemv_helper<Particles<RowVar, Dim, thrust::device_vector, RowSearch>,
+                   Particles<ColVar, Dim, thrust::device_vector, ColSearch>,
+                   F> {
+  typedef Particles<RowVar, Dim, thrust::device_vector, RowSearch> RowElements;
+  typedef Particles<ColVar, Dim, thrust::device_vector, ColSearch> ColElements;
+  typedef typename RowElements::raw_const_reference const_row_reference;
+  typedef typename ColElements::raw_const_reference const_col_reference;
+  typedef typename kernel_helper<RowElements, ColElements, F>::Block Block;
+  static const int BlockRows =
+      kernel_helper<RowElements, ColElements, F>::BlockRows;
+  static const int BlockCols =
+      kernel_helper<RowElements, ColElements, F>::BlockCols;
+
+  template <typename DerivedLHS, typename DerivedRHS>
+  static void evaluate(const RowElements &a, const ColElements &b, const F &f,
+                       Eigen::DenseBase<DerivedLHS> &lhs,
+                       const Eigen::DenseBase<DerivedRHS> &rhs) {
+
+    static_assert(std::is_same<typename DerivedLHS::Scalar, double>::value,
+                  "type of std::vector input must be double");
+    static_assert(std::is_same<typename DerivedRHS::Scalar, double>::value,
+                  "type of std::vector input must be double");
+    const size_t na = a.size();
+    const size_t nb = b.size();
+
+    CHECK(static_cast<size_t>(lhs.size()) == na * BlockRows,
+          "lhs size is inconsistent");
+    CHECK(static_cast<size_t>(rhs.size()) == nb * BlockCols,
+          "rhs size is inconsistent");
+
+    thrust::device_vector<double> rhs_gpu(rhs.derived().data(),
+                                          rhs.derived().data() + rhs.size());
+    thrust::device_vector<double> lhs_gpu(lhs.size());
+    thrust::counting_iterator<int> count(0);
+
+    // note: init-captures not supported for extended __host__ __device__
+    // lambdas
+    thrust::for_each(count, count + na,
+                     [rhsptr = thrust::raw_pointer_cast(rhs_gpu.data()),
+                      lhsptr = thrust::raw_pointer_cast(lhs_gpu.data()),
+                      aptr = iterator_to_raw_pointer(a.begin()),
+                      bptr = iterator_to_raw_pointer(b.begin()), nb = nb,
+                      f = f] __device__(const int i) {
+                       const_row_reference ai = *(aptr + i);
+                       for (size_t j = 0; j < nb; ++j) {
+                         const_col_reference bj = *(bptr + j);
+                         Block feval(f(ai, bj));
+                         for (size_t ii = 0; ii < BlockRows; ++ii) {
+                           for (size_t jj = 0; jj < BlockCols; ++jj) {
+                             lhsptr[i * BlockRows + ii] +=
+                                 feval(ii, jj) * rhsptr[j * BlockCols + jj];
+                           }
+                         }
+                       }
+                     });
+    thrust::copy(lhs_gpu.begin(), lhs_gpu.end(), lhs.derived().data());
+  }
+
+  template <typename LHSType, typename RHSType>
+  static void evaluate(const RowElements &a, const ColElements &b, const F &f,
+                       std::vector<LHSType> &lhs,
+                       const std::vector<RHSType> &rhs) {
+
+    static_assert(std::is_same<LHSType, double>::value,
+                  "type of std::vector input must be double");
+    static_assert(std::is_same<RHSType, double>::value,
+                  "type of std::vector input must be double");
+
+    const size_t na = a.size();
+    const size_t nb = b.size();
+
+    CHECK(static_cast<size_t>(lhs.size()) == na * BlockRows,
+          "lhs size is inconsistent");
+    CHECK(static_cast<size_t>(rhs.size()) == nb * BlockCols,
+          "rhs size is inconsistent");
+
+    thrust::device_vector<double> rhs_gpu(rhs.begin(), rhs.end());
+    thrust::device_vector<double> lhs_gpu(lhs.size());
+    thrust::counting_iterator<int> count(0);
+
+    // note: init-captures not supported for extended __host__ __device__
+    // lambdas
+    thrust::for_each(count, count + na,
+                     [rhsptr = thrust::raw_pointer_cast(rhs_gpu.data()),
+                      lhsptr = thrust::raw_pointer_cast(lhs_gpu.data()),
+                      aptr = iterator_to_raw_pointer(a.begin()),
+                      bptr = iterator_to_raw_pointer(b.begin()), nb = nb,
+                      f = f] __device__(const int i) {
+                       const_row_reference ai = *(aptr + i);
+                       for (size_t j = 0; j < nb; ++j) {
+                         const_col_reference bj = *(bptr + j);
+                         Block feval(f(ai, bj));
+                         for (size_t ii = 0; ii < BlockRows; ++ii) {
+                           for (size_t jj = 0; jj < BlockCols; ++jj) {
+                             lhsptr[i * BlockRows + ii] +=
+                                 feval(ii, jj) * rhsptr[j * BlockCols + jj];
+                           }
+                         }
+                       }
+                     });
+    thrust::copy(lhs_gpu.begin(), lhs_gpu.end(), lhs.begin());
+  }
+};
+
+#endif
+
 template <size_t D, typename F> struct position_kernel_helper {
   static const unsigned int dimension = D;
   typedef Vector<double, dimension> double_d;

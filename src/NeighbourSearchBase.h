@@ -1440,6 +1440,157 @@ private:
   const Query *m_query;
 };
 
+template <typename Query> class breadth_first_iterator {
+  typedef breadth_first_iterator<Query> iterator;
+  typedef typename Query::child_iterator child_iterator;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+
+public:
+  typedef typename std::vector<child_iterator> value_type;
+  typedef typename std::vector<child_iterator> *pointer;
+  typedef typename std::vector<child_iterator> *pointer;
+  typedef typename std::vector<child_iterator> &reference;
+  typedef std::forward_iterator_tag iterator_category;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  breadth_first_iterator() {}
+
+  /// this constructor is used to start the iterator at the head of a bucket
+  /// list
+  CUDA_HOST_DEVICE
+  breadth_first_iterator(const child_iterator &start_node, const Query *query)
+      : m_query(query), m_level_num(0) {
+    if (start_node != false) {
+      // see how many children is
+      child_iterator tmp = start_node;
+
+      m_level.push_back(start_node);
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tbreadth_first_iterator (constructor): start is false, no "
+             "children to search.");
+#endif
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  reference operator*() const { return dereference(); }
+  CUDA_HOST_DEVICE
+  reference operator->() { return dereference(); }
+  CUDA_HOST_DEVICE
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+  CUDA_HOST_DEVICE
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+  CUDA_HOST_DEVICE
+  size_t operator-(iterator start) const {
+    size_t count = 0;
+    while (start != *this) {
+      start++;
+      count++;
+    }
+    return count;
+  }
+  CUDA_HOST_DEVICE
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+private:
+  friend class boost::iterator_core_access;
+
+  CUDA_HOST_DEVICE
+  void increment() {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tincrement (breadth_first_iterator): m_level size = "
+               << m_level.size() << " m_leafs size = " << m_leafs.size());
+#endif
+    // m_level [ci0, ci1, ci2, ...]
+    // exclusive scan for # children + # leafs: n_child
+    // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
+    // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
+    auto fcount = [query = m_query] CUDA_HOST_DEVICE(const child_iterator &ci) {
+      const int nchild = query->child_iterator(ci).distance_to_end();
+      return Vector<int, 2>(nchild, nchild == 0);
+    };
+    m_counts.resize(m_level.size());
+    detail::transform_exclusive_scan(
+        m_level.begin(), m_level.end(), m_counts.begin(), fcount,
+        Vector<int, 2>::Constant(0),
+        [] CUDA_HOST_DEVICE(const Vector<int, 2> &a, const Vector<int, 2> &b) {
+          return a + b;
+        };);
+
+    // resize for new children and leafs
+    const Vector<int, 2> nchildren = m_counts.back() + fcount(m_level.back());
+    m_next_level.resize(nchildren[0]);
+    const size_t m_leafs_old_size = m_leafs.size();
+    m_leafs.resize(m_leafs.size() + nchildren[1]);
+
+    // tabulate m_level to copy children to m_next_level, or leafs to
+    // m_leafs
+    detail::tabulate(m_level.begin(), m_level.end(),
+                     [counts = iterator_to_raw_pointer(m_counts.begin()),
+                      leafs = iterator_to_raw_pointer(m_leafs.begin()),
+                      leafs_old_size = m_leafs_old_size, query = m_query,
+                      next_level = iterator_to_raw_pointer(
+                          m_next_level.begin())] CUDA_HOST_DEVICE(const int i) {
+                       auto ci = query->child_iterator(leafs[i]);
+                       if (query->is_leaf_node(*ci)) {
+                         int leafs_index = leafs_old_size + counts[i][1];
+                         leafs[leafs_index] = ci;
+                       } else {
+                         for (int next_level_index = counts[i][0]; ci != false;
+                              ++ci, ++next_level_index) {
+                           next_level[next_level_index] = ci;
+                         }
+                       }
+                     });
+
+    // swap level back to m_level and increment level count
+    m_level.swap(m_next_level);
+    m_level_num++;
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tend increment (breadth_first_iterator):");
+#endif
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(iterator const &other) const {
+    return m_query == other.m_query && m_level_num == other.m_level_num;
+  }
+
+  CUDA_HOST_DEVICE bool equal(const bool other) const {
+    return m_level.empty();
+  }
+
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_level.empty() ? m_leafs : m_level; }
+
+  std::vector<child_iterator> m_level;
+  std::vector<child_iterator> m_next_level;
+  std::vector<Vector<int, 2>> m_counts;
+  std::vector<child_iterator> m_leafs;
+  size_t m_level_num;
+  const Query *m_query;
+};
+
 template <typename Query, int LNormNumber> class tree_query_iterator {
   typedef tree_query_iterator<Query, LNormNumber> iterator;
   typedef typename Query::child_iterator child_iterator;
@@ -1480,10 +1631,10 @@ public:
 
     if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
-      LOG(3,
-          "\ttree_query_iterator (constructor) with query pt = "
-              << m_query_point
-              << "): search region outside domain or no children to search.");
+      LOG(3, "\ttree_query_iterator (constructor) with query pt = "
+                 << m_query_point
+                 << "): search region outside domain or no children to "
+                    "search.");
 #endif
     } else {
 #ifndef __CUDA_ARCH__
@@ -1847,6 +1998,11 @@ public:
   }
 
   CUDA_HOST_DEVICE
+  int distance_to_end() const {
+    return lattice_iterator(m_min, m_max, m_max) - *this;
+  }
+
+  CUDA_HOST_DEVICE
   inline bool operator==(const iterator &rhs) const { return equal(rhs); }
 
   CUDA_HOST_DEVICE
@@ -2197,7 +2353,8 @@ private:
         potential_bucket = m_index[i] >= 0;
       }
 
-      // std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant =
+      // std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant
+      // =
       // "<<m_quadrant << std::endl;
 
       // if index is outside domain don't bother calcing
@@ -2223,7 +2380,8 @@ private:
       if (potential_bucket)
         break;
 
-      // must be outside distance or outside domain, so reset index back to min
+      // must be outside distance or outside domain, so reset index back to
+      // min
       m_index[i] = m_min[i];
 
       // if gone through all dimensions, move to next quadrant
