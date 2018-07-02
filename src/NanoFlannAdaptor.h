@@ -313,6 +313,8 @@ public:
     }
   }
 
+  int distance_to_end() const { return 2 - m_high; }
+
   int get_child_number() const { return m_high; }
 
   bool is_high() const { return m_high > 0; }

@@ -617,6 +617,9 @@ public:
   int get_child_number() const { return m_high; }
 
   CUDA_HOST_DEVICE
+  int distance_to_end() const { return ((1 << D) - m_high); }
+
+  CUDA_HOST_DEVICE
   bool is_high(const size_t i) const { return m_high & (1 << (D - 1 - i)); }
 
   CUDA_HOST_DEVICE
