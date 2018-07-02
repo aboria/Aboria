@@ -478,12 +478,58 @@ public:
 #endif // HAVE_CAIRO
   }
 
+  template <template <typename, typename> class Vector,
+            template <typename> class SearchMethod>
+  void helper_breadth_first_iterator() {
+    using Particles_t = Particles<std::tuple<>, 2, Vector, SearchMethod>;
+    using position = typename Particles_t::position;
+
+    const int N = 1000;
+    const int nbucket = 5;
+    Particles_t particles(N);
+    std::normal_distribution<double> normal(0.5, 0.2);
+    for (size_t i = 0; i < particles.size(); ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] = vdouble2(normal(gen), normal(gen));
+    }
+    particles.init_neighbour_search(vdouble2::Constant(0),
+                                    vdouble2::Constant(1),
+                                    vdouble2::Constant(false), nbucket);
+
+    auto query = particles.get_query();
+    int count_cells = 0;
+    int count_levels = 0;
+    auto i = query.breadth_first();
+    for (; i != false; ++i) {
+      count_cells += (*i).size();
+      ++count_levels;
+    }
+
+    // check that total number of buckets and levels are correct
+    TS_ASSERT_EQUALS(count_cells, query.number_of_buckets());
+    TS_ASSERT_EQUALS(count_levels, query.number_of_levels());
+
+    // check that we have a sensible amount of leafs, and no non-leafs
+    TS_ASSERT((*i).size() >= N / nbucket);
+    for (auto ci : *i) {
+      TS_ASSERT(query->is_leaf_node(*ci));
+    }
+  }
+
   void test_visualise_data_structures() {
     draw_data_structure<CellList>();
     draw_data_structure<CellListOrdered>();
     draw_data_structure<Kdtree>();
     draw_data_structure<KdtreeNanoflann>();
     draw_data_structure<HyperOctree>();
+  }
+
+  void test_breadth_first_iterator() {
+    helper_breadth_first_iterator<std::vector, CellList>();
+    helper_breadth_first_iterator<std::vector, CellListOrdered>();
+    helper_breadth_first_iterator<std::vector, Kdtree>();
+    helper_breadth_first_iterator<std::vector, KdtreeNanoflann>();
+    helper_breadth_first_iterator<std::vector, HyperOctree>();
   }
 
   void test_CellList() {

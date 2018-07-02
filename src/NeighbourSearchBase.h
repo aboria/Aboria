@@ -674,6 +674,13 @@ template <typename Traits> struct NeighbourQueryBase {
   /// (depth-first)
   ///
   struct all_iterator {};
+
+  ///
+  /// @brief An iterator that steps through all the buckets in the tree
+  /// (breadth-first)
+  ///
+  struct breadth_first_iterator {};
+
   ///
   /// @brief An iterator that steps through the children of a single bucket in
   /// the tree
@@ -845,6 +852,14 @@ template <typename Traits> struct NeighbourQueryBase {
   /// @param ci the child_iterator to search under
   ///
   all_iterator get_subtree(const child_iterator &ci) const;
+
+  ///
+  /// @brief return an @ref breadth_first_iterator to the entire tree under
+  /// the given child_iterator @p ci
+  ///
+  /// @param ci the child_iterator to search under
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const;
 
   ///
   /// @brief return an @ref all_iterator to the entire tree data structure
