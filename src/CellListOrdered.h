@@ -295,6 +295,7 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   using query_iterator =
       lattice_iterator_within_distance<CellListOrderedQuery, LNormNumber>;
   typedef lattice_iterator<dimension> all_iterator;
+  typedef bf_iterator<CellListOrderedQuery> breadth_first_iterator;
   typedef lattice_iterator<dimension> child_iterator;
   typedef typename query_iterator<2>::reference reference;
   typedef typename query_iterator<2>::pointer pointer;
@@ -569,7 +570,14 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   /// @copydoc NeighbourQueryBase::get_breadth_first() const
   ///
   breadth_first_iterator breadth_first(const child_iterator &ci) const {
-    return breadth_first_iterator(this);
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
   }
 
   ///
@@ -616,7 +624,7 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   ///
   /// always 2 for CellListOrdered
   ///
-  unsigned number_of_levels() const { return 2; }
+  unsigned number_of_levels() const { return 1; }
 };
 
 } // namespace Aboria

@@ -713,6 +713,7 @@ template <typename Traits> struct HyperOctreeQuery {
   using query_iterator = tree_query_iterator<HyperOctreeQuery, LNormNumber>;
   typedef depth_first_iterator<HyperOctreeQuery> root_iterator;
   typedef depth_first_iterator<HyperOctreeQuery> all_iterator;
+  typedef bf_iterator<HyperOctreeQuery> breadth_first_iterator;
   typedef octree_child_iterator<dimension> child_iterator;
   typedef typename child_iterator::reference reference;
   typedef typename child_iterator::pointer pointer;
@@ -901,6 +902,25 @@ template <typename Traits> struct HyperOctreeQuery {
   CUDA_HOST_DEVICE
   all_iterator get_subtree() const {
     return all_iterator(get_children(), m_number_of_levels, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first(const child_iterator&)
+  /// const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
