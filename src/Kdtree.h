@@ -597,6 +597,8 @@ public:
 
   int get_child_number() const { return m_data.high; }
 
+  int distance_to_end() const { return 2 - m_high; }
+
   reference operator*() const { return dereference(); }
 
   reference operator->() const { return dereference(); }
