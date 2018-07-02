@@ -924,6 +924,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
       lattice_iterator_within_distance<CellListQuery, LNormNumber>;
 
   typedef lattice_iterator<dimension> all_iterator;
+  typedef breadth_first_iterator<CellListQuery> breadth_first_iterator;
   typedef lattice_iterator<dimension> child_iterator;
   typedef typename query_iterator<2>::reference reference;
   typedef typename query_iterator<2>::pointer pointer;
@@ -1206,6 +1207,13 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   CUDA_HOST_DEVICE
   all_iterator get_subtree() const {
     return all_iterator(int_d::Constant(0), m_end_bucket + 1);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(this);
   }
 
   ///

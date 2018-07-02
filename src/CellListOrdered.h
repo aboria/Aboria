@@ -435,7 +435,7 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   ///
   /// @copydoc NeighbourQueryBase::num_children() const
   ///
-size_t num_children() const { return number_of_buckets(); }
+  size_t num_children() const { return number_of_buckets(); }
 
   ///
   /// @copydoc NeighbourQueryBase::get_bounds()
@@ -563,6 +563,13 @@ size_t num_children() const { return number_of_buckets(); }
   CUDA_HOST_DEVICE
   all_iterator get_subtree(const child_iterator &ci) const {
     return all_iterator();
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(this);
   }
 
   ///
