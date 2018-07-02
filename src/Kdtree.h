@@ -214,7 +214,7 @@ private:
     m_nodes_split_pos.resize(1);
     m_nodes_split_dim.resize(1);
     m_nodes_child[0] = 1;
-    m_number_of_levels = 1;
+    m_number_of_levels = 0;
     int prev_level_index = 0;
     // m_nodes_child  int-> index of first child node (<0 is a leaf, gives index
     // of 1st particle)
@@ -597,7 +597,7 @@ public:
 
   int get_child_number() const { return m_data.high; }
 
-  int distance_to_end() const { return 2 - m_high; }
+  int distance_to_end() const { return 2 - m_data.high; }
 
   reference operator*() const { return dereference(); }
 
@@ -659,6 +659,7 @@ template <typename Traits> struct KdtreeQuery {
   using query_iterator = tree_query_iterator<KdtreeQuery, LNormNumber>;
 
   typedef depth_first_iterator<KdtreeQuery> all_iterator;
+  typedef bf_iterator<KdtreeQuery> breadth_first_iterator;
   typedef KdtreeChildIterator<KdtreeQuery> child_iterator;
 
   typedef typename child_iterator::value_type value_type;
@@ -840,6 +841,21 @@ public:
 
   all_iterator get_subtree() const {
     return all_iterator(get_children(), m_number_of_levels, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first(const child_iterator&)
+  /// const
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
   }
 
   size_t number_of_particles() const {

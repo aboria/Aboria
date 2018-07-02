@@ -512,7 +512,7 @@ public:
     // check that we have a sensible amount of leafs, and no non-leafs
     TS_ASSERT((*i).size() >= N / nbucket);
     for (auto ci : *i) {
-      TS_ASSERT(query->is_leaf_node(*ci));
+      TS_ASSERT(query.is_leaf_node(*ci));
     }
   }
 
@@ -525,10 +525,15 @@ public:
   }
 
   void test_breadth_first_iterator() {
+    std::cout << "bf-search CellList" << std::endl;
     helper_breadth_first_iterator<std::vector, CellList>();
+    std::cout << "bf-search CellListOrdered" << std::endl;
     helper_breadth_first_iterator<std::vector, CellListOrdered>();
+    std::cout << "bf-search Kdtree" << std::endl;
     helper_breadth_first_iterator<std::vector, Kdtree>();
+    std::cout << "bf-search KdtreeNanoflann" << std::endl;
     helper_breadth_first_iterator<std::vector, KdtreeNanoflann>();
+    std::cout << "bf-search HyperOctree" << std::endl;
     helper_breadth_first_iterator<std::vector, HyperOctree>();
   }
 

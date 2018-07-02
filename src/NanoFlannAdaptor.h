@@ -399,6 +399,7 @@ template <typename Traits> struct KdtreeNanoflannQuery {
   using query_iterator = tree_query_iterator<KdtreeNanoflannQuery, LNormNumber>;
   typedef value_type *root_iterator;
   typedef depth_first_iterator<KdtreeNanoflannQuery> all_iterator;
+  typedef bf_iterator<KdtreeNanoflannQuery> breadth_first_iterator;
   typedef nanoflann_child_iterator<Traits> child_iterator;
   typedef ranges_iterator<Traits> particle_iterator;
   typedef bbox<dimension> box_type;
@@ -602,6 +603,21 @@ template <typename Traits> struct KdtreeNanoflannQuery {
 
   all_iterator get_subtree() const {
     return all_iterator(get_children(), m_number_of_levels, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first(const child_iterator&)
+  /// const
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
   }
 
   size_t number_of_particles() const {
