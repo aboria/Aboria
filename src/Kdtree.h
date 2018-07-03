@@ -672,6 +672,9 @@ template <typename Traits> struct KdtreeQuery {
   bbox<dimension> m_bounds;
   raw_pointer m_particles_begin;
   raw_pointer m_particles_end;
+
+  /// number of entries in m_nodes_child, note that this is one more than the
+  /// total number of buckets when a user iterates through them all
   size_t m_number_of_buckets;
   size_t m_number_of_levels;
 
@@ -808,7 +811,7 @@ public:
     return get_child_index(bucket);
   }
 
-  size_t number_of_buckets() const { return m_number_of_buckets; }
+  size_t number_of_buckets() const { return m_number_of_buckets - 1; }
 
   template <int LNormNumber>
   query_iterator<LNormNumber>
