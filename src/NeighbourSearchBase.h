@@ -2018,7 +2018,7 @@ public:
 
   CUDA_HOST_DEVICE
   int distance_to_end() const {
-    return lattice_iterator(m_min, m_max, m_max) - *this;
+    return lattice_iterator(m_min, m_max, m_max - 1) - *this + 1;
   }
 
   CUDA_HOST_DEVICE
