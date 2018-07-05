@@ -1118,14 +1118,28 @@ public:
   Eigen::ComputationInfo info() { return Eigen::Success; }
 }; // namespace Aboria
 
-template <typename Solver> class SchwartzPreconditioner {
+template <typename Solver, bool GPU = false> class SchwartzPreconditioner {
   typedef double Scalar;
   typedef size_t Index;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
   typedef Solver solver_type;
+#ifdef HAVE_THRUST
+  typedef std::conditional<GPU, thrust::device_vector<size_t>,
+                           std::vector<size_t>>
+      storage_vector_type;
+  typedef std::conditional<GPU, thrust::device_vector<storage_vector_type>,
+                           std::vector<storage_vector_type>>
+      connectivity_type;
+
+  typedef std::conditional<GPU, thrust::device_vector<solver_type>,
+                           std::vector<solver_type>>
+      solvers_type;
+#else
   typedef std::vector<size_t> storage_vector_type;
   typedef std::vector<storage_vector_type> connectivity_type;
+  typedef std::vector<solver_type> solvers_type;
+#endif
 
 protected:
   bool m_isInitialized;
@@ -1136,7 +1150,7 @@ private:
 
   connectivity_type m_domain_indicies;
   connectivity_type m_domain_buffer;
-  std::vector<solver_type> m_domain_factorized_matrix;
+  solvers_type m_domain_factorized_matrix;
   Index m_rows;
   Index m_cols;
 
@@ -1180,6 +1194,9 @@ public:
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,
                   "Schwartz preconditioner restricted to identical row and col "
                   "particle sets");
+    static_assert(traits_type::data_on_GPU == GPU,
+                  "kernel and preconditioner must be both either located on "
+                  "the host, or on the gpu");
     const row_elements_type &a = kernel.get_row_elements();
     CHECK(
         &a == &(kernel.get_col_elements()),
@@ -1187,49 +1204,58 @@ public:
         "sets");
     std::default_random_engine generator;
     const query_type &query = a.get_query();
-    for (auto i = query.get_subtree(); i != false; ++i) {
-      if (query.is_leaf_node(*i)) {
-        auto ci = i.get_child_iterator();
-        auto bounds = query.get_bounds(ci);
-        const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
-        const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
 
-        // skip over empty buckets
-        if (query.get_bucket_particles(*ci) == false)
-          continue;
+    // get list of leaf cells
+    auto df_search = query.breadth_first();
+    for (; df_search != false; ++df_search)
+      ;
+    auto leaf_nodes = *df_search;
 
-        const size_t domain_index = m_domain_indicies.size();
-        m_domain_indicies.push_back(connectivity_type::value_type());
-        m_domain_buffer.push_back(connectivity_type::value_type());
-        storage_vector_type &buffer = m_domain_buffer[domain_index];
-        storage_vector_type &indicies = m_domain_indicies[domain_index];
+    auto count = traits_type::make_counting_iterator(0);
 
-        // add particles in bucket to indicies
-        // add particles in neighbouring buckets to buffer
-        for (auto bucket = query.template get_buckets_near_point<-1>(
-                 middle, side + m_neighbourhood_buffer);
-             bucket != false; ++bucket) {
-          for (auto particle = query.get_bucket_particles(*bucket);
-               particle != false; ++particle) {
-            const double_d &p = get<position>(*particle);
-            const size_t index =
-                &p - get<position>(query.get_particles_begin());
-            if (bucket.get_child_iterator() == ci) {
-              indicies.push_back(start_row + index);
-            } else {
-              buffer.push_back(start_row + index);
-            }
+    m_domain_indicies.resize(leaf_nodes.size());
+    m_domain_buffer.resize(leaf_nodes.size());
+
+    detail::for_each(traits_type::make_counting_iterator(0),traits_type::make_counting_iterator(leaf_nodes.size()),
+            [leaf_nodes = iterator_to_raw_pointer(leaf_nodes.begin()),
+             domain_indicies = iterator_to_raw_pointer(m_domain_indicies.begin()), 
+            domain_buffer= iterator_to_raw_pointer(m_domain_buffer.begin())](const int i) {
+      auto ci = leaf_nodes[i];
+      auto bounds = query.get_bounds(ci);
+      const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
+      const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
+
+      // skip over empty buckets
+      if (query.get_bucket_particles(*ci) == false)
+        continue;
+
+      storage_vector_type &buffer = m_domain_buffer[i];
+      storage_vector_type &indicies = m_domain_indicies[i];
+
+      // add particles in bucket to indicies
+      // add particles in neighbouring buckets to buffer
+      for (auto bucket = query.template get_buckets_near_point<-1>(
+               middle, side + m_neighbourhood_buffer);
+           bucket != false; ++bucket) {
+        for (auto particle = query.get_bucket_particles(*bucket);
+             particle != false; ++particle) {
+          const double_d &p = get<position>(*particle);
+          const size_t index = &p - get<position>(query.get_particles_begin());
+          if (bucket.get_child_iterator() == ci) {
+            indicies.push_back(start_row + index);
+          } else {
+            buffer.push_back(start_row + index);
           }
         }
-
-        if (buffer.size() > m_max_buffer_n) {
-          std::shuffle(buffer.begin(), buffer.end(), generator);
-          buffer.resize(m_max_buffer_n);
-        }
-
-        // ASSERT(buffer.size() > 0, "no particles in buffer");
-        ASSERT(indicies.size() > 0, "no particles in domain");
       }
+
+      if (buffer.size() > m_max_buffer_n) {
+        std::shuffle(buffer.begin(), buffer.end(), generator);
+        buffer.resize(m_max_buffer_n);
+      }
+
+      // ASSERT(buffer.size() > 0, "no particles in buffer");
+      ASSERT_CUDA(indicies.size() > 0, "no particles in domain");
     }
   }
 
@@ -1250,7 +1276,6 @@ public:
   template <unsigned int NI, unsigned int NJ, typename Blocks>
   SchwartzPreconditioner &
   analyzePattern(const MatrixReplacement<NI, NJ, Blocks> &mat) {
-
     LOG(2, "SchwartzPreconditioner: analyze pattern");
     m_rows = mat.rows();
     m_cols = mat.cols();
@@ -1261,26 +1286,31 @@ public:
     int maxsize_buffer = 0;
     int minsize_indicies = 1000;
     int maxsize_indicies = 0;
-    for (size_t domain_index = 0; domain_index < m_domain_indicies.size() - 1;
-         ++domain_index) {
-      const int size_indicies = m_domain_indicies[domain_index].size();
-      const int size_buffer = m_domain_buffer[domain_index].size();
-      count += size_indicies;
-      if (size_buffer < minsize_buffer)
-        minsize_buffer = size_buffer;
-      if (size_buffer > maxsize_buffer)
-        maxsize_buffer = size_buffer;
-      if (size_indicies < minsize_indicies)
-        minsize_indicies = size_indicies;
-      if (size_indicies > maxsize_indicies)
-        maxsize_indicies = size_indicies;
-    }
+    Vector<int, 2> minmax(std::numeric_limits<int>::max(),
+                          std::numeric_limits<int>::min());
+    auto get_size = [] CUDA_HOST_DEVICE(auto i) { return i.size() };
+    auto fminmax = [] CUDA_HOST_DEVICE(auto a, auto b) {
+      return Vector<int, 2>(b[0] < a[0] ? b[0] : a[0], b[1] > a[1]
+                            : b[1]
+                            : a[1]);
+    };
+    auto fsum = [] CUDA_HOST_DEVICE(auto a, auto b) { return a + b; };
+
+    auto minmax_indicies = detail::transform_reduce(m_domain_indicies.begin(),
+                                                    m_domain_indicies.end(),
+                                                    get_size, minmax, fminmax);
+    auto minmax_buffer =
+        detail::transform_reduce(m_domain_buffer.begin(), m_domain_buffer.end(),
+                                 get_size, minmax, fminmax);
+
+    auto count = detail::transform_reduce(
+        m_domain_indicies.begin(), m_domain_indicies.end(), get_size, 0, fsum);
+
     LOG(2, "SchwartzPreconditioner: finished analysis, found "
                << m_domain_indicies.size() << " domains, with "
-               << minsize_indicies << "--" << maxsize_indicies << " particles ("
-               << count << " total), and " << minsize_buffer << "--"
-               << maxsize_buffer << " buffer particles. The coarse grid has "
-               << m_domain_indicies.back().size() << " particles");
+               << minmax_indicies[0] << "--" << minmax_indicies[1]
+               << " particles (" << count << " total), and " << minmax_buffer[0]
+               << "--" << minmax_buffer[1] << " buffer particles");
     return *this;
   }
 
@@ -1329,55 +1359,56 @@ public:
 
     m_domain_factorized_matrix.resize(m_domain_indicies.size());
 
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (size_t domain_index = 0;
-         domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
+    detail::for_each(
+        traits_type::make_counting_iterator(0),
+        traits_type::make_counting_iterator(m_domain_indicies.size()),
+        [domain_indicies = iterator_to_raw_pointer(m_domain_indicies.begin()),
+         domain_buffer = iterator_to_raw_pointer(m_domain_buffer.begin()),
+         m_domain_factorized_matrix = iterator_to_raw_pointer(
+             m_domain_factorized_matrix.begin())](const int domain_index) {
+          const storage_vector_type &buffer = domain_buffer[domain_index];
+          const storage_vector_type &indicies = domain_indicies[domain_index];
+          solver_type &solver = domain_factorized_matrix[domain_index];
 
-      const storage_vector_type &buffer = m_domain_buffer[domain_index];
-      const storage_vector_type &indicies = m_domain_indicies[domain_index];
-      solver_type &solver = m_domain_factorized_matrix[domain_index];
+          const size_t size = indicies.size() + buffer.size();
+          // std::cout << "domain "<<domain_index<<"indicies =
+          // "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random =
+          // "<<random.size()<<std::endl;
 
-      const size_t size = indicies.size() + buffer.size();
-      // std::cout << "domain "<<domain_index<<"indicies =
-      // "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random =
-      // "<<random.size()<<std::endl;
+          matrix_type domain_matrix;
+          domain_matrix.resize(size, size);
 
-      matrix_type domain_matrix;
-      domain_matrix.resize(size, size);
+          size_t i = 0;
+          for (const size_t &big_index_i : indicies) {
+            size_t j = 0;
+            for (const size_t &big_index_j : indicies) {
+              domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
+            }
+            for (const size_t &big_index_j : buffer) {
+              domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
+            }
+            ++i;
+          }
+          for (const size_t &big_index_i : buffer) {
+            size_t j = 0;
+            for (const size_t &big_index_j : indicies) {
+              domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
+            }
+            for (const size_t &big_index_j : buffer) {
+              domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
+            }
+            ++i;
+          }
 
-      size_t i = 0;
-      for (const size_t &big_index_i : indicies) {
-        size_t j = 0;
-        for (const size_t &big_index_j : indicies) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        for (const size_t &big_index_j : buffer) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        ++i;
-      }
-      for (const size_t &big_index_i : buffer) {
-        size_t j = 0;
-        for (const size_t &big_index_j : indicies) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        for (const size_t &big_index_j : buffer) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        ++i;
-      }
+          solver.compute(domain_matrix);
 
-      solver.compute(domain_matrix);
-
-      Eigen::VectorXd b = Eigen::VectorXd::Random(domain_matrix.rows());
-      Eigen::VectorXd x = solver.solve(b);
-      double relative_error = (domain_matrix * x - b).norm() / b.norm();
-      if (relative_error > 1e-3 || std::isnan(relative_error)) {
-        std::cout << "relative error = " << relative_error << std::endl;
-      }
-    }
+          Eigen::VectorXd b = Eigen::VectorXd::Random(domain_matrix.rows());
+          Eigen::VectorXd x = solver.solve(b);
+          double relative_error = (domain_matrix * x - b).norm() / b.norm();
+          if (relative_error > 1e-3 || std::isnan(relative_error)) {
+            std::cout << "relative error = " << relative_error << std::endl;
+          }
+        });
 
     m_isInitialized = true;
 
@@ -1393,6 +1424,16 @@ public:
   /** \internal */
   template <typename Rhs, typename Dest>
   void _solve_impl(const Rhs &b, Dest &x) const {
+    swartz_solve_helper(b, x, m_domain_indicies, m_domain_buffer,
+                        m_domain_factorized_matrix);
+  }
+
+  template <typename Rhs, typename Dest>
+  static void swartz_solve_helper(
+      const Rhs &b, Dest &x,
+      const std::vector<std::vector<size_t>> &domain_indicies,
+      const std::vector<std::vector<size_t>> &domain_buffer,
+      const std::vector<solver_type> &domain_factorized_matrix) {
     // loop over domains and invert relevent sub-matricies in
     // mat
     // TODO: do I need this? x = b;
@@ -1406,11 +1447,11 @@ public:
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
-      if (m_domain_indicies.size() == 0)
+    for (size_t i = 0; i < domain_indicies.size(); ++i) {
+      const storage_vector_type &buffer = domain_buffer[i];
+      const storage_vector_type &indicies = domain_indicies[i];
+      if (indicies.size() == 0)
         continue;
-      const storage_vector_type &buffer = m_domain_buffer[i];
-      const storage_vector_type &indicies = m_domain_indicies[i];
 
       const size_t nb = indicies.size() + buffer.size();
 
@@ -1429,7 +1470,7 @@ public:
       }
 
       // solve domain
-      domain_x = m_domain_factorized_matrix[i].solve(domain_b);
+      domain_x = domain_factorized_matrix[i].solve(domain_b);
 
       // copy accumulate b values to big vector
       sub_index = 0;
@@ -1438,6 +1479,72 @@ public:
       }
     }
   }
+
+#ifdef HAVE_THRUST
+  template <typename Rhs, typename Dest>
+  static void swartz_solve_helper(
+      const Rhs &b, Dest &x,
+      const thrust::device_vector<thrust::device_vector<size_t>>
+          &domain_indicies,
+      const thrust::device_vector<thrust::device_vector<size_t>> &domain_buffer,
+      const thrust::device_vector<solver_type> &domain_factorized_matrix) {
+
+    thrust::device_vector<double> x_gpu(x.size());
+    thrust::device_vector<double> b_gpu(x.size());
+
+    // copy source b to both gpu vectors
+    thrust::copy(b.derived().data().b.derived().data() + x.size(),
+                 x_gpu.begin());
+    thrust::copy(x_gpu.begin(), x_gpu.end(), b_gpu.begin());
+
+    // loop over domains and invert relevent sub-matricies in
+    // mat
+    thrust::counting_iterator<int> count(0);
+    thrust::for_each(
+        count, count + domain_indicies.size(),
+        [domain_indicies = iterator_to_raw_pointer(domain_indicies.begin()),
+         domain_buffer = iterator_to_raw_pointer(domain_buffer.begin()),
+         domain_factorized_matrix =
+             iterator_to_raw_pointer(domain_factorized_matrix.begin()),
+         x = iterator_to_raw_pointer(x_gpu.begin()),
+         b = iterator_to_raw_pointer(
+             b_gpu.begin())] CUDA_HOST_DEVICE(const int i) {
+          const storage_vector_type &buffer = domain_buffer[i];
+          const storage_vector_type &indicies = domain_indicies[i];
+          if (indicies.size() == 0)
+            continue;
+
+          const size_t nb = indicies.size() + buffer.size();
+
+          vector_type domain_x;
+          vector_type domain_b;
+          domain_x.resize(nb);
+          domain_b.resize(nb);
+
+          // copy x values from big vector
+          size_t sub_index = 0;
+          for (size_t j = 0; j < indicies.size(); ++j) {
+            domain_b[sub_index++] = b[indicies[j]];
+          }
+          for (size_t j = 0; j < buffer.size(); ++j) {
+            domain_b[sub_index++] = b[buffer[j]];
+          }
+
+          // solve domain
+          domain_x = domain_factorized_matrix[i].solve(domain_b);
+
+          // copy accumulate b values to big vector
+          sub_index = 0;
+          for (size_t j = 0; j < indicies.size(); ++j) {
+            x[indicies[j]] = domain_x[sub_index++];
+          }
+        });
+
+    // copy result back
+    //
+    thrust::copy(x_gpu.begin(), x_gpu.end(), x.derived().data());
+  }
+#endif
 
   template <typename Rhs>
   inline const Eigen::Solve<SchwartzPreconditioner, Rhs>
