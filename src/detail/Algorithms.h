@@ -523,6 +523,33 @@ OutputIterator transform_exclusive_scan(InputIterator first, InputIterator last,
       typename is_std_iterator<InputIterator>::type());
 }
 
+template <class InputIt, class T, class UnaryOperation, class BinaryOperation>
+T transform_reduce(InputIt first, InputIt last, UnaryOperation unary_op, T init,
+                   BinaryOperation binary_op, std::true_type) {
+  T generalizedSum = init;
+  for (auto iter = first; iter != last; iter++) {
+    generalizedSum = binary_op(unary_op(*iter), generalizedSum);
+  }
+  return generalizedSum;
+}
+
+#ifdef HAVE_THRUST
+template <class InputIt, class T, class UnaryOperation, class BinaryOperation>
+T transform_reduce(InputIt first, InputIt last, UnaryOperation unary_op, T init,
+                   BinaryOperation binary_op, std::false_type) {
+
+  return thrust::transform_reduce(first, last, unary_op, init, binary_op);
+}
+#endif
+
+template <class InputIt, class T, class UnaryOperation, class BinaryOperation>
+T transform_reduce(InputIt first, InputIt last, UnaryOperation unary_op, T init,
+                   BinaryOperation binary_op) {
+
+  detail::transform_reduce(first, last, unary_op, init, binary_op,
+                           typename is_std_iterator<InputIt>::type());
+}
+
 template <class InputIt, class OutputIt>
 OutputIt inclusive_scan(InputIt first, InputIt last, OutputIt d_first,
                         std::true_type) {
@@ -553,7 +580,7 @@ OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
                         std::true_type) {
 #if __cplusplus >= 201703L
   // C++17 code here
-  return std::exclusive_scan(first, last, d_first,init);
+  return std::exclusive_scan(first, last, d_first, init);
 #else
   if (first != last) {
     *d_first++ = init;
@@ -569,7 +596,7 @@ OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
 template <class InputIt, class OutputIt, class T>
 OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
                         std::false_type) {
-  return thrust::exclusive_scan(first, last, d_first,init);
+  return thrust::exclusive_scan(first, last, d_first, init);
 }
 #endif
 

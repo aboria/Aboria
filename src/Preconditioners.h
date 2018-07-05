@@ -1202,7 +1202,6 @@ public:
         &a == &(kernel.get_col_elements()),
         "Schwartz preconditioner restricted to identical row and col particle "
         "sets");
-    std::default_random_engine generator;
     const query_type &query = a.get_query();
 
     // get list of leaf cells
@@ -1216,47 +1215,64 @@ public:
     m_domain_indicies.resize(leaf_nodes.size());
     m_domain_buffer.resize(leaf_nodes.size());
 
-    detail::for_each(traits_type::make_counting_iterator(0),traits_type::make_counting_iterator(leaf_nodes.size()),
-            [leaf_nodes = iterator_to_raw_pointer(leaf_nodes.begin()),
-             domain_indicies = iterator_to_raw_pointer(m_domain_indicies.begin()), 
-            domain_buffer= iterator_to_raw_pointer(m_domain_buffer.begin())](const int i) {
-      auto ci = leaf_nodes[i];
-      auto bounds = query.get_bounds(ci);
-      const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
-      const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
+    generator_type generator;
 
-      // skip over empty buckets
-      if (query.get_bucket_particles(*ci) == false)
-        continue;
+    detail::for_each(
+        count, count + leaf_nodes.size(),
+        [leaf_nodes = iterator_to_raw_pointer(leaf_nodes.begin()),
+         domain_indicies = iterator_to_raw_pointer(m_domain_indicies.begin()),
+         domain_buffer = iterator_to_raw_pointer(m_domain_buffer.begin()),
+         neighbourhood_buffer = m_neighbourhood_buffer,
+         max_buffer_n = m_max_buffer_n, start_row = start_row,
+         generator = generator](const int i) {
+          auto ci = leaf_nodes[i];
+          auto bounds = query.get_bounds(ci);
+          const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
+          const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
 
-      storage_vector_type &buffer = m_domain_buffer[i];
-      storage_vector_type &indicies = m_domain_indicies[i];
+          // skip over empty buckets
+          if (query.get_bucket_particles(*ci) != false) {
 
-      // add particles in bucket to indicies
-      // add particles in neighbouring buckets to buffer
-      for (auto bucket = query.template get_buckets_near_point<-1>(
-               middle, side + m_neighbourhood_buffer);
-           bucket != false; ++bucket) {
-        for (auto particle = query.get_bucket_particles(*bucket);
-             particle != false; ++particle) {
-          const double_d &p = get<position>(*particle);
-          const size_t index = &p - get<position>(query.get_particles_begin());
-          if (bucket.get_child_iterator() == ci) {
-            indicies.push_back(start_row + index);
-          } else {
-            buffer.push_back(start_row + index);
+            storage_vector_type &buffer = domain_buffer[i];
+            storage_vector_type &indicies = domain_indicies[i];
+
+            // add particles in bucket to indicies
+            // add particles in neighbouring buckets to buffer
+            for (auto bucket = query.template get_buckets_near_point<-1>(
+                     middle, side + neighbourhood_buffer);
+                 bucket != false; ++bucket) {
+              for (auto particle = query.get_bucket_particles(*bucket);
+                   particle != false; ++particle) {
+                const double_d &p = get<position>(*particle);
+                const size_t index =
+                    &p - get<position>(query.get_particles_begin());
+                if (bucket.get_child_iterator() == ci) {
+                  indicies.push_back(start_row + index);
+                } else {
+                  buffer.push_back(start_row + index);
+                }
+              }
+            }
+
+            if (buffer.size() > max_buffer_n) {
+
+              // random shuffle
+              for (int i = buffer.size() - 1; i > 0; --i) {
+#if defined(__CUDACC__)
+                thrust::uniform_int_distribution<int> uniform(0, i);
+#else
+                std::uniform_int_distribution<int> uniform(0, i);
+#endif
+
+                std::swap(buffer[i], buffer[uniform(generator)]);
+              }
+              buffer.resize(max_buffer_n);
+            }
+
+            // ASSERT(buffer.size() > 0, "no particles in buffer");
+            ASSERT_CUDA(indicies.size() > 0);
           }
-        }
-      }
-
-      if (buffer.size() > m_max_buffer_n) {
-        std::shuffle(buffer.begin(), buffer.end(), generator);
-        buffer.resize(m_max_buffer_n);
-      }
-
-      // ASSERT(buffer.size() > 0, "no particles in buffer");
-      ASSERT_CUDA(indicies.size() > 0, "no particles in domain");
-    }
+        });
   }
 
   template <typename RowParticles, typename ColParticles>
@@ -1281,18 +1297,12 @@ public:
     m_cols = mat.cols();
     analyze_impl(mat, detail::make_index_sequence<NI>());
 
-    int count = 0;
-    int minsize_buffer = 1000;
-    int maxsize_buffer = 0;
-    int minsize_indicies = 1000;
-    int maxsize_indicies = 0;
     Vector<int, 2> minmax(std::numeric_limits<int>::max(),
                           std::numeric_limits<int>::min());
-    auto get_size = [] CUDA_HOST_DEVICE(auto i) { return i.size() };
+    auto get_size = [] CUDA_HOST_DEVICE(auto i) { return i.size(); };
     auto fminmax = [] CUDA_HOST_DEVICE(auto a, auto b) {
-      return Vector<int, 2>(b[0] < a[0] ? b[0] : a[0], b[1] > a[1]
-                            : b[1]
-                            : a[1]);
+      return Vector<int, 2>((b[0] < a[0] ? b[0] : a[0]),
+                            (b[1] > a[1] ? b[1] : a[1]));
     };
     auto fsum = [] CUDA_HOST_DEVICE(auto a, auto b) { return a + b; };
 
@@ -1359,12 +1369,15 @@ public:
 
     m_domain_factorized_matrix.resize(m_domain_indicies.size());
 
+    typedef std::conditional<GPU, thrust::counting_iterator<int>,
+                             boost::counting_iterator<int>>
+        count_t;
+
     detail::for_each(
-        traits_type::make_counting_iterator(0),
-        traits_type::make_counting_iterator(m_domain_indicies.size()),
+        count_t(0), count_t(m_domain_indicies.size()),
         [domain_indicies = iterator_to_raw_pointer(m_domain_indicies.begin()),
          domain_buffer = iterator_to_raw_pointer(m_domain_buffer.begin()),
-         m_domain_factorized_matrix = iterator_to_raw_pointer(
+         domain_factorized_matrix = iterator_to_raw_pointer(
              m_domain_factorized_matrix.begin())](const int domain_index) {
           const storage_vector_type &buffer = domain_buffer[domain_index];
           const storage_vector_type &indicies = domain_indicies[domain_index];
@@ -1559,7 +1572,7 @@ public:
   }
 
   Eigen::ComputationInfo info() { return Eigen::Success; }
-}; // namespace Aboria
+};
 
 template <typename Solver> class SchwartzSamplingPreconditioner {
   typedef double Scalar;

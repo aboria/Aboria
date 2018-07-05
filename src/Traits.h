@@ -314,12 +314,9 @@ struct TraitsCommon<std::tuple<TYPES...>, DomainD, SelfD, traits>
 #if defined(__CUDACC__)
     typedef typename thrust::detail::iterator_category_to_system<
         typename vector_int::iterator::iterator_category>::type system;
-    thrust::counting_iterator<unsigned int, system> count_start(
-        update_start_index);
-    thrust::counting_iterator<unsigned int, system> count_end(update_end_index);
+    return thrust::counting_iterator<unsigned int, system>(x);
 #else
-    auto count_start = traits::make_counting_iterator(update_start_index);
-    auto count_end = traits::make_counting_iterator(update_end_index);
+    return traits::make_counting_iterator(x);
 #endif
   }
 
