@@ -39,8 +39,8 @@ struct default_traits {
   };
   template <class T> struct tuple_size { typedef thrust::tuple_size<T> type; };
 #else
- template <typename... T> struct tuple_type { typedef std::tuple<T...> type; };
- template <std::size_t I, class T> struct tuple_element {
+  template <typename... T> struct tuple_type { typedef std::tuple<T...> type; };
+  template <std::size_t I, class T> struct tuple_element {
     typedef std::tuple_element<I, T> type;
   };
   template <class T> struct tuple_size { typedef std::tuple_size<T> type; };
@@ -214,6 +214,9 @@ struct TraitsCommon<std::tuple<TYPES...>, DomainD, SelfD, traits>
   // TODO: use vector below
 
   const static unsigned int dimension = DomainD;
+  const static bool data_on_GPU =
+      !std::is_same<vector<int>, std::vector<int>>::value;
+
   typedef vector<Vector<double, DomainD>> vector_double_d;
   typedef typename vector_double_d::iterator vector_double_d_iterator;
   typedef
@@ -305,6 +308,20 @@ struct TraitsCommon<std::tuple<TYPES...>, DomainD, SelfD, traits>
 
   // need a std::tuple here, rather than a thrust one...
   const static size_t N = std::tuple_size<vectors_data_type>::value;
+
+  template <typename Incrementable>
+  static auto make_counting_iterator(Incrementable x) {
+#if defined(__CUDACC__)
+    typedef typename thrust::detail::iterator_category_to_system<
+        typename vector_int::iterator::iterator_category>::type system;
+    thrust::counting_iterator<unsigned int, system> count_start(
+        update_start_index);
+    thrust::counting_iterator<unsigned int, system> count_end(update_end_index);
+#else
+    auto count_start = traits::make_counting_iterator(update_start_index);
+    auto count_end = traits::make_counting_iterator(update_end_index);
+#endif
+  }
 
   template <std::size_t... I>
   static iterator begin_impl(data_type &data, detail::index_sequence<I...>) {
