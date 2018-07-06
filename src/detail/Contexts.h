@@ -187,8 +187,15 @@ template <typename labels_type, typename dx_type> struct EvalCtx {
                       // figure out how to do this via enable_if....
 
     result_type sum = accum.init;
-    for (const auto &i : label.get_particles()) {
-      auto new_labels = fusion::make_map<label_type>(i);
+
+    auto particles = label.get_particles();
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < particles.size(); ++i) {
+      const auto &p = particles[i];
+      auto new_labels = fusion::make_map<label_type>(p);
       EvalCtx<decltype(new_labels), decltype(ctx.m_dx)> const new_ctx(
           new_labels, ctx.m_dx);
       sum = accum.functor(sum, proto::eval(expr, new_ctx));

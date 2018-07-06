@@ -283,6 +283,16 @@ public:
         (decltype(vect_w_a_and_b3)));
 #endif
 
+    // check sums
+    auto vect_w_a_and_b4 =
+        detail::get_labels()(sum_dense(a, sum_sparse(b, 1)), fusion::nil_());
+#if not defined(__CUDACC__)
+    BOOST_MPL_ASSERT_MSG(
+        (std::is_same<decltype(vect_w_a_and_b4), fusion::nil_>::value),
+        RESULT_OF_GET_LABELS_ON_CONST_EXPRESSION_SUM_IS_NOT_CORRECT,
+        (decltype(vect_w_a_and_b4)));
+#endif
+
     static_assert(
         detail::is_univariate<decltype(sum_sparse(b, s[a] + s[a]))>::value,
         "result of is_univariate on expression sum_sparse(b,s[a]+s[a]) is not "
@@ -297,6 +307,11 @@ public:
                       sum_dense(b, if_else(s[b] == 1, s[b], 0)))>::value,
                   "result of is_const on expression "
                   "sum_dense(b,if_else(s[b]==1,s[b],0)) is not true");
+
+    static_assert(
+        detail::is_const<decltype(sum_dense(a, sum_sparse(b, 1)))>::value,
+        "result of is_const on expression "
+        "sum_dense(a,sum_sparse(b,1)) is not true");
   }
 
   void test_thrust(void) {

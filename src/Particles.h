@@ -223,8 +223,8 @@ public:
   /// copy-constructor. performs deep copying of all particles from \p other
   /// to \a *this
   Particles(const particles_type &other)
-      : data(other.data), search(other.search), next_id(other.next_id),
-        searchable(other.searchable), seed(other.seed) {}
+      : data(other.data), next_id(other.next_id), searchable(other.searchable),
+        seed(other.seed), search(other.search) {}
 
   /// range-based copy-constructor. performs deep copying of all
   /// particles from \p first to \p last
