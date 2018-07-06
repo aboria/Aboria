@@ -541,6 +541,8 @@ struct zip_pointer<std::tuple<Types *...>, MplVector> {
 
   reference operator*() const { return dereference(); }
 
+  reference operator[](std::size_t idx) { return *(operator+(idx)); }
+
   void increment() {
     detail::zip_helper<tuple_type>::increment_impl(data, index_type());
   }
@@ -728,6 +730,9 @@ struct zip_pointer<thrust::tuple<TT1, TT2, TT3, TT4, TT5, TT6, TT7, TT8, TT9>,
 
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  reference operator[](std::size_t idx) const { return *(operator+(idx)); }
 
   CUDA_HOST_DEVICE
   void increment() {

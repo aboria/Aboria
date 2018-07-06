@@ -3,7 +3,6 @@
 
 #if defined(HAVE_THRUST)
 
-
 #if defined(__CUDACC__)
 
 #undef THRUST_DEVICE_SYSTEM
@@ -22,6 +21,7 @@
 
 #include <nppdefs.h>
 #include <thrust/binary_search.h>
+#include <thrust/device_reference.h>
 #include <thrust/device_vector.h>
 #include <thrust/gather.h>
 #include <thrust/host_vector.h>

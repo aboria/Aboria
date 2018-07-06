@@ -93,6 +93,7 @@ public:
   typedef Scalar RealScalar;
   typedef size_t Index;
   typedef int StorageIndex;
+  static const bool GPU = first_block_type::GPU;
   enum {
     ColsAtCompileTime = Eigen::Dynamic,
     RowsAtCompileTime = Eigen::Dynamic,

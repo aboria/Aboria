@@ -13,6 +13,12 @@ namespace Aboria {
 
 namespace detail {
 
+struct plus {
+  template <typename T> CUDA_HOST_DEVICE T operator()(const T &a, const T &b) {
+    return a + b;
+  }
+};
+
 // TODO: this is a complicated mass of preprocessor, can I improve?
 #ifdef HAVE_THRUST
 template <typename Traits>
