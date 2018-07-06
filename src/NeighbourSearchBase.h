@@ -1453,11 +1453,14 @@ template <typename Query> class bf_iterator {
   static const unsigned int dimension = Query::dimension;
   typedef Vector<double, dimension> double_d;
   typedef Vector<int, dimension> int_d;
+  typedef typename Query::traits_type traits_type;
+  typedef typename traits_type::vector<child_iterator> vector_ci;
+  typedef typename traits_type::vector<vint2> vector_vint2;
 
 public:
-  typedef typename std::vector<child_iterator> const value_type;
-  typedef typename std::vector<child_iterator> const *pointer;
-  typedef typename std::vector<child_iterator> const &reference;
+  typedef vector_ci const value_type;
+  typedef vector_ci *pointer;
+  typedef vector_ci const &reference;
   typedef std::forward_iterator_tag iterator_category;
   typedef std::ptrdiff_t difference_type;
 
@@ -1519,9 +1522,43 @@ public:
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
-private:
-  friend class boost::iterator_core_access;
+  struct count_children {
+    const Query *m_query;
 
+    CUDA_HOST_DEVICE
+    auto operator()(const child_iterator &ci) {
+      const int nchild = m_query->is_leaf_node(*ci)
+                             ? 0
+                             : m_query->get_children(ci).distance_to_end();
+      return vint2(nchild, nchild == 0);
+    }
+  };
+
+  struct copy_children_and_leafs {
+    vint2 *m_counts;
+    child_iterator *m_leafs;
+    int m_leafs_old_size;
+    const Query *m_query;
+    child_iterator *m_next_level;
+    child_iterator *m_level;
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      auto ci = m_level[i];
+      if (m_query->is_leaf_node(*ci)) {
+        const int leafs_index = m_leafs_old_size + m_counts[i][1];
+        m_leafs[leafs_index] = ci;
+      } else {
+        auto child = m_query->get_children(ci);
+        for (int next_level_index = m_counts[i][0]; child != false;
+             ++child, ++next_level_index) {
+          m_next_level[next_level_index] = child;
+        }
+      }
+    }
+  };
+
+private:
   CUDA_HOST_DEVICE
   void increment() {
 #ifndef __CUDA_ARCH__
@@ -1532,22 +1569,16 @@ private:
     // exclusive scan for # children + # leafs: n_child
     // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
     // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
-    auto fcount = [query = m_query] CUDA_HOST_DEVICE(const child_iterator &ci) {
-      const int nchild = query->is_leaf_node(*ci)
-                             ? 0
-                             : query->get_children(ci).distance_to_end();
-      return Vector<int, 2>(nchild, nchild == 0);
-    };
+
     m_counts.resize(m_level.size());
-    detail::transform_exclusive_scan(
-        m_level.begin(), m_level.end(), m_counts.begin(), fcount,
-        Vector<int, 2>::Constant(0),
-        [] CUDA_HOST_DEVICE(const Vector<int, 2> &a, const Vector<int, 2> &b) {
-          return a + b;
-        });
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_children{m_query},
+                                     Vector<int, 2>::Constant(0),
+                                     std::plus<Vector<int, 2>>());
 
     // resize for new children and leafs
-    const Vector<int, 2> nchildren = m_counts.back() + fcount(m_level.back());
+    const vint2 nchildren = static_cast<vint2>(m_counts.back()) +
+                            count_children{m_query}(m_level.back());
     m_next_level.resize(nchildren[0]);
     const size_t m_leafs_old_size = m_leafs.size();
     m_leafs.resize(m_leafs.size() + nchildren[1]);
@@ -1556,31 +1587,19 @@ private:
 // m_leafs
 #if defined(__CUDACC__)
     typedef typename thrust::detail::iterator_category_to_system<
-        typename vector_int::iterator::iterator_category>::type system;
+        typename Query::traits_type::vector_int::iterator::iterator_category>::
+        type system;
     thrust::counting_iterator<int, system> count(0);
 #else
     auto count = Query::traits_type::make_counting_iterator(0);
 #endif
     detail::for_each(
         count, count + m_level.size(),
-        [counts = iterator_to_raw_pointer(m_counts.begin()),
-         leafs = iterator_to_raw_pointer(m_leafs.begin()),
-         leafs_old_size = m_leafs_old_size, query = m_query,
-         next_level = iterator_to_raw_pointer(m_next_level.begin()),
-         level = iterator_to_raw_pointer(
-             m_level.begin())] CUDA_HOST_DEVICE(const int i) {
-          auto ci = level[i];
-          if (query->is_leaf_node(*ci)) {
-            const int leafs_index = leafs_old_size + counts[i][1];
-            leafs[leafs_index] = ci;
-          } else {
-            auto child = query->get_children(ci);
-            for (int next_level_index = counts[i][0]; child != false;
-                 ++child, ++next_level_index) {
-              next_level[next_level_index] = child;
-            }
-          }
-        });
+        copy_children_and_leafs{iterator_to_raw_pointer(m_counts.begin()),
+                                iterator_to_raw_pointer(m_leafs.begin()),
+                                m_leafs_old_size, m_query,
+                                iterator_to_raw_pointer(m_next_level.begin()),
+                                iterator_to_raw_pointer(m_level.begin())});
 
     // swap level back to m_level and increment level count
     m_level.swap(m_next_level);
@@ -1602,10 +1621,10 @@ private:
   CUDA_HOST_DEVICE
   reference dereference() const { return m_level.empty() ? m_leafs : m_level; }
 
-  std::vector<child_iterator> m_level;
-  std::vector<child_iterator> m_next_level;
-  std::vector<Vector<int, 2>> m_counts;
-  std::vector<child_iterator> m_leafs;
+  vector_ci m_level;
+  vector_ci m_next_level;
+  vector_vint2 m_counts;
+  vector_ci m_leafs;
   size_t m_level_num;
   const Query *m_query;
 };

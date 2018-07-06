@@ -73,6 +73,10 @@ public:
   static const size_t BlockCols = kernel_helper::BlockCols;
   typedef typename kernel_helper::BlockRHSVector BlockRHSVector;
   typedef typename kernel_helper::BlockLHSVector BlockLHSVector;
+  static const bool GPU = RowElements::traits_type::data_on_GPU;
+  static_assert(RowElements::traits_type::data_on_GPU ==
+                    ColElements::traits_type::data_on_GPU,
+                "row and col elements must be both gpu or host particle sets");
 
   typedef RowElements row_elements_type;
   typedef ColElements col_elements_type;
