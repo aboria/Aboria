@@ -1147,7 +1147,7 @@ protected:
 
 private:
   double m_neighbourhood_buffer;
-  double m_max_buffer_n;
+  int m_max_buffer_n;
 
   connectivity_type m_domain_indicies;
   connectivity_type m_domain_buffer;
@@ -1185,6 +1185,138 @@ public:
   SchwartzPreconditioner &analyzePattern(const MatType &mat) {
     LOG(2, "SchwartzPreconditioner: analyzePattern: do nothing");
   }
+
+  template <typename T, typename Query> struct process_leaf_node {
+    static const unsigned int D = Query::dimension;
+    typedef Vector<double, D> double_d;
+    typedef position_d<D> position;
+    typename Query::child_iterator *m_leaf_nodes;
+    storage_vector_type *m_domain_indicies;
+    storage_vector_type *m_domain_buffer;
+    solver_type *m_domain_factorized_matrix;
+    double m_neighbourhood_buffer;
+    int m_max_buffer_n;
+    size_t m_start_row;
+    const T m_function;
+    Query m_query;
+
+    process_leaf_node(typename Query::child_iterator *m_leaf_nodes,
+                      storage_vector_type *m_domain_indicies,
+                      storage_vector_type *m_domain_buffer,
+                      solver_type *m_domain_factorized_matrix,
+                      double m_neighbourhood_buffer, int m_max_buffer_n,
+                      size_t m_start_row, const T &m_function,
+                      const Query &m_query)
+        : m_leaf_nodes(m_leaf_nodes), m_domain_indicies(m_domain_indicies),
+          m_domain_buffer(m_domain_buffer),
+          m_domain_factorized_matrix(m_domain_factorized_matrix),
+          m_neighbourhood_buffer(m_neighbourhood_buffer),
+          m_max_buffer_n(m_max_buffer_n), m_start_row(m_start_row),
+          m_function(m_function), m_query(m_query) {}
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      auto ci = m_leaf_nodes[i];
+      auto bounds = m_query.get_bounds(ci);
+      const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
+      const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
+
+      // skip over empty buckets
+      if (m_query.get_bucket_particles(*ci) != false) {
+
+        storage_vector_type &buffer = m_domain_buffer[i];
+        storage_vector_type &indicies = m_domain_indicies[i];
+        solver_type &solver = m_domain_factorized_matrix[i];
+
+        // add particles in bucket to indicies
+        // add particles in neighbouring buckets to buffer
+        for (auto bucket = m_query.template get_buckets_near_point<-1>(
+                 middle, side + m_neighbourhood_buffer);
+             bucket != false; ++bucket) {
+          for (auto particle = m_query.get_bucket_particles(*bucket);
+               particle != false; ++particle) {
+            const double_d &p = get<position>(*particle);
+            const size_t index =
+                &p - get<position>(m_query.get_particles_begin());
+            if (bucket.get_child_iterator() == ci) {
+              indicies.push_back(m_start_row + index);
+            } else {
+              buffer.push_back(m_start_row + index);
+            }
+          }
+        }
+
+        if (buffer.size() > m_max_buffer_n) {
+          // random shuffle
+#if defined(__CUDACC__)
+          thrust::default_random_engine gen;
+          thrust::uniform_int_distribution<int> uniform(0, i);
+#else
+          generator_type gen;
+          std::uniform_int_distribution<int> uniform(0, i);
+#endif
+          // advance forward so no random streams intersect
+          gen.discard(buffer.size() * i);
+          for (int i = buffer.size() - 1; i > 0; --i) {
+#if defined(__CUDACC__)
+            // thrust::swap(buffer[i], buffer[uniform(gen)]);
+            size_t tmp = buffer[i];
+            const auto random_index = uniform(gen);
+            buffer[i] = buffer[random_index];
+            buffer[random_index] = tmp;
+#else
+            std::swap(buffer[i], buffer[uniform(gen)]);
+#endif
+          }
+          buffer.resize(m_max_buffer_n);
+        }
+
+        // ASSERT(buffer.size() > 0, "no particles in buffer");
+        ASSERT_CUDA(indicies.size() > 0);
+
+        matrix_type domain_matrix;
+        const int size = indicies.size() + buffer.size();
+        domain_matrix.resize(size, size);
+
+        size_t i = 0;
+        for (const size_t &big_index_i : indicies) {
+          auto a = m_query.get_particles_begin()[big_index_i];
+          size_t j = 0;
+          for (const size_t &big_index_j : indicies) {
+            auto b = m_query.get_particles_begin()[big_index_j];
+            domain_matrix(i, j++) = m_function(a, b);
+          }
+          for (const size_t &big_index_j : buffer) {
+            auto b = m_query.get_particles_begin()[big_index_j];
+            domain_matrix(i, j++) = m_function(a, b);
+          }
+          ++i;
+        }
+        for (const size_t &big_index_i : buffer) {
+          auto a = m_query.get_particles_begin()[big_index_i];
+          size_t j = 0;
+          for (const size_t &big_index_j : indicies) {
+            auto b = m_query.get_particles_begin()[big_index_j];
+            domain_matrix(i, j++) = m_function(a, b);
+          }
+          for (const size_t &big_index_j : buffer) {
+            auto b = m_query.get_particles_begin()[big_index_j];
+            domain_matrix(i, j++) = m_function(a, b);
+          }
+          ++i;
+        }
+
+        solver.compute(domain_matrix);
+
+        Eigen::VectorXd b = Eigen::VectorXd::Random(domain_matrix.rows());
+        Eigen::VectorXd x = solver.solve(b);
+        double relative_error = (domain_matrix * x - b).norm() / b.norm();
+        if (relative_error > 1e-3 || std::isnan(relative_error)) {
+          std::cout << "relative error = " << relative_error << std::endl;
+        }
+      }
+    }
+  };
 
   template <typename Kernel>
   void factorize_impl_block(const Index start_row, const Kernel &kernel) {
@@ -1227,115 +1359,15 @@ public:
     m_domain_buffer.resize(leaf_nodes.size());
     m_domain_factorized_matrix.resize(leaf_nodes.size());
 
-    generator_type generator;
-
     detail::for_each(
         count, count + leaf_nodes.size(),
-        [leaf_nodes = iterator_to_raw_pointer(leaf_nodes.begin()),
-         domain_indicies = iterator_to_raw_pointer(m_domain_indicies.begin()),
-         domain_buffer = iterator_to_raw_pointer(m_domain_buffer.begin()),
-         domain_factorized_matrix =
-             iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
-         neighbourhood_buffer = m_neighbourhood_buffer,
-         max_buffer_n = m_max_buffer_n, start_row = start_row,
-         generator = generator, function = kernel.get_kernel_function(),
-         query = query](const int i) {
-          auto ci = leaf_nodes[i];
-          auto bounds = query.get_bounds(ci);
-          const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
-          const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
-
-          // skip over empty buckets
-          if (query.get_bucket_particles(*ci) != false) {
-
-            storage_vector_type &buffer = domain_buffer[i];
-            storage_vector_type &indicies = domain_indicies[i];
-            solver_type &solver = domain_factorized_matrix[i];
-
-            // add particles in bucket to indicies
-            // add particles in neighbouring buckets to buffer
-            for (auto bucket = query.template get_buckets_near_point<-1>(
-                     middle, side + neighbourhood_buffer);
-                 bucket != false; ++bucket) {
-              for (auto particle = query.get_bucket_particles(*bucket);
-                   particle != false; ++particle) {
-                const double_d &p = get<position>(*particle);
-                const size_t index =
-                    &p - get<position>(query.get_particles_begin());
-                if (bucket.get_child_iterator() == ci) {
-                  indicies.push_back(start_row + index);
-                } else {
-                  buffer.push_back(start_row + index);
-                }
-              }
-            }
-
-            if (buffer.size() > max_buffer_n) {
-          // random shuffle
-#if defined(__CUDACC__)
-              thrust::default_random_engine gen;
-              thrust::uniform_int_distribution<int> uniform(0, i);
-#else
-              generator_type gen;
-              std::uniform_int_distribution<int> uniform(0, i);
-#endif
-              // advance forward so no random streams intersect
-              gen.discard(buffer.size() * i);
-              for (int i = buffer.size() - 1; i > 0; --i) {
-#if defined(__CUDACC__)
-                thrust::swap(buffer[i], buffer[uniform(gen)]);
-#else
-                std::swap(buffer[i], buffer[uniform(gen)]);
-#endif
-              }
-              buffer.resize(max_buffer_n);
-            }
-
-            // ASSERT(buffer.size() > 0, "no particles in buffer");
-            ASSERT_CUDA(indicies.size() > 0);
-
-            matrix_type domain_matrix;
-            const int size = indicies.size() + buffer.size();
-            domain_matrix.resize(size, size);
-
-            size_t i = 0;
-            for (const size_t &big_index_i : indicies) {
-              auto a = query.get_particles_begin()[big_index_i];
-              size_t j = 0;
-              for (const size_t &big_index_j : indicies) {
-                auto b = query.get_particles_begin()[big_index_j];
-                domain_matrix(i, j++) = function(a, b);
-              }
-              for (const size_t &big_index_j : buffer) {
-                auto b = query.get_particles_begin()[big_index_j];
-                domain_matrix(i, j++) = function(a, b);
-              }
-              ++i;
-            }
-            for (const size_t &big_index_i : buffer) {
-              auto a = query.get_particles_begin()[big_index_i];
-              size_t j = 0;
-              for (const size_t &big_index_j : indicies) {
-                auto b = query.get_particles_begin()[big_index_j];
-                domain_matrix(i, j++) = function(a, b);
-              }
-              for (const size_t &big_index_j : buffer) {
-                auto b = query.get_particles_begin()[big_index_j];
-                domain_matrix(i, j++) = function(a, b);
-              }
-              ++i;
-            }
-
-            solver.compute(domain_matrix);
-
-            Eigen::VectorXd b = Eigen::VectorXd::Random(domain_matrix.rows());
-            Eigen::VectorXd x = solver.solve(b);
-            double relative_error = (domain_matrix * x - b).norm() / b.norm();
-            if (relative_error > 1e-3 || std::isnan(relative_error)) {
-              std::cout << "relative error = " << relative_error << std::endl;
-            }
-          }
-        });
+        process_leaf_node<typename Kernel::function_type, query_type>(
+            iterator_to_raw_pointer(leaf_nodes.begin()),
+            iterator_to_raw_pointer(m_domain_indicies.begin()),
+            iterator_to_raw_pointer(m_domain_buffer.begin()),
+            iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
+            m_neighbourhood_buffer, m_max_buffer_n, start_row,
+            kernel.get_kernel_function(), query));
   }
 
   template <typename RowParticles, typename ColParticles>
@@ -1498,7 +1530,7 @@ public:
     thrust::device_vector<double> b_gpu(x.size());
 
     // copy source b to both gpu vectors
-    thrust::copy(b.derived().data().b.derived().data() + x.size(),
+    thrust::copy(b.derived().data(), b.derived().data() + x.size(),
                  x_gpu.begin());
     thrust::copy(x_gpu.begin(), x_gpu.end(), b_gpu.begin());
 
@@ -1512,8 +1544,7 @@ public:
          domain_factorized_matrix =
              iterator_to_raw_pointer(domain_factorized_matrix.begin()),
          x = iterator_to_raw_pointer(x_gpu.begin()),
-         b = iterator_to_raw_pointer(
-             b_gpu.begin())] CUDA_HOST_DEVICE(const int i) {
+         b = iterator_to_raw_pointer(b_gpu.begin())] __device__(const int i) {
           const storage_vector_type &buffer = domain_buffer[i];
           const storage_vector_type &indicies = domain_indicies[i];
           if (indicies.size() == 0)

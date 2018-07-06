@@ -1523,13 +1523,13 @@ public:
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
   struct count_children {
-    const Query *m_query;
+    const Query m_query;
 
     CUDA_HOST_DEVICE
     auto operator()(const child_iterator &ci) {
-      const int nchild = m_query->is_leaf_node(*ci)
+      const int nchild = m_query.is_leaf_node(*ci)
                              ? 0
-                             : m_query->get_children(ci).distance_to_end();
+                             : m_query.get_children(ci).distance_to_end();
       return vint2(nchild, nchild == 0);
     }
   };
@@ -1538,18 +1538,18 @@ public:
     vint2 *m_counts;
     child_iterator *m_leafs;
     int m_leafs_old_size;
-    const Query *m_query;
+    const Query m_query;
     child_iterator *m_next_level;
     child_iterator *m_level;
 
     CUDA_HOST_DEVICE
     void operator()(const int i) {
       auto ci = m_level[i];
-      if (m_query->is_leaf_node(*ci)) {
+      if (m_query.is_leaf_node(*ci)) {
         const int leafs_index = m_leafs_old_size + m_counts[i][1];
         m_leafs[leafs_index] = ci;
       } else {
-        auto child = m_query->get_children(ci);
+        auto child = m_query.get_children(ci);
         for (int next_level_index = m_counts[i][0]; child != false;
              ++child, ++next_level_index) {
           m_next_level[next_level_index] = child;
@@ -1572,13 +1572,13 @@ private:
 
     m_counts.resize(m_level.size());
     detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
-                                     m_counts.begin(), count_children{m_query},
+                                     m_counts.begin(), count_children{*m_query},
                                      Vector<int, 2>::Constant(0),
                                      std::plus<Vector<int, 2>>());
 
     // resize for new children and leafs
     const vint2 nchildren = static_cast<vint2>(m_counts.back()) +
-                            count_children{m_query}(m_level.back());
+                            count_children{*m_query}(m_level.back());
     m_next_level.resize(nchildren[0]);
     const size_t m_leafs_old_size = m_leafs.size();
     m_leafs.resize(m_leafs.size() + nchildren[1]);
@@ -1597,7 +1597,7 @@ private:
         count, count + m_level.size(),
         copy_children_and_leafs{iterator_to_raw_pointer(m_counts.begin()),
                                 iterator_to_raw_pointer(m_leafs.begin()),
-                                m_leafs_old_size, m_query,
+                                m_leafs_old_size, *m_query,
                                 iterator_to_raw_pointer(m_next_level.begin()),
                                 iterator_to_raw_pointer(m_level.begin())});
 
