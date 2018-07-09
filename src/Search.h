@@ -57,6 +57,209 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 namespace Aboria {
 
+template <typename Query> class search_bf_iterator {
+  typedef bf_iterator<Query> iterator;
+  typedef typename Query::child_iterator child_iterator;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef typename Query::traits_type traits_type;
+  typedef typename traits_type::template tuple<child_iterator, child_iterator>
+      ci_pair;
+  typedef typename traits_type::template vector<ci_pair> vector_ci_pair;
+  typedef typename traits_type::template vector<vint2> vector_vint2;
+
+public:
+  typedef vector_ci_pair const value_type;
+  typedef vector_ci_pair *pointer;
+  typedef vector_ci_pair const &reference;
+  typedef std::forward_iterator_tag iterator_category;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  search_bf_iterator() {}
+
+  /// this constructor is used to start the iterator at the head of a bucket
+  /// list
+  CUDA_HOST_DEVICE
+  search_bf_iterator(const child_iterator &start_node, const Query *query)
+      : m_level_num(1), m_query(query) {
+    if (start_node != false) {
+      m_level.resize(start_node.distance_to_end());
+      int i = 0;
+      for (auto ci = start_node; ci != false; ++ci, ++i) {
+        m_level[i] = ci;
+      }
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tsearch_bf_iterator (constructor): start is false, no "
+             "children to search.");
+#endif
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  reference operator*() const { return dereference(); }
+  CUDA_HOST_DEVICE
+  reference operator->() { return dereference(); }
+  CUDA_HOST_DEVICE
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+  CUDA_HOST_DEVICE
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+  CUDA_HOST_DEVICE
+  size_t operator-(iterator start) const {
+    size_t count = 0;
+    while (start != *this) {
+      start++;
+      count++;
+    }
+    return count;
+  }
+  CUDA_HOST_DEVICE
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+  struct count_children {
+    const Query m_query;
+
+    CUDA_HOST_DEVICE
+    auto operator()(const ci_pair &ci2) {
+      // op 1: a and b are greater than search, nchild = 0
+      //  if not:
+      // op 2: a is parent, b is parent, nchild = nca*ncb
+      // op 3: a is parent, b is leaf, nchild = nca*1
+      // op 4: a is leaf, b is parent, nchild = 1*ncb
+      // op 5: a is leaf, b is leaf, nchild = 0
+      auto &a = ci2.template get<0>(ci2);
+      auto &b = ci2.template get<1>(ci2);
+      // btw, nchild = 1, really means nchild = 0
+      int nchild;
+      if (within_distance(a, b)) {
+        const int nchild_a = m_query.is_leaf_node(*a)
+                                 ? 1
+                                 : m_query.get_children(a).distance_to_end();
+        const int nchild_b = m_query.is_leaf_node(*b)
+                                 ? 1
+                                 : m_query.get_children(b).distance_to_end();
+        nchild = nchild_a * nchild_b;
+      } else {
+        nchild = 0;
+      }
+
+      return vint3(nchild, nchild == 1, nchild == 0);
+    }
+  };
+
+  struct copy_children_and_leafs {
+    vint2 *m_counts;
+    child_iterator *m_leafs;
+    int m_leafs_old_size;
+    const Query m_query;
+    child_iterator *m_next_level;
+    child_iterator *m_level;
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      auto ci = m_level[i];
+      if (m_query.is_leaf_node(*ci)) {
+        const int leafs_index = m_leafs_old_size + m_counts[i][1];
+        m_leafs[leafs_index] = ci;
+      } else {
+        auto child = m_query.get_children(ci);
+        for (int next_level_index = m_counts[i][0]; child != false;
+             ++child, ++next_level_index) {
+          m_next_level[next_level_index] = child;
+        }
+      }
+    }
+  };
+
+private:
+  CUDA_HOST_DEVICE
+  void increment() {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tincrement (bf_iterator): m_level size = "
+               << m_level.size() << " m_leafs size = " << m_leafs.size());
+#endif
+    // m_level [ci0, ci1, ci2, ...]
+    // exclusive scan for # children + # leafs: n_child
+    // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
+    // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
+
+    m_counts.resize(m_level.size());
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_children{*m_query},
+                                     vint3::Constant(0), detail::plus());
+
+    // resize for new children and leafs
+    const vint3 nchildren = static_cast<vint3>(m_counts.back()) +
+                            count_children{*m_query}(m_level.back());
+    m_next_level.resize(nchildren[0]);
+    const size_t m_leafs_old_size = m_leafs.size();
+    m_leafs.resize(m_leafs.size() + nchildren[1]);
+    m_internal_leafs.resize(nchildren[2]);
+
+// tabulate m_level to copy children to m_next_level, or leafs to
+// m_leafs
+#if defined(__CUDACC__)
+    typedef typename thrust::detail::iterator_category_to_system<
+        typename Query::traits_type::vector_int::iterator::iterator_category>::
+        type system;
+    thrust::counting_iterator<int, system> count(0);
+#else
+    auto count = Query::traits_type::make_counting_iterator(0);
+#endif
+    detail::for_each(
+        count, count + m_level.size(),
+        copy_children_and_leafs{iterator_to_raw_pointer(m_counts.begin()),
+                                iterator_to_raw_pointer(m_leafs.begin()),
+                                m_leafs_old_size, *m_query,
+                                iterator_to_raw_pointer(m_next_level.begin()),
+                                iterator_to_raw_pointer(m_level.begin())});
+
+    // swap level back to m_level and increment level count
+    m_level.swap(m_next_level);
+    m_level_num++;
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tend increment (bf_iterator):");
+#endif
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(iterator const &other) const {
+    return m_query == other.m_query && m_level_num == other.m_level_num;
+  }
+
+  CUDA_HOST_DEVICE bool equal(const bool other) const {
+    return m_level.empty();
+  }
+
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_level.empty() ? m_leafs : m_level; }
+
+  vector_ci m_level;
+  vector_ci m_next_level;
+  vector_vint2 m_counts;
+  vector_ci m_leafs;
+  size_t m_level_num;
+  const Query *m_query;
+};
+
 /// A const iterator to a set of neighbouring points. This iterator implements
 /// a STL forward iterator type
 // assume that these iterators, and query functions, are only called from device
@@ -354,13 +557,14 @@ private:
 
     while (m_current_bucket == false) {
 #ifdef __CUDA_ARCH__
-        if (3 <= ABORIA_LOG_LEVEL) {                                             \
-            printf("\t\tgo_to_next periodic (search_iterator): m_current_periodic = (");
-            for (int i = 0; i < Traits::dimension; ++i) {
-                printf("%d,",(*m_current_periodic)[i]);
-            }
-            printf("\n,");
+      if (3 <= ABORIA_LOG_LEVEL) {
+        printf("\t\tgo_to_next periodic (search_iterator): m_current_periodic "
+               "= (");
+        for (int i = 0; i < Traits::dimension; ++i) {
+          printf("%d,", (*m_current_periodic)[i]);
         }
+        printf("\n,");
+      }
 #else
       LOG(3, "\tgo_to_next periodic (search_iterator): m_current_periodic = "
                  << *m_current_periodic);
@@ -443,17 +647,17 @@ private:
       }
     }
 #ifdef __CUDA_ARCH__
-    if (3 <= ABORIA_LOG_LEVEL) {                                             \
-        printf("\tcheck_candidate: m_r = (");
-        for (int i = 0; i < Traits::dimension; ++i) {
-            printf("%d,",m_current_point[i]);
-        }
-        printf(") other r = (");
-        for (int i = 0; i < Traits::dimension; ++i) {
-            printf("%d,",get<position>(*m_current_particle)[i]);
-        }
-        printf("). outside = %d",outside);
-    } 
+    if (3 <= ABORIA_LOG_LEVEL) {
+      printf("\tcheck_candidate: m_r = (");
+      for (int i = 0; i < Traits::dimension; ++i) {
+        printf("%d,", m_current_point[i]);
+      }
+      printf(") other r = (");
+      for (int i = 0; i < Traits::dimension; ++i) {
+        printf("%d,", get<position>(*m_current_particle)[i]);
+      }
+      printf("). outside = %d", outside);
+    }
 #else
     LOG(3, "\tcheck_candidate: m_r = " << m_current_point << " other r = "
                                        << get<position>(*m_current_particle)
@@ -512,15 +716,12 @@ template <typename Query> class bucket_pair_iterator {
   double_d m_position_offset;
 
 public:
-  typedef const std::tuple<const int_d &, const int_d &,
-                                                const double_d &> *pointer;
+  typedef const std::tuple<const int_d &, const int_d &, const double_d &>
+      *pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef const std::tuple<const int_d &, const int_d &,
-                                                const double_d &>
+  typedef const std::tuple<const int_d &, const int_d &, const double_d &>
       reference;
-  typedef const std::tuple<const int_d, const int_d,
-                                                const double_d>
-      value_type;
+  typedef const std::tuple<const int_d, const int_d, const double_d> value_type;
   typedef std::ptrdiff_t difference_type;
 
   ABORIA_HOST_DEVICE_IGNORE_WARN

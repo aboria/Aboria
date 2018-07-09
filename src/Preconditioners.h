@@ -1465,30 +1465,18 @@ public:
                         m_domain_factorized_matrix);
   }
 
-  template <typename Rhs, typename Dest>
-  static void swartz_solve_helper(
-      const Rhs &b, Dest &x,
-      const std::vector<std::vector<size_t>> &domain_indicies,
-      const std::vector<std::vector<size_t>> &domain_buffer,
-      const std::vector<solver_type> &domain_factorized_matrix) {
-    // loop over domains and invert relevent sub-matricies in
-    // mat
-    // TODO: do I need this? x = b;
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (int i = 0; i < x.size(); ++i) {
-      x[i] = b[i];
-    }
+  struct solve_domain {
+    const storage_vector_type *m_domain_indicies;
+    const storage_vector_type *m_domain_buffer;
+    const solver_type *domain_factorized_matrix;
+    double *x;
+    const double *b;
 
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < domain_indicies.size(); ++i) {
-      const storage_vector_type &buffer = domain_buffer[i];
-      const storage_vector_type &indicies = domain_indicies[i];
+    __device__ void operator()(const int i) {
+      const storage_vector_type &buffer = m_domain_buffer[i];
+      const storage_vector_type &indicies = m_domain_indicies[i];
       if (indicies.size() == 0)
-        continue;
+        return;
 
       const size_t nb = indicies.size() + buffer.size();
 
@@ -1515,9 +1503,42 @@ public:
         x[indicies[j]] = domain_x[sub_index++];
       }
     }
+  };
+
+  template <typename Rhs, typename Dest>
+  static void swartz_solve_helper(
+      const Rhs &b, Dest &x,
+      const std::vector<std::vector<size_t>> &domain_indicies,
+      const std::vector<std::vector<size_t>> &domain_buffer,
+      const std::vector<solver_type> &domain_factorized_matrix) {
+    // TODO: counting interator and use stl algs...
+    //
+    // loop over domains and invert relevent sub-matricies in
+    // mat
+    // TODO: do I need this? x = b;
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (int i = 0; i < x.size(); ++i) {
+      x[i] = b[i];
+    }
+
+    solve_domain fsolve_domain{
+        iterator_to_raw_pointer(domain_indicies.begin()),
+        iterator_to_raw_pointer(domain_buffer.begin()),
+        iterator_to_raw_pointer(domain_factorized_matrix.begin()),
+        x.derived().data(), b.derived().data()};
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < domain_indicies.size(); ++i) {
+      fsolve_domain(i);
+    }
   }
 
 #ifdef HAVE_THRUST
+
   template <typename Rhs, typename Dest>
   static void swartz_solve_helper(
       const Rhs &b, Dest &x,
@@ -1539,42 +1560,11 @@ public:
     thrust::counting_iterator<int> count(0);
     thrust::for_each(
         count, count + domain_indicies.size(),
-        [domain_indicies = iterator_to_raw_pointer(domain_indicies.begin()),
-         domain_buffer = iterator_to_raw_pointer(domain_buffer.begin()),
-         domain_factorized_matrix =
-             iterator_to_raw_pointer(domain_factorized_matrix.begin()),
-         x = iterator_to_raw_pointer(x_gpu.begin()),
-         b = iterator_to_raw_pointer(b_gpu.begin())] __device__(const int i) {
-          const storage_vector_type &buffer = domain_buffer[i];
-          const storage_vector_type &indicies = domain_indicies[i];
-          if (indicies.size() == 0)
-            return;
-
-          const size_t nb = indicies.size() + buffer.size();
-
-          vector_type domain_x;
-          vector_type domain_b;
-          domain_x.resize(nb);
-          domain_b.resize(nb);
-
-          // copy x values from big vector
-          size_t sub_index = 0;
-          for (size_t j = 0; j < indicies.size(); ++j) {
-            domain_b[sub_index++] = b[indicies[j]];
-          }
-          for (size_t j = 0; j < buffer.size(); ++j) {
-            domain_b[sub_index++] = b[buffer[j]];
-          }
-
-          // solve domain
-          domain_x = domain_factorized_matrix[i].solve(domain_b);
-
-          // copy accumulate b values to big vector
-          sub_index = 0;
-          for (size_t j = 0; j < indicies.size(); ++j) {
-            x[indicies[j]] = domain_x[sub_index++];
-          }
-        });
+        solve_domain{iterator_to_raw_pointer(domain_indicies.begin()),
+                     iterator_to_raw_pointer(domain_buffer.begin()),
+                     iterator_to_raw_pointer(domain_factorized_matrix.begin()),
+                     iterator_to_raw_pointer(x_gpu.begin()),
+                     iterator_to_raw_pointer(b_gpu.begin())});
 
     // copy result back
     //
