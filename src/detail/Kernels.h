@@ -45,6 +45,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 namespace detail {
+
+void leaf_buckets_to_indices(const std::vector<child_iterator> &cis,
+                             std::vector<size_t> &indices) {}
+
+void leaf_buckets_to_indices(const thrust::device_vector<child_iterator> &cis,
+                             thrust::device_vector<size_t> &indices) {}
+
 template <typename RowRef, typename ColRef, typename F>
 struct kernel_helper_ref {
 

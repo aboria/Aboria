@@ -1460,8 +1460,8 @@ template <typename Query> class bf_iterator {
   typedef Vector<double, dimension> double_d;
   typedef Vector<int, dimension> int_d;
   typedef typename Query::traits_type traits_type;
-  typedef typename traits_type::vector<child_iterator> vector_ci;
-  typedef typename traits_type::vector<vint2> vector_vint2;
+  typedef typename traits_type::template vector<child_iterator> vector_ci;
+  typedef typename traits_type::template vector<vint2> vector_vint2;
 
 public:
   typedef vector_ci const value_type;
@@ -1577,10 +1577,9 @@ private:
     // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
 
     m_counts.resize(m_level.size());
-    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
-                                     m_counts.begin(), count_children{*m_query},
-                                     Vector<int, 2>::Constant(0),
-                                     std::plus<Vector<int, 2>>());
+    detail::transform_exclusive_scan(
+        m_level.begin(), m_level.end(), m_counts.begin(),
+        count_children{*m_query}, Vector<int, 2>::Constant(0), detail::plus());
 
     // resize for new children and leafs
     const vint2 nchildren = static_cast<vint2>(m_counts.back()) +

@@ -432,7 +432,8 @@ single_iterator_to_raw_pointer(const Iterator &arg,
 #endif
 
 template <typename Iterator>
-typename std::iterator_traits<Iterator>::value_type *
+auto
+// typename std::iterator_traits<Iterator>::value_type *
 iterator_to_raw_pointer(const Iterator &arg, std::false_type) {
 #ifdef HAVE_THRUST
   return thrust::raw_pointer_cast(&*arg);
