@@ -981,6 +981,107 @@ public:
               << " versus brute force = " << dt_brute.count() << std::endl;
   }
 
+  template <unsigned int D, template <typename, typename> class VectorType,
+            template <typename> class SearchMethod>
+  void helper_d_random_breadth_search(const int N, const double r,
+                                      const bool is_periodic,
+                                      const bool push_back_construction) {
+    typedef Particles<std::tuple<neighbours_brute, neighbours_aboria>, D,
+                      VectorType, SearchMethod>
+        particles_type;
+    typedef typename particles_type::query_type query_type;
+    typedef position_d<D> position;
+    typedef Vector<double, D> double_d;
+    typedef Vector<bool, D> bool_d;
+    double_d min = double_d::Constant(-1);
+    double_d max = double_d::Constant(1);
+    bool_d periodic = double_d::Constant(is_periodic);
+    particles_type particles;
+    const double required_bucket_size = r;
+    const double required_bucket_number =
+        N * std::pow(required_bucket_size, D) / std::pow(2.0, D);
+    double r2 = r * r;
+
+    std::cout << "random breadth search test (D=" << D
+              << " periodic= " << is_periodic << "  N=" << N << " r=" << r
+              << " required_bucket_number = " << required_bucket_number
+              << " push_back_construction = " << push_back_construction
+              << "):" << std::endl;
+
+    unsigned seed1 =
+        std::chrono::system_clock::now().time_since_epoch().count();
+    std::cout << "seed is " << seed1 << std::endl;
+    particles.set_seed(seed1);
+    generator_type gen(seed1);
+
+#if defined(__CUDACC__)
+    thrust::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#else
+    std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#endif
+
+    if (push_back_construction) {
+      particles.init_neighbour_search(min, max, periodic,
+                                      required_bucket_number);
+      typename particles_type::value_type p;
+      for (int i = 0; i < N; ++i) {
+        for (size_t d = 0; d < D; ++d) {
+          get<position>(p)[d] = uniform(gen);
+        }
+        particles.push_back(p);
+      }
+    } else {
+      particles.resize(N);
+      std::for_each(
+          std::begin(particles), std::end(particles),
+          set_random_position<D, typename particles_type::raw_reference>(-1.0,
+                                                                         1.0));
+
+      particles.init_neighbour_search(min, max, periodic,
+                                      required_bucket_number);
+    }
+
+    // brute force search
+    auto t0 = Clock::now();
+    Aboria::detail::for_each(particles.begin(), particles.end(),
+                             brute_force_check<particles_type>(
+                                 particles, min, max, r2, is_periodic));
+    auto t1 = Clock::now();
+    std::chrono::duration<double> dt_brute = t1 - t0;
+
+    // Aboria search
+    t0 = Clock::now();
+    auto bf = get_;
+    auto pair_it = get_neighbouring_buckets(particles.get_query());
+    std::for_each(pair_it, decltype(pair_it)(),
+                  aboria_fast_bucketsearch_check_neighbour<query_type>(
+                      particles.get_query(), r));
+    auto self_it = particles.get_query().get_subtree();
+    std::for_each(self_it, decltype(self_it)(),
+                  aboria_fast_bucketsearch_check_self<query_type>(
+                      particles.get_query(), r));
+    t1 = Clock::now();
+    std::chrono::duration<double> dt_aboria = t1 - t0;
+    for (size_t i = 0; i < particles.size(); ++i) {
+      if (int(get<neighbours_brute>(particles)[i]) !=
+          int(get<neighbours_aboria>(particles)[i])) {
+        std::cout << "error in finding neighbours for p = "
+                  << static_cast<const double_d &>(get<position>(particles)[i])
+                  << " over radius " << r << std::endl;
+        particles.print_data_structure();
+
+        TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                         int(get<neighbours_aboria>(particles)[i]));
+        return;
+      }
+      TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                       int(get<neighbours_aboria>(particles)[i]));
+    }
+
+    std::cout << "\ttiming result: Aboria = " << dt_aboria.count()
+              << " versus brute force = " << dt_brute.count() << std::endl;
+  }
+
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_regular() {
