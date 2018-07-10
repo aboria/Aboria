@@ -807,6 +807,23 @@ template <typename Traits> struct NeighbourQueryBase {
   size_t get_bucket_index(const reference bucket) const;
 
   ///
+  /// @brief returns all the bucket within a distance of a bucket
+  ///
+  /// This function can use multiple p-norm distance types by setting @p
+  /// LNormNumber, and uses a isotropic distance value given by @p max_distance.
+  /// Note that only buckets within the domain are returned, and periodicity is
+  /// not taken into account
+  ///
+  /// @param position the position to search around
+  /// @param max_distance the maximum distance of the buckets to be returned
+  /// @return an @ref iterator_range containing all the buckets found
+  ///
+  template <int LNormNumber = -1>
+  query_iterator<LNormNumber>
+  get_buckets_near_bucket(const reference bucket,
+                          const double max_distance) const;
+
+  ///
   /// @brief returns all the bucket within a distance of a point
   ///
   /// This function can use multiple p-norm distance types by setting @p
@@ -1487,6 +1504,9 @@ public:
   }
 
   CUDA_HOST_DEVICE
+  reference leafs() const { return m_leafs; }
+
+  CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
   CUDA_HOST_DEVICE
   reference operator->() { return dereference(); }
@@ -1618,7 +1638,7 @@ private:
   }
 
   CUDA_HOST_DEVICE
-  reference dereference() const { return m_level.empty() ? m_leafs : m_level; }
+  reference dereference() const { return m_level; }
 
   vector_ci m_level;
   vector_ci m_next_level;
@@ -2434,6 +2454,328 @@ private:
       }
     }
     LOG_CUDA(3, "lattice_iterator_within_distance: increment :end");
+  }
+};
+
+template <typename Query, int LNormNumber>
+class lattice_iterator_around_bounds {
+  typedef lattice_iterator_around_bounds<Query, LNormNumber> iterator;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef bbox<dimension> box_t;
+
+  // make a proxy int_d in case you ever
+  // want to get a pointer object to the
+  // reference (which are both of the
+  // same type)
+  struct proxy_int_d : public int_d {
+    CUDA_HOST_DEVICE
+    proxy_int_d() : int_d() {}
+
+    CUDA_HOST_DEVICE
+    proxy_int_d(const int_d &arg) : int_d(arg) {}
+
+    CUDA_HOST_DEVICE
+    proxy_int_d &operator&() { return *this; }
+
+    CUDA_HOST_DEVICE
+    const proxy_int_d &operator&() const { return *this; }
+
+    CUDA_HOST_DEVICE
+    const proxy_int_d &operator*() const { return *this; }
+
+    CUDA_HOST_DEVICE
+    proxy_int_d &operator*() { return *this; }
+
+    CUDA_HOST_DEVICE
+    const proxy_int_d *operator->() const { return this; }
+
+    CUDA_HOST_DEVICE
+    proxy_int_d *operator->() { return this; }
+  };
+
+  box_t m_query_box;
+  double m_inv_max_distance;
+  int m_quadrant;
+  const Query *m_query;
+  bool m_valid;
+  int_d m_min;
+  proxy_int_d m_index;
+
+public:
+  typedef proxy_int_d pointer;
+  typedef std::random_access_iterator_tag iterator_category;
+  typedef const proxy_int_d &reference;
+  typedef proxy_int_d value_type;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  lattice_iterator_around_bounds() : m_valid(false) {}
+
+  CUDA_HOST_DEVICE
+  lattice_iterator_around_bounds(const box_ &query_box,
+                                 const double max_distance, const Query *query)
+      : m_query_box(query_box), m_inv_max_distance(1.0 / max_distance),
+        m_quadrant(0), m_query(query), m_valid(true) {
+    if (outside_domain(query_point, max_distance)) {
+      m_valid = false;
+    } else {
+      reset_min_and_index();
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  explicit operator size_t() const {
+    return m_query->m_point_to_bucket_index.collapse_index_vector(m_index);
+  }
+
+  lattice_iterator<dimension> get_child_iterator() const {
+    lattice_iterator<dimension> ret = m_query->get_subtree();
+    ret = m_index;
+    return ret;
+  }
+
+  CUDA_HOST_DEVICE
+  reference operator*() const { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  reference operator->() const { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+
+  CUDA_HOST_DEVICE
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  CUDA_HOST_DEVICE
+  size_t operator-(const iterator &start) const {
+    int distance = 0;
+    iterator tmp = start;
+    while (tmp != *this) {
+      ++distance;
+      ++tmp;
+    }
+    return distance;
+  }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+private:
+  CUDA_HOST_DEVICE
+  bool equal(iterator const &other) const {
+    if (!other.m_valid)
+      return !m_valid;
+    if (!m_valid)
+      return !other.m_valid;
+    for (size_t i = 0; i < dimension; ++i) {
+      if (m_index[i] != other.m_index[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_valid == other; }
+
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_index; }
+
+  CUDA_HOST_DEVICE
+  bool ith_quadrant_bit(const int i) const {
+    return (1 == ((m_quadrant >> i) & 1));
+  }
+
+  CUDA_HOST_DEVICE static bool boxes_within_distance(const bbox<D> &a,
+                                                     const bbox<D> &b,
+                                                     const double distance) {
+    double squaredNorm = 0;
+    for (size_t i = 0; i < D; ++i) {
+      if (a.bmax[i] < b.bmin[i]) {
+        detail::distance_helper<LNormNumber>::do_accumulate(
+            squaredNorm,
+            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
+                b.bmin[i] - a.bmax[i]));
+      } else if (b.bmax[i] < a.bmin[i]) {
+        detail::distance_helper<LNormNumber>::do_accumulate(
+            squaredNorm,
+            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
+                a.bmin[i] - b.bmax[i]));
+      }
+    }
+    return squaredNorm <= distance;
+  }
+
+  CUDA_HOST_DEVICE
+  void reset_min_and_index() {
+    bool no_buckets = true;
+
+    LOG_CUDA(3, "lattice_iterator_around_bounds: reset_min_and_index:begin");
+    while (m_valid && no_buckets) {
+      for (size_t i = 0; i < dimension; ++i) {
+        m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
+            0.5 * (m_query_box.bmin[i] + m_query_box.bmax[i]), i,
+            ith_quadrant_bit(i));
+      }
+
+      // check distance
+      double accum = 0;
+      for (size_t j = 0; j < dimension; ++j) {
+        const double r =
+            ith_quadrant_bit(j) ? m_query_box.bmax[j] : m_query_box.bmin[j];
+        double dist = m_query->m_point_to_bucket_index.get_dist_by_quadrant(
+            r, m_min[j], j, ith_quadrant_bit(j));
+        if (dist < 0) {
+          dist = 0;
+        }
+        // std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<<
+        // std::endl;
+        accum =
+            detail::distance_helper<LNormNumber>::accumulate_norm(accum, dist);
+      }
+      // std::cout <<"accum = "<<accum<< std::endl;
+      //
+      no_buckets = accum * m_inv_max_distance > 1.0;
+
+      // std::cout <<" m_min = "<<m_min<<" m_quadrant = "<<m_quadrant <<
+      // std::endl;
+
+      // if good, check that this quadrant is within domain
+      if (!no_buckets) {
+        for (size_t i = 0; i < dimension; i++) {
+          if (ith_quadrant_bit(i)) {
+            if (m_min[i] < 0) {
+              m_min[i] = 0;
+            } else if (m_min[i] > m_query->m_end_bucket[i]) {
+              no_buckets = true;
+              m_min[i] = m_query->m_end_bucket[i];
+            }
+          } else {
+            if (m_min[i] < 0) {
+              no_buckets = true;
+              m_min[i] = 0;
+            } else if (m_min[i] > m_query->m_end_bucket[i]) {
+              m_min[i] = m_query->m_end_bucket[i];
+            }
+          }
+        }
+      }
+      if (no_buckets) {
+        // if no buckets, move onto next quadrant
+        ++m_quadrant;
+        if (m_quadrant >= (1 << dimension)) {
+          m_valid = false;
+        }
+      } else {
+        // we got a non empty quadrent, lets go!
+        m_index = m_min;
+      }
+    }
+    // std::cout <<"m_valid = "<<m_valid<<" m_min = "<<m_min<< "m_index =
+    // "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
+    LOG_CUDA(3, "lattice_iterator_around_bounds: reset_min_and_index:end");
+  }
+
+  CUDA_HOST_DEVICE
+  bool outside_domain(const box_t &box, const double &max_distance) {
+    int_d start = m_query->m_point_to_bucket_index.find_bucket_index_vector(
+        box.bmin - max_distance);
+    int_d end = m_query->m_point_to_bucket_index.find_bucket_index_vector(
+        box.bmax + max_distance);
+
+    bool no_buckets = false;
+    for (size_t i = 0; i < dimension; i++) {
+      if (start[i] > m_query->m_end_bucket[i]) {
+        no_buckets = true;
+      }
+      if (end[i] < 0) {
+        no_buckets = true;
+      }
+    }
+    return no_buckets;
+  }
+
+  CUDA_HOST_DEVICE
+  void increment() {
+    LOG_CUDA(3, "lattice_iterator_around_bounds: increment :begin");
+    for (int i = dimension - 1; i >= 0; --i) {
+
+      // increment or decrement index depending on the current
+      // quadrant
+      bool potential_bucket = true;
+      if (ith_quadrant_bit(i)) {
+        ++m_index[i];
+        potential_bucket = m_index[i] <= m_query->m_end_bucket[i];
+      } else {
+        --m_index[i];
+        potential_bucket = m_index[i] >= 0;
+      }
+
+      // std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant
+      // =
+      // "<<m_quadrant << std::endl;
+
+      // if index is outside domain don't bother calcing
+      // distance
+      if (potential_bucket) {
+        double accum = 0;
+        for (size_t j = 0; j < dimension; ++j) {
+          const double r =
+              ith_quadrant_bit(j) ? m_query_box.bmax[j] : m_query_box.bmin[j];
+          double dist = m_query->m_point_to_bucket_index.get_dist_by_quadrant(
+              r, m_index[j], j, ith_quadrant_bit(j));
+          if (dist < 0) {
+            dist = 0;
+          }
+          // std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<<
+          // std::endl;
+          accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,
+                                                                        dist);
+        }
+        // std::cout <<"accum = "<<accum<< std::endl;
+
+        potential_bucket = accum * m_inv_max_distance <= 1.0;
+      }
+
+      // if bucket is still good break out of loop
+      if (potential_bucket)
+        break;
+
+      // must be outside distance or outside domain, so reset index back to
+      // min
+      m_index[i] = m_min[i];
+
+      // if gone through all dimensions, move to next quadrant
+      if (i == 0) {
+        ++m_quadrant;
+        if (m_quadrant < (1 << dimension)) {
+          reset_min_and_index();
+        } else {
+          // if gone through all quadrants, iterator
+          // is now invalid
+          m_valid = false;
+        }
+      }
+    }
+    LOG_CUDA(3, "lattice_iterator_around_bounds: increment :end");
   }
 };
 

@@ -510,7 +510,7 @@ public:
     TS_ASSERT_EQUALS(count_levels, query.number_of_levels());
 
     // check that remains are all leafs
-    for (auto ci : *i) {
+    for (auto ci : i.leafs()) {
       TS_ASSERT(query.is_leaf_node(*ci));
     }
   }
