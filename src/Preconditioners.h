@@ -1324,10 +1324,6 @@ public:
     typedef typename Kernel::col_elements_type col_elements_type;
     typedef typename row_elements_type::query_type query_type;
     typedef typename query_type::traits_type traits_type;
-    typedef typename query_type::child_iterator child_iterator;
-    typedef typename traits_type::double_d double_d;
-    typedef typename traits_type::int_d int_d;
-    typedef typename traits_type::position position;
 
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,
                   "Schwartz preconditioner restricted to identical row and col "
@@ -1472,7 +1468,7 @@ public:
     double *x;
     const double *b;
 
-    __device__ void operator()(const int i) {
+    CUDA_DEVICE void operator()(const int i) {
       const storage_vector_type &buffer = m_domain_buffer[i];
       const storage_vector_type &indicies = m_domain_indicies[i];
       if (indicies.size() == 0)

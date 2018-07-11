@@ -696,6 +696,7 @@ public:
         : query(particles.get_query()), r(r), r2(r * r) {}
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     void operator()(reference i) {
       int count = 0;
       for (auto j = euclidean_search(query, get<position>(i), r); j != false;
@@ -704,6 +705,35 @@ public:
         count++;
       }
       get<neighbours_aboria>(i) = count;
+    }
+  };
+
+  template <typename Query> struct aboria_pair_check {
+
+    typedef typename search_bf_iterator<Query, Query, 2>::value_type vector;
+    typedef typename vector::const_reference reference;
+    typedef position_d<Query::dimension> position;
+    typedef Vector<double, Query::dimension> double_d;
+
+    const Query query;
+    double r;
+    double r2;
+
+    aboria_pair_check(const Query &query, double r)
+        : query(query), r(r), r2(r * r) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    void operator()(reference i) {
+      auto ci_a = detail::get_impl<0>(i);
+      auto ci_b = detail::get_impl<1>(i);
+      for (auto i = query.get_bucket_particles(*ci_a); i != false; ++i) {
+        for (auto j = query.get_bucket_particles(*ci_b); j != false; ++j) {
+          if ((get<position>(*i) - get<position>(*j)).squaredNorm() <= r2) {
+            ++get<neighbours_aboria>(*i);
+          }
+        }
+      }
     }
   };
 
@@ -983,6 +1013,7 @@ public:
   template <unsigned int D, template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_random_breadth_search(const int N, const double r,
+                                      const int neighbour_n,
                                       const bool is_periodic,
                                       const bool push_back_construction) {
     typedef Particles<std::tuple<neighbours_brute, neighbours_aboria>, D,
@@ -996,14 +1027,11 @@ public:
     double_d max = double_d::Constant(1);
     bool_d periodic = double_d::Constant(is_periodic);
     particles_type particles;
-    const double required_bucket_size = r;
-    const double required_bucket_number =
-        N * std::pow(required_bucket_size, D) / std::pow(2.0, D);
     double r2 = r * r;
 
     std::cout << "random breadth search test (D=" << D
               << " periodic= " << is_periodic << "  N=" << N << " r=" << r
-              << " required_bucket_number = " << required_bucket_number
+              << " neighbour_n = " << neighbour_n
               << " push_back_construction = " << push_back_construction
               << "):" << std::endl;
 
@@ -1020,8 +1048,7 @@ public:
 #endif
 
     if (push_back_construction) {
-      particles.init_neighbour_search(min, max, periodic,
-                                      required_bucket_number);
+      particles.init_neighbour_search(min, max, periodic, neighbour_n);
       typename particles_type::value_type p;
       for (int i = 0; i < N; ++i) {
         for (size_t d = 0; d < D; ++d) {
@@ -1031,13 +1058,12 @@ public:
       }
     } else {
       particles.resize(N);
-      std::for_each(
+      detail::for_each(
           std::begin(particles), std::end(particles),
           set_random_position<D, typename particles_type::raw_reference>(-1.0,
                                                                          1.0));
 
-      particles.init_neighbour_search(min, max, periodic,
-                                      required_bucket_number);
+      particles.init_neighbour_search(min, max, periodic, neighbour_n);
     }
 
     // brute force search
@@ -1050,15 +1076,17 @@ public:
 
     // Aboria search
     t0 = Clock::now();
-    auto bf = get_;
-    auto pair_it = get_neighbouring_buckets(particles.get_query());
-    std::for_each(pair_it, decltype(pair_it)(),
-                  aboria_fast_bucketsearch_check_neighbour<query_type>(
-                      particles.get_query(), r));
-    auto self_it = particles.get_query().get_subtree();
-    std::for_each(self_it, decltype(self_it)(),
-                  aboria_fast_bucketsearch_check_self<query_type>(
-                      particles.get_query(), r));
+    auto search =
+        euclidean_pair_search(particles.get_query(), particles.get_query(), r);
+    if (particles.get_query().number_of_levels() == 1) {
+      detail::for_each(search->begin(), search->end(),
+                       aboria_pair_check<query_type>(particles.get_query(), r));
+    } else {
+      for (; search != false; ++search) {
+      }
+      detail::for_each(search.leafs().begin(), search.leafs().end(),
+                       aboria_pair_check<query_type>(particles.get_query(), r));
+    }
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria = t1 - t0;
     for (size_t i = 0; i < particles.size(); ++i) {
@@ -1132,6 +1160,67 @@ public:
 
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
+  void helper_d_test_list_random_pair(bool test_push_back = true) {
+
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                false, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                true, false);
+
+    if (test_push_back) {
+      helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                  false, true);
+      helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                  true, true);
+    }
+
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 10,
+                                                                true, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 10,
+                                                                false, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 100,
+                                                                true, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 100,
+                                                                false, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.5, 10,
+                                                                true, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.5, 10,
+                                                                false, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                true, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                false, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 100,
+                                                                true, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 100,
+                                                                false, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 10,
+                                                                true, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 10,
+                                                                false, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                true, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                false, false);
+
+    if (test_push_back) {
+      helper_d_random_breadth_search<1, VectorType, SearchMethod>(100, 0.1, 10,
+                                                                  true, true);
+      helper_d_random_breadth_search<2, VectorType, SearchMethod>(100, 0.1, 10,
+                                                                  false, true);
+      helper_d_random_breadth_search<2, VectorType, SearchMethod>(100, 0.5, 10,
+                                                                  true, true);
+      helper_d_random_breadth_search<2, VectorType, SearchMethod>(100, 0.5, 10,
+                                                                  false, true);
+      helper_d_random_breadth_search<3, VectorType, SearchMethod>(100, 0.2, 10,
+                                                                  true, true);
+      helper_d_random_breadth_search<3, VectorType, SearchMethod>(100, 0.2, 10,
+                                                                  false, true);
+    }
+  }
+
+  template <template <typename, typename> class VectorType,
+            template <typename> class SearchMethod>
   void helper_d_test_list_random_fast_bucketsearch(bool test_push_back = true) {
 
     helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(
@@ -1188,49 +1277,64 @@ public:
   }
 
   void test_std_vector_CellList(void) {
+    helper_d_test_list_random_pair<std::vector, CellList>();
+    /*
     helper_d_test_list_random<std::vector, CellList>();
     helper_single_particle<std::vector, CellList>();
     helper_two_particles<std::vector, CellList>();
     helper_d_test_list_regular<std::vector, CellList>();
+    */
   }
 
   void test_std_vector_CellListOrdered(void) {
-    helper_d_test_list_random<std::vector, CellListOrdered>();
-    helper_single_particle<std::vector, CellListOrdered>();
-    helper_two_particles<std::vector, CellListOrdered>();
+    /*
+  helper_d_test_list_random<std::vector, CellListOrdered>();
+  helper_single_particle<std::vector, CellListOrdered>();
+  helper_two_particles<std::vector, CellListOrdered>();
 
-    helper_d_test_list_regular<std::vector, CellListOrdered>();
+  helper_d_test_list_regular<std::vector, CellListOrdered>();
+  */
   }
 
   void test_std_vector_CellList_fast_bucketsearch(void) {
-    helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
-    helper_single_particle<std::vector, CellList>();
-    helper_two_particles<std::vector, CellList>();
-    helper_d_test_list_regular<std::vector, CellList>();
+    /*
+  helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
+  helper_single_particle<std::vector, CellList>();
+  helper_two_particles<std::vector, CellList>();
+  helper_d_test_list_regular<std::vector, CellList>();
+  */
   }
 
   void test_std_vector_CellListOrdered_fast_bucketsearch(void) {
-    helper_d_test_list_random_fast_bucketsearch<std::vector, CellListOrdered>();
-    helper_single_particle<std::vector, CellListOrdered>();
-    helper_two_particles<std::vector, CellListOrdered>();
-    helper_d_test_list_regular<std::vector, CellListOrdered>();
+    /*
+  helper_d_test_list_random_fast_bucketsearch<std::vector, CellListOrdered>();
+  helper_single_particle<std::vector, CellListOrdered>();
+  helper_two_particles<std::vector, CellListOrdered>();
+  helper_d_test_list_regular<std::vector, CellListOrdered>();
+  */
   }
 
   void test_std_vector_Kdtree(void) {
-    helper_d_test_list_random<std::vector, Kdtree>();
-    helper_d_test_list_regular<std::vector, Kdtree>();
+    /*
+  helper_d_test_list_random<std::vector, Kdtree>();
+  helper_d_test_list_regular<std::vector, Kdtree>();
+  */
   }
 
   void test_std_vector_KdtreeNanoflann(void) {
+    /*
 #if not defined(__CUDACC__)
-    helper_d_test_list_random<std::vector, KdtreeNanoflann>();
-    helper_d_test_list_regular<std::vector, KdtreeNanoflann>();
+  helper_d_test_list_random<std::vector, KdtreeNanoflann>();
+  helper_d_test_list_regular<std::vector, KdtreeNanoflann>();
 #endif
+*/
   }
 
   void test_std_vector_HyperOctree(void) {
-    helper_d_test_list_random<std::vector, HyperOctree>();
-    helper_d_test_list_regular<std::vector, HyperOctree>();
+    /*
+  helper_d_test_list_random<std::vector, HyperOctree>();
+  helper_d_test_list_regular<std::vector, HyperOctree>();
+  */
   }
 
   // void test_thrust_vector_CellList(void) {
@@ -1241,25 +1345,31 @@ public:
   //}
 
   void test_thrust_vector_CellListOrdered(void) {
+    /*
 #if defined(HAVE_THRUST)
-    // helper_d_test_list_random_fast_bucketsearch<std::vector,CellListOrdered>();
-    helper_d_test_list_regular<thrust::device_vector, CellListOrdered>();
-    helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
+  // helper_d_test_list_random_fast_bucketsearch<std::vector,CellListOrdered>();
+  helper_d_test_list_regular<thrust::device_vector, CellListOrdered>();
+  helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
 #endif
+*/
   }
 
   void test_thrust_vector_HyperOctree(void) {
+    /*
 #if defined(HAVE_THRUST)
-    helper_d_test_list_regular<thrust::device_vector, HyperOctree>();
-    helper_d_test_list_random<thrust::device_vector, HyperOctree>();
+  helper_d_test_list_regular<thrust::device_vector, HyperOctree>();
+  helper_d_test_list_random<thrust::device_vector, HyperOctree>();
 #endif
+*/
   }
 
   void test_thrust_vector_Kdtree(void) {
+    /*
 #if defined(HAVE_THRUST)
-    helper_d_test_list_random<thrust::device_vector, Kdtree>();
-    helper_d_test_list_regular<thrust::device_vector, Kdtree>();
+  helper_d_test_list_random<thrust::device_vector, Kdtree>();
+  helper_d_test_list_regular<thrust::device_vector, Kdtree>();
 #endif
+*/
   }
 };
 

@@ -242,6 +242,7 @@ typedef std::tuple<
   }
 };
 
+#ifdef HAVE_THRUST
 template <typename T> struct thrust_raw_pointer_cast {
   typedef typename thrust::iterator_traits<T>::reference ref_t;
   typedef typename ref_t::pointer pointer_t;
@@ -254,7 +255,6 @@ template <> struct thrust_raw_pointer_cast<thrust::null_type> {
   typedef thrust::null_type type;
 };
 
-#ifdef HAVE_THRUST
 template <typename T0, typename T1, typename T2, typename T3, typename T4,
           typename T5, typename T6, typename T7, typename T8, typename T9>
 struct zip_helper<thrust::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>> {
