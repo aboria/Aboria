@@ -2608,7 +2608,14 @@ private:
   void reset_min_and_index() {
     bool no_buckets = true;
 
+#ifdef __CUDA_ARCH__
     LOG_CUDA(3, "lattice_iterator_around_bounds: reset_min_and_index:begin");
+#else
+    LOG(3,
+        "lattice_iterator_around_bounds: reset_min_and_index:begin (m_quadrant "
+        "= " << m_quadrant
+             << ')');
+#endif
     while (m_valid && no_buckets) {
       for (size_t i = 0; i < dimension; ++i) {
         m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
@@ -2666,6 +2673,14 @@ private:
         }
       } else {
         // we got a non empty quadrent, lets go!
+#ifdef __CUDA_ARCH__
+        LOG_CUDA(3, "lattice_iterator_within_distance: reset_min_and_index: "
+                    "found valid bucket");
+#else
+        LOG(3, "lattice_iterator_within_distance: reset_min_and_index: "
+               "found valid bucket "
+                   << m_min);
+#endif
         m_index = m_min;
       }
     }
@@ -2736,8 +2751,18 @@ private:
       }
 
       // if bucket is still good break out of loop
-      if (potential_bucket)
+      if (potential_bucket) {
+#ifdef __CUDA_ARCH__
+        LOG_CUDA(3, "lattice_iterator_within_distance: increment: "
+                    "found valid bucket");
+#else
+        LOG(3, "lattice_iterator_within_distance: increment: "
+               "found valid bucket "
+                   << m_index);
+#endif
+
         break;
+      }
 
       // must be outside distance or outside domain, so reset index back to
       // min
