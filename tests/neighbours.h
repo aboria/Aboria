@@ -727,6 +727,8 @@ public:
     void operator()(reference i) {
       auto ci_a = detail::get_impl<0>(i);
       auto ci_b = detail::get_impl<1>(i);
+      auto offset = detail::get_impl<2>(i) *
+                    (query.get_bounds().bmax - query.get_bounds().bmin);
       int index_a = query.get_bucket_index(*ci_a);
       int index_b = query.get_bucket_index(*ci_b);
       // std::cout << "found ci pair " << index_a << " and " << index_b
@@ -737,7 +739,8 @@ public:
           for (auto j = query.get_bucket_particles(*ci_b); j != false; ++j) {
             // std::cout << "testing p_i = " << get<position>(*i)
             //          << " and p_j = " << get<position>(*j) << ": ";
-            if ((get<position>(*i) - get<position>(*j)).squaredNorm() < r2) {
+            if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
+                r2) {
               // std::cout << "NEIGHBOURS";
               ++get<neighbours_aboria>(*i);
               ++get<neighbours_aboria>(*j);
@@ -748,11 +751,14 @@ public:
       } else if (index_a == index_b) {
         for (auto i = query.get_bucket_particles(*ci_a); i != false; ++i) {
           // count self
-          ++get<neighbours_aboria>(*i);
+          if (offset.squaredNorm() < r2) {
+            ++get<neighbours_aboria>(*i);
+          }
           for (auto j = i + 1; j != false; ++j) {
             // std::cout << "testing p_i = " << get<position>(*i)
             //          << " and p_j = " << get<position>(*j) << ": ";
-            if ((get<position>(*i) - get<position>(*j)).squaredNorm() < r2) {
+            if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
+                r2) {
               // std::cout << "NEIGHBOURS";
               ++get<neighbours_aboria>(*i);
               ++get<neighbours_aboria>(*j);
@@ -1190,9 +1196,9 @@ public:
   void helper_d_test_list_random_pair(bool test_push_back = true) {
 
     helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
-                                                                true, false);
-    helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
                                                                 false, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                true, false);
 
     if (test_push_back) {
       helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
