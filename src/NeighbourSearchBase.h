@@ -2520,11 +2520,11 @@ public:
   lattice_iterator_around_bounds() : m_valid(false) {}
 
   CUDA_HOST_DEVICE
-  lattice_iterator_around_bounds(const box_ &query_box,
+  lattice_iterator_around_bounds(const box_t &query_box,
                                  const double max_distance, const Query *query)
       : m_query_box(query_box), m_inv_max_distance(1.0 / max_distance),
         m_quadrant(0), m_query(query), m_valid(true) {
-    if (outside_domain(query_point, max_distance)) {
+    if (outside_domain(query_box, max_distance)) {
       m_valid = false;
     } else {
       reset_min_and_index();
@@ -2608,26 +2608,6 @@ private:
   CUDA_HOST_DEVICE
   bool ith_quadrant_bit(const int i) const {
     return (1 == ((m_quadrant >> i) & 1));
-  }
-
-  CUDA_HOST_DEVICE static bool boxes_within_distance(const bbox<D> &a,
-                                                     const bbox<D> &b,
-                                                     const double distance) {
-    double squaredNorm = 0;
-    for (size_t i = 0; i < D; ++i) {
-      if (a.bmax[i] < b.bmin[i]) {
-        detail::distance_helper<LNormNumber>::do_accumulate(
-            squaredNorm,
-            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
-                b.bmin[i] - a.bmax[i]));
-      } else if (b.bmax[i] < a.bmin[i]) {
-        detail::distance_helper<LNormNumber>::do_accumulate(
-            squaredNorm,
-            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
-                a.bmin[i] - b.bmax[i]));
-      }
-    }
-    return squaredNorm <= distance;
   }
 
   CUDA_HOST_DEVICE

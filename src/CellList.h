@@ -1156,12 +1156,12 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   /// @copydoc NeighbourQueryBase::get_buckets_near_bucket()
   ///
   template <int LNormNumber = -1>
-  query_iterator<LNormNumber>
+  bounds_query_iterator<LNormNumber>
   get_buckets_near_bucket(const box_type &bounds,
                           const double max_distance) const {
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tget_buckets_near_point: position = "
-               << position << " max_distance = " << max_distance);
+    LOG(4, "\tget_buckets_near_bucket: bounds = "
+               << bounds << " max_distance = " << max_distance);
 #endif
 
     return bounds_query_iterator<LNormNumber>(bounds, max_distance, this);
