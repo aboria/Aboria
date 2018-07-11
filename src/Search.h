@@ -56,6 +56,22 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <queue>
 
 namespace Aboria {
+namespace detail {
+///
+/// @brief returns iterator for periodic lattice, given the periodicity
+/// of the domain
+///
+CUDA_HOST_DEVICE
+template <unsigned int D, typename periodic_iterator = lattice_iterator<D>>
+periodic_iterator get_periodic_range(const Vector<bool, D> &is_periodic) {
+  Vector<int, D> start, end;
+  for (size_t i = 0; i < D; ++i) {
+    start[i] = is_periodic[i] ? -1 : 0;
+    end[i] = is_periodic[i] ? 2 : 1;
+  }
+  return periodic_iterator(start, end);
+}
+} // namespace detail
 
 template <typename QueryA, typename QueryB, int LNormNumber>
 class search_bf_iterator {
@@ -75,6 +91,7 @@ class search_bf_iterator {
   typedef typename traits_type_a::template vector<ci_pair> vector_ci_pair;
   typedef typename traits_type_a::template vector<vint3> vector_vint3;
   typedef typename traits_type_a::template vector<int> vector_int;
+  typedef lattice_iterator<dimension> periodic_iterator_type;
 
 public:
   typedef vector_ci_pair const value_type;
@@ -117,7 +134,9 @@ public:
                                           distance};
         detail::transform_exclusive_scan(count, count + size_a, vcount.begin(),
                                          fcount, 0, detail::plus());
-        const int n_neighbours = vcount.back() + fcount(size_a);
+        const int n_neighbours = vcount.back() + fcount(size_a - 1);
+        LOG(2, "\tsearch_bf_iterator (constructor): found "
+                   << n_neighbours << " neighbouring bucket pairs.");
         m_level.resize(n_neighbours);
         detail::for_each(
             count, count + size_a,
@@ -125,12 +144,18 @@ public:
                                      iterator_to_raw_pointer(m_level.begin()),
                                      iterator_to_raw_pointer(vcount.begin()),
                                      *m_query_a, *m_query_b, distance});
+        if (ABORIA_LOG_LEVEL > 3) {
+          LOG(4, "\tsearch_bf_iterator (constructor): neighbouring bucket "
+                 "pairs are:");
+          for (const auto &i : m_level) {
+            LOG(4, "\t\t{" << *detail::get_impl<0>(i) << ','
+                           << *detail::get_impl<1>(i) << '}');
+          }
+        }
       }
     } else {
-#ifndef __CUDA_ARCH__
-      LOG(3, "\tsearch_bf_iterator (constructor): start is false, no "
+      LOG(2, "\tsearch_bf_iterator (constructor): start is false, no "
              "children to search.");
-#endif
     }
   }
 
@@ -205,10 +230,16 @@ public:
     int operator()(const int i) {
       int ret = 0;
       auto ci_a = first_ci_a + i;
-      for (auto ci_b = m_query_b.get_buckets_near_bucket(
-               m_query_a.get_bounds(ci_a), m_distance);
-           ci_b != false; ++ci_b, ++ret)
-        ;
+
+      for (auto p_it = detail::get_periodic_range(m_query_a.get_periodic());
+           p_it != false; ++p_it) {
+        const double_d offset = (*p_it) * (m_query_a.get_bounds().bmax -
+                                           m_query_a.get_bounds().bmin);
+        for (auto ci_b = m_query_b.get_buckets_near_bucket(
+                 m_query_a.get_bounds(ci_a) + offset, m_distance);
+             ci_b != false; ++ci_b, ++ret)
+          ;
+      }
       return ret;
     }
   };
@@ -224,11 +255,16 @@ public:
     CUDA_HOST_DEVICE void operator()(const int i) {
       int j = 0;
       auto ci_a = first_ci_a + i;
-      for (auto ci_b = m_query_b.get_buckets_near_bucket(
-               m_query_a.get_bounds(ci_a), m_distance);
-           ci_b != false; ++ci_b, ++j) {
-        detail::get_impl<0>(m_level[m_count[i] + j]) = *ci_a;
-        detail::get_impl<1>(m_level[m_count[i] + j]) = *ci_b;
+      for (auto p_it = detail::get_periodic_range(m_query_a.get_periodic());
+           p_it != false; ++p_it) {
+        const double_d offset = (*p_it) * (m_query_a.get_bounds().bmax -
+                                           m_query_a.get_bounds().bmin);
+        for (auto ci_b = m_query_b.get_buckets_near_bucket(
+                 m_query_a.get_bounds(ci_a) + offset, m_distance);
+             ci_b != false; ++ci_b, ++j) {
+          detail::get_impl<0>(m_level[m_count[i] + j]) = *ci_a;
+          detail::get_impl<1>(m_level[m_count[i] + j]) = *ci_b;
+        }
       }
     }
   };
@@ -494,21 +530,6 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   ///
-  /// @brief returns iterator for periodic lattice, given the periodicity
-  /// of the domain
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static periodic_iterator_type get_periodic_range(const bool_d is_periodic) {
-    int_d start, end;
-    for (size_t i = 0; i < dimension; ++i) {
-      start[i] = is_periodic[i] ? -1 : 0;
-      end[i] = is_periodic[i] ? 2 : 1;
-    }
-    return periodic_iterator_type(start, end);
-  }
-
-  ///
   /// @brief constructs an invalid iterator that can be used as an end()
   /// iterator
   ///
@@ -534,7 +555,7 @@ public:
         m_max_distance2(
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
                 max_distance)),
-        m_current_periodic(get_periodic_range(m_query->get_periodic())),
+        m_current_periodic(detail::get_periodic_range(m_query->get_periodic())),
         m_current_point(
             r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin)),

@@ -81,6 +81,24 @@ template <unsigned int D> struct bbox {
   }
 
   ///
+  /// @return translate the bounding box
+  ///
+  inline CUDA_HOST_DEVICE bbox &operator+=(const double_d &arg) {
+    bmin += arg;
+    bmax += arg;
+    return *this;
+  }
+
+  ///
+  /// @return translate the bounding box
+  ///
+  inline CUDA_HOST_DEVICE bbox operator+(const double_d &arg) const {
+    bbox bounds = *this;
+    bounds += arg;
+    return bounds;
+  }
+
+  ///
   /// @return the bounding box covering both input boxes
   ///
   inline CUDA_HOST_DEVICE bbox operator+(const bbox &arg) {
