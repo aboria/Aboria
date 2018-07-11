@@ -83,11 +83,12 @@ class search_bf_iterator {
                 "query dimensions must match");
   typedef Vector<double, dimension> double_d;
   typedef Vector<int, dimension> int_d;
+  typedef Vector<int8_t, dimension> int8_d;
   typedef typename QueryA::traits_type traits_type_a;
   typedef typename QueryB::traits_type traits_type_b;
-  typedef
-      typename traits_type_a::template tuple<child_iterator_a, child_iterator_b>
-          ci_pair;
+  typedef typename traits_type_a::template tuple<child_iterator_a,
+                                                 child_iterator_b, int8_d>
+      ci_pair;
   typedef typename traits_type_a::template vector<ci_pair> vector_ci_pair;
   typedef typename traits_type_a::template vector<vint3> vector_vint3;
   typedef typename traits_type_a::template vector<int> vector_int;
@@ -122,9 +123,18 @@ public:
         // put all n^2 ci pairs in m_level
         const int size_a = start_node_a.distance_to_end();
         const int size_b = start_node_b.distance_to_end();
+
         m_level.resize(size_a * size_b);
         detail::tabulate(m_level.begin(), m_level.end(),
-                         add_all_buckets{start_node_a, start_node_b, size_b});
+                         add_all_buckets{start_node_a, start_node_b, size_b,
+                                         int8_d::Constant(0)});
+        for (auto p_it = detail::get_periodic_range(m_query_b->get_periodic());
+             p_it != false; ++p_it) {
+          m_level.resize(m_level.size() + size_a * size_b);
+          detail::tabulate(
+              m_level.end() - size_a * size_b, m_level.end(),
+              add_all_buckets{start_node_a, start_node_b, size_b, *p_it});
+        }
       } else {
         // only put in neighbouring buckets
         const int size_a = start_node_a.distance_to_end();
@@ -149,7 +159,8 @@ public:
                  "pairs are:");
           for (const auto &i : m_level) {
             LOG(4, "\t\t{" << *detail::get_impl<0>(i) << ','
-                           << *detail::get_impl<1>(i) << '}');
+                           << *detail::get_impl<1>(i) << ','
+                           << detail::get_impl<2>(i) << '}');
           }
         }
       }
@@ -208,6 +219,7 @@ public:
     child_iterator_a first_ci_a;
     child_iterator_b first_ci_b;
     int m_size_b;
+    int8_d m_offset;
 
     CUDA_HOST_DEVICE
     ci_pair operator()(const int ij) {
@@ -216,7 +228,7 @@ public:
       const int i = ij / m_size_b;
       auto ci_a = first_ci_a + i;
       auto ci_b = first_ci_b + j;
-      return {ci_a, ci_b};
+      return {ci_a, ci_b, m_offset};
     }
   };
 
@@ -231,10 +243,10 @@ public:
       int ret = 0;
       auto ci_a = first_ci_a + i;
 
-      for (auto p_it = detail::get_periodic_range(m_query_a.get_periodic());
+      for (auto p_it = detail::get_periodic_range(m_query_b.get_periodic());
            p_it != false; ++p_it) {
-        const double_d offset = (*p_it) * (m_query_a.get_bounds().bmax -
-                                           m_query_a.get_bounds().bmin);
+        const double_d offset = (*p_it) * (m_query_b.get_bounds().bmax -
+                                           m_query_b.get_bounds().bmin);
         for (auto ci_b = m_query_b.get_buckets_near_bucket(
                  m_query_a.get_bounds(ci_a) + offset, m_distance);
              ci_b != false; ++ci_b, ++ret)
@@ -255,15 +267,16 @@ public:
     CUDA_HOST_DEVICE void operator()(const int i) {
       int j = 0;
       auto ci_a = first_ci_a + i;
-      for (auto p_it = detail::get_periodic_range(m_query_a.get_periodic());
+      for (auto p_it = detail::get_periodic_range(m_query_b.get_periodic());
            p_it != false; ++p_it) {
-        const double_d offset = (*p_it) * (m_query_a.get_bounds().bmax -
-                                           m_query_a.get_bounds().bmin);
+        const double_d offset = (*p_it) * (m_query_b.get_bounds().bmax -
+                                           m_query_b.get_bounds().bmin);
         for (auto ci_b = m_query_b.get_buckets_near_bucket(
                  m_query_a.get_bounds(ci_a) + offset, m_distance);
              ci_b != false; ++ci_b, ++j) {
           detail::get_impl<0>(m_level[m_count[i] + j]) = *ci_a;
           detail::get_impl<1>(m_level[m_count[i] + j]) = *ci_b;
+          detail::get_impl<2>(m_level[m_count[i] + j]) = *p_it;
         }
       }
     }
@@ -284,9 +297,11 @@ public:
       // op 5: a is leaf, b is leaf, nchild = 0
       auto &a = detail::get_impl<0>(ci2);
       auto &b = detail::get_impl<1>(ci2);
+      auto offset = detail::get_impl<2>(ci2) *
+                    (m_query_b.get_bounds().bmax - m_query_b.get_bounds().bmin);
       // btw, nchild = 1, really means nchild = 0
       int nchild;
-      if (boxes_within_distance(m_query_a.get_bounds(a),
+      if (boxes_within_distance(m_query_a.get_bounds(a) + offset,
                                 m_query_b.get_bounds(b), m_distance2)) {
         const int nchild_a = m_query_a.is_leaf_node(*a)
                                  ? 1
@@ -338,15 +353,17 @@ public:
         m_leafs[leafs_index] = m_level[i];
       } else {
         // pair have children
-        auto ci_a = detail::get_impl<0>(m_level[i]);
-        auto ci_b = detail::get_impl<1>(m_level[i]);
+        auto &ci_a = detail::get_impl<0>(m_level[i]);
+        auto &ci_b = detail::get_impl<1>(m_level[i]);
+        auto &offset = detail::get_impl<2>(m_level[i]);
         {
           int next_level_index = m_counts[i][0];
           for (auto child_a = m_query_a.get_children(ci_a); child_a != false;
                ++child_a) {
             for (auto child_b = m_query_b.get_children(ci_b); child_b != false;
                  ++child_b, ++next_level_index) {
-              m_next_level[next_level_index] = ci_pair(child_a, child_b);
+              m_next_level[next_level_index] =
+                  ci_pair(child_a, child_b, offset);
             }
           }
         }
