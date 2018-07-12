@@ -1311,40 +1311,40 @@ public:
   }
 
   void test_std_vector_CellList(void) {
+    helper_d_test_list_random<std::vector, CellList>();
     helper_d_test_list_random_pair<std::vector, CellList>();
     helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
-    helper_d_test_list_random<std::vector, CellList>();
     helper_single_particle<std::vector, CellList>();
     helper_two_particles<std::vector, CellList>();
     helper_d_test_list_regular<std::vector, CellList>();
   }
 
   void test_std_vector_CellListOrdered(void) {
+    helper_d_test_list_random<std::vector, CellListOrdered>();
     helper_d_test_list_random_pair<std::vector, CellListOrdered>();
     helper_d_test_list_random_fast_bucketsearch<std::vector, CellListOrdered>();
-    helper_d_test_list_random<std::vector, CellListOrdered>();
     helper_single_particle<std::vector, CellListOrdered>();
     helper_two_particles<std::vector, CellListOrdered>();
     helper_d_test_list_regular<std::vector, CellListOrdered>();
   }
 
   void test_std_vector_Kdtree(void) {
-    helper_d_test_list_random_pair<std::vector, Kdtree>();
     helper_d_test_list_random<std::vector, Kdtree>();
+    helper_d_test_list_random_pair<std::vector, Kdtree>();
     helper_d_test_list_regular<std::vector, Kdtree>();
   }
 
   void test_std_vector_KdtreeNanoflann(void) {
 #if not defined(__CUDACC__)
-    helper_d_test_list_random_pair<std::vector, KdtreeNanoflann>();
     helper_d_test_list_random<std::vector, KdtreeNanoflann>();
+    helper_d_test_list_random_pair<std::vector, KdtreeNanoflann>();
     helper_d_test_list_regular<std::vector, KdtreeNanoflann>();
 #endif
   }
 
   void test_std_vector_HyperOctree(void) {
-    helper_d_test_list_random_pair<std::vector, HyperOctree>();
     helper_d_test_list_random<std::vector, HyperOctree>();
+    helper_d_test_list_random_pair<std::vector, HyperOctree>();
     helper_d_test_list_regular<std::vector, HyperOctree>();
   }
 
@@ -1356,31 +1356,25 @@ public:
   //}
 
   void test_thrust_vector_CellListOrdered(void) {
-    /*
 #if defined(HAVE_THRUST)
-  // helper_d_test_list_random_fast_bucketsearch<std::vector,CellListOrdered>();
-  helper_d_test_list_regular<thrust::device_vector, CellListOrdered>();
-  helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
+    // helper_d_test_list_random_fast_bucketsearch<std::vector,CellListOrdered>();
+    helper_d_test_list_regular<thrust::device_vector, CellListOrdered>();
+    helper_d_test_list_random<thrust::device_vector, CellListOrdered>();
 #endif
-*/
   }
 
   void test_thrust_vector_HyperOctree(void) {
-    /*
 #if defined(HAVE_THRUST)
-  helper_d_test_list_regular<thrust::device_vector, HyperOctree>();
-  helper_d_test_list_random<thrust::device_vector, HyperOctree>();
+    helper_d_test_list_regular<thrust::device_vector, HyperOctree>();
+    helper_d_test_list_random<thrust::device_vector, HyperOctree>();
 #endif
-*/
   }
 
   void test_thrust_vector_Kdtree(void) {
-    /*
 #if defined(HAVE_THRUST)
-  helper_d_test_list_random<thrust::device_vector, Kdtree>();
-  helper_d_test_list_regular<thrust::device_vector, Kdtree>();
+    helper_d_test_list_random<thrust::device_vector, Kdtree>();
+    helper_d_test_list_regular<thrust::device_vector, Kdtree>();
 #endif
-*/
   }
 };
 

@@ -145,8 +145,7 @@ template <unsigned int D> struct point_to_bucket_index {
                                 const bool up) const {
     // std::cout << "up = "<<up<<"r = "<<r<<" i = "<<i << std::endl;
     const int ret =
-        std::floor((r + 0.5 * m_bucket_side_length[i] - m_bounds.bmin[i]) *
-                   m_inv_bucket_side_length[i]);
+        std::floor((r - m_bounds.bmin[i]) * m_inv_bucket_side_length[i]);
     return up ? ret + 1 : ret;
   }
 
