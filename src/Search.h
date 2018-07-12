@@ -119,24 +119,23 @@ public:
 
   {
     if (start_node_a != false && start_node_b != false) {
-      if (m_save_internal_leafs) {
+      if (m_query_b->number_of_levels() > 1 || m_save_internal_leafs) {
         // put all n^2 ci pairs in m_level
         const int size_a = start_node_a.distance_to_end();
         const int size_b = start_node_b.distance_to_end();
 
-        m_level.resize(size_a * size_b);
-        detail::tabulate(m_level.begin(), m_level.end(),
-                         add_all_buckets{start_node_a, start_node_b, size_b,
-                                         int8_d::Constant(0)});
         for (auto p_it = detail::get_periodic_range(m_query_b->get_periodic());
              p_it != false; ++p_it) {
+          LOG(3, "\tsearch_bf_iterator (constructor): adding "
+                     << size_a * size_b << " buckets in periodic = " << *p_it);
           m_level.resize(m_level.size() + size_a * size_b);
           detail::tabulate(
               m_level.end() - size_a * size_b, m_level.end(),
               add_all_buckets{start_node_a, start_node_b, size_b, *p_it});
         }
       } else {
-        // only put in neighbouring buckets
+        // only have 1 level and don't want to consider internal leafs, so only
+        // put in neighbouring buckets
         const int size_a = start_node_a.distance_to_end();
         vector_int vcount(size_a);
         auto count = QueryA::traits_type::make_counting_iterator(0);
@@ -154,47 +153,49 @@ public:
                                      iterator_to_raw_pointer(m_level.begin()),
                                      iterator_to_raw_pointer(vcount.begin()),
                                      *m_query_a, *m_query_b, distance});
-        if (ABORIA_LOG_LEVEL > 3) {
-          LOG(4, "\tsearch_bf_iterator (constructor): neighbouring bucket "
-                 "pairs are:");
-          for (const auto &i : m_level) {
-            LOG(4, "\t\t{" << *detail::get_impl<0>(i) << ','
-                           << *detail::get_impl<1>(i) << ','
-                           << detail::get_impl<2>(i) << '}');
-          }
-        }
       }
     } else {
       LOG(2, "\tsearch_bf_iterator (constructor): start is false, no "
              "children to search.");
     }
+    print_tree();
   }
 
-  CUDA_HOST_DEVICE
+  void print_tree() {
+    if (ABORIA_LOG_LEVEL > 3) {
+      LOG(4, "\tsearch_bf_iterator (print_tree): neighbouring bucket "
+             "pairs are:");
+      for (const auto &i : m_level) {
+        LOG(4, "\t\t{" << m_query_a->get_bucket_index(*detail::get_impl<0>(i))
+                       << ','
+                       << m_query_b->get_bucket_index(*detail::get_impl<1>(i))
+                       << ',' << detail::get_impl<2>(i).template cast<int>()
+                       << "} that is, bounds = {"
+                       << m_query_a->get_bounds(detail::get_impl<0>(i)) << ','
+                       << m_query_b->get_bounds(detail::get_impl<1>(i)) << '}');
+      }
+    }
+  }
+
   reference leafs() const { return m_leafs; }
 
-  CUDA_HOST_DEVICE
   reference internal_leafs() const { return m_internal_leafs; }
 
-  CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
 
-  CUDA_HOST_DEVICE
   pointer operator->() { return &dereference(); }
 
-  CUDA_HOST_DEVICE
   iterator &operator++() {
     increment();
     return *this;
   }
 
-  CUDA_HOST_DEVICE
   iterator operator++(int) {
     iterator tmp(*this);
     operator++();
     return tmp;
   }
-  CUDA_HOST_DEVICE
+
   size_t operator-(iterator start) const {
     size_t count = 0;
     while (start != *this) {
@@ -203,16 +204,13 @@ public:
     }
     return count;
   }
-  CUDA_HOST_DEVICE
+
   inline bool operator==(const iterator &rhs) const { return equal(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
   struct add_all_buckets {
@@ -247,8 +245,9 @@ public:
            p_it != false; ++p_it) {
         const double_d offset = (*p_it) * (m_query_b.get_bounds().bmax -
                                            m_query_b.get_bounds().bmin);
-        for (auto ci_b = m_query_b.get_buckets_near_bucket(
-                 m_query_a.get_bounds(ci_a) + offset, m_distance);
+        for (auto ci_b =
+                 m_query_b.template get_buckets_near_bucket<LNormNumber>(
+                     m_query_a.get_bounds(ci_a) + offset, m_distance);
              ci_b != false; ++ci_b, ++ret)
           ;
       }
@@ -271,10 +270,11 @@ public:
            p_it != false; ++p_it) {
         const double_d offset = (*p_it) * (m_query_b.get_bounds().bmax -
                                            m_query_b.get_bounds().bmin);
-        for (auto ci_b = m_query_b.get_buckets_near_bucket(
-                 m_query_a.get_bounds(ci_a) + offset, m_distance);
+        for (auto ci_b =
+                 m_query_b.template get_buckets_near_bucket<LNormNumber>(
+                     m_query_a.get_bounds(ci_a) + offset, m_distance);
              ci_b != false; ++ci_b, ++j) {
-          detail::get_impl<0>(m_level[m_count[i] + j]) = *ci_a;
+          detail::get_impl<0>(m_level[m_count[i] + j]) = ci_a;
           detail::get_impl<1>(m_level[m_count[i] + j]) = *ci_b;
           detail::get_impl<2>(m_level[m_count[i] + j]) = *p_it;
         }
@@ -301,8 +301,9 @@ public:
                     (m_query_b.get_bounds().bmax - m_query_b.get_bounds().bmin);
       // btw, nchild = 1, really means nchild = 0
       int nchild;
-      if (boxes_within_distance(m_query_a.get_bounds(a) + offset,
-                                m_query_b.get_bounds(b), m_distance2)) {
+      if (detail::boxes_within_distance<LNormNumber>(
+              m_query_a.get_bounds(a) + offset, m_query_b.get_bounds(b),
+              m_distance2)) {
         const int nchild_a = m_query_a.is_leaf_node(*a)
                                  ? 1
                                  : m_query_a.get_children(a).distance_to_end();
@@ -314,7 +315,12 @@ public:
         nchild = 0;
       }
 
-      return vint3(nchild, nchild == 1, nchild == 0);
+      const bool leaf = nchild == 1;
+      const bool internal_leaf = nchild == 0;
+      if (leaf || internal_leaf) {
+        nchild = 0;
+      }
+      return vint3(nchild, leaf, internal_leaf);
     }
   };
 
@@ -334,22 +340,25 @@ public:
     CUDA_HOST_DEVICE
     void operator()(const int i) {
       vint3 my_count;
-      if (i == static_cast<int>(m_end)) {
+      // std::cout << "pair index " << i << std::endl;
+      if (i == static_cast<int>(m_end) - 1) {
         count_children count{m_query_a, m_query_b, m_distance2};
         my_count = count(m_level[i]);
       } else {
         my_count = m_counts[i + 1] - m_counts[i];
       }
+      // std::cout << "\tmy_count = " << my_count << std::endl;
 
       if (my_count[2]) {
         // pair outside distance
         if (m_save_internal_leafs) {
           const int internal_leafs_index = m_counts[i][2];
-          m_leafs[internal_leafs_index] = m_level[i];
+          m_internal_leafs[internal_leafs_index] = m_level[i];
         }
       } else if (my_count[1]) {
         // pair are both leafs
         const int leafs_index = m_leafs_old_size + m_counts[i][1];
+        // std::cout << "\tadding to leaf index = " << leafs_index << std::endl;
         m_leafs[leafs_index] = m_level[i];
       } else {
         // pair have children
@@ -358,12 +367,32 @@ public:
         auto &offset = detail::get_impl<2>(m_level[i]);
         {
           int next_level_index = m_counts[i][0];
-          for (auto child_a = m_query_a.get_children(ci_a); child_a != false;
-               ++child_a) {
+          if (m_query_a.is_leaf_node(*ci_a)) {
             for (auto child_b = m_query_b.get_children(ci_b); child_b != false;
                  ++child_b, ++next_level_index) {
-              m_next_level[next_level_index] =
-                  ci_pair(child_a, child_b, offset);
+              // std::cout << "\tadding to next level index = " <<
+              // next_level_index
+              //          << std::endl;
+              m_next_level[next_level_index] = ci_pair(ci_a, child_b, offset);
+            }
+          } else if (m_query_b.is_leaf_node(*ci_b)) {
+            for (auto child_a = m_query_a.get_children(ci_a); child_a != false;
+                 ++child_a, ++next_level_index) {
+              // std::cout << "\tadding to next level index = " <<
+              // next_level_index
+              //          << std::endl;
+              m_next_level[next_level_index] = ci_pair(child_a, ci_b, offset);
+            }
+          } else {
+            for (auto child_a = m_query_a.get_children(ci_a); child_a != false;
+                 ++child_a) {
+              for (auto child_b = m_query_b.get_children(ci_b);
+                   child_b != false; ++child_b, ++next_level_index) {
+                // std::cout << "\tadding to next level index = "
+                //          << next_level_index << std::endl;
+                m_next_level[next_level_index] =
+                    ci_pair(child_a, child_b, offset);
+              }
             }
           }
         }
@@ -372,32 +401,10 @@ public:
   };
 
 private:
-  CUDA_HOST_DEVICE static bool boxes_within_distance(const bbox<dimension> &a,
-                                                     const bbox<dimension> &b,
-                                                     const double distance2) {
-    double squaredNorm = 0;
-    for (size_t i = 0; i < dimension; ++i) {
-      if (a.bmax[i] < b.bmin[i]) {
-        detail::distance_helper<LNormNumber>::do_accumulate(
-            squaredNorm,
-            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
-                b.bmin[i] - a.bmax[i]));
-      } else if (b.bmax[i] < a.bmin[i]) {
-        detail::distance_helper<LNormNumber>::do_accumulate(
-            squaredNorm,
-            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
-                a.bmin[i] - b.bmax[i]));
-      }
-    }
-    return squaredNorm <= distance2;
-  }
-
-  CUDA_HOST_DEVICE
   void increment() {
-#ifndef __CUDA_ARCH__
     LOG(4, "\tincrement (search_bf_iterator): m_level size = "
-               << m_level.size() << " m_leafs size = " << m_leafs.size());
-#endif
+               << m_level.size() << " m_leafs size = " << m_leafs.size()
+               << " m_internal_leafs size = " << m_internal_leafs.size());
     // m_level [ci0, ci1, ci2, ...]
     // exclusive scan for # children + # leafs: n_child
     // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
@@ -419,6 +426,11 @@ private:
       m_internal_leafs.resize(nchildren[2]);
     }
 
+    LOG(3, "\tincrement(search_bf_iterator): adding "
+               << nchildren[0] << " children, " << nchildren[1] << " leafs and "
+               << (m_save_internal_leafs ? nchildren[2] : 0)
+               << " internal leafs");
+
     // tabulate m_level to copy children to m_next_level, or leafs to
     // m_leafs
     auto count = QueryA::traits_type::make_counting_iterator(0);
@@ -436,21 +448,16 @@ private:
     // swap level back to m_level and increment level count
     m_level.swap(m_next_level);
     m_level_num++;
-#ifndef __CUDA_ARCH__
+    print_tree();
     LOG(4, "\tend increment (search_bf_iterator):");
-#endif
   }
 
-  CUDA_HOST_DEVICE
   bool equal(iterator const &other) const {
     return m_query_a == other.m_query_b && m_level_num == other.m_level_num;
   }
 
-  CUDA_HOST_DEVICE bool equal(const bool other) const {
-    return m_level.empty();
-  }
+  bool equal(const bool other) const { return m_level.empty(); }
 
-  CUDA_HOST_DEVICE
   reference dereference() const { return m_level; }
 
   double m_distance2;

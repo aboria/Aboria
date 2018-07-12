@@ -294,6 +294,10 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   template <int LNormNumber>
   using query_iterator =
       lattice_iterator_within_distance<CellListOrderedQuery, LNormNumber>;
+  template <int LNormNumber>
+  using bounds_query_iterator =
+      lattice_iterator_around_bounds<CellListOrderedQuery, LNormNumber>;
+
   typedef lattice_iterator<dimension> all_iterator;
   typedef bf_iterator<CellListOrderedQuery> breadth_first_iterator;
   typedef lattice_iterator<dimension> child_iterator;
@@ -517,6 +521,21 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   CUDA_HOST_DEVICE
   size_t get_bucket_index(const reference bucket) const {
     return m_point_to_bucket_index.collapse_index_vector(bucket);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_bucket()
+  ///
+  template <int LNormNumber = -1>
+  bounds_query_iterator<LNormNumber>
+  get_buckets_near_bucket(const box_type &bounds,
+                          const double max_distance) const {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tget_buckets_near_bucket: bounds = "
+               << bounds << " max_distance = " << max_distance);
+#endif
+
+    return bounds_query_iterator<LNormNumber>(bounds, max_distance, this);
   }
 
   ///

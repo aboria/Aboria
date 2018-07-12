@@ -288,7 +288,7 @@ public:
   ///
   /// \return A new vector with each element `static_cast` to
   /// `T2`
-  template <typename T2> CUDA_HOST_DEVICE Vector<T2, N> cast() {
+  template <typename T2> CUDA_HOST_DEVICE Vector<T2, N> cast() const {
     Vector<T2, N> ret;
     for (size_t i = 0; i < N; ++i) {
       ret[i] = static_cast<T2>(mem[i]);

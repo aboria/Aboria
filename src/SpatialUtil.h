@@ -63,17 +63,17 @@ template <unsigned int D> struct bbox {
   ///
   double_d bmax;
 
-  inline CUDA_HOST_DEVICE bbox()
+  CUDA_HOST_DEVICE bbox()
       : bmin(double_d::Constant(detail::get_max<double>())),
         bmax(double_d::Constant(-detail::get_max<double>())) {}
 
-  inline CUDA_HOST_DEVICE bbox(const double_d &p)
+  explicit CUDA_HOST_DEVICE bbox(const double_d &p)
       : bmin(p), bmax(p + std::numeric_limits<double>::epsilon()) {}
 
-  inline CUDA_HOST_DEVICE bbox(const double_d &min, const double_d &max)
+  CUDA_HOST_DEVICE bbox(const double_d &min, const double_d &max)
       : bmin(min), bmax(max) {}
 
-  inline CUDA_HOST_DEVICE bbox(const double *min, const double *max) {
+  CUDA_HOST_DEVICE bbox(const double *min, const double *max) {
     for (size_t i = 0; i < D; ++i) {
       bmin[i] = min[i];
       bmax[i] = max[i];
