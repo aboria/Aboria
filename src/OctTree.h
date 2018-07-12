@@ -655,6 +655,13 @@ public:
   }
 
   CUDA_HOST_DEVICE
+  octree_child_iterator operator+(const int n) {
+    octree_child_iterator tmp(*this);
+    tmp.increment(n);
+    return tmp;
+  }
+
+  CUDA_HOST_DEVICE
   inline bool operator==(const octree_child_iterator &rhs) const {
     return equal(rhs);
   }
@@ -686,12 +693,12 @@ private:
   void increment() {
     ++m_index;
     ++m_high;
-    // Note: big change, octree iterators now visit empty leaves (for fmm)
-    //       be careful of follow-on bugs....
-    // do {
-    //    ++m_index;
-    //    ++m_high;
-    //} while (!equal(false) && detail::is_empty(*m_index));
+  }
+
+  CUDA_HOST_DEVICE
+  void increment(const int n) {
+    m_index += n;
+    m_high += n;
   }
 };
 
@@ -711,6 +718,11 @@ template <typename Traits> struct HyperOctreeQuery {
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   template <int LNormNumber>
   using query_iterator = tree_query_iterator<HyperOctreeQuery, LNormNumber>;
+
+  template <int LNormNumber>
+  using bounds_query_iterator =
+      tree_box_query_iterator<HyperOctreeQuery, LNormNumber>;
+
   typedef depth_first_iterator<HyperOctreeQuery> root_iterator;
   typedef depth_first_iterator<HyperOctreeQuery> all_iterator;
   typedef bf_iterator<HyperOctreeQuery> breadth_first_iterator;
@@ -858,6 +870,22 @@ template <typename Traits> struct HyperOctreeQuery {
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   size_t number_of_buckets() const { return m_number_of_nodes; }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_bucket()
+  ///
+  template <int LNormNumber>
+  bounds_query_iterator<LNormNumber>
+  get_buckets_near_bucket(const box_type &bounds,
+                          const double max_distance) const {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tget_buckets_near_bucket: bounds = "
+               << bounds << " max_distance = " << max_distance);
+#endif
+
+    return bounds_query_iterator<LNormNumber>(
+        get_children(), bounds, max_distance, m_number_of_levels, this);
+  }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber>

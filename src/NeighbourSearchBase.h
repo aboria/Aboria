@@ -1909,6 +1909,249 @@ private:
   const Query *m_query;
 };
 
+template <typename Query, int LNormNumber> class tree_box_query_iterator {
+  typedef tree_box_query_iterator<Query, LNormNumber> iterator;
+  typedef typename Query::child_iterator child_iterator;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef bbox<dimension> box_type;
+
+public:
+  typedef child_iterator const value_type;
+  typedef child_iterator const *pointer;
+  typedef std::forward_iterator_tag iterator_category;
+  typedef child_iterator const &reference;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  tree_box_query_iterator() {}
+
+  /// this constructor is used to start the iterator at the head of a bucket
+  /// list
+  CUDA_HOST_DEVICE
+  tree_box_query_iterator(const child_iterator &start,
+                          const box_type &query_box, const double max_distance,
+                          const unsigned tree_depth, const Query *query,
+                          const bool ordered = false)
+      : m_query_box(query_box), m_max_distance2(std::pow(max_distance, 2)),
+        m_query(query) {
+    ASSERT_CUDA(tree_depth <= m_stack_max_size);
+    if (start != false) {
+      m_stack.push_back(start);
+      go_to_next_leaf();
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\ttree_box_query_iterator (constructor) with query box = "
+                 << m_query_box << "): start is false, no children to search.");
+#endif
+    }
+
+    if (m_stack.empty()) {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\ttree_box_query_iterator (constructor) with query box = "
+                 << m_query_box
+                 << "): search region outside domain or no children to "
+                    "search.");
+#endif
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\ttree_box_query_iterator (constructor) with query box = "
+                 << m_query_box
+                 << "):  found bbox = " << m_query->get_bounds(m_stack.back()));
+#endif
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  tree_box_query_iterator(const iterator &copy)
+      : m_query_box(copy.m_query_box), m_max_distance2(copy.m_max_distance2),
+        m_query(copy.m_query)
+
+  {
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
+      m_stack.push_back(copy.m_stack[i]);
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  ~tree_box_query_iterator() {}
+
+  CUDA_HOST_DEVICE
+  child_iterator get_child_iterator() const { return m_stack.back(); }
+
+  CUDA_HOST_DEVICE
+  iterator &operator=(const iterator &copy) {
+    m_query_box = copy.m_query_box;
+    m_max_distance2 = copy.m_max_distance2;
+
+    m_stack.resize(copy.m_stack.size());
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
+      m_stack[i] = copy.m_stack[i];
+    }
+
+    m_query = copy.m_query;
+    return *this;
+  }
+
+  /*
+  iterator& operator=(const octtree_depth_first_iterator<Query>& copy) {
+      m_stack = copy.m_stack;
+      go_to_next_leaf();
+      return *this;
+  }
+  */
+
+  CUDA_HOST_DEVICE
+  reference operator*() const { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  reference operator->() { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+
+  CUDA_HOST_DEVICE
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  CUDA_HOST_DEVICE
+  size_t operator-(iterator start) const {
+    size_t count = 0;
+    while (start != *this) {
+      start++;
+      count++;
+    }
+    return count;
+  }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+private:
+  CUDA_HOST_DEVICE
+  void increment_stack() {
+    while (!m_stack.empty()) {
+      ++m_stack.back();
+#ifndef __CUDA_ARCH__
+      LOG(4,
+          "\tincrement stack with child " << m_stack.back().get_child_number());
+#endif
+      if (m_stack.back() == false) {
+#ifndef __CUDA_ARCH__
+        LOG(4, "\tincrement_stack: pop");
+#endif
+        m_stack.pop_back();
+      } else {
+        break;
+      }
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  void go_to_next_leaf() {
+    bool exit = m_stack.empty();
+    while (!exit) {
+      child_iterator &node = m_stack.back();
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tgo_to_next_leaf with child " << node.get_child_number()
+                                             << " with bounds "
+                                             << m_query->get_bounds(node));
+#endif
+
+      if (detail::boxes_within_distance<LNormNumber>(
+              m_query_box, m_query->get_bounds(node),
+              m_max_distance2)) { // could be in this child
+
+#ifndef __CUDA_ARCH__
+        LOG(4, "\tthis child is within query, so going to next child");
+#endif
+        if (m_query->is_leaf_node(*node)) {
+          exit = true;
+        } else {
+#ifndef __CUDA_ARCH__
+          LOG(4, "\tdive down");
+#endif
+          m_stack.push_back(m_query->get_children(node));
+        }
+      } else { // not in this one, so go to next child, or go up if no more
+               // children
+#ifndef __CUDA_ARCH__
+        LOG(4, "\tthis child is NOT within query, so going to next child");
+#endif
+        increment_stack();
+        exit = m_stack.empty();
+      }
+    }
+#ifndef __CUDA_ARCH__
+    if (4 <= ABORIA_LOG_LEVEL) {
+      if (m_stack.empty()) {
+        LOG(4, "\tgo_to_next_leaf: stack empty, finishing");
+      } else {
+        LOG(4, "\tgo_to_next_leaf: found leaf, finishing");
+      }
+    }
+#endif
+  }
+
+  CUDA_HOST_DEVICE
+  void increment() {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tincrement (tree_box_query_iterator):");
+#endif
+    increment_stack();
+    go_to_next_leaf();
+
+    if (m_stack.empty()) {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tend increment (tree_box_query_iterator): no more nodes");
+#endif
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tend increment (tree_box_query_iterator): looking in bbox "
+                 << m_query->get_bounds(m_stack.back()));
+#endif
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(iterator const &other) const {
+    if (m_stack.empty() || other.m_stack.empty()) {
+      return m_stack.empty() == other.m_stack.empty();
+    } else {
+      return m_stack.back() == other.m_stack.back();
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_stack.empty() != other; }
+
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_stack.back(); }
+
+  // unsigned m_stack_size;
+  const static unsigned m_stack_max_size = Query::m_max_tree_depth;
+  static_vector<child_iterator, m_stack_max_size> m_stack;
+  box_type m_query_box;
+  double m_max_distance2;
+  const Query *m_query;
+};
+
 template <unsigned int D> class lattice_iterator {
   typedef lattice_iterator<D> iterator;
   typedef Vector<double, D> double_d;
