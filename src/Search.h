@@ -226,7 +226,7 @@ public:
       const int i = ij / m_size_b;
       auto ci_a = first_ci_a + i;
       auto ci_b = first_ci_b + j;
-      return {ci_a, ci_b, m_offset};
+      return ci_pair(ci_a, ci_b, m_offset);
     }
   };
 
