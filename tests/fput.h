@@ -82,7 +82,6 @@ public:
     const int nout = 1000;
     const int timesteps_per_out = timesteps / nout;
     const double dt = static_cast<double>(Tf) / timesteps;
-    const double dx = 1.0 / (N + 1);
 
     // create particles
     particles_t particles(N);

@@ -1557,7 +1557,7 @@ public:
   struct copy_children_and_leafs {
     vint2 *m_counts;
     child_iterator *m_leafs;
-    int m_leafs_old_size;
+    size_t m_leafs_old_size;
     const Query m_query;
     child_iterator *m_next_level;
     child_iterator *m_level;
