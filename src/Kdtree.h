@@ -821,10 +821,14 @@ public:
   }
 
   size_t get_bucket_index(reference bucket) const {
-    return get_child_index(bucket);
+    // minus one since we disregard the root index
+    return get_child_index(bucket) - 1;
   }
 
-  size_t number_of_buckets() const { return m_number_of_buckets - 1; }
+  size_t number_of_buckets() const {
+    // minus one since we disregard the root index
+    return m_number_of_buckets - 1;
+  }
 
   template <int LNormNumber>
   query_iterator<LNormNumber>
