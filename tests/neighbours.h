@@ -741,8 +741,10 @@ public:
             //          << " and p_j = " << get<position>(*j) << ": ";
             if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
                 r2) {
-              // std::cout << "NEIGHBOURS";
+// std::cout << "NEIGHBOURS";
+#pragma omp atomic
               ++get<neighbours_aboria>(*i);
+#pragma omp atomic
               ++get<neighbours_aboria>(*j);
             }
             // std::cout << std::endl;
@@ -752,6 +754,7 @@ public:
         for (auto i = query.get_bucket_particles(*ci_a); i != false; ++i) {
           // count self
           if (offset.squaredNorm() < r2) {
+#pragma omp atomic
             ++get<neighbours_aboria>(*i);
           }
           for (auto j = i + 1; j != false; ++j) {
@@ -759,13 +762,58 @@ public:
             //          << " and p_j = " << get<position>(*j) << ": ";
             if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
                 r2) {
-              // std::cout << "NEIGHBOURS";
+// std::cout << "NEIGHBOURS";
+#pragma omp atomic
               ++get<neighbours_aboria>(*i);
+#pragma omp atomic
               ++get<neighbours_aboria>(*j);
             }
             // std::cout << std::endl;
           }
         }
+      }
+    }
+  };
+
+  template <typename Query> struct aboria_pair_check2 {
+
+    typedef typename search_bf_iterator<Query, Query, 2>::value_type vector;
+    typedef typename vector::const_reference reference;
+    typedef position_d<Query::dimension> position;
+    typedef Vector<double, Query::dimension> double_d;
+
+    const Query query;
+    double r;
+    double r2;
+
+    aboria_pair_check2(const Query &query, double r)
+        : query(query), r(r), r2(r * r) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    void operator()(reference i) {
+      auto ci_a = detail::get_impl<0>(i);
+      auto ci_b = detail::get_impl<1>(i);
+      auto offset = detail::get_impl<2>(i) *
+                    (query.get_bounds().bmax - query.get_bounds().bmin);
+      int index_a = query.get_bucket_index(*ci_a);
+      int index_b = query.get_bucket_index(*ci_b);
+      // std::cout << "found ci pair " << index_a << " and " << index_b
+      //          << std::endl;
+      // exploit symmetries
+      for (auto i = query.get_bucket_particles(*ci_a); i != false; ++i) {
+        int sum = 0;
+        for (auto j = query.get_bucket_particles(*ci_b); j != false; ++j) {
+          // std::cout << "testing p_i = " << get<position>(*i)
+          //          << " and p_j = " << get<position>(*j) << ": ";
+          if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
+              r2) {
+            ++sum;
+          }
+          // std::cout << std::endl;
+        }
+#pragma omp atomic
+        get<neighbours_aboria>(*i) += sum;
       }
     }
   };
@@ -1114,7 +1162,7 @@ public:
     for (; search != false; ++search) {
     }
     detail::for_each(search->begin(), search->end(),
-                     aboria_pair_check<query_type>(particles.get_query(), r));
+                     aboria_pair_check2<query_type>(particles.get_query(), r));
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria = t1 - t0;
     for (size_t i = 0; i < particles.size(); ++i) {

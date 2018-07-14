@@ -1118,7 +1118,7 @@ public:
   Eigen::ComputationInfo info() { return Eigen::Success; }
 }; // namespace Aboria
 
-template <typename Solver, bool GPU = false> class SchwartzPreconditioner {
+template <typename Solver> class SchwartzPreconditioner {
   typedef double Scalar;
   typedef size_t Index;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
@@ -1147,25 +1147,9 @@ template <typename Solver, bool GPU = false> class SchwartzPreconditioner {
     CUDA_HOST_DEVICE
     const size_t &operator[](const int i) const { return m_data[i]; }
   };
-#ifdef HAVE_THRUST
-  typedef
-      typename std::conditional<GPU, thrust::device_vector<storage_vector_type>,
-                                std::vector<storage_vector_type>>::type
-          connectivity_type;
-
-  typedef
-      typename std::conditional<GPU, thrust::device_vector<solver_type>,
-                                std::vector<solver_type>>::type solvers_type;
-  typedef
-      typename std::conditional<GPU, thrust::device_vector<matrix_type>,
-                                std::vector<matrix_type>>::type matrices_type;
-
-#else
-  static_assert(GPU == false, "cannot use GPU without compiling with thrust");
   typedef std::vector<storage_vector_type> connectivity_type;
   typedef std::vector<solver_type> solvers_type;
   typedef std::vector<matrix_type> matrices_type;
-#endif
 
 protected:
   bool m_isInitialized;
@@ -1359,7 +1343,6 @@ public:
   };
 
   struct factorize_matrix {
-    CUDA_HOST_DEVICE
     solver_type operator()(matrix_type &domain_matrix) {
       solver_type solver;
       solver.compute(domain_matrix);
@@ -1387,9 +1370,6 @@ public:
     static_assert(Kernel::BlockRows == 1 && Kernel::BlockCols == 1,
                   "Schwartz preconditioner not currently implemented for "
                   "vector-valued kernels");
-    static_assert(traits_type::data_on_GPU == GPU,
-                  "kernel and preconditioner must be both either located on "
-                  "the host, or on the gpu");
 
     const row_elements_type &a = kernel.get_row_elements();
     CHECK(
@@ -1410,7 +1390,7 @@ public:
     m_domain_matrix.resize(leaf_nodes.size());
     m_domain_factorized_matrix.resize(leaf_nodes.size());
 
-    if (traits_type::data_on_GPU ^ GPU) {
+    if (traits_type::data_on_GPU) {
       // need to copy data from/to gpu
       typename traits_type::template vector<storage_vector_type>
           tmp_domain_indicies(leaf_nodes.size());
@@ -1430,11 +1410,11 @@ public:
               m_neighbourhood_buffer, m_max_buffer_n, start_row,
               kernel.get_kernel_function(), query));
 
-      thrust::copy(tmp_domain_indicies.begin(), tmp_domain_indicies.end(),
+      detail::copy(tmp_domain_indicies.begin(), tmp_domain_indicies.end(),
                    m_domain_indicies.begin());
-      thrust::copy(tmp_domain_buffer.begin(), tmp_domain_buffer.end(),
+      detail::copy(tmp_domain_buffer.begin(), tmp_domain_buffer.end(),
                    m_domain_buffer.begin());
-      thrust::copy(tmp_domain_matrix.begin(), tmp_domain_matrix.end(),
+      detail::copy(tmp_domain_matrix.begin(), tmp_domain_matrix.end(),
                    m_domain_matrix.begin());
     } else {
       // no copy required
@@ -1545,7 +1525,7 @@ public:
     double *x;
     const double *b;
 
-    CUDA_DEVICE void operator()(const int i) {
+    void operator()(const int i) {
       const storage_vector_type &buffer = m_domain_buffer[i];
       const storage_vector_type &indicies = m_domain_indicies[i];
       if (indicies.size() == 0)
@@ -1581,58 +1561,29 @@ public:
   /** \internal */
   template <typename Rhs, typename Dest>
   void _solve_impl(const Rhs &b, Dest &x) const {
-    if (GPU) {
-#ifdef HAVE_THRUST
-      thrust::device_vector<double> x_gpu(x.size());
-      thrust::device_vector<double> b_gpu(x.size());
-
-      // copy source b to both gpu vectors
-      thrust::copy(b.derived().data(), b.derived().data() + x.size(),
-                   x_gpu.begin());
-      thrust::copy(x_gpu.begin(), x_gpu.end(), b_gpu.begin());
-
-      // loop over domains and invert relevent sub-matricies in
-      // mat
-      thrust::counting_iterator<int> count(0);
-      thrust::for_each(
-          count, count + m_domain_indicies.size(),
-          solve_domain{
-              iterator_to_raw_pointer(m_domain_indicies.begin()),
-              iterator_to_raw_pointer(m_domain_buffer.begin()),
-              iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
-              iterator_to_raw_pointer(x_gpu.begin()),
-              iterator_to_raw_pointer(b_gpu.begin())});
-
-      // copy result back
-      //
-      thrust::copy(x_gpu.begin(), x_gpu.end(), x.derived().data());
-#endif
-
-    } else {
-      // TODO: counting interator and use stl algs...
-      //
-      // loop over domains and invert relevent sub-matricies in
-      // mat
-      // TODO: do I need this? x = b;
+    // TODO: counting interator and use stl algs...
+    //
+    // loop over domains and invert relevent sub-matricies in
+    // mat
+    // TODO: do I need this? x = b;
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-      for (int i = 0; i < x.size(); ++i) {
-        x[i] = b[i];
-      }
+    for (int i = 0; i < x.size(); ++i) {
+      x[i] = b[i];
+    }
 
-      solve_domain fsolve_domain{
-          iterator_to_raw_pointer(m_domain_indicies.begin()),
-          iterator_to_raw_pointer(m_domain_buffer.begin()),
-          iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
-          x.derived().data(), b.derived().data()};
+    solve_domain fsolve_domain{
+        iterator_to_raw_pointer(m_domain_indicies.begin()),
+        iterator_to_raw_pointer(m_domain_buffer.begin()),
+        iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
+        x.derived().data(), b.derived().data()};
 
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-      for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
-        fsolve_domain(i);
-      }
+    for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
+      fsolve_domain(i);
     }
   }
 
