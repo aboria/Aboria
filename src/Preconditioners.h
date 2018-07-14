@@ -1126,9 +1126,10 @@ template <typename Solver> class SchwartzPreconditioner {
   typedef Solver solver_type;
 
   struct storage_vector_type {
-    size_t *m_data;
+    size_t *m_data{nullptr};
     size_t m_size{0};
 
+    ~storage_vector_type() { delete[] m_data; }
     CUDA_HOST_DEVICE
     size_t *begin() const { return m_data; }
     CUDA_HOST_DEVICE
@@ -1137,10 +1138,12 @@ template <typename Solver> class SchwartzPreconditioner {
     size_t size() const { return m_size; }
     CUDA_HOST_DEVICE
     void resize(const size_t n) {
-      if (m_data) {
-        delete[] m_data;
+      // only supports reductions in size after initial resize
+      ASSERT_CUDA(!m_data || n <= m_size);
+      if (!m_data) {
+        m_data = new size_t[n];
       }
-      m_data = new size_t[n];
+      m_size = n;
     }
     CUDA_HOST_DEVICE
     size_t &operator[](const int i) { return m_data[i]; }
@@ -1211,23 +1214,11 @@ public:
     const T m_function;
     Query m_query;
 
-    process_leaf_node(typename Query::child_iterator *m_leaf_nodes,
-                      storage_vector_type *m_domain_indicies,
-                      storage_vector_type *m_domain_buffer,
-                      matrix_type *m_domain_matrix,
-                      double m_neighbourhood_buffer, int m_max_buffer_n,
-                      size_t m_start_row, const T &m_function,
-                      const Query &m_query)
-        : m_leaf_nodes(m_leaf_nodes), m_domain_indicies(m_domain_indicies),
-          m_domain_buffer(m_domain_buffer), m_domain_matrix(m_domain_matrix),
-          m_neighbourhood_buffer(m_neighbourhood_buffer),
-          m_max_buffer_n(m_max_buffer_n), m_start_row(m_start_row),
-          m_function(m_function), m_query(m_query) {}
-
     CUDA_HOST_DEVICE
     void operator()(const int i) {
       auto ci = m_leaf_nodes[i];
       auto bounds = m_query.get_bounds(ci);
+      LOG(3, "process_leaf_node with bounds " << bounds);
       const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
       const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
 
@@ -1239,17 +1230,14 @@ public:
         matrix_type &domain_matrix = m_domain_matrix[i];
 
         // find out how many particles and how many buffer particles there are
-        size_t n_indicies;
+        const size_t n_indicies =
+            m_query.get_bucket_particles(*ci).distance_to_end();
         size_t n_buffer = 0;
         for (auto bucket = m_query.template get_buckets_near_point<-1>(
                  middle, side + m_neighbourhood_buffer);
              bucket != false; ++bucket) {
-          const size_t n_in_bucket =
-              m_query.get_bucket_particles(*bucket).distance_to_end();
-          if (bucket.get_child_iterator() == ci) {
-            n_indicies = n_in_bucket;
-          } else {
-            n_buffer += n_in_bucket;
+          if (bucket.get_child_iterator() != ci) {
+            n_buffer += m_query.get_bucket_particles(*bucket).distance_to_end();
           }
         }
 
@@ -1277,6 +1265,9 @@ public:
           }
         }
 
+        LOG(3, "\tfound  " << indicies.size() << " indices in bucket and "
+                           << buffer.size() << " in buffer");
+
         ASSERT_CUDA(i_indicies == n_indicies);
         ASSERT_CUDA(i_buffer == n_buffer);
 
@@ -1284,26 +1275,31 @@ public:
           // random shuffle
 #if defined(__CUDACC__)
           thrust::default_random_engine gen;
-          thrust::uniform_int_distribution<int> uniform(0, i);
 #else
           generator_type gen;
-          std::uniform_int_distribution<int> uniform(0, i);
 #endif
           // advance forward so no random streams intersect
           gen.discard(buffer.size() * i);
+
           for (int i = buffer.size() - 1; i > 0; --i) {
 #if defined(__CUDACC__)
+            thrust::uniform_int_distribution<int> uniform(0, i);
             // thrust::swap(buffer[i], buffer[uniform(gen)]);
             size_t tmp = buffer[i];
             const auto random_index = uniform(gen);
             buffer[i] = buffer[random_index];
             buffer[random_index] = tmp;
 #else
+            std::uniform_int_distribution<int> uniform(0, i);
             std::swap(buffer[i], buffer[uniform(gen)]);
 #endif
           }
           buffer.resize(m_max_buffer_n);
         }
+
+        LOG(3, "\tafter filtering, found  " << indicies.size()
+                                            << " indices in bucket and "
+                                            << buffer.size() << " in buffer");
 
         // ASSERT(buffer.size() > 0, "no particles in buffer");
         ASSERT_CUDA(indicies.size() > 0);
@@ -1344,6 +1340,8 @@ public:
 
   struct factorize_matrix {
     solver_type operator()(matrix_type &domain_matrix) {
+      LOG(3, "factorize matrix with size (" << domain_matrix.rows() << ','
+                                            << domain_matrix.cols() << ')');
       solver_type solver;
       solver.compute(domain_matrix);
 
@@ -1402,13 +1400,13 @@ public:
       auto count = traits_type::make_counting_iterator(0);
       detail::for_each(
           count, count + leaf_nodes.size(),
-          process_leaf_node<typename Kernel::function_type, query_type>(
+          process_leaf_node<typename Kernel::function_type, query_type>{
               iterator_to_raw_pointer(leaf_nodes.begin()),
               iterator_to_raw_pointer(tmp_domain_indicies.begin()),
               iterator_to_raw_pointer(tmp_domain_buffer.begin()),
               iterator_to_raw_pointer(tmp_domain_matrix.begin()),
               m_neighbourhood_buffer, m_max_buffer_n, start_row,
-              kernel.get_kernel_function(), query));
+              kernel.get_kernel_function(), query});
 
       detail::copy(tmp_domain_indicies.begin(), tmp_domain_indicies.end(),
                    m_domain_indicies.begin());
@@ -1421,13 +1419,13 @@ public:
       auto count = traits_type::make_counting_iterator(0);
       detail::for_each(
           count, count + leaf_nodes.size(),
-          process_leaf_node<typename Kernel::function_type, query_type>(
+          process_leaf_node<typename Kernel::function_type, query_type>{
               iterator_to_raw_pointer(leaf_nodes.begin()),
               iterator_to_raw_pointer(m_domain_indicies.begin()),
               iterator_to_raw_pointer(m_domain_buffer.begin()),
               iterator_to_raw_pointer(m_domain_matrix.begin()),
               m_neighbourhood_buffer, m_max_buffer_n, start_row,
-              kernel.get_kernel_function(), query));
+              kernel.get_kernel_function(), query});
     }
 
     // factorize domain matrices
@@ -1457,24 +1455,21 @@ public:
     m_cols = mat.cols();
     factorize_impl(mat, detail::make_index_sequence<NI>());
 
-    Vector<int, 2> minmax(std::numeric_limits<int>::max(),
-                          std::numeric_limits<int>::min());
-
     auto min_indicies = detail::transform_reduce(
         m_domain_indicies.begin(), m_domain_indicies.end(), detail::get_size(),
-        std::numeric_limits<int>::max(), detail::min());
+        std::numeric_limits<size_t>::max(), detail::min());
 
     auto max_indicies = detail::transform_reduce(
         m_domain_indicies.begin(), m_domain_indicies.end(), detail::get_size(),
-        std::numeric_limits<int>::min(), detail::max());
+        std::numeric_limits<size_t>::min(), detail::max());
 
     auto min_buffer = detail::transform_reduce(
         m_domain_buffer.begin(), m_domain_buffer.end(), detail::get_size(),
-        std::numeric_limits<int>::max(), detail::min());
+        std::numeric_limits<size_t>::max(), detail::min());
 
     auto max_buffer = detail::transform_reduce(
         m_domain_buffer.begin(), m_domain_buffer.end(), detail::get_size(),
-        std::numeric_limits<int>::min(), detail::max());
+        std::numeric_limits<size_t>::min(), detail::max());
 
     auto count = detail::transform_reduce(
         m_domain_indicies.begin(), m_domain_indicies.end(), detail::get_size(),
