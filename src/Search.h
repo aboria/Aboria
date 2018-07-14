@@ -61,9 +61,10 @@ namespace detail {
 /// @brief returns iterator for periodic lattice, given the periodicity
 /// of the domain
 ///
-CUDA_HOST_DEVICE
+
 template <unsigned int D, typename periodic_iterator = lattice_iterator<D>>
-periodic_iterator get_periodic_range(const Vector<bool, D> &is_periodic) {
+CUDA_HOST_DEVICE periodic_iterator
+get_periodic_range(const Vector<bool, D> &is_periodic) {
   Vector<int, D> start, end;
   for (size_t i = 0; i < D; ++i) {
     start[i] = is_periodic[i] ? -1 : 0;
@@ -90,7 +91,7 @@ class search_bf_iterator {
                                                  child_iterator_b, int8_d>
       ci_pair;
   typedef typename traits_type_a::template vector<ci_pair> vector_ci_pair;
-  typedef typename traits_type_a::template vector<vint3> vector_vint3;
+  typedef typename traits_type_a::template vector<vint2> vector_vint2;
   typedef typename traits_type_a::template vector<int> vector_int;
   typedef lattice_iterator<dimension> periodic_iterator_type;
 
@@ -102,7 +103,7 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   CUDA_HOST_DEVICE
-  search_bf_iterator() {}
+  search_bf_iterator() : m_all_leafs(true) {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
@@ -115,11 +116,12 @@ public:
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
                 distance)),
         m_level_num(1), m_save_internal_leafs(save_internal_leafs),
-        m_query_a(&query_a), m_query_b(&query_b)
+        m_query_a(&query_a), m_query_b(&query_b), m_all_leafs(true)
 
   {
     if (start_node_a != false && start_node_b != false) {
       if (m_query_b->number_of_levels() > 1 || m_save_internal_leafs) {
+        m_all_leafs = false;
         // put all n^2 ci pairs in m_level
         const int size_a = start_node_a.distance_to_end();
         const int size_b = start_node_b.distance_to_end();
@@ -176,8 +178,6 @@ public:
       }
     }
   }
-
-  reference leafs() const { return m_leafs; }
 
   reference internal_leafs() const { return m_internal_leafs; }
 
@@ -315,22 +315,16 @@ public:
         nchild = 0;
       }
 
-      const bool leaf = nchild == 1;
       const bool internal_leaf = nchild == 0;
-      if (leaf || internal_leaf) {
-        nchild = 0;
-      }
-      return vint3(nchild, leaf, internal_leaf);
+      return vint2(nchild, internal_leaf);
     }
   };
 
   struct copy_children_and_leafs {
     size_t m_end;
     double m_distance2;
-    vint3 *m_counts;
-    ci_pair *m_leafs;
+    vint2 *m_counts;
     ci_pair *m_internal_leafs;
-    size_t m_leafs_old_size;
     const QueryA m_query_a;
     const QueryB m_query_b;
     ci_pair *m_next_level;
@@ -339,7 +333,7 @@ public:
 
     CUDA_HOST_DEVICE
     void operator()(const int i) {
-      vint3 my_count;
+      vint2 my_count;
       // std::cout << "pair index " << i << std::endl;
       if (i == static_cast<int>(m_end) - 1) {
         count_children count{m_query_a, m_query_b, m_distance2};
@@ -349,17 +343,15 @@ public:
       }
       // std::cout << "\tmy_count = " << my_count << std::endl;
 
-      if (my_count[2]) {
+      if (my_count[1]) {
         // pair outside distance
         if (m_save_internal_leafs) {
-          const int internal_leafs_index = m_counts[i][2];
-          m_internal_leafs[internal_leafs_index] = m_level[i];
+          m_internal_leafs[m_counts[i][2]] = m_level[i];
         }
-      } else if (my_count[1]) {
-        // pair are both leafs
-        const int leafs_index = m_leafs_old_size + m_counts[i][1];
+      } else if (my_count[0] == 1) {
+        // pair are both leafs, pass it down to next level
         // std::cout << "\tadding to leaf index = " << leafs_index << std::endl;
-        m_leafs[leafs_index] = m_level[i];
+        m_next_level[m_counts[i][0]] = m_level[i];
       } else {
         // pair have children
         auto &ci_a = detail::get_impl<0>(m_level[i]);
@@ -417,33 +409,36 @@ private:
                                      vint3::Constant(0), detail::plus());
 
     // resize for new children and leafs
-    const vint3 nchildren =
-        static_cast<vint3>(m_counts.back()) + fcount_children(m_level.back());
+    const vint2 nchildren =
+        static_cast<vint2>(m_counts.back()) + fcount_children(m_level.back());
+
+    if (nchildren[0] == m_level.size() && nchildren[1] == 0) {
+      // all leafs, nothing to do, set flag and return
+      m_all_leafs = true;
+      return;
+    }
+
     m_next_level.resize(nchildren[0]);
-    const size_t m_leafs_old_size = m_leafs.size();
-    m_leafs.resize(m_leafs.size() + nchildren[1]);
     if (m_save_internal_leafs) {
-      m_internal_leafs.resize(nchildren[2]);
+      m_internal_leafs.resize(nchildren[1]);
     }
 
     LOG(3, "\tincrement(search_bf_iterator): adding "
-               << nchildren[0] << " children, " << nchildren[1] << " leafs and "
+               << nchildren[0] << " children and "
                << (m_save_internal_leafs ? nchildren[2] : 0)
                << " internal leafs");
 
-    // tabulate m_level to copy children to m_next_level, or leafs to
-    // m_leafs
+    // tabulate m_level to copy children to m_next_level, internal leafs to
+    // m_internal_leafs
     auto count = QueryA::traits_type::make_counting_iterator(0);
-    detail::for_each(count, count + m_level.size(),
-                     copy_children_and_leafs{
-                         m_level.size(), m_distance2,
-                         iterator_to_raw_pointer(m_counts.begin()),
-                         iterator_to_raw_pointer(m_leafs.begin()),
-                         iterator_to_raw_pointer(m_internal_leafs.begin()),
-                         m_leafs_old_size, *m_query_a, *m_query_b,
-                         iterator_to_raw_pointer(m_next_level.begin()),
-                         iterator_to_raw_pointer(m_level.begin()),
-                         m_save_internal_leafs});
+    detail::for_each(
+        count, count + m_level.size(),
+        copy_children_and_leafs{
+            m_level.size(), m_distance2,
+            iterator_to_raw_pointer(m_counts.begin()),
+            iterator_to_raw_pointer(m_internal_leafs.begin()), *m_query_a,
+            *m_query_b, iterator_to_raw_pointer(m_next_level.begin()),
+            iterator_to_raw_pointer(m_level.begin()), m_save_internal_leafs});
 
     // swap level back to m_level and increment level count
     m_level.swap(m_next_level);
@@ -453,21 +448,23 @@ private:
   }
 
   bool equal(iterator const &other) const {
-    return m_query_a == other.m_query_b && m_level_num == other.m_level_num;
+    return m_query_a == other.m_query_a && m_query_b == other.m_query_b &&
+           m_level_num == other.m_level_num;
   }
 
-  bool equal(const bool other) const { return m_level.empty(); }
+  bool equal(const bool other) const { return m_all_leafs != other; }
 
   reference dereference() const { return m_level; }
 
   double m_distance2;
   vector_ci_pair m_level;
   vector_ci_pair m_next_level;
-  vector_vint3 m_counts;
+  vector_vint2 m_counts;
   vector_ci_pair m_leafs;
   vector_ci_pair m_internal_leafs;
   size_t m_level_num;
   const bool m_save_internal_leafs;
+  bool m_all_leafs;
   const QueryA *m_query_a;
   const QueryB *m_query_b;
 }; // namespace Aboria

@@ -1124,10 +1124,30 @@ template <typename Solver, bool GPU = false> class SchwartzPreconditioner {
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
   typedef Solver solver_type;
+
+  struct storage_vector_type {
+    size_t *m_data;
+    size_t m_size{0};
+
+    CUDA_HOST_DEVICE
+    size_t *begin() const { return m_data; }
+    CUDA_HOST_DEVICE
+    size_t *end() const { return m_data + m_size; }
+    CUDA_HOST_DEVICE
+    size_t size() const { return m_size; }
+    CUDA_HOST_DEVICE
+    void resize(const size_t n) {
+      if (m_data) {
+        delete[] m_data;
+      }
+      m_data = new size_t[n];
+    }
+    CUDA_HOST_DEVICE
+    size_t &operator[](const int i) { return m_data[i]; }
+    CUDA_HOST_DEVICE
+    const size_t &operator[](const int i) const { return m_data[i]; }
+  };
 #ifdef HAVE_THRUST
-  typedef
-      typename std::conditional<GPU, thrust::device_vector<size_t>,
-                                std::vector<size_t>>::type storage_vector_type;
   typedef
       typename std::conditional<GPU, thrust::device_vector<storage_vector_type>,
                                 std::vector<storage_vector_type>>::type
@@ -1136,10 +1156,15 @@ template <typename Solver, bool GPU = false> class SchwartzPreconditioner {
   typedef
       typename std::conditional<GPU, thrust::device_vector<solver_type>,
                                 std::vector<solver_type>>::type solvers_type;
+  typedef
+      typename std::conditional<GPU, thrust::device_vector<matrix_type>,
+                                std::vector<matrix_type>>::type matrices_type;
+
 #else
-  typedef std::vector<size_t> storage_vector_type;
+  static_assert(GPU == false, "cannot use GPU without compiling with thrust");
   typedef std::vector<storage_vector_type> connectivity_type;
   typedef std::vector<solver_type> solvers_type;
+  typedef std::vector<matrix_type> matrices_type;
 #endif
 
 protected:
@@ -1152,6 +1177,7 @@ private:
   connectivity_type m_domain_indicies;
   connectivity_type m_domain_buffer;
   solvers_type m_domain_factorized_matrix;
+  matrices_type m_domain_matrix;
   Index m_rows;
   Index m_cols;
 
@@ -1184,6 +1210,7 @@ public:
   template <typename MatType>
   SchwartzPreconditioner &analyzePattern(const MatType &mat) {
     LOG(2, "SchwartzPreconditioner: analyzePattern: do nothing");
+    return *this;
   }
 
   template <typename T, typename Query> struct process_leaf_node {
@@ -1193,7 +1220,7 @@ public:
     typename Query::child_iterator *m_leaf_nodes;
     storage_vector_type *m_domain_indicies;
     storage_vector_type *m_domain_buffer;
-    solver_type *m_domain_factorized_matrix;
+    matrix_type *m_domain_matrix;
     double m_neighbourhood_buffer;
     int m_max_buffer_n;
     size_t m_start_row;
@@ -1203,13 +1230,12 @@ public:
     process_leaf_node(typename Query::child_iterator *m_leaf_nodes,
                       storage_vector_type *m_domain_indicies,
                       storage_vector_type *m_domain_buffer,
-                      solver_type *m_domain_factorized_matrix,
+                      matrix_type *m_domain_matrix,
                       double m_neighbourhood_buffer, int m_max_buffer_n,
                       size_t m_start_row, const T &m_function,
                       const Query &m_query)
         : m_leaf_nodes(m_leaf_nodes), m_domain_indicies(m_domain_indicies),
-          m_domain_buffer(m_domain_buffer),
-          m_domain_factorized_matrix(m_domain_factorized_matrix),
+          m_domain_buffer(m_domain_buffer), m_domain_matrix(m_domain_matrix),
           m_neighbourhood_buffer(m_neighbourhood_buffer),
           m_max_buffer_n(m_max_buffer_n), m_start_row(m_start_row),
           m_function(m_function), m_query(m_query) {}
@@ -1226,10 +1252,31 @@ public:
 
         storage_vector_type &buffer = m_domain_buffer[i];
         storage_vector_type &indicies = m_domain_indicies[i];
-        solver_type &solver = m_domain_factorized_matrix[i];
+        matrix_type &domain_matrix = m_domain_matrix[i];
+
+        // find out how many particles and how many buffer particles there are
+        size_t n_indicies;
+        size_t n_buffer = 0;
+        for (auto bucket = m_query.template get_buckets_near_point<-1>(
+                 middle, side + m_neighbourhood_buffer);
+             bucket != false; ++bucket) {
+          const size_t n_in_bucket =
+              m_query.get_bucket_particles(*bucket).distance_to_end();
+          if (bucket.get_child_iterator() == ci) {
+            n_indicies = n_in_bucket;
+          } else {
+            n_buffer += n_in_bucket;
+          }
+        }
+
+        // allocate for buffer + indicies
+        buffer.resize(n_buffer);
+        indicies.resize(n_indicies);
 
         // add particles in bucket to indicies
         // add particles in neighbouring buckets to buffer
+        size_t i_indicies = 0;
+        size_t i_buffer = 0;
         for (auto bucket = m_query.template get_buckets_near_point<-1>(
                  middle, side + m_neighbourhood_buffer);
              bucket != false; ++bucket) {
@@ -1239,14 +1286,17 @@ public:
             const size_t index =
                 &p - get<position>(m_query.get_particles_begin());
             if (bucket.get_child_iterator() == ci) {
-              indicies.push_back(m_start_row + index);
+              indicies[i_indicies++] = m_start_row + index;
             } else {
-              buffer.push_back(m_start_row + index);
+              buffer[i_buffer++] = m_start_row + index;
             }
           }
         }
 
-        if (buffer.size() > m_max_buffer_n) {
+        ASSERT_CUDA(i_indicies == n_indicies);
+        ASSERT_CUDA(i_buffer == n_buffer);
+
+        if (static_cast<int>(buffer.size()) > m_max_buffer_n) {
           // random shuffle
 #if defined(__CUDACC__)
           thrust::default_random_engine gen;
@@ -1274,7 +1324,6 @@ public:
         // ASSERT(buffer.size() > 0, "no particles in buffer");
         ASSERT_CUDA(indicies.size() > 0);
 
-        matrix_type domain_matrix;
         const int size = indicies.size() + buffer.size();
         domain_matrix.resize(size, size);
 
@@ -1305,16 +1354,23 @@ public:
           }
           ++i;
         }
-
-        solver.compute(domain_matrix);
-
-        Eigen::VectorXd b = Eigen::VectorXd::Random(domain_matrix.rows());
-        Eigen::VectorXd x = solver.solve(b);
-        double relative_error = (domain_matrix * x - b).norm() / b.norm();
-        if (relative_error > 1e-3 || std::isnan(relative_error)) {
-          std::cout << "relative error = " << relative_error << std::endl;
-        }
       }
+    }
+  };
+
+  struct factorize_matrix {
+    CUDA_HOST_DEVICE
+    solver_type operator()(matrix_type &domain_matrix) {
+      solver_type solver;
+      solver.compute(domain_matrix);
+
+      Eigen::VectorXd b = Eigen::VectorXd::Random(domain_matrix.rows());
+      Eigen::VectorXd x = solver.solve(b);
+      double relative_error = (domain_matrix * x - b).norm() / b.norm();
+      if (relative_error > 1e-3 || std::isnan(relative_error)) {
+        std::cout << "relative error = " << relative_error << std::endl;
+      }
+      return solver;
     }
   };
 
@@ -1328,7 +1384,7 @@ public:
     static_assert(std::is_same<row_elements_type, col_elements_type>::value,
                   "Schwartz preconditioner restricted to identical row and col "
                   "particle sets");
-    static_assert(Kernel::BlockRows == Kernel::BlockCols == 1,
+    static_assert(Kernel::BlockRows == 1 && Kernel::BlockCols == 1,
                   "Schwartz preconditioner not currently implemented for "
                   "vector-valued kernels");
     static_assert(traits_type::data_on_GPU == GPU,
@@ -1349,21 +1405,54 @@ public:
       ;
     auto leaf_nodes = *df_search;
 
-    auto count = traits_type::make_counting_iterator(0);
-
     m_domain_indicies.resize(leaf_nodes.size());
     m_domain_buffer.resize(leaf_nodes.size());
+    m_domain_matrix.resize(leaf_nodes.size());
     m_domain_factorized_matrix.resize(leaf_nodes.size());
 
-    detail::for_each(
-        count, count + leaf_nodes.size(),
-        process_leaf_node<typename Kernel::function_type, query_type>(
-            iterator_to_raw_pointer(leaf_nodes.begin()),
-            iterator_to_raw_pointer(m_domain_indicies.begin()),
-            iterator_to_raw_pointer(m_domain_buffer.begin()),
-            iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
-            m_neighbourhood_buffer, m_max_buffer_n, start_row,
-            kernel.get_kernel_function(), query));
+    if (traits_type::data_on_GPU ^ GPU) {
+      // need to copy data from/to gpu
+      typename traits_type::template vector<storage_vector_type>
+          tmp_domain_indicies(leaf_nodes.size());
+      typename traits_type::template vector<storage_vector_type>
+          tmp_domain_buffer(leaf_nodes.size());
+      typename traits_type::template vector<matrix_type> tmp_domain_matrix(
+          leaf_nodes.size());
+
+      auto count = traits_type::make_counting_iterator(0);
+      detail::for_each(
+          count, count + leaf_nodes.size(),
+          process_leaf_node<typename Kernel::function_type, query_type>(
+              iterator_to_raw_pointer(leaf_nodes.begin()),
+              iterator_to_raw_pointer(tmp_domain_indicies.begin()),
+              iterator_to_raw_pointer(tmp_domain_buffer.begin()),
+              iterator_to_raw_pointer(tmp_domain_matrix.begin()),
+              m_neighbourhood_buffer, m_max_buffer_n, start_row,
+              kernel.get_kernel_function(), query));
+
+      thrust::copy(tmp_domain_indicies.begin(), tmp_domain_indicies.end(),
+                   m_domain_indicies.begin());
+      thrust::copy(tmp_domain_buffer.begin(), tmp_domain_buffer.end(),
+                   m_domain_buffer.begin());
+      thrust::copy(tmp_domain_matrix.begin(), tmp_domain_matrix.end(),
+                   m_domain_matrix.begin());
+    } else {
+      // no copy required
+      auto count = traits_type::make_counting_iterator(0);
+      detail::for_each(
+          count, count + leaf_nodes.size(),
+          process_leaf_node<typename Kernel::function_type, query_type>(
+              iterator_to_raw_pointer(leaf_nodes.begin()),
+              iterator_to_raw_pointer(m_domain_indicies.begin()),
+              iterator_to_raw_pointer(m_domain_buffer.begin()),
+              iterator_to_raw_pointer(m_domain_matrix.begin()),
+              m_neighbourhood_buffer, m_max_buffer_n, start_row,
+              kernel.get_kernel_function(), query));
+    }
+
+    // factorize domain matrices
+    detail::transform(m_domain_matrix.begin(), m_domain_matrix.end(),
+                      m_domain_factorized_matrix.begin(), factorize_matrix());
   }
 
   template <typename RowParticles, typename ColParticles>
@@ -1390,31 +1479,26 @@ public:
 
     Vector<int, 2> minmax(std::numeric_limits<int>::max(),
                           std::numeric_limits<int>::min());
-    auto get_size = [] CUDA_HOST_DEVICE(const storage_vector_type &i) {
-      return i.size();
-    };
-    auto fmin = [] CUDA_HOST_DEVICE(int a, int b) { return b < a ? b : a; };
-    auto fmax = [] CUDA_HOST_DEVICE(int a, int b) { return b > a ? b : a; };
-    auto fsum = [] CUDA_HOST_DEVICE(int a, int b) { return a + b; };
 
     auto min_indicies = detail::transform_reduce(
-        m_domain_indicies.begin(), m_domain_indicies.end(), get_size,
-        std::numeric_limits<int>::max(), fmin);
+        m_domain_indicies.begin(), m_domain_indicies.end(), detail::get_size(),
+        std::numeric_limits<int>::max(), detail::min());
 
     auto max_indicies = detail::transform_reduce(
-        m_domain_indicies.begin(), m_domain_indicies.end(), get_size,
-        std::numeric_limits<int>::min(), fmax);
+        m_domain_indicies.begin(), m_domain_indicies.end(), detail::get_size(),
+        std::numeric_limits<int>::min(), detail::max());
 
     auto min_buffer = detail::transform_reduce(
-        m_domain_buffer.begin(), m_domain_buffer.end(), get_size,
-        std::numeric_limits<int>::max(), fmin);
+        m_domain_buffer.begin(), m_domain_buffer.end(), detail::get_size(),
+        std::numeric_limits<int>::max(), detail::min());
 
     auto max_buffer = detail::transform_reduce(
-        m_domain_buffer.begin(), m_domain_buffer.end(), get_size,
-        std::numeric_limits<int>::min(), fmax);
+        m_domain_buffer.begin(), m_domain_buffer.end(), detail::get_size(),
+        std::numeric_limits<int>::min(), detail::max());
 
     auto count = detail::transform_reduce(
-        m_domain_indicies.begin(), m_domain_indicies.end(), get_size, 0, fsum);
+        m_domain_indicies.begin(), m_domain_indicies.end(), detail::get_size(),
+        0, detail::plus());
 
     LOG(2, "SchwartzPreconditioner: finished factorizing, found "
                << m_domain_indicies.size() << " domains, with " << min_indicies
@@ -1452,13 +1536,6 @@ public:
   SchwartzPreconditioner &compute(const MatType &mat) {
     analyzePattern(mat);
     return factorize(mat);
-  }
-
-  /** \internal */
-  template <typename Rhs, typename Dest>
-  void _solve_impl(const Rhs &b, Dest &x) const {
-    swartz_solve_helper(b, x, m_domain_indicies, m_domain_buffer,
-                        m_domain_factorized_matrix);
   }
 
   struct solve_domain {
@@ -1501,72 +1578,63 @@ public:
     }
   };
 
+  /** \internal */
   template <typename Rhs, typename Dest>
-  static void swartz_solve_helper(
-      const Rhs &b, Dest &x,
-      const std::vector<std::vector<size_t>> &domain_indicies,
-      const std::vector<std::vector<size_t>> &domain_buffer,
-      const std::vector<solver_type> &domain_factorized_matrix) {
-    // TODO: counting interator and use stl algs...
-    //
-    // loop over domains and invert relevent sub-matricies in
-    // mat
-    // TODO: do I need this? x = b;
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (int i = 0; i < x.size(); ++i) {
-      x[i] = b[i];
-    }
-
-    solve_domain fsolve_domain{
-        iterator_to_raw_pointer(domain_indicies.begin()),
-        iterator_to_raw_pointer(domain_buffer.begin()),
-        iterator_to_raw_pointer(domain_factorized_matrix.begin()),
-        x.derived().data(), b.derived().data()};
-
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < domain_indicies.size(); ++i) {
-      fsolve_domain(i);
-    }
-  }
-
+  void _solve_impl(const Rhs &b, Dest &x) const {
+    if (GPU) {
 #ifdef HAVE_THRUST
+      thrust::device_vector<double> x_gpu(x.size());
+      thrust::device_vector<double> b_gpu(x.size());
 
-  template <typename Rhs, typename Dest>
-  static void swartz_solve_helper(
-      const Rhs &b, Dest &x,
-      const thrust::device_vector<thrust::device_vector<size_t>>
-          &domain_indicies,
-      const thrust::device_vector<thrust::device_vector<size_t>> &domain_buffer,
-      const thrust::device_vector<solver_type> &domain_factorized_matrix) {
+      // copy source b to both gpu vectors
+      thrust::copy(b.derived().data(), b.derived().data() + x.size(),
+                   x_gpu.begin());
+      thrust::copy(x_gpu.begin(), x_gpu.end(), b_gpu.begin());
 
-    thrust::device_vector<double> x_gpu(x.size());
-    thrust::device_vector<double> b_gpu(x.size());
+      // loop over domains and invert relevent sub-matricies in
+      // mat
+      thrust::counting_iterator<int> count(0);
+      thrust::for_each(
+          count, count + m_domain_indicies.size(),
+          solve_domain{
+              iterator_to_raw_pointer(m_domain_indicies.begin()),
+              iterator_to_raw_pointer(m_domain_buffer.begin()),
+              iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
+              iterator_to_raw_pointer(x_gpu.begin()),
+              iterator_to_raw_pointer(b_gpu.begin())});
 
-    // copy source b to both gpu vectors
-    thrust::copy(b.derived().data(), b.derived().data() + x.size(),
-                 x_gpu.begin());
-    thrust::copy(x_gpu.begin(), x_gpu.end(), b_gpu.begin());
-
-    // loop over domains and invert relevent sub-matricies in
-    // mat
-    thrust::counting_iterator<int> count(0);
-    thrust::for_each(
-        count, count + domain_indicies.size(),
-        solve_domain{iterator_to_raw_pointer(domain_indicies.begin()),
-                     iterator_to_raw_pointer(domain_buffer.begin()),
-                     iterator_to_raw_pointer(domain_factorized_matrix.begin()),
-                     iterator_to_raw_pointer(x_gpu.begin()),
-                     iterator_to_raw_pointer(b_gpu.begin())});
-
-    // copy result back
-    //
-    thrust::copy(x_gpu.begin(), x_gpu.end(), x.derived().data());
-  }
+      // copy result back
+      //
+      thrust::copy(x_gpu.begin(), x_gpu.end(), x.derived().data());
 #endif
+
+    } else {
+      // TODO: counting interator and use stl algs...
+      //
+      // loop over domains and invert relevent sub-matricies in
+      // mat
+      // TODO: do I need this? x = b;
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+      for (int i = 0; i < x.size(); ++i) {
+        x[i] = b[i];
+      }
+
+      solve_domain fsolve_domain{
+          iterator_to_raw_pointer(m_domain_indicies.begin()),
+          iterator_to_raw_pointer(m_domain_buffer.begin()),
+          iterator_to_raw_pointer(m_domain_factorized_matrix.begin()),
+          x.derived().data(), b.derived().data()};
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+      for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
+        fsolve_domain(i);
+      }
+    }
+  }
 
   template <typename Rhs>
   inline const Eigen::Solve<SchwartzPreconditioner, Rhs>
@@ -1581,7 +1649,7 @@ public:
   }
 
   Eigen::ComputationInfo info() { return Eigen::Success; }
-};
+}; // namespace Aboria
 
 template <typename Solver> class SchwartzSamplingPreconditioner {
   typedef double Scalar;
