@@ -116,7 +116,7 @@ public:
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
                 distance)),
         m_level_num(1), m_save_internal_leafs(save_internal_leafs),
-        m_query_a(&query_a), m_query_b(&query_b), m_all_leafs(true)
+        m_all_leafs(true), m_query_a(&query_a), m_query_b(&query_b)
 
   {
     if (start_node_a != false && start_node_b != false) {
@@ -406,13 +406,13 @@ private:
     count_children fcount_children{*m_query_a, *m_query_b, m_distance2};
     detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
                                      m_counts.begin(), fcount_children,
-                                     vint3::Constant(0), detail::plus());
+                                     vint2::Constant(0), detail::plus());
 
     // resize for new children and leafs
     const vint2 nchildren =
         static_cast<vint2>(m_counts.back()) + fcount_children(m_level.back());
 
-    if (nchildren[0] == m_level.size() && nchildren[1] == 0) {
+    if (nchildren[0] == static_cast<int>(m_level.size()) && nchildren[1] == 0) {
       // all leafs, nothing to do, set flag and return
       m_all_leafs = true;
       return;
