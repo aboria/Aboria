@@ -707,9 +707,9 @@ public:
       for (double sigma = 0.9; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
         for (size_t n_subdomain = 50; n_subdomain < 400; n_subdomain += 100) {
+          /*
           helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
-          /*
           helper_param_sweep<2>(rosenbrock<10>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
           helper_param_sweep<2>(rosenbrock<8>(N, Ntest), Ntest, kernel, jitter,
@@ -718,8 +718,10 @@ public:
                                 n_subdomain, out);
           helper_param_sweep<4>(rosenbrock<4>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
+                                */
           helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
+          /*
           helper_param_sweep<5>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
           helper_param_sweep<4>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,

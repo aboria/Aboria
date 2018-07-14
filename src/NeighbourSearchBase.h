@@ -65,24 +65,6 @@ template <typename IteratorType> struct iterator_range {
   IteratorType m_begin;
   IteratorType m_end;
 
-  /*
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range() {}
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range(const iterator_range &arg) = default;
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range(iterator_range &&arg) = default;
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range &operator=(const iterator_range &) = default;
-  */
-
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range(const IteratorType &begin, const IteratorType &end)
@@ -950,11 +932,9 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   ranges_iterator() {}
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   ranges_iterator(const p_pointer &begin, const p_pointer &end)
       : m_current_p(begin), m_end_p(end) {}
@@ -963,16 +943,13 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   reference operator->() const { return dereference(); }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   ranges_iterator &operator++() {
     increment();
@@ -980,7 +957,6 @@ public:
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   ranges_iterator operator++(int) {
     ranges_iterator tmp(*this);
@@ -998,13 +974,11 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   size_t operator-(ranges_iterator start) const {
     return get_by_index<0>(m_current_p) - get_by_index<0>(start.m_current_p);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   inline bool operator==(const ranges_iterator &rhs) const {
     return equal(rhs);
@@ -1012,18 +986,15 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   inline bool operator!=(const ranges_iterator &rhs) const {
     return !operator==(rhs);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
@@ -1032,13 +1003,11 @@ private:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   bool equal(ranges_iterator const &other) const {
     return m_current_p == other.m_current_p;
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   bool equal(const bool other) const {
     return (m_current_p < m_end_p) == other;
@@ -1046,16 +1015,13 @@ private:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   reference dereference() const { return *m_current_p; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   void increment() { ++m_current_p; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   void increment(const int n) { m_current_p += n; }
 
@@ -1478,7 +1444,7 @@ template <typename Query> class bf_iterator {
   typedef Vector<int, dimension> int_d;
   typedef typename Query::traits_type traits_type;
   typedef typename traits_type::template vector<child_iterator> vector_ci;
-  typedef typename traits_type::template vector<vint2> vector_vint2;
+  typedef typename traits_type::template vector<int> vector_int;
 
 public:
   typedef vector_ci const value_type;
@@ -1488,19 +1454,20 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   CUDA_HOST_DEVICE
-  bf_iterator() {}
+  bf_iterator() : m_all_leafs(true) {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
   CUDA_HOST_DEVICE
   bf_iterator(const child_iterator &start_node, const Query *query)
-      : m_level_num(1), m_query(query) {
+      : m_all_leafs(true), m_level_num(1), m_query(query) {
     if (start_node != false) {
       m_level.resize(start_node.distance_to_end());
       int i = 0;
       for (auto ci = start_node; ci != false; ++ci, ++i) {
         m_level[i] = ci;
       }
+      m_all_leafs = query->number_of_levels() == 1;
     } else {
 #ifndef __CUDA_ARCH__
       LOG(3, "\tbf_iterator (constructor): start is false, no "
@@ -1508,9 +1475,6 @@ public:
 #endif
     }
   }
-
-  CUDA_HOST_DEVICE
-  reference leafs() const { return m_leafs; }
 
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
@@ -1552,18 +1516,16 @@ public:
     const Query m_query;
 
     CUDA_HOST_DEVICE
-    auto operator()(const child_iterator &ci) {
+    int operator()(const child_iterator &ci) {
       const int nchild = m_query.is_leaf_node(*ci)
-                             ? 0
+                             ? 1
                              : m_query.get_children(ci).distance_to_end();
-      return vint2(nchild, nchild == 0);
+      return nchild;
     }
   };
 
   struct copy_children_and_leafs {
-    vint2 *m_counts;
-    child_iterator *m_leafs;
-    size_t m_leafs_old_size;
+    int *m_counts;
     const Query m_query;
     child_iterator *m_next_level;
     child_iterator *m_level;
@@ -1572,11 +1534,10 @@ public:
     void operator()(const int i) {
       auto ci = m_level[i];
       if (m_query.is_leaf_node(*ci)) {
-        const int leafs_index = m_leafs_old_size + m_counts[i][1];
-        m_leafs[leafs_index] = ci;
+        m_next_level[m_counts[i]] = ci;
       } else {
         auto child = m_query.get_children(ci);
-        for (int next_level_index = m_counts[i][0]; child != false;
+        for (int next_level_index = m_counts[i]; child != false;
              ++child, ++next_level_index) {
           m_next_level[next_level_index] = child;
         }
@@ -1588,8 +1549,7 @@ private:
   CUDA_HOST_DEVICE
   void increment() {
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tincrement (bf_iterator): m_level size = "
-               << m_level.size() << " m_leafs size = " << m_leafs.size());
+    LOG(4, "\tincrement (bf_iterator): m_level size = " << m_level.size());
 #endif
     // m_level [ci0, ci1, ci2, ...]
     // exclusive scan for # children + # leafs: n_child
@@ -1597,16 +1557,15 @@ private:
     // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
 
     m_counts.resize(m_level.size());
-    detail::transform_exclusive_scan(
-        m_level.begin(), m_level.end(), m_counts.begin(),
-        count_children{*m_query}, Vector<int, 2>::Constant(0), detail::plus());
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_children{*m_query},
+                                     0, detail::plus());
 
     // resize for new children and leafs
-    const vint2 nchildren = static_cast<vint2>(m_counts.back()) +
-                            count_children{*m_query}(m_level.back());
-    m_next_level.resize(nchildren[0]);
-    const size_t m_leafs_old_size = m_leafs.size();
-    m_leafs.resize(m_leafs.size() + nchildren[1]);
+    const int nchildren = static_cast<int>(m_counts.back()) +
+                          count_children{*m_query}(m_level.back());
+    m_all_leafs = nchildren == static_cast<int>(m_level.size());
+    m_next_level.resize(nchildren);
 
 // tabulate m_level to copy children to m_next_level, or leafs to
 // m_leafs
@@ -1618,13 +1577,11 @@ private:
 #else
     auto count = Query::traits_type::make_counting_iterator(0);
 #endif
-    detail::for_each(
-        count, count + m_level.size(),
-        copy_children_and_leafs{iterator_to_raw_pointer(m_counts.begin()),
-                                iterator_to_raw_pointer(m_leafs.begin()),
-                                m_leafs_old_size, *m_query,
-                                iterator_to_raw_pointer(m_next_level.begin()),
-                                iterator_to_raw_pointer(m_level.begin())});
+    detail::for_each(count, count + m_level.size(),
+                     copy_children_and_leafs{
+                         iterator_to_raw_pointer(m_counts.begin()), *m_query,
+                         iterator_to_raw_pointer(m_next_level.begin()),
+                         iterator_to_raw_pointer(m_level.begin())});
 
     // swap level back to m_level and increment level count
     m_level.swap(m_next_level);
@@ -1640,7 +1597,7 @@ private:
   }
 
   CUDA_HOST_DEVICE bool equal(const bool other) const {
-    return m_level.empty();
+    return m_all_leafs != other;
   }
 
   CUDA_HOST_DEVICE
@@ -1648,8 +1605,8 @@ private:
 
   vector_ci m_level;
   vector_ci m_next_level;
-  vector_vint2 m_counts;
-  vector_ci m_leafs;
+  vector_int m_counts;
+  bool m_all_leafs;
   size_t m_level_num;
   const Query *m_query;
 };

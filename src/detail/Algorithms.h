@@ -14,19 +14,22 @@ namespace Aboria {
 namespace detail {
 
 struct plus {
-  template <typename T> CUDA_HOST_DEVICE T operator()(const T &a, const T &b) {
+  template <typename T1, typename T2>
+  CUDA_HOST_DEVICE auto operator()(const T1 &a, const T2 &b) {
     return a + b;
   }
 };
 
 struct min {
-  template <typename T> CUDA_HOST_DEVICE T operator()(const T &a, const T &b) {
+  template <typename T1, typename T2>
+  CUDA_HOST_DEVICE auto operator()(const T1 &a, const T2 &b) {
     return b < a ? b : a;
   }
 };
 
 struct max {
-  template <typename T> CUDA_HOST_DEVICE T operator()(const T &a, const T &b) {
+  template <typename T1, typename T2>
+  CUDA_HOST_DEVICE auto operator()(const T1 &a, const T2 &b) {
     return b > a ? b : a;
   }
 };

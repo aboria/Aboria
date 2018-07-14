@@ -498,7 +498,7 @@ public:
 
     auto query = particles.get_query();
     int count_cells = 0;
-    int count_levels = 0;
+    int count_levels = 1;
     auto i = query.breadth_first();
     for (; i != false; ++i) {
       count_cells += (*i).size();
@@ -510,7 +510,7 @@ public:
     TS_ASSERT_EQUALS(count_levels, query.number_of_levels());
 
     // check that remains are all leafs
-    for (auto ci : i.leafs()) {
+    for (auto ci : *i) {
       TS_ASSERT(query.is_leaf_node(*ci));
     }
   }
