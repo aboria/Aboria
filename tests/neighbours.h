@@ -1111,15 +1111,10 @@ public:
     t0 = Clock::now();
     auto search =
         euclidean_pair_search(particles.get_query(), particles.get_query(), r);
-    if (particles.get_query().number_of_levels() == 1) {
-      detail::for_each(search->begin(), search->end(),
-                       aboria_pair_check<query_type>(particles.get_query(), r));
-    } else {
-      for (; search != false; ++search) {
-      }
-      detail::for_each(search.leafs().begin(), search.leafs().end(),
-                       aboria_pair_check<query_type>(particles.get_query(), r));
+    for (; search != false; ++search) {
     }
+    detail::for_each(search->begin(), search->end(),
+                     aboria_pair_check<query_type>(particles.get_query(), r));
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria = t1 - t0;
     for (size_t i = 0; i < particles.size(); ++i) {

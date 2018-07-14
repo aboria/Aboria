@@ -19,6 +19,24 @@ struct plus {
   }
 };
 
+struct min {
+  template <typename T> CUDA_HOST_DEVICE T operator()(const T &a, const T &b) {
+    return b < a ? b : a;
+  }
+};
+
+struct max {
+  template <typename T> CUDA_HOST_DEVICE T operator()(const T &a, const T &b) {
+    return b > a ? b : a;
+  }
+};
+
+struct get_size {
+  template <typename T> CUDA_HOST_DEVICE size_t operator()(const T &a) {
+    return a.size();
+  }
+};
+
 // TODO: this is a complicated mass of preprocessor, can I improve?
 #ifdef HAVE_THRUST
 template <typename Traits>
@@ -552,8 +570,8 @@ template <class InputIt, class T, class UnaryOperation, class BinaryOperation>
 T transform_reduce(InputIt first, InputIt last, UnaryOperation unary_op, T init,
                    BinaryOperation binary_op) {
 
-  detail::transform_reduce(first, last, unary_op, init, binary_op,
-                           typename is_std_iterator<InputIt>::type());
+  return detail::transform_reduce(first, last, unary_op, init, binary_op,
+                                  typename is_std_iterator<InputIt>::type());
 }
 
 template <class InputIt, class OutputIt>
