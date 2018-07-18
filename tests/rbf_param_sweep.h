@@ -413,6 +413,7 @@ public:
           bicg2;
       bicg2.setMaxIterations(max_iter);
       bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+      bicg2.preconditioner().set_decimate_factor(2);
       t0 = Clock::now();
       bicg2.compute(G);
       t1 = Clock::now();
