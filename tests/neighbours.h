@@ -796,8 +796,6 @@ public:
       auto ci_b = detail::get_impl<1>(i);
       auto offset = detail::get_impl<2>(i) *
                     (query.get_bounds().bmax - query.get_bounds().bmin);
-      int index_a = query.get_bucket_index(*ci_a);
-      int index_b = query.get_bucket_index(*ci_b);
       // std::cout << "found ci pair " << index_a << " and " << index_b
       //          << std::endl;
       // exploit symmetries

@@ -776,7 +776,7 @@ void gather(InputIterator map_first, InputIterator map_last,
             std::true_type) {
   std::transform(map_first, map_last, result,
                  [&input_first](typename InputIterator::value_type const &i) {
-                   return input_first[i];
+                   return *(input_first + i);
                  });
 }
 

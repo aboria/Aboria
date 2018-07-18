@@ -1160,11 +1160,20 @@ protected:
 private:
   double m_neighbourhood_buffer;
   int m_max_buffer_n;
+  int m_decimate_factor;
 
   connectivity_type m_domain_indicies;
   connectivity_type m_domain_buffer;
   solvers_type m_domain_factorized_matrix;
   matrices_type m_domain_matrix;
+
+  std::vector<size_t> m_domain_coarse_indicies;
+
+  connectivity_type m_coarse_indicies;
+  connectivity_type m_coarse_buffer;
+  solvers_type m_coarse_factorized_matrix;
+  matrices_type m_coarse_matrix;
+
   Index m_rows;
   Index m_cols;
 
@@ -1178,7 +1187,7 @@ public:
   SchwartzPreconditioner()
       : m_isInitialized(false),
         m_neighbourhood_buffer(1e5 * std::numeric_limits<double>::epsilon()),
-        m_max_buffer_n(300) {}
+        m_max_buffer_n(300), m_decimate_factor(0) {}
 
   template <typename MatType>
   explicit SchwartzPreconditioner(const MatType &mat) {
@@ -1193,6 +1202,7 @@ public:
   }
 
   void set_max_buffer_n(int arg) { m_max_buffer_n = arg; }
+  void set_decimate_factor(int arg) { m_decimate_factor = arg; }
 
   template <typename MatType>
   SchwartzPreconditioner &analyzePattern(const MatType &mat) {
@@ -1356,24 +1366,13 @@ public:
   };
 
   template <typename Kernel>
-  void factorize_impl_block(const Index start_row, const Kernel &kernel) {
+  void factorize_fill_indices_and_matrices(
+      const Index start_row, const Kernel &kernel,
+      const typename Kernel::row_elements_type &a, connectivity_type &indicies,
+      connectivity_type &buffer, matrices_type &matrix) {
     typedef typename Kernel::row_elements_type row_elements_type;
-    typedef typename Kernel::col_elements_type col_elements_type;
     typedef typename row_elements_type::query_type query_type;
     typedef typename query_type::traits_type traits_type;
-
-    static_assert(std::is_same<row_elements_type, col_elements_type>::value,
-                  "Schwartz preconditioner restricted to identical row and col "
-                  "particle sets");
-    static_assert(Kernel::BlockRows == 1 && Kernel::BlockCols == 1,
-                  "Schwartz preconditioner not currently implemented for "
-                  "vector-valued kernels");
-
-    const row_elements_type &a = kernel.get_row_elements();
-    CHECK(
-        &a == &(kernel.get_col_elements()),
-        "Schwartz preconditioner restricted to identical row and col particle "
-        "sets");
 
     const query_type &query = a.get_query();
 
@@ -1383,18 +1382,17 @@ public:
       ;
     auto leaf_nodes = *df_search;
 
-    m_domain_indicies.resize(leaf_nodes.size());
-    m_domain_buffer.resize(leaf_nodes.size());
-    m_domain_matrix.resize(leaf_nodes.size());
-    m_domain_factorized_matrix.resize(leaf_nodes.size());
+    indicies.resize(leaf_nodes.size());
+    buffer.resize(leaf_nodes.size());
+    matrix.resize(leaf_nodes.size());
 
     if (traits_type::data_on_GPU) {
       // need to copy data from/to gpu
-      typename traits_type::template vector<storage_vector_type>
-          tmp_domain_indicies(leaf_nodes.size());
-      typename traits_type::template vector<storage_vector_type>
-          tmp_domain_buffer(leaf_nodes.size());
-      typename traits_type::template vector<matrix_type> tmp_domain_matrix(
+      typename traits_type::template vector<storage_vector_type> tmp_indicies(
+          leaf_nodes.size());
+      typename traits_type::template vector<storage_vector_type> tmp_buffer(
+          leaf_nodes.size());
+      typename traits_type::template vector<matrix_type> tmp_matrix(
           leaf_nodes.size());
 
       auto count = traits_type::make_counting_iterator(0);
@@ -1402,18 +1400,15 @@ public:
           count, count + leaf_nodes.size(),
           process_leaf_node<typename Kernel::function_type, query_type>{
               iterator_to_raw_pointer(leaf_nodes.begin()),
-              iterator_to_raw_pointer(tmp_domain_indicies.begin()),
-              iterator_to_raw_pointer(tmp_domain_buffer.begin()),
-              iterator_to_raw_pointer(tmp_domain_matrix.begin()),
+              iterator_to_raw_pointer(tmp_indicies.begin()),
+              iterator_to_raw_pointer(tmp_buffer.begin()),
+              iterator_to_raw_pointer(tmp_matrix.begin()),
               m_neighbourhood_buffer, m_max_buffer_n, start_row,
               kernel.get_kernel_function(), query});
 
-      detail::copy(tmp_domain_indicies.begin(), tmp_domain_indicies.end(),
-                   m_domain_indicies.begin());
-      detail::copy(tmp_domain_buffer.begin(), tmp_domain_buffer.end(),
-                   m_domain_buffer.begin());
-      detail::copy(tmp_domain_matrix.begin(), tmp_domain_matrix.end(),
-                   m_domain_matrix.begin());
+      detail::copy(tmp_indicies.begin(), tmp_indicies.end(), indicies.begin());
+      detail::copy(tmp_buffer.begin(), tmp_buffer.end(), buffer.begin());
+      detail::copy(tmp_matrix.begin(), tmp_matrix.end(), matrix.begin());
     } else {
       // no copy required
       auto count = traits_type::make_counting_iterator(0);
@@ -1421,12 +1416,70 @@ public:
           count, count + leaf_nodes.size(),
           process_leaf_node<typename Kernel::function_type, query_type>{
               iterator_to_raw_pointer(leaf_nodes.begin()),
-              iterator_to_raw_pointer(m_domain_indicies.begin()),
-              iterator_to_raw_pointer(m_domain_buffer.begin()),
-              iterator_to_raw_pointer(m_domain_matrix.begin()),
-              m_neighbourhood_buffer, m_max_buffer_n, start_row,
-              kernel.get_kernel_function(), query});
+              iterator_to_raw_pointer(indicies.begin()),
+              iterator_to_raw_pointer(buffer.begin()),
+              iterator_to_raw_pointer(matrix.begin()), m_neighbourhood_buffer,
+              m_max_buffer_n, start_row, kernel.get_kernel_function(), query});
     }
+  }
+
+  template <typename Kernel>
+  void factorize_impl_block(const Index start_row, const Kernel &kernel) {
+    typedef typename Kernel::row_elements_type row_elements_type;
+    typedef typename Kernel::col_elements_type col_elements_type;
+
+    static_assert(std::is_same<row_elements_type, col_elements_type>::value,
+                  "Schwartz preconditioner restricted to identical row and col "
+                  "particle sets");
+    static_assert(Kernel::BlockRows == 1 && Kernel::BlockCols == 1,
+                  "Schwartz preconditioner not currently implemented for "
+                  "vector-valued kernels");
+
+    const row_elements_type &a = kernel.get_row_elements();
+
+    CHECK(
+        &a == &(kernel.get_col_elements()),
+        "Schwartz preconditioner restricted to identical row and col particle "
+        "sets");
+
+    // create coarse
+    typename std::remove_cv<row_elements_type>::type coarse_a;
+    if (m_decimate_factor > 0) {
+
+      // generate a random permutation of size a.size()/m_decimate_factor
+      m_domain_coarse_indicies.resize(a.size());
+      std::iota(m_domain_coarse_indicies.begin(),
+                m_domain_coarse_indicies.end(), 0);
+      std::random_shuffle(m_domain_coarse_indicies.begin(),
+                          m_domain_coarse_indicies.end());
+      m_domain_coarse_indicies.resize(a.size() / m_decimate_factor);
+
+      // gather the randomly chosen particles into coarse_a
+      coarse_a.resize(m_domain_coarse_indicies.size());
+      detail::gather(m_domain_coarse_indicies.begin(),
+                     m_domain_coarse_indicies.end(), a.begin(),
+                     coarse_a.begin());
+
+      // init ns
+      coarse_a.init_neighbour_search(a.get_min(), a.get_max(), a.get_periodic(),
+                                     a.get_max_bucket_size());
+
+      factorize_fill_indices_and_matrices(start_row, kernel, coarse_a,
+                                          m_coarse_indicies, m_coarse_buffer,
+                                          m_coarse_matrix);
+
+      m_coarse_factorized_matrix.resize(m_coarse_matrix.size());
+
+      // factorize coarse matrices
+      detail::transform(m_coarse_matrix.begin(), m_coarse_matrix.end(),
+                        m_coarse_factorized_matrix.begin(), factorize_matrix());
+    }
+
+    // do domain level
+    factorize_fill_indices_and_matrices(start_row, kernel, a, m_domain_indicies,
+                                        m_domain_buffer, m_domain_matrix);
+
+    m_domain_factorized_matrix.resize(m_domain_matrix.size());
 
     // factorize domain matrices
     detail::transform(m_domain_matrix.begin(), m_domain_matrix.end(),
@@ -1475,11 +1528,35 @@ public:
         m_domain_indicies.begin(), m_domain_indicies.end(), detail::get_size(),
         0, detail::plus());
 
+    auto min_coarse_indicies = detail::transform_reduce(
+        m_coarse_indicies.begin(), m_coarse_indicies.end(), detail::get_size(),
+        std::numeric_limits<size_t>::max(), detail::min());
+
+    auto max_coarse_indicies = detail::transform_reduce(
+        m_coarse_indicies.begin(), m_coarse_indicies.end(), detail::get_size(),
+        std::numeric_limits<size_t>::min(), detail::max());
+
+    auto min_coarse_buffer = detail::transform_reduce(
+        m_coarse_buffer.begin(), m_coarse_buffer.end(), detail::get_size(),
+        std::numeric_limits<size_t>::max(), detail::min());
+
+    auto max_coarse_buffer = detail::transform_reduce(
+        m_coarse_buffer.begin(), m_coarse_buffer.end(), detail::get_size(),
+        std::numeric_limits<size_t>::min(), detail::max());
+
+    auto coarse_count = detail::transform_reduce(
+        m_coarse_indicies.begin(), m_coarse_indicies.end(), detail::get_size(),
+        0, detail::plus());
+
     LOG(2, "SchwartzPreconditioner: finished factorizing, found "
                << m_domain_indicies.size() << " domains, with " << min_indicies
                << "--" << max_indicies << " particles (" << count
                << " total), and " << min_buffer << "--" << max_buffer
-               << " buffer particles");
+               << " buffer particles.  found " << m_coarse_indicies.size()
+               << " coarse domains, with " << min_coarse_indicies << "--"
+               << max_coarse_indicies << " particles (" << coarse_count
+               << " total), and " << min_coarse_buffer << "--"
+               << max_coarse_buffer << " buffer particles");
 
     m_isInitialized = true;
     return *this;
@@ -1548,8 +1625,15 @@ public:
       // copy accumulate b values to big vector
       sub_index = 0;
       for (size_t j = 0; j < indicies.size(); ++j) {
-        x[indicies[j]] = domain_x[sub_index++];
+        x[indicies[j]] += domain_x[sub_index++];
       }
+
+      /*
+       // non-restricted
+      for (size_t j = 0; j < buffer.size(); ++j) {
+        x[buffer[j]] += domain_x[sub_index++];
+      }
+      */
     }
   };
 
@@ -1560,14 +1644,44 @@ public:
     //
     // loop over domains and invert relevent sub-matricies in
     // mat
-    // TODO: do I need this? x = b;
+    // x = 0;
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
     for (int i = 0; i < x.size(); ++i) {
-      x[i] = b[i];
+      x[i] = 0;
     }
 
+    // coarse grid correction
+
+    // gather coarse b and init coarse x
+    std::vector<double> coarse_b(m_domain_coarse_indicies.size());
+    std::vector<double> coarse_x(m_domain_coarse_indicies.size());
+    std::fill(coarse_x.begin(), coarse_x.end(), 0);
+
+    detail::gather(m_domain_coarse_indicies.begin(),
+                   m_domain_coarse_indicies.end(), b.derived().data(),
+                   coarse_b.begin());
+
+    // solve on coarse grid
+    solve_domain fsolve_coarse{
+        iterator_to_raw_pointer(m_coarse_indicies.begin()),
+        iterator_to_raw_pointer(m_coarse_buffer.begin()),
+        iterator_to_raw_pointer(m_coarse_factorized_matrix.begin()),
+        coarse_x.data(), coarse_b.data()};
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < m_coarse_indicies.size(); ++i) {
+      fsolve_coarse(i);
+    }
+
+    // scatter back to domain
+    detail::scatter(coarse_x.begin(), coarse_x.end(),
+                    m_domain_coarse_indicies.begin(), x.derived().data());
+
+    // now add domain contribution
     solve_domain fsolve_domain{
         iterator_to_raw_pointer(m_domain_indicies.begin()),
         iterator_to_raw_pointer(m_domain_buffer.begin()),
