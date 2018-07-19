@@ -1476,6 +1476,8 @@ public:
     }
   }
 
+  reference previous() const { return m_next_level; }
+
   CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
   CUDA_HOST_DEVICE
