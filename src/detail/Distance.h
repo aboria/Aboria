@@ -138,6 +138,26 @@ template <int LNormNumber> struct distance_helper {
   }
 };
 
+template <int LNormNumber, unsigned int D>
+CUDA_HOST_DEVICE bool boxes_within_distance(const bbox<D> &a, const bbox<D> &b,
+                                            const double distance2) {
+  double squaredNorm = 0;
+  for (size_t i = 0; i < D; ++i) {
+    if (a.bmax[i] < b.bmin[i]) {
+      squaredNorm = detail::distance_helper<LNormNumber>::do_accumulate(
+          squaredNorm,
+          detail::distance_helper<LNormNumber>::get_value_to_accumulate(
+              b.bmin[i] - a.bmax[i]));
+    } else if (b.bmax[i] < a.bmin[i]) {
+      squaredNorm = detail::distance_helper<LNormNumber>::do_accumulate(
+          squaredNorm,
+          detail::distance_helper<LNormNumber>::get_value_to_accumulate(
+              a.bmin[i] - b.bmax[i]));
+    }
+  }
+  return squaredNorm <= distance2;
+}
+
 } // namespace detail
 } // namespace Aboria
 

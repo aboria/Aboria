@@ -294,7 +294,12 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   template <int LNormNumber>
   using query_iterator =
       lattice_iterator_within_distance<CellListOrderedQuery, LNormNumber>;
+  template <int LNormNumber>
+  using bounds_query_iterator =
+      lattice_iterator_around_bounds<CellListOrderedQuery, LNormNumber>;
+
   typedef lattice_iterator<dimension> all_iterator;
+  typedef bf_iterator<CellListOrderedQuery> breadth_first_iterator;
   typedef lattice_iterator<dimension> child_iterator;
   typedef typename query_iterator<2>::reference reference;
   typedef typename query_iterator<2>::pointer pointer;
@@ -435,7 +440,7 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
   ///
   /// @copydoc NeighbourQueryBase::num_children() const
   ///
-size_t num_children() const { return number_of_buckets(); }
+  size_t num_children() const { return number_of_buckets(); }
 
   ///
   /// @copydoc NeighbourQueryBase::get_bounds()
@@ -519,6 +524,21 @@ size_t num_children() const { return number_of_buckets(); }
   }
 
   ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_bucket()
+  ///
+  template <int LNormNumber = -1>
+  bounds_query_iterator<LNormNumber>
+  get_buckets_near_bucket(const box_type &bounds,
+                          const double max_distance) const {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tget_buckets_near_bucket: bounds = "
+               << bounds << " max_distance = " << max_distance);
+#endif
+
+    return bounds_query_iterator<LNormNumber>(bounds, max_distance, this);
+  }
+
+  ///
   /// @copydoc NeighbourQueryBase::get_buckets_near_point()
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -566,6 +586,20 @@ size_t num_children() const { return number_of_buckets(); }
   }
 
   ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
+  }
+
+  ///
   /// @copydoc NeighbourQueryBase::get_subtree() const
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -609,7 +643,7 @@ size_t num_children() const { return number_of_buckets(); }
   ///
   /// always 2 for CellListOrdered
   ///
-  unsigned number_of_levels() const { return 2; }
+  unsigned number_of_levels() const { return 1; }
 };
 
 } // namespace Aboria

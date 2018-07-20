@@ -214,7 +214,7 @@ private:
     m_nodes_split_pos.resize(1);
     m_nodes_split_dim.resize(1);
     m_nodes_child[0] = 1;
-    m_number_of_levels = 1;
+    m_number_of_levels = 0;
     int prev_level_index = 0;
     // m_nodes_child  int-> index of first child node (<0 is a leaf, gives index
     // of 1st particle)
@@ -597,6 +597,8 @@ public:
 
   int get_child_number() const { return m_data.high; }
 
+  int distance_to_end() const { return 2 - m_data.high; }
+
   reference operator*() const { return dereference(); }
 
   reference operator->() const { return dereference(); }
@@ -609,6 +611,13 @@ public:
   KdtreeChildIterator operator++(int) {
     KdtreeChildIterator tmp(*this);
     operator++();
+    return tmp;
+  }
+
+  CUDA_HOST_DEVICE
+  KdtreeChildIterator operator+(const int n) {
+    KdtreeChildIterator tmp(*this);
+    tmp.increment(n);
     return tmp;
   }
 
@@ -635,6 +644,8 @@ private:
   reference dereference() const { return m_data; }
 
   void increment() { ++m_data.high; }
+
+  void increment(const int n) { m_data.high += n; }
 };
 
 /// @copydetails NeighbourQueryBase
@@ -656,7 +667,12 @@ template <typename Traits> struct KdtreeQuery {
   template <int LNormNumber>
   using query_iterator = tree_query_iterator<KdtreeQuery, LNormNumber>;
 
+  template <int LNormNumber>
+  using bounds_query_iterator =
+      tree_box_query_iterator<KdtreeQuery, LNormNumber>;
+
   typedef depth_first_iterator<KdtreeQuery> all_iterator;
+  typedef bf_iterator<KdtreeQuery> breadth_first_iterator;
   typedef KdtreeChildIterator<KdtreeQuery> child_iterator;
 
   typedef typename child_iterator::value_type value_type;
@@ -669,10 +685,14 @@ template <typename Traits> struct KdtreeQuery {
   bbox<dimension> m_bounds;
   raw_pointer m_particles_begin;
   raw_pointer m_particles_end;
+
+  /// number of entries in m_nodes_child, note that this is one more than the
+  /// total number of buckets when a user iterates through them all
   size_t m_number_of_buckets;
   size_t m_number_of_levels;
 
   int *m_nodes_child;
+  int m_dummy_root{-1};
   int *m_nodes_split_dim;
   double *m_nodes_split_pos;
 
@@ -718,6 +738,13 @@ public:
    * end functions for tree_query_iterator
    */
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_root() const
+  ///
+  child_iterator get_root() const {
+    return ++child_iterator(&m_dummy_root, m_bounds);
+  }
+
   child_iterator get_children() const {
     return child_iterator(m_nodes_child, m_bounds);
   }
@@ -746,14 +773,19 @@ public:
 
   const box_type get_bounds(const child_iterator &ci) const {
     box_type ret = (*ci).bounds;
-    const int pindex = get_parent_index(*ci);
-    const int i = m_nodes_split_dim[pindex];
-    if (ci.is_high()) {
-      ret.bmin[i] = m_nodes_split_pos[pindex];
+    if ((*ci).parent == &m_dummy_root) {
+      // if root node we are done
+      return ret;
     } else {
-      ret.bmax[i] = m_nodes_split_pos[pindex];
+      const int pindex = get_parent_index(*ci);
+      const int i = m_nodes_split_dim[pindex];
+      if (ci.is_high()) {
+        ret.bmin[i] = m_nodes_split_pos[pindex];
+      } else {
+        ret.bmax[i] = m_nodes_split_pos[pindex];
+      }
+      return ret;
     }
-    return ret;
   }
 
   particle_iterator get_bucket_particles(reference bucket) const {
@@ -772,6 +804,10 @@ public:
   }
 
   void go_to(const double_d &position, child_iterator &ci) const {
+    if ((*ci).parent == m_dummy_root) {
+      // if root node do nothing
+      return;
+    }
     const int pindex = get_parent_index(*ci);
     const int i = m_nodes_split_dim[pindex];
     ASSERT(position[i] < ci.m_data.bounds.bmax[i], "position out of bounds");
@@ -802,10 +838,14 @@ public:
   }
 
   size_t get_bucket_index(reference bucket) const {
-    return get_child_index(bucket);
+    // minus one since we disregard the root index
+    return get_child_index(bucket) - 1;
   }
 
-  size_t number_of_buckets() const { return m_number_of_buckets; }
+  size_t number_of_buckets() const {
+    // minus one since we disregard the root index
+    return m_number_of_buckets - 1;
+  }
 
   template <int LNormNumber>
   query_iterator<LNormNumber>
@@ -818,6 +858,22 @@ public:
     return query_iterator<LNormNumber>(get_children(), position,
                                        double_d::Constant(max_distance),
                                        m_number_of_levels, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_bucket()
+  ///
+  template <int LNormNumber>
+  bounds_query_iterator<LNormNumber>
+  get_buckets_near_bucket(const box_type &bounds,
+                          const double max_distance) const {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tget_buckets_near_bucket: bounds = "
+               << bounds << " max_distance = " << max_distance);
+#endif
+
+    return bounds_query_iterator<LNormNumber>(
+        get_children(), bounds, max_distance, m_number_of_levels, this);
   }
 
   template <int LNormNumber>
@@ -838,6 +894,21 @@ public:
 
   all_iterator get_subtree() const {
     return all_iterator(get_children(), m_number_of_levels, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first(const child_iterator&)
+  /// const
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
   }
 
   size_t number_of_particles() const {

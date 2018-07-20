@@ -1124,20 +1124,70 @@ template <typename Solver> class SchwartzPreconditioner {
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, Eigen::Dynamic> matrix_type;
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
   typedef Solver solver_type;
-  typedef std::vector<size_t> storage_vector_type;
+
+  struct storage_vector_type {
+    size_t *m_data;
+    size_t m_size;
+
+    storage_vector_type() : m_data(nullptr), m_size(0) {}
+    storage_vector_type(const storage_vector_type &other)
+        : m_data(nullptr), m_size(0) {
+      resize(other.m_size);
+      for (size_t i = 0; i < m_size; ++i) {
+        m_data[i] = other.m_data[i];
+      }
+    }
+
+    storage_vector_type(storage_vector_type &&other) = default;
+
+    ~storage_vector_type() {
+      if (m_data)
+        delete[] m_data;
+    }
+
+    storage_vector_type &operator=(const storage_vector_type &other) {
+      resize(other.m_size);
+      for (size_t i = 0; i < m_size; ++i) {
+        m_data[i] = other.m_data[i];
+      }
+      return *this;
+    }
+    CUDA_HOST_DEVICE
+    size_t *begin() const { return m_data; }
+    CUDA_HOST_DEVICE
+    size_t *end() const { return m_data + m_size; }
+    CUDA_HOST_DEVICE
+    size_t size() const { return m_size; }
+    CUDA_HOST_DEVICE
+    void resize(const size_t n) {
+      // only supports reductions in size after initial resize
+      ASSERT_CUDA(!m_data || n <= m_size);
+      if (!m_data && n > 0) {
+        m_data = new size_t[n];
+      }
+      m_size = n;
+    }
+    CUDA_HOST_DEVICE
+    size_t &operator[](const int i) { return m_data[i]; }
+    CUDA_HOST_DEVICE
+    const size_t &operator[](const int i) const { return m_data[i]; }
+  };
   typedef std::vector<storage_vector_type> connectivity_type;
+  typedef std::vector<solver_type> solvers_type;
+  typedef std::vector<matrix_type> matrices_type;
 
 protected:
   bool m_isInitialized;
 
 private:
-  double m_neighbourhood_buffer;
-  double m_max_buffer_n;
-  double m_coarse_grid_n;
+  size_t m_max_buffer_n;
 
-  connectivity_type m_domain_indicies;
-  connectivity_type m_domain_buffer;
-  std::vector<solver_type> m_domain_factorized_matrix;
+  connectivity_type m_indicies[2];
+  connectivity_type m_buffer[2];
+  solvers_type m_factorized_matrix[2];
+  matrices_type m_matrix[2];
+  matrices_type m_coupling_matrix[2];
+
   Index m_rows;
   Index m_cols;
 
@@ -1148,10 +1198,7 @@ public:
     MaxColsAtCompileTime = Eigen::Dynamic
   };
 
-  SchwartzPreconditioner()
-      : m_isInitialized(false),
-        m_neighbourhood_buffer(1e5 * std::numeric_limits<double>::epsilon()),
-        m_max_buffer_n(300), m_coarse_grid_n(0) {}
+  SchwartzPreconditioner() : m_isInitialized(false), m_max_buffer_n(300) {}
 
   template <typename MatType>
   explicit SchwartzPreconditioner(const MatType &mat) {
@@ -1161,301 +1208,218 @@ public:
   Index rows() const { return m_rows; }
   Index cols() const { return m_cols; }
 
-  void set_neighbourhood_buffer_size(double arg) {
-    m_neighbourhood_buffer = arg;
+  void set_max_buffer_n(size_t arg) { m_max_buffer_n = arg; }
+
+  template <typename MatType>
+  SchwartzPreconditioner &analyzePattern(const MatType &mat) {
+    LOG(2, "SchwartzPreconditioner: analyzePattern: do nothing");
+    return *this;
   }
 
-  void set_coarse_grid_n(int arg) { m_coarse_grid_n = arg; }
-  void set_max_buffer_n(int arg) { m_max_buffer_n = arg; }
+  template <typename T, typename Query> struct process_node {
+    static const unsigned int D = Query::dimension;
+    typedef Vector<double, D> double_d;
+    typedef position_d<D> position;
+    typename Query::child_iterator *m_nodes;
+    storage_vector_type *m_domain_indicies;
+    storage_vector_type *m_domain_buffer;
+    matrix_type *m_domain_matrix;
+    matrix_type *m_coupling_matrix;
+    size_t m_max_buffer_n;
+    size_t m_start_row;
+    const T m_function;
+    Query m_query;
+    int m_level;
+    bool is_root;
 
-  template <typename Kernel>
-  void analyze_impl_block(const Index start_row, const Kernel &kernel) {
-    typedef typename Kernel::row_elements_type row_elements_type;
-    typedef typename Kernel::col_elements_type col_elements_type;
-    typedef typename row_elements_type::query_type query_type;
-    typedef typename query_type::traits_type traits_type;
-    typedef typename query_type::child_iterator child_iterator;
-    typedef typename traits_type::double_d double_d;
-    typedef typename traits_type::int_d int_d;
-    typedef typename traits_type::position position;
+    CUDA_HOST_DEVICE
+    void operator()(const int i) const {
+      auto &ci = m_nodes[i];
+      auto &bounds = m_query.get_bounds(ci);
+      LOG(3, "process_node with bounds "
+                 << bounds << " is leaf node = " << m_query.is_leaf_node(*ci)
+                 << " is root = " << is_root);
 
-    static_assert(std::is_same<row_elements_type, col_elements_type>::value,
-                  "Schwartz preconditioner restricted to identical row and col "
-                  "particle sets");
-    const row_elements_type &a = kernel.get_row_elements();
-    CHECK(
-        &a == &(kernel.get_col_elements()),
-        "Schwartz preconditioner restricted to identical row and col particle "
-        "sets");
-    std::default_random_engine generator;
-    const query_type &query = a.get_query();
-    for (auto i = query.get_subtree(); i != false; ++i) {
-      if (query.is_leaf_node(*i)) {
-        auto ci = i.get_child_iterator();
-        auto bounds = query.get_bounds(ci);
-        const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
-        const double_d side = 0.5 * (bounds.bmax - bounds.bmin);
+      const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
+      const double_d side = 0.9 * (bounds.bmax - bounds.bmin);
 
-        // skip over empty buckets
-        if (query.get_bucket_particles(*ci) == false)
-          continue;
+      // skip over empty leaf buckets on leaf level, or leaf buckets on non leaf
+      // level
+      if ((m_level == 0 && m_query.get_bucket_particles(*ci) == false) ||
+          (m_level > 0 && m_query.is_leaf_node(*ci))) {
+        return;
+      }
 
-        const size_t domain_index = m_domain_indicies.size();
-        m_domain_indicies.push_back(connectivity_type::value_type());
-        m_domain_buffer.push_back(connectivity_type::value_type());
-        storage_vector_type &buffer = m_domain_buffer[domain_index];
-        storage_vector_type &indicies = m_domain_indicies[domain_index];
+      // find out how many particles and how many buffer particles there are
+      size_t n_indicies = 0;
+      size_t n_buffer = 0;
 
-        // add particles in bucket to indicies
-        // add particles in neighbouring buckets to buffer
-        for (auto bucket = query.template get_buckets_near_point<-1>(
-                 middle, side + m_neighbourhood_buffer);
+      if (is_root) {
+        n_buffer = m_query.number_of_particles();
+      } else {
+        for (auto bucket =
+                 m_query.template get_buckets_near_point<-1>(middle, side);
              bucket != false; ++bucket) {
-          for (auto particle = query.get_bucket_particles(*bucket);
+          if (m_level == 0 && bucket.get_child_iterator() == ci) {
+            n_indicies =
+                m_query.get_bucket_particles(*bucket).distance_to_end();
+          } else {
+            n_buffer += m_query.get_bucket_particles(*bucket).distance_to_end();
+          }
+        }
+      }
+
+      // allocate for buffer + indicies
+      auto &indicies = m_domain_indicies[i];
+      storage_vector_type buffer_tmp;
+      buffer_tmp.resize(n_buffer);
+      indicies.resize(n_indicies);
+
+      // add particles in bucket to indicies
+      // add particles in neighbouring buckets to buffer
+      size_t i_indicies = 0;
+      size_t i_buffer = 0;
+      if (is_root) {
+        for (size_t i = 0; i < buffer_tmp.size(); ++i) {
+          buffer_tmp[i] = m_start_row + i;
+          i_buffer = n_buffer;
+        }
+      } else {
+        for (auto bucket =
+                 m_query.template get_buckets_near_point<-1>(middle, side);
+             bucket != false; ++bucket) {
+          for (auto particle = m_query.get_bucket_particles(*bucket);
                particle != false; ++particle) {
             const double_d &p = get<position>(*particle);
             const size_t index =
-                &p - get<position>(query.get_particles_begin());
-            if (bucket.get_child_iterator() == ci) {
-              indicies.push_back(start_row + index);
+                &p - get<position>(m_query.get_particles_begin());
+            if (m_level == 0 && bucket.get_child_iterator() == ci) {
+              indicies[i_indicies++] = m_start_row + index;
             } else {
-              buffer.push_back(start_row + index);
+              buffer_tmp[i_buffer++] = m_start_row + index;
+            }
+          }
+        }
+      }
+
+      LOG(3, "\tfound  " << indicies.size() << " indices in bucket and "
+                         << buffer_tmp.size() << " in buffer");
+
+      ASSERT_CUDA(i_indicies == n_indicies);
+      ASSERT_CUDA(i_buffer == n_buffer);
+
+      if (buffer_tmp.size() > m_max_buffer_n) {
+        // random shuffle
+#if defined(__CUDACC__)
+        thrust::default_random_engine gen;
+#else
+        generator_type gen;
+#endif
+        // advance forward so no random streams intersect
+        gen.discard(buffer_tmp.size() * i);
+
+        for (int i = buffer_tmp.size() - 1; i > 0; --i) {
+#if defined(__CUDACC__)
+          thrust::uniform_int_distribution<int> uniform(0, i);
+          size_t tmp = buffer_tmp[i];
+          const auto random_index = uniform(gen);
+          buffer_tmp[i] = buffer_tmp[random_index];
+          buffer_tmp[random_index] = tmp;
+#else
+          std::uniform_int_distribution<int> uniform(0, i);
+          std::swap(buffer_tmp[i], buffer_tmp[uniform(gen)]);
+#endif
+        }
+      }
+      // copy random chosen buffer_tmp to buffer along with indicies
+      auto &buffer = m_domain_buffer[i];
+      const size_t buffer_size = std::min(buffer_tmp.size(), m_max_buffer_n);
+      buffer.resize(indicies.size() + buffer_size);
+      for (size_t i = 0; i < indicies.size(); ++i) {
+        buffer[i] = indicies[i];
+      }
+      for (size_t i = 0; i < buffer_size; ++i) {
+        buffer[indicies.size() + i] = buffer_tmp[i];
+      }
+
+      LOG(3, "\tafter filtering, found  " << indicies.size()
+                                          << " indices in bucket and "
+                                          << buffer.size() << " in buffer");
+
+      // ASSERT(buffer.size() > 0, "no particles in buffer");
+      ASSERT_CUDA(m_level > 0 || indicies.size() > 0);
+
+      // fill domain matrix
+      const int size = buffer.size();
+      auto &domain_matrix = m_domain_matrix[i];
+      domain_matrix.resize(size, size);
+      for (size_t i = 0; i < buffer.size(); ++i) {
+        auto a = m_query.get_particles_begin()[buffer[i]];
+        for (size_t j = 0; j < buffer.size(); ++j) {
+          auto b = m_query.get_particles_begin()[buffer[j]];
+          domain_matrix(i, j) = m_function(a, b);
+        }
+      }
+
+      if (m_level > 0) {
+        LOG(3, "doing coupling");
+
+        // fill coupling matrix
+        int count = 0;
+        if (is_root) {
+          count = m_query.number_of_particles();
+        } else {
+          for (auto child = m_query.get_subtree(ci); child != false; ++child) {
+            if (m_query.is_leaf_node(*child)) {
+              count += m_query.get_bucket_particles(*child).distance_to_end();
             }
           }
         }
 
-        if (buffer.size() > m_max_buffer_n) {
-          std::shuffle(buffer.begin(), buffer.end(), generator);
-          buffer.resize(m_max_buffer_n);
-        }
+        auto &coupling_matrix = m_coupling_matrix[i];
+        indicies.resize(count);
+        coupling_matrix.resize(count, buffer.size());
 
-        // ASSERT(buffer.size() > 0, "no particles in buffer");
-        ASSERT(indicies.size() > 0, "no particles in domain");
-      }
-    }
-
-    // add coarse grid
-    if (m_coarse_grid_n > 0) {
-      m_domain_indicies.push_back(connectivity_type::value_type());
-      m_domain_buffer.push_back(connectivity_type::value_type());
-      storage_vector_type &indicies = m_domain_indicies.back();
-      auto bounds = query.get_bounds();
-      indicies.resize(std::pow(m_coarse_grid_n + 1, query_type::dimension));
-      const double_d dx = (bounds.bmax - bounds.bmin) / m_coarse_grid_n -
-                          std::numeric_limits<double>::epsilon();
-      lattice_iterator<query_type::dimension> it(
-          int_d::Constant(0), int_d::Constant(m_coarse_grid_n + 1),
-          int_d::Constant(0));
-      std::unordered_map<size_t, std::pair<child_iterator, size_t>> counts;
-      for (; it != false; ++it) {
-        const double_d point = (*it) * dx + bounds.bmin;
-        const child_iterator ci = query.get_bucket(point);
-        auto bucket_index = query.get_bucket_index(*ci);
-        auto cit = counts.find(bucket_index);
-        if (cit != counts.end()) {
-          cit->second.second++;
+        if (is_root) {
+          for (int i = 0; i < count; ++i) {
+            indicies[i] = i;
+            auto a = m_query.get_particles_begin()[i];
+            int mj = 0;
+            for (const size_t &big_index_j : buffer) {
+              auto b = m_query.get_particles_begin()[big_index_j];
+              coupling_matrix(i, mj++) = m_function(a, b);
+            }
+          }
         } else {
-          counts[bucket_index] = std::make_pair(ci, 1);
+          int mi = 0;
+          for (auto child = m_query.get_subtree(ci); child != false; ++child) {
+            if (m_query.is_leaf_node(*child)) {
+              for (auto a = m_query.get_bucket_particles(*child); a != false;
+                   ++a, ++mi) {
+                const double_d &p = get<position>(*a);
+                indicies[mi] =
+                    &p - get<position>(m_query.get_particles_begin());
+                int mj = 0;
+                for (const size_t &big_index_j : buffer) {
+                  auto b = m_query.get_particles_begin()[big_index_j];
+                  coupling_matrix(mi, mj++) = m_function(*a, b);
+                }
+              }
+            }
+          }
         }
       }
-      // for (auto i : counts) {
-      // std::cout << "bucket index " << i.first << " with bounds "
-      //<< query.get_bounds(i.second.first) << " has " << i.second.second
-      //<< " counts" << std::endl;
-      //}
-
-      int out_index = 0;
-      std::for_each(counts.begin(), counts.end(), [&](auto i) {
-        const child_iterator &ci = i.second.first;
-        size_t count = i.second.second;
-        auto pit = query.get_bucket_particles(*ci);
-        auto num_particles = pit.distance_to_end();
-        std::vector<int> bucket_indices(num_particles);
-        std::iota(bucket_indices.begin(), bucket_indices.end(), 0);
-        std::shuffle(bucket_indices.begin(), bucket_indices.end(), generator);
-        const int trunc_count = std::min(count, bucket_indices.size());
-        std::transform(
-            bucket_indices.begin(), bucket_indices.begin() + trunc_count,
-            indicies.begin() + out_index, [&](const int j) {
-              return (&get<position>(*(pit + j)) - &get<position>(a)[0]) +
-                     start_row;
-            });
-        // std::cout << "looking for " << count
-        //<< " samples in buffer. Found at indicies ";
-        // for (size_t i = out_index; i < out_index + trunc_count; ++i) {
-        //  std::cout << buffer[i] << " ";
-        //}
-        // std::cout << std::endl;
-        out_index += trunc_count;
-      });
-      indicies.resize(out_index);
-      ASSERT(indicies.size() > 0, "no particles in domain");
-
-#ifdef HAVE_CAIRO_TURN_OFF
-      const int image_size = 512;
-      cairo_surface_t *surface =
-          cairo_svg_surface_create("coarse_grid.svg", image_size, image_size);
-      cairo_svg_surface_restrict_to_version(surface, CAIRO_SVG_VERSION_1_2);
-      cairo_t *cr = cairo_create(surface);
-      const double lw = 0.007;
-
-      cairo_scale(cr, image_size, image_size);
-      cairo_set_line_width(cr, lw);
-      cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
-      cairo_move_to(cr, bounds.bmin[0], bounds.bmin[1]);
-      cairo_line_to(cr, bounds.bmax[0], bounds.bmin[1]);
-      cairo_line_to(cr, bounds.bmax[0], bounds.bmax[1]);
-      cairo_line_to(cr, bounds.bmin[0], bounds.bmax[1]);
-      cairo_close_path(cr);
-      cairo_stroke(cr);
-
-      const double PI = boost::math::constants::pi<double>();
-      cairo_set_source_rgba(cr, 0.5, 0, 0, 0.5);
-      for (auto i : indicies) {
-        auto &pos = get<position>(a)[i];
-        cairo_arc(cr, pos[0], pos[1], lw, 0, 2 * PI);
-        cairo_fill(cr);
-      }
-      cairo_destroy(cr);
-      cairo_surface_destroy(surface);
-#endif
     }
-  }
+  };
 
-  template <typename RowParticles, typename ColParticles>
-  void
-  analyze_impl_block(const Index start_row,
-                     const KernelZero<RowParticles, ColParticles> &kernel) {}
+  struct factorize_matrix {
+    solver_type operator()(matrix_type &domain_matrix) {
+      LOG(3, "factorize matrix with size (" << domain_matrix.rows() << ','
+                                            << domain_matrix.cols() << ')');
 
-  template <unsigned int NI, unsigned int NJ, typename Blocks, std::size_t... I>
-  void analyze_impl(const MatrixReplacement<NI, NJ, Blocks> &mat,
-                    detail::index_sequence<I...>) {
-    int dummy[] = {0, (analyze_impl_block(mat.template start_row<I>(),
-                                          std::get<I * NJ + I>(mat.m_blocks)),
-                       0)...};
-    static_cast<void>(dummy);
-  }
-
-  template <unsigned int NI, unsigned int NJ, typename Blocks>
-  SchwartzPreconditioner &
-  analyzePattern(const MatrixReplacement<NI, NJ, Blocks> &mat) {
-
-    LOG(2, "SchwartzPreconditioner: analyze pattern");
-    m_rows = mat.rows();
-    m_cols = mat.cols();
-    analyze_impl(mat, detail::make_index_sequence<NI>());
-
-    int count = 0;
-    int minsize_buffer = 1000;
-    int maxsize_buffer = 0;
-    int minsize_indicies = 1000;
-    int maxsize_indicies = 0;
-    for (size_t domain_index = 0; domain_index < m_domain_indicies.size() - 1;
-         ++domain_index) {
-      const int size_indicies = m_domain_indicies[domain_index].size();
-      const int size_buffer = m_domain_buffer[domain_index].size();
-      count += size_indicies;
-      if (size_buffer < minsize_buffer)
-        minsize_buffer = size_buffer;
-      if (size_buffer > maxsize_buffer)
-        maxsize_buffer = size_buffer;
-      if (size_indicies < minsize_indicies)
-        minsize_indicies = size_indicies;
-      if (size_indicies > maxsize_indicies)
-        maxsize_indicies = size_indicies;
-    }
-    LOG(2, "SchwartzPreconditioner: finished analysis, found "
-               << m_domain_indicies.size() << " domains, with "
-               << minsize_indicies << "--" << maxsize_indicies << " particles ("
-               << count << " total), and " << minsize_buffer << "--"
-               << maxsize_buffer << " buffer particles. The coarse grid has "
-               << m_domain_indicies.back().size() << " particles");
-    return *this;
-  }
-
-  template <int _Options, typename _StorageIndex>
-  SchwartzPreconditioner &analyzePattern(
-      const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex> &mat) {
-    CHECK(m_domain_indicies.size() > 0,
-          "SchwartzPreconditioner::analyzePattern(): cannot analyze sparse "
-          "matrix, "
-          "call analyzePattern using a Aboria MatrixReplacement class first");
-    return *this;
-  }
-
-  template <int _Options, typename _StorageIndex, int RefOptions,
-            typename RefStrideType>
-  SchwartzPreconditioner &
-  analyzePattern(const Eigen::Ref<
-                 const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex>,
-                 RefOptions, RefStrideType> &mat) {
-    CHECK(m_domain_indicies.size() > 0,
-          "SchwartzPreconditioner::analyzePattern(): cannot analyze sparse "
-          "matrix, "
-          "call analyzePattern using a Aboria MatrixReplacement class first");
-    return *this;
-  }
-
-  template <typename Derived>
-  SchwartzPreconditioner &analyzePattern(const Eigen::DenseBase<Derived> &mat) {
-    CHECK(m_domain_indicies.size() > 0,
-          "SchwartzPreconditioner::analyzePattern(): cannot analyze dense "
-          "matrix, "
-          "call analyzePattern need to pass a Aboria MatrixReplacement class "
-          "first");
-    return *this;
-  }
-
-  template <typename MatType>
-  SchwartzPreconditioner &factorize(const MatType &mat) {
-    LOG(2, "SchwartzPreconditioner: factorizing domain");
-    eigen_assert(
-        static_cast<typename MatType::Index>(m_rows) == mat.rows() &&
-        "SchwartzPreconditioner::solve(): invalid number of rows of mat");
-    eigen_assert(
-        static_cast<typename MatType::Index>(m_cols) == mat.cols() &&
-        "SchwartzPreconditioner::solve(): invalid number of rows of mat");
-
-    m_domain_factorized_matrix.resize(m_domain_indicies.size());
-
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (size_t domain_index = 0;
-         domain_index < m_domain_factorized_matrix.size(); ++domain_index) {
-
-      const storage_vector_type &buffer = m_domain_buffer[domain_index];
-      const storage_vector_type &indicies = m_domain_indicies[domain_index];
-      solver_type &solver = m_domain_factorized_matrix[domain_index];
-
-      const size_t size = indicies.size() + buffer.size();
-      // std::cout << "domain "<<domain_index<<"indicies =
-      // "<<indicies.size()<<" buffer =  "<<buffer.size()<<" random =
-      // "<<random.size()<<std::endl;
-
-      matrix_type domain_matrix;
-      domain_matrix.resize(size, size);
-
-      size_t i = 0;
-      for (const size_t &big_index_i : indicies) {
-        size_t j = 0;
-        for (const size_t &big_index_j : indicies) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        for (const size_t &big_index_j : buffer) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        ++i;
-      }
-      for (const size_t &big_index_i : buffer) {
-        size_t j = 0;
-        for (const size_t &big_index_j : indicies) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        for (const size_t &big_index_j : buffer) {
-          domain_matrix(i, j++) = mat.coeff(big_index_i, big_index_j);
-        }
-        ++i;
+      solver_type solver;
+      if (domain_matrix.rows() == 0 || domain_matrix.cols() == 0) {
+        return solver;
       }
 
       solver.compute(domain_matrix);
@@ -1466,10 +1430,189 @@ public:
       if (relative_error > 1e-3 || std::isnan(relative_error)) {
         std::cout << "relative error = " << relative_error << std::endl;
       }
+      return solver;
+    }
+  };
+
+  template <typename Kernel>
+  void factorize_fill_indices_and_matrices(
+      const Index start_row, const Kernel &kernel,
+      const typename Kernel::row_elements_type &a, connectivity_type &indicies,
+      connectivity_type &buffer, matrices_type &matrix,
+      const typename Kernel::row_elements_type &a_fine,
+      matrices_type &coupling_matrix, connectivity_type &coupling_indicies) {}
+
+  template <typename Kernel>
+  void factorize_impl_block(const Index start_row, const Kernel &kernel) {
+    typedef typename Kernel::row_elements_type row_elements_type;
+    typedef typename Kernel::col_elements_type col_elements_type;
+    typedef typename row_elements_type::query_type query_type;
+    typedef typename query_type::traits_type traits_type;
+
+    static_assert(std::is_same<row_elements_type, col_elements_type>::value,
+                  "Schwartz preconditioner restricted to identical row and col "
+                  "particle sets");
+    static_assert(Kernel::BlockRows == 1 && Kernel::BlockCols == 1,
+                  "Schwartz preconditioner not currently implemented for "
+                  "vector-valued kernels");
+
+    const row_elements_type &a = kernel.get_row_elements();
+
+    CHECK(&a == &(kernel.get_col_elements()),
+          "Schwartz preconditioner restricted to identical row and col "
+          "particle "
+          "sets");
+
+    const query_type &query = a.get_query();
+
+    // get list of leaf cells
+    auto df_search = query.breadth_first();
+    for (; df_search != false; ++df_search) {
+    }
+    auto leaf_nodes = *df_search;
+    decltype(leaf_nodes) coarse_nodes = {query.get_root()};
+    // decltype(leaf_nodes) coarse_nodes = df_search.previous();
+    decltype(leaf_nodes) both_nodes[2] = {leaf_nodes, coarse_nodes};
+
+    for (int i = 0; i < 2; ++i) {
+      auto &indicies = m_indicies[i];
+      auto &buffer = m_buffer[i];
+      auto &matrix = m_matrix[i];
+      auto &coupling_matrix = m_coupling_matrix[i];
+      auto &factorized_matrix = m_factorized_matrix[i];
+      auto &nodes = both_nodes[i];
+
+      indicies.resize(nodes.size());
+      buffer.resize(nodes.size());
+      matrix.resize(nodes.size());
+      factorized_matrix.resize(nodes.size());
+      if (i > 0) {
+        coupling_matrix.resize(nodes.size());
+      }
+
+      if (traits_type::data_on_GPU) {
+        // need to copy data from/to gpu
+        typename traits_type::template vector<storage_vector_type> tmp_indicies(
+            nodes.size());
+        typename traits_type::template vector<storage_vector_type> tmp_buffer(
+            nodes.size());
+        typename traits_type::template vector<matrix_type> tmp_matrix(
+            nodes.size());
+        typename traits_type::template vector<matrix_type> tmp_coupling_matrix(
+            coupling_matrix.size());
+
+        auto count = traits_type::make_counting_iterator(0);
+        detail::for_each(
+            count, count + nodes.size(),
+            process_node<typename Kernel::function_type, query_type>{
+                iterator_to_raw_pointer(nodes.begin()),
+                iterator_to_raw_pointer(tmp_indicies.begin()),
+                iterator_to_raw_pointer(tmp_buffer.begin()),
+                iterator_to_raw_pointer(tmp_matrix.begin()),
+                iterator_to_raw_pointer(tmp_coupling_matrix.begin()),
+                m_max_buffer_n + i * m_max_buffer_n, start_row,
+                kernel.get_kernel_function(), query, i, nodes.size() == 1});
+
+        detail::copy(tmp_indicies.begin(), tmp_indicies.end(),
+                     indicies.begin());
+        detail::copy(tmp_buffer.begin(), tmp_buffer.end(), buffer.begin());
+        detail::copy(tmp_matrix.begin(), tmp_matrix.end(), matrix.begin());
+        detail::copy(tmp_coupling_matrix.begin(), tmp_coupling_matrix.end(),
+                     coupling_matrix.begin());
+      } else {
+        // no copy required
+        auto count = traits_type::make_counting_iterator(0);
+        detail::for_each(
+            count, count + nodes.size(),
+            process_node<typename Kernel::function_type, query_type>{
+                iterator_to_raw_pointer(nodes.begin()),
+                iterator_to_raw_pointer(indicies.begin()),
+                iterator_to_raw_pointer(buffer.begin()),
+                iterator_to_raw_pointer(matrix.begin()),
+                iterator_to_raw_pointer(coupling_matrix.begin()),
+                m_max_buffer_n + i * m_max_buffer_n, start_row,
+                kernel.get_kernel_function(), query, i, nodes.size() == 1});
+      }
+
+      // factorize domain matrices
+      detail::transform(matrix.begin(), matrix.end(), factorized_matrix.begin(),
+                        factorize_matrix());
+    }
+  }
+
+  template <typename RowParticles, typename ColParticles>
+  void
+  factorize_impl_block(const Index start_row,
+                       const KernelZero<RowParticles, ColParticles> &kernel) {}
+
+  template <unsigned int NI, unsigned int NJ, typename Blocks, std::size_t... I>
+  void factorize_impl(const MatrixReplacement<NI, NJ, Blocks> &mat,
+                      detail::index_sequence<I...>) {
+    int dummy[] = {0, (factorize_impl_block(mat.template start_row<I>(),
+                                            std::get<I * NJ + I>(mat.m_blocks)),
+                       0)...};
+    static_cast<void>(dummy);
+  }
+
+  template <unsigned int NI, unsigned int NJ, typename Blocks>
+  SchwartzPreconditioner &
+  factorize(const MatrixReplacement<NI, NJ, Blocks> &mat) {
+    LOG(2, "SchwartzPreconditioner: factorize");
+    m_rows = mat.rows();
+    m_cols = mat.cols();
+    factorize_impl(mat, detail::make_index_sequence<NI>());
+
+    for (int i = 0; i < 2; ++i) {
+      auto min_indicies = detail::transform_reduce(
+          m_indicies[i].begin(), m_indicies[i].end(), detail::get_size(),
+          std::numeric_limits<size_t>::max(), detail::min());
+
+      auto max_indicies = detail::transform_reduce(
+          m_indicies[i].begin(), m_indicies[i].end(), detail::get_size(),
+          std::numeric_limits<size_t>::min(), detail::max());
+
+      auto min_buffer = detail::transform_reduce(
+          m_buffer[i].begin(), m_buffer[i].end(), detail::get_size(),
+          std::numeric_limits<size_t>::max(), detail::min());
+
+      auto max_buffer = detail::transform_reduce(
+          m_buffer[i].begin(), m_buffer[i].end(), detail::get_size(),
+          std::numeric_limits<size_t>::min(), detail::max());
+
+      auto count =
+          detail::transform_reduce(m_indicies[i].begin(), m_indicies[i].end(),
+                                   detail::get_size(), 0, detail::plus());
+
+      LOG(2, "SchwartzPreconditioner: finished factorizing, on level "
+                 << i << " found " << m_indicies[i].size() << " domains, with "
+                 << min_indicies << "--" << max_indicies << " particles ("
+                 << count << " total), and " << min_buffer << "--" << max_buffer
+                 << " buffer particles.");
     }
 
     m_isInitialized = true;
+    return *this;
+  }
 
+  template <int _Options, typename _StorageIndex, int RefOptions,
+            typename RefStrideType>
+  SchwartzPreconditioner &
+  factorize(const Eigen::Ref<
+            const Eigen::SparseMatrix<Scalar, _Options, _StorageIndex>,
+            RefOptions, RefStrideType> &mat) {
+    CHECK(m_indicies[0].size() > 0,
+          "SchwartzPreconditioner::factorize(): cannot factorize sparse "
+          "matrix, call factorize with a Aboria MatrixReplacement class "
+          "instead");
+    return *this;
+  }
+
+  template <typename Derived>
+  SchwartzPreconditioner &factorize(const Eigen::DenseBase<Derived> &mat) {
+    CHECK(m_indicies[0].size() > 0,
+          "SchwartzPreconditioner::analyzePattern(): cannot factorize dense "
+          "matrix, call factorize with a Aboria MatrixReplacement class "
+          "instead");
     return *this;
   }
 
@@ -1479,52 +1622,85 @@ public:
     return factorize(mat);
   }
 
-  /** \internal */
-  template <typename Rhs, typename Dest>
-  void _solve_impl(const Rhs &b, Dest &x) const {
-    // loop over domains and invert relevent sub-matricies in
-    // mat
-    // TODO: do I need this? x = b;
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (int i = 0; i < x.size(); ++i) {
-      x[i] = b[i];
-    }
+  template <typename Rhs, typename Dest> struct solve_domain {
+    const storage_vector_type *m_domain_indicies;
+    const storage_vector_type *m_domain_buffer;
+    const solver_type *domain_factorized_matrix;
+    const matrix_type *m_coupling_matrix;
+    Dest &x;
+    const Rhs &b;
+    int m_level;
+    bool is_root;
 
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < m_domain_indicies.size(); ++i) {
-      if (m_domain_indicies.size() == 0)
-        continue;
+    void operator()(const int i) const {
       const storage_vector_type &buffer = m_domain_buffer[i];
       const storage_vector_type &indicies = m_domain_indicies[i];
+      if (indicies.size() == 0)
+        return;
 
-      const size_t nb = indicies.size() + buffer.size();
+      const size_t nb = buffer.size();
 
       vector_type domain_x;
       vector_type domain_b;
       domain_x.resize(nb);
       domain_b.resize(nb);
 
-      // copy x values from big vector
-      size_t sub_index = 0;
-      for (size_t j = 0; j < indicies.size(); ++j) {
-        domain_b[sub_index++] = b[indicies[j]];
-      }
+      // copy b values from big vector
       for (size_t j = 0; j < buffer.size(); ++j) {
-        domain_b[sub_index++] = b[buffer[j]];
+        domain_b[j] = b[buffer[j]];
       }
 
       // solve domain
-      domain_x = m_domain_factorized_matrix[i].solve(domain_b);
+      domain_x = domain_factorized_matrix[i].solve(domain_b);
 
-      // copy accumulate b values to big vector
-      sub_index = 0;
-      for (size_t j = 0; j < indicies.size(); ++j) {
-        x[indicies[j]] = domain_x[sub_index++];
+      if (m_level == 0) {
+        // copy accumulate x values to big vector
+        for (size_t j = 0; j < indicies.size(); ++j) {
+          x[indicies[j]] += domain_x[j];
+        }
+      } else {
+        // interpolate x values to big vector
+        if (is_root) {
+          domain_b = domain_factorized_matrix[i].solve(domain_x);
+          // Eigen::Map<vector_type> big_x(x, m_coupling_matrix[i].rows());
+          x += m_coupling_matrix[i] * domain_b;
+        } else {
+          domain_b = domain_factorized_matrix[i].solve(domain_x);
+          vector_type big_x = m_coupling_matrix[i] * domain_b;
+          for (size_t j = 0; j < indicies.size(); ++j) {
+            x[indicies[j]] += big_x[j];
+          }
+        }
       }
+
+      /*
+       // non-restricted
+      for (size_t j = 0; j < buffer.size(); ++j) {
+        x[buffer[j]] += domain_x[sub_index++];
+      }
+      */
+    }
+  };
+
+  /** \internal */
+  template <typename Rhs, typename Dest>
+  void _solve_impl(const Rhs &b, Dest &x) const {
+
+    x.setZero();
+
+    for (int i = 0; i < 2; ++i) {
+      solve_domain<Rhs, Dest> fsolve_domain{
+          iterator_to_raw_pointer(m_indicies[i].begin()),
+          iterator_to_raw_pointer(m_buffer[i].begin()),
+          iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
+          iterator_to_raw_pointer(m_coupling_matrix[i].begin()),
+          x,
+          b,
+          i,
+          m_indicies[i].size() == 1};
+
+      auto count = boost::make_counting_iterator(0);
+      detail::for_each(count, count + m_indicies[i].size(), fsolve_domain);
     }
   }
 

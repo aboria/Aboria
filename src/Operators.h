@@ -46,6 +46,15 @@ class MatrixReplacement;
 #ifdef HAVE_EIGEN
 #include "detail/Operators.h"
 
+namespace Eigen {
+namespace internal {
+// MatrixReplacement looks-like a SparseMatrix, so let's inherits its traits:
+template <unsigned int NI, unsigned int NJ, typename Blocks>
+struct traits<Aboria::MatrixReplacement<NI, NJ, Blocks>>
+    : public Eigen::internal::traits<Eigen::SparseMatrix<double>> {};
+} // namespace internal
+} // namespace Eigen
+
 namespace Aboria {
 
 /// \brief A matrix-replacement class for use with Eigen
@@ -84,6 +93,7 @@ public:
   typedef Scalar RealScalar;
   typedef size_t Index;
   typedef int StorageIndex;
+  static const bool GPU = first_block_type::GPU;
   enum {
     ColsAtCompileTime = Eigen::Dynamic,
     RowsAtCompileTime = Eigen::Dynamic,
@@ -96,50 +106,22 @@ public:
   MatrixReplacement(const Blocks &blocks) : m_blocks(blocks){};
   MatrixReplacement(Blocks &&blocks) : m_blocks(std::move(blocks)){};
 
-  CUDA_HOST_DEVICE
   Index rows() const {
     // std::cout << "rows = " << rows_impl(detail::make_index_sequence<NI>()) <<
     // std::endl;
     //
-#ifdef __CUDA_ARCH__
-    ERROR_CUDA("MatrixReplacement class unusable from device code");
-    return 0;
-#else
     return rows_impl(detail::make_index_sequence<NI>());
-#endif
   }
 
-  CUDA_HOST_DEVICE
   Index cols() const {
     // std::cout << "cols = " << cols_impl(detail::make_index_sequence<NJ>())<<
     // std::endl;
-#ifdef __CUDA_ARCH__
-    ERROR_CUDA("MatrixReplacement class unusable from device code");
-    return 0;
-#else
     return cols_impl(detail::make_index_sequence<NJ>());
-#endif
   }
 
-  CUDA_HOST_DEVICE
-  Index innerSize() const {
-#ifdef __CUDA_ARCH__
-    ERROR_CUDA("MatrixReplacement class unusable from device code");
-    return 0;
-#else
-    return rows();
-#endif
-  }
+  Index innerSize() const { return rows(); }
 
-  CUDA_HOST_DEVICE
-  Index outerSize() const {
-#ifdef __CUDA_ARCH__
-    ERROR_CUDA("MatrixReplacement class unusable from device code");
-    return 0;
-#else
-    return cols();
-#endif
-  }
+  Index outerSize() const { return cols(); }
 
   void resize(Index a_rows, Index a_cols) {
     // This method should not be needed in the future.
@@ -556,6 +538,40 @@ create_block_operator(const MatrixReplacement<1, 1, T> &... operators) {
 }
 
 } // namespace Aboria
+
+// Implementation of MatrixReplacement * Eigen::DenseVector though a
+// specialization of internal::generic_product_impl:
+namespace Eigen {
+namespace internal {
+// FIXME: nvcc does not detect mat-vec producs as GemvProduct, so template on
+// this so that this specialisation is used for *all* products with
+// MatrixReplacement
+template <typename Rhs, unsigned int NI, unsigned int NJ, typename Blocks,
+          int ProductType>
+struct generic_product_impl<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
+                            SparseShape, DenseShape, ProductType>
+    : generic_product_impl_base<
+          Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
+          generic_product_impl<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs,
+                               SparseShape, DenseShape, ProductType>> {
+
+  typedef
+      typename Product<Aboria::MatrixReplacement<NI, NJ, Blocks>, Rhs>::Scalar
+          Scalar;
+  template <typename Dest>
+  static void
+  scaleAndAddTo(Dest &y, const Aboria::MatrixReplacement<NI, NJ, Blocks> &lhs,
+                const Rhs &rhs, const Scalar &alpha) {
+    // This method should implement "y += alpha * lhs * rhs" inplace,
+    // however, for iterative solvers, alpha is always equal to 1, so let's not
+    // bother about it.
+    assert(alpha == Scalar(1) && "scaling is not implemented");
+    evalTo_impl(y, lhs, rhs, Aboria::detail::make_index_sequence<NI * NJ>());
+  }
+};
+} // namespace internal
+} // namespace Eigen
+
 #endif // HAVE_EIGEN
 
 #endif // OPERATORS_H_

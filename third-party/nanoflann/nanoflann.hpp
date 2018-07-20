@@ -1211,7 +1211,7 @@ private:
       node->node_type.lr.left = left;
       node->node_type.lr.right = right;
 
-      m_number_of_levels = std::max(m_number_of_levels, ++level);
+      m_number_of_levels = std::max(m_number_of_levels, level);
 
       // compute bounding-box of leaf points
       /*
@@ -1240,11 +1240,11 @@ private:
 
       BoundingBox left_bbox(bbox);
       left_bbox[cutfeat].high = cutval;
-      node->child1 = divideTree(left, left + idx, left_bbox, ++level);
+      node->child1 = divideTree(left, left + idx, left_bbox, level + 1);
 
       BoundingBox right_bbox(bbox);
       right_bbox[cutfeat].low = cutval;
-      node->child2 = divideTree(left + idx, right, right_bbox, ++level);
+      node->child2 = divideTree(left + idx, right, right_bbox, level + 1);
 
       node->node_type.sub.divlow = left_bbox[cutfeat].high;
       node->node_type.sub.divhigh = right_bbox[cutfeat].low;

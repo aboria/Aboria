@@ -617,11 +617,18 @@ public:
   int get_child_number() const { return m_high; }
 
   CUDA_HOST_DEVICE
+  int distance_to_end() const { return ((1 << D) - m_high); }
+
+  CUDA_HOST_DEVICE
   bool is_high(const size_t i) const { return m_high & (1 << (D - 1 - i)); }
 
   CUDA_HOST_DEVICE
   box_type get_bounds() const {
     box_type ret = m_bounds;
+    if (*m_index == 0) {
+      // if root we are done
+      return ret;
+    }
     for (size_t i = 0; i < D; ++i) {
       if (is_high(i)) {
         ret.bmin[i] = 0.5 * (ret.bmax[i] + ret.bmin[i]);
@@ -648,6 +655,13 @@ public:
   octree_child_iterator operator++(int) {
     octree_child_iterator tmp(*this);
     operator++();
+    return tmp;
+  }
+
+  CUDA_HOST_DEVICE
+  octree_child_iterator operator+(const int n) {
+    octree_child_iterator tmp(*this);
+    tmp.increment(n);
     return tmp;
   }
 
@@ -683,12 +697,12 @@ private:
   void increment() {
     ++m_index;
     ++m_high;
-    // Note: big change, octree iterators now visit empty leaves (for fmm)
-    //       be careful of follow-on bugs....
-    // do {
-    //    ++m_index;
-    //    ++m_high;
-    //} while (!equal(false) && detail::is_empty(*m_index));
+  }
+
+  CUDA_HOST_DEVICE
+  void increment(const int n) {
+    m_index += n;
+    m_high += n;
   }
 };
 
@@ -708,8 +722,14 @@ template <typename Traits> struct HyperOctreeQuery {
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   template <int LNormNumber>
   using query_iterator = tree_query_iterator<HyperOctreeQuery, LNormNumber>;
+
+  template <int LNormNumber>
+  using bounds_query_iterator =
+      tree_box_query_iterator<HyperOctreeQuery, LNormNumber>;
+
   typedef depth_first_iterator<HyperOctreeQuery> root_iterator;
   typedef depth_first_iterator<HyperOctreeQuery> all_iterator;
+  typedef bf_iterator<HyperOctreeQuery> breadth_first_iterator;
   typedef octree_child_iterator<dimension> child_iterator;
   typedef typename child_iterator::reference reference;
   typedef typename child_iterator::pointer pointer;
@@ -727,6 +747,7 @@ template <typename Traits> struct HyperOctreeQuery {
 
   vint2 *m_leaves_begin;
   int *m_nodes_begin;
+  int m_dummy_root{0};
 
   size_t *m_id_map_key;
   size_t *m_id_map_value;
@@ -764,6 +785,16 @@ template <typename Traits> struct HyperOctreeQuery {
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static bool is_tree() { return true; }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_root() const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  child_iterator get_root() const {
+    const int inc = (1 << dimension) - 1;
+    return child_iterator(&m_dummy_root - inc, m_bounds) + inc;
+  }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -855,6 +886,22 @@ template <typename Traits> struct HyperOctreeQuery {
   CUDA_HOST_DEVICE
   size_t number_of_buckets() const { return m_number_of_nodes; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_bucket()
+  ///
+  template <int LNormNumber>
+  bounds_query_iterator<LNormNumber>
+  get_buckets_near_bucket(const box_type &bounds,
+                          const double max_distance) const {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tget_buckets_near_bucket: bounds = "
+               << bounds << " max_distance = " << max_distance);
+#endif
+
+    return bounds_query_iterator<LNormNumber>(
+        get_children(), bounds, max_distance, m_number_of_levels, this);
+  }
+
   ABORIA_HOST_DEVICE_IGNORE_WARN
   template <int LNormNumber>
   CUDA_HOST_DEVICE query_iterator<LNormNumber>
@@ -898,6 +945,25 @@ template <typename Traits> struct HyperOctreeQuery {
   CUDA_HOST_DEVICE
   all_iterator get_subtree() const {
     return all_iterator(get_children(), m_number_of_levels, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first(const child_iterator&)
+  /// const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN

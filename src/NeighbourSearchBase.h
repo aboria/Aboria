@@ -65,24 +65,6 @@ template <typename IteratorType> struct iterator_range {
   IteratorType m_begin;
   IteratorType m_end;
 
-  /*
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range() {}
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range(const iterator_range &arg) = default;
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range(iterator_range &&arg) = default;
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  iterator_range &operator=(const iterator_range &) = default;
-  */
-
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   iterator_range(const IteratorType &begin, const IteratorType &end)
@@ -674,6 +656,13 @@ template <typename Traits> struct NeighbourQueryBase {
   /// (depth-first)
   ///
   struct all_iterator {};
+
+  ///
+  /// @brief An iterator that steps through all the buckets in the tree
+  /// (breadth-first)
+  ///
+  struct breadth_first_iterator {};
+
   ///
   /// @brief An iterator that steps through the children of a single bucket in
   /// the tree
@@ -727,6 +716,11 @@ template <typename Traits> struct NeighbourQueryBase {
   /// @return false if this data structure is not a tree (e.g. cell list)
   ///
   bool is_tree();
+
+  ///
+  /// @brief gets a child_iterator pointing to the root node
+  ///
+  child_iterator get_root() const;
 
   ///
   /// @brief gets all the children of the root node.
@@ -800,6 +794,23 @@ template <typename Traits> struct NeighbourQueryBase {
   size_t get_bucket_index(const reference bucket) const;
 
   ///
+  /// @brief returns all the bucket within a distance of a bucket
+  ///
+  /// This function can use multiple p-norm distance types by setting @p
+  /// LNormNumber, and uses a isotropic distance value given by @p max_distance.
+  /// Note that only buckets within the domain are returned, and periodicity is
+  /// not taken into account
+  ///
+  /// @param position the position to search around
+  /// @param max_distance the maximum distance of the buckets to be returned
+  /// @return an @ref iterator_range containing all the buckets found
+  ///
+  template <int LNormNumber = -1>
+  query_iterator<LNormNumber>
+  get_buckets_near_bucket(const reference bucket,
+                          const double max_distance) const;
+
+  ///
   /// @brief returns all the bucket within a distance of a point
   ///
   /// This function can use multiple p-norm distance types by setting @p
@@ -855,6 +866,21 @@ template <typename Traits> struct NeighbourQueryBase {
   all_iterator get_subtree() const;
 
   ///
+  /// @brief return an @ref breadth_first_iterator to the entire tree under
+  /// the given child_iterator @p ci
+  ///
+  /// @param ci the child_iterator to search under
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const;
+
+  ///
+  /// @brief return an @ref breadth_first_iterator to the entire tree
+  ///
+  /// @param ci the child_iterator to search under
+  ///
+  breadth_first_iterator breadth_first() const;
+
+  ///
   /// @brief return the total number of buckets in the data structure
   ///
   size_t number_of_buckets() const;
@@ -905,11 +931,9 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   ranges_iterator() {}
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   ranges_iterator(const p_pointer &begin, const p_pointer &end)
       : m_current_p(begin), m_end_p(end) {}
@@ -918,16 +942,13 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   reference operator->() const { return dereference(); }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   ranges_iterator &operator++() {
     increment();
@@ -935,7 +956,6 @@ public:
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   ranges_iterator operator++(int) {
     ranges_iterator tmp(*this);
@@ -953,13 +973,11 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   size_t operator-(ranges_iterator start) const {
     return get_by_index<0>(m_current_p) - get_by_index<0>(start.m_current_p);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   inline bool operator==(const ranges_iterator &rhs) const {
     return equal(rhs);
@@ -967,18 +985,15 @@ public:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   inline bool operator!=(const ranges_iterator &rhs) const {
     return !operator==(rhs);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
@@ -987,13 +1002,11 @@ private:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   bool equal(ranges_iterator const &other) const {
     return m_current_p == other.m_current_p;
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   bool equal(const bool other) const {
     return (m_current_p < m_end_p) == other;
@@ -1001,16 +1014,13 @@ private:
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   reference dereference() const { return *m_current_p; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
-  CUDA_HOST_DEVICE
   void increment() { ++m_current_p; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
   CUDA_HOST_DEVICE
   void increment(const int n) { m_current_p += n; }
 
@@ -1425,6 +1435,188 @@ private:
   const Query *m_query;
 };
 
+template <typename Query> class bf_iterator {
+  typedef bf_iterator<Query> iterator;
+  typedef typename Query::child_iterator child_iterator;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef typename Query::traits_type traits_type;
+  typedef typename traits_type::template vector<child_iterator> vector_ci;
+  typedef typename traits_type::template vector<int> vector_int;
+
+public:
+  typedef vector_ci const value_type;
+  typedef vector_ci *pointer;
+  typedef vector_ci const &reference;
+  typedef std::forward_iterator_tag iterator_category;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  bf_iterator() : m_all_leafs(true) {}
+
+  /// this constructor is used to start the iterator at the head of a bucket
+  /// list
+  CUDA_HOST_DEVICE
+  bf_iterator(const child_iterator &start_node, const Query *query)
+      : m_all_leafs(true), m_level_num(1), m_query(query) {
+    if (start_node != false) {
+      m_level.resize(start_node.distance_to_end());
+      int i = 0;
+      for (auto ci = start_node; ci != false; ++ci, ++i) {
+        m_level[i] = ci;
+      }
+      m_all_leafs = query->number_of_levels() == 1;
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tbf_iterator (constructor): start is false, no "
+             "children to search.");
+#endif
+    }
+  }
+
+  reference previous() const { return m_next_level; }
+
+  CUDA_HOST_DEVICE
+  reference operator*() const { return dereference(); }
+  CUDA_HOST_DEVICE
+  reference operator->() { return dereference(); }
+  CUDA_HOST_DEVICE
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+  CUDA_HOST_DEVICE
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+  CUDA_HOST_DEVICE
+  size_t operator-(iterator start) const {
+    size_t count = 0;
+    while (start != *this) {
+      start++;
+      count++;
+    }
+    return count;
+  }
+  CUDA_HOST_DEVICE
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+  struct count_children {
+    const Query m_query;
+
+    CUDA_HOST_DEVICE
+    int operator()(const child_iterator &ci) {
+      const int nchild = m_query.is_leaf_node(*ci)
+                             ? 1
+                             : m_query.get_children(ci).distance_to_end();
+      return nchild;
+    }
+  };
+
+  struct copy_children_and_leafs {
+    int *m_counts;
+    const Query m_query;
+    child_iterator *m_next_level;
+    child_iterator *m_level;
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      auto ci = m_level[i];
+      if (m_query.is_leaf_node(*ci)) {
+        m_next_level[m_counts[i]] = ci;
+      } else {
+        auto child = m_query.get_children(ci);
+        for (int next_level_index = m_counts[i]; child != false;
+             ++child, ++next_level_index) {
+          m_next_level[next_level_index] = child;
+        }
+      }
+    }
+  };
+
+private:
+  CUDA_HOST_DEVICE
+  void increment() {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tincrement (bf_iterator): m_level size = " << m_level.size());
+#endif
+    // m_level [ci0, ci1, ci2, ...]
+    // exclusive scan for # children + # leafs: n_child
+    // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
+    // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
+
+    m_counts.resize(m_level.size());
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_children{*m_query},
+                                     0, detail::plus());
+
+    // resize for new children and leafs
+    const int nchildren = static_cast<int>(m_counts.back()) +
+                          count_children{*m_query}(m_level.back());
+    m_all_leafs = nchildren == static_cast<int>(m_level.size());
+
+    // don't bother doing next level if they are all leafs
+    if (m_all_leafs)
+      return;
+
+    m_next_level.resize(nchildren);
+
+// tabulate m_level to copy children to m_next_level, or leafs to
+// m_leafs
+#if defined(__CUDACC__)
+    typedef typename thrust::detail::iterator_category_to_system<
+        typename Query::traits_type::vector_int::iterator::iterator_category>::
+        type system;
+    thrust::counting_iterator<int, system> count(0);
+#else
+    auto count = Query::traits_type::make_counting_iterator(0);
+#endif
+    detail::for_each(count, count + m_level.size(),
+                     copy_children_and_leafs{
+                         iterator_to_raw_pointer(m_counts.begin()), *m_query,
+                         iterator_to_raw_pointer(m_next_level.begin()),
+                         iterator_to_raw_pointer(m_level.begin())});
+
+    // swap level back to m_level and increment level count
+    m_level.swap(m_next_level);
+    m_level_num++;
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tend increment (bf_iterator):");
+#endif
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(iterator const &other) const {
+    return m_query == other.m_query && m_level_num == other.m_level_num;
+  }
+
+  CUDA_HOST_DEVICE bool equal(const bool other) const {
+    return m_all_leafs != other;
+  }
+
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_level; }
+
+  vector_ci m_level;
+  vector_ci m_next_level;
+  vector_int m_counts;
+  bool m_all_leafs;
+  size_t m_level_num;
+  const Query *m_query;
+};
+
 template <typename Query, int LNormNumber> class tree_query_iterator {
   typedef tree_query_iterator<Query, LNormNumber> iterator;
   typedef typename Query::child_iterator child_iterator;
@@ -1465,10 +1657,10 @@ public:
 
     if (m_stack.empty()) {
 #ifndef __CUDA_ARCH__
-      LOG(3,
-          "\ttree_query_iterator (constructor) with query pt = "
-              << m_query_point
-              << "): search region outside domain or no children to search.");
+      LOG(3, "\ttree_query_iterator (constructor) with query pt = "
+                 << m_query_point
+                 << "): search region outside domain or no children to "
+                    "search.");
 #endif
     } else {
 #ifndef __CUDA_ARCH__
@@ -1686,6 +1878,249 @@ private:
   const Query *m_query;
 };
 
+template <typename Query, int LNormNumber> class tree_box_query_iterator {
+  typedef tree_box_query_iterator<Query, LNormNumber> iterator;
+  typedef typename Query::child_iterator child_iterator;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef bbox<dimension> box_type;
+
+public:
+  typedef child_iterator const value_type;
+  typedef child_iterator const *pointer;
+  typedef std::forward_iterator_tag iterator_category;
+  typedef child_iterator const &reference;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  tree_box_query_iterator() {}
+
+  /// this constructor is used to start the iterator at the head of a bucket
+  /// list
+  CUDA_HOST_DEVICE
+  tree_box_query_iterator(const child_iterator &start,
+                          const box_type &query_box, const double max_distance,
+                          const unsigned tree_depth, const Query *query,
+                          const bool ordered = false)
+      : m_query_box(query_box), m_max_distance2(std::pow(max_distance, 2)),
+        m_query(query) {
+    ASSERT_CUDA(tree_depth <= m_stack_max_size);
+    if (start != false) {
+      m_stack.push_back(start);
+      go_to_next_leaf();
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\ttree_box_query_iterator (constructor) with query box = "
+                 << m_query_box << "): start is false, no children to search.");
+#endif
+    }
+
+    if (m_stack.empty()) {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\ttree_box_query_iterator (constructor) with query box = "
+                 << m_query_box
+                 << "): search region outside domain or no children to "
+                    "search.");
+#endif
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\ttree_box_query_iterator (constructor) with query box = "
+                 << m_query_box
+                 << "):  found bbox = " << m_query->get_bounds(m_stack.back()));
+#endif
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  tree_box_query_iterator(const iterator &copy)
+      : m_query_box(copy.m_query_box), m_max_distance2(copy.m_max_distance2),
+        m_query(copy.m_query)
+
+  {
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
+      m_stack.push_back(copy.m_stack[i]);
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  ~tree_box_query_iterator() {}
+
+  CUDA_HOST_DEVICE
+  child_iterator get_child_iterator() const { return m_stack.back(); }
+
+  CUDA_HOST_DEVICE
+  iterator &operator=(const iterator &copy) {
+    m_query_box = copy.m_query_box;
+    m_max_distance2 = copy.m_max_distance2;
+
+    m_stack.resize(copy.m_stack.size());
+    for (size_t i = 0; i < copy.m_stack.size(); ++i) {
+      m_stack[i] = copy.m_stack[i];
+    }
+
+    m_query = copy.m_query;
+    return *this;
+  }
+
+  /*
+  iterator& operator=(const octtree_depth_first_iterator<Query>& copy) {
+      m_stack = copy.m_stack;
+      go_to_next_leaf();
+      return *this;
+  }
+  */
+
+  CUDA_HOST_DEVICE
+  reference operator*() const { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  reference operator->() { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+
+  CUDA_HOST_DEVICE
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  CUDA_HOST_DEVICE
+  size_t operator-(iterator start) const {
+    size_t count = 0;
+    while (start != *this) {
+      start++;
+      count++;
+    }
+    return count;
+  }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+private:
+  CUDA_HOST_DEVICE
+  void increment_stack() {
+    while (!m_stack.empty()) {
+      ++m_stack.back();
+#ifndef __CUDA_ARCH__
+      LOG(4,
+          "\tincrement stack with child " << m_stack.back().get_child_number());
+#endif
+      if (m_stack.back() == false) {
+#ifndef __CUDA_ARCH__
+        LOG(4, "\tincrement_stack: pop");
+#endif
+        m_stack.pop_back();
+      } else {
+        break;
+      }
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  void go_to_next_leaf() {
+    bool exit = m_stack.empty();
+    while (!exit) {
+      child_iterator &node = m_stack.back();
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tgo_to_next_leaf with child " << node.get_child_number()
+                                             << " with bounds "
+                                             << m_query->get_bounds(node));
+#endif
+
+      if (detail::boxes_within_distance<LNormNumber>(
+              m_query_box, m_query->get_bounds(node),
+              m_max_distance2)) { // could be in this child
+
+#ifndef __CUDA_ARCH__
+        LOG(4, "\tthis child is within query, so going to next child");
+#endif
+        if (m_query->is_leaf_node(*node)) {
+          exit = true;
+        } else {
+#ifndef __CUDA_ARCH__
+          LOG(4, "\tdive down");
+#endif
+          m_stack.push_back(m_query->get_children(node));
+        }
+      } else { // not in this one, so go to next child, or go up if no more
+               // children
+#ifndef __CUDA_ARCH__
+        LOG(4, "\tthis child is NOT within query, so going to next child");
+#endif
+        increment_stack();
+        exit = m_stack.empty();
+      }
+    }
+#ifndef __CUDA_ARCH__
+    if (4 <= ABORIA_LOG_LEVEL) {
+      if (m_stack.empty()) {
+        LOG(4, "\tgo_to_next_leaf: stack empty, finishing");
+      } else {
+        LOG(4, "\tgo_to_next_leaf: found leaf, finishing");
+      }
+    }
+#endif
+  }
+
+  CUDA_HOST_DEVICE
+  void increment() {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tincrement (tree_box_query_iterator):");
+#endif
+    increment_stack();
+    go_to_next_leaf();
+
+    if (m_stack.empty()) {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tend increment (tree_box_query_iterator): no more nodes");
+#endif
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tend increment (tree_box_query_iterator): looking in bbox "
+                 << m_query->get_bounds(m_stack.back()));
+#endif
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(iterator const &other) const {
+    if (m_stack.empty() || other.m_stack.empty()) {
+      return m_stack.empty() == other.m_stack.empty();
+    } else {
+      return m_stack.back() == other.m_stack.back();
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_stack.empty() != other; }
+
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_stack.back(); }
+
+  // unsigned m_stack_size;
+  const static unsigned m_stack_max_size = Query::m_max_tree_depth;
+  static_vector<child_iterator, m_stack_max_size> m_stack;
+  box_type m_query_box;
+  double m_max_distance2;
+  const Query *m_query;
+};
+
 template <unsigned int D> class lattice_iterator {
   typedef lattice_iterator<D> iterator;
   typedef Vector<double, D> double_d;
@@ -1827,8 +2262,13 @@ public:
     } else {
       distance = collapse_index_vector(minus(m_index, start.m_index));
     }
-    assert(distance > 0);
+    ASSERT_CUDA(distance >= 0);
     return distance;
+  }
+
+  CUDA_HOST_DEVICE
+  int distance_to_end() const {
+    return lattice_iterator(m_min, m_max, m_max - 1) - *this + 1;
   }
 
   CUDA_HOST_DEVICE
@@ -2182,7 +2622,8 @@ private:
         potential_bucket = m_index[i] >= 0;
       }
 
-      // std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant =
+      // std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant
+      // =
       // "<<m_quadrant << std::endl;
 
       // if index is outside domain don't bother calcing
@@ -2208,7 +2649,8 @@ private:
       if (potential_bucket)
         break;
 
-      // must be outside distance or outside domain, so reset index back to min
+      // must be outside distance or outside domain, so reset index back to
+      // min
       m_index[i] = m_min[i];
 
       // if gone through all dimensions, move to next quadrant
@@ -2224,6 +2666,333 @@ private:
       }
     }
     LOG_CUDA(3, "lattice_iterator_within_distance: increment :end");
+  }
+};
+
+template <typename Query, int LNormNumber>
+class lattice_iterator_around_bounds {
+  typedef lattice_iterator_around_bounds<Query, LNormNumber> iterator;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef bbox<dimension> box_t;
+
+  // make a proxy int_d in case you ever
+  // want to get a pointer object to the
+  // reference (which are both of the
+  // same type)
+  struct proxy_int_d : public int_d {
+    CUDA_HOST_DEVICE
+    proxy_int_d() : int_d() {}
+
+    CUDA_HOST_DEVICE
+    proxy_int_d(const int_d &arg) : int_d(arg) {}
+
+    CUDA_HOST_DEVICE
+    proxy_int_d &operator&() { return *this; }
+
+    CUDA_HOST_DEVICE
+    const proxy_int_d &operator&() const { return *this; }
+
+    CUDA_HOST_DEVICE
+    const proxy_int_d &operator*() const { return *this; }
+
+    CUDA_HOST_DEVICE
+    proxy_int_d &operator*() { return *this; }
+
+    CUDA_HOST_DEVICE
+    const proxy_int_d *operator->() const { return this; }
+
+    CUDA_HOST_DEVICE
+    proxy_int_d *operator->() { return this; }
+  };
+
+  box_t m_query_box;
+  double m_inv_max_distance;
+  int m_quadrant;
+  const Query *m_query;
+  bool m_valid;
+  int_d m_min;
+  proxy_int_d m_index;
+
+public:
+  typedef proxy_int_d pointer;
+  typedef std::random_access_iterator_tag iterator_category;
+  typedef const proxy_int_d &reference;
+  typedef proxy_int_d value_type;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  lattice_iterator_around_bounds() : m_valid(false) {}
+
+  CUDA_HOST_DEVICE
+  lattice_iterator_around_bounds(const box_t &query_box,
+                                 const double max_distance, const Query *query)
+      : m_query_box(query_box), m_inv_max_distance(1.0 / max_distance),
+        m_quadrant(0), m_query(query), m_valid(true) {
+    if (outside_domain(query_box, max_distance)) {
+      m_valid = false;
+    } else {
+      reset_min_and_index();
+    }
+  }
+
+  CUDA_HOST_DEVICE
+  explicit operator size_t() const {
+    return m_query->m_point_to_bucket_index.collapse_index_vector(m_index);
+  }
+
+  lattice_iterator<dimension> get_child_iterator() const {
+    lattice_iterator<dimension> ret = m_query->get_subtree();
+    ret = m_index;
+    return ret;
+  }
+
+  CUDA_HOST_DEVICE
+  reference operator*() const { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  reference operator->() const { return dereference(); }
+
+  CUDA_HOST_DEVICE
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+
+  CUDA_HOST_DEVICE
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  CUDA_HOST_DEVICE
+  size_t operator-(const iterator &start) const {
+    int distance = 0;
+    iterator tmp = start;
+    while (tmp != *this) {
+      ++distance;
+      ++tmp;
+    }
+    return distance;
+  }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  CUDA_HOST_DEVICE
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+private:
+  CUDA_HOST_DEVICE
+  bool equal(iterator const &other) const {
+    if (!other.m_valid)
+      return !m_valid;
+    if (!m_valid)
+      return !other.m_valid;
+    for (size_t i = 0; i < dimension; ++i) {
+      if (m_index[i] != other.m_index[i]) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  CUDA_HOST_DEVICE
+  bool equal(const bool other) const { return m_valid == other; }
+
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_index; }
+
+  CUDA_HOST_DEVICE
+  bool ith_quadrant_bit(const int i) const {
+    return (1 == ((m_quadrant >> i) & 1));
+  }
+
+  CUDA_HOST_DEVICE
+  void reset_min_and_index() {
+    bool no_buckets = true;
+
+#ifdef __CUDA_ARCH__
+    LOG_CUDA(3, "lattice_iterator_around_bounds: reset_min_and_index:begin");
+#else
+    LOG(3,
+        "lattice_iterator_around_bounds: reset_min_and_index:begin (m_quadrant "
+        "= " << m_quadrant
+             << ')');
+#endif
+    while (m_valid && no_buckets) {
+      for (size_t i = 0; i < dimension; ++i) {
+        m_min[i] = m_query->m_point_to_bucket_index.get_min_index_by_quadrant(
+            0.5 * (m_query_box.bmin[i] + m_query_box.bmax[i]), i,
+            ith_quadrant_bit(i));
+      }
+
+      // check distance
+      double accum = 0;
+      for (size_t j = 0; j < dimension; ++j) {
+        const double r =
+            ith_quadrant_bit(j) ? m_query_box.bmax[j] : m_query_box.bmin[j];
+        double dist = m_query->m_point_to_bucket_index.get_dist_by_quadrant(
+            r, m_min[j], j, ith_quadrant_bit(j));
+        if (dist < 0) {
+          dist = 0;
+        }
+        // std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<<
+        // std::endl;
+        accum =
+            detail::distance_helper<LNormNumber>::accumulate_norm(accum, dist);
+      }
+      // std::cout <<"accum = "<<accum<< std::endl;
+      //
+      no_buckets = accum * m_inv_max_distance > 1.0;
+
+      // std::cout <<" m_min = "<<m_min<<" m_quadrant = "<<m_quadrant <<
+      // std::endl;
+
+      // if good, check that this quadrant is within domain
+      if (!no_buckets) {
+        for (size_t i = 0; i < dimension; i++) {
+          if (ith_quadrant_bit(i)) {
+            if (m_min[i] < 0) {
+              m_min[i] = 0;
+            } else if (m_min[i] > m_query->m_end_bucket[i]) {
+              no_buckets = true;
+              m_min[i] = m_query->m_end_bucket[i];
+            }
+          } else {
+            if (m_min[i] < 0) {
+              no_buckets = true;
+              m_min[i] = 0;
+            } else if (m_min[i] > m_query->m_end_bucket[i]) {
+              m_min[i] = m_query->m_end_bucket[i];
+            }
+          }
+        }
+      }
+      if (no_buckets) {
+        // if no buckets, move onto next quadrant
+        ++m_quadrant;
+        if (m_quadrant >= (1 << dimension)) {
+          m_valid = false;
+        }
+      } else {
+        // we got a non empty quadrent, lets go!
+#ifdef __CUDA_ARCH__
+        LOG_CUDA(3, "lattice_iterator_within_distance: reset_min_and_index: "
+                    "found valid bucket");
+#else
+        LOG(3, "lattice_iterator_within_distance: reset_min_and_index: "
+               "found valid bucket "
+                   << m_min);
+#endif
+        m_index = m_min;
+      }
+    }
+    // std::cout <<"m_valid = "<<m_valid<<" m_min = "<<m_min<< "m_index =
+    // "<<m_index<<" m_quadrant = "<<m_quadrant << std::endl;
+    LOG_CUDA(3, "lattice_iterator_around_bounds: reset_min_and_index:end");
+  }
+
+  CUDA_HOST_DEVICE
+  bool outside_domain(const box_t &box, const double &max_distance) {
+    int_d start = m_query->m_point_to_bucket_index.find_bucket_index_vector(
+        box.bmin - max_distance);
+    int_d end = m_query->m_point_to_bucket_index.find_bucket_index_vector(
+        box.bmax + max_distance);
+
+    bool no_buckets = false;
+    for (size_t i = 0; i < dimension; i++) {
+      if (start[i] > m_query->m_end_bucket[i]) {
+        no_buckets = true;
+      }
+      if (end[i] < 0) {
+        no_buckets = true;
+      }
+    }
+    return no_buckets;
+  }
+
+  CUDA_HOST_DEVICE
+  void increment() {
+    LOG_CUDA(3, "lattice_iterator_around_bounds: increment :begin");
+    for (int i = dimension - 1; i >= 0; --i) {
+
+      // increment or decrement index depending on the current
+      // quadrant
+      bool potential_bucket = true;
+      if (ith_quadrant_bit(i)) {
+        ++m_index[i];
+        potential_bucket = m_index[i] <= m_query->m_end_bucket[i];
+      } else {
+        --m_index[i];
+        potential_bucket = m_index[i] >= 0;
+      }
+
+      // std::cout <<"m_min = "<<m_min<< "m_index = "<<m_index<<" m_quadrant
+      // =
+      // "<<m_quadrant << std::endl;
+
+      // if index is outside domain don't bother calcing
+      // distance
+      if (potential_bucket) {
+        double accum = 0;
+        for (size_t j = 0; j < dimension; ++j) {
+          const double r =
+              ith_quadrant_bit(j) ? m_query_box.bmax[j] : m_query_box.bmin[j];
+          double dist = m_query->m_point_to_bucket_index.get_dist_by_quadrant(
+              r, m_index[j], j, ith_quadrant_bit(j));
+          if (dist < 0) {
+            dist = 0;
+          }
+          // std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<<
+          // std::endl;
+          accum = detail::distance_helper<LNormNumber>::accumulate_norm(accum,
+                                                                        dist);
+        }
+        // std::cout <<"accum = "<<accum<< std::endl;
+
+        potential_bucket = accum * m_inv_max_distance <= 1.0;
+      }
+
+      // if bucket is still good break out of loop
+      if (potential_bucket) {
+#ifdef __CUDA_ARCH__
+        LOG_CUDA(3, "lattice_iterator_within_distance: increment: "
+                    "found valid bucket");
+#else
+        LOG(3, "lattice_iterator_within_distance: increment: "
+               "found valid bucket "
+                   << m_index);
+#endif
+
+        break;
+      }
+
+      // must be outside distance or outside domain, so reset index back to
+      // min
+      m_index[i] = m_min[i];
+
+      // if gone through all dimensions, move to next quadrant
+      if (i == 0) {
+        ++m_quadrant;
+        if (m_quadrant < (1 << dimension)) {
+          reset_min_and_index();
+        } else {
+          // if gone through all quadrants, iterator
+          // is now invalid
+          m_valid = false;
+        }
+      }
+    }
+    LOG_CUDA(3, "lattice_iterator_around_bounds: increment :end");
   }
 };
 

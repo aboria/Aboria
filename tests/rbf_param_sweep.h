@@ -44,6 +44,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 #include <fstream>
 typedef std::chrono::system_clock Clock;
+
+#ifdef HAVE_GPERFTOOLS
+#include <gperftools/profiler.h>
+#endif
+
 #include "Aboria.h"
 using namespace Aboria;
 
@@ -60,8 +65,8 @@ public:
       m_scale = std::sqrt(3.0) / sigma;
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       const double r = (b - a).norm();
       return (1.0 + m_scale * r) * std::exp(-r * m_scale);
     };
@@ -76,8 +81,8 @@ public:
       m_scale = 1.0 / std::pow(sigma, 2);
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       return std::exp(-(b - a).squaredNorm() * m_scale);
     };
   };
@@ -91,8 +96,8 @@ public:
       m_scale = 1.0 / sigma;
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       return std::exp(-(b - a).norm() * m_scale);
     };
   };
@@ -106,8 +111,8 @@ public:
       m_scale = std::pow(sigma, 2);
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       const double r2 = (b - a).squaredNorm();
       return 1.0 - r2 / (r2 + m_scale);
     };
@@ -122,8 +127,8 @@ public:
       m_scale = std::pow(sigma, 2);
     }
     template <unsigned int D>
-    double operator()(const Vector<double, D> &a,
-                      const Vector<double, D> &b) const {
+    CUDA_HOST_DEVICE double operator()(const Vector<double, D> &a,
+                                       const Vector<double, D> &b) const {
       const double r2 = (b - a).squaredNorm();
       return 1.0 / std::sqrt(r2 + m_scale);
     };
@@ -304,8 +309,8 @@ public:
   }
 
   template <typename Op, typename TrueOp, typename TestOp>
-  void helper_operator_matrix(const Op &G, const TrueOp &Gtrue,
-                              const Eigen::VectorXd &phi, const TestOp &Gtest,
+  void helper_operator_matrix(Op &G, const TrueOp &Gtrue,
+                              const Eigen::VectorXd &phi, TestOp &Gtest,
                               const Eigen::VectorXd &phi_test,
                               output_files &out, bool do_solve) {
 
@@ -413,11 +418,21 @@ public:
           bicg2;
       bicg2.setMaxIterations(max_iter);
       bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+      // bicg2.preconditioner().set_decimate_factor(2);
       t0 = Clock::now();
       bicg2.compute(G);
+
+#ifdef HAVE_GPERFTOOLS
+      ProfilerStart("schwartz_solve");
+#endif
+
       t1 = Clock::now();
       gamma = bicg2.solve(phi);
       t2 = Clock::now();
+
+#ifdef HAVE_GPERFTOOLS
+      ProfilerStop();
+#endif
 
       out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
                                              << bicg2.iterations();
@@ -531,6 +546,7 @@ public:
                           const Kernel &kernel, const double jitter,
                           const size_t Nsubdomain, output_files &out) {
 #ifdef HAVE_EIGEN
+    typedef typename Particles_t::raw_const_reference raw_const_reference;
 
     char name[50] = "program name";
     char *argv[] = {name, NULL};
@@ -575,7 +591,8 @@ public:
                                Vector<bool, D>::Constant(false), n_subdomain);
     std::cout << "FINISHED INIT NEIGHBOUR" << std::endl;
 
-    auto self_kernel = [&](auto a, auto b) {
+    auto self_kernel = [=] CUDA_HOST_DEVICE(raw_const_reference a,
+                                            raw_const_reference b) {
       double ret = kernel(get<position>(a), get<position>(b));
       if (get<id>(a) == get<id>(b)) {
         ret += jitter;
@@ -620,7 +637,7 @@ public:
     helper_operator(Gdense, Gmatrix, phi, Gdense_test, phi_test, max_iter,
                     Nbuffer, out, 0);
 
-    if (D < 4) {
+    if (D < 1) {
       const size_t n_subdomain = std::pow(Order, D);
       const int Nbuffer = 4 * n_subdomain;
 
@@ -734,10 +751,10 @@ public:
     }
   }
 
-  void test_gaussian(void) { helper_param_sweep_per_kernel<gaussian_kernel>(16000); }
-  void test_matern(void) { helper_param_sweep_per_kernel<matern_kernel>(32000); }
+  void test_gaussian(void) { helper_param_sweep_per_kernel<gaussian_kernel>(1000); }
+  void test_matern(void) { helper_param_sweep_per_kernel<matern_kernel>(1000); }
   void test_exponential(void) {
-    helper_param_sweep_per_kernel<exponential_kernel>(32000);
+    helper_param_sweep_per_kernel<exponential_kernel>(1000);
   }
   void test_rational_quadratic(void) {
     helper_param_sweep_per_kernel<rational_quadratic_kernel>(1000);

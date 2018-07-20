@@ -313,6 +313,8 @@ public:
     }
   }
 
+  int distance_to_end() const { return 2 - m_high; }
+
   int get_child_number() const { return m_high; }
 
   bool is_high() const { return m_high > 0; }
@@ -340,6 +342,12 @@ public:
   nanoflann_child_iterator operator++(int) {
     nanoflann_child_iterator tmp(*this);
     operator++();
+    return tmp;
+  }
+
+  nanoflann_child_iterator operator+(const int n) {
+    nanoflann_child_iterator tmp(*this);
+    tmp.increment(n);
     return tmp;
   }
 
@@ -371,6 +379,7 @@ private:
   }
 
   void increment() { ++m_high; }
+  void increment(const int n) { m_high += n; }
 };
 
 /// @copydetails NeighbourQueryBase
@@ -395,8 +404,14 @@ template <typename Traits> struct KdtreeNanoflannQuery {
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   template <int LNormNumber>
   using query_iterator = tree_query_iterator<KdtreeNanoflannQuery, LNormNumber>;
+
+  template <int LNormNumber>
+  using bounds_query_iterator =
+      tree_box_query_iterator<KdtreeNanoflannQuery, LNormNumber>;
+
   typedef value_type *root_iterator;
   typedef depth_first_iterator<KdtreeNanoflannQuery> all_iterator;
+  typedef bf_iterator<KdtreeNanoflannQuery> breadth_first_iterator;
   typedef nanoflann_child_iterator<Traits> child_iterator;
   typedef ranges_iterator<Traits> particle_iterator;
   typedef bbox<dimension> box_type;
@@ -454,6 +469,13 @@ template <typename Traits> struct KdtreeNanoflannQuery {
   /*
    * end functions for tree_query_iterator
    */
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_root() const
+  ///
+  child_iterator get_root() const {
+    return ++child_iterator(&m_dummy_root, m_bounds);
+  }
 
   child_iterator get_children() const {
     if (m_root == nullptr) { // empty tree, return a false child iterator
@@ -565,6 +587,22 @@ template <typename Traits> struct KdtreeNanoflannQuery {
 
   size_t number_of_buckets() const { return m_number_of_buckets; }
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_buckets_near_bucket()
+  ///
+  template <int LNormNumber>
+  bounds_query_iterator<LNormNumber>
+  get_buckets_near_bucket(const box_type &bounds,
+                          const double max_distance) const {
+#ifndef __CUDA_ARCH__
+    LOG(4, "\tget_buckets_near_bucket: bounds = "
+               << bounds << " max_distance = " << max_distance);
+#endif
+
+    return bounds_query_iterator<LNormNumber>(
+        get_children(), bounds, max_distance, m_number_of_levels, this);
+  }
+
   template <int LNormNumber>
   query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
@@ -600,6 +638,21 @@ template <typename Traits> struct KdtreeNanoflannQuery {
 
   all_iterator get_subtree() const {
     return all_iterator(get_children(), m_number_of_levels, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first(const child_iterator&)
+  /// const
+  ///
+  breadth_first_iterator breadth_first(const child_iterator &ci) const {
+    return breadth_first_iterator(ci, this);
+  }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_breadth_first() const
+  ///
+  breadth_first_iterator breadth_first() const {
+    return breadth_first_iterator(get_children(), this);
   }
 
   size_t number_of_particles() const {

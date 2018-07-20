@@ -92,7 +92,7 @@ public:
     int index = ptob(vdouble3(0.5, 0.5, 0.5));
     TS_ASSERT_EQUALS(index_true, index);
 
-    int index2_true = 2;
+    int index2_true = 3;
     int index2 = ptob.get_min_index_by_quadrant(0.5 - 1e-5, 0, true);
     TS_ASSERT_EQUALS(index2_true, index2);
 
@@ -100,7 +100,7 @@ public:
     int index3 = ptob.get_min_index_by_quadrant(0.5 + 1e-5, 0, true);
     TS_ASSERT_EQUALS(index3_true, index3);
 
-    int index4_true = 1;
+    int index4_true = 2;
     int index4 = ptob.get_min_index_by_quadrant(0.5 - 1e-5, 0, false);
     TS_ASSERT_EQUALS(index4_true, index4);
 

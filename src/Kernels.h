@@ -73,6 +73,10 @@ public:
   static const size_t BlockCols = kernel_helper::BlockCols;
   typedef typename kernel_helper::BlockRHSVector BlockRHSVector;
   typedef typename kernel_helper::BlockLHSVector BlockLHSVector;
+  static const bool GPU = RowElements::traits_type::data_on_GPU;
+  static_assert(RowElements::traits_type::data_on_GPU ==
+                    ColElements::traits_type::data_on_GPU,
+                "row and col elements must be both gpu or host particle sets");
 
   typedef RowElements row_elements_type;
   typedef ColElements col_elements_type;
@@ -213,30 +217,8 @@ public:
   void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
-
-    const size_t na = a.size();
-    const size_t nb = b.size();
-
-    CHECK(static_cast<size_t>(lhs.size()) == this->rows(),
-          "lhs size is inconsistent");
-    CHECK(static_cast<size_t>(rhs.size()) == this->cols(),
-          "rhs size is inconsistent");
-
-
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < na; ++i) {
-      const_row_reference ai = a[i];
-      for (size_t j = 0; j < nb; ++j) {
-        const_col_reference bj = b[j];
-        lhs.template segment<BlockRows>(i * BlockRows) +=
-            this->m_function(ai, bj) *
-            rhs.template segment<BlockCols>(j * BlockCols);
-      }
-    }
+    detail::gemv_helper<RowElements, ColElements, F>::evaluate(
+        this->m_row_elements, this->m_col_elements, this->m_function, lhs, rhs);
   }
 
   /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
@@ -245,26 +227,8 @@ public:
   template <typename LHSType, typename RHSType>
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
-
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
-
-    const size_t na = a.size();
-    const size_t nb = b.size();
-
-    CHECK(lhs.size() == na, "lhs size is inconsistent");
-    CHECK(rhs.size() == nb, "rhs size is inconsistent");
-
-#ifdef HAVE_OPENMP
-#pragma omp parallel for
-#endif
-    for (size_t i = 0; i < na; ++i) {
-      const_row_reference ai = a[i];
-      for (size_t j = 0; j < nb; ++j) {
-        const_col_reference bj = b[j];
-        lhs[i] += this->m_function(ai, bj) * rhs[j];
-      }
-    }
+    detail::gemv_helper<RowElements, ColElements, F>::evaluate(
+        this->m_row_elements, this->m_col_elements, this->m_function, lhs, rhs);
   }
 };
 
@@ -815,6 +779,102 @@ public:
   template <typename VectorLHS, typename VectorRHS>
   void evaluate(VectorLHS &lhs, const VectorRHS &rhs) const {}
 };
+
+/*
+template <typename MatrixType, typename KernelType, typename RowElements,
+          typename ColElements, typename F>
+class KernelSparseMatrix : public KernelBase<RowElements, ColElements, F> {
+protected:
+  typedef KernelBase<RowElements, ColElements, F> base_type;
+  static const unsigned int dimension = base_type::dimension;
+  typedef typename base_type::double_d double_d;
+  typedef typename base_type::int_d int_d;
+  typedef typename base_type::const_row_reference const_row_reference;
+  typedef typename base_type::const_col_reference const_col_reference;
+
+  MatrixType m_matrix;
+  KernelType m_kernel;
+
+public:
+  typedef typename base_type::Scalar Scalar;
+  typedef typename base_type::Block Block;
+  static const size_t BlockRows = base_type::BlockRows;
+  static const size_t BlockCols = base_type::BlockCols;
+
+  KernelSparseMatrix(const KernelType &kernel)
+      : base_type(kernel.get_row_elements(), kernel.get_col_elements(),
+                  kernel.get_kernel_function()),
+        m_kernel(kernel) {
+    m_kernel assemble_matrix();
+  };
+
+  MatrixType &get_matrix() { return m_matrix; }
+
+  void assemble_matrix() {
+
+    const RowElements &a = this->m_row_elements;
+    const ColElements &b = this->m_col_elements;
+
+    m_matrix.resize(this->rows(), this->cols());
+    for (size_t i = 0; i < a.size(); ++i) {
+      const_row_reference ai = a[i];
+      for (size_t j = 0; j < b.size(); ++j) {
+        const_col_reference bj = b[j];
+        m_matrix.template block<BlockRows, BlockCols>(i * BlockRows,
+                                                      j * BlockCols) =
+            static_cast<Block>(this->m_function(ai, bj));
+      }
+    }
+  }
+
+  Scalar coeff(const size_t i, const size_t j) const { return m_matrix(i, j); }
+
+  template <typename MatrixType> void assemble(const MatrixType &matrix) const {
+    const_cast<MatrixType &>(matrix) = m_matrix;
+  }
+
+  /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+  /// and particle sets \p a and \p b on a vector rhs and
+  /// accumulates the result in vector lhs
+  template <typename LHSType, typename RHSType>
+  void evaluate(std::vector<LHSType> &lhs,
+                const std::vector<RHSType> &rhs) const {
+
+    const RowElements &a = this->m_row_elements;
+    const ColElements &b = this->m_col_elements;
+
+    const size_t na = a.size();
+    const size_t nb = b.size();
+
+    ASSERT(lhs.size() == na, "lhs size is inconsistent");
+    ASSERT(rhs.size() == nb, "rhs size is inconsistent");
+
+#ifdef HAVE_OPENMP
+#pragma omp parallel for
+#endif
+    for (size_t i = 0; i < na; ++i) {
+      for (size_t j = 0; j < nb; ++j) {
+        lhs[i] += m_matrix.template block<BlockRows, BlockCols>(i * BlockRows,
+                                                                j * BlockCols) *
+                  rhs[j];
+      }
+    }
+  }
+
+  /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
+  /// and particle sets \p a and \p b on a vector rhs and
+  /// accumulates the result in vector lhs
+  template <typename DerivedLHS, typename DerivedRHS>
+  void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
+                const Eigen::DenseBase<DerivedRHS> &rhs) const {
+    ASSERT(lhs.size() == static_cast<int>(this->rows()),
+           "lhs size not consistent")
+    ASSERT(rhs.size() == static_cast<int>(this->cols()),
+           "lhs size not consistent")
+    lhs.derived() += m_matrix * rhs.derived();
+  }
+};
+*/
 
 } // namespace Aboria
 

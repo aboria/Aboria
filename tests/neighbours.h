@@ -696,6 +696,7 @@ public:
         : query(particles.get_query()), r(r), r2(r * r) {}
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
     void operator()(reference i) {
       int count = 0;
       for (auto j = euclidean_search(query, get<position>(i), r); j != false;
@@ -704,6 +705,114 @@ public:
         count++;
       }
       get<neighbours_aboria>(i) = count;
+    }
+  };
+
+  template <typename Query> struct aboria_pair_check {
+
+    typedef typename search_bf_iterator<Query, Query, 2>::value_type vector;
+    typedef typename vector::const_reference reference;
+    typedef position_d<Query::dimension> position;
+    typedef Vector<double, Query::dimension> double_d;
+
+    const Query query;
+    double r;
+    double r2;
+
+    aboria_pair_check(const Query &query, double r)
+        : query(query), r(r), r2(r * r) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    void operator()(reference i) {
+      auto ci_a = detail::get_impl<0>(i);
+      auto ci_b = detail::get_impl<1>(i);
+      auto offset = detail::get_impl<2>(i) *
+                    (query.get_bounds().bmax - query.get_bounds().bmin);
+      int index_a = query.get_bucket_index(*ci_a);
+      int index_b = query.get_bucket_index(*ci_b);
+      // std::cout << "found ci pair " << index_a << " and " << index_b
+      //          << std::endl;
+      if (index_a > index_b) {
+        // exploit symmetries
+        for (auto i = query.get_bucket_particles(*ci_a); i != false; ++i) {
+          for (auto j = query.get_bucket_particles(*ci_b); j != false; ++j) {
+            // std::cout << "testing p_i = " << get<position>(*i)
+            //          << " and p_j = " << get<position>(*j) << ": ";
+            if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
+                r2) {
+// std::cout << "NEIGHBOURS";
+#pragma omp atomic
+              ++get<neighbours_aboria>(*i);
+#pragma omp atomic
+              ++get<neighbours_aboria>(*j);
+            }
+            // std::cout << std::endl;
+          }
+        }
+      } else if (index_a == index_b) {
+        for (auto i = query.get_bucket_particles(*ci_a); i != false; ++i) {
+          // count self
+          if (offset.squaredNorm() < r2) {
+#pragma omp atomic
+            ++get<neighbours_aboria>(*i);
+          }
+          for (auto j = i + 1; j != false; ++j) {
+            // std::cout << "testing p_i = " << get<position>(*i)
+            //          << " and p_j = " << get<position>(*j) << ": ";
+            if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
+                r2) {
+// std::cout << "NEIGHBOURS";
+#pragma omp atomic
+              ++get<neighbours_aboria>(*i);
+#pragma omp atomic
+              ++get<neighbours_aboria>(*j);
+            }
+            // std::cout << std::endl;
+          }
+        }
+      }
+    }
+  };
+
+  template <typename Query> struct aboria_pair_check2 {
+
+    typedef typename search_bf_iterator<Query, Query, 2>::value_type vector;
+    typedef typename vector::const_reference reference;
+    typedef position_d<Query::dimension> position;
+    typedef Vector<double, Query::dimension> double_d;
+
+    const Query query;
+    double r;
+    double r2;
+
+    aboria_pair_check2(const Query &query, double r)
+        : query(query), r(r), r2(r * r) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    CUDA_HOST_DEVICE
+    void operator()(reference i) {
+      auto ci_a = detail::get_impl<0>(i);
+      auto ci_b = detail::get_impl<1>(i);
+      auto offset = detail::get_impl<2>(i) *
+                    (query.get_bounds().bmax - query.get_bounds().bmin);
+      // std::cout << "found ci pair " << index_a << " and " << index_b
+      //          << std::endl;
+      // exploit symmetries
+      for (auto i = query.get_bucket_particles(*ci_a); i != false; ++i) {
+        int sum = 0;
+        for (auto j = query.get_bucket_particles(*ci_b); j != false; ++j) {
+          // std::cout << "testing p_i = " << get<position>(*i)
+          //          << " and p_j = " << get<position>(*j) << ": ";
+          if ((get<position>(*i) - get<position>(*j) + offset).squaredNorm() <
+              r2) {
+            ++sum;
+          }
+          // std::cout << std::endl;
+        }
+#pragma omp atomic
+        get<neighbours_aboria>(*i) += sum;
+      }
     }
   };
 
@@ -980,6 +1089,100 @@ public:
               << " versus brute force = " << dt_brute.count() << std::endl;
   }
 
+  template <unsigned int D, template <typename, typename> class VectorType,
+            template <typename> class SearchMethod>
+  void helper_d_random_breadth_search(const int N, const double r,
+                                      const int neighbour_n,
+                                      const bool is_periodic,
+                                      const bool push_back_construction) {
+    typedef Particles<std::tuple<neighbours_brute, neighbours_aboria>, D,
+                      VectorType, SearchMethod>
+        particles_type;
+    typedef typename particles_type::query_type query_type;
+    typedef position_d<D> position;
+    typedef Vector<double, D> double_d;
+    typedef Vector<bool, D> bool_d;
+    double_d min = double_d::Constant(-1);
+    double_d max = double_d::Constant(1);
+    bool_d periodic = double_d::Constant(is_periodic);
+    particles_type particles;
+    double r2 = r * r;
+
+    std::cout << "random breadth search test (D=" << D
+              << " periodic= " << is_periodic << "  N=" << N << " r=" << r
+              << " neighbour_n = " << neighbour_n
+              << " push_back_construction = " << push_back_construction
+              << "):" << std::endl;
+
+    unsigned seed1 =
+        std::chrono::system_clock::now().time_since_epoch().count();
+    std::cout << "seed is " << seed1 << std::endl;
+    particles.set_seed(seed1);
+    generator_type gen(seed1);
+
+#if defined(__CUDACC__)
+    thrust::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#else
+    std::uniform_real_distribution<float> uniform(-1.0, 1.0);
+#endif
+
+    if (push_back_construction) {
+      particles.init_neighbour_search(min, max, periodic, neighbour_n);
+      typename particles_type::value_type p;
+      for (int i = 0; i < N; ++i) {
+        for (size_t d = 0; d < D; ++d) {
+          get<position>(p)[d] = uniform(gen);
+        }
+        particles.push_back(p);
+      }
+    } else {
+      particles.resize(N);
+      detail::for_each(
+          std::begin(particles), std::end(particles),
+          set_random_position<D, typename particles_type::raw_reference>(-1.0,
+                                                                         1.0));
+
+      particles.init_neighbour_search(min, max, periodic, neighbour_n);
+    }
+
+    // brute force search
+    auto t0 = Clock::now();
+    Aboria::detail::for_each(particles.begin(), particles.end(),
+                             brute_force_check<particles_type>(
+                                 particles, min, max, r2, is_periodic));
+    auto t1 = Clock::now();
+    std::chrono::duration<double> dt_brute = t1 - t0;
+
+    // Aboria search
+    t0 = Clock::now();
+    auto search =
+        euclidean_pair_search(particles.get_query(), particles.get_query(), r);
+    for (; search != false; ++search) {
+    }
+    detail::for_each(search->begin(), search->end(),
+                     aboria_pair_check2<query_type>(particles.get_query(), r));
+    t1 = Clock::now();
+    std::chrono::duration<double> dt_aboria = t1 - t0;
+    for (size_t i = 0; i < particles.size(); ++i) {
+      if (int(get<neighbours_brute>(particles)[i]) !=
+          int(get<neighbours_aboria>(particles)[i])) {
+        std::cout << "error in finding neighbours for p = "
+                  << static_cast<const double_d &>(get<position>(particles)[i])
+                  << " over radius " << r << std::endl;
+        particles.print_data_structure();
+
+        TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                         int(get<neighbours_aboria>(particles)[i]));
+        return;
+      }
+      TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
+                       int(get<neighbours_aboria>(particles)[i]));
+    }
+
+    std::cout << "\ttiming result: Aboria = " << dt_aboria.count()
+              << " versus brute force = " << dt_brute.count() << std::endl;
+  }
+
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_regular() {
@@ -1026,6 +1229,67 @@ public:
       helper_d_random<2, VectorType, SearchMethod>(100, 0.5, 10, false, true);
       helper_d_random<3, VectorType, SearchMethod>(100, 0.2, 10, true, true);
       helper_d_random<3, VectorType, SearchMethod>(100, 0.2, 10, false, true);
+    }
+  }
+
+  template <template <typename, typename> class VectorType,
+            template <typename> class SearchMethod>
+  void helper_d_test_list_random_pair(bool test_push_back = true) {
+
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                false, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                true, false);
+
+    if (test_push_back) {
+      helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                  false, true);
+      helper_d_random_breadth_search<1, VectorType, SearchMethod>(14, 0.1, 1,
+                                                                  true, true);
+    }
+
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 10,
+                                                                true, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 10,
+                                                                false, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 100,
+                                                                true, false);
+    helper_d_random_breadth_search<1, VectorType, SearchMethod>(1000, 0.1, 100,
+                                                                false, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.5, 10,
+                                                                true, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.5, 10,
+                                                                false, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                true, false);
+    helper_d_random_breadth_search<2, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                false, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 100,
+                                                                true, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 100,
+                                                                false, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 10,
+                                                                true, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 10,
+                                                                false, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                true, false);
+    helper_d_random_breadth_search<3, VectorType, SearchMethod>(1000, 0.2, 1,
+                                                                false, false);
+
+    if (test_push_back) {
+      helper_d_random_breadth_search<1, VectorType, SearchMethod>(100, 0.1, 10,
+                                                                  true, true);
+      helper_d_random_breadth_search<2, VectorType, SearchMethod>(100, 0.1, 10,
+                                                                  false, true);
+      helper_d_random_breadth_search<2, VectorType, SearchMethod>(100, 0.5, 10,
+                                                                  true, true);
+      helper_d_random_breadth_search<2, VectorType, SearchMethod>(100, 0.5, 10,
+                                                                  false, true);
+      helper_d_random_breadth_search<3, VectorType, SearchMethod>(100, 0.2, 10,
+                                                                  true, true);
+      helper_d_random_breadth_search<3, VectorType, SearchMethod>(100, 0.2, 10,
+                                                                  false, true);
     }
   }
 
@@ -1088,6 +1352,8 @@ public:
 
   void test_std_vector_CellList(void) {
     helper_d_test_list_random<std::vector, CellList>();
+    helper_d_test_list_random_pair<std::vector, CellList>();
+    helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
     helper_single_particle<std::vector, CellList>();
     helper_two_particles<std::vector, CellList>();
     helper_d_test_list_regular<std::vector, CellList>();
@@ -1095,20 +1361,7 @@ public:
 
   void test_std_vector_CellListOrdered(void) {
     helper_d_test_list_random<std::vector, CellListOrdered>();
-    helper_single_particle<std::vector, CellListOrdered>();
-    helper_two_particles<std::vector, CellListOrdered>();
-
-    helper_d_test_list_regular<std::vector, CellListOrdered>();
-  }
-
-  void test_std_vector_CellList_fast_bucketsearch(void) {
-    helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
-    helper_single_particle<std::vector, CellList>();
-    helper_two_particles<std::vector, CellList>();
-    helper_d_test_list_regular<std::vector, CellList>();
-  }
-
-  void test_std_vector_CellListOrdered_fast_bucketsearch(void) {
+    helper_d_test_list_random_pair<std::vector, CellListOrdered>();
     helper_d_test_list_random_fast_bucketsearch<std::vector, CellListOrdered>();
     helper_single_particle<std::vector, CellListOrdered>();
     helper_two_particles<std::vector, CellListOrdered>();
@@ -1117,18 +1370,21 @@ public:
 
   void test_std_vector_Kdtree(void) {
     helper_d_test_list_random<std::vector, Kdtree>();
+    helper_d_test_list_random_pair<std::vector, Kdtree>();
     helper_d_test_list_regular<std::vector, Kdtree>();
   }
 
   void test_std_vector_KdtreeNanoflann(void) {
 #if not defined(__CUDACC__)
     helper_d_test_list_random<std::vector, KdtreeNanoflann>();
+    helper_d_test_list_random_pair<std::vector, KdtreeNanoflann>();
     helper_d_test_list_regular<std::vector, KdtreeNanoflann>();
 #endif
   }
 
   void test_std_vector_HyperOctree(void) {
     helper_d_test_list_random<std::vector, HyperOctree>();
+    helper_d_test_list_random_pair<std::vector, HyperOctree>();
     helper_d_test_list_regular<std::vector, HyperOctree>();
   }
 

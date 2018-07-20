@@ -56,11 +56,423 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <queue>
 
 namespace Aboria {
+namespace detail {
+///
+/// @brief returns iterator for periodic lattice, given the periodicity
+/// of the domain
+///
 
-/// A const iterator to a set of neighbouring points. This iterator implements
-/// a STL forward iterator type
-// assume that these iterators, and query functions, are only called from device
-// code
+template <unsigned int D, typename periodic_iterator = lattice_iterator<D>>
+CUDA_HOST_DEVICE periodic_iterator
+get_periodic_range(const Vector<bool, D> &is_periodic) {
+  Vector<int, D> start, end;
+  for (size_t i = 0; i < D; ++i) {
+    start[i] = is_periodic[i] ? -1 : 0;
+    end[i] = is_periodic[i] ? 2 : 1;
+  }
+  return periodic_iterator(start, end);
+}
+} // namespace detail
+
+template <typename QueryA, typename QueryB, int LNormNumber>
+class search_bf_iterator {
+  typedef search_bf_iterator<QueryA, QueryB, LNormNumber> iterator;
+  typedef typename QueryA::child_iterator child_iterator_a;
+  typedef typename QueryB::child_iterator child_iterator_b;
+  static const unsigned int dimension = QueryA::dimension;
+  static_assert(QueryB::dimension == QueryA::dimension,
+                "query dimensions must match");
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef Vector<int8_t, dimension> int8_d;
+  typedef typename QueryA::traits_type traits_type_a;
+  typedef typename QueryB::traits_type traits_type_b;
+  typedef typename traits_type_a::template tuple<child_iterator_a,
+                                                 child_iterator_b, int8_d>
+      ci_pair;
+  typedef typename traits_type_a::template vector<ci_pair> vector_ci_pair;
+  typedef typename traits_type_a::template vector<vint2> vector_vint2;
+  typedef typename traits_type_a::template vector<int> vector_int;
+  typedef lattice_iterator<dimension> periodic_iterator_type;
+
+public:
+  typedef vector_ci_pair const value_type;
+  typedef vector_ci_pair const *pointer;
+  typedef vector_ci_pair const &reference;
+  typedef std::forward_iterator_tag iterator_category;
+  typedef std::ptrdiff_t difference_type;
+
+  CUDA_HOST_DEVICE
+  search_bf_iterator() : m_all_leafs(true) {}
+
+  /// this constructor is used to start the iterator at the head of a bucket
+  /// list
+  CUDA_HOST_DEVICE
+  search_bf_iterator(const child_iterator_a &start_node_a,
+                     const child_iterator_b &start_node_b,
+                     const QueryA &query_a, const QueryB &query_b,
+                     const double distance, const bool save_internal_leafs)
+      : m_distance2(
+            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
+                distance)),
+        m_level_num(1), m_save_internal_leafs(save_internal_leafs),
+        m_all_leafs(true), m_query_a(&query_a), m_query_b(&query_b)
+
+  {
+    if (start_node_a != false && start_node_b != false) {
+      if (m_query_b->number_of_levels() > 1 || m_save_internal_leafs) {
+        m_all_leafs = false;
+        // put all n^2 ci pairs in m_level
+        const int size_a = start_node_a.distance_to_end();
+        const int size_b = start_node_b.distance_to_end();
+
+        for (auto p_it = detail::get_periodic_range(m_query_b->get_periodic());
+             p_it != false; ++p_it) {
+          LOG(3, "\tsearch_bf_iterator (constructor): adding "
+                     << size_a * size_b << " buckets in periodic = " << *p_it);
+          m_level.resize(m_level.size() + size_a * size_b);
+          detail::tabulate(
+              m_level.end() - size_a * size_b, m_level.end(),
+              add_all_buckets{start_node_a, start_node_b, size_b, *p_it});
+        }
+      } else {
+        // only have 1 level and don't want to consider internal leafs, so only
+        // put in neighbouring buckets
+        const int size_a = start_node_a.distance_to_end();
+        vector_int vcount(size_a);
+        auto count = QueryA::traits_type::make_counting_iterator(0);
+        count_neighbouring_buckets fcount{start_node_a, *m_query_a, *m_query_b,
+                                          distance};
+        detail::transform_exclusive_scan(count, count + size_a, vcount.begin(),
+                                         fcount, 0, detail::plus());
+        const int n_neighbours = vcount.back() + fcount(size_a - 1);
+        LOG(2, "\tsearch_bf_iterator (constructor): found "
+                   << n_neighbours << " neighbouring bucket pairs.");
+        m_level.resize(n_neighbours);
+        detail::for_each(
+            count, count + size_a,
+            add_neighbouring_buckets{start_node_a,
+                                     iterator_to_raw_pointer(m_level.begin()),
+                                     iterator_to_raw_pointer(vcount.begin()),
+                                     *m_query_a, *m_query_b, distance});
+      }
+    } else {
+      LOG(2, "\tsearch_bf_iterator (constructor): start is false, no "
+             "children to search.");
+    }
+    print_tree();
+  }
+
+  void print_tree() {
+    if (ABORIA_LOG_LEVEL > 3) {
+      LOG(4, "\tsearch_bf_iterator (print_tree): neighbouring bucket "
+             "pairs are:");
+      for (const auto &i : m_level) {
+        LOG(4, "\t\t{" << m_query_a->get_bucket_index(*detail::get_impl<0>(i))
+                       << ','
+                       << m_query_b->get_bucket_index(*detail::get_impl<1>(i))
+                       << ',' << detail::get_impl<2>(i).template cast<int>()
+                       << "} that is, bounds = {"
+                       << m_query_a->get_bounds(detail::get_impl<0>(i)) << ','
+                       << m_query_b->get_bounds(detail::get_impl<1>(i)) << '}');
+      }
+    }
+  }
+
+  reference internal_leafs() const { return m_internal_leafs; }
+
+  reference operator*() const { return dereference(); }
+
+  pointer operator->() { return &dereference(); }
+
+  iterator &operator++() {
+    increment();
+    return *this;
+  }
+
+  iterator operator++(int) {
+    iterator tmp(*this);
+    operator++();
+    return tmp;
+  }
+
+  size_t operator-(iterator start) const {
+    size_t count = 0;
+    while (start != *this) {
+      start++;
+      count++;
+    }
+    return count;
+  }
+
+  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
+
+  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
+
+  inline bool operator==(const bool rhs) const { return equal(rhs); }
+
+  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
+
+  struct add_all_buckets {
+    child_iterator_a first_ci_a;
+    child_iterator_b first_ci_b;
+    int m_size_b;
+    int8_d m_offset;
+
+    CUDA_HOST_DEVICE
+    ci_pair operator()(const int ij) {
+      // ij = i*size_b + j;
+      const int j = ij % m_size_b;
+      const int i = ij / m_size_b;
+      auto ci_a = first_ci_a + i;
+      auto ci_b = first_ci_b + j;
+      return ci_pair(ci_a, ci_b, m_offset);
+    }
+  };
+
+  struct count_neighbouring_buckets {
+    child_iterator_a first_ci_a;
+    const QueryA m_query_a;
+    const QueryB m_query_b;
+    const double m_distance;
+
+    CUDA_HOST_DEVICE
+    int operator()(const int i) {
+      int ret = 0;
+      auto ci_a = first_ci_a + i;
+
+      for (auto p_it = detail::get_periodic_range(m_query_b.get_periodic());
+           p_it != false; ++p_it) {
+        const double_d offset = (*p_it) * (m_query_b.get_bounds().bmax -
+                                           m_query_b.get_bounds().bmin);
+        for (auto ci_b =
+                 m_query_b.template get_buckets_near_bucket<LNormNumber>(
+                     m_query_a.get_bounds(ci_a) + offset, m_distance);
+             ci_b != false; ++ci_b, ++ret)
+          ;
+      }
+      return ret;
+    }
+  };
+
+  struct add_neighbouring_buckets {
+    child_iterator_a first_ci_a;
+    ci_pair *m_level;
+    int *m_count;
+    const QueryA m_query_a;
+    const QueryB m_query_b;
+    const double m_distance;
+
+    CUDA_HOST_DEVICE void operator()(const int i) {
+      int j = 0;
+      auto ci_a = first_ci_a + i;
+      for (auto p_it = detail::get_periodic_range(m_query_b.get_periodic());
+           p_it != false; ++p_it) {
+        const double_d offset = (*p_it) * (m_query_b.get_bounds().bmax -
+                                           m_query_b.get_bounds().bmin);
+        for (auto ci_b =
+                 m_query_b.template get_buckets_near_bucket<LNormNumber>(
+                     m_query_a.get_bounds(ci_a) + offset, m_distance);
+             ci_b != false; ++ci_b, ++j) {
+          detail::get_impl<0>(m_level[m_count[i] + j]) = ci_a;
+          detail::get_impl<1>(m_level[m_count[i] + j]) = *ci_b;
+          detail::get_impl<2>(m_level[m_count[i] + j]) = *p_it;
+        }
+      }
+    }
+  };
+
+  struct count_children {
+    const QueryA m_query_a;
+    const QueryB m_query_b;
+    const double m_distance2;
+
+    CUDA_HOST_DEVICE
+    auto operator()(const ci_pair &ci2) {
+      // op 1: a and b are greater than search, nchild = 0
+      //  if not:
+      // op 2: a is parent, b is parent, nchild = nca*ncb
+      // op 3: a is parent, b is leaf, nchild = nca*1
+      // op 4: a is leaf, b is parent, nchild = 1*ncb
+      // op 5: a is leaf, b is leaf, nchild = 0
+      auto &a = detail::get_impl<0>(ci2);
+      auto &b = detail::get_impl<1>(ci2);
+      auto offset = detail::get_impl<2>(ci2) *
+                    (m_query_b.get_bounds().bmax - m_query_b.get_bounds().bmin);
+      // btw, nchild = 1, really means nchild = 0
+      int nchild;
+      if (detail::boxes_within_distance<LNormNumber>(
+              m_query_a.get_bounds(a) + offset, m_query_b.get_bounds(b),
+              m_distance2)) {
+        const int nchild_a = m_query_a.is_leaf_node(*a)
+                                 ? 1
+                                 : m_query_a.get_children(a).distance_to_end();
+        const int nchild_b = m_query_b.is_leaf_node(*b)
+                                 ? 1
+                                 : m_query_b.get_children(b).distance_to_end();
+        nchild = nchild_a * nchild_b;
+      } else {
+        nchild = 0;
+      }
+
+      const bool internal_leaf = nchild == 0;
+      return vint2(nchild, internal_leaf);
+    }
+  };
+
+  struct copy_children_and_leafs {
+    size_t m_end;
+    double m_distance2;
+    vint2 *m_counts;
+    ci_pair *m_internal_leafs;
+    const QueryA m_query_a;
+    const QueryB m_query_b;
+    ci_pair *m_next_level;
+    ci_pair *m_level;
+    const bool m_save_internal_leafs;
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      vint2 my_count;
+      // std::cout << "pair index " << i << std::endl;
+      if (i == static_cast<int>(m_end) - 1) {
+        count_children count{m_query_a, m_query_b, m_distance2};
+        my_count = count(m_level[i]);
+      } else {
+        my_count = m_counts[i + 1] - m_counts[i];
+      }
+      // std::cout << "\tmy_count = " << my_count << std::endl;
+
+      if (my_count[1]) {
+        // pair outside distance
+        if (m_save_internal_leafs) {
+          m_internal_leafs[m_counts[i][2]] = m_level[i];
+        }
+      } else if (my_count[0] == 1) {
+        // pair are both leafs, pass it down to next level
+        // std::cout << "\tadding to leaf index = " << leafs_index << std::endl;
+        m_next_level[m_counts[i][0]] = m_level[i];
+      } else {
+        // pair have children
+        auto &ci_a = detail::get_impl<0>(m_level[i]);
+        auto &ci_b = detail::get_impl<1>(m_level[i]);
+        auto &offset = detail::get_impl<2>(m_level[i]);
+        {
+          int next_level_index = m_counts[i][0];
+          if (m_query_a.is_leaf_node(*ci_a)) {
+            for (auto child_b = m_query_b.get_children(ci_b); child_b != false;
+                 ++child_b, ++next_level_index) {
+              // std::cout << "\tadding to next level index = " <<
+              // next_level_index
+              //          << std::endl;
+              m_next_level[next_level_index] = ci_pair(ci_a, child_b, offset);
+            }
+          } else if (m_query_b.is_leaf_node(*ci_b)) {
+            for (auto child_a = m_query_a.get_children(ci_a); child_a != false;
+                 ++child_a, ++next_level_index) {
+              // std::cout << "\tadding to next level index = " <<
+              // next_level_index
+              //          << std::endl;
+              m_next_level[next_level_index] = ci_pair(child_a, ci_b, offset);
+            }
+          } else {
+            for (auto child_a = m_query_a.get_children(ci_a); child_a != false;
+                 ++child_a) {
+              for (auto child_b = m_query_b.get_children(ci_b);
+                   child_b != false; ++child_b, ++next_level_index) {
+                // std::cout << "\tadding to next level index = "
+                //          << next_level_index << std::endl;
+                m_next_level[next_level_index] =
+                    ci_pair(child_a, child_b, offset);
+              }
+            }
+          }
+        }
+      }
+    }
+  };
+
+private:
+  void increment() {
+    LOG(4, "\tincrement (search_bf_iterator): m_level size = "
+               << m_level.size() << " m_leafs size = " << m_leafs.size()
+               << " m_internal_leafs size = " << m_internal_leafs.size());
+    // m_level [ci0, ci1, ci2, ...]
+    // exclusive scan for # children + # leafs: n_child
+    // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
+    // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
+
+    m_counts.resize(m_level.size());
+    count_children fcount_children{*m_query_a, *m_query_b, m_distance2};
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), fcount_children,
+                                     vint2::Constant(0), detail::plus());
+
+    // resize for new children and leafs
+    const vint2 nchildren =
+        static_cast<vint2>(m_counts.back()) + fcount_children(m_level.back());
+
+    if (nchildren[0] == static_cast<int>(m_level.size()) && nchildren[1] == 0) {
+      // all leafs, nothing to do, set flag and return
+      m_all_leafs = true;
+      return;
+    }
+
+    m_next_level.resize(nchildren[0]);
+    if (m_save_internal_leafs) {
+      m_internal_leafs.resize(nchildren[1]);
+    }
+
+    LOG(3, "\tincrement(search_bf_iterator): adding "
+               << nchildren[0] << " children and "
+               << (m_save_internal_leafs ? nchildren[2] : 0)
+               << " internal leafs");
+
+    // tabulate m_level to copy children to m_next_level, internal leafs to
+    // m_internal_leafs
+    auto count = QueryA::traits_type::make_counting_iterator(0);
+    detail::for_each(
+        count, count + m_level.size(),
+        copy_children_and_leafs{
+            m_level.size(), m_distance2,
+            iterator_to_raw_pointer(m_counts.begin()),
+            iterator_to_raw_pointer(m_internal_leafs.begin()), *m_query_a,
+            *m_query_b, iterator_to_raw_pointer(m_next_level.begin()),
+            iterator_to_raw_pointer(m_level.begin()), m_save_internal_leafs});
+
+    // swap level back to m_level and increment level count
+    m_level.swap(m_next_level);
+    m_level_num++;
+    print_tree();
+    LOG(4, "\tend increment (search_bf_iterator):");
+  }
+
+  bool equal(iterator const &other) const {
+    return m_query_a == other.m_query_a && m_query_b == other.m_query_b &&
+           m_level_num == other.m_level_num;
+  }
+
+  bool equal(const bool other) const { return m_all_leafs != other; }
+
+  reference dereference() const { return m_level; }
+
+  double m_distance2;
+  vector_ci_pair m_level;
+  vector_ci_pair m_next_level;
+  vector_vint2 m_counts;
+  vector_ci_pair m_leafs;
+  vector_ci_pair m_internal_leafs;
+  size_t m_level_num;
+  const bool m_save_internal_leafs;
+  bool m_all_leafs;
+  const QueryA *m_query_a;
+  const QueryB *m_query_b;
+}; // namespace Aboria
+
+/// A const iterator to a set of neighbouring points. This iterator
+/// implements a STL forward iterator type
+// assume that these iterators, and query functions, are only called from
+// device code
 template <typename Query, int LNormNumber> class search_iterator {
 
   typedef typename Query::particle_iterator particle_iterator;
@@ -78,8 +490,8 @@ template <typename Query, int LNormNumber> class search_iterator {
   typedef lattice_iterator<dimension> periodic_iterator_type;
 
   ///
-  /// @brief true if the iterator has run out of particles within the search
-  /// distance
+  /// @brief true if the iterator has run out of particles within the
+  /// search distance
   ///
   bool m_valid;
 
@@ -110,8 +522,8 @@ template <typename Query, int LNormNumber> class search_iterator {
   double m_max_distance2;
 
   ///
-  /// @brief iterator for searching periodic domains, iterates over the periodic
-  /// lattice
+  /// @brief iterator for searching periodic domains, iterates over the
+  /// periodic lattice
   ///
   periodic_iterator_type m_current_periodic;
 
@@ -139,21 +551,6 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   ///
-  /// @brief returns iterator for periodic lattice, given the periodicity of the
-  /// domain
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static periodic_iterator_type get_periodic_range(const bool_d is_periodic) {
-    int_d start, end;
-    for (size_t i = 0; i < dimension; ++i) {
-      start[i] = is_periodic[i] ? -1 : 0;
-      end[i] = is_periodic[i] ? 2 : 1;
-    }
-    return periodic_iterator_type(start, end);
-  }
-
-  ///
   /// @brief constructs an invalid iterator that can be used as an end()
   /// iterator
   ///
@@ -162,9 +559,10 @@ public:
   search_iterator() : m_valid(false) {}
 
   ///
-  /// @brief should generally use this constructor to make a search iterator.
-  /// Returns an iterator that will search around the given point, and iterate
-  /// through all the particles it finds within the given maximum distance
+  /// @brief should generally use this constructor to make a search
+  /// iterator. Returns an iterator that will search around the given
+  /// point, and iterate through all the particles it finds within the
+  /// given maximum distance
   ///
   /// @param query a query object for a spatial data structure
   /// @param r the central point to search around
@@ -178,7 +576,7 @@ public:
         m_max_distance2(
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
                 max_distance)),
-        m_current_periodic(get_periodic_range(m_query->get_periodic())),
+        m_current_periodic(detail::get_periodic_range(m_query->get_periodic())),
         m_current_point(
             r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin)),
@@ -247,7 +645,8 @@ public:
   reference operator->() { return dereference(); }
 
   ///
-  /// @brief increment the iterator, i.e. move to the next candidate particle
+  /// @brief increment the iterator, i.e. move to the next candidate
+  /// particle
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -307,16 +706,16 @@ public:
   }
 
   ///
-  /// @brief the search iterator can be converted to true if it is pointing to a
-  /// valid candidate point, false otherwise
+  /// @brief the search iterator can be converted to true if it is
+  /// pointing to a valid candidate point, false otherwise
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
   ///
-  /// @brief the search iterator can be converted to true if it is pointing to a
-  /// valid candidate point, false otherwise
+  /// @brief the search iterator can be converted to true if it is
+  /// pointing to a valid candidate point, false otherwise
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -324,8 +723,8 @@ public:
 
 private:
   ///
-  /// @brief if both iterators are valid, and pointing to the same particle,
-  /// then they are equal
+  /// @brief if both iterators are valid, and pointing to the same
+  /// particle, then they are equal
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -342,10 +741,10 @@ private:
   bool equal(const bool other) const { return m_valid == other; }
 
   ///
-  /// @brief to be called after incrementing m_current_bucket. If m_current
-  /// bucket is no longer valid, then move to the next periodic lattice. If not
-  /// more periodic lattices to search through, then the iterator becomes
-  /// invalid
+  /// @brief to be called after incrementing m_current_bucket. If
+  /// m_current bucket is no longer valid, then move to the next periodic
+  /// lattice. If not more periodic lattices to search through, then the
+  /// iterator becomes invalid
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -354,13 +753,15 @@ private:
 
     while (m_current_bucket == false) {
 #ifdef __CUDA_ARCH__
-        if (3 <= ABORIA_LOG_LEVEL) {                                             \
-            printf("\t\tgo_to_next periodic (search_iterator): m_current_periodic = (");
-            for (int i = 0; i < Traits::dimension; ++i) {
-                printf("%d,",(*m_current_periodic)[i]);
-            }
-            printf("\n,");
+      if (3 <= ABORIA_LOG_LEVEL) {
+        printf("\t\tgo_to_next periodic (search_iterator): "
+               "m_current_periodic "
+               "= (");
+        for (int i = 0; i < Traits::dimension; ++i) {
+          printf("%d,", (*m_current_periodic)[i]);
         }
+        printf("\n,");
+      }
 #else
       LOG(3, "\tgo_to_next periodic (search_iterator): m_current_periodic = "
                  << *m_current_periodic);
@@ -407,7 +808,8 @@ private:
   }
 
   ///
-  /// @brief increments m_current_particle and deals with any invalid iterators
+  /// @brief increments m_current_particle and deals with any invalid
+  /// iterators
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -420,8 +822,8 @@ private:
   }
 
   ///
-  /// @brief checks that the current particle in m_current_particle is within
-  /// the search distance
+  /// @brief checks that the current particle in m_current_particle is
+  /// within the search distance
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
@@ -443,17 +845,17 @@ private:
       }
     }
 #ifdef __CUDA_ARCH__
-    if (3 <= ABORIA_LOG_LEVEL) {                                             \
-        printf("\tcheck_candidate: m_r = (");
-        for (int i = 0; i < Traits::dimension; ++i) {
-            printf("%d,",m_current_point[i]);
-        }
-        printf(") other r = (");
-        for (int i = 0; i < Traits::dimension; ++i) {
-            printf("%d,",get<position>(*m_current_particle)[i]);
-        }
-        printf("). outside = %d",outside);
-    } 
+    if (3 <= ABORIA_LOG_LEVEL) {
+      printf("\tcheck_candidate: m_r = (");
+      for (int i = 0; i < Traits::dimension; ++i) {
+        printf("%d,", m_current_point[i]);
+      }
+      printf(") other r = (");
+      for (int i = 0; i < Traits::dimension; ++i) {
+        printf("%d,", get<position>(*m_current_particle)[i]);
+      }
+      printf("). outside = %d", outside);
+    }
 #else
     LOG(3, "\tcheck_candidate: m_r = " << m_current_point << " other r = "
                                        << get<position>(*m_current_particle)
@@ -512,15 +914,12 @@ template <typename Query> class bucket_pair_iterator {
   double_d m_position_offset;
 
 public:
-  typedef const std::tuple<const int_d &, const int_d &,
-                                                const double_d &> *pointer;
+  typedef const std::tuple<const int_d &, const int_d &, const double_d &>
+      *pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef const std::tuple<const int_d &, const int_d &,
-                                                const double_d &>
+  typedef const std::tuple<const int_d &, const int_d &, const double_d &>
       reference;
-  typedef const std::tuple<const int_d, const int_d,
-                                                const double_d>
-      value_type;
+  typedef const std::tuple<const int_d, const int_d, const double_d> value_type;
   typedef std::ptrdiff_t difference_type;
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -767,20 +1166,20 @@ private:
 /*
 template <typename query_iterator>
 iterator_range<query_iterator>
-get_buckets_near_point(const double_d &position, const double max_distance,
-detail::cell_list_tag) {
+get_buckets_near_point(const double_d &position, const double
+max_distance, detail::cell_list_tag) {
 }
 
 template <typename query_iterator>
 iterator_range<query_iterator>
-get_buckets_near_point(const double_d &position, const double max_distance,
-detail::kd_tree_tag) {
+get_buckets_near_point(const double_d &position, const double
+max_distance, detail::kd_tree_tag) {
 }
 */
 
 ///
-/// @brief returns a @ref search_iterator that iterates over all the particles
-/// within a given distance around a point
+/// @brief returns a @ref search_iterator that iterates over all the
+/// particles within a given distance around a point
 ///
 /// @tparam Query the query object type
 /// @tparam search_iterator<Query, 1> the search iterator type
@@ -823,6 +1222,7 @@ manhatten_search(const Query &query, const typename Query::double_d &centre,
                  const double max_distance) {
   return SearchIterator(query, centre, max_distance);
 }
+
 ///
 /// @copydoc distance_search()
 ///
@@ -838,9 +1238,10 @@ euclidean_search(const Query &query, const typename Query::double_d &centre,
 }
 
 ///
-/// @brief returns a @ref bucket_pair_iterator that iterates through all the
-/// neighbouring buckets (i.e. buckets that are touching) within a domain. Note
-/// that this will only work for cell list spatial data structures
+/// @brief returns a @ref bucket_pair_iterator that iterates through all
+/// the neighbouring buckets (i.e. buckets that are touching) within a
+/// domain. Note that this will only work for cell list spatial data
+/// structures
 ///
 /// @tparam Query query object type (must be @ref CellListQuery or @ref
 /// CellListOrderedQuery)
@@ -850,6 +1251,44 @@ euclidean_search(const Query &query, const typename Query::double_d &centre,
 template <typename Query, typename Iterator = bucket_pair_iterator<Query>>
 CUDA_HOST_DEVICE Iterator get_neighbouring_buckets(const Query &query) {
   return Iterator(query);
+}
+
+///
+/// @brief returns a @ref search_iterator that iterates down the levels of the
+/// spatial structure tree, finding buckets that are within a given distance
+/// from each other.
+///
+/// @tparam LNormNumber the p-norm number of the distance
+/// @tparam QueryA the query object a type
+/// @tparam QueryB the query object b type
+/// @tparam search_bf_iterator<QueryA,QueryB,LNormNumber> the search
+/// iterator type
+/// @param query_a the query object a
+/// @param query_b the query object b
+/// @param max_distance the maximum distance to search around @p centre
+///
+template <
+    int LNormNumber, typename QueryA, typename QueryB,
+    typename SearchIterator = search_bf_iterator<QueryA, QueryB, LNormNumber>>
+CUDA_HOST_DEVICE SearchIterator distance_pair_search(
+    const QueryA &query_a, const QueryB &query_b, const double max_distance) {
+  return SearchIterator(query_a.get_children(), query_b.get_children(), query_a,
+                        query_b, max_distance, false);
+}
+
+///
+/// @copydoc distance_pair_search()
+///
+/// Uses the euclidean distance
+/// <https://en.wikipedia.org/wiki/Euclidean_distance>
+///
+///
+template <typename QueryA, typename QueryB,
+          typename SearchIterator = search_bf_iterator<QueryA, QueryB, 2>>
+CUDA_HOST_DEVICE SearchIterator euclidean_pair_search(
+    const QueryA &query_a, const QueryB &query_b, const double max_distance) {
+  return SearchIterator(query_a.get_children(), query_b.get_children(), query_a,
+                        query_b, max_distance, false);
 }
 
 } // namespace Aboria
