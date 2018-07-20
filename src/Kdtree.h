@@ -692,6 +692,7 @@ template <typename Traits> struct KdtreeQuery {
   size_t m_number_of_levels;
 
   int *m_nodes_child;
+  int m_dummy_root{-1};
   int *m_nodes_split_dim;
   double *m_nodes_split_pos;
 
@@ -737,6 +738,13 @@ public:
    * end functions for tree_query_iterator
    */
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_root() const
+  ///
+  child_iterator get_root() const {
+    return ++child_iterator(&m_dummy_root, m_bounds);
+  }
+
   child_iterator get_children() const {
     return child_iterator(m_nodes_child, m_bounds);
   }
@@ -765,14 +773,19 @@ public:
 
   const box_type get_bounds(const child_iterator &ci) const {
     box_type ret = (*ci).bounds;
-    const int pindex = get_parent_index(*ci);
-    const int i = m_nodes_split_dim[pindex];
-    if (ci.is_high()) {
-      ret.bmin[i] = m_nodes_split_pos[pindex];
+    if ((*ci).parent == &m_dummy_root) {
+      // if root node we are done
+      return ret;
     } else {
-      ret.bmax[i] = m_nodes_split_pos[pindex];
+      const int pindex = get_parent_index(*ci);
+      const int i = m_nodes_split_dim[pindex];
+      if (ci.is_high()) {
+        ret.bmin[i] = m_nodes_split_pos[pindex];
+      } else {
+        ret.bmax[i] = m_nodes_split_pos[pindex];
+      }
+      return ret;
     }
-    return ret;
   }
 
   particle_iterator get_bucket_particles(reference bucket) const {
@@ -791,6 +804,10 @@ public:
   }
 
   void go_to(const double_d &position, child_iterator &ci) const {
+    if ((*ci).parent == m_dummy_root) {
+      // if root node do nothing
+      return;
+    }
     const int pindex = get_parent_index(*ci);
     const int i = m_nodes_split_dim[pindex];
     ASSERT(position[i] < ci.m_data.bounds.bmax[i], "position out of bounds");

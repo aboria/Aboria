@@ -470,6 +470,13 @@ template <typename Traits> struct KdtreeNanoflannQuery {
    * end functions for tree_query_iterator
    */
 
+  ///
+  /// @copydoc NeighbourQueryBase::get_root() const
+  ///
+  child_iterator get_root() const {
+    return ++child_iterator(&m_dummy_root, m_bounds);
+  }
+
   child_iterator get_children() const {
     if (m_root == nullptr) { // empty tree, return a false child iterator
       return child_iterator();
