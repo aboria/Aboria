@@ -117,13 +117,12 @@ if (Aboria_USE_H2LIB)
 endif()
 
 if (Aboria_USE_INTEL_MKL)
-    if (Aboria_USE_INTEL_MKL)
-        set(BLA_VENDOR Intel10_64lp)
-        add_definitions(-DEIGEN_USE_MKL_ALL)
+    add_definitions(-DEIGEN_USE_MKL_ALL)
+    if (NOT Aboria_USE_H2LIB)
+        find_package(BLAS REQUIRED)
+        set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
+        list(APPEND Aboria_LIBRARIES "${BLAS_LIBRARIES}")
     endif()
-    find_package(BLAS REQUIRED)
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${BLAS_LINKER_FLAGS}")
-    list(APPEND Aboria_LIBRARIES "${BLAS_LIBRARIES}")
 endif()
 
 #export compiler flags for code completion engines

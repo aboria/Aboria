@@ -705,7 +705,8 @@ public:
 #endif // HAVE_EIGEN
   }
 
-  template <typename Kernel> void helper_param_sweep_per_kernel() {
+  template <typename Kernel>
+  void helper_param_sweep_per_kernel(const int minN) {
     Kernel kernel;
 
     std::cout << "-------------------------------------------\n"
@@ -755,16 +756,20 @@ public:
     }
   }
 
-  void test_gaussian(void) { helper_param_sweep_per_kernel<gaussian_kernel>(); }
-  void test_matern(void) { helper_param_sweep_per_kernel<matern_kernel>(); }
+  void test_gaussian(void) {
+    helper_param_sweep_per_kernel<gaussian_kernel>(16000);
+  }
+  void test_matern(void) {
+    helper_param_sweep_per_kernel<matern_kernel>(32000);
+  }
   void test_exponential(void) {
-    helper_param_sweep_per_kernel<exponential_kernel>();
+    helper_param_sweep_per_kernel<exponential_kernel>(32000);
   }
   void test_rational_quadratic(void) {
-    helper_param_sweep_per_kernel<rational_quadratic_kernel>();
+    helper_param_sweep_per_kernel<rational_quadratic_kernel>(1000);
   }
   void test_inverse_multiquadric(void) {
-    helper_param_sweep_per_kernel<inverse_multiquadric_kernel>();
+    helper_param_sweep_per_kernel<inverse_multiquadric_kernel>(1000);
   }
 };
 
