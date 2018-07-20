@@ -718,6 +718,11 @@ template <typename Traits> struct NeighbourQueryBase {
   bool is_tree();
 
   ///
+  /// @brief gets a child_iterator pointing to the root node
+  ///
+  child_iterator get_root() const;
+
+  ///
   /// @brief gets all the children of the root node.
   ///
   /// @return a @ref child_iterator that iterates through all the buckets in the
@@ -1561,6 +1566,11 @@ private:
     const int nchildren = static_cast<int>(m_counts.back()) +
                           count_children{*m_query}(m_level.back());
     m_all_leafs = nchildren == static_cast<int>(m_level.size());
+
+    // don't bother doing next level if they are all leafs
+    if (m_all_leafs)
+      return;
+
     m_next_level.resize(nchildren);
 
 // tabulate m_level to copy children to m_next_level, or leafs to

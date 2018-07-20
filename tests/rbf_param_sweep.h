@@ -44,6 +44,11 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 #include <fstream>
 typedef std::chrono::system_clock Clock;
+
+#ifdef HAVE_GPERFTOOLS
+#include <gperftools/profiler.h>
+#endif
+
 #include "Aboria.h"
 using namespace Aboria;
 
@@ -413,12 +418,21 @@ public:
           bicg2;
       bicg2.setMaxIterations(max_iter);
       bicg2.preconditioner().set_max_buffer_n(Nbuffer);
-      bicg2.preconditioner().set_decimate_factor(2);
+      // bicg2.preconditioner().set_decimate_factor(2);
       t0 = Clock::now();
       bicg2.compute(G);
+
+#ifdef HAVE_GPERFTOOLS
+      ProfilerStart("schwartz_solve");
+#endif
+
       t1 = Clock::now();
       gamma = bicg2.solve(phi);
       t2 = Clock::now();
+
+#ifdef HAVE_GPERFTOOLS
+      ProfilerStop();
+#endif
 
       out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
                                              << bicg2.iterations();
@@ -623,7 +637,7 @@ public:
     helper_operator(Gdense, Gmatrix, phi, Gdense_test, phi_test, max_iter,
                     Nbuffer, out, 0);
 
-    if (D < 4) {
+    if (D < 1) {
       const size_t n_subdomain = std::pow(Order, D);
       const int Nbuffer = 4 * n_subdomain;
 
@@ -704,7 +718,7 @@ public:
     const size_t Ntest = 1000;
     const double jitter = 1e-5;
 
-    for (int N = 1000; N < 30000; N *= 2) {
+    for (int N = 8000; N < 30000; N *= 2) {
       for (double sigma = 0.9; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
         for (size_t n_subdomain = 50; n_subdomain < 400; n_subdomain += 100) {

@@ -497,17 +497,16 @@ public:
                                     vdouble2::Constant(false), nbucket);
 
     auto query = particles.get_query();
-    int count_cells = 0;
-    int count_levels = 1;
     auto i = query.breadth_first();
+    int count_levels = 1;
+    bool tree = false;
     for (; i != false; ++i) {
-      count_cells += (*i).size();
+      tree = true;
       ++count_levels;
     }
 
-    // check that total number of buckets and levels are correct
-    TS_ASSERT_EQUALS(count_cells, query.number_of_buckets());
-    TS_ASSERT_EQUALS(count_levels, query.number_of_levels());
+    // check that total number of levels are correct
+    TS_ASSERT_EQUALS(count_levels, query.number_of_levels() + (tree ? 1 : 0));
 
     // check that remains are all leafs
     for (auto ci : *i) {
@@ -543,6 +542,46 @@ public:
     TS_ASSERT_EQUALS(count_cells, query.number_of_buckets());
   }
 
+  template <template <typename, typename> class Vector,
+            template <typename> class SearchMethod>
+  void helper_dummy_root() {
+    using Particles_t = Particles<std::tuple<>, 2, Vector, SearchMethod>;
+    using position = typename Particles_t::position;
+
+    const int N = 10;
+    const int nbucket = 5;
+    Particles_t particles(N);
+    std::normal_distribution<double> normal(0.5, 0.2);
+    for (size_t i = 0; i < particles.size(); ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] = vdouble2(normal(gen), normal(gen));
+    }
+    particles.init_neighbour_search(vdouble2::Constant(0),
+                                    vdouble2::Constant(1),
+                                    vdouble2::Constant(false), nbucket);
+
+    auto query = particles.get_query();
+    auto root = query.get_root();
+    for (int i = 0; i < 2; ++i) {
+      auto bounds = query.get_bounds(root);
+      TS_ASSERT_EQUALS(bounds.bmin[i], 0);
+      TS_ASSERT_EQUALS(bounds.bmax[i], 1);
+    }
+    auto child_from_root = query.get_children(root);
+    auto child = query.get_children();
+    for (; child != false; ++child, ++child_from_root) {
+      TS_ASSERT_EQUALS(child_from_root, child);
+      auto bounds_from_root = query.get_bounds(child_from_root);
+      auto bounds = query.get_bounds(child);
+      for (int i = 0; i < 2; ++i) {
+        TS_ASSERT_EQUALS(bounds_from_root.bmin[i], bounds.bmin[i]);
+        TS_ASSERT_EQUALS(bounds_from_root.bmax[i], bounds.bmax[i]);
+      }
+    }
+    ++root;
+    TS_ASSERT_EQUALS(root, false);
+  }
+
   void test_visualise_data_structures() {
     draw_data_structure<CellList>();
     draw_data_structure<CellListOrdered>();
@@ -575,6 +614,15 @@ public:
     helper_depth_first_iterator<std::vector, KdtreeNanoflann>();
     std::cout << "df-search HyperOctree" << std::endl;
     helper_depth_first_iterator<std::vector, HyperOctree>();
+  }
+
+  void test_dummy_root() {
+    std::cout << "root Kdtree" << std::endl;
+    helper_dummy_root<std::vector, Kdtree>();
+    std::cout << "root KdtreeNanoflann" << std::endl;
+    helper_dummy_root<std::vector, KdtreeNanoflann>();
+    std::cout << "root HyperOctree" << std::endl;
+    helper_dummy_root<std::vector, HyperOctree>();
   }
 
   void test_CellList() {

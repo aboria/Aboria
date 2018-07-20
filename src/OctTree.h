@@ -625,6 +625,10 @@ public:
   CUDA_HOST_DEVICE
   box_type get_bounds() const {
     box_type ret = m_bounds;
+    if (*m_index == 0) {
+      // if root we are done
+      return ret;
+    }
     for (size_t i = 0; i < D; ++i) {
       if (is_high(i)) {
         ret.bmin[i] = 0.5 * (ret.bmax[i] + ret.bmin[i]);
@@ -743,6 +747,7 @@ template <typename Traits> struct HyperOctreeQuery {
 
   vint2 *m_leaves_begin;
   int *m_nodes_begin;
+  int m_dummy_root{0};
 
   size_t *m_id_map_key;
   size_t *m_id_map_value;
@@ -780,6 +785,16 @@ template <typename Traits> struct HyperOctreeQuery {
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   static bool is_tree() { return true; }
+
+  ///
+  /// @copydoc NeighbourQueryBase::get_root() const
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  child_iterator get_root() const {
+    const int inc = (1 << dimension) - 1;
+    return child_iterator(&m_dummy_root - inc, m_bounds) + inc;
+  }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE

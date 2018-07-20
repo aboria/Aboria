@@ -1039,9 +1039,9 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   ///
   /// CellList is not a proper tree structure, so will return false always
   ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  CUDA_HOST_DEVICE
-  static bool is_tree() { return false; }
+  ABORIA_HOST_DEVICE_IGNORE_WARN CUDA_HOST_DEVICE static bool is_tree() {
+    return false;
+  }
 
   ///
   /// @copydoc NeighbourQueryBase::get_children()
