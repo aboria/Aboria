@@ -418,6 +418,7 @@ public:
           bicg2;
       bicg2.setMaxIterations(max_iter);
       bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+      bicg2.preconditioner().set_multiplicative(true);
       // bicg2.preconditioner().set_decimate_factor(2);
       t0 = Clock::now();
       bicg2.compute(G);
@@ -705,7 +706,8 @@ public:
 #endif // HAVE_EIGEN
   }
 
-  template <typename Kernel> void helper_param_sweep_per_kernel(const int minN) {
+  template <typename Kernel>
+  void helper_param_sweep_per_kernel(const int minN) {
     Kernel kernel;
 
     std::cout << "-------------------------------------------\n"
@@ -722,18 +724,21 @@ public:
       for (double sigma = 0.1; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
         for (size_t n_subdomain = 50; n_subdomain < 400; n_subdomain += 100) {
-          helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
-          helper_param_sweep<2>(rosenbrock<10>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
-          helper_param_sweep<2>(rosenbrock<8>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
-          helper_param_sweep<3>(rosenbrock<5>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
-          helper_param_sweep<4>(rosenbrock<4>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
+          /*
+        helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
+                              n_subdomain, out);
+        helper_param_sweep<2>(rosenbrock<10>(N, Ntest), Ntest, kernel, jitter,
+                              n_subdomain, out);
+        helper_param_sweep<2>(rosenbrock<8>(N, Ntest), Ntest, kernel, jitter,
+                              n_subdomain, out);
+        helper_param_sweep<3>(rosenbrock<5>(N, Ntest), Ntest, kernel, jitter,
+                              n_subdomain, out);
+        helper_param_sweep<4>(rosenbrock<4>(N, Ntest), Ntest, kernel, jitter,
+                              n_subdomain, out);
+                              */
           helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
+          /*
           helper_param_sweep<5>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
           helper_param_sweep<4>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
@@ -746,13 +751,16 @@ public:
                                 n_subdomain, out);
           helper_param_sweep<10>(rosenbrock<1>(N, Ntest), Ntest, kernel, jitter,
                                  n_subdomain, out);
+                                 */
         }
       }
     }
   }
 
-  void test_gaussian(void) { helper_param_sweep_per_kernel<gaussian_kernel>(1000); }
-  void test_matern(void) { helper_param_sweep_per_kernel<matern_kernel>(1000); }
+  void test_gaussian(void) {
+    helper_param_sweep_per_kernel<gaussian_kernel>(8000);
+  }
+  void test_matern(void) { helper_param_sweep_per_kernel<matern_kernel>(4000); }
   void test_exponential(void) {
     helper_param_sweep_per_kernel<exponential_kernel>(1000);
   }
