@@ -1187,6 +1187,9 @@ private:
   solvers_type m_factorized_matrix[2];
   matrices_type m_matrix[2];
   matrices_type m_coupling_matrix[2];
+  matrix_type m_A;
+  bool m_multiplicitive;
+  int m_levels;
 
   Index m_rows;
   Index m_cols;
@@ -1198,7 +1201,9 @@ public:
     MaxColsAtCompileTime = Eigen::Dynamic
   };
 
-  SchwartzPreconditioner() : m_isInitialized(false), m_max_buffer_n(300) {}
+  SchwartzPreconditioner()
+      : m_isInitialized(false), m_max_buffer_n(300), m_multiplicitive(false),
+        m_levels(1) {}
 
   template <typename MatType>
   explicit SchwartzPreconditioner(const MatType &mat) {
@@ -1209,6 +1214,8 @@ public:
   Index cols() const { return m_cols; }
 
   void set_max_buffer_n(size_t arg) { m_max_buffer_n = arg; }
+  void set_multiplicative(bool arg) { m_multiplicitive = arg; }
+  void set_levels(int arg) { m_levels = arg; }
 
   template <typename MatType>
   SchwartzPreconditioner &analyzePattern(const MatType &mat) {
@@ -1474,7 +1481,7 @@ public:
     // decltype(leaf_nodes) coarse_nodes = df_search.previous();
     decltype(leaf_nodes) both_nodes[2] = {leaf_nodes, coarse_nodes};
 
-    for (int i = 0; i < 2; ++i) {
+    for (int i = 0; i < std::min(m_levels, 2); ++i) {
       auto &indicies = m_indicies[i];
       auto &buffer = m_buffer[i];
       auto &matrix = m_matrix[i];
@@ -1510,8 +1517,8 @@ public:
                 iterator_to_raw_pointer(tmp_buffer.begin()),
                 iterator_to_raw_pointer(tmp_matrix.begin()),
                 iterator_to_raw_pointer(tmp_coupling_matrix.begin()),
-                m_max_buffer_n + i * m_max_buffer_n, start_row,
-                kernel.get_kernel_function(), query, i, nodes.size() == 1});
+                m_max_buffer_n, start_row, kernel.get_kernel_function(), query,
+                i, nodes.size() == 1});
 
         detail::copy(tmp_indicies.begin(), tmp_indicies.end(),
                      indicies.begin());
@@ -1530,8 +1537,8 @@ public:
                 iterator_to_raw_pointer(buffer.begin()),
                 iterator_to_raw_pointer(matrix.begin()),
                 iterator_to_raw_pointer(coupling_matrix.begin()),
-                m_max_buffer_n + i * m_max_buffer_n, start_row,
-                kernel.get_kernel_function(), query, i, nodes.size() == 1});
+                m_max_buffer_n, start_row, kernel.get_kernel_function(), query,
+                i, nodes.size() == 1});
       }
 
       // factorize domain matrices
@@ -1562,7 +1569,12 @@ public:
     m_cols = mat.cols();
     factorize_impl(mat, detail::make_index_sequence<NI>());
 
-    for (int i = 0; i < 2; ++i) {
+    if (m_multiplicitive) {
+      m_A.resize(mat.rows(), mat.cols());
+      mat.assemble(m_A);
+    }
+
+    for (int i = 0; i < std::min(m_levels, 2); ++i) {
       auto min_indicies = detail::transform_reduce(
           m_indicies[i].begin(), m_indicies[i].end(), detail::get_size(),
           std::numeric_limits<size_t>::max(), detail::min());
@@ -1587,7 +1599,8 @@ public:
                  << i << " found " << m_indicies[i].size() << " domains, with "
                  << min_indicies << "--" << max_indicies << " particles ("
                  << count << " total), and " << min_buffer << "--" << max_buffer
-                 << " buffer particles.");
+                 << " buffer particles. kernel matrix is size (" << m_A.rows()
+                 << ',' << m_A.cols() << ')');
     }
 
     m_isInitialized = true;
@@ -1686,21 +1699,43 @@ public:
   template <typename Rhs, typename Dest>
   void _solve_impl(const Rhs &b, Dest &x) const {
 
-    x.setZero();
+    if (m_multiplicitive && m_levels > 1) {
+      x.setZero();
+      vector_type b_copy = b;
 
-    for (int i = 0; i < 2; ++i) {
-      solve_domain<Rhs, Dest> fsolve_domain{
-          iterator_to_raw_pointer(m_indicies[i].begin()),
-          iterator_to_raw_pointer(m_buffer[i].begin()),
-          iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
-          iterator_to_raw_pointer(m_coupling_matrix[i].begin()),
-          x,
-          b,
-          i,
-          m_indicies[i].size() == 1};
+      for (int i = 0; i < std::min(m_levels, 2); ++i) {
+        solve_domain<Rhs, Dest> fsolve_domain{
+            iterator_to_raw_pointer(m_indicies[i].begin()),
+            iterator_to_raw_pointer(m_buffer[i].begin()),
+            iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
+            iterator_to_raw_pointer(m_coupling_matrix[i].begin()),
+            x,
+            b_copy,
+            i,
+            m_indicies[i].size() == 1};
 
-      auto count = boost::make_counting_iterator(0);
-      detail::for_each(count, count + m_indicies[i].size(), fsolve_domain);
+        auto count = boost::make_counting_iterator(0);
+        detail::for_each(count, count + m_indicies[i].size(), fsolve_domain);
+
+        b_copy = b - m_A * x;
+      }
+    } else {
+      x.setZero();
+
+      for (int i = 0; i < std::min(m_levels, 2); ++i) {
+        solve_domain<Rhs, Dest> fsolve_domain{
+            iterator_to_raw_pointer(m_indicies[i].begin()),
+            iterator_to_raw_pointer(m_buffer[i].begin()),
+            iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
+            iterator_to_raw_pointer(m_coupling_matrix[i].begin()),
+            x,
+            b,
+            i,
+            m_indicies[i].size() == 1};
+
+        auto count = boost::make_counting_iterator(0);
+        detail::for_each(count, count + m_indicies[i].size(), fsolve_domain);
+      }
     }
   }
 

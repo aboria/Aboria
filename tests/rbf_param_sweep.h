@@ -418,6 +418,7 @@ public:
           bicg2;
       bicg2.setMaxIterations(max_iter);
       bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+      bicg2.preconditioner().set_multiplicative(true);
       // bicg2.preconditioner().set_decimate_factor(2);
       t0 = Clock::now();
       bicg2.compute(G);
@@ -735,6 +736,7 @@ public:
           helper_param_sweep<4>(rosenbrock<4>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
                                 */
+
           helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
           /*
