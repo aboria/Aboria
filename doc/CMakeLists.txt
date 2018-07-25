@@ -34,20 +34,20 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/H2Lib.h
     )
 
-  add_reference(libaboria.xml ${ABORIA_HEADERS} 
-      DOXYGEN 
+  add_reference(libaboria.xml ${ABORIA_HEADERS}
+      DOXYGEN
       MACRO_EXPANSION=YES
       EXPAND_ONLY_PREDEF=YES
-      EXTRACT_ALL=YES 
-      EXTRACT_PRIVATE=YES 
+      EXTRACT_ALL=YES
+      EXTRACT_PRIVATE=YES
       EXTRACT_STATIC=YES
       TAB_SIZE=4
       PREDEFINED="BOOST_COMPUTE_DOXYGEN_INVOKED\" \\ \"HAVE_EIGEN\" \\ \" HAVE_THRUST\" \\ \"HAVE_H2LIB\" \\ \"HAVE_VTK\" \\ \"CUDA_HOST_DEVICE=\" \\ \"ABORIA_HOST_DEVICE_IGNORE_WARN="
-      EXPAND_AS_DEFINED=UFUNC 
+      EXPAND_AS_DEFINED=UFUNC
       EXPAND_AS_DEFINED="COMPOUND_ASSIGN\" \"COMPARISON\" \"OPERATOR\" \"UNARY_OPERATOR\" \"ABORIA_UNARY_FUNCTION\" \"ABORIA_BINARY_FUNCTION"
-      BOOSTBOOK 
+      BOOSTBOOK
       boost.doxygen.reftitle="libaboria")
-  
+
 
     set(QBK_SOURCES
         aboria.qbk
@@ -64,6 +64,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         ../tests/operators.h
         ../tests/neighbours.h
         ../tests/data_structures.h
+        ../tests/symbolic.h
         ../tests/md.h
         ../tests/bd.h
         ../tests/dem.h
@@ -88,12 +89,12 @@ MathJax.Hub.Config({
     inlineMath: [['$','$'], ['\\\\(','\\\\)']],
     processEscapes: true
     },
-  TeX: { 
-    extensions: [\"AMSmath.js\", \"AMSsymbols.js\"] 
+  TeX: {
+    extensions: [\"AMSmath.js\", \"AMSsymbols.js\"]
     }
 });
 </script>
-<script type=\"text/javascript\" 
+<script type=\"text/javascript\"
   src=\"https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML\">
 </script>
 ")

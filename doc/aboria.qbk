@@ -1,10 +1,10 @@
 [article Aboria
-    [quickbook 1.6]
-    [version 0.7]
-    [id aboria]
-    [copyright 2015-2018 Martin Robinson]
-    [authors [Robinson, Martin]]
-    [source-mode c++]
+[quickbook 1.6]
+[version 0.7]
+[id aboria]
+[copyright 2015-2018 Martin Robinson]
+[authors [Robinson, Martin]]
+[source-mode c++]
 ]
 
 [def __aboria__ [@https://github.com/martinjrobins/Aboria Aboria]]
@@ -35,7 +35,8 @@
 [import ../tests/operators.h]
 [operators]
 
-[include symbolic.qbk]
+[import ../tests/symbolic.h]
+[symbolic]
 
 [include examples.qbk]
 [include benchmarks.qbk]

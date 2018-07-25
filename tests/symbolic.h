@@ -44,6 +44,260 @@ using namespace Aboria;
 
 class SymbolicTest : public CxxTest::TestSuite {
 public:
+  void test_documentation(void) {
+    ABORIA_VARIABLE(flag, uint8_t, "my flag");
+    size_t N = 100;
+    typedef Particles<std::tuple<flag>> Particles_t;
+    typedef typename Particles_t::position position;
+    Particles_t particles(N);
+
+    std::uniform_real_distribution<double> uniform(0, 1);
+    for (size_t i = 0; i < N; ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] =
+          vdouble3(uniform(gen), uniform(gen), uniform(gen));
+    }
+
+    particles.init_neighbour_search(vdouble3::Constant(0),
+                                    vdouble3::Constant(1),
+                                    vdouble3::Constant(false));
+
+    //[symbolic
+    /*`
+
+    [section Symbolic Expressions]
+
+    [section Setup]
+    To start using symbolic expressions, you first need to define a set of
+    symbols to represent your variables, as well as labels to represent your
+    particle set(s).
+
+    A symbol representing each particle's `position` is defined as
+    */
+
+    Symbol<position> p;
+
+    /*`
+    A symbol representing the variable `alive` is defined as
+    */
+
+    Symbol<alive> _alive;
+
+    /*`
+    A label representing the particle set `particles` with type `MyParticles` is
+    defined as
+    */
+
+    Label<0, Particles_t> a(particles);
+    Label<1, Particles_t> b(particles);
+
+    /*`
+    The first template argument is the *id* of the label, and the second is the
+    type of the particle set label refers to. Note that the type of each label
+    must be unique, as this type is used to determine which particle you mean
+    when using the label within expressions. You can use the *id* template
+    argument to ensure that each label type is unique.
+
+    Labels refer to a specific particle set. For example, given a bivariate
+    neighbour expression involving two particles from `particles`, the label `a`
+    defined above would refer to the first particle, and `b` would refer to the
+    second. Note that the result values of a bivariate expression will form a
+    matrix of values, with particle `a` corresponding to the row of the matrix,
+    and particle `b` corresponding to the column.
+
+    [endsect]
+
+    [section Constant Expressions]
+
+    Now we have defined our labels and symbols, we can create a simple
+    expression to set the position of all particles to `double3(0,0,1)`
+    */
+
+    p[a] = vdouble3(0, 0, 1);
+
+    /*`
+    If we want to add `1` to every particle position, we can use an increment
+    expression
+    */
+
+    p[a] += 1;
+
+    /*`
+    A special case involves the `alive` variable flag. If we use our `_alive`
+    symbol to set all the alive flag's to `false` like so
+    */
+
+    _alive[a] = false;
+
+    /*`
+    Then after the expression is complete Aboria will call the [memberref
+    Aboria::Particles::delete_particles delete_particles] member function to
+    delete all the particles with `get<alive>(particle) == false` (i.e. all of
+    them). After this expression the particle container will be empty.
+
+    [endsect]
+
+
+    [section Univariate Expressions]
+
+    Single-particle dependent expressions can easily be built by using a single
+    label on the RHS of the expression. For example we can also add a constant
+    value `1` to each particle position like so
+    */
+
+    p[a] = p[a] + 1;
+
+    /*`
+    Or we can use a flag variable `flag`, along with its symbol `f`, so define
+    two sets of particles within the same container and only change the particle
+    position if `get<flag>(particle) == true`. Recall that we can't use boolean
+    flags so we can instead use a `uint8_t` datatype. For example
+
+    ``
+    ABORIA_VARIABLE(flag,uint8_t,"my flag");
+
+    // create particle container and set flags and positions here
+    ``
+
+    */
+
+    Symbol<flag> f;
+    p[a] = if_else(f[a], p[a] + 1, p[a]);
+
+    /*`
+    We can even selectively delete particle using our `f` and `_alive` symbols.
+    */
+
+    _alive[a] = if_else(f[a], true, false);
+
+    /*`
+    [endsect]
+
+    [section Bivariate Expressions]
+
+    So far we have used constant or univariate expressions on the RHS of an
+    assignment operator. This makes sense because we can only assign an
+    expression to a single particle if that expression depends on a constant or
+    that particle's variables. However, we might also want our expression to
+    depend on the other particles in the container, or another container. In
+    this case we wish to use a bivariate expression. For example, the following
+    equation defined a sum over all other particles (with label `b`), using the
+    function `w`, which depends on the separation of particle `a` and `b`.
+
+    $$
+    p_a = \sum_b w(p_b-p_a)
+    $$
+
+    Normally for a bivariate expression we wish to accumulate the contribution
+    from other particles in order to arrive at a result. This is most often done
+    with a summation. In Aboria, we can define an accumulator object, which
+    takes a single template argument which is the function or functor to
+    accumulate with. For example, the following defines a summation accumulator
+    using `std::plus`
+    */
+
+    Accumulate<std::plus<vdouble3>> sum;
+
+    /*`
+    Once we have this summation accumulator, we can write an expression similar
+    to the equation above like so, using $w(p_b) = (p_b - p_a)$.Note that the
+    first argument to `sum` is set to `true`, indicating the summation is over
+*all* particles in label `b`.
+*/
+
+    p[a] = sum(b, p[b] - p[a]);
+
+    /*`
+     We might also want to sum the inverse distance between particle pairs,
+     like so
+     */
+
+    p[a] = sum(b, 1.0 / (p[b] - p[a]));
+
+    /*`
+    Unfortunately if `a` and `b` refer to the same particle container this will
+    result a divide-by-zero at runtime, when  `a` and `b` are labels for the
+    same particle. Therefore we can restrict the evaluation of the sum by
+    setting the second argument to ensure that the `id` of particles `a` and `b`
+    are non-identical. Recall that `id` is a built-in variable that contains a
+    unique id for each particle in the container.
+    */
+
+    Symbol<id> _id;
+    p[a] = sum(b, if_else(_id[a] != _id[b], 1.0, 0.0) / (p[b] - p[a]));
+
+    /*`
+    So the first argument to `sum` is the label to sum over, the second is the
+    conditional expression that must evaluate to `true` to be included in the
+    summation, and the third is an expression that provides the value to be
+    included in the summation.
+
+    There is a special case for the conditional expression, when you want to sum
+    over all particles within a certain radius. This can be expressed using the
+    Aboria::AccumulateWithinDistance summation
+    */
+
+    AccumulateWithinDistance<std::plus<vdouble3>> sum_within_two(2);
+    auto dx = create_dx(a, b);
+    p[a] = sum_within_two(b, dx / pow(norm(dx), 2));
+
+    /*`
+    where `dx` is a [classref Aboria::Dx Dx] symbol representing the
+    *shortest* vector from `b` to `a`. Note that this might be different
+    from `p[a]-p[b]` for periodic domains. The symbolic function
+    [functionref Aboria::norm norm] returns the 2-norm, or magnitude, of the
+    vector `dx`, and the symbolic function [functionref Aboria::pow pow]
+    returns the first argument to the power of the second (in much the same
+    way as std::pow, but lazily evaluated).
+
+    In this case Aboria will perform a summation over neighbours closer
+    than a radius of 2, and will use the neighbourhood searching facility
+    described in [link aboria.neighbourhood_searching] to find these
+    neighbouring particles. Note that you need to call [memberref
+    Aboria::Particles::init_neighbour_search] before any bivariate
+    expressions using neighbourhood searching.
+
+        As another, more complete example, we can use the
+    neighbourhood-searching expressions to count the number of particles
+    within a distance of `2` of each individual particle, storing the result
+    in a variable called `count`.
+    */
+
+    ABORIA_VARIABLE(count, int, "number of surrounding particles")
+    typedef Particles<std::tuple<count>> MyParticles;
+    typedef MyParticles::position position_t;
+
+    // add some particles
+    MyParticles particles2(N);
+
+    std::uniform_real_distribution<double> uni(0, 1);
+    for (size_t i = 0; i < N; ++i) {
+      auto &gen = get<generator>(particles2)[i];
+      get<position_t>(particles2)[i] = vdouble3(uni(gen), uni(gen), uni(gen));
+    }
+
+    // initialise neighbour searching
+    particles2.init_neighbour_search(
+        vdouble3::Constant(0), vdouble3::Constant(1), vbool3::Constant(false));
+
+    // define symbols and labels, and sum
+    Symbol<count> c;
+    Label<0, MyParticles> i(particles2);
+    Label<1, MyParticles> j(particles2);
+    AccumulateWithinDistance<std::plus<int>> neighbour_sum(2);
+    auto dx_ij = create_dx(i, j);
+
+    // count neighbouring particles within a distance of 2
+    c[i] = neighbour_sum(j, 1);
+
+    /*`
+    [endsect]
+    [endsect]
+     */
+
+    //]
+  }
+
   void helper_create_double_vector(void) {
     ABORIA_VARIABLE(scalar, double, "scalar")
     typedef Particles<std::tuple<scalar>> ParticlesType;

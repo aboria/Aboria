@@ -193,7 +193,7 @@ template <typename labels_type, typename dx_type> struct EvalCtx {
 #ifdef HAVE_OPENMP
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < particles.size(); ++i) {
+    for (size_t i = 0; i < particles.size(); ++i) {
       const auto &p = particles[i];
       auto new_labels = fusion::make_map<label_type>(p);
       EvalCtx<decltype(new_labels), decltype(ctx.m_dx)> const new_ctx(
