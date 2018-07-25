@@ -14,8 +14,8 @@ MathJax.Hub.Config({
     inlineMath: [['$','$'], ['\\(','\\)']],
     processEscapes: true
     },
-  TeX: { 
-    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
     }
 });
 </script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
@@ -52,7 +52,7 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">bool_d</span>                                                        <a name="Aboria.CellListOrderedQuery.bool_d"></a><span class="identifier">bool_d</span><span class="special">;</span>           
   <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">int_d</span>                                                         <a name="Aboria.CellListOrderedQuery.int_d"></a><span class="identifier">int_d</span><span class="special">;</span>            
   <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">unsigned_int_d</span>                                                <a name="Aboria.CellListOrderedQuery.unsigned_int_d"></a><span class="identifier">unsigned_int_d</span><span class="special">;</span>   
-  <span class="keyword">typedef</span> <a class="link" href="lattice__idp46391699402896.html" title="Class template lattice_iterator_within_distance">lattice_iterator_within_distance</a><span class="special">&lt;</span> <a class="link" href="CellListOrderedQuery.html" title="Struct template CellListOrderedQuery">CellListOrderedQuery</a><span class="special">,</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> <a name="Aboria.CellListOrderedQuery.query_iterator"></a><span class="identifier">query_iterator</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <a class="link" href="lattice__idp47236267014432.html" title="Class template lattice_iterator_within_distance">lattice_iterator_within_distance</a><span class="special">&lt;</span> <a class="link" href="CellListOrderedQuery.html" title="Struct template CellListOrderedQuery">CellListOrderedQuery</a><span class="special">,</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> <a name="Aboria.CellListOrderedQuery.query_iterator"></a><span class="identifier">query_iterator</span><span class="special">;</span>   
   <span class="keyword">typedef</span> <a class="link" href="lattice_iterator.html" title="Class template lattice_iterator">lattice_iterator</a><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span>                                         <a name="Aboria.CellListOrderedQuery.all_iterator"></a><span class="identifier">all_iterator</span><span class="special">;</span>     
   <span class="keyword">typedef</span> <a class="link" href="lattice_iterator.html" title="Class template lattice_iterator">lattice_iterator</a><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span>                                         <a name="Aboria.CellListOrderedQuery.child_iterator"></a><span class="identifier">child_iterator</span><span class="special">;</span>   
   <span class="keyword">typedef</span> <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="number">2</span> <span class="special">&gt;</span><span class="special">::</span><span class="identifier">reference</span>                                        <a name="Aboria.CellListOrderedQuery.reference"></a><span class="identifier">reference</span><span class="special">;</span>        
@@ -62,39 +62,39 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span>                                                     <a name="Aboria.CellListOrderedQuery.box_type"></a><span class="identifier">box_type</span><span class="special">;</span>         
 
   <span class="comment">// <a class="link" href="CellListOrderedQuery.html#Aboria.CellListOrderedQueryconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="CellListOrderedQuery.html#idp46391697723744-bb"><span class="identifier">CellListOrderedQuery</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="CellListOrderedQuery.html#idp47236265335280-bb"><span class="identifier">CellListOrderedQuery</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="CellListOrderedQuery.html#idp46391697663024-bb">public member functions</a></span>
-  <span class="identifier">raw_pointer</span> <a class="link" href="CellListOrderedQuery.html#idp46391697663424-bb"><span class="identifier">find</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">child_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp46391697667024-bb"><span class="identifier">get_children</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">child_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp46391697669200-bb"><span class="identifier">get_children</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp46391697672896-bb"><span class="identifier">num_children</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">box_type</span> <a class="link" href="CellListOrderedQuery.html#idp46391697674176-bb"><span class="identifier">get_bounds</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp46391697677440-bb"><span class="identifier">get_bounds</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp46391697680016-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">particle_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp46391697681280-bb"><span class="identifier">get_bucket_particles</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <a class="link" href="CellListOrderedQuery.html#idp46391697684128-bb"><span class="identifier">get_bucket_bbox</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">child_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp46391697686528-bb"><span class="identifier">get_bucket</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp46391697690640-bb"><span class="identifier">get_bucket_index</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="CellListOrderedQuery.html#idp47236265274560-bb">public member functions</a></span>
+  <span class="identifier">raw_pointer</span> <a class="link" href="CellListOrderedQuery.html#idp47236265274960-bb"><span class="identifier">find</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">child_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp47236265278560-bb"><span class="identifier">get_children</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">child_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp47236265280736-bb"><span class="identifier">get_children</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp47236265284432-bb"><span class="identifier">num_children</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">box_type</span> <a class="link" href="CellListOrderedQuery.html#idp47236265285712-bb"><span class="identifier">get_bounds</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp47236265288976-bb"><span class="identifier">get_bounds</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp47236265291552-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">particle_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp47236265292816-bb"><span class="identifier">get_bucket_particles</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <a class="link" href="CellListOrderedQuery.html#idp47236265295664-bb"><span class="identifier">get_bucket_bbox</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">child_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp47236265298064-bb"><span class="identifier">get_bucket</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp47236265302176-bb"><span class="identifier">get_bucket_index</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber <span class="special">=</span> <span class="special">-</span><span class="number">1</span><span class="special">&gt;</span> 
     <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
-    <a class="link" href="CellListOrderedQuery.html#idp46391697693040-bb"><span class="identifier">get_buckets_near_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <a class="link" href="CellListOrderedQuery.html#idp47236265304576-bb"><span class="identifier">get_buckets_near_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
   <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber <span class="special">=</span> <span class="special">-</span><span class="number">1</span><span class="special">&gt;</span> 
     <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
-    <a class="link" href="CellListOrderedQuery.html#idp46391697700928-bb"><span class="identifier">get_buckets_near_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">int_d</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp46391697708816-bb"><span class="identifier">get_end_bucket</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">all_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp46391697710096-bb"><span class="identifier">get_subtree</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">all_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp46391697713392-bb"><span class="identifier">get_subtree</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp46391697715184-bb"><span class="identifier">number_of_buckets</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp46391697716480-bb"><span class="identifier">number_of_particles</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp46391697717776-bb"><span class="identifier">get_particles_begin</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp46391697719552-bb"><span class="identifier">get_particles_begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">unsigned</span> <a class="link" href="CellListOrderedQuery.html#idp46391697721328-bb"><span class="identifier">number_of_levels</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <a class="link" href="CellListOrderedQuery.html#idp47236265312464-bb"><span class="identifier">get_buckets_near_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">int_d</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp47236265320352-bb"><span class="identifier">get_end_bucket</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">all_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp47236265321632-bb"><span class="identifier">get_subtree</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">all_iterator</span> <a class="link" href="CellListOrderedQuery.html#idp47236265324928-bb"><span class="identifier">get_subtree</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp47236265326720-bb"><span class="identifier">number_of_buckets</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp47236265328016-bb"><span class="identifier">number_of_particles</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp47236265329312-bb"><span class="identifier">get_particles_begin</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a class="link" href="CellListOrderedQuery.html#idp47236265331088-bb"><span class="identifier">get_particles_begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">unsigned</span> <a class="link" href="CellListOrderedQuery.html#idp47236265332864-bb"><span class="identifier">number_of_levels</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="CellListOrderedQuery.html#idp46391697723872-bb">public static functions</a></span>
-  <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="CellListOrderedQuery.html#idp46391697724272-bb"><span class="identifier">is_leaf_node</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="CellListOrderedQuery.html#idp46391697729440-bb"><span class="identifier">is_tree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">static</span> <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp46391697733040-bb"><span class="identifier">num_children</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="CellListOrderedQuery.html#idp47236265335408-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="CellListOrderedQuery.html#idp47236265335808-bb"><span class="identifier">is_leaf_node</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="CellListOrderedQuery.html#idp47236265340976-bb"><span class="identifier">is_tree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="identifier">size_t</span> <a class="link" href="CellListOrderedQuery.html#idp47236265344576-bb"><span class="identifier">num_children</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="identifier">dimension</span><span class="special">;</span>
@@ -112,7 +112,7 @@ MathJax.Hub.Config({
   <span class="identifier">size_t</span> <span class="special">*</span> <span class="identifier">m_id_map_value</span><span class="special">;</span>  <span class="comment">// a pointer to the "value" values of the find-by-id map </span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47006884165936"></a><h2>Description</h2>
+<a name="idp46469549351200"></a><h2>Description</h2>
 <p>This object is designed to be used within algorithms or gpu kernels, and can be obtained from a <a class="link" href="Particles.html" title="Class template Particles">Particles</a> type using the Particles::get_query() function</p>
 <pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">query</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="identifier">std</span><span class="special">::</span><span class="identifier">for_each</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">,</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">,</span> <span class="special">[</span><span class="special">&amp;</span><span class="special">]</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
@@ -137,25 +137,25 @@ MathJax.Hub.Config({
 <p>
 </p>
 <div class="refsect2">
-<a name="idp47006884256496"></a><h3>Template Parameters</h3>
+<a name="idp46469549441760"></a><h3>Template Parameters</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
 <pre class="literallayout"><span class="keyword">typename</span> Traits</pre>
 <p>the <code class="computeroutput"><a class="link" href="TraitsCommon.html" title="Struct template TraitsCommon">TraitsCommon</a></code> type </p>
 </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47006884260880"></a><h3>
+<a name="idp46469549446144"></a><h3>
 <a name="Aboria.CellListOrderedQueryconstruct-copy-destruct"></a><code class="computeroutput">CellListOrderedQuery</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46391697723744-bb"></a><span class="identifier">CellListOrderedQuery</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47236265335280-bb"></a><span class="identifier">CellListOrderedQuery</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47006884266752"></a><h3>
-<a name="idp46391697663024-bb"></a><code class="computeroutput">CellListOrderedQuery</code> public member functions</h3>
+<a name="idp46469549452080"></a><h3>
+<a name="idp47236265274560-bb"></a><code class="computeroutput">CellListOrderedQuery</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">raw_pointer</span> <a name="idp46391697663424-bb"></a><span class="identifier">find</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> id<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>implement find-by-id <p>performs a binary search for the id in the map</p>
+<pre class="literallayout"><span class="identifier">raw_pointer</span> <a name="idp47236265274960-bb"></a><span class="identifier">find</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> id<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>implement find-by-id <p>performs a binary search for the id in the map</p>
 <p>
 
 </p>
@@ -186,7 +186,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp46391697667024-bb"></a><span class="identifier">get_children</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>gets all the children of the root node. <p>
+<pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp47236265278560-bb"></a><span class="identifier">get_children</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>gets all the children of the root node. <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -200,7 +200,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp46391697669200-bb"></a><span class="identifier">get_children</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns all the children of the given child_iterator <p>
+<pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp47236265280736-bb"></a><span class="identifier">get_children</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns all the children of the given child_iterator <p>
 
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -230,9 +230,9 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp46391697672896-bb"></a><span class="identifier">num_children</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the number of children of the root node </li>
+<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47236265284432-bb"></a><span class="identifier">num_children</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the number of children of the root node </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">box_type</span> <a name="idp46391697674176-bb"></a><span class="identifier">get_bounds</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the min/max bounds of the given child_iterator <code class="computeroutput">ci</code><p>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">box_type</span> <a name="idp47236265285712-bb"></a><span class="identifier">get_bounds</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the min/max bounds of the given child_iterator <code class="computeroutput">ci</code><p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -246,7 +246,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> <a name="idp46391697677440-bb"></a><span class="identifier">get_bounds</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the min/max bounds of the given child_iterator <code class="computeroutput">ci</code><p>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> <a name="idp47236265288976-bb"></a><span class="identifier">get_bounds</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the min/max bounds of the given child_iterator <code class="computeroutput">ci</code><p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -260,9 +260,9 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp46391697680016-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the periodicity of the domain </li>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp47236265291552-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the periodicity of the domain </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">particle_iterator</span> <a name="idp46391697681280-bb"></a><span class="identifier">get_bucket_particles</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns a particle_iterator range to all the particles within the given bucket <p>
+<pre class="literallayout"><span class="identifier">particle_iterator</span> <a name="idp47236265292816-bb"></a><span class="identifier">get_bucket_particles</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns a particle_iterator range to all the particles within the given bucket <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -285,10 +285,10 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <a name="idp46391697684128-bb"></a><span class="identifier">get_bucket_bbox</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>get min/max bounds of given bucket <code class="computeroutput">bucket</code>
+<pre class="literallayout"><span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <a name="idp47236265295664-bb"></a><span class="identifier">get_bucket_bbox</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>get min/max bounds of given bucket <code class="computeroutput">bucket</code>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp46391697686528-bb"></a><span class="identifier">get_bucket</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>given a <code class="computeroutput">position</code>, returns a <code class="computeroutput">bucket</code> and a min/max <code class="computeroutput">bounds</code><p>
+<pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp47236265298064-bb"></a><span class="identifier">get_bucket</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>given a <code class="computeroutput">position</code>, returns a <code class="computeroutput">bucket</code> and a min/max <code class="computeroutput">bounds</code><p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -311,11 +311,11 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp46391697690640-bb"></a><span class="identifier">get_bucket_index</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns a bucket index/id given a <code class="computeroutput">bucket</code> reference </li>
+<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47236265302176-bb"></a><span class="identifier">get_bucket_index</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns a bucket index/id given a <code class="computeroutput">bucket</code> reference </li>
 <li class="listitem">
 <pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber <span class="special">=</span> <span class="special">-</span><span class="number">1</span><span class="special">&gt;</span> 
   <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
-  <a name="idp46391697693040-bb"></a><span class="identifier">get_buckets_near_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns all the bucket within a distance of a point <p>This function can use multiple p-norm distance types by setting <code class="computeroutput">LNormNumber</code>, and uses a isotropic distance value given by <code class="computeroutput">max_distance</code>. Note that only buckets within the domain are returned, and periodicity is not taken into account</p>
+  <a name="idp47236265304576-bb"></a><span class="identifier">get_buckets_near_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns all the bucket within a distance of a point <p>This function can use multiple p-norm distance types by setting <code class="computeroutput">LNormNumber</code>, and uses a isotropic distance value given by <code class="computeroutput">max_distance</code>. Note that only buckets within the domain are returned, and periodicity is not taken into account</p>
 <p>
 
 </p>
@@ -354,7 +354,7 @@ MathJax.Hub.Config({
 <li class="listitem">
 <pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber <span class="special">=</span> <span class="special">-</span><span class="number">1</span><span class="special">&gt;</span> 
   <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
-  <a name="idp46391697700928-bb"></a><span class="identifier">get_buckets_near_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">,</span> 
+  <a name="idp47236265312464-bb"></a><span class="identifier">get_buckets_near_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">,</span> 
                          <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> max_distance<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns all the bucket within a distance of a point <p>This function can use multiple p-norm distance types by setting <code class="computeroutput">LNormNumber</code>, and uses a isotropic distance value given by <code class="computeroutput">max_distance</code>. Note that only buckets within the domain are returned, and periodicity is not taken into account</p>
 <p>
 
@@ -392,9 +392,9 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">int_d</span> <span class="special">&amp;</span> <a name="idp46391697708816-bb"></a><span class="identifier">get_end_bucket</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>get index of the last bucket in the cell list </li>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">int_d</span> <span class="special">&amp;</span> <a name="idp47236265320352-bb"></a><span class="identifier">get_end_bucket</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>get index of the last bucket in the cell list </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">all_iterator</span> <a name="idp46391697710096-bb"></a><span class="identifier">get_subtree</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return an all_iterator to the entire tree under the given child_iterator <code class="computeroutput">ci</code><p>
+<pre class="literallayout"><span class="identifier">all_iterator</span> <a name="idp47236265321632-bb"></a><span class="identifier">get_subtree</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return an all_iterator to the entire tree under the given child_iterator <code class="computeroutput">ci</code><p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -417,29 +417,29 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">all_iterator</span> <a name="idp46391697713392-bb"></a><span class="identifier">get_subtree</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return an all_iterator to the entire tree data structure <p>Can use this range to loop through all the buckets in the data structure, wether it is a tree or not </p>
+<pre class="literallayout"><span class="identifier">all_iterator</span> <a name="idp47236265324928-bb"></a><span class="identifier">get_subtree</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return an all_iterator to the entire tree data structure <p>Can use this range to loop through all the buckets in the data structure, wether it is a tree or not </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp46391697715184-bb"></a><span class="identifier">number_of_buckets</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return the total number of buckets in the data structure </li>
+<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47236265326720-bb"></a><span class="identifier">number_of_buckets</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return the total number of buckets in the data structure </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp46391697716480-bb"></a><span class="identifier">number_of_particles</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return the total number of particles in the data structure </li>
+<pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47236265328016-bb"></a><span class="identifier">number_of_particles</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>return the total number of particles in the data structure </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a name="idp46391697717776-bb"></a><span class="identifier">get_particles_begin</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>get a pointer to the beginning of the particle container <p>can use this and number_of_particles() to loop through all the particles </p>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a name="idp47236265329312-bb"></a><span class="identifier">get_particles_begin</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>get a pointer to the beginning of the particle container <p>can use this and number_of_particles() to loop through all the particles </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a name="idp46391697719552-bb"></a><span class="identifier">get_particles_begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>get a pointer to the beginning of the particle container <p>can use this and number_of_particles() to loop through all the particles </p>
+<pre class="literallayout"><span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a name="idp47236265331088-bb"></a><span class="identifier">get_particles_begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>get a pointer to the beginning of the particle container <p>can use this and number_of_particles() to loop through all the particles </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">unsigned</span> <a name="idp46391697721328-bb"></a><span class="identifier">number_of_levels</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the number of levels in the tree <p>always 2 for <code class="computeroutput"><a class="link" href="CellListOrdered.html" title="Class template CellListOrdered">CellListOrdered</a></code> </p>
+<pre class="literallayout"><span class="keyword">unsigned</span> <a name="idp47236265332864-bb"></a><span class="identifier">number_of_levels</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the number of levels in the tree <p>always 2 for <code class="computeroutput"><a class="link" href="CellListOrdered.html" title="Class template CellListOrdered">CellListOrdered</a></code> </p>
 </li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47006884468128"></a><h3>
-<a name="idp46391697723872-bb"></a><code class="computeroutput">CellListOrderedQuery</code> public static functions</h3>
+<a name="idp46469549653648"></a><h3>
+<a name="idp47236265335408-bb"></a><code class="computeroutput">CellListOrderedQuery</code> public static functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp46391697724272-bb"></a><span class="identifier">is_leaf_node</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> bucket<span class="special">)</span><span class="special">;</span></pre>given a reference to a bucket, checks if that bucket is a leaf (i.e. does not have any children) <p>
+<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp47236265335808-bb"></a><span class="identifier">is_leaf_node</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">value_type</span> <span class="special">&amp;</span> bucket<span class="special">)</span><span class="special">;</span></pre>given a reference to a bucket, checks if that bucket is a leaf (i.e. does not have any children) <p>
 
 always true for <code class="computeroutput"><a class="link" href="CellListOrdered.html" title="Class template CellListOrdered">CellListOrdered</a></code> </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -472,7 +472,7 @@ always true for <code class="computeroutput"><a class="link" href="CellListOrder
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp46391697729440-bb"></a><span class="identifier">is_tree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp47236265340976-bb"></a><span class="identifier">is_tree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
 <p>
 always false for <code class="computeroutput"><a class="link" href="CellListOrdered.html" title="Class template CellListOrdered">CellListOrdered</a></code> </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
@@ -490,7 +490,7 @@ always false for <code class="computeroutput"><a class="link" href="CellListOrde
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">static</span> <span class="identifier">size_t</span> <a name="idp46391697733040-bb"></a><span class="identifier">num_children</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span><span class="special">;</span></pre>returns the number of children of a given child iterator <code class="computeroutput">ci</code>
+<pre class="literallayout"><span class="keyword">static</span> <span class="identifier">size_t</span> <a name="idp47236265344576-bb"></a><span class="identifier">num_children</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span><span class="special">;</span></pre>returns the number of children of a given child iterator <code class="computeroutput">ci</code>
 </li>
 </ol></div>
 </div>

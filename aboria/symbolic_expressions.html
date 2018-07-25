@@ -14,8 +14,8 @@ MathJax.Hub.Config({
     inlineMath: [['$','$'], ['\\(','\\)']],
     processEscapes: true
     },
-  TeX: { 
-    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
     }
 });
 </script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
@@ -73,8 +73,8 @@ MathJax.Hub.Config({
         with type <code class="computeroutput"><span class="identifier">MyParticles</span></code> is
         defined as
       </p>
-<pre class="programlisting"><span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
-<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
+<pre class="programlisting"><span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span> <span class="identifier">Particles_t</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span> <span class="identifier">Particles_t</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
 </pre>
 <p>
         The first template argument is the <span class="bold"><strong>id</strong></span> of
@@ -104,7 +104,7 @@ MathJax.Hub.Config({
         Now we have defined our labels and symbols, we can create a simple expression
         to set the position of all particles to <code class="computeroutput"><span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">1</span><span class="special">)</span></code>
       </p>
-<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">double3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">1</span><span class="special">);</span>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble3</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
 </pre>
 <p>
         If we want to add <code class="computeroutput"><span class="number">1</span></code> to every
@@ -150,8 +150,8 @@ MathJax.Hub.Config({
 <pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">flag</span><span class="special">,</span><span class="identifier">uint8_t</span><span class="special">,</span><span class="string">"my flag"</span><span class="special">);</span>
 
 <span class="comment">// create particle container and set flags and positions here</span>
-
-<span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">flag</span><span class="special">&gt;</span> <span class="identifier">f</span><span class="special">;</span>
+</pre>
+<pre class="programlisting"><span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">flag</span><span class="special">&gt;</span> <span class="identifier">f</span><span class="special">;</span>
 <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">if_else</span><span class="special">(</span><span class="identifier">f</span><span class="special">[</span><span class="identifier">a</span><span class="special">],</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">+</span> <span class="number">1</span><span class="special">,</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
 </pre>
 <p>
@@ -188,23 +188,22 @@ MathJax.Hub.Config({
         a single template argument which is the function or functor to accumulate
         with. For example, the following defines a summation accumulator using <code class="computeroutput"><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span></code>
       </p>
-<pre class="programlisting"><span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
+<pre class="programlisting"><span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="identifier">vdouble3</span><span class="special">&gt;&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
 </pre>
-<p>
-        Once we have this summation accumulator, we can write an expression similar
-        to the equation above like so, using $w(p_b) = (p_b-p_a)$. Note that the
-        first argument to <code class="computeroutput"><span class="identifier">sum</span></code> is
-        set to <code class="computeroutput"><span class="keyword">true</span></code>, indicating the
-        summation is over <span class="bold"><strong>all</strong></span> particles in label
-        <code class="computeroutput"><span class="identifier">b</span></code>.
-      </p>
-<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="keyword">true</span><span class="special">,</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]-</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
+<pre class="programlisting"><span class="identifier">Once</span> <span class="identifier">we</span> <span class="identifier">have</span> <span class="keyword">this</span> <span class="identifier">summation</span> <span class="identifier">accumulator</span><span class="special">,</span> <span class="identifier">we</span> <span class="identifier">can</span> <span class="identifier">write</span> <span class="identifier">an</span> <span class="identifier">expression</span> <span class="identifier">similar</span>
+<span class="identifier">to</span> <span class="identifier">the</span> <span class="identifier">equation</span> <span class="identifier">above</span> <span class="identifier">like</span> <span class="identifier">so</span><span class="special">,</span> <span class="keyword">using</span> <span class="error">$</span><span class="identifier">w</span><span class="special">(</span><span class="identifier">p_b</span><span class="special">)</span> <span class="special">=</span> <span class="special">(</span><span class="identifier">p_b</span> <span class="special">-</span> <span class="identifier">p_a</span><span class="special">)</span><span class="error">$</span><span class="special">.</span><span class="identifier">Note</span> <span class="identifier">that</span> <span class="identifier">the</span>
+<span class="identifier">first</span> <span class="identifier">argument</span> <span class="identifier">to</span> <span class="error">`</span><span class="identifier">sum</span><span class="error">`</span> <span class="identifier">is</span> <span class="identifier">set</span> <span class="identifier">to</span> <span class="error">`</span><span class="keyword">true</span><span class="error">`</span><span class="special">,</span> <span class="identifier">indicating</span> <span class="identifier">the</span> <span class="identifier">summation</span> <span class="identifier">is</span> <span class="identifier">over</span>
+</pre>
+<div class="itemizedlist"><ul class="itemizedlist" style="list-style-type: disc; "><li class="listitem">
+            all* particles in label <code class="computeroutput"><span class="identifier">b</span></code>.
+          </li></ul></div>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]</span> <span class="special">-</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]);</span>
 </pre>
 <p>
         We might also want to sum the inverse distance between particle pairs, like
         so
       </p>
-<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="keyword">true</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/(</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]-</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]));</span>
+<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="number">1.0</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]</span> <span class="special">-</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]));</span>
 </pre>
 <p>
         Unfortunately if <code class="computeroutput"><span class="identifier">a</span></code> and <code class="computeroutput"><span class="identifier">b</span></code> refer to the same particle container
@@ -216,7 +215,7 @@ MathJax.Hub.Config({
         a unique id for each particle in the container.
       </p>
 <pre class="programlisting"><span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;</span> <span class="identifier">_id</span><span class="special">;</span>
-<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">_id</span><span class="special">[</span><span class="identifier">a</span><span class="special">]!=</span><span class="identifier">_id</span><span class="special">[</span><span class="identifier">b</span><span class="special">],</span> <span class="number">1.0</span><span class="special">/(</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]-</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]));</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">if_else</span><span class="special">(</span><span class="identifier">_id</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">!=</span> <span class="identifier">_id</span><span class="special">[</span><span class="identifier">b</span><span class="special">],</span> <span class="number">1.0</span><span class="special">,</span> <span class="number">0.0</span><span class="special">)</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">p</span><span class="special">[</span><span class="identifier">b</span><span class="special">]</span> <span class="special">-</span> <span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]));</span>
 </pre>
 <p>
         So the first argument to <code class="computeroutput"><span class="identifier">sum</span></code>
@@ -227,10 +226,12 @@ MathJax.Hub.Config({
       </p>
 <p>
         There is a special case for the conditional expression, when you want to
-        sum over all particles within a certain radius. This might be expressed as
+        sum over all particles within a certain radius. This can be expressed using
+        the Aboria::AccumulateWithinDistance summation
       </p>
-<pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">b</span><span class="special">);</span>
-<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+<pre class="programlisting"><span class="identifier">AccumulateWithinDistance</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="identifier">vdouble3</span><span class="special">&gt;&gt;</span> <span class="identifier">sum_within_two</span><span class="special">(</span><span class="number">2</span><span class="special">);</span>
+<span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span> <span class="identifier">b</span><span class="special">);</span>
+<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum_within_two</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">dx</span> <span class="special">/</span> <span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span> <span class="number">2</span><span class="special">));</span>
 </pre>
 <p>
         where <code class="computeroutput"><span class="identifier">dx</span></code> is a <code class="computeroutput"><a class="link" href="../Aboria/Dx.html" title="Struct template Dx">Dx</a></code> symbol representing the <span class="bold"><strong>shortest</strong></span>
@@ -243,45 +244,45 @@ MathJax.Hub.Config({
         lazily evaluated).
       </p>
 <p>
-        In this case Aboria can recognise a summation over neighbours closer than
+        In this case Aboria will perform a summation over neighbours closer than
         a radius of 2, and will use the neighbourhood searching facility described
         in <a class="link" href="neighbourhood_searching.html" title="Neighbourhood Searching">aboria.neighbourhood_searching</a>
-        to find these neighbouring particles. Note that you need to call <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46391699927616-bb">Aboria::Particles::init_neighbour_search</a></code>
+        to find these neighbouring particles. Note that you need to call <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp47236267539152-bb">Aboria::Particles::init_neighbour_search</a></code>
         before any bivariate expressions using neighbourhood searching.
       </p>
-<p>
-        Aboria will also recognise the following as neighbourhood-searching expressions:
-      </p>
-<pre class="programlisting"><span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="number">2</span><span class="special">&gt;</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
-<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;=</span><span class="number">2</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
-<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="number">2</span><span class="special">&gt;=</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
-<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span> <span class="special">&amp;&amp;</span> <span class="identifier">_id</span><span class="special">[</span><span class="identifier">a</span><span class="special">]!=</span><span class="identifier">_id</span><span class="special">[</span><span class="identifier">b</span><span class="special">],</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
-<span class="identifier">p</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span> <span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span> <span class="special">&amp;&amp;</span> <span class="identifier">a_conditional_expression</span><span class="special">,</span> <span class="number">1.0</span><span class="special">/</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">),</span><span class="number">2</span><span class="special">))</span>
+<pre class="programlisting"><span class="identifier">As</span> <span class="identifier">another</span><span class="special">,</span> <span class="identifier">more</span> <span class="identifier">complete</span> <span class="identifier">example</span><span class="special">,</span> <span class="identifier">we</span> <span class="identifier">can</span> <span class="identifier">use</span> <span class="identifier">the</span>
 </pre>
 <p>
-        As another, more complete example, we can use the neighbourhood-searching
-        expressions to count the number of particles within a distance of <code class="computeroutput"><span class="number">2</span></code> of each individual particle, storing the
-        result in a variable called <code class="computeroutput"><span class="identifier">count</span></code>.
+        neighbourhood-searching expressions to count the number of particles within
+        a distance of <code class="computeroutput"><span class="number">2</span></code> of each individual
+        particle, storing the result in a variable called <code class="computeroutput"><span class="identifier">count</span></code>.
       </p>
-<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">count</span><span class="special">,</span><span class="keyword">int</span><span class="special">,</span><span class="string">"number of surrounding particles"</span><span class="special">)</span>
-<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;</span> <span class="identifier">MyParticles</span><span class="special">;</span>
-<span class="identifier">MyParticles</span> <span class="identifier">particles</span><span class="special">();</span>
+<pre class="programlisting"><span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">count</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="string">"number of surrounding particles"</span><span class="special">)</span>
+<span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;&gt;</span> <span class="identifier">MyParticles</span><span class="special">;</span>
+<span class="keyword">typedef</span> <span class="identifier">MyParticles</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position_t</span><span class="special">;</span>
 
-<span class="comment">//add some particles</span>
-<span class="special">...</span>
+<span class="comment">// add some particles</span>
+<span class="identifier">MyParticles</span> <span class="identifier">particles2</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
 
-<span class="comment">//initialise neighbour searching</span>
-<span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">Vect3d</span><span class="special">(</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">,</span><span class="number">0</span><span class="special">),</span><span class="identifier">Vect3d</span><span class="special">(</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">,</span><span class="number">1</span><span class="special">),</span><span class="number">4</span><span class="special">,</span><span class="identifier">Vect3b</span><span class="special">(</span><span class="keyword">false</span><span class="special">,</span><span class="keyword">false</span><span class="special">,</span><span class="keyword">false</span><span class="special">));</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
+<span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="keyword">auto</span> <span class="special">&amp;</span><span class="identifier">gen</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">generator</span><span class="special">&gt;(</span><span class="identifier">particles2</span><span class="special">)[</span><span class="identifier">i</span><span class="special">];</span>
+  <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position_t</span><span class="special">&gt;(</span><span class="identifier">particles2</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble3</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span> <span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">),</span> <span class="identifier">uni</span><span class="special">(</span><span class="identifier">gen</span><span class="special">));</span>
+<span class="special">}</span>
 
-<span class="comment">//define symbols and labels, and sum</span>
+<span class="comment">// initialise neighbour searching</span>
+<span class="identifier">particles2</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span>
+    <span class="identifier">vdouble3</span><span class="special">::</span><span class="identifier">Constant</span><span class="special">(</span><span class="number">0</span><span class="special">),</span> <span class="identifier">vdouble3</span><span class="special">::</span><span class="identifier">Constant</span><span class="special">(</span><span class="number">1</span><span class="special">),</span> <span class="identifier">vbool3</span><span class="special">::</span><span class="identifier">Constant</span><span class="special">(</span><span class="keyword">false</span><span class="special">));</span>
+
+<span class="comment">// define symbols and labels, and sum</span>
 <span class="identifier">Symbol</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;</span> <span class="identifier">c</span><span class="special">;</span>
-<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">a</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
-<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span><span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">b</span><span class="special">(</span><span class="identifier">particles</span><span class="special">);</span>
-<span class="identifier">Accumulate</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;</span> <span class="special">&gt;</span> <span class="identifier">sum</span><span class="special">;</span>
-<span class="keyword">auto</span> <span class="identifier">dx</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">a</span><span class="special">,</span><span class="identifier">b</span><span class="special">);</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">0</span><span class="special">,</span> <span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">i</span><span class="special">(</span><span class="identifier">particles2</span><span class="special">);</span>
+<span class="identifier">Label</span><span class="special">&lt;</span><span class="number">1</span><span class="special">,</span> <span class="identifier">MyParticles</span><span class="special">&gt;</span> <span class="identifier">j</span><span class="special">(</span><span class="identifier">particles2</span><span class="special">);</span>
+<span class="identifier">AccumulateWithinDistance</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">plus</span><span class="special">&lt;</span><span class="keyword">int</span><span class="special">&gt;&gt;</span> <span class="identifier">neighbour_sum</span><span class="special">(</span><span class="number">2</span><span class="special">);</span>
+<span class="keyword">auto</span> <span class="identifier">dx_ij</span> <span class="special">=</span> <span class="identifier">create_dx</span><span class="special">(</span><span class="identifier">i</span><span class="special">,</span> <span class="identifier">j</span><span class="special">);</span>
 
-<span class="comment">//count neighbouring particles within a distance of 2</span>
-<span class="identifier">c</span><span class="special">[</span><span class="identifier">a</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">sum</span><span class="special">(</span><span class="identifier">b</span><span class="special">,</span><span class="identifier">norm</span><span class="special">(</span><span class="identifier">dx</span><span class="special">)&lt;</span><span class="number">2</span><span class="special">,</span><span class="number">1</span><span class="special">)</span>
+<span class="comment">// count neighbouring particles within a distance of 2</span>
+<span class="identifier">c</span><span class="special">[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">neighbour_sum</span><span class="special">(</span><span class="identifier">j</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
 </pre>
 </div>
 </div>

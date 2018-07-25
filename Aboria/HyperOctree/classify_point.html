@@ -5,7 +5,7 @@
 <link rel="stylesheet" href="../../css/boostbook.css" type="text/css">
 <meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
 <link rel="home" href="../../index.html" title="Aboria 0.7">
-<link rel="up" href="../HyperOctree.html#idp47006898913728" title="Description">
+<link rel="up" href="../HyperOctree.html#idp46469564151184" title="Description">
 <link rel="prev" href="classify_node.html" title="Struct classify_node">
 <link rel="next" href="make_leaf.html" title="Struct make_leaf">
 <script type="text/x-mathjax-config">
@@ -14,8 +14,8 @@ MathJax.Hub.Config({
     inlineMath: [['$','$'], ['\\(','\\)']],
     processEscapes: true
     },
-  TeX: { 
-    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
     }
 });
 </script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../HyperOctree.html#idp47006898913728"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../HyperOctree.html#idp46469564151184"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.HyperOctree.classify_point"></a><div class="titlepage"></div>
@@ -47,28 +47,28 @@ MathJax.Hub.Config({
 
 <span class="keyword">struct</span> <a class="link" href="classify_point.html" title="Struct classify_point">classify_point</a> <span class="special">{</span>
   <span class="comment">// <a class="link" href="classify_point.html#Aboria.HyperOctree.classify_pointconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="classify_point.html#idp46391699561456-bb"><span class="identifier">classify_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="classify_point.html#idp47236267172992-bb"><span class="identifier">classify_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="classify_point.html#idp46391699559408-bb">public member functions</a></span>
-  <span class="keyword">int</span> <a class="link" href="classify_point.html#idp46391699559808-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="classify_point.html#idp47236267170944-bb">public member functions</a></span>
+  <span class="keyword">int</span> <a class="link" href="classify_point.html#idp47236267171344-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="identifier">box</span><span class="special">;</span>
   <span class="keyword">int</span> <span class="identifier">max_level</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47006899117968"></a><h2>Description</h2>
+<a name="idp46469564355584"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp47006899118352"></a><h3>
+<a name="idp46469564355968"></a><h3>
 <a name="Aboria.HyperOctree.classify_pointconstruct-copy-destruct"></a><code class="computeroutput">classify_point</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46391699561456-bb"></a><span class="identifier">classify_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="special">&amp;</span> b<span class="special">,</span> <span class="keyword">int</span> lvl<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47236267172992-bb"></a><span class="identifier">classify_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="special">&amp;</span> b<span class="special">,</span> <span class="keyword">int</span> lvl<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47006899128528"></a><h3>
-<a name="idp46391699559408-bb"></a><code class="computeroutput">classify_point</code> public member functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">int</span> <a name="idp46391699559808-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> p<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp46469564366064"></a><h3>
+<a name="idp47236267170944-bb"></a><code class="computeroutput">classify_point</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">int</span> <a name="idp47236267171344-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> p<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 </div>
 </div>
@@ -79,7 +79,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../HyperOctree.html#idp47006898913728"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
+<a accesskey="p" href="classify_node.html"><img src="../../images/prev.png" alt="Prev"></a><a accesskey="u" href="../HyperOctree.html#idp46469564151184"><img src="../../images/up.png" alt="Up"></a><a accesskey="h" href="../../index.html"><img src="../../images/home.png" alt="Home"></a><a accesskey="n" href="make_leaf.html"><img src="../../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>

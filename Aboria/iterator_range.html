@@ -14,8 +14,8 @@ MathJax.Hub.Config({
     inlineMath: [['$','$'], ['\\(','\\)']],
     processEscapes: true
     },
-  TeX: { 
-    extensions: ["AMSmath.js", "AMSsymbols.js"] 
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
     }
 });
 </script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
@@ -49,44 +49,44 @@ MathJax.Hub.Config({
   <span class="keyword">typedef</span> <span class="identifier">IteratorType</span> <a name="Aboria.iterator_range.iterator"></a><span class="identifier">iterator</span><span class="special">;</span>
 
   <span class="comment">// <a class="link" href="iterator_range.html#Aboria.iterator_rangeconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="iterator_range.html#idp46391699000912-bb"><span class="identifier">iterator_range</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="iterator_range.html#idp47236266612448-bb"><span class="identifier">iterator_range</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="iterator_range.html#idp46391698996672-bb">public member functions</a></span>
-  <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp46391698997072-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp46391698998032-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp46391698998992-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp46391698999952-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="iterator_range.html#idp47236266608208-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp47236266608608-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp47236266609568-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp47236266610528-bb"><span class="identifier">begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a class="link" href="iterator_range.html#idp47236266611488-bb"><span class="identifier">end</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
   <span class="comment">// public data members</span>
   <span class="identifier">IteratorType</span> <span class="identifier">m_begin</span><span class="special">;</span>
   <span class="identifier">IteratorType</span> <span class="identifier">m_end</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp47006894624032"></a><h2>Description</h2>
+<a name="idp46469559810144"></a><h2>Description</h2>
 <p>
 </p>
 <div class="refsect2">
-<a name="idp47006894624704"></a><h3>Template Parameters</h3>
+<a name="idp46469559810816"></a><h3>Template Parameters</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
 <pre class="literallayout"><span class="keyword">typename</span> IteratorType</pre>
 <p>the type of the iterators to be held </p>
 </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47006894627872"></a><h3>
+<a name="idp46469559813984"></a><h3>
 <a name="Aboria.iterator_rangeconstruct-copy-destruct"></a><code class="computeroutput">iterator_range</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46391699000912-bb"></a><span class="identifier">iterator_range</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> end<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47236266612448-bb"></a><span class="identifier">iterator_range</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> begin<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> end<span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp47006894638656"></a><h3>
-<a name="idp46391698996672-bb"></a><code class="computeroutput">iterator_range</code> public member functions</h3>
+<a name="idp46469559824768"></a><h3>
+<a name="idp47236266608208-bb"></a><code class="computeroutput">iterator_range</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46391698997072-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46391698998032-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46391698998992-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp46391698999952-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp47236266608608-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp47236266609568-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp47236266610528-bb"></a><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">IteratorType</span> <span class="special">&amp;</span> <a name="idp47236266611488-bb"></a><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
