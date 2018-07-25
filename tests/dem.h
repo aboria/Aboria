@@ -181,7 +181,7 @@ public:
       std::cout << "." << std::flush;
 
 #ifdef HAVE_VTK
-      vtkWriteGrid("dem", io, dem.get_grid(true));
+      vtkWriteGrid("dem", io, dem.get_grid(true), {{"time", io / 2.0}});
 #endif
       for (int i = 0; i < timesteps_per_out; i++) {
         p[a] += v[a] * dt;
