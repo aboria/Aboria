@@ -7,7 +7,7 @@
 <link rel="home" href="../index.html" title="Aboria 0.7">
 <link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.CellList_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/CellList.h&gt;">
 <link rel="prev" href="CellListQuery.html" title="Struct template CellListQuery">
-<link rel="next" href="CellList/copy_poi_idp47236265124000.html" title="Struct copy_points_in_bucket_lambda">
+<link rel="next" href="CellList/copy_poi_idp47259550360480.html" title="Struct copy_points_in_bucket_lambda">
 <script type="text/x-mathjax-config">
 MathJax.Hub.Config({
   tex2jax: {
@@ -32,7 +32,7 @@ MathJax.Hub.Config({
 <table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="CellListQuery.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.CellList_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="CellList/copy_poi_idp47236265124000.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="CellListQuery.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.CellList_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="CellList/copy_poi_idp47259550360480.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 <div class="refentry">
 <a name="Aboria.CellList"></a><div class="titlepage"></div>
@@ -51,12 +51,12 @@ MathJax.Hub.Config({
 
   <span class="comment">// function object to copy a range of particles to another index range</span>
 
-  <span class="keyword">struct</span> <a class="link" href="CellList/copy_poi_idp47236265124000.html" title="Struct copy_points_in_bucket_lambda">copy_points_in_bucket_lambda</a> <span class="special">{</span>
-    <span class="comment">// <a class="link" href="CellList/copy_poi_idp47236265124000.html#Aboria.CellList.copy_poi_idp47236265124000construct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="CellList/copy_poi_idp47236265124000.html#idp47236265131440-bb"><span class="identifier">copy_points_in_bucket_lambda</span></a><span class="special">(</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">struct</span> <a class="link" href="CellList/copy_poi_idp47259550360480.html" title="Struct copy_points_in_bucket_lambda">copy_points_in_bucket_lambda</a> <span class="special">{</span>
+    <span class="comment">// <a class="link" href="CellList/copy_poi_idp47259550360480.html#Aboria.CellList.copy_poi_idp47259550360480construct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="CellList/copy_poi_idp47259550360480.html#idp47259550367920-bb"><span class="identifier">copy_points_in_bucket_lambda</span></a><span class="special">(</span><span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/copy_poi_idp47236265124000.html#idp47236265128608-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="CellList/copy_poi_idp47236265124000.html#idp47236265129008-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="CellList/copy_poi_idp47259550360480.html#idp47259550365088-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="CellList/copy_poi_idp47259550360480.html#idp47259550365488-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="keyword">int</span> <span class="special">*</span> <span class="identifier">m_linked_list</span><span class="special">;</span>
@@ -68,12 +68,12 @@ MathJax.Hub.Config({
 
   <span class="comment">// function object to delete a range of particles within the buckets</span>
 
-  <span class="keyword">struct</span> <a class="link" href="CellList/delete_p_idp47236265135008.html" title="Struct delete_points_in_bucket_lambda">delete_points_in_bucket_lambda</a> <span class="special">{</span>
-    <span class="comment">// <a class="link" href="CellList/delete_p_idp47236265135008.html#Aboria.CellList.delete_p_idp47236265135008construct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="CellList/delete_p_idp47236265135008.html#idp47236265141824-bb"><span class="identifier">delete_points_in_bucket_lambda</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">struct</span> <a class="link" href="CellList/delete_p_idp47259550371488.html" title="Struct delete_points_in_bucket_lambda">delete_points_in_bucket_lambda</a> <span class="special">{</span>
+    <span class="comment">// <a class="link" href="CellList/delete_p_idp47259550371488.html#Aboria.CellList.delete_p_idp47259550371488construct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="CellList/delete_p_idp47259550371488.html#idp47259550378304-bb"><span class="identifier">delete_points_in_bucket_lambda</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/delete_p_idp47236265135008.html#idp47236265138928-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="CellList/delete_p_idp47236265135008.html#idp47236265139328-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="CellList/delete_p_idp47259550371488.html#idp47259550375408-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="CellList/delete_p_idp47259550371488.html#idp47259550375808-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="keyword">int</span> <span class="special">*</span> <span class="identifier">m_linked_list</span><span class="special">;</span>
@@ -85,17 +85,17 @@ MathJax.Hub.Config({
   <span class="comment">// thread-safe function object to insert a list of non-consecutive particles
   // into the data structure</span>
 
-  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47236265144704.html" title="Struct insert_points_lambda_non_sequential">insert_points_lambda_non_sequential</a> <span class="special">{</span>
+  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47259550381184.html" title="Struct insert_points_lambda_non_sequential">insert_points_lambda_non_sequential</a> <span class="special">{</span>
     <span class="comment">// types</span>
-    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47236265144704.html#Aboria.CellList.insert_p_idp47236265144704.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
-    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47236265144704.html#Aboria.CellList.insert_p_idp47236265144704.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47259550381184.html#Aboria.CellList.insert_p_idp47259550381184.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
+    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47259550381184.html#Aboria.CellList.insert_p_idp47259550381184.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265144704.html#Aboria.CellList.insert_p_idp47236265144704construct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="CellList/insert_p_idp47236265144704.html#idp47236265155488-bb"><span class="identifier">insert_points_lambda_non_sequential</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ptobl_type</span> <span class="special">&amp;</span><span class="special">,</span> 
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550381184.html#Aboria.CellList.insert_p_idp47259550381184construct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="CellList/insert_p_idp47259550381184.html#idp47259550391968-bb"><span class="identifier">insert_points_lambda_non_sequential</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ptobl_type</span> <span class="special">&amp;</span><span class="special">,</span> 
                                         <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265144704.html#idp47236265152224-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47236265144704.html#idp47236265152624-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550381184.html#idp47259550388704-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47259550381184.html#idp47259550389104-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="identifier">double_d</span> <span class="special">*</span> <span class="identifier">m_positions</span><span class="special">;</span>
@@ -110,18 +110,18 @@ MathJax.Hub.Config({
   <span class="comment">// non-threadsafe function object to insert a non-consecutive list of
   // particles into the data structure</span>
 
-  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47236265160736.html" title="Struct insert_points_lambda_non_sequential_serial">insert_points_lambda_non_sequential_serial</a> <span class="special">{</span>
+  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47259550397216.html" title="Struct insert_points_lambda_non_sequential_serial">insert_points_lambda_non_sequential_serial</a> <span class="special">{</span>
     <span class="comment">// types</span>
-    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47236265160736.html#Aboria.CellList.insert_p_idp47236265160736.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
-    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47236265160736.html#Aboria.CellList.insert_p_idp47236265160736.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47259550397216.html#Aboria.CellList.insert_p_idp47259550397216.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
+    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47259550397216.html#Aboria.CellList.insert_p_idp47259550397216.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265160736.html#Aboria.CellList.insert_p_idp47236265160736construct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="CellList/insert_p_idp47236265160736.html#idp47236265172240-bb"><span class="identifier">insert_points_lambda_non_sequential_serial</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> 
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550397216.html#Aboria.CellList.insert_p_idp47259550397216construct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="CellList/insert_p_idp47259550397216.html#idp47259550408720-bb"><span class="identifier">insert_points_lambda_non_sequential_serial</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> 
                                                <span class="keyword">const</span> <span class="identifier">ptobl_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> 
                                                <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265160736.html#idp47236265168960-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47236265160736.html#idp47236265169360-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550397216.html#idp47259550405440-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47259550397216.html#idp47259550405840-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="identifier">double_d</span> <span class="special">*</span> <span class="identifier">m_positions</span><span class="special">;</span>
@@ -137,17 +137,17 @@ MathJax.Hub.Config({
   <span class="comment">// thread-safe function object to insert a list of consecutive particles
   // into the data structure</span>
 
-  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47236265178192.html" title="Struct insert_points_lambda_sequential">insert_points_lambda_sequential</a> <span class="special">{</span>
+  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47259550414672.html" title="Struct insert_points_lambda_sequential">insert_points_lambda_sequential</a> <span class="special">{</span>
     <span class="comment">// types</span>
-    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47236265178192.html#Aboria.CellList.insert_p_idp47236265178192.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
-    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47236265178192.html#Aboria.CellList.insert_p_idp47236265178192.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47259550414672.html#Aboria.CellList.insert_p_idp47259550414672.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
+    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47259550414672.html#Aboria.CellList.insert_p_idp47259550414672.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265178192.html#Aboria.CellList.insert_p_idp47236265178192construct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="CellList/insert_p_idp47236265178192.html#idp47236265188272-bb"><span class="identifier">insert_points_lambda_sequential</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ptobl_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> 
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550414672.html#Aboria.CellList.insert_p_idp47259550414672construct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="CellList/insert_p_idp47259550414672.html#idp47259550424752-bb"><span class="identifier">insert_points_lambda_sequential</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ptobl_type</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> 
                                     <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265178192.html#idp47236265185024-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47236265178192.html#idp47236265185424-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550414672.html#idp47259550421504-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47259550414672.html#idp47259550421904-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="identifier">double_d</span> <span class="special">*</span> <span class="identifier">m_positions</span><span class="special">;</span>
@@ -161,17 +161,17 @@ MathJax.Hub.Config({
   <span class="comment">// non-threadsafe insert a consecutive vector of particles into the data
   // structure</span>
 
-  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47236265192816.html" title="Struct insert_points_lambda_sequential_serial">insert_points_lambda_sequential_serial</a> <span class="special">{</span>
+  <span class="keyword">struct</span> <a class="link" href="CellList/insert_p_idp47259550429296.html" title="Struct insert_points_lambda_sequential_serial">insert_points_lambda_sequential_serial</a> <span class="special">{</span>
     <span class="comment">// types</span>
-    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47236265192816.html#Aboria.CellList.insert_p_idp47236265192816.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
-    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47236265192816.html#Aboria.CellList.insert_p_idp47236265192816.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span> <a class="link" href="CellList/insert_p_idp47259550429296.html#Aboria.CellList.insert_p_idp47259550429296.double_d"><span class="identifier">double_d</span></a><span class="special">;</span>  
+    <span class="keyword">typedef</span> <span class="emphasis"><em><span class="identifier">unspecified</span></em></span>      <a class="link" href="CellList/insert_p_idp47259550429296.html#Aboria.CellList.insert_p_idp47259550429296.ptobl_type"><span class="identifier">ptobl_type</span></a><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265192816.html#Aboria.CellList.insert_p_idp47236265192816construct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="CellList/insert_p_idp47236265192816.html#idp47236265203600-bb"><span class="identifier">insert_points_lambda_sequential_serial</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ptobl_type</span> <span class="special">&amp;</span><span class="special">,</span> 
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550429296.html#Aboria.CellList.insert_p_idp47259550429296construct-copy-destruct">construct/copy/destruct</a></span>
+    <a class="link" href="CellList/insert_p_idp47259550429296.html#idp47259550440080-bb"><span class="identifier">insert_points_lambda_sequential_serial</span></a><span class="special">(</span><span class="identifier">double_d</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">ptobl_type</span> <span class="special">&amp;</span><span class="special">,</span> 
                                            <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="CellList/insert_p_idp47236265192816.html#idp47236265200320-bb">public member functions</a></span>
-    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47236265192816.html#idp47236265200720-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="CellList/insert_p_idp47259550429296.html#idp47259550436800-bb">public member functions</a></span>
+    <span class="keyword">void</span> <a class="link" href="CellList/insert_p_idp47259550429296.html#idp47259550437200-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="identifier">double_d</span> <span class="special">*</span> <span class="identifier">m_positions</span><span class="special">;</span>
@@ -183,55 +183,55 @@ MathJax.Hub.Config({
     <span class="keyword">int</span> <span class="identifier">start</span><span class="special">;</span>
   <span class="special">}</span><span class="special">;</span>
   <span class="comment">// <a class="link" href="CellList.html#Aboria.CellListconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="CellList.html#idp47236265210512-bb"><span class="identifier">CellList</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="CellList.html#idp47259550446992-bb"><span class="identifier">CellList</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="CellList.html#idp47236265208848-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47236265209248-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="CellList.html#idp47259550445328-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47259550445728-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="CellList.html#idp47236265210944-bb">public static functions</a></span>
-  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="CellList.html#idp47236265211344-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="CellList.html#idp47259550447424-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="CellList.html#idp47259550447824-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="CellList.html#idp47236265212752-bb">private member functions</a></span>
-  <span class="keyword">bool</span> <a class="link" href="CellList.html#idp47236265213168-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47236265215408-bb"><span class="identifier">check_data_structure</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47236265216688-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47236265217984-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47236265225792-bb"><span class="identifier">insert_points</span></a><span class="special">(</span><span class="keyword">typename</span> <span class="identifier">vector_int</span><span class="special">::</span><span class="identifier">iterator</span><span class="special">,</span> 
+  <span class="comment">// <a class="link" href="CellList.html#idp47259550449232-bb">private member functions</a></span>
+  <span class="keyword">bool</span> <a class="link" href="CellList.html#idp47259550449648-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47259550451888-bb"><span class="identifier">check_data_structure</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47259550453168-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47259550454464-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47259550462272-bb"><span class="identifier">insert_points</span></a><span class="special">(</span><span class="keyword">typename</span> <span class="identifier">vector_int</span><span class="special">::</span><span class="identifier">iterator</span><span class="special">,</span> 
                      <span class="keyword">typename</span> <span class="identifier">vector_int</span><span class="special">::</span><span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47236265230992-bb"><span class="identifier">insert_points</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="CellList.html#idp47236265233328-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="CellList.html#idp47236265235504-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="CellList.html#idp47259550467472-bb"><span class="identifier">insert_points</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="CellList.html#idp47259550469808-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="CellList.html#idp47259550471984-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46469548434272"></a><h2>Description</h2>
+<a name="idp46869506229648"></a><h2>Description</h2>
 <p>This class implements neighbourhood searching using a bucket search, or cell list algorithm. The domain is first divided up into a regular grid of constant size "buckets".</p>
 <p>After the buckets are created, a set of 3D points can be assigned to their respective buckets. After this, neighbourhood queries around a given point can be performed be looking at all the points in the same bucket or surrounding buckets of the given point. </p>
 <div class="refsect2">
-<a name="idp46469548435664"></a><h3>
+<a name="idp46869506231040"></a><h3>
 <a name="Aboria.CellListconstruct-copy-destruct"></a><code class="computeroutput">CellList</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><a name="idp47236265210512-bb"></a><span class="identifier">CellList</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>constructs the default base structure </li></ol></div>
+<pre class="literallayout"><a name="idp47259550446992-bb"></a><span class="identifier">CellList</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>constructs the default base structure </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46469548441680"></a><h3>
-<a name="idp47236265208848-bb"></a><code class="computeroutput">CellList</code> public member functions</h3>
+<a name="idp46869506237056"></a><h3>
+<a name="idp47259550445328-bb"></a><code class="computeroutput">CellList</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp47236265209248-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Print the data structure to stdout. </li></ol></div>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47259550445728-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>Print the data structure to stdout. </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46469548449024"></a><h3>
-<a name="idp47236265210944-bb"></a><code class="computeroutput">CellList</code> public static functions</h3>
+<a name="idp46869506244400"></a><h3>
+<a name="idp47259550447424-bb"></a><code class="computeroutput">CellList</code> public static functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp47236265211344-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>This structure is not ordered. That is, the order of the particles is not important to the search algorithm. Instead, the indicies of the particles are kept in a linked list. </li></ol></div>
+<pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp47259550447824-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>This structure is not ordered. That is, the order of the particles is not important to the search algorithm. Instead, the indicies of the particles are kept in a linked list. </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46469548457136"></a><h3>
-<a name="idp47236265212752-bb"></a><code class="computeroutput">CellList</code> private member functions</h3>
+<a name="idp46869506252512"></a><h3>
+<a name="idp47259550449232-bb"></a><code class="computeroutput">CellList</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">bool</span> <a name="idp47236265213168-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>set the domain, called from base class <p>
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp47259550449648-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>set the domain, called from base class <p>
 </p>
 <div class="variablelist"><table border="0" class="variablelist compact">
 <colgroup>
@@ -245,11 +245,11 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp47236265215408-bb"></a><span class="identifier">check_data_structure</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>check that the data structure is internally consistent </li>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47259550451888-bb"></a><span class="identifier">check_data_structure</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>check that the data structure is internally consistent </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp47236265216688-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>called by base class, does nothing for this data structure </li>
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47259550453168-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>called by base class, does nothing for this data structure </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp47236265217984-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47259550454464-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">int</span> num_new_particles_added<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">bool</span> call_set_domain <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre>called by base class, deals with an updated particle range. <p>Needs to handle: dead particles (only if <code class="computeroutput">update_end</code> == <code class="computeroutput">m_particles_end</code>), particles with different positions, and new particles</p>
 <p>
@@ -289,7 +289,7 @@ MathJax.Hub.Config({
 </table></div>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">void</span> <a name="idp47236265225792-bb"></a><span class="identifier">insert_points</span><span class="special">(</span><span class="keyword">typename</span> <span class="identifier">vector_int</span><span class="special">::</span><span class="identifier">iterator</span> start_adding<span class="special">,</span> 
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47259550462272-bb"></a><span class="identifier">insert_points</span><span class="special">(</span><span class="keyword">typename</span> <span class="identifier">vector_int</span><span class="special">::</span><span class="identifier">iterator</span> start_adding<span class="special">,</span> 
                    <span class="keyword">typename</span> <span class="identifier">vector_int</span><span class="special">::</span><span class="identifier">iterator</span> stop_adding<span class="special">,</span> 
                    <span class="keyword">const</span> <span class="keyword">int</span> start<span class="special">)</span><span class="special">;</span></pre>insert non-consecutive points into data structure <p>
 </p>
@@ -323,11 +323,11 @@ MathJax.Hub.Config({
 </tr></tbody>
 </table></div>
 </li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47236265230992-bb"></a><span class="identifier">insert_points</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span> start<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47259550467472-bb"></a><span class="identifier">insert_points</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span> start<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre></li>
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47236265233328-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the query object via the base class </li>
+<pre class="literallayout"><span class="keyword">const</span> <a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47259550469808-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the query object via the base class </li>
 <li class="listitem">
-<pre class="literallayout"><a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47236265235504-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns the query object via the base class </li>
+<pre class="literallayout"><a class="link" href="CellListQuery.html" title="Struct template CellListQuery">CellListQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47259550471984-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns the query object via the base class </li>
 </ol></div>
 </div>
 </div>
@@ -339,7 +339,7 @@ MathJax.Hub.Config({
 </tr></table>
 <hr>
 <div class="spirit-nav">
-<a accesskey="p" href="CellListQuery.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.CellList_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="CellList/copy_poi_idp47236265124000.html"><img src="../images/next.png" alt="Next"></a>
+<a accesskey="p" href="CellListQuery.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.CellList_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="CellList/copy_poi_idp47259550360480.html"><img src="../images/next.png" alt="Next"></a>
 </div>
 </body>
 </html>
