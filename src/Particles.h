@@ -497,7 +497,7 @@ public:
 
   /// return the length scale of the neighbourhood search
   /// \see init_neighbour_search()
-  double get_max_bucket_size() const { return search.get_max_bucket_size(); }
+  size_t get_max_bucket_size() const { return search.get_max_bucket_size(); }
 
   /// return the lower extent of the neighbourhood search
   /// \see init_neighbour_search()

@@ -101,7 +101,7 @@ template <unsigned int D> struct bbox {
   ///
   /// @return the bounding box covering both input boxes
   ///
-  inline CUDA_HOST_DEVICE bbox operator+(const bbox &arg) {
+  inline CUDA_HOST_DEVICE bbox operator+(const bbox &arg) const {
     bbox bounds;
     for (size_t i = 0; i < D; ++i) {
       bounds.bmin[i] = std::min(bmin[i], arg.bmin[i]);
@@ -110,10 +110,11 @@ template <unsigned int D> struct bbox {
     return bounds;
   }
 
+  /*
   ///
   /// @return true if lhs box is within rhs box
   ///
-  inline CUDA_HOST_DEVICE bool operator<(const bbox &arg) {
+  inline CUDA_HOST_DEVICE bool operator<(const bbox &arg) const {
     bbox bounds;
     bool within = true;
     for (size_t i = 0; i < D; ++i) {
@@ -122,16 +123,17 @@ template <unsigned int D> struct bbox {
     }
     return within;
   }
+  */
 
   ///
   /// @return true if lhs box is the same or within rhs box
   ///
-  inline CUDA_HOST_DEVICE bool operator<=(const bbox &arg) {
+  inline CUDA_HOST_DEVICE bool operator<=(const bbox &arg) const {
     bbox bounds;
     bool within = true;
     for (size_t i = 0; i < D; ++i) {
-      within |= bmin[i] >= arg.bmin[i];
-      within |= bmax[i] <= arg.bmax[i];
+      within &= bmin[i] >= arg.bmin[i];
+      within &= bmax[i] <= arg.bmax[i];
     }
     return within;
   }
@@ -139,7 +141,7 @@ template <unsigned int D> struct bbox {
   ///
   /// @return true if box has no volume
   ///
-  inline CUDA_HOST_DEVICE bool is_empty() {
+  inline CUDA_HOST_DEVICE bool is_empty() const {
     for (size_t i = 0; i < D; ++i) {
       if (bmax[i] < bmin[i] + 3 * std::numeric_limits<double>::epsilon())
         return true;
