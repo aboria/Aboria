@@ -157,7 +157,9 @@ public:
             << std::setw(width) << "D " << std::setw(width) << "order "
             << std::setw(width) << "Nsubdomain " << std::setw(width) << "chol "
             << std::setw(width) << "diag " << std::setw(width) << "srtz "
-            << std::setw(width)
+            << std::setw(width) << "srtz(add) " << std::setw(width)
+            << "srtz(mult) " << std::setw(width) << "srtz(padd) "
+            << std::setw(width) << "srtz(pmult) " << std::setw(width)
             << "nystrom "
             //<< std::setw(width) << "nys_srtz "
             << std::endl;
@@ -418,7 +420,7 @@ public:
           bicg2;
       bicg2.setMaxIterations(max_iter);
       bicg2.preconditioner().set_max_buffer_n(Nbuffer);
-      bicg2.preconditioner().set_multiplicative(true);
+      bicg2.preconditioner().set_levels(1);
       // bicg2.preconditioner().set_decimate_factor(2);
       t0 = Clock::now();
       bicg2.compute(G);
@@ -460,6 +462,176 @@ public:
           << " " << std::setw(out.width)
           << (phi_proposed - phi_test).norm() / phi_test.norm();
 
+      //===============================================
+      {
+        std::cout << "SOLVING Schwartz (add)" << std::endl;
+        Eigen::BiCGSTAB<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg2;
+        bicg2.setMaxIterations(max_iter);
+        bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+        bicg2.preconditioner().set_levels(2);
+        bicg2.preconditioner().set_multiplicative(false);
+        // bicg2.preconditioner().set_decimate_factor(2);
+        t0 = Clock::now();
+        bicg2.compute(G);
+
+        t1 = Clock::now();
+        gamma = bicg2.solve(phi);
+        t2 = Clock::now();
+
+        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                               << bicg2.iterations();
+        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                          << bicg2.error();
+        out.out_solve_setup_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                   .count();
+        out.out_solve_solve_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                   .count();
+        const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+        const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
+        out.out_solve_solve_memory[do_solve - 1]
+            << " " << std::setw(out.width)
+            << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+
+        phi_proposed = Gtest * gamma;
+
+        out.out_solve_test_error[do_solve - 1]
+            << " " << std::setw(out.width)
+            << (phi_proposed - phi_test).norm() / phi_test.norm();
+      }
+      //===============================================
+      {
+        std::cout << "SOLVING Schwartz (mult)" << std::endl;
+        Eigen::BiCGSTAB<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg2;
+        bicg2.setMaxIterations(max_iter);
+        bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+        bicg2.preconditioner().set_levels(2);
+        bicg2.preconditioner().set_multiplicative(true);
+        // bicg2.preconditioner().set_decimate_factor(2);
+        t0 = Clock::now();
+        bicg2.compute(G);
+
+        t1 = Clock::now();
+        gamma = bicg2.solve(phi);
+        t2 = Clock::now();
+
+        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                               << bicg2.iterations();
+        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                          << bicg2.error();
+        out.out_solve_setup_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                   .count();
+        out.out_solve_solve_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                   .count();
+        const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+        const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
+        out.out_solve_solve_memory[do_solve - 1]
+            << " " << std::setw(out.width)
+            << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+
+        phi_proposed = Gtest * gamma;
+
+        out.out_solve_test_error[do_solve - 1]
+            << " " << std::setw(out.width)
+            << (phi_proposed - phi_test).norm() / phi_test.norm();
+      }
+      //===============================================
+      {
+        std::cout << "SOLVING Schwartz (padd)" << std::endl;
+        Eigen::BiCGSTAB<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg2;
+        bicg2.setMaxIterations(max_iter);
+        bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+        bicg2.preconditioner().set_levels(2);
+        bicg2.preconditioner().set_multiplicative(false);
+        bicg2.preconditioner().set_interpolate(false);
+        bicg2.preconditioner().set_use_root(false);
+        // bicg2.preconditioner().set_decimate_factor(2);
+        t0 = Clock::now();
+        bicg2.compute(G);
+
+        t1 = Clock::now();
+        gamma = bicg2.solve(phi);
+        t2 = Clock::now();
+
+        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                               << bicg2.iterations();
+        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                          << bicg2.error();
+        out.out_solve_setup_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                   .count();
+        out.out_solve_solve_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                   .count();
+        const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+        const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
+        out.out_solve_solve_memory[do_solve - 1]
+            << " " << std::setw(out.width)
+            << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+
+        phi_proposed = Gtest * gamma;
+
+        out.out_solve_test_error[do_solve - 1]
+            << " " << std::setw(out.width)
+            << (phi_proposed - phi_test).norm() / phi_test.norm();
+      }
+      //===============================================
+      {
+        std::cout << "SOLVING Schwartz (pmult)" << std::endl;
+        Eigen::BiCGSTAB<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+            bicg2;
+        bicg2.setMaxIterations(max_iter);
+        bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+        bicg2.preconditioner().set_levels(2);
+        bicg2.preconditioner().set_multiplicative(true);
+        bicg2.preconditioner().set_interpolate(false);
+        bicg2.preconditioner().set_use_root(false);
+        // bicg2.preconditioner().set_decimate_factor(2);
+        t0 = Clock::now();
+        bicg2.compute(G);
+
+        t1 = Clock::now();
+        gamma = bicg2.solve(phi);
+        t2 = Clock::now();
+
+        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                               << bicg2.iterations();
+        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                          << bicg2.error();
+        out.out_solve_setup_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                   .count();
+        out.out_solve_solve_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                   .count();
+        const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+        const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
+        out.out_solve_solve_memory[do_solve - 1]
+            << " " << std::setw(out.width)
+            << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+
+        phi_proposed = Gtest * gamma;
+
+        out.out_solve_test_error[do_solve - 1]
+            << " " << std::setw(out.width)
+            << (phi_proposed - phi_test).norm() / phi_test.norm();
+      }
+
+      //===============================================
       std::cout << "SOLVING Nystrom" << std::endl;
       Eigen::BiCGSTAB<Op, NystromPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
           bicg3;
@@ -768,10 +940,10 @@ public:
     helper_param_sweep_per_kernel<exponential_kernel>(32000);
   }
   void test_rational_quadratic(void) {
-    helper_param_sweep_per_kernel<rational_quadratic_kernel>(1000);
+    helper_param_sweep_per_kernel<rational_quadratic_kernel>(4000);
   }
   void test_inverse_multiquadric(void) {
-    helper_param_sweep_per_kernel<inverse_multiquadric_kernel>(1000);
+    helper_param_sweep_per_kernel<inverse_multiquadric_kernel>(4000);
   }
 };
 
