@@ -1944,6 +1944,9 @@ private:
   level_connectivity_t m_restriction;
   level_particles_t m_particles;
 
+  mutable std::vector<vector_type> m_r;
+  mutable std::vector<vector_type> m_u;
+
   Index m_rows;
   Index m_cols;
 
@@ -1986,6 +1989,7 @@ public:
     size_t m_max_bucket_n;
     const T m_function;
     Query m_query;
+    int m_level;
     bool is_root;
 
     CUDA_HOST_DEVICE
@@ -2135,55 +2139,6 @@ public:
           domain_matrix(i, j) = m_function(a, b);
         }
       }
-
-      if (m_level > 0 && m_interpolate) {
-        LOG(3, "doing interpolate coupling");
-
-        // fill coupling matrix
-        int count = 0;
-        if (is_root) {
-          count = m_query.number_of_particles();
-        } else {
-          for (auto child = m_query.get_subtree(ci); child != false; ++child) {
-            if (m_query.is_leaf_node(*child)) {
-              count += m_query.get_bucket_particles(*child).distance_to_end();
-            }
-          }
-        }
-
-        auto &coupling_matrix = m_coupling_matrix[i];
-        indicies.resize(count);
-        coupling_matrix.resize(count, buffer.size());
-
-        if (is_root) {
-          for (int i = 0; i < count; ++i) {
-            indicies[i] = i;
-            auto a = m_query.get_particles_begin()[i];
-            int mj = 0;
-            for (const size_t &big_index_j : buffer) {
-              auto b = m_query.get_particles_begin()[big_index_j];
-              coupling_matrix(i, mj++) = m_function(a, b);
-            }
-          }
-        } else {
-          int mi = 0;
-          for (auto child = m_query.get_subtree(ci); child != false; ++child) {
-            if (m_query.is_leaf_node(*child)) {
-              for (auto a = m_query.get_bucket_particles(*child); a != false;
-                   ++a, ++mi) {
-                const double_d &p = get<position>(*a);
-                indicies[mi] =
-                    &p - get<position>(m_query.get_particles_begin());
-                int mj = 0;
-                for (const size_t &big_index_j : buffer) {
-                  auto b = m_query.get_particles_begin()[big_index_j];
-                  coupling_matrix(mi, mj++) = m_function(*a, b);
-                }
-              }
-            }
-          }
-        }
-      }
     }
   };
 
@@ -2229,14 +2184,14 @@ public:
     m_restriction.resize(n_levels - 1);
     m_A.resize(n_levels - 1);
 
-    for (int i = 0; i < n_levels - 1; ++i) {
+    for (int i = 1; i < n_levels; ++i) {
       // setup particles on this level
       const int n_particles = a.size() / std::pow(2, i);
-      auto &particles = m_particles[i];
+      auto &particles = m_particles[i - 1];
       particles.resize(n_particles);
       detail::tabulate(particles.begin(), particles.end(),
                        [prev_level = iterator_to_raw_pointer(
-                            (i == 0 ? a.begin() : m_particles[i - 1].begin()))](
+                            (i == 1 ? a.begin() : m_particles[i - 2].begin()))](
                            const int index) { return prev_level[index * 2]; });
 
       const int max_bucket_size =
@@ -2252,6 +2207,8 @@ public:
     m_buffer.resize(n_levels);
     m_matrix.resize(n_levels);
     m_factorized_matrix.resize(n_levels);
+    m_r.resize(m_levels);
+    m_u.resize(m_levels);
 
     for (int i = 0; i < n_levels; ++i) {
       // get list of leaf cells
@@ -2296,7 +2253,7 @@ public:
                 iterator_to_raw_pointer(tmp_buffer.begin()),
                 iterator_to_raw_pointer(tmp_matrix.begin()), m_max_buffer_n,
                 a.get_max_bucket_size(), kernel.get_kernel_function(), query, i,
-                nodes.size() == 1, m_interpolate});
+                nodes.size() == 1});
 
         detail::copy(tmp_indicies.begin(), tmp_indicies.end(),
                      indicies.begin());
@@ -2313,27 +2270,13 @@ public:
                 iterator_to_raw_pointer(buffer.begin()),
                 iterator_to_raw_pointer(matrix.begin()), m_max_buffer_n,
                 a.get_max_bucket_size(), kernel.get_kernel_function(), query, i,
-                nodes.size() == 1, m_interpolate});
+                nodes.size() == 1});
       }
 
       // factorize domain matrices
       detail::transform(matrix.begin(), matrix.end(), factorized_matrix.begin(),
                         factorize_matrix());
     }
-  }
-
-  template <typename RowParticles, typename ColParticles>
-  void
-  factorize_impl_block(const Index start_row,
-                       const KernelZero<RowParticles, ColParticles> &kernel) {}
-
-  template <unsigned int NI, unsigned int NJ, typename Blocks, std::size_t... I>
-  void factorize_impl(const MatrixReplacement<NI, NJ, Blocks> &mat,
-                      detail::index_sequence<I...>) {
-    int dummy[] = {0, (factorize_impl_block(mat.template start_row<I>(),
-                                            std::get<I * NJ + I>(mat.m_blocks)),
-                       0)...};
-    static_cast<void>(dummy);
   }
 
   template <unsigned int NI, unsigned int NJ, typename Blocks>
@@ -2345,12 +2288,7 @@ public:
     m_fineA = &mat.get_first_kernel();
     factorize_impl_block();
 
-    if (m_multiplicitive != 0) {
-      m_A.resize(mat.rows(), mat.cols());
-      mat.assemble(m_A);
-    }
-
-    for (int i = 0; i < std::min(m_levels, 2); ++i) {
+    for (int i = 0; i < m_indicies.size(); ++i) {
       auto min_indicies = detail::transform_reduce(
           m_indicies[i].begin(), m_indicies[i].end(), detail::get_size(),
           std::numeric_limits<size_t>::max(), detail::min());
@@ -2371,12 +2309,17 @@ public:
           detail::transform_reduce(m_indicies[i].begin(), m_indicies[i].end(),
                                    detail::get_size(), 0, detail::plus());
 
+      auto pA = i == 0 ? m_fineA : &m_A[i - 1];
+      auto &particles =
+          i == 0 ? m_fineA->get_row_elements() : m_particles[i - 1];
+
       LOG(2, "SchwartzPreconditioner: finished factorizing, on level "
                  << i << " found " << m_indicies[i].size() << " domains, with "
                  << min_indicies << "--" << max_indicies << " particles ("
                  << count << " total), and " << min_buffer << "--" << max_buffer
-                 << " buffer particles. kernel matrix is size (" << m_A.rows()
-                 << ',' << m_A.cols() << ')');
+                 << " buffer particles. particles size is " << particles.size()
+                 << ". kernel matrix is size (" << pA->rows() << ','
+                 << pA->cols() << ")");
     }
 
     m_isInitialized = true;
@@ -2420,7 +2363,6 @@ public:
     const Rhs &b;
     int m_level;
     bool is_root;
-    bool m_interpolate;
 
     void operator()(const int i) const {
       const storage_vector_type &buffer = m_domain_buffer[i];
@@ -2443,26 +2385,10 @@ public:
       // solve domain
       domain_x = domain_factorized_matrix[i].solve(domain_b);
 
-      if (m_level == 0 || !m_interpolate) {
-        // copy accumulate x values to big vector
-        for (size_t j = 0; j < indicies.size(); ++j) {
-          x[indicies[j]] += domain_x[j];
-        }
-      } else {
-        // interpolate x values to big vector
-        if (is_root) {
-          domain_b = domain_factorized_matrix[i].solve(domain_x);
-          // Eigen::Map<vector_type> big_x(x, m_coupling_matrix[i].rows());
-          x += m_coupling_matrix[i] * domain_b;
-        } else {
-          domain_b = domain_factorized_matrix[i].solve(domain_x);
-          vector_type big_x = m_coupling_matrix[i] * domain_b;
-          for (size_t j = 0; j < indicies.size(); ++j) {
-            x[indicies[j]] += big_x[j];
-          }
-        }
+      // copy accumulate x values to big vector
+      for (size_t j = 0; j < indicies.size(); ++j) {
+        x[indicies[j]] += domain_x[j];
       }
-
       /*
        // non-restricted
       for (size_t j = 0; j < buffer.size(); ++j) {
@@ -2476,45 +2402,56 @@ public:
   template <typename Rhs, typename Dest>
   void _solve_impl(const Rhs &b, Dest &x) const {
 
+    vector_type tmp;
     if (m_multiplicitive == 2 && m_levels > 1) {
+      m_r[0] = b;
+      m_u[0] = vector_type::Zero(a.size());
       // symmetric multiplicative
-      // v1 <- C r
-      x.setZero();
-      vector_type b_copy = b;
-      int i = 1;
-      auto count = boost::make_counting_iterator(0);
-      detail::for_each(
-          count, count + m_indicies[i].size(),
-          solve_domain<Rhs, Dest>{
-              iterator_to_raw_pointer(m_indicies[i].begin()),
-              iterator_to_raw_pointer(m_buffer[i].begin()),
-              iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
-              iterator_to_raw_pointer(m_coupling_matrix[i].begin()), x, b_copy,
-              i, m_indicies[i].size() == 1, m_interpolate});
+      for (int i = 0; i < m_indicies.size(); ++i) {
+        auto count = boost::make_counting_iterator(0);
+        detail::for_each(
+            count, count + m_indicies[i].size(),
+            solve_domain<Rhs, Dest>{
+                iterator_to_raw_pointer(m_indicies[i].begin()),
+                iterator_to_raw_pointer(m_buffer[i].begin()),
+                iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
+                m_r[i], i, m_indicies[i].size() == 1});
+        if (i < m_indicies.size() - 1) {
+          if (i == 0) {
+            tmp = m_r[0] - (*m_fineA) * u[0]
+          } else {
+            tmp = m_r[i] - m_A[i - 1] * u[i];
+          }
+          // restrict to coarser level
+          m_r[i + 1].resize(m_particles[i].size());
+          detail::tabulate(m_r[i + 1].data(),
+                           m_r[i + 1].data() + m_r[i + 1].size(),
+                           [&tmp, id = get<id>(m_particles[i].begin())](
+                               const int index) { return tmp[2 * id[index]]; });
+          m_u[i + 1] = vector_type::Zero(m_particles[i].size());
+        }
+      }
+      for (int i = m_indicies.size() - 2; i >= 0; ++i) {
+        // u(1) <-- u(1) + Rt*u(0)
+        detail::for_each(count, count + m_particles[i].size(),
+                         [&m_u, id = get<id>(m_particles[i].begin())](
+                             const int upper_index) {
+                           const int lower_index = 2 * id[upper_index];
+                           m_u[i][lower_index] += m_u[i + 1][upper_index];
+                         });
 
-      // v2 <- v1 + M-1 ( r - A v1)
-      b_copy = b - m_A * x;
-      i = 0;
-      detail::for_each(
-          count, count + m_indicies[i].size(),
-          solve_domain<Rhs, Dest>{
-              iterator_to_raw_pointer(m_indicies[i].begin()),
-              iterator_to_raw_pointer(m_buffer[i].begin()),
-              iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
-              iterator_to_raw_pointer(m_coupling_matrix[i].begin()), x, b_copy,
-              i, m_indicies[i].size() == 1, m_interpolate});
+        m_r[i] -= m_A[i] * m_u[i];
 
-      // v3 <- v2 + C ( r - (r - A v1) - A v2)
-      b_copy = b - b_copy - m_A * x;
-      i = 1;
-      detail::for_each(
-          count, count + m_indicies[i].size(),
-          solve_domain<Rhs, Dest>{
-              iterator_to_raw_pointer(m_indicies[i].begin()),
-              iterator_to_raw_pointer(m_buffer[i].begin()),
-              iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
-              iterator_to_raw_pointer(m_coupling_matrix[i].begin()), x, b_copy,
-              i, m_indicies[i].size() == 1, m_interpolate});
+        auto count = boost::make_counting_iterator(0);
+        detail::for_each(
+            count, count + m_indicies[i].size(),
+            solve_domain<Rhs, Dest>{
+                iterator_to_raw_pointer(m_indicies[i].begin()),
+                iterator_to_raw_pointer(m_buffer[i].begin()),
+                iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
+                m_r[i], i, m_indicies[i].size() == 1});
+      }
+      x = m_u[0];
 
     } else if (m_multiplicitive == 1 && m_levels > 1) {
       // non-symmetric multiplicative
