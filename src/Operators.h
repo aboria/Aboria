@@ -85,15 +85,14 @@ template <unsigned int NI, unsigned int NJ, typename Blocks>
 class MatrixReplacement
     : public Eigen::EigenBase<MatrixReplacement<NI, NJ, Blocks>> {
 
-  typedef typename std::tuple_element<0, Blocks>::type first_block_type;
-
 public:
+  typedef typename std::tuple_element<0, Blocks>::type FirstBlock;
   // Expose some compile-time information to Eigen:
-  typedef typename first_block_type::Scalar Scalar;
+  typedef typename FirstBlock::Scalar Scalar;
   typedef Scalar RealScalar;
   typedef size_t Index;
   typedef int StorageIndex;
-  static const bool GPU = first_block_type::GPU;
+  static const bool GPU = FirstBlock::GPU;
   enum {
     ColsAtCompileTime = Eigen::Dynamic,
     RowsAtCompileTime = Eigen::Dynamic,
