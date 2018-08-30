@@ -86,22 +86,33 @@ public:
 
   KernelBase(const RowElements &row_elements, const ColElements &col_elements,
              const F &function)
-      : m_row_elements(row_elements), m_col_elements(col_elements),
+      : m_row_elements(&row_elements), m_col_elements(&col_elements),
         m_function(function){};
 
-  RowElements &get_row_elements() { return m_row_elements; }
+  KernelBase(const RowElements &row_elements, const ColElements &col_elements,
+             const KernelBase &kernel)
+      : m_row_elements(&row_elements), m_col_elements(&col_elements),
+        m_function(kernel.get_kernel_function()){};
 
-  const RowElements &get_row_elements() const { return m_row_elements; }
+  RowElements &get_row_elements() { return *m_row_elements; }
 
-  ColElements &get_col_elements() { return m_col_elements; }
+  const RowElements &get_row_elements() const { return *m_row_elements; }
+
+  ColElements &get_col_elements() { return *m_col_elements; }
 
   const function_type &get_kernel_function() const { return m_function; }
 
-  const ColElements &get_col_elements() const { return m_col_elements; }
+  const ColElements &get_col_elements() const { return *m_col_elements; }
 
-  size_t rows() const { return m_row_elements.size() * BlockRows; }
+  void set_elements(const RowElements &row_elements,
+                    const ColElements &col_elements) {
+    m_row_elements = &row_elements;
+    m_col_elements = &col_elements;
+  }
 
-  size_t cols() const { return m_col_elements.size() * BlockCols; }
+  size_t rows() const { return get_row_element().size() * BlockRows; }
+
+  size_t cols() const { return get_col_elements().size() * BlockCols; }
 
   Scalar coeff(const size_t i, const size_t j) const {
     ASSERT(i < rows(), "i greater than rows()");
@@ -111,7 +122,7 @@ public:
     const int pj = std::floor(static_cast<float>(j) / BlockCols);
     const int joffset = j - pj * BlockCols;
     const Block block =
-        Block(m_function(m_row_elements[pi], m_col_elements[pj]));
+        Block(m_function(get_row_elements()[pi], get_col_elements()[pj]));
     return block(ioffset, joffset);
   }
 
@@ -134,8 +145,8 @@ public:
   }
 
 protected:
-  const RowElements &m_row_elements;
-  const ColElements &m_col_elements;
+  const RowElements *m_row_elements;
+  const ColElements *m_col_elements;
   const F m_function;
 };
 
@@ -161,11 +172,15 @@ public:
               const F &function)
       : base_type(row_elements, col_elements, function){};
 
+  KernelDense(const RowElements &row_elements, const ColElements &col_elements,
+              const KernelDense &kernel)
+      : base_type(row_elements, col_elements, kernel){};
+
   template <typename Derived>
   void assemble(const Eigen::DenseBase<Derived> &matrix) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
     const size_t na = a.size();
     const size_t nb = b.size();
 
@@ -188,8 +203,8 @@ public:
   void assemble(std::vector<Triplet> &triplets, const size_t startI = 0,
                 const size_t startJ = 0) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -218,7 +233,7 @@ public:
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
     detail::gemv_helper<RowElements, ColElements, F>::evaluate(
-        this->m_row_elements, this->m_col_elements, this->m_function, lhs, rhs);
+        get_row_elements(), get_col_elements(), this->m_function, lhs, rhs);
   }
 
   /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
@@ -228,7 +243,7 @@ public:
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
     detail::gemv_helper<RowElements, ColElements, F>::evaluate(
-        this->m_row_elements, this->m_col_elements, this->m_function, lhs, rhs);
+        get_row_elements(), get_col_elements(), this->m_function, lhs, rhs);
   }
 };
 
@@ -258,11 +273,23 @@ public:
     assemble_matrix();
   };
 
+  KernelMatrix(const RowElements &row_elements, const ColElements &col_elements,
+               const KernelMatrix &kernel)
+      : base_type(row_elements, col_elements, kernel) {
+    assemble_matrix();
+  };
+
+  void set_elements(const RowElements &row_elements,
+                    const ColElements &col_elements) {
+    base_type::set_elements(row_elements, col_elements);
+    assemble_matrix();
+  }
+
   const matrix_type &get_matrix() const { return m_matrix; }
 
   void assemble_matrix() {
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     m_matrix.resize(this->rows(), this->cols());
     for (size_t i = 0; i < a.size(); ++i) {
@@ -289,8 +316,8 @@ public:
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -362,8 +389,24 @@ public:
       : base_type(row_elements, col_elements, F(function)), m_order(n),
         m_ncheb(std::pow(n, dimension)), m_start(int_d::Constant(0)),
         m_end(int_d::Constant(n)), m_position_function(function) {
-    set_n(n);
+    set_n(m_order);
   };
+
+  KernelChebyshev(const RowElements &row_elements,
+                  const ColElements &col_elements,
+                  const KernelChebyshev &kernel)
+      : base_type(row_elements, col_elements, kernel), m_order(kernel.m_order),
+        m_ncheb(kernel.m_ncheb), m_start(kernel.m_start), m_end(kernel.m_end),
+        m_position_function(kernel.m_position_function) {
+    set_n(m_order);
+  };
+
+  void set_elements(const RowElements &row_elements,
+                    const ColElements &col_elements) {
+    base_type::set_elements(row_elements, col_elements);
+    update_row_positions();
+    update_col_positions();
+  }
 
   void set_n(const unsigned int n) {
     m_order = n;
@@ -377,22 +420,22 @@ public:
   }
 
   void update_row_positions() {
-    bbox<dimension> row_box(this->m_row_elements.get_min(),
-                            this->m_row_elements.get_max());
+    bbox<dimension> row_box(get_row_elements().get_min(),
+                            get_row_elements().get_max());
     detail::integrate_chebyshev<RowElements, BlockRows, QuadratureOrder>
-        integrate(this->m_row_elements, m_order, row_box);
+        integrate(get_row_elements(), m_order, row_box);
 
     // fill row_Rn matrix
-    m_row_Rn_matrix.resize(this->m_row_elements.size() * BlockRows,
+    m_row_Rn_matrix.resize(get_row_elements().size() * BlockRows,
                            m_ncheb * BlockRows);
     integrate(m_row_Rn_matrix);
   }
 
   void update_kernel_matrix() {
-    bbox<dimension> row_box(this->m_row_elements.get_min(),
-                            this->m_row_elements.get_max());
-    bbox<dimension> col_box(this->m_col_elements.get_min(),
-                            this->m_col_elements.get_max());
+    bbox<dimension> row_box(get_row_elements().get_min(),
+                            get_row_elements().get_max());
+    bbox<dimension> col_box(get_col_elements().get_min(),
+                            get_col_elements().get_max());
     detail::ChebyshevRn<dimension> col_Rn(m_order, row_box);
     detail::ChebyshevRn<dimension> row_Rn(m_order, col_box);
 
@@ -412,13 +455,13 @@ public:
   }
 
   void update_col_positions() {
-    bbox<dimension> col_box(this->m_col_elements.get_min(),
-                            this->m_col_elements.get_max());
+    bbox<dimension> col_box(get_col_elements().get_min(),
+                            get_col_elements().get_max());
     detail::integrate_chebyshev<ColElements, BlockCols, QuadratureOrder>
-        integrate(this->m_col_elements, m_order, col_box);
+        integrate(get_col_elements(), m_order, col_box);
 
     // fill row_Rn matrix
-    m_col_Rn_matrix.resize(this->m_col_elements.size() * BlockCols,
+    m_col_Rn_matrix.resize(get_col_elements().size() * BlockCols,
                            m_ncheb * BlockCols);
     integrate(m_col_Rn_matrix);
   }
@@ -430,7 +473,7 @@ public:
   void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
-    const ColElements &b = this->m_col_elements;
+    const ColElements &b = get_col_elements();
 
     CHECK(!b.get_periodic().any(), "chebyshev operator assumes not periodic");
     ASSERT(static_cast<typename DerivedLHS::Index>(this->rows()) == lhs.rows(),
@@ -464,6 +507,8 @@ class KernelH2 : public KernelDense<RowElements, ColElements, F> {
   typedef H2LibMatrix h2_matrix_type;
 
   PositionF m_position_function;
+  expantions_type m_expansions;
+  double m_eta;
   h2_matrix_type m_h2_matrix;
 
 public:
@@ -481,10 +526,25 @@ public:
            const int max_tree_depth)
       : base_type(row_elements, col_elements, function),
         m_position_function(position_function),
-        m_h2_matrix(
-            row_elements, col_elements,
-            expansions_type(order, position_function, beta, max_tree_depth),
-            function, eta) {}
+        m_expansions(order, position_function, beta, max_tree_depth),
+        m_eta(eta),
+        m_h2_matrix(row_elements, col_elements, m_expansions, function, m_eta) {
+  }
+
+  KernelH2(const RowElements &row_elements, const ColElements &col_elements,
+           const KernelH2 &kernel)
+      : base_type(row_elements, col_elements, kernel),
+        m_position_function(kernel.m_position_function),
+        m_expansions(kernel.m_expansions), m_eta(kernel.m_eta),
+        m_h2_matrix(row_elements, col_elements, m_expansions, function,
+                    m_eta){};
+
+  void set_elements(const RowElements &row_elements,
+                    const ColElements &col_elements) {
+    base_type::set_elements(row_elements, col_elements);
+    m_h2_matrix = h2_matrix_type(row_elements, col_elements, m_expansions,
+                                 this->m_function, m_eta);
+  }
 
   const h2_matrix_type &get_h2_matrix() const { return m_h2_matrix; }
 
@@ -538,6 +598,19 @@ public:
         m_expansions(position_function),
         m_fmm(row_elements, col_elements, m_expansions, function){};
 
+  KernelFMM(const RowElements &row_elements, const ColElements &col_elements,
+            const KernelFMM &kernel)
+      : base_type(row_elements, col_elements, kernel),
+        m_expansions(kernel.m_expansions),
+        m_fmm(row_elements, col_elements, m_expansions, function){};
+
+  void set_elements(const RowElements &row_elements,
+                    const ColElements &col_elements) {
+    base_type::set_elements(row_elements, col_elements);
+    m_fmm =
+        fmm_type(row_elements, col_elements, m_expansions, this->m_function);
+  }
+
   /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
   /// and particle sets \p a and \p b on a vector rhs and
   /// accumulates the result in vector lhs
@@ -578,6 +651,12 @@ public:
                   F(col_elements, radius_function, withdx_function)),
         m_radius_function(radius_function), m_dx_function(withdx_function){};
 
+  KernelSparse(const RowElements &row_elements, const ColElements &col_elements,
+               const KernelSparse &kernel)
+      : base_type(row_elements, col_elements, kernel),
+        m_expansions(kernel.m_expansions),
+        m_fmm(row_elements, col_elements, m_expansions, function){};
+
   /*
    * shouldn't need this anymore....
   Block coeff(const size_t i, const size_t j) const {
@@ -585,10 +664,10 @@ public:
       const int ioffset = i - pi*BlockRows;
       const int pj = std::floor(static_cast<float>(j)/BlockCols);
       const int joffset = j - pj*BlockCols;
-      ASSERT(pi < this->m_row_elements.size(),"pi greater than a.size()");
-      ASSERT(pj < this->m_col_elements.size(),"pj greater than b.size()");
-      const_row_reference ai = this->m_row_elements[pi];
-      const_col_reference bj = this->m_col_elements[pj];
+      ASSERT(pi < get_row_elements().size(),"pi greater than a.size()");
+      ASSERT(pj < get_col_elements().size(),"pj greater than b.size()");
+      const_row_reference ai = get_row_elements()[pi];
+      const_col_reference bj = get_col_elements()[pj];
       const_position_reference dx = get<position>(bj)-get<position>(ai);
       if (dx.squaredNorm() < std::pow(m_radius_function(ai),2)) {
           return this->m_function(dx,ai,bj)(ioffset,joffset);
@@ -600,8 +679,8 @@ public:
 
   template <typename MatrixType> void assemble(const MatrixType &matrix) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     const size_t na = a.size();
 
@@ -628,8 +707,8 @@ public:
   void assemble(std::vector<Triplet> &triplets, const size_t startI = 0,
                 const size_t startJ = 0) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     const size_t na = a.size();
 
@@ -664,8 +743,8 @@ public:
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     const size_t na = a.size();
 
@@ -698,8 +777,8 @@ public:
     ASSERT(static_cast<typename DerivedRHS::Index>(this->cols()) == rhs.rows(),
            "rhs vector has incompatible size");
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     const size_t na = a.size();
 
@@ -812,8 +891,8 @@ public:
 
   void assemble_matrix() {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     m_matrix.resize(this->rows(), this->cols());
     for (size_t i = 0; i < a.size(); ++i) {
@@ -827,10 +906,11 @@ public:
     }
   }
 
-  Scalar coeff(const size_t i, const size_t j) const { return m_matrix(i, j); }
+  Scalar coeff(const size_t i, const size_t j) const { return m_matrix(i, j);
+}
 
-  template <typename MatrixType> void assemble(const MatrixType &matrix) const {
-    const_cast<MatrixType &>(matrix) = m_matrix;
+  template <typename MatrixType> void assemble(const MatrixType &matrix) const
+{ const_cast<MatrixType &>(matrix) = m_matrix;
   }
 
   /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
@@ -840,8 +920,8 @@ public:
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
 
-    const RowElements &a = this->m_row_elements;
-    const ColElements &b = this->m_col_elements;
+    const RowElements &a = get_row_elements();
+    const ColElements &b = get_col_elements();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -855,8 +935,8 @@ public:
     for (size_t i = 0; i < na; ++i) {
       for (size_t j = 0; j < nb; ++j) {
         lhs[i] += m_matrix.template block<BlockRows, BlockCols>(i * BlockRows,
-                                                                j * BlockCols) *
-                  rhs[j];
+                                                                j * BlockCols)
+* rhs[j];
       }
     }
   }
