@@ -109,25 +109,31 @@ struct write_from_tuple<getter_type<std::tuple<Types...>, MplVector>> {
   typename boost::enable_if<
       boost::is_arithmetic<non_ref_tuple_element<U>>>::type
   operator()(U i) {
-    datas[i]->SetValue(index, std::get<U::value>(write_from));
+    if (datas[i] != nullptr) {
+      datas[i]->SetValue(index, std::get<U::value>(write_from));
+    }
   }
 
 #ifdef HAVE_EIGEN
   template <typename U>
   typename boost::enable_if<is_eigen_vector<non_ref_tuple_element<U>>>::type
   operator()(U i) {
-    Eigen::Matrix<float, non_ref_tuple_element<U>::RowsAtCompileTime, 1> tmp =
-        std::get<U::value>(write_from).template cast<float>();
-    datas[i]->SetTuple(index, tmp.data());
+    if (datas[i] != nullptr) {
+      Eigen::Matrix<float, non_ref_tuple_element<U>::RowsAtCompileTime, 1> tmp =
+          std::get<U::value>(write_from).template cast<float>();
+      datas[i]->SetTuple(index, tmp.data());
+    }
   }
 #endif
 
   template <typename U>
   typename boost::enable_if<is_vector<non_ref_tuple_element<U>>>::type
   operator()(U i) {
-    Vector<float, non_ref_tuple_element<U>::size> tmp =
-        std::get<U::value>(write_from);
-    datas[i]->SetTuple(index, tmp.data());
+    if (datas[i] != nullptr) {
+      Vector<float, non_ref_tuple_element<U>::size> tmp =
+          std::get<U::value>(write_from);
+      datas[i]->SetTuple(index, tmp.data());
+    }
   }
 
   template <typename U>
@@ -136,14 +142,18 @@ struct write_from_tuple<getter_type<std::tuple<Types...>, MplVector>> {
   operator()(U i) {
     // TODO: not sure what to write here, default to original seed
     // seed + uint32_t(Aboria::get<id>(i)
-    datas[i]->SetValue(index, seed);
+    if (datas[i] != nullptr) {
+      datas[i]->SetValue(index, seed);
+    }
   }
 
   template <typename U>
   typename boost::enable_if<
       boost::is_same<non_ref_tuple_element<U>, uint32_t>>::type
   operator()(U i) {
-    datas[i]->SetValue(index, std::get<U::value>(write_from));
+    if (datas[i] != nullptr) {
+      datas[i]->SetValue(index, std::get<U::value>(write_from));
+    }
   }
 
   template <typename U>
@@ -300,6 +310,9 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>, MplVector>> {
   operator()(U i) {
     typedef typename mpl::at<mpl_type_vector, U>::type variable_type;
     const char *name = variable_type().name;
+    if (name[0] == '_') {
+      return;
+    }
     datas[i] =
         vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
     if (!datas[i]) {
@@ -315,6 +328,9 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>, MplVector>> {
   operator()(U i) {
     typedef typename mpl::at<mpl_type_vector, U>::type variable_type;
     const char *name = variable_type().name;
+    if (name[0] == '_') {
+      return;
+    }
     datas[i] =
         vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
     if (!datas[i]) {
@@ -331,6 +347,9 @@ struct setup_datas_for_writing<getter_type<std::tuple<Types...>, MplVector>> {
   operator()(U i) {
     typedef typename mpl::at<mpl_type_vector, U>::type variable_type;
     const char *name = variable_type().name;
+    if (name[0] == '_') {
+      return;
+    }
     datas[i] =
         vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
     if (!datas[i]) {
@@ -375,6 +394,9 @@ struct setup_datas_for_writing<getter_type<
   operator()(U i) {
     typedef typename mpl::at<mpl_type_vector, U>::type variable_type;
     const char *name = variable_type().name;
+    if (name[0] == '_') {
+      return;
+    }
     datas[i] =
         vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
     if (!datas[i]) {
@@ -390,6 +412,9 @@ struct setup_datas_for_writing<getter_type<
   operator()(U i) {
     typedef typename mpl::at<mpl_type_vector, U>::type variable_type;
     const char *name = variable_type().name;
+    if (name[0] == '_') {
+      return;
+    }
     datas[i] =
         vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
     if (!datas[i]) {
@@ -406,6 +431,9 @@ struct setup_datas_for_writing<getter_type<
   operator()(U i) {
     typedef typename mpl::at<mpl_type_vector, U>::type variable_type;
     const char *name = variable_type().name;
+    if (name[0] == '_') {
+      return;
+    }
     datas[i] =
         vtkFloatArray::SafeDownCast(grid->GetPointData()->GetArray(name));
     if (!datas[i]) {
