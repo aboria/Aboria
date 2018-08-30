@@ -404,7 +404,7 @@ public:
     It is possible to convert the [classref Aboria::Particles] data structure to
     a [@https://www.vtk.org/doc/nightly/html/classvtkUnstructuredGrid.html  VTK
     unstructured grid] class using the [memberref Aboria::Particles::get_grid]
-    function. This function will write out each particle as a 3D points in the
+    function. This function will write out each particle as a 3D point in the
     unstructured grid. By default all the particle's variables are converted
     into VTK data arrays and added to the grid, [*except] for those with names
     starting with the character "_".
@@ -414,11 +414,12 @@ public:
     Aboria::vtkWriteGrid], which can write out the grid along with any constant
     fields (e.g. a timestamp) that you may need. For example, the following code
     writes out the entire contents of the the particle set to the file
-    `doc00001.vtu`
+    `doc00001.vtu`, along with a constant field named "time" containing the
+    value 1.0.
 
     */
 
-    vtkWriteGrid("doc", 0, particles.get_grid(true));
+    vtkWriteGrid("doc", 0, particles.get_grid(true), {{"time", 1.0}});
 
     /*`
      [endsect]
