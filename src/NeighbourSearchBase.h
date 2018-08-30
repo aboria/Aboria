@@ -1938,7 +1938,8 @@ private:
   }
 };
 
-template <typename Query, int LNormNumber>
+template <typename Query, int LNormNumber,
+          typename Transform = detail::IdentityTransform>
 class lattice_iterator_within_distance {
   typedef lattice_iterator_within_distance<Query, LNormNumber> iterator;
   static const unsigned int dimension = Query::dimension;
@@ -1976,13 +1977,14 @@ class lattice_iterator_within_distance {
   };
 
   double_d m_query_point;
-  double_d m_inv_max_distance;
+  double m_max_distance2;
   int m_quadrant;
   const Query *m_query;
   bool m_valid;
   int_d m_min;
   proxy_int_d m_index;
   int_d m_base_index;
+  Transform m_transform;
 
 public:
   typedef proxy_int_d pointer;
@@ -1996,10 +1998,14 @@ public:
 
   CUDA_HOST_DEVICE
   lattice_iterator_within_distance(const double_d &query_point,
-                                   const double_d &max_distance,
-                                   const Query *query)
-      : m_query_point(query_point), m_inv_max_distance(1.0 / max_distance),
-        m_quadrant(0), m_query(query), m_valid(true) {
+                                   const double max_distance,
+                                   const Query *query,
+                                   const Transform &transform = Transform())
+      : m_query_point(query_point),
+        m_max_distance2(
+            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
+                max_distance)),
+        m_quadrant(0), m_query(query), m_valid(true), m_transform(transform) {
     if (outside_domain(query_point, max_distance)) {
       m_valid = false;
     } else {
@@ -2098,19 +2104,17 @@ private:
       }
 
       // check distance
-      double accum = 0;
+      double_d dx;
       for (size_t j = 0; j < dimension; ++j) {
-        const double dist = m_query->m_point_to_bucket_index.get_dist_to_bucket(
+        dx[j] = m_query->m_point_to_bucket_index.get_dist_to_bucket(
             m_query_point[j], m_base_index[j], m_min[j], j);
-        ASSERT_CUDA(dist >= 0);
-        // std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<<
-        // std::endl;
-        accum = detail::distance_helper<LNormNumber>::accumulate_norm(
-            accum, dist * m_inv_max_distance[j]);
       }
+
+      transform(dx);
+      const double accum = detail::distance_helper<LNormNumber>::norm(dx);
       // std::cout <<"accum = "<<accum<< std::endl;
 
-      no_buckets = accum > 1.0;
+      no_buckets = accum > m_max_distance2;
 
       // std::cout <<" m_min = "<<m_min<<" m_quadrant = "<<m_quadrant <<
       // std::endl;
@@ -2194,20 +2198,18 @@ private:
       // if index is outside domain don't bother calcing
       // distance
       if (potential_bucket) {
-        double accum = 0;
+        double_d dx;
         for (size_t j = 0; j < dimension; ++j) {
-          const double dist =
-              m_query->m_point_to_bucket_index.get_dist_to_bucket(
-                  m_query_point[j], m_base_index[j], m_index[j], j);
-          ASSERT_CUDA(dist >= 0);
-          // std::cout <<"dist= "<<dist<< " "<<dist*m_inv_max_distance[j]<<
-          // std::endl;
-          accum = detail::distance_helper<LNormNumber>::accumulate_norm(
-              accum, dist * m_inv_max_distance[j]);
+          dx[j] = m_query->m_point_to_bucket_index.get_dist_to_bucket(
+              m_query_point[j], m_base_index[j], m_index[j], j);
         }
+
+        transform(dx);
+
+        const double accum = detail::distance_helper<LNormNumber>::norm(dx);
         // std::cout <<"accum = "<<accum<< std::endl;
 
-        potential_bucket = accum <= 1.0;
+        potential_bucket = accum <= m_max_distance2;
       }
 
       // if bucket is still good break out of loop

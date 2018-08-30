@@ -43,6 +43,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 namespace detail {
 
+template <unsigned int D> struct IdentityTransform {
+  void operator()(const Vector<double, D> &v) {}
+};
+
 template <int LNormNumber> struct distance_helper {
   CUDA_HOST_DEVICE
   static inline double get_value_to_accumulate(const double arg) {
