@@ -1,0 +1,561 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template Vector</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Vector_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Vector.h&gt;">
+<link rel="prev" href="../ABORIA_VARIABLE_VECTOR.html" title="Macro ABORIA_VARIABLE_VECTOR">
+<link rel="next" href="is_vector.html" title="Struct template is_vector">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../ABORIA_VARIABLE_VECTOR.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Vector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="is_vector.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.Vector"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template Vector</span></h2>
+<p>Aboria::Vector &#8212; An N-dimensional vector class. </p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Vector_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Vector.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Vector.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T<span class="special">,</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> N<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <span class="identifier">T</span> <a name="Aboria.Vector.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="Vector.html#Aboria.Vectorconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="Vector.html#idp47381155529952-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp47381155530400-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp47381155534016-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp47381155538256-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">T</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="Vector.html#idp47381155543632-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> <a class="link" href="Vector.html#idp47381155544896-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html#idp47381155547312-bb"><span class="identifier">Vector</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a class="link" href="Vector.html#idp47381155551136-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a class="link" href="Vector.html#idp47381155556272-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> 
+    Vector&amp; <a class="link" href="Vector.html#idp47381155560400-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="Vector.html#idp47381155482512-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idp47381155482912-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <span class="special">&amp;</span> <a class="link" href="Vector.html#idp47381155486464-bb"><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span></a><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idp47381155490016-bb"><span class="identifier">inner_product</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a class="link" href="Vector.html#idp47381155494560-bb"><span class="identifier">cast</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a class="link" href="Vector.html#idp47381155498688-bb"><span class="identifier">dot</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idp47381155504208-bb"><span class="identifier">squaredNorm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idp47381155506032-bb"><span class="identifier">norm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="Vector.html#idp47381155507840-bb"><span class="identifier">inf_norm</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a class="link" href="Vector.html#idp47381155509664-bb"><span class="identifier">pow</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="Vector.html#idp47381155512448-bb"><span class="identifier">normalize</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="Vector.html#idp47381155515008-bb"><span class="identifier">all</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="Vector.html#idp47381155517760-bb"><span class="identifier">any</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idp47381155520512-bb"><span class="identifier">minCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idp47381155522352-bb"><span class="identifier">maxCoeff</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <a class="link" href="Vector.html#idp47381155524192-bb"><span class="identifier">prod</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">T</span> <span class="special">*</span> <a class="link" href="Vector.html#idp47381155525472-bb"><span class="identifier">data</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Archive<span class="special">&gt;</span> <span class="keyword">void</span> <a class="link" href="Vector.html#idp47381155526768-bb"><span class="identifier">serialize</span></a><span class="special">(</span><span class="identifier">Archive</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="Vector.html#idp47381155563808-bb">public static functions</a></span>
+  <span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a class="link" href="Vector.html#idp47381155564208-bb"><span class="identifier">Zero</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a class="link" href="Vector.html#idp47381155566720-bb"><span class="identifier">Constant</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">size</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46373938145008"></a><h2>Description</h2>
+<p><a class="link" href="Normal.html" title="Struct Normal">Normal</a> C++ operators ('*','/','&lt;' etc.) operate on this vector class in an element-wise fashion.</p>
+<p>
+</p>
+<div class="refsect2">
+<a name="idp46373938146864"></a><h3>
+<a name="Aboria.Vectorconstruct-copy-destruct"></a><code class="computeroutput">Vector</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><a name="idp47381155529952-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>Constructs an vector and allocates memory. </li>
+<li class="listitem">
+<pre class="literallayout"><a name="idp47381155530400-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">)</span><span class="special">;</span></pre>
+<p>Constructs an vector with initial values.</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg1</code></span></p></td>
+<td>
+<p>All the elements of the vector are set to this value Constructs an vector with initial values.</p>
+<p>The first element is set to this value </p>
+</td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg2</code></span></p></td>
+<td><p>The second element is set to this value </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><a name="idp47381155534016-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">,</span> <span class="identifier">T</span> arg3<span class="special">)</span><span class="special">;</span></pre>
+<p>Constructs an vector with initial values.</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg1</code></span></p></td>
+<td><p>The first element is set to this value </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg2</code></span></p></td>
+<td><p>The second element is set to this value </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg3</code></span></p></td>
+<td><p>The third element is set to this value </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><a name="idp47381155538256-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="identifier">T</span> arg1<span class="special">,</span> <span class="identifier">T</span> arg2<span class="special">,</span> <span class="identifier">T</span> arg3<span class="special">,</span> <span class="identifier">T</span> arg4<span class="special">)</span><span class="special">;</span></pre>
+<p>Constructs an vector with initial values.</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg1</code></span></p></td>
+<td><p>The first element is set to this value </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg2</code></span></p></td>
+<td><p>The second element is set to this value </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg3</code></span></p></td>
+<td><p>The third element is set to this value </p></td>
+</tr>
+<tr>
+<td><p><span class="term"><code class="computeroutput">arg4</code></span></p></td>
+<td><p>The fourth element is set to this value </p></td>
+</tr>
+</tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem"><pre class="literallayout"><a name="idp47381155543632-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> <a name="idp47381155544896-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>Eigen copy constructor</p>
+<p>Assigns an eigen vector object (arg) to this vector. </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a name="idp47381155547312-bb"></a><span class="identifier">Vector</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p><code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> copy-constructor</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term"><code class="computeroutput">arg</code></span></p></td>
+<td><p>constructs a vector as a copy of this arguement </p></td>
+</tr></tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a name="idp47381155551136-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p><code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> assignment</p>
+<p>Assigns a vector with different type <code class="computeroutput">T2</code> but same length <code class="computeroutput">N</code> to this vector</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term"><code class="computeroutput">arg</code></span></p></td>
+<td><p>Assigns the first N values from arg to this vector. </p></td>
+</tr></tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> Vector&amp; <a name="idp47381155556272-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="identifier">T2</span> <span class="special">*</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>Other <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> assignment</p>
+<p>Assigns a vector-like object (arg) to this vector.</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term"><code class="computeroutput">arg</code></span></p></td>
+<td><p>Vector-like object (with index operator) </p></td>
+</tr></tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Derived<span class="special">&gt;</span> 
+  Vector&amp; <a name="idp47381155560400-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">Eigen</span><span class="special">::</span><span class="identifier">DenseBase</span><span class="special">&lt;</span> <span class="identifier">Derived</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>Eigen <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code> assignment</p>
+<p>Assigns an eigen vector object (arg) to this vector. </p>
+</li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373938273344"></a><h3>
+<a name="idp47381155482512-bb"></a><code class="computeroutput">Vector</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> <a name="idp47381155482912-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>const Index operator</p>
+<p>Returns a const reference to the <code class="computeroutput">n</code>-th element of the vector</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term"><code class="computeroutput">n</code></span></p></td>
+<td><p>the element number to index </p></td>
+</tr></tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">T</span> <span class="special">&amp;</span> <a name="idp47381155486464-bb"></a><span class="keyword">operator</span><span class="special">[</span><span class="special">]</span><span class="special">(</span><span class="keyword">unsigned</span> <span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre>
+<p>Index operator</p>
+<p>Returns a reference to the <code class="computeroutput">n</code>-th element of the vector</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Parameters:</span></p></td>
+<td><div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term"><code class="computeroutput">n</code></span></p></td>
+<td><p>the element number to index </p></td>
+</tr></tbody>
+</table></div></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idp47381155490016-bb"></a><span class="identifier">inner_product</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>inner product</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the inner product (dot product) of this vector with <code class="computeroutput">arg</code> </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="idp47381155494560-bb"></a><span class="identifier">cast</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<p>change vector type</p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>A new vector with each element <code class="computeroutput">static_cast</code> to <code class="computeroutput">T2</code> </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> T2<span class="special">&gt;</span> <span class="keyword">double</span> <a name="idp47381155498688-bb"></a><span class="identifier">dot</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T2</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <span class="special">&amp;</span> arg<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>inner product</p>
+<p>
+</p>
+<p><span class="bold"><strong>See Also:</strong></span></p>
+<p>inner_product </p>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>The inner product (dot product) of this vector with <code class="computeroutput">arg</code></p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp47381155504208-bb"></a><span class="identifier">squaredNorm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>squared norm 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the squared 2-norm of the vector $ v_i^2$ </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp47381155506032-bb"></a><span class="identifier">norm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>2-norm 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the 2-norm of the vector ${ v_i^2}$ </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">double</span> <a name="idp47381155507840-bb"></a><span class="identifier">inf_norm</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>inf-norm 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the infinity norm of the vector $ |v_i|$ </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> EXP_T<span class="special">&gt;</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="identifier">T</span><span class="special">,</span> <span class="identifier">N</span> <span class="special">&gt;</span> <a name="idp47381155509664-bb"></a><span class="identifier">pow</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">EXP_T</span> exponent<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">void</span> <a name="idp47381155512448-bb"></a><span class="identifier">normalize</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<p>normalise vector so that its length (2-norm) equals one. </p>
+<p><span class="bold"><strong>See Also:</strong></span></p>
+<p>norm </p>
+<p>
+</p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381155515008-bb"></a><span class="identifier">all</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>collapse boolean vector using <code class="computeroutput">&amp;</code> operator 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the accumulated <code class="computeroutput">&amp;</code> of all the vectors elements, i.e. v_1 &amp; v_2 &amp; v3 &amp; ... </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381155517760-bb"></a><span class="identifier">any</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>collapse boolean vector using <code class="computeroutput">|</code> operator 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the accumulated <code class="computeroutput">|</code> of all the vectors elements, i.e. v_1 | v_2 | v3 | ... </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">T</span> <a name="idp47381155520512-bb"></a><span class="identifier">minCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>find the minimum element of the vector 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the minimum element of the vector </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">T</span> <a name="idp47381155522352-bb"></a><span class="identifier">maxCoeff</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>find the maximum element of the vector 
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the maximum element of the vector </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">T</span> <a name="idp47381155524192-bb"></a><span class="identifier">prod</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>returns the product of every element in the vector </li>
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">T</span> <span class="special">*</span> <a name="idp47381155525472-bb"></a><span class="identifier">data</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns the raw memory array containing the data for the vector </li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Archive<span class="special">&gt;</span> 
+  <span class="keyword">void</span> <a name="idp47381155526768-bb"></a><span class="identifier">serialize</span><span class="special">(</span><span class="identifier">Archive</span> <span class="special">&amp;</span> ar<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> version<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373938433648"></a><h3>
+<a name="idp47381155563808-bb"></a><code class="computeroutput">Vector</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a name="idp47381155564208-bb"></a><span class="identifier">Zero</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<p>Zero <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code></p>
+<p>Returns a zero vector </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a> <a name="idp47381155566720-bb"></a><span class="identifier">Constant</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> c<span class="special">)</span><span class="special">;</span></pre>
+<p>Constant <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code></p>
+<p>Returns a constant vector </p>
+</li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../ABORIA_VARIABLE_VECTOR.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Vector_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="is_vector.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

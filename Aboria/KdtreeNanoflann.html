@@ -1,0 +1,128 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template KdtreeNanoflann</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NanoFlannAdaptor.h&gt;">
+<link rel="prev" href="../LOG_BOLD.html" title="Macro LOG_BOLD">
+<link rel="next" href="KdtreeNanoflannQuery.html" title="Struct template KdtreeNanoflannQuery">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../LOG_BOLD.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="KdtreeNanoflannQuery.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.KdtreeNanoflann"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template KdtreeNanoflann</span></h2>
+<p>Aboria::KdtreeNanoflann &#8212; Implements neighbourhood searching using a bucket search algorithm, dividing the domain into constant size "buckets". </p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NanoFlannAdaptor.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NanoFlannAdaptor.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Traits<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="KdtreeNanoflann.html" title="Class template KdtreeNanoflann">KdtreeNanoflann</a> <span class="special">:</span> <span class="keyword">public</span> Aboria::neighbour_search_base&lt; KdtreeNanoflann&lt; Traits &gt;, Traits, KdtreeNanoflannQuery&lt; Traits &gt; &gt;
+<span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// <a class="link" href="KdtreeNanoflann.html#Aboria.KdtreeNanoflannconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="KdtreeNanoflann.html#idp47381153708848-bb"><span class="identifier">KdtreeNanoflann</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="KdtreeNanoflann.html#idp47381153698672-bb">public member functions</a></span>
+  <span class="identifier">size_t</span> <a class="link" href="KdtreeNanoflann.html#idp47381153699072-bb"><span class="identifier">kdtree_get_point_count</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="KdtreeNanoflann.html#idp47381153700032-bb"><span class="identifier">kdtree_distance</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">*</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">double</span> <a class="link" href="KdtreeNanoflann.html#idp47381153703056-bb"><span class="identifier">kdtree_get_pt</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> BBOX<span class="special">&gt;</span> <span class="keyword">bool</span> <a class="link" href="KdtreeNanoflann.html#idp47381153705392-bb"><span class="identifier">kdtree_get_bbox</span></a><span class="special">(</span><span class="identifier">BBOX</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KdtreeNanoflann.html#idp47381153707888-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="KdtreeNanoflann.html#idp47381153708976-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="KdtreeNanoflann.html#idp47381153709376-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="KdtreeNanoflann.html#idp47381153710336-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="KdtreeNanoflann.html#idp47381153710752-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KdtreeNanoflann.html#idp47381153711712-bb"><span class="identifier">end_list_of_copies_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KdtreeNanoflann.html#idp47381153712672-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KdtreeNanoflann.html#idp47381153713632-bb"><span class="identifier">print_tree</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KdtreeNanoflann.html#idp47381153715280-bb"><span class="identifier">print_level</span></a><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="KdtreeNanoflann.html#idp47381153716944-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <a class="link" href="KdtreeNanoflannQuery.html" title="Struct template KdtreeNanoflannQuery">KdtreeNanoflannQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="KdtreeNanoflann.html#idp47381153720944-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="KdtreeNanoflannQuery.html" title="Struct template KdtreeNanoflannQuery">KdtreeNanoflannQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="KdtreeNanoflann.html#idp47381153722800-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46373923014160"></a><h2>Description</h2>
+<p>This class implements neighbourhood searching using a bucket search algorithm. The domain is first divided up into a regular grid of constant size "buckets", either by using the class constructor to initialise the domain extents, bucket size etc., or by using the reset() member function to reset these parameters.</p>
+<p>After the buckets are created, a set of 3D points can be assigned to their respective buckets using the embed_points() member function. After this, neighbourhood queries around a given point can be performed using find_broadphase_neighbours(), which returns a const iterator to all the points in the same bucket or surrounding buckets of the given point. </p>
+<div class="refsect2">
+<a name="idp46373923015792"></a><h3>
+<a name="Aboria.KdtreeNanoflannconstruct-copy-destruct"></a><code class="computeroutput">KdtreeNanoflann</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47381153708848-bb"></a><span class="identifier">KdtreeNanoflann</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373923021728"></a><h3>
+<a name="idp47381153698672-bb"></a><code class="computeroutput">KdtreeNanoflann</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47381153699072-bb"></a><span class="identifier">kdtree_get_point_count</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idp47381153700032-bb"></a><span class="identifier">kdtree_distance</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">double</span> <span class="special">*</span> p1<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">size_t</span> idx_p2<span class="special">,</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">double</span> <a name="idp47381153703056-bb"></a><span class="identifier">kdtree_get_pt</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> idx<span class="special">,</span> <span class="keyword">int</span> dim<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> BBOX<span class="special">&gt;</span> <span class="keyword">bool</span> <a name="idp47381153705392-bb"></a><span class="identifier">kdtree_get_bbox</span><span class="special">(</span><span class="identifier">BBOX</span> <span class="special">&amp;</span> bb<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381153707888-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373923061056"></a><h3>
+<a name="idp47381153708976-bb"></a><code class="computeroutput">KdtreeNanoflann</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp47381153709376-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373923068976"></a><h3>
+<a name="idp47381153710336-bb"></a><code class="computeroutput">KdtreeNanoflann</code> private member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381153710752-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381153711712-bb"></a><span class="identifier">end_list_of_copies_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381153712672-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381153713632-bb"></a><span class="identifier">print_tree</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span> nodes<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381153715280-bb"></a><span class="identifier">print_level</span><span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span> <span class="keyword">const</span> <span class="identifier">node_type</span> <span class="special">*</span> <span class="special">&gt;</span> <span class="special">&amp;</span> nodes<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381153716944-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
+                           <span class="keyword">const</span> <span class="keyword">int</span> new_n<span class="special">,</span> 
+                           <span class="keyword">const</span> <span class="keyword">bool</span> call_set_domain <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="KdtreeNanoflannQuery.html" title="Struct template KdtreeNanoflannQuery">KdtreeNanoflannQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47381153720944-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="KdtreeNanoflannQuery.html" title="Struct template KdtreeNanoflannQuery">KdtreeNanoflannQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47381153722800-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="../LOG_BOLD.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NanoFlannAdaptor_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="KdtreeNanoflannQuery.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

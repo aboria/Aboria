@@ -1,0 +1,210 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template HyperOctreeQuery</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.OctTree_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/OctTree.h&gt;">
+<link rel="prev" href="make_iterator_range.html" title="Function template make_iterator_range">
+<link rel="next" href="HyperOctree.html" title="Class template HyperOctree">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="make_iterator_range.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.OctTree_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="HyperOctree.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.HyperOctreeQuery"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template HyperOctreeQuery</span></h2>
+<p>Aboria::HyperOctreeQuery &#8212; This is a query object for the <a class="link" href="HyperOctree.html" title="Class template HyperOctree">HyperOctree</a> spatial data structure. </p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.OctTree_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/OctTree.h&gt;">/home/travis/build/martinjrobins/Aboria/src/OctTree.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Traits<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a> <span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a>                                               <a name="Aboria.HyperOctreeQuery.traits_type"></a><span class="identifier">traits_type</span><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">raw_pointer</span>                                  <a name="Aboria.HyperOctreeQuery.raw_pointer"></a><span class="identifier">raw_pointer</span><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">double_d</span>                                     <a name="Aboria.HyperOctreeQuery.double_d"></a><span class="identifier">double_d</span><span class="special">;</span>         
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">bool_d</span>                                       <a name="Aboria.HyperOctreeQuery.bool_d"></a><span class="identifier">bool_d</span><span class="special">;</span>           
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">int_d</span>                                        <a name="Aboria.HyperOctreeQuery.int_d"></a><span class="identifier">int_d</span><span class="special">;</span>            
+  <span class="keyword">typedef</span> <span class="identifier">Traits</span><span class="special">::</span><span class="identifier">unsigned_int_d</span>                               <a name="Aboria.HyperOctreeQuery.unsigned_int_d"></a><span class="identifier">unsigned_int_d</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <a class="link" href="tree_query_iterator.html" title="Class template tree_query_iterator">tree_query_iterator</a><span class="special">&lt;</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">,</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> <a name="Aboria.HyperOctreeQuery.query_iterator"></a><span class="identifier">query_iterator</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <a class="link" href="depth_first_iterator.html" title="Class template depth_first_iterator">depth_first_iterator</a><span class="special">&lt;</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a> <span class="special">&gt;</span>             <a name="Aboria.HyperOctreeQuery.root_iterator"></a><span class="identifier">root_iterator</span><span class="special">;</span>    
+  <span class="keyword">typedef</span> <a class="link" href="depth_first_iterator.html" title="Class template depth_first_iterator">depth_first_iterator</a><span class="special">&lt;</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a> <span class="special">&gt;</span>             <a name="Aboria.HyperOctreeQuery.all_iterator"></a><span class="identifier">all_iterator</span><span class="special">;</span>     
+  <span class="keyword">typedef</span> <a class="link" href="octree_child_iterator.html" title="Class template octree_child_iterator">octree_child_iterator</a><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span>                   <a name="Aboria.HyperOctreeQuery.child_iterator"></a><span class="identifier">child_iterator</span><span class="special">;</span>   
+  <span class="keyword">typedef</span> <span class="identifier">child_iterator</span><span class="special">::</span><span class="identifier">reference</span>                            <a name="Aboria.HyperOctreeQuery.reference"></a><span class="identifier">reference</span><span class="special">;</span>        
+  <span class="keyword">typedef</span> <span class="identifier">child_iterator</span><span class="special">::</span><span class="identifier">pointer</span>                              <a name="Aboria.HyperOctreeQuery.pointer"></a><span class="identifier">pointer</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">child_iterator</span><span class="special">::</span><span class="identifier">value_type</span>                           <a name="Aboria.HyperOctreeQuery.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>       
+  <span class="keyword">typedef</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span>                                    <a name="Aboria.HyperOctreeQuery.box_type"></a><span class="identifier">box_type</span><span class="special">;</span>         
+  <span class="keyword">typedef</span> <a class="link" href="ranges_iterator.html" title="Class template ranges_iterator">ranges_iterator</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span>                            <a name="Aboria.HyperOctreeQuery.particle_iterator"></a><span class="identifier">particle_iterator</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="HyperOctreeQuery.html#idp47381154321520-bb">public member functions</a></span>
+  <span class="identifier">raw_pointer</span> <a class="link" href="HyperOctreeQuery.html#idp47381154321920-bb"><span class="identifier">find</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> <a class="link" href="HyperOctreeQuery.html#idp47381154323568-bb"><span class="identifier">get_bounds</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="HyperOctreeQuery.html#idp47381154324528-bb"><span class="identifier">get_periodic</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">child_iterator</span> <a class="link" href="HyperOctreeQuery.html#idp47381154325488-bb"><span class="identifier">get_children</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">child_iterator</span> <a class="link" href="HyperOctreeQuery.html#idp47381154326448-bb"><span class="identifier">get_children</span></a><span class="special">(</span><span class="identifier">reference</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">child_iterator</span> <a class="link" href="HyperOctreeQuery.html#idp47381154328784-bb"><span class="identifier">get_children</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">particle_iterator</span> <a class="link" href="HyperOctreeQuery.html#idp47381154330432-bb"><span class="identifier">get_bucket_particles</span></a><span class="special">(</span><span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">child_iterator</span> <a class="link" href="HyperOctreeQuery.html#idp47381154332080-bb"><span class="identifier">get_bucket</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="HyperOctreeQuery.html#idp47381154333728-bb"><span class="identifier">get_bucket_index</span></a><span class="special">(</span><span class="identifier">reference</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="HyperOctreeQuery.html#idp47381154335376-bb"><span class="identifier">number_of_buckets</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber<span class="special">&gt;</span> 
+    <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
+    <a class="link" href="HyperOctreeQuery.html#idp47381154336336-bb"><span class="identifier">get_buckets_near_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber<span class="special">&gt;</span> 
+    <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
+    <a class="link" href="HyperOctreeQuery.html#idp47381154339824-bb"><span class="identifier">get_buckets_near_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="iterator_range.html" title="Struct template iterator_range">iterator_range</a><span class="special">&lt;</span> <span class="identifier">root_iterator</span> <span class="special">&gt;</span> <a class="link" href="HyperOctreeQuery.html#idp47381154343312-bb"><span class="identifier">get_root_buckets</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">all_iterator</span> <a class="link" href="HyperOctreeQuery.html#idp47381154344560-bb"><span class="identifier">get_subtree</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">all_iterator</span> <a class="link" href="HyperOctreeQuery.html#idp47381154346208-bb"><span class="identifier">get_subtree</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="HyperOctreeQuery.html#idp47381154347168-bb"><span class="identifier">number_of_particles</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">unsigned</span> <a class="link" href="HyperOctreeQuery.html#idp47381154348128-bb"><span class="identifier">number_of_levels</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">const</span> <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a class="link" href="HyperOctreeQuery.html#idp47381154349088-bb"><span class="identifier">get_particles_begin</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a class="link" href="HyperOctreeQuery.html#idp47381154350048-bb"><span class="identifier">get_particles_begin</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="HyperOctreeQuery.html#idp47381154351008-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="HyperOctreeQuery.html#idp47381154351408-bb"><span class="identifier">is_leaf_node</span></a><span class="special">(</span><span class="identifier">reference</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="keyword">bool</span> <a class="link" href="HyperOctreeQuery.html#idp47381154353056-bb"><span class="identifier">is_tree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="identifier">size_t</span> <a class="link" href="HyperOctreeQuery.html#idp47381154354016-bb"><span class="identifier">num_children</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="identifier">size_t</span> <a class="link" href="HyperOctreeQuery.html#idp47381154355296-bb"><span class="identifier">num_children</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="identifier">box_type</span> <a class="link" href="HyperOctreeQuery.html#idp47381154356944-bb"><span class="identifier">get_bounds</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="identifier">dimension</span><span class="special">;</span>
+  <span class="keyword">static</span> <span class="keyword">const</span> <span class="keyword">unsigned</span> <span class="keyword">int</span> <span class="identifier">m_max_tree_depth</span><span class="special">;</span>
+  <span class="identifier">bool_d</span> <span class="identifier">m_periodic</span><span class="special">;</span>
+  <span class="identifier">box_type</span> <span class="identifier">m_bounds</span><span class="special">;</span>
+  <span class="identifier">raw_pointer</span> <span class="identifier">m_particles_begin</span><span class="special">;</span>
+  <span class="identifier">raw_pointer</span> <span class="identifier">m_particles_end</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <span class="identifier">m_number_of_nodes</span><span class="special">;</span>
+  <span class="keyword">unsigned</span> <span class="identifier">m_number_of_levels</span><span class="special">;</span>
+  <span class="identifier">vint2</span> <span class="special">*</span> <span class="identifier">m_leaves_begin</span><span class="special">;</span>
+  <span class="keyword">int</span> <span class="special">*</span> <span class="identifier">m_nodes_begin</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <span class="special">*</span> <span class="identifier">m_id_map_key</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <span class="special">*</span> <span class="identifier">m_id_map_value</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46373927910112"></a><h2>Description</h2>
+<p>This object is designed to be used within algorithms or gpu kernels, and can be obtained from a <a class="link" href="Particles.html" title="Class template Particles">Particles</a> type using the Particles::get_query() function</p>
+<pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">query</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+<span class="identifier">std</span><span class="special">::</span><span class="identifier">for_each</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">,</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">,</span> <span class="special">[</span><span class="special">&amp;</span><span class="special">]</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+  <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">query</span><span class="special">,</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span><span class="special">,</span> <span class="identifier">diameter</span><span class="special">)</span><span class="special">;</span>
+                  <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+    <span class="special">++</span><span class="identifier">count</span><span class="special">;</span>
+  <span class="special">}</span>
+<span class="special">}</span><span class="special">)</span><span class="special">;</span>
+</pre>
+<p>Note that if you wish to run this on a gpu using Trust, you need to copy the query object to the kernel, and mark the lambda function as a device function</p>
+<pre class="programlisting"><span class="keyword">auto</span> <span class="identifier">query</span> <span class="special">=</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+<span class="identifier">thrust</span><span class="special">::</span><span class="identifier">for_each</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">begin</span><span class="special">(</span><span class="special">)</span><span class="special">,</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">end</span><span class="special">(</span><span class="special">)</span><span class="special">,</span>
+  <span class="special">[</span><span class="special">=</span><span class="special">]</span> <span class="identifier">__host__</span> <span class="identifier">__device__</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+    <span class="keyword">int</span> <span class="identifier">count</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">query</span><span class="special">,</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;</span><span class="special">(</span><span class="identifier">i</span><span class="special">)</span><span class="special">,</span> <span class="identifier">diameter</span><span class="special">)</span><span class="special">;</span>
+                  <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+      <span class="special">++</span><span class="identifier">count</span><span class="special">;</span>
+    <span class="special">}</span>
+<span class="special">}</span><span class="special">)</span><span class="special">;</span>
+</pre>
+<p>
+</p>
+<div class="refsect2">
+<a name="idp46373928000672"></a><h3>Template Parameters</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+<pre class="literallayout"><span class="keyword">typename</span> Traits</pre>
+<p>the <code class="computeroutput"><a class="link" href="TraitsCommon.html" title="Struct template TraitsCommon">TraitsCommon</a></code> type </p>
+</li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373928005056"></a><h3>
+<a name="idp47381154321520-bb"></a><code class="computeroutput">HyperOctreeQuery</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="identifier">raw_pointer</span> <a name="idp47381154321920-bb"></a><span class="identifier">find</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">size_t</span> id<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> <a name="idp47381154323568-bb"></a><span class="identifier">get_bounds</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp47381154324528-bb"></a><span class="identifier">get_periodic</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp47381154325488-bb"></a><span class="identifier">get_children</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp47381154326448-bb"></a><span class="identifier">get_children</span><span class="special">(</span><span class="identifier">reference</span> bucket<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">box_type</span> <span class="special">&amp;</span> bounds<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp47381154328784-bb"></a><span class="identifier">get_children</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">particle_iterator</span> <a name="idp47381154330432-bb"></a><span class="identifier">get_bucket_particles</span><span class="special">(</span><span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">child_iterator</span> <a name="idp47381154332080-bb"></a><span class="identifier">get_bucket</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47381154333728-bb"></a><span class="identifier">get_bucket_index</span><span class="special">(</span><span class="identifier">reference</span> bucket<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47381154335376-bb"></a><span class="identifier">number_of_buckets</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber<span class="special">&gt;</span> 
+  <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
+  <a name="idp47381154336336-bb"></a><span class="identifier">get_buckets_near_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">,</span> <span class="keyword">const</span> <span class="keyword">double</span> max_distance<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">int</span> LNormNumber<span class="special">&gt;</span> 
+  <span class="identifier">query_iterator</span><span class="special">&lt;</span> <span class="identifier">LNormNumber</span> <span class="special">&gt;</span> 
+  <a name="idp47381154339824-bb"></a><span class="identifier">get_buckets_near_point</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> position<span class="special">,</span> 
+                         <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> max_distance<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="iterator_range.html" title="Struct template iterator_range">iterator_range</a><span class="special">&lt;</span> <span class="identifier">root_iterator</span> <span class="special">&gt;</span> <a name="idp47381154343312-bb"></a><span class="identifier">get_root_buckets</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">all_iterator</span> <a name="idp47381154344560-bb"></a><span class="identifier">get_subtree</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">all_iterator</span> <a name="idp47381154346208-bb"></a><span class="identifier">get_subtree</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47381154347168-bb"></a><span class="identifier">number_of_particles</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">unsigned</span> <a name="idp47381154348128-bb"></a><span class="identifier">number_of_levels</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a name="idp47381154349088-bb"></a><span class="identifier">get_particles_begin</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">raw_pointer</span> <span class="special">&amp;</span> <a name="idp47381154350048-bb"></a><span class="identifier">get_particles_begin</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373928138224"></a><h3>
+<a name="idp47381154351008-bb"></a><code class="computeroutput">HyperOctreeQuery</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp47381154351408-bb"></a><span class="identifier">is_leaf_node</span><span class="special">(</span><span class="identifier">reference</span> bucket<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">bool</span> <a name="idp47381154353056-bb"></a><span class="identifier">is_tree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <span class="identifier">size_t</span> <a name="idp47381154354016-bb"></a><span class="identifier">num_children</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>returns the number of children of the root node </li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="identifier">size_t</span> <a name="idp47381154355296-bb"></a><span class="identifier">num_children</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">static</span> <span class="identifier">box_type</span> <a name="idp47381154356944-bb"></a><span class="identifier">get_bounds</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">child_iterator</span> <span class="special">&amp;</span> ci<span class="special">)</span><span class="special">;</span></pre>returns the min/max bounds of the given child_iterator <code class="computeroutput">ci</code><p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>a  containing the bounds </p></td>
+</tr></tbody>
+</table></div>
+</li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="make_iterator_range.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.OctTree_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="HyperOctree.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

@@ -1,0 +1,140 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template linked_list_iterator</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">
+<link rel="prev" href="ranges_iterator.html" title="Class template ranges_iterator">
+<link rel="next" href="index_vector_iterator.html" title="Class template index_vector_iterator">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="ranges_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="index_vector_iterator.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.linked_list_iterator"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template linked_list_iterator</span></h2>
+<p>Aboria::linked_list_iterator</p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h&gt;">/home/travis/build/martinjrobins/Aboria/src/NeighbourSearchBase.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> Traits<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a>                    <a name="Aboria.linked_list_iterator.traits_type"></a><span class="identifier">traits_type</span><span class="special">;</span>      
+  <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span>           <a name="Aboria.linked_list_iterator.pointer"></a><span class="identifier">pointer</span><span class="special">;</span>          
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">forward_iterator_tag</span> <a name="Aboria.linked_list_iterator.iterator_category"></a><span class="identifier">iterator_category</span><span class="special">;</span>
+  <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">p_reference</span>         <a name="Aboria.linked_list_iterator.reference"></a><span class="identifier">reference</span><span class="special">;</span>        
+  <span class="keyword">typedef</span> <span class="keyword">const</span> <span class="identifier">p_reference</span>         <a name="Aboria.linked_list_iterator.value_type"></a><span class="identifier">value_type</span><span class="special">;</span>       
+  <span class="keyword">typedef</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">ptrdiff_t</span>            <a name="Aboria.linked_list_iterator.difference_type"></a><span class="identifier">difference_type</span><span class="special">;</span>  
+
+  <span class="comment">// <a class="link" href="linked_list_iterator.html#Aboria.linked_list_iteratorconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="linked_list_iterator.html#idp47381154081968-bb"><span class="identifier">linked_list_iterator</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="linked_list_iterator.html#idp47381154082096-bb"><span class="identifier">linked_list_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span> <span class="special">*</span><span class="keyword">const</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="linked_list_iterator.html#idp47381154084768-bb"><span class="identifier">linked_list_iterator</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  linked_list_iterator&amp; <a class="link" href="linked_list_iterator.html#idp47381154086032-bb"><span class="keyword">operator</span><span class="special">=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="linked_list_iterator.html#idp47381154064624-bb">public member functions</a></span>
+  <span class="identifier">size_t</span> <a class="link" href="linked_list_iterator.html#idp47381154065024-bb"><span class="identifier">distance_to_end</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="linked_list_iterator.html#idp47381154065984-bb"><span class="keyword">operator</span><span class="special">*</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="linked_list_iterator.html#idp47381154066944-bb"><span class="keyword">operator</span><span class="special">-&gt;</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span> <a class="link" href="linked_list_iterator.html#idp47381154067904-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <a class="link" href="linked_list_iterator.html#idp47381154069152-bb"><span class="keyword">operator</span><span class="special">++</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <a class="link" href="linked_list_iterator.html#idp47381154070928-bb"><span class="keyword">operator</span><span class="special">+</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">size_t</span> <a class="link" href="linked_list_iterator.html#idp47381154072704-bb"><span class="keyword">operator</span><span class="special">-</span></a><span class="special">(</span><a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="linked_list_iterator.html#idp47381154074480-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="linked_list_iterator.html#idp47381154076576-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="linked_list_iterator.html#idp47381154078672-bb"><span class="keyword">operator</span><span class="special">==</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="linked_list_iterator.html#idp47381154080320-bb"><span class="keyword">operator</span><span class="special">!=</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="linked_list_iterator.html#idp47381154087568-bb">private member functions</a></span>
+  <span class="keyword">bool</span> <a class="link" href="linked_list_iterator.html#idp47381154087984-bb"><span class="identifier">increment</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="linked_list_iterator.html#idp47381154088944-bb"><span class="identifier">equal</span></a><span class="special">(</span><a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="linked_list_iterator.html#idp47381154090880-bb"><span class="identifier">equal</span></a><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="identifier">reference</span> <a class="link" href="linked_list_iterator.html#idp47381154092528-bb"><span class="identifier">dereference</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46373925621456"></a><h2>Description</h2>
+<p>A const iterator to a set of neighbouring points. This iterator implements a STL forward iterator type </p>
+<div class="refsect2">
+<a name="idp46373925622240"></a><h3>
+<a name="Aboria.linked_list_iteratorconstruct-copy-destruct"></a><code class="computeroutput">linked_list_iterator</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idp47381154081968-bb"></a><span class="identifier">linked_list_iterator</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem">
+<pre class="literallayout"><a name="idp47381154082096-bb"></a><span class="identifier">linked_list_iterator</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">int</span> index<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">p_pointer</span> <span class="special">&amp;</span> particles_begin<span class="special">,</span> 
+                     <span class="keyword">int</span> <span class="special">*</span><span class="keyword">const</span> linked_list_begin<span class="special">)</span><span class="special">;</span></pre>
+<p>this constructor is used to start the iterator at the head of a bucket list </p>
+</li>
+<li class="listitem"><pre class="literallayout"><a name="idp47381154084768-bb"></a><span class="identifier">linked_list_iterator</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout">linked_list_iterator&amp; <a name="idp47381154086032-bb"></a><span class="keyword">operator</span><span class="special">=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span> other<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373925651360"></a><h3>
+<a name="idp47381154064624-bb"></a><code class="computeroutput">linked_list_iterator</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47381154065024-bb"></a><span class="identifier">distance_to_end</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47381154065984-bb"></a><span class="keyword">operator</span><span class="special">*</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47381154066944-bb"></a><span class="keyword">operator</span><span class="special">-&gt;</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span> <a name="idp47381154067904-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <a name="idp47381154069152-bb"></a><span class="keyword">operator</span><span class="special">++</span><span class="special">(</span><span class="keyword">int</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <a name="idp47381154070928-bb"></a><span class="keyword">operator</span><span class="special">+</span><span class="special">(</span><span class="keyword">int</span> n<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">size_t</span> <a name="idp47381154072704-bb"></a><span class="keyword">operator</span><span class="special">-</span><span class="special">(</span><a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> start<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381154074480-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381154076576-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="special">&amp;</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381154078672-bb"></a><span class="keyword">operator</span><span class="special">==</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381154080320-bb"></a><span class="keyword">operator</span><span class="special">!=</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span> rhs<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46373925721712"></a><h3>
+<a name="idp47381154087568-bb"></a><code class="computeroutput">linked_list_iterator</code> private member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381154087984-bb"></a><span class="identifier">increment</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381154088944-bb"></a><span class="identifier">equal</span><span class="special">(</span><a class="link" href="linked_list_iterator.html" title="Class template linked_list_iterator">linked_list_iterator</a> <span class="keyword">const</span> <span class="special">&amp;</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">bool</span> <a name="idp47381154090880-bb"></a><span class="identifier">equal</span><span class="special">(</span><span class="keyword">const</span> <span class="keyword">bool</span> other<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="identifier">reference</span> <a name="idp47381154092528-bb"></a><span class="identifier">dereference</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="ranges_iterator.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.NeighbourSearchBase_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="index_vector_iterator.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
