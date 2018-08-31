@@ -417,11 +417,10 @@ public:
     `doc00001.vtu`, along with a constant field named "time" containing the
     value 1.0.
 
-    */
-
+    ```
     vtkWriteGrid("doc", 0, particles.get_grid(true), {{"time", 1.0}});
+    ```
 
-    /*`
      [endsect]
      [endsect]
      */
@@ -429,8 +428,8 @@ public:
 #endif
   }
 
-#ifdef HAVE_VTK
   void test_vtk_output(void) {
+#ifdef HAVE_VTK
     ABORIA_VARIABLE(scalar, double, "my scalar")
     ABORIA_VARIABLE(scalar2, double, "_should not be in vtk file")
     typedef Particles<std::tuple<scalar, scalar2>> MyParticles;
@@ -438,8 +437,8 @@ public:
     vtkWriteGrid("test", 0, particles.get_grid(true));
     vtkWriteGrid("test_with_field", 0, particles.get_grid(true),
                  {{"time", 1.0 / 2.0}});
-  }
 #endif
+  }
 
   void test_std_vector_CellList(void) {
     helper_add_particle1<std::vector, CellList>();
