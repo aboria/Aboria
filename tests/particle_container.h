@@ -399,9 +399,44 @@ public:
 
     [endsect]
 
-    [endsect]
-    */
+    [section Conversion to VTK formats]
+
+    It is possible to convert the [classref Aboria::Particles] data structure to
+    a [@https://www.vtk.org/doc/nightly/html/classvtkUnstructuredGrid.html  VTK
+    unstructured grid] class using the [memberref Aboria::Particles::get_grid]
+    function. This function will write out each particle as a 3D point in the
+    unstructured grid. By default all the particle's variables are converted
+    into VTK data arrays and added to the grid, [*except] for those with names
+    starting with the character "_".
+
+    In order to write out the resultant grid to a file using the VTK data
+    format, Aboria provides a useful helper function [funcref
+    Aboria::vtkWriteGrid], which can write out the grid along with any constant
+    fields (e.g. a timestamp) that you may need. For example, the following code
+    writes out the entire contents of the the particle set to the file
+    `doc00001.vtu`, along with a constant field named "time" containing the
+    value 1.0.
+
+    ```
+    vtkWriteGrid("doc", 0, particles.get_grid(true), {{"time", 1.0}});
+    ```
+
+     [endsect]
+     [endsect]
+     */
     //]
+#endif
+  }
+
+  void test_vtk_output(void) {
+#ifdef HAVE_VTK
+    ABORIA_VARIABLE(scalar, double, "my scalar")
+    ABORIA_VARIABLE(scalar2, double, "_should not be in vtk file")
+    typedef Particles<std::tuple<scalar, scalar2>> MyParticles;
+    MyParticles particles(5);
+    vtkWriteGrid("test", 0, particles.get_grid(true));
+    vtkWriteGrid("test_with_field", 0, particles.get_grid(true),
+                 {{"time", 1.0 / 2.0}});
 #endif
   }
 

@@ -28,7 +28,7 @@ endmacro(aboria_cxx_test)
 option(Aboria_RUN_TESTS "run main test suite with ctest" ON)
 if (Aboria_RUN_TESTS)
     set(all_test_suites
-        MetafunctionsTest 
+        MetafunctionsTest
         NeighboursTest
         SpatialDataStructuresTest
         IDSearchTest
@@ -42,7 +42,7 @@ if (Aboria_RUN_TESTS)
         ChebyshevTest
         FMMTest
         DocGettingStartedTest
-        ParallelTest 
+        ParallelTest
         H2Test
         )
     set(releaseonly_test_suites
@@ -119,7 +119,7 @@ set(BenchmarkHPC
     )
 
 set(SpeedTestFile speed_test.h)
-set(SpeedTest 
+set(SpeedTest
     test_vector_addition
     test_daxpy
     test_finite_difference
@@ -128,13 +128,13 @@ set(SpeedTest
     test_linear_spring
     )
 
-set(MetafunctionsTestFile metafunctions.h) 
+set(MetafunctionsTestFile metafunctions.h)
 set(MetafunctionsTest
     test_aliasing
     test_expr_matching
     test_get_labels
     test_thrust
-    ) 
+    )
 
 set(UtilsTestFile utils.h)
 set(UtilsTest
@@ -224,13 +224,14 @@ if (Aboria_USE_THRUST)
 endif()
 
 set(ParticleContainerTestFile particle_container.h)
-set(ParticleContainerTest 
+set(ParticleContainerTest
     test_std_vector_CellList
     test_std_vector_CellListOrdered
     test_documentation
+    test_vtk_output
     )
 if (Aboria_USE_THRUST)
-    list(APPEND ParticleContainerTest 
+    list(APPEND ParticleContainerTest
     test_thrust_vector_CellListOrdered
     )
 endif()
@@ -259,7 +260,7 @@ set(SPHTest
     test_CellListOrdered
     test_Kdtree
     )
- 
+
 set(MDTestFile md.h)
 set(MDTest
     test_CellList
@@ -282,29 +283,29 @@ if (Aboria_USE_THRUST)
 endif()
 
 
- 
+
 set(RbfInterpolationTestFile rbf_interpolation.h)
-set(RbfInterpolationTest 
+set(RbfInterpolationTest
     test_CellList
     test_CellListOrdered
     test_kdtree
     test_HyperOctree
     )
-    
+
 set(RbfPdeTestFile rbf_pde.h)
-set(RbfPdeTest 
+set(RbfPdeTest
     test_CellList
     test_CellListOrdered
     )
 
 set(RbfStokesTestFile rbf_stokes.h)
-set(RbfStokesTest 
+set(RbfStokesTest
     test_CellList
     test_CellListOrdered
     )
 
 set(DiffusionAroundSpheresFile diffusion_around_spheres.h)
-set(DiffusionAroundSpheres 
+set(DiffusionAroundSpheres
     test_CellList
     test_CellListOrdered
     test_Kdtree
@@ -359,18 +360,18 @@ foreach(test_suite ${test_suites})
 
     aboria_cxx_test(${test_suite} ${test_suite}.cpp OFF ${${test_suite}File})
     target_link_libraries(${test_suite} ${VTK_LIBRARIES} ${Boost_LIBRARIES} ${CUDA_LIBRARIES} ${GPERFTOOLS_LIBRARIES} ${Aboria_LIBRARIES})
-    
+
     foreach(test_name ${${test_suite}})
         add_test(NAME ${test_suite}:__${test_name} COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
     endforeach()
 
     if (Aboria_USE_OPENMP)
         foreach(test_name ${${test_suite}})
-            add_test(NAME ${test_suite}__OpenMP:__${test_name} 
+            add_test(NAME ${test_suite}__OpenMP:__${test_name}
                      COMMAND ${RUNTIME_OUTPUT_DIRECTORY}/${test_suite} ${test_suite} ${test_name})
-            set_tests_properties(${test_suite}:__${test_name} 
+            set_tests_properties(${test_suite}:__${test_name}
                 PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=1")
-            set_tests_properties(${test_suite}__OpenMP:__${test_name} 
+            set_tests_properties(${test_suite}__OpenMP:__${test_name}
                 PROPERTIES ENVIRONMENT "OMP_NUM_THREADS=3")
         endforeach()
     endif()

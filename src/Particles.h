@@ -612,10 +612,13 @@ public:
 
     constexpr size_t dn = mpl::size<mpl_type_vector>::type::value;
     vtkSmartPointer<vtkFloatArray> datas[dn];
+    ASSERT(datas[0] == nullptr, "default vtkSmartPointer should be nullptr");
     mpl::for_each<mpl::range_c<int, 1, dn>>(
         detail::setup_datas_for_writing<reference>(n, datas, grid));
     for (size_t i = 0; i < dn; ++i) {
-      grid->GetPointData()->AddArray(datas[i]);
+      if (datas[i] != nullptr) {
+        grid->GetPointData()->AddArray(datas[i]);
+      }
     }
     points->SetNumberOfPoints(n);
     cells->Reset();
