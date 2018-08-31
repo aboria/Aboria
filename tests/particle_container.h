@@ -247,10 +247,6 @@ public:
 
     [endsect]
 
-    [section Accessing Particle Variables]
-
-    [endsect]
-
     [section Working with particles within the container]
 
     You can use the indexing operator [memberref
@@ -421,8 +417,9 @@ public:
     vtkWriteGrid("doc", 0, particles.get_grid(true), {{"time", 1.0}});
     ```
 
-     [endsect]
-     [endsect]
+    [endsect]
+
+    [endsect]
      */
     //]
 #endif

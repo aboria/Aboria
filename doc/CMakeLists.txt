@@ -24,6 +24,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Kernels.h
     ../src/Functions.h
     ../src/Log.h
+    ../src/Utils.h
     ../src/Symbolic.h
     ../src/Traits.h
     ../src/Get.h
