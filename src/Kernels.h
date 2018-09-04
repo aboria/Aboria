@@ -535,8 +535,8 @@ public:
       : base_type(row_elements, col_elements, kernel),
         m_position_function(kernel.m_position_function),
         m_expansions(kernel.m_expansions), m_eta(kernel.m_eta),
-        m_h2_matrix(row_elements, col_elements, m_expansions, function,
-                    m_eta){};
+        m_h2_matrix(row_elements, col_elements, m_expansions,
+                    kernel.get_kernel_function(), m_eta){};
 
   void set_elements(const RowElements &row_elements,
                     const ColElements &col_elements) {
@@ -601,7 +601,8 @@ public:
             const KernelFMM &kernel)
       : base_type(row_elements, col_elements, kernel),
         m_expansions(kernel.m_expansions),
-        m_fmm(row_elements, col_elements, m_expansions, function){};
+        m_fmm(row_elements, col_elements, m_expansions,
+              kernel.get_kernel_function()){};
 
   void set_elements(const RowElements &row_elements,
                     const ColElements &col_elements) {
@@ -653,8 +654,9 @@ public:
   KernelSparse(const RowElements &row_elements, const ColElements &col_elements,
                const KernelSparse &kernel)
       : base_type(row_elements, col_elements, kernel),
-        m_expansions(kernel.m_expansions),
-        m_fmm(row_elements, col_elements, m_expansions, function){};
+        F(col_elements, kernel.m_radius_function, kernel.m_dx_function),
+        m_radius_function(kernel.m_radius_function),
+        m_dx_function(kernel.m_dx_function) {}
 
   /*
    * shouldn't need this anymore....
@@ -823,6 +825,10 @@ public:
                     const F &function)
       : base_type(row_elements, col_elements, RadiusFunction(radius),
                   function) {}
+  KernelSparseConst(const RowElements &row_elements,
+                    const ColElements &col_elements,
+                    const KernelSparseConst &kernel)
+      : base_type(row_elements, col_elements, kernel) {}
 };
 
 template <typename RowElements, typename ColElements,
@@ -841,6 +847,9 @@ public:
   typedef typename base_type::Scalar Scalar;
 
   KernelZero(const RowElements &row_elements, const ColElements &col_elements)
+      : base_type(row_elements, col_elements, F()){};
+  KernelZero(const RowElements &row_elements, const ColElements &col_elements,
+             const KernelZero &kernel)
       : base_type(row_elements, col_elements, F()){};
 
   template <typename MatrixType> void assemble(const MatrixType &matrix) const {

@@ -67,7 +67,7 @@ class MultiLevelSchwartzPreconditioner {
   typedef kernel_t::row_elements_type particles_t;
   typedef MatrixReplacement<1, 1, std::tuple<kernel_t>> operator_t;
   typedef typedef std::vector<operator_t> level_operators_t;
-  typedef std::vector<storage_vector_type> level_connectivity_t;
+  typedef std::vector<size_t> level_connectivity_t;
   typedef std::vector<particles_t> level_particles_t;
 
 protected:
@@ -83,7 +83,6 @@ private:
   matrices_t m_matrix;
   level_operators_t m_A;
   const operator_t *m_fineA;
-  level_connectivity_t m_restriction;
   level_particles_t m_particles;
 
   mutable std::vector<vector_type> m_r;
@@ -322,38 +321,50 @@ public:
         (std::log(a.size()) - std::log(m_max_buffer_n)) / std::log(2) + 1;
     LOG(2,
         "MultiLevelSchwartzPreconditioner: creating " << n_levels << " levels");
-    m_particles.resize(n_levels - 1);
-    m_restriction.resize(n_levels - 1);
 
     for (int i = 0; i < n_levels - 1; ++i) {
-      if (i == 1) {
-        m_A.emplace_back(*m_fineA);
-      } else {
-        m_A.emplace_back(m_A[i - 2]);
-      }
-      // setup particles on this level
+
+      // create new particle set for this level
       const int n_particles = a.size() / std::pow(2, i);
-      auto &particles = m_particles[i - 1];
-      particles.resize(n_particles);
+      m_particles.emplace_back(n_particles);
+
+      // copy every second finer particle
+      auto &particles = m_particles.back();
       detail::tabulate(particles.begin(), particles.end(),
                        [prev_level = iterator_to_raw_pointer(
-                            (i == 1 ? a.begin() : m_particles[i - 2].begin()))](
+                            (i == 0 ? a.begin() : m_particles[i - 1].begin()))](
                            const int index) { return prev_level[index * 2]; });
 
+      // set particle ids to point to finer level index so that we can implement
+      // the restriction operator later on...
+      detail::tabulate(get<id>(particles).begin(), get<id>(particles).end(),
+                       [](const int index) { return index * 2; });
+
+      // init neighbour search
       const int max_bucket_size =
           i == n_levels - 2 ? m_max_buffer_n : a.get_max_bucket_size();
+
+      LOG(3, "\t: creating new particle set with "
+                 << particles.size()
+                 << " particles and with max bucket size of "
+                 << max_bucket_size);
       particles.init_neighbour_search(a.get_min(), a.get_max(),
                                       a.get_periodic(), max_bucket_size);
 
-      // setup A operator on this level
+      // setup A operator on this level, copy finest operator but overwrite
+      // particles
+      m_A.emplace_back(particles, particles, *m_fineA);
     }
 
     m_indicies.resize(n_levels);
     m_buffer.resize(n_levels);
     m_matrix.resize(n_levels);
     m_factorized_matrix.resize(n_levels);
-    m_r.resize(m_levels);
-    m_u.resize(m_levels);
+    m_r.resize(n_levels);
+    m_u.resize(n_levels);
+
+    LOG(2, "MultiLevelSchwartzPreconditioner: processing " << n_levels
+                                                           << " levels");
 
     for (int i = 0; i < n_levels; ++i) {
       // get list of leaf cells
@@ -367,6 +378,8 @@ public:
         CHECK(nodes.size() == 1 && query.is_leaf_node(nodes[0]),
               "top level should have one leaf node");
       }
+
+      LOG(3, "\t: processing operator with " << nodes.size() << " nodes");
 
       auto &indicies = m_indicies[i];
       auto &buffer = m_buffer[i];
@@ -419,6 +432,8 @@ public:
       }
 
       // factorize domain matrices
+      LOG(2, "MultiLevelSchwartzPreconditioner: factorizing domain matrices");
+
       detail::transform(matrix.begin(), matrix.end(), factorized_matrix.begin(),
                         factorize_matrix());
     }
@@ -551,7 +566,7 @@ public:
   void _solve_impl(const Rhs &b, Dest &x) const {
 
     vector_type tmp;
-    if (m_multiplicitive == 2 && m_levels > 1) {
+    if (m_multiplicitive == 2) {
       m_r[0] = b;
       m_u[0] = vector_type::Zero(a.size());
       // symmetric multiplicative
@@ -601,8 +616,8 @@ public:
       }
       x = m_u[0];
 
-    } else if (m_multiplicitive == 1 && m_levels > 1) {
-      // non-symmetric multiplicative
+    } else if (m_multiplicitive == 1) {
+      // non-symmetric multiplicative (TODO)
       x.setZero();
       vector_type b_copy = b;
 
@@ -626,6 +641,7 @@ public:
         }
       }
     } else {
+      // additive (TODO)
       x.setZero();
 
       for (int i = 0; i < std::min(m_levels, 2); ++i) {
