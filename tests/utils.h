@@ -109,6 +109,29 @@ public:
     TS_ASSERT_EQUALS(index5_true, index5);
   }
 
+  void test_circle_cube_intersection(void) {
+    vdouble2 centre(0, 0);
+    double radius = 1;
+    bbox<2> cube(vdouble2(-0.1, -0.1), vdouble2(0.1, 0.1));
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
+    cube.bmin = vdouble2(-1.1, -5);
+    cube.bmax = vdouble2(-0.9, 5);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
+    cube.bmin = vdouble2(-1.1, -5);
+    cube.bmax = vdouble2(-1.01, 5);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), false);
+
+    cube.bmin = vdouble2(-1.1, -1.1);
+    cube.bmax = vdouble2(1.1, 1.1);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
+    cube.bmin = vdouble2(0.99, 0.99);
+    cube.bmax = vdouble2(0.999, 0.999);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), false);
+  }
+
   void test_low_rank(void) {
 #ifdef HAVE_EIGEN
     const unsigned int D = 2;

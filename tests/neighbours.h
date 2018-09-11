@@ -48,7 +48,11 @@ class NeighboursTest : public CxxTest::TestSuite {
 public:
   ABORIA_VARIABLE(scalar, double, "scalar")
   ABORIA_VARIABLE(neighbours_brute, int, "number of neighbours")
+  ABORIA_VARIABLE(bucket_neighbours_brute, int,
+                  "number of neighbouring buckets")
   ABORIA_VARIABLE(neighbours_aboria, int, "number of neighbours")
+  ABORIA_VARIABLE(bucket_neighbours_aboria, int,
+                  "number of neighbouring buckets")
 
   void test_documentation(void) {
 #if not defined(__CUDACC__)
@@ -634,7 +638,8 @@ public:
     void operator()(Reference arg) { get<neighbours_aboria>(arg) = 1; }
   };
 
-  template <typename ParticlesType> struct brute_force_check {
+  template <typename ParticlesType, typename Transform>
+  struct brute_force_check {
     typedef typename ParticlesType::raw_reference reference;
     typedef typename ParticlesType::raw_pointer pointer;
     typedef typename ParticlesType::raw_const_reference const_reference;
@@ -649,11 +654,12 @@ public:
     double_d max;
     double r2;
     bool is_periodic;
+    Transform transform;
 
     brute_force_check(ParticlesType &particles, double_d &min, double_d &max,
-                      double r2, bool is_periodic)
+                      double r2, bool is_periodic, const Transform &transform)
         : query(particles.get_query()), min(min), max(max), r2(r2),
-          is_periodic(is_periodic) {}
+          is_periodic(is_periodic), transform(transform) {}
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
@@ -667,12 +673,16 @@ public:
           for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
                                                int_d::Constant(2));
                periodic_it != false; ++periodic_it) {
-            if ((pi + (*periodic_it) * (max - min) - pj).squaredNorm() <= r2) {
+            double_d dx = pi + (*periodic_it) * (max - min) - pj;
+            transform(dx);
+            if (dx.squaredNorm() <= r2) {
               count++;
             }
           }
         } else {
-          if ((pi - pj).squaredNorm() <= r2) {
+          double_d dx = pi - pj;
+          transform(dx);
+          if (dx.squaredNorm() <= r2) {
             count++;
           }
         }
@@ -680,7 +690,57 @@ public:
       get<neighbours_brute>(i) = count;
     }
   };
-  template <typename ParticlesType> struct aboria_check {
+
+  template <typename ParticlesType> struct brute_force_check_bucket {
+    typedef typename ParticlesType::raw_reference reference;
+    typedef typename ParticlesType::raw_pointer pointer;
+    typedef typename ParticlesType::raw_const_reference const_reference;
+    typedef typename ParticlesType::double_d double_d;
+    typedef typename ParticlesType::int_d int_d;
+    typedef typename ParticlesType::query_type query_type;
+    typedef typename ParticlesType::position position;
+    static const unsigned int D = ParticlesType::dimension;
+
+    query_type query;
+    double_d min;
+    double_d max;
+    double r;
+    bool is_periodic;
+
+    brute_force_check_bucket(ParticlesType &particles, double_d &min,
+                             double_d &max, double r2, bool is_periodic)
+        : query(particles.get_query()), min(min), max(max), r(std::sqrt(r2)),
+          is_periodic(is_periodic) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    void operator()(reference i) {
+      int count = 0;
+      pointer begin = query.get_particles_begin();
+      double_d &pi = get<position>(i);
+      for (auto j = query.get_subtree(); j != false; ++j) {
+        auto bounds = query.get_bounds(j.get_child_iterator());
+        if (is_periodic) {
+          for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
+                                               int_d::Constant(2));
+               periodic_it != false; ++periodic_it) {
+            bbox<D> periodic_bounds(bounds.bmin + (*periodic_it) * (max - min),
+                                    bounds.bmax + (*periodic_it) * (max - min));
+            if (circle_intersect_cube(pi,r,periodic_bounds.bmin,periodic_bounds.bmax) {
+              count++;
+            }
+          }
+        } else {
+            if (circle_intersect_cube(pi,r,bounds.bmin,bounds.bmax) {
+            count++;
+          }
+        }
+      }
+      get<bucket_neighbours_brute>(i) = count;
+    }
+  };
+
+  template <typename ParticlesType, typename Transform>
+  struct aboria_check_bucket {
     typedef typename ParticlesType::raw_reference reference;
     typedef typename ParticlesType::raw_pointer pointer;
     typedef typename ParticlesType::raw_const_reference const_reference;
@@ -699,8 +759,37 @@ public:
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
       int count = 0;
-      for (auto j = euclidean_search(query, get<position>(i), r); j != false;
-           ++j) {
+      for (auto j = query.buckets_within_distance<2>(get<position>(i), r);
+           j != false; ++j) {
+        (void)j;
+        count++;
+      }
+      get<bucket_neighbours_aboria>(i) = count;
+    }
+  };
+
+  template <typename ParticlesType, typename Transform> struct aboria_check {
+    typedef typename ParticlesType::raw_reference reference;
+    typedef typename ParticlesType::raw_pointer pointer;
+    typedef typename ParticlesType::raw_const_reference const_reference;
+    typedef typename ParticlesType::double_d double_d;
+    typedef typename ParticlesType::query_type query_type;
+    typedef typename ParticlesType::position position;
+    static const unsigned int D = ParticlesType::dimension;
+
+    query_type query;
+    double r;
+    double r2;
+    Transform transform;
+
+    aboria_check(ParticlesType &particles, double r, const Transform &transform)
+        : query(particles.get_query()), r(r), r2(r * r), transform(transform) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    void operator()(reference i) {
+      int count = 0;
+      for (auto j = euclidean_search(query, get<position>(i), r, transform);
+           j != false; ++j) {
         (void)j;
         count++;
       }
@@ -771,10 +860,10 @@ public:
 
   template <unsigned int D, template <typename, typename> class VectorType,
             template <typename> class SearchMethod, typename Transform>
-  void helper_d_random(const int N, const double r, const int neighbour_n,
-                       const bool is_periodic,
-                       const bool push_back_construction,
-                       const Transform &transform) {
+  void
+  helper_d_random(const int N, const double r, const int neighbour_n,
+                  const bool is_periodic, const bool push_back_construction,
+                  const Transform &transform = detail::IdentityTransform()) {
     typedef Particles<std::tuple<neighbours_brute, neighbours_aboria>, D,
                       VectorType, SearchMethod>
         particles_type;
@@ -848,20 +937,38 @@ public:
     // delete last particle
     particles.erase(particles.begin() + particles.size() - 1);
 
-    // brute force search
+    // brute force search: particle-particle
     auto t0 = Clock::now();
-    Aboria::detail::for_each(particles.begin(), particles.end(),
-                             brute_force_check<particles_type>(
-                                 particles, min, max, r2, is_periodic));
+    Aboria::detail::for_each(
+        particles.begin(), particles.end(),
+        brute_force_check<particles_type>(particles, min, max, r2, is_periodic,
+                                          transform));
     auto t1 = Clock::now();
     std::chrono::duration<double> dt_brute = t1 - t0;
 
-    // Aboria search
+    // brute force search: particle-bucket
     t0 = Clock::now();
     Aboria::detail::for_each(particles.begin(), particles.end(),
-                             aboria_check<particles_type>(particles, r));
+                             brute_force_check_bucket<particles_type>(
+                                 particles, min, max, r2, is_periodic));
+    t1 = Clock::now();
+    std::chrono::duration<double> dt_brute_bucket = t1 - t0;
+
+    // Aboria search: particle-particle
+    t0 = Clock::now();
+    Aboria::detail::for_each(
+        particles.begin(), particles.end(),
+        aboria_check<particles_type>(particles, r, transform));
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria = t1 - t0;
+
+    // Aboria search: particle-bucket
+    t0 = Clock::now();
+    Aboria::detail::for_each(particles.begin(), particles.end(),
+                             aboria_check_bucket<particles_type>(particles, r));
+    t1 = Clock::now();
+    std::chrono::duration<double> dt_aboria = t1 - t0;
+
     for (size_t i = 0; i < particles.size(); ++i) {
       if (int(get<neighbours_brute>(particles)[i]) !=
           int(get<neighbours_aboria>(particles)[i])) {
@@ -876,10 +983,27 @@ public:
       }
       TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                        int(get<neighbours_aboria>(particles)[i]));
+      if (int(get<bucket_neighbours_brute>(particles)[i]) !=
+          int(get<bucket_neighbours_aboria>(particles)[i])) {
+        std::cout << "error in finding neighbour buckets for p = "
+                  << static_cast<const double_d &>(get<position>(particles)[i])
+                  << " over radius " << r << std::endl;
+        particles.print_data_structure();
+
+        TS_ASSERT_EQUALS(int(get<bucket_neighbours_brute>(particles)[i]),
+                         int(get<bucket_neighbours_aboria>(particles)[i]));
+        return;
+      }
+      TS_ASSERT_EQUALS(int(get<bucket_neighbours_brute>(particles)[i]),
+                       int(get<bucket_neighbours_aboria>(particles)[i]));
     }
 
     std::cout << "\ttiming result: Aboria = " << dt_aboria.count()
               << " versus brute force = " << dt_brute.count() << std::endl;
+    std::cout << "\ttiming result for particle-bucket: Aboria = "
+              << dt_aboria_bucket.count()
+              << " versus brute force = " << dt_brute_bucket.count()
+              << std::endl;
   }
 
   template <unsigned int D, template <typename, typename> class VectorType,
@@ -994,12 +1118,20 @@ public:
     helper_d<4, VectorType, SearchMethod>(10, 1.0001, 10);
   }
 
+  template <unsigned int D> struct SkewTransform {
+    void operator()(const Vector<double, D> &v) { v = ? ; }
+  };
+
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_random(bool test_push_back = true) {
 
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false);
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, true, false);
+    helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false,
+                                                 SkewTransform);
+    helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, true, false,
+                                                 SkewTransform);
 
     if (test_push_back) {
       helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, true);
@@ -1008,6 +1140,10 @@ public:
 
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, false);
+    helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, false,
+                                                 SkewTransform);
+    helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, false,
+                                                 SkewTransform);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, true, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, false, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, false);
