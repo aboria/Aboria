@@ -856,30 +856,16 @@ template <typename Traits> struct HyperOctreeQuery {
   size_t number_of_buckets() const { return m_number_of_nodes; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber>
-  CUDA_HOST_DEVICE query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double max_distance) const {
-#ifndef __CUDA_ARCH__
-    LOG(4, "\tget_buckets_near_point: position = "
-               << position << " max_distance= " << max_distance);
-#endif
-    return query_iterator<LNormNumber>(get_children(), position,
-                                       double_d::Constant(max_distance),
-                                       m_number_of_levels, this);
-  }
-
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber>
-  CUDA_HOST_DEVICE query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double_d &max_distance) const {
+  template <typename Transform, int LNormNumber>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber> get_buckets_near_point(
+      const double_d &position, const double max_distance,
+      const Transform &transform = detail::IdentityTransform()) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
     return query_iterator<LNormNumber>(get_children(), position, max_distance,
-                                       m_number_of_levels, this);
+                                       m_number_of_levels, this, transform);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN

@@ -188,7 +188,7 @@ public:
             r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin)),
         m_current_bucket(query.template get_buckets_near_point<LNormNumber>(
-                             m_current_point, max_distance),
+                             m_current_point, max_distance, transform),
                          m_transform(transform)) {
 
 #if defined(__CUDA_ARCH__)
@@ -385,7 +385,7 @@ private:
           m_r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin);
       m_current_bucket = m_query->template get_buckets_near_point<LNormNumber>(
-          m_current_point, m_max_distance);
+          m_current_point, m_max_distance, m_transform);
     }
     return true;
   }

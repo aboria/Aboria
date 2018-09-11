@@ -815,12 +815,15 @@ template <typename Traits> struct NeighbourQueryBase {
   ///
   /// @param position the position to search around
   /// @param max_distance the maximum distance of the buckets to be returned
+  /// @param transform a transform function object allowing the user to search
+  /// in a transformed space (e.g. shew coordinate systems). @see
+  /// detail::IdentityTransform for an example
   /// @return an @ref iterator_range containing all the buckets found
   ///
-  template <int LNormNumber = -1>
-  query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double max_distance) const;
+  template <typename Transform, int LNormNumber = -1>
+  query_iterator<LNormNumber> get_buckets_near_point(
+      const double_d &position, const double max_distance,
+      const Transform &transform = detail::IdentityTransform()) const;
 
   ///
   /// @brief returns all the bucket within an anisotropic distance of a point
@@ -1431,8 +1434,10 @@ private:
   const Query *m_query;
 };
 
-template <typename Query, int LNormNumber> class tree_query_iterator {
-  typedef tree_query_iterator<Query, LNormNumber> iterator;
+template <typename Query, int LNormNumber,
+          typename Transform = detail::IdentityTransform>
+class tree_query_iterator {
+  typedef tree_query_iterator<Query, LNormNumber, Transform> iterator;
   typedef typename Query::child_iterator child_iterator;
   static const unsigned int dimension = Query::dimension;
   typedef Vector<double, dimension> double_d;
@@ -1454,8 +1459,12 @@ public:
   CUDA_HOST_DEVICE
   tree_query_iterator(const child_iterator &start, const double_d &query_point,
                       const double_d &max_distance, const unsigned tree_depth,
-                      const Query *query, const bool ordered = false)
-      : m_query_point(query_point), m_inv_max_distance(1.0 / max_distance),
+                      const Query *query,
+                      const Transform &transform = Transform())
+      : m_query_point(query_point),
+        m_max_distance2(
+            detail::distance_helper<LNormNumber>::get_value_to_accumulate(
+                max_distance)),
         m_query(query) {
     ASSERT_CUDA(tree_depth <= m_stack_max_size);
     if (start != false) {
@@ -1488,7 +1497,7 @@ public:
   CUDA_HOST_DEVICE
   tree_query_iterator(const iterator &copy)
       : m_query_point(copy.m_query_point),
-        m_inv_max_distance(copy.m_inv_max_distance), m_query(copy.m_query)
+        m_max_distance2(copy.m_max_distance2), m_query(copy.m_query)
 
   {
     for (size_t i = 0; i < copy.m_stack.size(); ++i) {
@@ -1505,7 +1514,7 @@ public:
   CUDA_HOST_DEVICE
   iterator &operator=(const iterator &copy) {
     m_query_point = copy.m_query_point;
-    m_inv_max_distance = copy.m_inv_max_distance;
+    m_max_distance2 = copy.m_max_distance2;
 
     m_stack.resize(copy.m_stack.size());
     for (size_t i = 0; i < copy.m_stack.size(); ++i) {
@@ -1571,21 +1580,23 @@ private:
   CUDA_HOST_DEVICE
   bool child_is_within_query(const child_iterator &node) {
     const box_type &bounds = m_query->get_bounds(node);
-    double accum = 0;
+    double_d dx;
     for (size_t j = 0; j < dimension; j++) {
       const bool less_than_bmin = m_query_point[j] < bounds.bmin[j];
       const bool more_than_bmax = m_query_point[j] > bounds.bmax[j];
 
       // dist 0 if between min/max, or distance to min/max if not
-      const double dist =
-          (less_than_bmin ^ more_than_bmax) *
-          (less_than_bmin ? (bounds.bmin[j] - m_query_point[j])
-                          : (m_query_point[j] - bounds.bmax[j]));
-
-      accum = detail::distance_helper<LNormNumber>::accumulate_norm(
-          accum, dist * m_inv_max_distance[j]);
+      dx[j] = (less_than_bmin ^ more_than_bmax) *
+              (less_than_bmin ? (bounds.bmin[j] - m_query_point[j])
+                              : (m_query_point[j] - bounds.bmax[j]));
     }
-    return (accum < 1.0);
+
+    transform(dx);
+
+    const double accum = detail::distance_helper<LNormNumber>::norm(dx);
+    // std::cout <<"accum = "<<accum<< std::endl;
+
+    return (accum < m_max_distance2);
   }
 
   CUDA_HOST_DEVICE
@@ -1688,7 +1699,7 @@ private:
   const static unsigned m_stack_max_size = Query::m_max_tree_depth;
   static_vector<child_iterator, m_stack_max_size> m_stack;
   double_d m_query_point;
-  double_d m_inv_max_distance;
+  double m_max_distance2;
   const Query *m_query;
 };
 

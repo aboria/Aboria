@@ -1153,34 +1153,16 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   /// @see lattice_iterator_within_distance
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber = -1>
-  CUDA_HOST_DEVICE query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double max_distance) const {
+  template <typename Transform, int LNormNumber = -1>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber> get_buckets_near_point(
+      const double_d &position, const double max_distance,
+      const Transform &transform = detail::IdentityTransform()) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance = " << max_distance);
 #endif
 
-    return query_iterator<LNormNumber>(position,
-                                       double_d::Constant(max_distance), this);
-  }
-
-  ///
-  /// @copydoc NeighbourQueryBase::get_buckets_near_point()
-  ///
-  /// @see lattice_iterator_within_distance
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber = -1>
-  CUDA_HOST_DEVICE query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double_d &max_distance) const {
-#ifndef __CUDA_ARCH__
-    LOG(4, "\tget_buckets_near_point: position = "
-               << position << " max_distance = " << max_distance);
-#endif
-    return query_iterator<LNormNumber>(position, max_distance, this);
+    return query_iterator<LNormNumber>(position, max_distance, this, transform);
   }
 
   ///

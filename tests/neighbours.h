@@ -770,10 +770,11 @@ public:
   };
 
   template <unsigned int D, template <typename, typename> class VectorType,
-            template <typename> class SearchMethod>
+            template <typename> class SearchMethod, typename Transform>
   void helper_d_random(const int N, const double r, const int neighbour_n,
                        const bool is_periodic,
-                       const bool push_back_construction) {
+                       const bool push_back_construction,
+                       const Transform &transform) {
     typedef Particles<std::tuple<neighbours_brute, neighbours_aboria>, D,
                       VectorType, SearchMethod>
         particles_type;

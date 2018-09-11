@@ -564,29 +564,16 @@ template <typename Traits> struct KdtreeNanoflannQuery {
 
   size_t number_of_buckets() const { return m_number_of_buckets; }
 
-  template <int LNormNumber>
-  query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double max_distance) const {
-#ifndef __CUDA_ARCH__
-    LOG(4, "\tget_buckets_near_point: position = "
-               << position << " max_distance= " << max_distance);
-#endif
-    return query_iterator<LNormNumber>(get_children(), position,
-                                       double_d::Constant(max_distance),
-                                       m_number_of_levels, this);
-  }
-
-  template <int LNormNumber>
-  query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double_d &max_distance) const {
+  template <typename Transform, int LNormNumber>
+  query_iterator<LNormNumber> get_buckets_near_point(
+      const double_d &position, const double max_distance,
+      const Transform &transform = detail::IdentityTransform()) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
     return query_iterator<LNormNumber>(get_children(), position, max_distance,
-                                       m_number_of_levels, this);
+                                       m_number_of_levels, this, transform);
   }
 
   iterator_range<root_iterator> get_root_buckets() const {
