@@ -653,8 +653,9 @@ template <typename Traits> struct KdtreeQuery {
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
 
-  template <int LNormNumber>
-  using query_iterator = tree_query_iterator<KdtreeQuery, LNormNumber>;
+  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  using query_iterator =
+      tree_query_iterator<KdtreeQuery, LNormNumber, Transform>;
 
   typedef depth_first_iterator<KdtreeQuery> all_iterator;
   typedef KdtreeChildIterator<KdtreeQuery> child_iterator;
@@ -807,16 +808,17 @@ public:
 
   size_t number_of_buckets() const { return m_number_of_buckets; }
 
-  template <typename Transform, int LNormNumber>
-  query_iterator<LNormNumber> get_buckets_near_point(
-      const double_d &position, const double max_distance,
-      const Transform &transform = detail::IdentityTransform()) const {
+  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  query_iterator<LNormNumber, Transform>
+  get_buckets_near_point(const double_d &position, const double max_distance,
+                         const Transform &transform = Transform()) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
-    return query_iterator<LNormNumber>(get_children(), position, max_distance,
-                                       m_number_of_levels, this, transform);
+    return query_iterator<LNormNumber, Transform>(
+        get_children(), position, max_distance, m_number_of_levels, this,
+        transform);
   }
 
   all_iterator get_subtree(const child_iterator &ci) const {

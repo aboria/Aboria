@@ -820,7 +820,7 @@ template <typename Traits> struct NeighbourQueryBase {
   /// detail::IdentityTransform for an example
   /// @return an @ref iterator_range containing all the buckets found
   ///
-  template <typename Transform, int LNormNumber = -1>
+  template <int LNormNumber, typename Transform>
   query_iterator<LNormNumber> get_buckets_near_point(
       const double_d &position, const double max_distance,
       const Transform &transform = detail::IdentityTransform()) const;
@@ -1434,8 +1434,7 @@ private:
   const Query *m_query;
 };
 
-template <typename Query, int LNormNumber,
-          typename Transform = detail::IdentityTransform>
+template <typename Query, int LNormNumber, typename Transform>
 class tree_query_iterator {
   typedef tree_query_iterator<Query, LNormNumber, Transform> iterator;
   typedef typename Query::child_iterator child_iterator;
@@ -1458,14 +1457,13 @@ public:
   /// list
   CUDA_HOST_DEVICE
   tree_query_iterator(const child_iterator &start, const double_d &query_point,
-                      const double_d &max_distance, const unsigned tree_depth,
-                      const Query *query,
-                      const Transform &transform = Transform())
+                      const double &max_distance, const unsigned tree_depth,
+                      const Query *query, const Transform &transform)
       : m_query_point(query_point),
         m_max_distance2(
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
                 max_distance)),
-        m_query(query) {
+        m_query(query), m_transform(transform) {
     ASSERT_CUDA(tree_depth <= m_stack_max_size);
     if (start != false) {
       m_stack.push_back(start);
@@ -1591,7 +1589,7 @@ private:
                               : (m_query_point[j] - bounds.bmax[j]));
     }
 
-    transform(dx);
+    m_transform(dx);
 
     const double accum = detail::distance_helper<LNormNumber>::norm(dx);
     // std::cout <<"accum = "<<accum<< std::endl;
@@ -1701,6 +1699,7 @@ private:
   double_d m_query_point;
   double m_max_distance2;
   const Query *m_query;
+  Transform m_transform;
 };
 
 template <unsigned int D> class lattice_iterator {
@@ -1949,10 +1948,10 @@ private:
   }
 };
 
-template <typename Query, int LNormNumber,
-          typename Transform = detail::IdentityTransform>
+template <typename Query, int LNormNumber, typename Transform>
 class lattice_iterator_within_distance {
-  typedef lattice_iterator_within_distance<Query, LNormNumber> iterator;
+  typedef lattice_iterator_within_distance<Query, LNormNumber, Transform>
+      iterator;
   static const unsigned int dimension = Query::dimension;
   typedef Vector<double, dimension> double_d;
   typedef Vector<int, dimension> int_d;
@@ -2011,7 +2010,7 @@ public:
   lattice_iterator_within_distance(const double_d &query_point,
                                    const double max_distance,
                                    const Query *query,
-                                   const Transform &transform = Transform())
+                                   const Transform &transform)
       : m_query_point(query_point),
         m_max_distance2(
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
@@ -2121,7 +2120,7 @@ private:
             m_query_point[j], m_base_index[j], m_min[j], j);
       }
 
-      transform(dx);
+      m_transform(dx);
       const double accum = detail::distance_helper<LNormNumber>::norm(dx);
       // std::cout <<"accum = "<<accum<< std::endl;
 
@@ -2167,7 +2166,7 @@ private:
   }
 
   CUDA_HOST_DEVICE
-  bool outside_domain(const double_d &position, const double_d &max_distance) {
+  bool outside_domain(const double_d &position, const double max_distance) {
     m_base_index =
         m_query->m_point_to_bucket_index.find_bucket_index_vector(position);
     int_d start = m_query->m_point_to_bucket_index.find_bucket_index_vector(
@@ -2215,7 +2214,7 @@ private:
               m_query_point[j], m_base_index[j], m_index[j], j);
         }
 
-        transform(dx);
+        m_transform(dx);
 
         const double accum = detail::distance_helper<LNormNumber>::norm(dx);
         // std::cout <<"accum = "<<accum<< std::endl;

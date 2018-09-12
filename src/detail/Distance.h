@@ -43,8 +43,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 namespace detail {
 
-template <unsigned int D> struct IdentityTransform {
-  void operator()(const Vector<double, D> &v) {}
+struct IdentityTransform {
+  template <unsigned int D> void operator()(Vector<double, D> &v) {}
 };
 
 template <int LNormNumber> struct distance_helper {

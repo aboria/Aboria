@@ -66,7 +66,8 @@ template <typename Query, int LNormNumber,
 class search_iterator {
 
   typedef typename Query::particle_iterator particle_iterator;
-  typedef typename Query::template query_iterator<LNormNumber> query_iterator;
+  typedef typename Query::template query_iterator<LNormNumber, Transform>
+      query_iterator;
   typedef typename Query::traits_type Traits;
   static const unsigned int dimension = Traits::dimension;
 
@@ -187,9 +188,10 @@ public:
         m_current_point(
             r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin)),
-        m_current_bucket(query.template get_buckets_near_point<LNormNumber>(
-                             m_current_point, max_distance, transform),
-                         m_transform(transform)) {
+        m_current_bucket(
+            query.template get_buckets_near_point<LNormNumber, Transform>(
+                m_current_point, max_distance, transform)),
+        m_transform(transform) {
 
 #if defined(__CUDA_ARCH__)
     CHECK_CUDA((!std::is_same<typename Traits::template vector<double>,
@@ -384,8 +386,9 @@ private:
       m_current_point =
           m_r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin);
-      m_current_bucket = m_query->template get_buckets_near_point<LNormNumber>(
-          m_current_point, m_max_distance, m_transform);
+      m_current_bucket =
+          m_query->template get_buckets_near_point<LNormNumber, Transform>(
+              m_current_point, m_max_distance, m_transform);
     }
     return true;
   }
@@ -438,7 +441,7 @@ private:
     // m_particle_range.get_transpose();
     const double_d &p = get<position>(*m_current_particle);
     m_dx = p - m_current_point;
-    transform(m_dx);
+    m_transform(m_dx);
     const double accum = detail::distance_helper<LNormNumber>::norm(m_dx);
     const bool outside = accum > m_max_distance2;
 
@@ -785,12 +788,14 @@ detail::kd_tree_tag) {
 /// @param centre the central point of the search
 /// @param max_distance the maximum distance to search around @p centre
 ///
-template <int LNormNumber, typename Query,
-          typename SearchIterator = search_iterator<Query, LNormNumber>>
-CUDA_HOST_DEVICE SearchIterator
-distance_search(const Query &query, const typename Query::double_d &centre,
-                const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <
+    int LNormNumber, typename Query,
+    typename Transform = detail::IdentityTransform,
+    typename SearchIterator = search_iterator<Query, LNormNumber, Transform>>
+CUDA_HOST_DEVICE SearchIterator distance_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 
 ///
@@ -800,11 +805,12 @@ distance_search(const Query &query, const typename Query::double_d &centre,
 /// <https://en.wikipedia.org/wiki/Chebyshev_distance>
 ///
 ///
-template <typename Query, typename SearchIterator = search_iterator<Query, -1>>
-CUDA_HOST_DEVICE SearchIterator
-chebyshev_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <typename Query, typename Transform = detail::IdentityTransform,
+          typename SearchIterator = search_iterator<Query, -1, Transform>>
+CUDA_HOST_DEVICE SearchIterator chebyshev_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 
 ///
@@ -814,11 +820,12 @@ chebyshev_search(const Query &query, const typename Query::double_d &centre,
 /// <https://en.wikipedia.org/wiki/Taxicab_geometry>
 ///
 ///
-template <typename Query, typename SearchIterator = search_iterator<Query, 1>>
-CUDA_HOST_DEVICE SearchIterator
-manhatten_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <typename Query, typename Transform = detail::IdentityTransform,
+          typename SearchIterator = search_iterator<Query, 1, Transform>>
+CUDA_HOST_DEVICE SearchIterator manhatten_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 ///
 /// @copydoc distance_search()
@@ -827,11 +834,12 @@ manhatten_search(const Query &query, const typename Query::double_d &centre,
 /// <https://en.wikipedia.org/wiki/Euclidean_distance>
 ///
 ///
-template <typename Query, typename SearchIterator = search_iterator<Query, 2>>
-CUDA_HOST_DEVICE SearchIterator
-euclidean_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <typename Query, typename Transform = detail::IdentityTransform,
+          typename SearchIterator = search_iterator<Query, 2, Transform>>
+CUDA_HOST_DEVICE SearchIterator euclidean_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 
 ///

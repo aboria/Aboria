@@ -706,8 +706,9 @@ template <typename Traits> struct HyperOctreeQuery {
   typedef typename Traits::bool_d bool_d;
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
-  template <int LNormNumber>
-  using query_iterator = tree_query_iterator<HyperOctreeQuery, LNormNumber>;
+  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  using query_iterator =
+      tree_query_iterator<HyperOctreeQuery, LNormNumber, Transform>;
   typedef depth_first_iterator<HyperOctreeQuery> root_iterator;
   typedef depth_first_iterator<HyperOctreeQuery> all_iterator;
   typedef octree_child_iterator<dimension> child_iterator;
@@ -856,16 +857,17 @@ template <typename Traits> struct HyperOctreeQuery {
   size_t number_of_buckets() const { return m_number_of_nodes; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <typename Transform, int LNormNumber>
-  CUDA_HOST_DEVICE query_iterator<LNormNumber> get_buckets_near_point(
-      const double_d &position, const double max_distance,
-      const Transform &transform = detail::IdentityTransform()) const {
+  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber, Transform>
+  get_buckets_near_point(const double_d &position, const double max_distance,
+                         const Transform &transform = Transform()) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance= " << max_distance);
 #endif
-    return query_iterator<LNormNumber>(get_children(), position, max_distance,
-                                       m_number_of_levels, this, transform);
+    return query_iterator<LNormNumber, Transform>(
+        get_children(), position, max_distance, m_number_of_levels, this,
+        transform);
   }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
