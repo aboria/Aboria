@@ -717,20 +717,23 @@ public:
       int count = 0;
       double_d &pi = get<position>(i);
       for (auto j = query.get_subtree(); j != false; ++j) {
-        auto bounds = query.get_bounds(j.get_child_iterator());
-        if (is_periodic) {
-          for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
-                                               int_d::Constant(2));
-               periodic_it != false; ++periodic_it) {
-            bbox<D> periodic_bounds(bounds.bmin + (*periodic_it) * (max - min),
-                                    bounds.bmax + (*periodic_it) * (max - min));
-            if (circle_intersect_cube(pi, r, periodic_bounds)) {
+        if (query.is_leaf_node(*j)) {
+          auto bounds = query.get_bounds(j.get_child_iterator());
+          if (is_periodic) {
+            for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
+                                                 int_d::Constant(2));
+                 periodic_it != false; ++periodic_it) {
+              bbox<D> periodic_bounds(
+                  bounds.bmin + (*periodic_it) * (max - min),
+                  bounds.bmax + (*periodic_it) * (max - min));
+              if (circle_intersect_cube(pi, r, periodic_bounds)) {
+                count++;
+              }
+            }
+          } else {
+            if (circle_intersect_cube(pi, r, bounds)) {
               count++;
             }
-          }
-        } else {
-          if (circle_intersect_cube(pi, r, bounds)) {
-            count++;
           }
         }
       }
@@ -743,6 +746,7 @@ public:
     typedef typename ParticlesType::raw_pointer pointer;
     typedef typename ParticlesType::raw_const_reference const_reference;
     typedef typename ParticlesType::double_d double_d;
+    typedef typename ParticlesType::int_d int_d;
     typedef typename ParticlesType::query_type query_type;
     typedef typename ParticlesType::position position;
     static const unsigned int D = ParticlesType::dimension;
@@ -750,18 +754,36 @@ public:
     query_type query;
     double r;
     double r2;
+    bool is_periodic;
 
-    aboria_check_bucket(ParticlesType &particles, double r)
-        : query(particles.get_query()), r(r), r2(r * r) {}
+    aboria_check_bucket(ParticlesType &particles, double r, bool is_periodic)
+        : query(particles.get_query()), r(r), r2(r * r),
+          is_periodic(is_periodic) {}
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
       int count = 0;
-      for (auto j =
-               query.template get_buckets_near_point<2>(get<position>(i), r);
-           j != false; ++j) {
-        (void)j;
-        count++;
+      const auto &bounds = query.get_bounds();
+      if (is_periodic) {
+        for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
+                                             int_d::Constant(2));
+             periodic_it != false; ++periodic_it) {
+          for (auto j = query.template get_buckets_near_point<2>(
+                   get<position>(i) +
+                       (*periodic_it) * (bounds.bmax - bounds.bmin),
+                   r);
+               j != false; ++j) {
+            (void)j;
+            count++;
+          }
+        }
+      } else {
+        for (auto j =
+                 query.template get_buckets_near_point<2>(get<position>(i), r);
+             j != false; ++j) {
+          (void)j;
+          count++;
+        }
       }
       get<bucket_neighbours_aboria>(i) = count;
     }
@@ -881,6 +903,7 @@ public:
     std::cout << "random test (D=" << D << " periodic= " << is_periodic
               << "  N=" << N << " r=" << r
               << " push_back_construction = " << push_back_construction
+              << " transform = " << typeid(transform).name()
               << "):" << std::endl;
 
     unsigned seed1 =
@@ -966,12 +989,14 @@ public:
 
     // Aboria search: particle-bucket
     t0 = Clock::now();
-    Aboria::detail::for_each(particles.begin(), particles.end(),
-                             aboria_check_bucket<particles_type>(particles, r));
+    Aboria::detail::for_each(
+        particles.begin(), particles.end(),
+        aboria_check_bucket<particles_type>(particles, r, is_periodic));
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria_bucket = t1 - t0;
 
     for (size_t i = 0; i < particles.size(); ++i) {
+      /*
       if (int(get<neighbours_brute>(particles)[i]) !=
           int(get<neighbours_aboria>(particles)[i])) {
         std::cout << "error in finding neighbours for p = "
@@ -983,8 +1008,10 @@ public:
                          int(get<neighbours_aboria>(particles)[i]));
         return;
       }
+      */
       TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                        int(get<neighbours_aboria>(particles)[i]));
+      /*
       if (int(get<bucket_neighbours_brute>(particles)[i]) !=
           int(get<bucket_neighbours_aboria>(particles)[i])) {
         std::cout << "error in finding neighbour buckets for p = "
@@ -996,6 +1023,7 @@ public:
                          int(get<bucket_neighbours_aboria>(particles)[i]));
         return;
       }
+      */
       TS_ASSERT_EQUALS(int(get<bucket_neighbours_brute>(particles)[i]),
                        int(get<bucket_neighbours_aboria>(particles)[i]));
     }
@@ -1122,7 +1150,7 @@ public:
   }
 
   struct SkewTransform {
-    void operator()(Vector<double, 1> &v) { v[0] = 0.1 * v[0]; }
+    void operator()(Vector<double, 1> &v) { v[0] = 0.5 * v[0]; }
     void operator()(Vector<double, 2> &v) { v[0] += 0.1 * v[1]; }
   };
 

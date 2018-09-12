@@ -1591,7 +1591,7 @@ private:
 
     m_transform(dx);
 
-    const double accum = detail::distance_helper<LNormNumber>::norm(dx);
+    const double accum = detail::distance_helper<LNormNumber>::norm2(dx);
     // std::cout <<"accum = "<<accum<< std::endl;
 
     return (accum < m_max_distance2);
@@ -2121,7 +2121,7 @@ private:
       }
 
       m_transform(dx);
-      const double accum = detail::distance_helper<LNormNumber>::norm(dx);
+      const double accum = detail::distance_helper<LNormNumber>::norm2(dx);
       // std::cout <<"accum = "<<accum<< std::endl;
 
       no_buckets = accum > m_max_distance2;
@@ -2216,7 +2216,7 @@ private:
 
         m_transform(dx);
 
-        const double accum = detail::distance_helper<LNormNumber>::norm(dx);
+        const double accum = detail::distance_helper<LNormNumber>::norm2(dx);
         // std::cout <<"accum = "<<accum<< std::endl;
 
         potential_bucket = accum <= m_max_distance2;

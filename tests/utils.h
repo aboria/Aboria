@@ -115,6 +115,10 @@ public:
     bbox<2> cube(vdouble2(-0.1, -0.1), vdouble2(0.1, 0.1));
     TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
 
+    cube.bmin = vdouble2(-0.005, 0.11);
+    cube.bmax = vdouble2(0.005, 0.12);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
     cube.bmin = vdouble2(-1.1, -5);
     cube.bmax = vdouble2(-0.9, 5);
     TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);

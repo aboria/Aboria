@@ -149,20 +149,26 @@ bool circle_intersect_line(const Vector<double, D> &centre, const double radius,
   const double under_sqrt = std::pow(a_minus_c_along_ab, 2) -
                             a_minus_c.squaredNorm() + std::pow(radius, 2);
 
+  bool intersects;
   if (under_sqrt > 0) {
     // two intersections
     const double after_sqrt = std::sqrt(under_sqrt);
     const double d1 = -a_minus_c_along_ab - after_sqrt;
     const double d2 = -a_minus_c_along_ab + after_sqrt;
-    return (d1 >= 0 && d1 < dx_norm) || (d2 >= 0 && d2 < dx_norm);
+    intersects = (d1 >= 0 && d1 < dx_norm) || (d2 >= 0 && d2 < dx_norm);
   } else if (under_sqrt == 0) {
     // one intersection
     const double d1 = -a_minus_c_along_ab;
-    return d1 >= 0 && d1 < dx_norm;
+    intersects = d1 >= 0 && d1 < dx_norm;
   } else {
     // no intersections
-    return false;
+    intersects = false;
   }
+
+  // check if one of the points is within the sphere
+  bool a_in_sphere = (a - centre).squaredNorm() <= std::pow(radius, 2);
+
+  return intersects || a_in_sphere;
 }
 
 /// @returns true if the hypersphere defined by \p centre and \p radius
