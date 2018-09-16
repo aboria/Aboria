@@ -2102,6 +2102,26 @@ private:
     return (1 == ((m_quadrant >> i) & 1));
   }
 
+  double get_min_distance_to_bucket(const int_d &bucket) {
+    if (std::is_same<Transform, detail::IdentityTransform>::value) {
+      double_d dx = m_query->m_point_to_bucket_index.get_dist_to_bucket(
+          m_query_point, bucket);
+      m_transform(dx);
+      return detail::distance_helper<LNormNumber>::norm2(dx);
+    } else {
+      double min_accum = std::numeric_limits<double>::max();
+      for (int i = 0; i < 1 << dimension; ++i) {
+        double_d dx =
+            m_query->m_point_to_bucket_index.get_dist_to_bucket_vertex(
+                m_query_point, bucket, i);
+        m_transform(dx);
+        min_accum = std::min(detail::distance_helper<LNormNumber>::norm2(dx),
+                             min_accum);
+      }
+      return min_accum;
+    }
+  }
+
   CUDA_HOST_DEVICE
   void reset_min_and_index() {
     bool no_buckets = true;
@@ -2113,15 +2133,7 @@ private:
             m_query_point[i], i, ith_quadrant_bit(i));
       }
 
-      // check distance
-      double_d dx;
-      for (size_t j = 0; j < dimension; ++j) {
-        dx[j] = m_query->m_point_to_bucket_index.get_dist_to_bucket(
-            m_query_point[j], m_base_index[j], m_min[j], j);
-      }
-
-      m_transform(dx);
-      const double accum = detail::distance_helper<LNormNumber>::norm2(dx);
+      const double accum = get_min_distance_to_bucket(m_min);
       // std::cout <<"accum = "<<accum<< std::endl;
 
       no_buckets = accum > m_max_distance2;
@@ -2208,15 +2220,8 @@ private:
       // if index is outside domain don't bother calcing
       // distance
       if (potential_bucket) {
-        double_d dx;
-        for (size_t j = 0; j < dimension; ++j) {
-          dx[j] = m_query->m_point_to_bucket_index.get_dist_to_bucket(
-              m_query_point[j], m_base_index[j], m_index[j], j);
-        }
 
-        m_transform(dx);
-
-        const double accum = detail::distance_helper<LNormNumber>::norm2(dx);
+        const double accum = get_min_distance_to_bucket(m_index);
         // std::cout <<"accum = "<<accum<< std::endl;
 
         potential_bucket = accum <= m_max_distance2;

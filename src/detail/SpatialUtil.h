@@ -3,6 +3,7 @@
 #define DETAIL_SPATIAL_UTIL_H_
 
 #include "CudaInclude.h"
+#include "Distance.h"
 #include "Log.h"
 #include "Vector.h"
 
@@ -140,6 +141,10 @@ template <unsigned int D> struct point_to_bucket_index {
     return (vindex + 1) * m_bucket_side_length + m_bounds.bmin;
   }
 
+  inline CUDA_HOST_DEVICE int find_bucket_centre(const int_d &vindex) const {
+    return (vindex + 0.5) * m_bucket_side_length + m_bounds.bmin;
+  }
+
   CUDA_HOST_DEVICE
   int get_min_index_by_quadrant(const double r, const int i,
                                 const bool up) const {
@@ -150,15 +155,56 @@ template <unsigned int D> struct point_to_bucket_index {
   }
 
   CUDA_HOST_DEVICE
+  double_d get_dist_to_bucket(const double_d &r,
+                              const int_d &target_index) const {
+
+    double_d dx =
+        (target_index + 0.5) * m_bucket_side_length + m_bounds.bmin - r;
+    for (int i = 0; i < D; ++i) {
+      dx[i] = std::max(std::abs(dx[i]) - 0.5 * m_bucket_side_length[i], 0.0);
+    }
+    return dx;
+  }
+
+  CUDA_HOST_DEVICE
+  double_d get_dist_to_bucket_vertex(const double_d &r,
+                                     const int_d &target_index,
+                                     const int vertex) const {
+    double_d dx;
+    for (int i = 0; i < D; ++i) {
+      const bool jth_bit = (1 == ((vertex >> i) & 1));
+      dx[i] = (target_index[i] + jth_bit) * m_bucket_side_length[i] +
+              m_bounds.bmin[i] - r[i];
+    }
+    return dx;
+  }
+
+  /*
+  template <>
+  double_d get_dist_to_bucket<detail::IdentityTransform>(
+      const double_d &r, const int_d &target_index, int quadrant,
+      const detail::IdentityTransform &transform) const {
+
+    double_d dx =
+        (target_index + 0.5) * m_bucket_side_length + m_bounds.bmin - r;
+    transform(dx);
+    for (int i = 0; i < D; ++i) {
+      dx[i] = std::max(std::abs(dx[i]) - 0.5 * m_bucket_side_length[i], 0.0);
+    }
+    return dx;
+  }
+  */
+
+  CUDA_HOST_DEVICE
   double get_dist_to_bucket(const double r, const int my_index,
                             const int target_index, const int i) const {
     if (my_index < target_index) {
       // compare point to lower edge of bucket, return a positive distance
       return target_index * m_bucket_side_length[i] + m_bounds.bmin[i] - r;
     } else if (my_index > target_index) {
-      // compare point to upper edge of bucket, return a positive distance
-      return r -
-             ((target_index + 1) * m_bucket_side_length[i] + m_bounds.bmin[i]);
+      // compare point to upper edge of bucket, return a negative distance
+      return ((target_index + 1) * m_bucket_side_length[i] + m_bounds.bmin[i]) -
+             r;
     } else
       // same index, return 0.0
       return 0.0;

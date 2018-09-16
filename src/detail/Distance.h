@@ -44,7 +44,7 @@ namespace Aboria {
 namespace detail {
 
 struct IdentityTransform {
-  template <unsigned int D> void operator()(Vector<double, D> &v) {}
+  template <unsigned int D> void operator()(Vector<double, D> &v) const {}
 };
 
 template <int LNormNumber> struct distance_helper {

@@ -40,10 +40,6 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <cxxtest/TestSuite.h>
 typedef std::chrono::system_clock Clock;
 
-#ifdef HAVE_CAIRO
-#include <cairo-svg.h>
-#endif
-
 #include "Aboria.h"
 
 using namespace Aboria;
@@ -677,14 +673,14 @@ public:
           for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
                                                int_d::Constant(2));
                periodic_it != false; ++periodic_it) {
-            double_d dx = pi + (*periodic_it) * (max - min) - pj;
+            double_d dx = pj - pi - (*periodic_it) * (max - min);
             transform(dx);
             if (dx.squaredNorm() <= r2) {
               count++;
             }
           }
         } else {
-          double_d dx = pi - pj;
+          double_d dx = pj - pi;
           transform(dx);
           if (dx.squaredNorm() <= r2) {
             count++;
@@ -727,10 +723,8 @@ public:
             for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
                                                  int_d::Constant(2));
                  periodic_it != false; ++periodic_it) {
-              bbox<D> periodic_bounds(
-                  bounds.bmin + (*periodic_it) * (max - min),
-                  bounds.bmax + (*periodic_it) * (max - min));
-              if (circle_intersect_cube(pi, r, periodic_bounds)) {
+              if (circle_intersect_cube(pi + (*periodic_it) * (max - min), r,
+                                        bounds)) {
                 count++;
               }
             }
@@ -883,6 +877,20 @@ public:
     }
   };
 
+  template <typename Particles_t, typename Transform>
+  void helper_plot(std::false_type, std::string filename,
+                   const Particles_t &particles, const double search_radius,
+                   const Transform &transform) {}
+  template <typename Particles_t, typename Transform>
+  void helper_plot(std::true_type, std::string filename,
+                   const Particles_t &particles, const double search_radius,
+                   const Transform &transform) {
+    draw_particles_with_search(
+        filename, particles,
+        {vdouble2(0.488235, -0.255954), vdouble2(-0.418461, 0.457392)},
+        search_radius, transform);
+  }
+
   template <unsigned int D, template <typename, typename> class VectorType,
             template <typename> class SearchMethod,
             typename Transform = detail::IdentityTransform>
@@ -966,6 +974,24 @@ public:
     // delete last particle
     particles.erase(particles.begin() + particles.size() - 1);
 
+    // plot search if 2D
+    std::string filename = "";
+    if (is_periodic) {
+      filename += "periodic";
+    } else {
+      filename += "non-periodic";
+    }
+    filename += "-" + std::to_string(N) + "-" + std::to_string(r);
+    if (push_back_construction) {
+      filename += "-push-back";
+    } else {
+      filename += "-no-push-back";
+    }
+    filename += std::string("-") + typeid(transform).name() + ".svg";
+
+    helper_plot(std::integral_constant<bool, D == 2>(), filename, particles, r,
+                transform);
+
     // brute force search: particle-particle
     auto t0 = Clock::now();
     Aboria::detail::for_each(
@@ -1000,19 +1026,20 @@ public:
     std::chrono::duration<double> dt_aboria_bucket = t1 - t0;
 
     for (size_t i = 0; i < particles.size(); ++i) {
-      /*
       if (int(get<neighbours_brute>(particles)[i]) !=
           int(get<neighbours_aboria>(particles)[i])) {
         std::cout << "error in finding neighbours for p = "
                   << static_cast<const double_d &>(get<position>(particles)[i])
                   << " over radius " << r << std::endl;
+        /*
         particles.print_data_structure();
+
 
         TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                          int(get<neighbours_aboria>(particles)[i]));
         return;
+        */
       }
-      */
       TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                        int(get<neighbours_aboria>(particles)[i]));
       /*
@@ -1027,9 +1054,9 @@ public:
                          int(get<bucket_neighbours_aboria>(particles)[i]));
         return;
       }
-      */
       TS_ASSERT_EQUALS(int(get<bucket_neighbours_brute>(particles)[i]),
                        int(get<bucket_neighbours_aboria>(particles)[i]));
+      */
     }
 
     std::cout << "\ttiming result: Aboria = " << dt_aboria.count()
@@ -1154,14 +1181,15 @@ public:
   }
 
   struct SkewTransform {
-    void operator()(Vector<double, 1> &v) { v[0] = 0.5 * v[0]; }
-    void operator()(Vector<double, 2> &v) { v[0] += 0.1 * v[1]; }
+    void operator()(Vector<double, 1> &v) const { v[0] = 0.5 * v[0]; }
+    void operator()(Vector<double, 2> &v) const { v[0] += 0.3 * v[1]; }
   };
+
+  template <template <typename> class SearchMethod> void helper_plot_search() {}
 
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_random(bool test_push_back = true) {
-
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false);
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, true, false);
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false,
@@ -1216,7 +1244,6 @@ public:
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_random_fast_bucketsearch(bool test_push_back = true) {
-
     helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(
         14, 0.1, false, false);
     helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(14, 0.1,
