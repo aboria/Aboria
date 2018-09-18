@@ -155,13 +155,27 @@ template <unsigned int D> struct point_to_bucket_index {
   }
 
   CUDA_HOST_DEVICE
-  double_d get_dist_to_bucket(const double_d &r,
-                              const int_d &target_index) const {
+  double_d get_dist_to_bucket_unsigned(const double_d &r,
+                                       const int_d &target_index) const {
 
     double_d dx =
         (target_index + 0.5) * m_bucket_side_length + m_bounds.bmin - r;
     for (int i = 0; i < D; ++i) {
       dx[i] = std::max(std::abs(dx[i]) - 0.5 * m_bucket_side_length[i], 0.0);
+    }
+    return dx;
+  }
+
+  CUDA_HOST_DEVICE
+  double_d get_dist_to_bucket_signed(const double_d &r,
+                                     const int_d &target_index) const {
+
+    double_d dx =
+        (target_index + 0.5) * m_bucket_side_length + m_bounds.bmin - r;
+    for (int i = 0; i < D; ++i) {
+      dx[i] = std::copysign(
+          std::max(std::abs(dx[i]) - 0.5 * m_bucket_side_length[i], 0.0),
+          dx[i]);
     }
     return dx;
   }

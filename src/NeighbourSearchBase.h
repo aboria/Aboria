@@ -1993,7 +1993,6 @@ class lattice_iterator_within_distance {
   bool m_valid;
   int_d m_min;
   proxy_int_d m_index;
-  int_d m_base_index;
   Transform m_transform;
 
 public:
@@ -2103,23 +2102,24 @@ private:
   }
 
   double get_min_distance_to_bucket(const int_d &bucket) {
-    if (std::is_same<Transform, detail::IdentityTransform>::value) {
-      double_d dx = m_query->m_point_to_bucket_index.get_dist_to_bucket(
-          m_query_point, bucket);
-      m_transform(dx);
-      return detail::distance_helper<LNormNumber>::norm2(dx);
-    } else {
-      double min_accum = std::numeric_limits<double>::max();
-      for (int i = 0; i < 1 << dimension; ++i) {
-        double_d dx =
-            m_query->m_point_to_bucket_index.get_dist_to_bucket_vertex(
-                m_query_point, bucket, i);
-        m_transform(dx);
-        min_accum = std::min(detail::distance_helper<LNormNumber>::norm2(dx),
-                             min_accum);
-      }
-      return min_accum;
-    }
+    return get_min_distance_to_bucket_impl(
+        bucket, std::is_same<Transform, detail::IdentityTransform>());
+  }
+
+  double get_min_distance_to_bucket_impl(const int_d &bucket, std::true_type) {
+    double_d dx = m_query->m_point_to_bucket_index.get_dist_to_bucket_unsigned(
+        m_query_point, bucket);
+    m_transform(dx);
+    return detail::distance_helper<LNormNumber>::norm2(dx);
+  }
+
+  double get_min_distance_to_bucket_impl(const int_d &bucket, std::false_type) {
+    double_d dx = m_query->m_point_to_bucket_index.get_dist_to_bucket_signed(
+        m_query_point, bucket);
+    m_transform(dx);
+    // TODO: this 0.9 is a bit of a fudge factor to make sure we get all
+    // relevent buckets, needs improvement
+    return 0.9 * detail::distance_helper<LNormNumber>::norm2(dx);
   }
 
   CUDA_HOST_DEVICE
@@ -2179,8 +2179,19 @@ private:
 
   CUDA_HOST_DEVICE
   bool outside_domain(const double_d &position, const double max_distance) {
+    /*
     m_base_index =
         m_query->m_point_to_bucket_index.find_bucket_index_vector(position);
+        */
+    return outside_domain_impl(
+        position, max_distance,
+        typename std::is_same<Transform, detail::IdentityTransform>());
+  }
+
+  CUDA_HOST_DEVICE
+  /// outside_domain implementation for identity transforms
+  bool outside_domain_impl(const double_d &position, const double max_distance,
+                           std::true_type) {
     int_d start = m_query->m_point_to_bucket_index.find_bucket_index_vector(
         position - max_distance);
     int_d end = m_query->m_point_to_bucket_index.find_bucket_index_vector(
@@ -2196,6 +2207,31 @@ private:
       }
     }
     return no_buckets;
+  }
+
+  CUDA_HOST_DEVICE
+  /// outside_domain implementation for non-identity transforms
+  bool outside_domain_impl(const double_d &position, const double max_distance,
+                           std::false_type) {
+    // TODO: this should cull points that are clearly outside the domain
+    return false;
+    /*
+    double_d vertex;
+    for (int i = 0; i < 1 << dimension; ++i) {
+      for (int j = 0; j < dimension; ++j) {
+        const bool jth_bit = 1 == ((i >> j) & 1);
+        vertex[j] = position[j] + (jth_bit ? max_distance : -max_distance);
+      }
+      m_transform(vertex);
+      bbox<dimension> bounds = m_query->get_bounds();
+      m_transform(bounds.bmin);
+      m_transform(bounds.bmax);
+      if ((vertex >= bounds.bmin).all() && (vertex < bounds.bmax).all()) {
+        return false;
+      }
+    }
+    return true;
+    */
   }
 
   CUDA_HOST_DEVICE

@@ -878,17 +878,18 @@ public:
   };
 
   template <typename Particles_t, typename Transform>
-  void helper_plot(std::false_type, std::string filename,
-                   const Particles_t &particles, const double search_radius,
-                   const Transform &transform) {}
+  void helper_plot(std::false_type,
+                   const Vector<double, Particles_t::dimension> &search_point,
+                   std::string filename, const Particles_t &particles,
+                   const double search_radius, const Transform &transform) {}
   template <typename Particles_t, typename Transform>
-  void helper_plot(std::true_type, std::string filename,
-                   const Particles_t &particles, const double search_radius,
-                   const Transform &transform) {
-    draw_particles_with_search(
-        filename, particles,
-        {vdouble2(0.488235, -0.255954), vdouble2(-0.418461, 0.457392)},
-        search_radius, transform);
+  void helper_plot(std::true_type,
+                   const Vector<double, Particles_t::dimension> &search_point,
+                   std::string filename, const Particles_t &particles,
+                   const double search_radius, const Transform &transform) {
+    std::cout << "plotting with position " << search_point << std::endl;
+    draw_particles_with_search(filename, particles, {search_point},
+                               search_radius, transform);
   }
 
   template <unsigned int D, template <typename, typename> class VectorType,
@@ -989,9 +990,6 @@ public:
     }
     filename += std::string("-") + typeid(transform).name() + ".svg";
 
-    helper_plot(std::integral_constant<bool, D == 2>(), filename, particles, r,
-                transform);
-
     // brute force search: particle-particle
     auto t0 = Clock::now();
     Aboria::detail::for_each(
@@ -1025,12 +1023,20 @@ public:
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria_bucket = t1 - t0;
 
+    bool plotted_error = false;
     for (size_t i = 0; i < particles.size(); ++i) {
       if (int(get<neighbours_brute>(particles)[i]) !=
           int(get<neighbours_aboria>(particles)[i])) {
         std::cout << "error in finding neighbours for p = "
                   << static_cast<const double_d &>(get<position>(particles)[i])
                   << " over radius " << r << std::endl;
+        if (!plotted_error) {
+          helper_plot(std::integral_constant<bool, D == 2>(),
+                      get<position>(particles)[i], filename, particles, r,
+                      transform);
+          plotted_error = true;
+        }
+
         /*
         particles.print_data_structure();
 
@@ -1181,7 +1187,7 @@ public:
   }
 
   struct SkewTransform {
-    void operator()(Vector<double, 1> &v) const { v[0] = 0.5 * v[0]; }
+    void operator()(Vector<double, 1> &v) const { v[0] = 0.7 * v[0]; }
     void operator()(Vector<double, 2> &v) const { v[0] += 0.3 * v[1]; }
   };
 
@@ -1219,9 +1225,9 @@ public:
                                                  SkewTransform());
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, false, false,
                                                  SkewTransform());
-    helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 1, true, false,
+    helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 10, true, false,
                                                  SkewTransform());
-    helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 1, false, false,
+    helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 10, false, false,
                                                  SkewTransform());
 
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 100, true, false);
