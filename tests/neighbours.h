@@ -673,15 +673,14 @@ public:
           for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
                                                int_d::Constant(2));
                periodic_it != false; ++periodic_it) {
-            double_d dx = pj - pi - (*periodic_it) * (max - min);
-            transform(dx);
+            const double_d dx =
+                transform(pj - pi - (*periodic_it) * (max - min));
             if (dx.squaredNorm() <= r2) {
               count++;
             }
           }
         } else {
-          double_d dx = pj - pi;
-          transform(dx);
+          double_d dx = transform(pj - pi);
           if (dx.squaredNorm() <= r2) {
             count++;
           }
@@ -1187,8 +1186,10 @@ public:
   }
 
   struct SkewTransform {
-    void operator()(Vector<double, 1> &v) const { v[0] = 0.7 * v[0]; }
-    void operator()(Vector<double, 2> &v) const { v[0] += 0.3 * v[1]; }
+    inline vdouble1 operator()(const vdouble1 &v) const { return 0.7 * v; }
+    inline vdouble2 operator()(const vdouble2 &v) const {
+      return vdouble2(v[0] + 0.3 * v[1], v[1]);
+    }
   };
 
   template <template <typename> class SearchMethod> void helper_plot_search() {}

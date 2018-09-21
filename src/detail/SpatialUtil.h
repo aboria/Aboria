@@ -193,22 +193,6 @@ template <unsigned int D> struct point_to_bucket_index {
     return dx;
   }
 
-  /*
-  template <>
-  double_d get_dist_to_bucket<detail::IdentityTransform>(
-      const double_d &r, const int_d &target_index, int quadrant,
-      const detail::IdentityTransform &transform) const {
-
-    double_d dx =
-        (target_index + 0.5) * m_bucket_side_length + m_bounds.bmin - r;
-    transform(dx);
-    for (int i = 0; i < D; ++i) {
-      dx[i] = std::max(std::abs(dx[i]) - 0.5 * m_bucket_side_length[i], 0.0);
-    }
-    return dx;
-  }
-  */
-
   CUDA_HOST_DEVICE
   double get_dist_to_bucket(const double r, const int my_index,
                             const int target_index, const int i) const {

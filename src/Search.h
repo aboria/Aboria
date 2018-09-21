@@ -440,8 +440,7 @@ private:
     // const double_d& p = get<position>(*m_current_particle) +
     // m_particle_range.get_transpose();
     const double_d &p = get<position>(*m_current_particle);
-    m_dx = p - m_current_point;
-    m_transform(m_dx);
+    m_dx = m_transform(p - m_current_point);
     const double accum = detail::distance_helper<LNormNumber>::norm2(m_dx);
     const bool outside = accum > m_max_distance2;
 

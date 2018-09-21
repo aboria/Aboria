@@ -251,13 +251,10 @@ void draw_particles_with_search(
       // draw its outline
       auto bounds = query.get_bounds(ci);
       vdouble2 rect[4];
-      rect[0] = vdouble2(bounds.bmin[0], bounds.bmin[1]);
-      rect[1] = vdouble2(bounds.bmax[0], bounds.bmin[1]);
-      rect[2] = vdouble2(bounds.bmax[0], bounds.bmax[1]);
-      rect[3] = vdouble2(bounds.bmin[0], bounds.bmax[1]);
-      for (int i = 0; i < 4; ++i) {
-        transform(rect[i]);
-      }
+      rect[0] = transform(vdouble2(bounds.bmin[0], bounds.bmin[1]));
+      rect[1] = transform(vdouble2(bounds.bmax[0], bounds.bmin[1]));
+      rect[2] = transform(vdouble2(bounds.bmax[0], bounds.bmax[1]));
+      rect[3] = transform(vdouble2(bounds.bmin[0], bounds.bmax[1]));
       cairo_move_to(cr, rect[0][0], rect[0][1]);
       for (int i = 1; i < 4; ++i) {
         cairo_line_to(cr, rect[i][0], rect[i][1]);
@@ -271,11 +268,9 @@ void draw_particles_with_search(
   const double PI = boost::math::constants::pi<double>();
   for (size_t i = 0; i < particles.size(); ++i) {
     bool within_search = false;
-    vdouble2 pos = get<position>(particles)[i];
-    transform(pos);
+    vdouble2 pos = transform(get<position>(particles)[i]);
     for (auto &search_point : search_points) {
-      vdouble2 transformed_search_point = search_point;
-      transform(transformed_search_point);
+      vdouble2 transformed_search_point = transform(search_point);
 
       if ((pos - transformed_search_point).squaredNorm() <=
           std::pow(search_radius, 2)) {
@@ -294,8 +289,7 @@ void draw_particles_with_search(
   // draw search region and point
   for (auto &search_point : search_points) {
     cairo_set_source_rgba(cr, 0, 0, 0.5, 0.5);
-    vdouble2 transformed_search_point = search_point;
-    transform(transformed_search_point);
+    vdouble2 transformed_search_point = transform(search_point);
     cairo_arc(cr, transformed_search_point[0], transformed_search_point[1],
               search_radius, 0, 2 * PI);
     cairo_stroke(cr);
@@ -310,13 +304,10 @@ void draw_particles_with_search(
       auto ci = i.get_child_iterator();
       auto bounds = query.get_bounds(ci);
       vdouble2 rect[4];
-      rect[0] = vdouble2(bounds.bmin[0], bounds.bmin[1]);
-      rect[1] = vdouble2(bounds.bmax[0], bounds.bmin[1]);
-      rect[2] = vdouble2(bounds.bmax[0], bounds.bmax[1]);
-      rect[3] = vdouble2(bounds.bmin[0], bounds.bmax[1]);
-      for (int i = 0; i < 4; ++i) {
-        transform(rect[i]);
-      }
+      rect[0] = transform(vdouble2(bounds.bmin[0], bounds.bmin[1]));
+      rect[1] = transform(vdouble2(bounds.bmax[0], bounds.bmin[1]));
+      rect[2] = transform(vdouble2(bounds.bmax[0], bounds.bmax[1]));
+      rect[3] = transform(vdouble2(bounds.bmin[0], bounds.bmax[1]));
 
       // colour in search buckets
       cairo_move_to(cr, rect[0][0], rect[0][1]);
@@ -326,8 +317,7 @@ void draw_particles_with_search(
       cairo_close_path(cr);
       cairo_fill(cr);
       for (auto j = query.get_bucket_particles(*ci); j != false; ++j) {
-        vdouble2 pos = get<position>(*j);
-        transform(pos);
+        vdouble2 pos = transform(get<position>(*j));
         cairo_arc(cr, pos[0], pos[1], lw[0], 0, 2 * PI);
         cairo_fill(cr);
       }
@@ -335,8 +325,7 @@ void draw_particles_with_search(
     for (auto i =
              euclidean_search(query, search_point, search_radius, transform);
          i != false; ++i) {
-      vdouble2 pos = get<position>(*i);
-      transform(pos);
+      vdouble2 pos = transform(get<position>(*i));
       cairo_arc(cr, pos[0], pos[1], 2 * lw[0], 0, 2 * PI);
       cairo_fill(cr);
     }

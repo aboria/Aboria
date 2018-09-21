@@ -1594,10 +1594,9 @@ private:
                    0.0),
           dx[i]);
     }
-    m_transform(dx);
     // TODO: this 0.9 is a bit of a fudge factor to make sure we get all
     // relevent buckets, needs improvement
-    return 0.9 * detail::distance_helper<LNormNumber>::norm2(dx);
+    return 0.9 * detail::distance_helper<LNormNumber>::norm2(m_transform(dx));
   }
 
   CUDA_HOST_DEVICE
@@ -2119,16 +2118,16 @@ private:
   }
 
   double get_min_distance_to_bucket_impl(const int_d &bucket, std::true_type) {
-    double_d dx = m_query->m_point_to_bucket_index.get_dist_to_bucket_unsigned(
-        m_query_point, bucket);
-    m_transform(dx);
+    const double_d dx =
+        m_query->m_point_to_bucket_index.get_dist_to_bucket_unsigned(
+            m_query_point, bucket);
     return detail::distance_helper<LNormNumber>::norm2(dx);
   }
 
   double get_min_distance_to_bucket_impl(const int_d &bucket, std::false_type) {
-    double_d dx = m_query->m_point_to_bucket_index.get_dist_to_bucket_signed(
-        m_query_point, bucket);
-    m_transform(dx);
+    double_d dx =
+        m_transform(m_query->m_point_to_bucket_index.get_dist_to_bucket_signed(
+            m_query_point, bucket));
     // TODO: this 0.9 is a bit of a fudge factor to make sure we get all
     // relevent buckets, needs improvement
     return 0.9 * detail::distance_helper<LNormNumber>::norm2(dx);
