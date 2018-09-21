@@ -914,7 +914,7 @@ public:
     double r2 = r * r;
 
     std::cout << "random test (D=" << D << " periodic= " << is_periodic
-              << "  N=" << N << " r=" << r
+              << "  N=" << N << " r=" << r << " neighbour_n=" << neighbour_n
               << " push_back_construction = " << push_back_construction
               << " transform = " << typeid(transform).name()
               << "):" << std::endl;
@@ -1001,9 +1001,9 @@ public:
 
     // brute force search: particle-bucket
     t0 = Clock::now();
-    Aboria::detail::for_each(particles.begin(), particles.end(),
-                             brute_force_check_bucket<particles_type>(
-                                 particles, min, max, r2, is_periodic));
+    // Aboria::detail::for_each(particles.begin(), particles.end(),
+    //                         brute_force_check_bucket<particles_type>(
+    //                             particles, min, max, r2, is_periodic));
     t1 = Clock::now();
     std::chrono::duration<double> dt_brute_bucket = t1 - t0;
 

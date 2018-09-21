@@ -1576,24 +1576,36 @@ private:
   friend class boost::iterator_core_access;
 
   CUDA_HOST_DEVICE
+  double get_dist_to_bucket(const box_type &bucket, std::true_type) const {
+    double_d dx = 0.5 * (bucket.bmin + bucket.bmax) - m_query_point;
+    for (int i = 0; i < dimension; ++i) {
+      dx[i] = std::max(
+          std::abs(dx[i]) - 0.5 * (bucket.bmax[i] - bucket.bmin[i]), 0.0);
+    }
+    return detail::distance_helper<LNormNumber>::norm2(dx);
+  }
+
+  CUDA_HOST_DEVICE
+  double get_dist_to_bucket(const box_type &bucket, std::false_type) const {
+    double_d dx = 0.5 * (bucket.bmin + bucket.bmax) - m_query_point;
+    for (int i = 0; i < dimension; ++i) {
+      dx[i] = std::copysign(
+          std::max(std::abs(dx[i]) - 0.5 * (bucket.bmax[i] - bucket.bmin[i]),
+                   0.0),
+          dx[i]);
+    }
+    m_transform(dx);
+    // TODO: this 0.9 is a bit of a fudge factor to make sure we get all
+    // relevent buckets, needs improvement
+    return 0.9 * detail::distance_helper<LNormNumber>::norm2(dx);
+  }
+
+  CUDA_HOST_DEVICE
   bool child_is_within_query(const child_iterator &node) {
     const box_type &bounds = m_query->get_bounds(node);
-    double_d dx;
-    for (size_t j = 0; j < dimension; j++) {
-      const bool less_than_bmin = m_query_point[j] < bounds.bmin[j];
-      const bool more_than_bmax = m_query_point[j] > bounds.bmax[j];
-
-      // dist 0 if between min/max, or distance to min/max if not
-      dx[j] = (less_than_bmin ^ more_than_bmax) *
-              (less_than_bmin ? (bounds.bmin[j] - m_query_point[j])
-                              : (m_query_point[j] - bounds.bmax[j]));
-    }
-
-    m_transform(dx);
-
-    const double accum = detail::distance_helper<LNormNumber>::norm2(dx);
+    const double accum = get_dist_to_bucket(
+        bounds, std::is_same<Transform, detail::IdentityTransform>());
     // std::cout <<"accum = "<<accum<< std::endl;
-
     return (accum < m_max_distance2);
   }
 
