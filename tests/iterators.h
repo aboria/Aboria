@@ -63,7 +63,7 @@ public:
     // 0   0.1  0.2  0.3  0.4  0.5  0.6  0.7  0.8  0.9  1.0
 
     int count = 0;
-    for (auto p = particles.get_query().get_buckets_near_point(
+    for (auto p = particles.get_query().get_buckets_near_point<2>(
              vdouble1::Constant(0.5), 0.05);
          p != false; ++p) {
       ++count;
@@ -73,7 +73,7 @@ public:
     TS_ASSERT_EQUALS(count, 2);
 
     count = 0;
-    for (auto p = particles.get_query().get_buckets_near_point(
+    for (auto p = particles.get_query().get_buckets_near_point<2>(
              vdouble1::Constant(0.5), 0.15);
          p != false; ++p) {
       ++count;
@@ -83,7 +83,7 @@ public:
     TS_ASSERT_EQUALS(count, 4);
 
     count = 0;
-    for (auto p = particles.get_query().get_buckets_near_point(
+    for (auto p = particles.get_query().get_buckets_near_point<2>(
              vdouble1::Constant(0.1), 0.15);
          p != false; ++p) {
       ++count;
@@ -93,7 +93,7 @@ public:
     TS_ASSERT_EQUALS(count, 3);
 
     count = 0;
-    for (auto p = particles.get_query().get_buckets_near_point(
+    for (auto p = particles.get_query().get_buckets_near_point<2>(
              vdouble1::Constant(-0.1), 0.05);
          p != false; ++p) {
       ++count;
@@ -103,7 +103,7 @@ public:
     TS_ASSERT_EQUALS(count, 0);
 
     count = 0;
-    for (auto p = particles.get_query().get_buckets_near_point(
+    for (auto p = particles.get_query().get_buckets_near_point<2>(
              vdouble1::Constant(-0.1), 0.15);
          p != false; ++p) {
       ++count;
