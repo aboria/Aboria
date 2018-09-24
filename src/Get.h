@@ -412,6 +412,12 @@ struct zip_pointer<std::tuple<Types *...>, MplVector> {
   typedef getter_type<typename detail::zip_helper<tuple_type>::tuple_reference,
                       mpl_vector_type>
       reference;
+
+  typedef getter_type<
+      typename detail::zip_helper<tuple_type>::tuple_const_reference,
+      mpl_vector_type>
+      const_reference;
+
   typedef
       typename detail::zip_helper<tuple_type>::difference_type difference_type;
   typedef typename detail::zip_helper<tuple_type>::index_type index_type;
@@ -543,6 +549,10 @@ struct zip_pointer<std::tuple<Types *...>, MplVector> {
 
   reference operator[](std::size_t idx) { return *(operator+(idx)); }
 
+  const_reference operator[](std::size_t idx) const {
+    return *(operator+(idx));
+  }
+
   void increment() {
     detail::zip_helper<tuple_type>::increment_impl(data, index_type());
   }
@@ -594,6 +604,12 @@ struct zip_pointer<thrust::tuple<TT1, TT2, TT3, TT4, TT5, TT6, TT7, TT8, TT9>,
   typedef getter_type<typename detail::zip_helper<tuple_type>::tuple_reference,
                       mpl_vector_type>
       reference;
+
+  typedef getter_type<
+      typename detail::zip_helper<tuple_type>::tuple_const_reference,
+      mpl_vector_type>
+      const_reference;
+
   typedef
       typename detail::zip_helper<tuple_type>::difference_type difference_type;
   typedef typename detail::zip_helper<tuple_type>::index_type index_type;
@@ -733,6 +749,11 @@ struct zip_pointer<thrust::tuple<TT1, TT2, TT3, TT4, TT5, TT6, TT7, TT8, TT9>,
 
   CUDA_HOST_DEVICE
   reference operator[](std::size_t idx) const { return *(operator+(idx)); }
+
+  CUDA_HOST_DEVICE
+  const_reference operator[](std::size_t idx) const {
+    return *(operator+(idx));
+  }
 
   CUDA_HOST_DEVICE
   void increment() {

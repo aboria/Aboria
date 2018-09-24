@@ -180,6 +180,8 @@ template <typename... T> struct zip_helper<std::tuple<T...>> {
       tuple_value_type;
   typedef std::tuple<typename std::iterator_traits<T>::reference...>
       tuple_reference;
+  typedef std::tuple<typename std::iterator_traits<T>::reference &...>
+      tuple_const_reference;
   typedef std::tuple<typename std::iterator_traits<T>::pointer...>
       tuple_pointer;
   typedef tuple_pointer tuple_raw_pointer;
@@ -282,6 +284,18 @@ struct zip_helper<thrust::tuple<T0, T1, T2, T3, T4, T5, T6, T7, T8, T9>> {
                         typename thrust::iterator_traits<T8>::reference,
                         typename thrust::iterator_traits<T9>::reference>
       tuple_reference;
+
+  typedef thrust::tuple<typename thrust::iterator_traits<T0>::reference &,
+                        typename thrust::iterator_traits<T1>::reference &,
+                        typename thrust::iterator_traits<T2>::reference &,
+                        typename thrust::iterator_traits<T3>::reference &,
+                        typename thrust::iterator_traits<T4>::reference &,
+                        typename thrust::iterator_traits<T5>::reference &,
+                        typename thrust::iterator_traits<T6>::reference &,
+                        typename thrust::iterator_traits<T7>::reference &,
+                        typename thrust::iterator_traits<T8>::reference &,
+                        typename thrust::iterator_traits<T9>::reference &>
+      tuple_const_reference;
 
   typedef thrust::tuple<typename thrust::iterator_traits<T0>::pointer,
                         typename thrust::iterator_traits<T1>::pointer,

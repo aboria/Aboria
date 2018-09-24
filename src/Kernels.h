@@ -78,7 +78,7 @@ public:
                     ColElements::traits_type::data_on_GPU,
                 "row and col elements must be both gpu or host particle sets");
 
-  typedef typename RowElements::blah row_elements_type;
+  typedef RowElements row_elements_type;
   typedef ColElements col_elements_type;
   typedef F function_type;
   typedef size_t Index;
@@ -95,10 +95,8 @@ public:
         m_function(kernel.get_kernel_function()){};
 
   const RowElements &get_row_elements() const { return *m_row_elements; }
-  RowElements &get_row_elements() { return *m_row_elements; }
 
   const function_type &get_kernel_function() const { return m_function; }
-  ColElements &get_col_elements() { return *m_col_elements; }
 
   const ColElements &get_col_elements() const { return *m_col_elements; }
 

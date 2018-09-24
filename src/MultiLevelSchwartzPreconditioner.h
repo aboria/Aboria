@@ -126,7 +126,8 @@ public:
     static const unsigned int D = Query::dimension;
     typedef Vector<double, D> double_d;
     typedef position_d<D> position;
-    typename Query::child_iterator *m_nodes;
+
+    const typename Query::child_iterator *m_nodes;
     storage_vector_type *m_domain_indicies;
     storage_vector_type *m_domain_buffer;
     matrix_type *m_domain_matrix;
@@ -149,7 +150,7 @@ public:
       const double_d side = 0.9 * (bounds.bmax - bounds.bmin);
 
       // skip over empty buckets
-      if (m_query.get_bucket_particles(*ci)) {
+      if (m_query.get_bucket_particles(*ci) == false) {
         return;
       }
 
@@ -329,15 +330,16 @@ public:
     for (int i = 0; i < n_levels - 1; ++i) {
 
       // create new particle set for this level
-      const int n_particles = a.size() / std::pow(2, i);
+      const int n_particles = a.size() / std::pow(2, i + 1);
       m_particles.emplace_back(n_particles);
 
       // copy every second finer particle
       auto &particles = m_particles.back();
-      detail::tabulate(particles.begin(), particles.end(),
-                       [prev_level = iterator_to_raw_pointer(
-                            (i == 0 ? a.begin() : m_particles[i - 1].begin()))](
-                           const int index) { return prev_level[index * 2]; });
+      detail::tabulate(
+          particles.begin(), particles.end(),
+          [prev_level = iterator_to_raw_pointer(
+               (i == 0 ? a.cbegin() : m_particles[i - 1].cbegin()))](
+              const int index) { return prev_level[index * 2]; });
 
       // set particle ids to point to finer level index so that we can implement
       // the restriction operator later on...
@@ -348,7 +350,7 @@ public:
       const int max_bucket_size =
           i == n_levels - 2 ? m_max_buffer_n : a.get_max_bucket_size();
 
-      LOG(3, "\t: creating new particle set with "
+      LOG(2, "\t: creating new particle set with "
                  << particles.size()
                  << " particles and with max bucket size of "
                  << max_bucket_size);
@@ -357,7 +359,7 @@ public:
 
       // setup A operator on this level, copy finest operator but overwrite
       // particles
-      m_A.emplace_back(particles, particles, *m_fineA);
+      m_A.emplace_back(kernel_t(particles, particles, kernel));
     }
 
     m_indicies.resize(n_levels);
@@ -379,11 +381,11 @@ public:
       }
       auto &nodes = *df_search;
       if (i == n_levels - 1) {
-        CHECK(nodes.size() == 1 && query.is_leaf_node(nodes[0]),
+        CHECK(nodes.size() == 1 && query.is_leaf_node(*nodes[0]),
               "top level should have one leaf node");
       }
 
-      LOG(3, "\t: processing operator with " << nodes.size() << " nodes");
+      LOG(2, "\t: processing level with " << nodes.size() << " nodes");
 
       auto &indicies = m_indicies[i];
       auto &buffer = m_buffer[i];
@@ -447,7 +449,8 @@ public:
     LOG(2, "MultiLevelSchwartzPreconditioner: factorize");
     m_rows = mat.rows();
     m_cols = mat.cols();
-    m_fineA = &mat.get_first_kernel();
+    m_fineA = &mat;
+    const kernel_t &kernel = m_fineA->get_first_kernel();
     factorize_impl_block();
 
     for (int i = 0; i < m_indicies.size(); ++i) {
@@ -472,8 +475,7 @@ public:
                                    detail::get_size(), 0, detail::plus());
 
       auto pA = i == 0 ? m_fineA : &m_A[i - 1];
-      auto &particles =
-          i == 0 ? m_fineA->get_row_elements() : m_particles[i - 1];
+      auto &particles = i == 0 ? kernel.get_row_elements() : m_particles[i - 1];
 
       LOG(2, "MultiLevelSchwartzPreconditioner: finished factorizing, on level "
                  << i << " found " << m_indicies[i].size() << " domains, with "
@@ -523,7 +525,6 @@ public:
     const storage_vector_type *m_domain_indicies;
     const storage_vector_type *m_domain_buffer;
     const solver_type *domain_factorized_matrix;
-    const matrix_type *m_coupling_matrix;
     Dest &x;
     const Rhs &b;
     int m_level;
