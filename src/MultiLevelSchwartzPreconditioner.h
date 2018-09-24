@@ -56,7 +56,9 @@ class MultiLevelSchwartzPreconditioner {
   typedef std::vector<std::vector<solver_type>> solvers_t;
   typedef std::vector<std::vector<matrix_type>> matrices_t;
 
-  typedef typename Operator::FirstBlock kernel_t;
+  typedef
+      typename std::remove_cv<typename std::remove_reference<Operator>::type>::
+          type::FirstBlock kernel_t;
   static_assert(
       std::is_same<typename kernel_t::row_elements_type,
                    typename kernel_t::col_elements_type>::value,
