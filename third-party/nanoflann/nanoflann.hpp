@@ -832,9 +832,10 @@ class KDTreeSingleIndexAdaptor {
 
 private:
   /** Hidden copy constructor, to disallow copying indices (Not implemented) */
+  // Aboria update: don't see why this is hidden, let it use the default....
   KDTreeSingleIndexAdaptor(
       const KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, IndexType>
-          &);
+          &) = default;
 
 public:
   typedef typename Distance::ElementType ElementType;

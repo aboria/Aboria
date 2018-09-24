@@ -14,8 +14,8 @@ namespace Aboria {
 namespace detail {
 
 struct plus {
-  template <typename T>
-  CUDA_HOST_DEVICE auto operator()(const T &a, const T &b) const {
+  template <typename T1, typename T2>
+  CUDA_HOST_DEVICE auto operator()(const T1 &a, const T2 &b) const {
     return a + b;
   }
 };
