@@ -44,6 +44,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_EIGEN
 #include "Kernels.h"
+#include "MultiLevelSchwartzPreconditioner.h"
 #include "Operators.h"
 #include "Preconditioners.h"
 #endif

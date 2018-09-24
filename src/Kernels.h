@@ -110,7 +110,7 @@ public:
     m_col_elements = &col_elements;
   }
 
-  size_t rows() const { return get_row_element().size() * BlockRows; }
+  size_t rows() const { return get_row_elements().size() * BlockRows; }
 
   size_t cols() const { return get_col_elements().size() * BlockCols; }
 
@@ -179,8 +179,8 @@ public:
   template <typename Derived>
   void assemble(const Eigen::DenseBase<Derived> &matrix) const {
 
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
     const size_t na = a.size();
     const size_t nb = b.size();
 
@@ -203,8 +203,8 @@ public:
   void assemble(std::vector<Triplet> &triplets, const size_t startI = 0,
                 const size_t startJ = 0) const {
 
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -232,7 +232,8 @@ public:
   void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
     detail::gemv_helper<RowElements, ColElements, F>::evaluate(
-        get_row_elements(), get_col_elements(), this->m_function, lhs, rhs);
+        this->get_row_elements(), this->get_col_elements(), this->m_function,
+        lhs, rhs);
   }
 
   /// Evaluates a matrix-free linear operator given by \p expr \p if_expr,
@@ -242,7 +243,8 @@ public:
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
     detail::gemv_helper<RowElements, ColElements, F>::evaluate(
-        get_row_elements(), get_col_elements(), this->m_function, lhs, rhs);
+        this->get_row_elements(), this->get_col_elements(), this->m_function,
+        lhs, rhs);
   }
 };
 
@@ -287,8 +289,8 @@ public:
   const matrix_type &get_matrix() const { return m_matrix; }
 
   void assemble_matrix() {
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
 
     m_matrix.resize(this->rows(), this->cols());
     for (size_t i = 0; i < a.size(); ++i) {
@@ -315,8 +317,8 @@ public:
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
 
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
 
     const size_t na = a.size();
     const size_t nb = b.size();
@@ -419,22 +421,22 @@ public:
   }
 
   void update_row_positions() {
-    bbox<dimension> row_box(get_row_elements().get_min(),
-                            get_row_elements().get_max());
+    bbox<dimension> row_box(this->get_row_elements().get_min(),
+                            this->get_row_elements().get_max());
     detail::integrate_chebyshev<RowElements, BlockRows, QuadratureOrder>
-        integrate(get_row_elements(), m_order, row_box);
+        integrate(this->get_row_elements(), m_order, row_box);
 
     // fill row_Rn matrix
-    m_row_Rn_matrix.resize(get_row_elements().size() * BlockRows,
+    m_row_Rn_matrix.resize(this->get_row_elements().size() * BlockRows,
                            m_ncheb * BlockRows);
     integrate(m_row_Rn_matrix);
   }
 
   void update_kernel_matrix() {
-    bbox<dimension> row_box(get_row_elements().get_min(),
-                            get_row_elements().get_max());
-    bbox<dimension> col_box(get_col_elements().get_min(),
-                            get_col_elements().get_max());
+    bbox<dimension> row_box(this->get_row_elements().get_min(),
+                            this->get_row_elements().get_max());
+    bbox<dimension> col_box(this->get_col_elements().get_min(),
+                            this->get_col_elements().get_max());
     detail::ChebyshevRn<dimension> col_Rn(m_order, row_box);
     detail::ChebyshevRn<dimension> row_Rn(m_order, col_box);
 
@@ -454,13 +456,13 @@ public:
   }
 
   void update_col_positions() {
-    bbox<dimension> col_box(get_col_elements().get_min(),
-                            get_col_elements().get_max());
+    bbox<dimension> col_box(this->get_col_elements().get_min(),
+                            this->get_col_elements().get_max());
     detail::integrate_chebyshev<ColElements, BlockCols, QuadratureOrder>
-        integrate(get_col_elements(), m_order, col_box);
+        integrate(this->get_col_elements(), m_order, col_box);
 
     // fill row_Rn matrix
-    m_col_Rn_matrix.resize(get_col_elements().size() * BlockCols,
+    m_col_Rn_matrix.resize(this->get_col_elements().size() * BlockCols,
                            m_ncheb * BlockCols);
     integrate(m_col_Rn_matrix);
   }
@@ -472,7 +474,7 @@ public:
   void evaluate(Eigen::DenseBase<DerivedLHS> &lhs,
                 const Eigen::DenseBase<DerivedRHS> &rhs) const {
 
-    const ColElements &b = get_col_elements();
+    const ColElements &b = this->get_col_elements();
 
     CHECK(!b.get_periodic().any(), "chebyshev operator assumes not periodic");
     ASSERT(static_cast<typename DerivedLHS::Index>(this->rows()) == lhs.rows(),
@@ -506,7 +508,7 @@ class KernelH2 : public KernelDense<RowElements, ColElements, F> {
   typedef H2LibMatrix h2_matrix_type;
 
   PositionF m_position_function;
-  expantions_type m_expansions;
+  expansions_type m_expansions;
   double m_eta;
   h2_matrix_type m_h2_matrix;
 
@@ -680,8 +682,8 @@ public:
 
   template <typename MatrixType> void assemble(const MatrixType &matrix) const {
 
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
 
     const size_t na = a.size();
 
@@ -708,8 +710,8 @@ public:
   void assemble(std::vector<Triplet> &triplets, const size_t startI = 0,
                 const size_t startJ = 0) const {
 
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
 
     const size_t na = a.size();
 
@@ -744,8 +746,8 @@ public:
   void evaluate(std::vector<LHSType> &lhs,
                 const std::vector<RHSType> &rhs) const {
 
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
 
     const size_t na = a.size();
 
@@ -778,8 +780,8 @@ public:
     ASSERT(static_cast<typename DerivedRHS::Index>(this->cols()) == rhs.rows(),
            "rhs vector has incompatible size");
 
-    const RowElements &a = get_row_elements();
-    const ColElements &b = get_col_elements();
+    const RowElements &a = this->get_row_elements();
+    const ColElements &b = this->get_col_elements();
 
     const size_t na = a.size();
 

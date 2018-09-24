@@ -47,6 +47,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifdef HAVE_EIGEN
 #include <unsupported/Eigen/SparseExtra>
 
+#include "Operators.h"
+
 namespace Aboria {
 
 namespace detail {
@@ -1857,19 +1859,6 @@ public:
 
   Eigen::ComputationInfo info() { return Eigen::Success; }
 };
-
-template <typename Rhs>
-inline const Eigen::Solve<SchwartzPreconditioner, Rhs>
-solve(const Eigen::MatrixBase<Rhs> &b) const {
-  eigen_assert(static_cast<typename Rhs::Index>(m_rows) == b.rows() &&
-               "SchwartzPreconditioner::solve(): invalid number of rows of the "
-               "right hand side matrix b");
-  eigen_assert(m_isInitialized && "SchwartzPreconditioner is not initialized.");
-  return Eigen::Solve<SchwartzPreconditioner, Rhs>(*this, b.derived());
-}
-
-Eigen::ComputationInfo info() { return Eigen::Success; }
-}; // namespace Aboria
 
 template <typename Solver> class SchwartzSamplingPreconditioner {
   typedef double Scalar;

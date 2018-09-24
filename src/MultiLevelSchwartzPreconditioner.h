@@ -38,6 +38,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_EIGEN
 
+#include "Preconditioners.h"
+
 namespace Aboria {
 
 template <typename Operator, typename Solver>
@@ -64,9 +66,9 @@ class MultiLevelSchwartzPreconditioner {
       kernel_t::BlockRows == 1 && kernel_t::BlockCols == 1,
       "Multi-Level Schwartz preconditioner not currently implemented for "
       "vector-valued kernels");
-  typedef kernel_t::row_elements_type particles_t;
+  typedef typename kernel_t::row_elements_type particles_t;
   typedef MatrixReplacement<1, 1, std::tuple<kernel_t>> operator_t;
-  typedef typedef std::vector<operator_t> level_operators_t;
+  typedef std::vector<operator_t> level_operators_t;
   typedef std::vector<size_t> level_connectivity_t;
   typedef std::vector<particles_t> level_particles_t;
 
@@ -399,13 +401,11 @@ public:
             nodes.size());
         typename traits_type::template vector<matrix_type> tmp_matrix(
             nodes.size());
-        typename traits_type::template vector<matrix_type> tmp_coupling_matrix(
-            coupling_matrix.size());
 
         auto count = traits_type::make_counting_iterator(0);
         detail::for_each(
             count, count + nodes.size(),
-            process_node<typename Kernel::function_type, query_type>{
+            process_node<typename kernel_t::function_type, query_type>{
                 iterator_to_raw_pointer(nodes.begin()),
                 iterator_to_raw_pointer(tmp_indicies.begin()),
                 iterator_to_raw_pointer(tmp_buffer.begin()),
@@ -422,7 +422,7 @@ public:
         auto count = traits_type::make_counting_iterator(0);
         detail::for_each(
             count, count + nodes.size(),
-            process_node<typename Kernel::function_type, query_type>{
+            process_node<typename kernel_t::function_type, query_type>{
                 iterator_to_raw_pointer(nodes.begin()),
                 iterator_to_raw_pointer(indicies.begin()),
                 iterator_to_raw_pointer(buffer.begin()),
@@ -568,9 +568,11 @@ public:
     vector_type tmp;
     if (m_multiplicitive == 2) {
       m_r[0] = b;
-      m_u[0] = vector_type::Zero(a.size());
+      m_u[0] = vector_type::Zero(b.size());
       // symmetric multiplicative
       for (int i = 0; i < m_indicies.size(); ++i) {
+        // solve for this level
+        // u(j) <- sum R_kt^j A^j^-1 R_k^j r^j
         auto count = boost::make_counting_iterator(0);
         detail::for_each(
             count, count + m_indicies[i].size(),
@@ -580,32 +582,41 @@ public:
                 iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
                 m_r[i], i, m_indicies[i].size() == 1});
         if (i < m_indicies.size() - 1) {
+          // residual (r - A u^j) in tmp
           if (i == 0) {
-            tmp = m_r[0] - (*m_fineA) * u[0]
+            tmp = m_r[0] - (*m_fineA) * m_u[0];
           } else {
-            tmp = m_r[i] - m_A[i - 1] * u[i];
+            tmp = m_r[i] - m_A[i - 1] * m_u[i];
           }
-          // restrict to coarser level
+          // restrict tmp to coarser level
+          // r <- R^j-1 (r - A u^j)
           m_r[i + 1].resize(m_particles[i].size());
           detail::tabulate(m_r[i + 1].data(),
                            m_r[i + 1].data() + m_r[i + 1].size(),
                            [&tmp, id = get<id>(m_particles[i].begin())](
                                const int index) { return tmp[2 * id[index]]; });
+          // init u^{j-1} to zero for next level
           m_u[i + 1] = vector_type::Zero(m_particles[i].size());
         }
       }
       for (int i = m_indicies.size() - 2; i >= 0; ++i) {
         // u(1) <-- u(1) + Rt*u(0)
-        detail::for_each(count, count + m_particles[i].size(),
-                         [&m_u, id = get<id>(m_particles[i].begin())](
-                             const int upper_index) {
-                           const int lower_index = 2 * id[upper_index];
-                           m_u[i][lower_index] += m_u[i + 1][upper_index];
-                         });
+        auto count = boost::make_counting_iterator(0);
+        auto &u_i = m_u[i];
+        auto &u_i_plus_1 = m_u[i + 1];
+        detail::for_each(
+            count, count + m_particles[i].size(),
+            [&u_i, &u_i_plus_1,
+             id = get<id>(m_particles[i].begin())](const int upper_index) {
+              const int lower_index = 2 * id[upper_index];
+              u_i[lower_index] += u_i_plus_1[upper_index];
+            });
 
+        // r^j <- r^j - A^j u^j
         m_r[i] -= m_A[i] * m_u[i];
 
-        auto count = boost::make_counting_iterator(0);
+        // solve again for this level
+        // u(j) <- sum R_kt^j A^j^-1 R_k^j r^j r^j
         detail::for_each(
             count, count + m_indicies[i].size(),
             solve_domain<Rhs, Dest>{
@@ -614,51 +625,15 @@ public:
                 iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
                 m_r[i], i, m_indicies[i].size() == 1});
       }
+
+      // u^j contains the result
       x = m_u[0];
 
     } else if (m_multiplicitive == 1) {
       // non-symmetric multiplicative (TODO)
-      x.setZero();
-      vector_type b_copy = b;
 
-      for (int i = 0; i < std::min(m_levels, 2); ++i) {
-        solve_domain<Rhs, Dest> fsolve_domain{
-            iterator_to_raw_pointer(m_indicies[i].begin()),
-            iterator_to_raw_pointer(m_buffer[i].begin()),
-            iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
-            iterator_to_raw_pointer(m_coupling_matrix[i].begin()),
-            x,
-            b_copy,
-            i,
-            m_indicies[i].size() == 1,
-            m_interpolate};
-
-        auto count = boost::make_counting_iterator(0);
-        detail::for_each(count, count + m_indicies[i].size(), fsolve_domain);
-
-        if (i == 0) {
-          b_copy -= m_A * x;
-        }
-      }
     } else {
       // additive (TODO)
-      x.setZero();
-
-      for (int i = 0; i < std::min(m_levels, 2); ++i) {
-        solve_domain<Rhs, Dest> fsolve_domain{
-            iterator_to_raw_pointer(m_indicies[i].begin()),
-            iterator_to_raw_pointer(m_buffer[i].begin()),
-            iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
-            iterator_to_raw_pointer(m_coupling_matrix[i].begin()),
-            x,
-            b,
-            i,
-            m_indicies[i].size() == 1,
-            m_interpolate};
-
-        auto count = boost::make_counting_iterator(0);
-        detail::for_each(count, count + m_indicies[i].size(), fsolve_domain);
-      }
     }
   }
 
