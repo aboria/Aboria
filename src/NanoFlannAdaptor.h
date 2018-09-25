@@ -297,7 +297,7 @@ public:
   nanoflann_child_iterator(pointer start, const box_type &bounds)
       : m_high(0), m_index(start), m_bounds(bounds) {
     ASSERT(start != nullptr, "start pointer should not be null");
-    ASSERT(start->child1 != nullptr, "start pointer should point to leaf");
+    ASSERT(start->child1 != nullptr, "start pointer should point to non leaf");
   }
 
   void go_to(const double_d &position) {

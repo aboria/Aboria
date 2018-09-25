@@ -884,7 +884,7 @@ public:
   }
 
   void test_gaussian(void) {
-    helper_param_sweep_per_kernel<gaussian_kernel>(1000);
+    helper_param_sweep_per_kernel<gaussian_kernel>(4000);
   }
   void test_matern(void) { helper_param_sweep_per_kernel<matern_kernel>(4000); }
   void test_exponential(void) {
