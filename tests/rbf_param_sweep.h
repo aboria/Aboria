@@ -707,7 +707,7 @@ public:
 
     auto t0 = Clock::now();
     knots.init_neighbour_search(knots_box.bmin, knots_box.bmax,
-                                Vector<bool, D>::Constant(false), n_subdomain);
+                                Vector<bool, D>::Constant(false), 10);
     auto t1 = Clock::now();
     out.out_ds_setup_time
         << " " << std::setw(out.width)
@@ -715,7 +715,7 @@ public:
                .count();
 
     test.init_neighbour_search(test_box.bmin, test_box.bmax,
-                               Vector<bool, D>::Constant(false), n_subdomain);
+                               Vector<bool, D>::Constant(false), 10);
     std::cout << "FINISHED INIT NEIGHBOUR" << std::endl;
 
     auto self_kernel = [=] CUDA_HOST_DEVICE(raw_const_reference a,
