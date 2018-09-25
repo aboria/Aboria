@@ -748,9 +748,6 @@ struct zip_pointer<thrust::tuple<TT1, TT2, TT3, TT4, TT5, TT6, TT7, TT8, TT9>,
   reference operator*() const { return dereference(); }
 
   CUDA_HOST_DEVICE
-  reference operator[](std::size_t idx) const { return *(operator+(idx)); }
-
-  CUDA_HOST_DEVICE
   const_reference operator[](std::size_t idx) const {
     return *(operator+(idx));
   }

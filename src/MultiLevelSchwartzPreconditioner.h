@@ -149,8 +149,8 @@ public:
       const double_d middle = 0.5 * (bounds.bmax + bounds.bmin);
       const double_d side = 0.9 * (bounds.bmax - bounds.bmin);
 
-      // skip over empty buckets
-      if (m_query.get_bucket_particles(*ci) == false) {
+      // skip over empty buckets on non root levels
+      if (!is_root && m_query.get_bucket_particles(*ci) == false) {
         return;
       }
 
@@ -323,9 +323,16 @@ public:
           "sets");
 
     const int n_levels =
-        (std::log(a.size()) - std::log(m_max_buffer_n)) / std::log(2) + 1;
+        std::ceil((std::log(a.size()) - std::log(m_max_buffer_n)) /
+                  std::log(2)) +
+        1;
     LOG(2,
         "MultiLevelSchwartzPreconditioner: creating " << n_levels << " levels");
+
+    m_particles.clear();
+    m_particles.reserve(n_levels - 1);
+    m_A.clear();
+    m_A.reserve(n_levels - 1);
 
     for (int i = 0; i < n_levels - 1; ++i) {
 
@@ -349,6 +356,11 @@ public:
       // init neighbour search
       const int max_bucket_size =
           i == n_levels - 2 ? m_max_buffer_n : a.get_max_bucket_size();
+
+      if (i == n_levels - 2) {
+        CHECK(static_cast<size_t>(max_bucket_size) >= particles.size(),
+              "top level should have a single leaf bucket");
+      }
 
       LOG(2, "\t: creating new particle set with "
                  << particles.size()
@@ -379,11 +391,10 @@ public:
       auto df_search = query.breadth_first();
       for (; df_search != false; ++df_search) {
       }
-      auto &nodes = *df_search;
-      if (i == n_levels - 1) {
-        CHECK(nodes.size() == 1 && query.is_leaf_node(*nodes[0]),
-              "top level should have one leaf node");
-      }
+
+      typename query_type::breadth_first_iterator::value_type root_node_vector =
+          {query.get_root()};
+      auto &nodes = i == n_levels - 1 ? root_node_vector : *df_search;
 
       LOG(2, "\t: processing level with " << nodes.size() << " nodes");
 
@@ -453,7 +464,7 @@ public:
     const kernel_t &kernel = m_fineA->get_first_kernel();
     factorize_impl_block();
 
-    for (int i = 0; i < m_indicies.size(); ++i) {
+    for (size_t i = 0; i < m_indicies.size(); ++i) {
       auto min_indicies = detail::transform_reduce(
           m_indicies[i].begin(), m_indicies[i].end(), detail::get_size(),
           std::numeric_limits<size_t>::max(), detail::min());
@@ -527,7 +538,7 @@ public:
     const solver_type *domain_factorized_matrix;
     Dest &x;
     const Rhs &b;
-    int m_level;
+    size_t m_level;
     bool is_root;
 
     void operator()(const int i) const {
@@ -573,7 +584,7 @@ public:
       m_r[0] = b;
       m_u[0] = vector_type::Zero(b.size());
       // symmetric multiplicative
-      for (int i = 0; i < m_indicies.size(); ++i) {
+      for (size_t i = 0; i < m_indicies.size(); ++i) {
         // solve for this level
         // u(j) <- sum R_kt^j A^j^-1 R_k^j r^j
         auto count = boost::make_counting_iterator(0);
@@ -597,12 +608,12 @@ public:
           detail::tabulate(m_r[i + 1].data(),
                            m_r[i + 1].data() + m_r[i + 1].size(),
                            [&tmp, id = get<id>(m_particles[i].begin())](
-                               const int index) { return tmp[2 * id[index]]; });
+                               const int index) { return tmp[id[index]]; });
           // init u^{j-1} to zero for next level
           m_u[i + 1] = vector_type::Zero(m_particles[i].size());
         }
       }
-      for (int i = m_indicies.size() - 2; i >= 0; ++i) {
+      for (int i = m_indicies.size() - 2; i >= 0; --i) {
         // u(1) <-- u(1) + Rt*u(0)
         auto count = boost::make_counting_iterator(0);
         auto &u_i = m_u[i];
@@ -611,12 +622,16 @@ public:
             count, count + m_particles[i].size(),
             [&u_i, &u_i_plus_1,
              id = get<id>(m_particles[i].begin())](const int upper_index) {
-              const int lower_index = 2 * id[upper_index];
+              const int lower_index = id[upper_index];
               u_i[lower_index] += u_i_plus_1[upper_index];
             });
 
         // r^j <- r^j - A^j u^j
-        m_r[i] -= m_A[i] * m_u[i];
+        if (i == 0) {
+          tmp = m_r[0] - (*m_fineA) * m_u[0];
+        } else {
+          tmp = m_r[i] - m_A[i - 1] * m_u[i];
+        }
 
         // solve again for this level
         // u(j) <- sum R_kt^j A^j^-1 R_k^j r^j r^j
@@ -626,7 +641,7 @@ public:
                 iterator_to_raw_pointer(m_indicies[i].begin()),
                 iterator_to_raw_pointer(m_buffer[i].begin()),
                 iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
-                m_r[i], i, m_indicies[i].size() == 1});
+                tmp, static_cast<size_t>(i), m_indicies[i].size() == 1});
       }
 
       // u^j contains the result
