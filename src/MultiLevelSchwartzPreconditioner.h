@@ -95,6 +95,8 @@ private:
   Index m_rows;
   Index m_cols;
 
+  std::default_random_engine m_generator;
+
 public:
   typedef typename vector_type::StorageIndex StorageIndex;
   enum {
@@ -339,19 +341,43 @@ public:
       // create new particle set for this level
       const int n_particles = a.size() / std::pow(2, i + 1);
       m_particles.emplace_back(n_particles);
-
-      // copy every second finer particle
       auto &particles = m_particles.back();
-      detail::tabulate(
-          particles.begin(), particles.end(),
-          [prev_level = iterator_to_raw_pointer(
-               (i == 0 ? a.cbegin() : m_particles[i - 1].cbegin()))](
-              const int index) { return prev_level[index * 2]; });
+      if (0) {
+        // choose a random set of particles
+        level_connectivity_t chosen_indices(n_particles * 2);
+        std::iota(chosen_indices.begin(), chosen_indices.end(), 0);
+        std::shuffle(chosen_indices.begin(), chosen_indices.end(), m_generator);
+        chosen_indices.resize(n_particles);
 
-      // set particle ids to point to finer level index so that we can implement
-      // the restriction operator later on...
-      detail::tabulate(get<id>(particles).begin(), get<id>(particles).end(),
-                       [](const int index) { return index * 2; });
+        // TODO: need to copy chosen_indicies to gpu if particles are there...
+
+        detail::tabulate(
+            particles.begin(), particles.end(),
+            [chosen_indices = iterator_to_raw_pointer(chosen_indices.begin()),
+             prev_level = iterator_to_raw_pointer(
+                 (i == 0 ? a.cbegin() : m_particles[i - 1].cbegin()))](
+                const int index) { return prev_level[chosen_indices[index]]; });
+
+        // set particle ids to point to finer level index so that we can
+        // implement the restriction operator later on...
+        detail::tabulate(
+            get<id>(particles).begin(), get<id>(particles).end(),
+            [chosen_indices = iterator_to_raw_pointer(chosen_indices.begin())](
+                const int index) { return chosen_indices[index]; });
+
+      } else {
+        // copy every second finer particle
+        detail::tabulate(
+            particles.begin(), particles.end(),
+            [prev_level = iterator_to_raw_pointer(
+                 (i == 0 ? a.cbegin() : m_particles[i - 1].cbegin()))](
+                const int index) { return prev_level[index * 2]; });
+
+        // set particle ids to point to finer level index so that we can
+        // implement the restriction operator later on...
+        detail::tabulate(get<id>(particles).begin(), get<id>(particles).end(),
+                         [](const int index) { return index * 2; });
+      }
 
       // init neighbour search
       const int max_bucket_size =
@@ -538,8 +564,6 @@ public:
     const solver_type *domain_factorized_matrix;
     Dest &x;
     const Rhs &b;
-    size_t m_level;
-    bool is_root;
 
     void operator()(const int i) const {
       const storage_vector_type &buffer = m_domain_buffer[i];
@@ -575,84 +599,112 @@ public:
     }
   };
 
+  void v_cycle(int level) const {
+    const size_t i = level;
+    if (level == static_cast<int>(m_indicies.size()) - 1) {
+      // solve coarse level
+      solve_domain<decltype(m_r[i]), decltype(m_u[i])>{
+          iterator_to_raw_pointer(m_indicies[i].begin()),
+          iterator_to_raw_pointer(m_buffer[i].begin()),
+          iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
+          m_r[i]}(0);
+    } else {
+      // pre-smoothing (u <- u + A-1 r)
+      auto count = boost::make_counting_iterator(0);
+      detail::for_each(
+          count, count + m_indicies[i].size(),
+          solve_domain<decltype(m_r[i]), decltype(m_u[i])>{
+              iterator_to_raw_pointer(m_indicies[i].begin()),
+              iterator_to_raw_pointer(m_buffer[i].begin()),
+              iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
+              m_r[i]});
+
+      // restrict error to coarser level
+      // r <- R^j-1 (r - A u^j)
+      vector_type tmp;
+      if (i == 0) {
+        tmp = m_r[0] - (*m_fineA) * m_u[0];
+      } else {
+        tmp = m_r[i] - m_A[i - 1] * m_u[i];
+      }
+      detail::tabulate(m_r[i + 1].data(), m_r[i + 1].data() + m_r[i + 1].size(),
+                       [&tmp, id = get<id>(m_particles[i].begin())](
+                           const int index) { return tmp[id[index]]; });
+
+      // v_cycle up the hierarchy
+      m_u[i + 1].Zero(m_particles[i].size());
+      v_cycle(i + 1);
+
+      // interpolate result to finer level
+      // u(1) <-- u(1) + Rt*u(0)
+      auto &u_i = m_u[i];
+      auto &u_i_plus_1 = m_u[i + 1];
+      detail::for_each(
+          count, count + m_particles[i].size(),
+          [&u_i, &u_i_plus_1,
+           id = get<id>(m_particles[i].begin())](const int upper_index) {
+            const int lower_index = id[upper_index];
+            u_i[lower_index] += u_i_plus_1[upper_index];
+          });
+
+      // update residual and perform post-smoothing
+      // r <- r - Au
+      // u <- u + A-1 r
+      if (i == 0) {
+        m_r[0] = m_r[0] - (*m_fineA) * m_u[0];
+      } else {
+        m_r[i] = m_r[i] - m_A[i - 1] * m_u[i];
+      }
+
+      // solve for this level
+      detail::for_each(
+          count, count + m_indicies[i].size(),
+          solve_domain<decltype(m_r[i]), decltype(m_u[i])>{
+              iterator_to_raw_pointer(m_indicies[i].begin()),
+              iterator_to_raw_pointer(m_buffer[i].begin()),
+              iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
+              m_r[i]});
+    }
+  }
+
   /** \internal */
   template <typename Rhs, typename Dest>
   void _solve_impl(const Rhs &b, Dest &x) const {
+    m_r[0] = b;
 
-    vector_type tmp;
-    if (m_multiplicitive == 2) {
-      m_r[0] = b;
-      m_u[0] = vector_type::Zero(b.size());
-      // symmetric multiplicative
-      for (size_t i = 0; i < m_indicies.size(); ++i) {
-        // solve for this level
-        // u(j) <- sum R_kt^j A^j^-1 R_k^j r^j
-        auto count = boost::make_counting_iterator(0);
-        detail::for_each(
-            count, count + m_indicies[i].size(),
-            solve_domain<Rhs, Dest>{
-                iterator_to_raw_pointer(m_indicies[i].begin()),
-                iterator_to_raw_pointer(m_buffer[i].begin()),
-                iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
-                m_r[i], i, m_indicies[i].size() == 1});
-        if (i < m_indicies.size() - 1) {
-          // residual (r - A u^j) in tmp
-          if (i == 0) {
-            tmp = m_r[0] - (*m_fineA) * m_u[0];
-          } else {
-            tmp = m_r[i] - m_A[i - 1] * m_u[i];
-          }
-          // restrict tmp to coarser level
-          // r <- R^j-1 (r - A u^j)
-          m_r[i + 1].resize(m_particles[i].size());
-          detail::tabulate(m_r[i + 1].data(),
-                           m_r[i + 1].data() + m_r[i + 1].size(),
-                           [&tmp, id = get<id>(m_particles[i].begin())](
-                               const int index) { return tmp[id[index]]; });
-          // init u^{j-1} to zero for next level
-          m_u[i + 1] = vector_type::Zero(m_particles[i].size());
-        }
-      }
-      for (int i = m_indicies.size() - 2; i >= 0; --i) {
-        // u(1) <-- u(1) + Rt*u(0)
-        auto count = boost::make_counting_iterator(0);
-        auto &u_i = m_u[i];
-        auto &u_i_plus_1 = m_u[i + 1];
-        detail::for_each(
-            count, count + m_particles[i].size(),
-            [&u_i, &u_i_plus_1,
-             id = get<id>(m_particles[i].begin())](const int upper_index) {
-              const int lower_index = id[upper_index];
-              u_i[lower_index] += u_i_plus_1[upper_index];
-            });
-
-        // r^j <- r^j - A^j u^j
-        if (i == 0) {
-          tmp = m_r[0] - (*m_fineA) * m_u[0];
-        } else {
-          tmp = m_r[i] - m_A[i - 1] * m_u[i];
-        }
-
-        // solve again for this level
-        // u(j) <- sum R_kt^j A^j^-1 R_k^j r^j r^j
-        detail::for_each(
-            count, count + m_indicies[i].size(),
-            solve_domain<Rhs, Dest>{
-                iterator_to_raw_pointer(m_indicies[i].begin()),
-                iterator_to_raw_pointer(m_buffer[i].begin()),
-                iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
-                tmp, static_cast<size_t>(i), m_indicies[i].size() == 1});
-      }
-
-      // u^j contains the result
-      x = m_u[0];
-
-    } else if (m_multiplicitive == 1) {
-      // non-symmetric multiplicative (TODO)
-
-    } else {
-      // additive (TODO)
+    // restrict r to coarsest level
+    for (size_t i = 0; i < m_indicies.size() - 1; ++i) {
+      // r <- R^j-1 r
+      m_r[i + 1].resize(m_particles[i].size());
+      auto &m_r_i = m_r[i];
+      detail::tabulate(m_r[i + 1].data(), m_r[i + 1].data() + m_r[i + 1].size(),
+                       [&m_r_i, id = get<id>(m_particles[i].begin())](
+                           const int index) { return m_r_i[id[index]]; });
     }
+
+    // solve coarsest grid exactly
+    const int top_level = m_indicies.size() - 1;
+    m_u[top_level] = vector_type::Zero(m_particles[top_level - 1].size());
+    v_cycle(top_level);
+
+    // go back down doing v-cycles
+    for (int i = m_indicies.size() - 2; i >= 0; --i) {
+      // u(1) <-- Rt*u(0)
+      m_u[i] = vector_type::Zero(m_particles[i - 1].size());
+      auto count = boost::make_counting_iterator(0);
+      auto &u_i = m_u[i];
+      auto &u_i_plus_1 = m_u[i + 1];
+      detail::for_each(
+          count, count + m_particles[i - 1].size(),
+          [&u_i, &u_i_plus_1,
+           id = get<id>(m_particles[i].begin())](const int upper_index) {
+            const int lower_index = id[upper_index];
+            u_i[lower_index] += u_i_plus_1[upper_index];
+          });
+
+      v_cycle(i);
+    }
+    x = m_u[0];
   }
 
   template <typename Rhs>
