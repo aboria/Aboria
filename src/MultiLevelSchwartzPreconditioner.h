@@ -661,19 +661,19 @@ public:
 
         LOG(3, "\t\tpost-smoothing on level " << level);
         if (i == 0) {
-          m_r[0] = m_r[0] - (*m_fineA) * m_u[0];
+          tmp = m_r[0] - (*m_fineA) * m_u[0];
         } else {
-          m_r[i] = m_r[i] - m_A[i - 1] * m_u[i];
+          tmp = m_r[i] - m_A[i - 1] * m_u[i];
         }
 
         // solve for this level
         detail::for_each(
             count, count + m_indicies[i].size(),
-            solve_domain<decltype(m_r[i]), decltype(m_u[i])>{
+            solve_domain<decltype(tmp), decltype(m_u[i])>{
                 iterator_to_raw_pointer(m_indicies[i].begin()),
                 iterator_to_raw_pointer(m_buffer[i].begin()),
                 iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
-                m_r[i]});
+                tmp});
       }
     }
   }
