@@ -600,6 +600,7 @@ public:
   };
 
   void v_cycle(int level) const {
+    LOG(3, "\trunning v_cycle on level " << level);
     const size_t i = level;
     if (level == static_cast<int>(m_indicies.size()) - 1) {
       // solve coarse level
@@ -609,24 +610,29 @@ public:
           iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
           m_r[i]}(0);
     } else {
-      // pre-smoothing (u <- u + A-1 r)
       auto count = boost::make_counting_iterator(0);
-      detail::for_each(
-          count, count + m_indicies[i].size(),
-          solve_domain<decltype(m_r[i]), decltype(m_u[i])>{
-              iterator_to_raw_pointer(m_indicies[i].begin()),
-              iterator_to_raw_pointer(m_buffer[i].begin()),
-              iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
-              m_r[i]});
+      // pre-smoothing (u <- u + A-1 r)
+      vector_type tmp = m_r[i];
+      for (int j = 0; j < 1; ++j) {
+        LOG(3, "\t\tpre-smoothing on level " << level);
+        detail::for_each(
+            count, count + m_indicies[i].size(),
+            solve_domain<decltype(tmp), decltype(m_u[i])>{
+                iterator_to_raw_pointer(m_indicies[i].begin()),
+                iterator_to_raw_pointer(m_buffer[i].begin()),
+                iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
+                tmp});
 
-      // restrict error to coarser level
-      // r <- R^j-1 (r - A u^j)
-      vector_type tmp;
-      if (i == 0) {
-        tmp = m_r[0] - (*m_fineA) * m_u[0];
-      } else {
-        tmp = m_r[i] - m_A[i - 1] * m_u[i];
+        LOG(3, "\t\trestrict to level " << level + 1);
+        if (i == 0) {
+          tmp = m_r[0] - (*m_fineA) * m_u[0];
+        } else {
+          tmp = m_r[i] - m_A[i - 1] * m_u[i];
+        }
       }
+      // restrict residual to coarser level
+      // r <- R^j-1 (r - A u^j)
+      // auto &r_i = m_r[i];
       detail::tabulate(m_r[i + 1].data(), m_r[i + 1].data() + m_r[i + 1].size(),
                        [&tmp, id = get<id>(m_particles[i].begin())](
                            const int index) { return tmp[id[index]]; });
@@ -637,6 +643,7 @@ public:
 
       // interpolate result to finer level
       // u(1) <-- u(1) + Rt*u(0)
+      LOG(3, "\t\tinterpolate result to level " << level);
       auto &u_i = m_u[i];
       auto &u_i_plus_1 = m_u[i + 1];
       detail::for_each(
@@ -650,20 +657,24 @@ public:
       // update residual and perform post-smoothing
       // r <- r - Au
       // u <- u + A-1 r
-      if (i == 0) {
-        m_r[0] = m_r[0] - (*m_fineA) * m_u[0];
-      } else {
-        m_r[i] = m_r[i] - m_A[i - 1] * m_u[i];
-      }
+      for (int j = 0; j < 1; ++j) {
 
-      // solve for this level
-      detail::for_each(
-          count, count + m_indicies[i].size(),
-          solve_domain<decltype(m_r[i]), decltype(m_u[i])>{
-              iterator_to_raw_pointer(m_indicies[i].begin()),
-              iterator_to_raw_pointer(m_buffer[i].begin()),
-              iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
-              m_r[i]});
+        LOG(3, "\t\tpost-smoothing on level " << level);
+        if (i == 0) {
+          m_r[0] = m_r[0] - (*m_fineA) * m_u[0];
+        } else {
+          m_r[i] = m_r[i] - m_A[i - 1] * m_u[i];
+        }
+
+        // solve for this level
+        detail::for_each(
+            count, count + m_indicies[i].size(),
+            solve_domain<decltype(m_r[i]), decltype(m_u[i])>{
+                iterator_to_raw_pointer(m_indicies[i].begin()),
+                iterator_to_raw_pointer(m_buffer[i].begin()),
+                iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
+                m_r[i]});
+      }
     }
   }
 
@@ -671,6 +682,7 @@ public:
   template <typename Rhs, typename Dest>
   void _solve_impl(const Rhs &b, Dest &x) const {
     m_r[0] = b;
+    LOG(3, "Solving MultiLevelSchwartzPreconditioner: ");
 
     // restrict r to coarsest level
     for (size_t i = 0; i < m_indicies.size() - 1; ++i) {
@@ -684,18 +696,19 @@ public:
 
     // solve coarsest grid exactly
     const int top_level = m_indicies.size() - 1;
-    m_u[top_level] = vector_type::Zero(m_particles[top_level - 1].size());
+    m_u[top_level] = vector_type::Zero(
+        top_level == 0 ? x.size() : m_particles[top_level - 1].size());
     v_cycle(top_level);
 
     // go back down doing v-cycles
     for (int i = m_indicies.size() - 2; i >= 0; --i) {
       // u(1) <-- Rt*u(0)
-      m_u[i] = vector_type::Zero(m_particles[i - 1].size());
+      m_u[i] = vector_type::Zero(i == 0 ? x.size() : m_particles[i - 1].size());
       auto count = boost::make_counting_iterator(0);
       auto &u_i = m_u[i];
       auto &u_i_plus_1 = m_u[i + 1];
       detail::for_each(
-          count, count + m_particles[i - 1].size(),
+          count, count + m_particles[i].size(),
           [&u_i, &u_i_plus_1,
            id = get<id>(m_particles[i].begin())](const int upper_index) {
             const int lower_index = id[upper_index];
