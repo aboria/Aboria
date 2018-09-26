@@ -550,6 +550,13 @@ public:
         Eigen::BiCGSTAB<Op, MultiLevelSchwartzPreconditioner<
                                 decltype(G), Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
+
+        /*
+        Eigen::ConjugateGradient<Op, Eigen::Lower | Eigen::Upper,
+                                 MultiLevelSchwartzPreconditioner<
+                                     decltype(G), Eigen::LLT<Eigen::MatrixXd>>>
+            bicg2;
+            */
         bicg2.setMaxIterations(max_iter);
         bicg2.preconditioner().set_max_buffer_n(Nbuffer);
         bicg2.preconditioner().set_multiplicative(2);
@@ -707,7 +714,7 @@ public:
 
     auto t0 = Clock::now();
     knots.init_neighbour_search(knots_box.bmin, knots_box.bmax,
-                                Vector<bool, D>::Constant(false), 10);
+                                Vector<bool, D>::Constant(false), 5);
     auto t1 = Clock::now();
     out.out_ds_setup_time
         << " " << std::setw(out.width)
@@ -715,7 +722,7 @@ public:
                .count();
 
     test.init_neighbour_search(test_box.bmin, test_box.bmax,
-                               Vector<bool, D>::Constant(false), 10);
+                               Vector<bool, D>::Constant(false), 5);
     std::cout << "FINISHED INIT NEIGHBOUR" << std::endl;
 
     auto self_kernel = [=] CUDA_HOST_DEVICE(raw_const_reference a,
