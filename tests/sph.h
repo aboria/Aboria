@@ -184,11 +184,19 @@ public:
     ABORIA_VARIABLE(is_fixed, uint8_t, "fixed boundary");
     ABORIA_VARIABLE(pressure_div_density2, double, "pressure div density2");
 
+    //<-
     typedef Particles<
         std::tuple<kernel_radius, velocity, velocity_tmp, varh_omega, density,
                    total_force, is_fixed, pressure_div_density2>,
         3, std::vector, SearchMethod>
         sph_type;
+    //->
+    //=        typedef Particles<
+    //=            std::tuple<kernel_radius, velocity, velocity_tmp, varh_omega,
+    //=                       density, total_force, is_fixed,
+    //=                       pressure_div_density2>, 3>
+    //=            sph_type;
+
     typedef position_d<3> position;
     sph_type sph;
 
