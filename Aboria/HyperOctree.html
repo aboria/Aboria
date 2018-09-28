@@ -54,10 +54,10 @@ MathJax.Hub.Config({
     <span class="keyword">typedef</span> <span class="identifier">vector_int</span><span class="special">::</span><span class="identifier">const_pointer</span> <a class="link" href="HyperOctree/child_index_to_tag_mask.html#Aboria.HyperOctree.child_index_to_tag_mask.ptr_type"><span class="identifier">ptr_type</span></a><span class="special">;</span>
 
     <span class="comment">// <a class="link" href="HyperOctree/child_index_to_tag_mask.html#Aboria.HyperOctree.child_index_to_tag_maskconstruct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="HyperOctree/child_index_to_tag_mask.html#idp47381154386288-bb"><span class="identifier">child_index_to_tag_mask</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">ptr_type</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="HyperOctree/child_index_to_tag_mask.html#idp46037507438944-bb"><span class="identifier">child_index_to_tag_mask</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="identifier">ptr_type</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="HyperOctree/child_index_to_tag_mask.html#idp47381154384240-bb">public member functions</a></span>
-    <span class="keyword">int</span> <a class="link" href="HyperOctree/child_index_to_tag_mask.html#idp47381154384640-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="HyperOctree/child_index_to_tag_mask.html#idp46037507436896-bb">public member functions</a></span>
+    <span class="keyword">int</span> <a class="link" href="HyperOctree/child_index_to_tag_mask.html#idp46037507437296-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">level</span><span class="special">;</span>
@@ -68,10 +68,10 @@ MathJax.Hub.Config({
 
   <span class="keyword">struct</span> <a class="link" href="HyperOctree/classify_node.html" title="Struct classify_node">classify_node</a> <span class="special">{</span>
     <span class="comment">// <a class="link" href="HyperOctree/classify_node.html#Aboria.HyperOctree.classify_nodeconstruct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="HyperOctree/classify_node.html#idp47381154393152-bb"><span class="identifier">classify_node</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="HyperOctree/classify_node.html#idp46037507445808-bb"><span class="identifier">classify_node</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="HyperOctree/classify_node.html#idp47381154390256-bb">public member functions</a></span>
-    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> tuple_type<span class="special">&gt;</span> <span class="keyword">int</span> <a class="link" href="HyperOctree/classify_node.html#idp47381154390656-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="HyperOctree/classify_node.html#idp46037507442912-bb">public member functions</a></span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> tuple_type<span class="special">&gt;</span> <span class="keyword">int</span> <a class="link" href="HyperOctree/classify_node.html#idp46037507443312-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">threshold</span><span class="special">;</span>
@@ -80,10 +80,10 @@ MathJax.Hub.Config({
 
   <span class="keyword">struct</span> <a class="link" href="HyperOctree/classify_point.html" title="Struct classify_point">classify_point</a> <span class="special">{</span>
     <span class="comment">// <a class="link" href="HyperOctree/classify_point.html#Aboria.HyperOctree.classify_pointconstruct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="HyperOctree/classify_point.html#idp47381154398480-bb"><span class="identifier">classify_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="HyperOctree/classify_point.html#idp46037507451136-bb"><span class="identifier">classify_point</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="HyperOctree/classify_point.html#idp47381154396432-bb">public member functions</a></span>
-    <span class="keyword">int</span> <a class="link" href="HyperOctree/classify_point.html#idp47381154396832-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="HyperOctree/classify_point.html#idp46037507449088-bb">public member functions</a></span>
+    <span class="keyword">int</span> <a class="link" href="HyperOctree/classify_point.html#idp46037507449488-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="identifier">bbox</span><span class="special">&lt;</span> <span class="identifier">dimension</span> <span class="special">&gt;</span> <span class="identifier">box</span><span class="special">;</span>
@@ -94,41 +94,41 @@ MathJax.Hub.Config({
     <span class="comment">// types</span>
     <span class="keyword">typedef</span> <span class="identifier">vint2</span> <a class="link" href="HyperOctree/make_leaf.html#Aboria.HyperOctree.make_leaf.result_type"><span class="identifier">result_type</span></a><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="HyperOctree/make_leaf.html#idp47381154401088-bb">public member functions</a></span>
+    <span class="comment">// <a class="link" href="HyperOctree/make_leaf.html#idp46037507453744-bb">public member functions</a></span>
     <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> tuple_type<span class="special">&gt;</span> 
-      <span class="identifier">result_type</span> <a class="link" href="HyperOctree/make_leaf.html#idp47381154401488-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+      <span class="identifier">result_type</span> <a class="link" href="HyperOctree/make_leaf.html#idp46037507454144-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
   <span class="special">}</span><span class="special">;</span>
 
   <span class="keyword">struct</span> <a class="link" href="HyperOctree/write_nodes.html" title="Struct write_nodes">write_nodes</a> <span class="special">{</span>
     <span class="comment">// <a class="link" href="HyperOctree/write_nodes.html#Aboria.HyperOctree.write_nodesconstruct-copy-destruct">construct/copy/destruct</a></span>
-    <a class="link" href="HyperOctree/write_nodes.html#idp47381154408656-bb"><span class="identifier">write_nodes</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
+    <a class="link" href="HyperOctree/write_nodes.html#idp46037507461312-bb"><span class="identifier">write_nodes</span></a><span class="special">(</span><span class="keyword">int</span><span class="special">,</span> <span class="keyword">int</span><span class="special">)</span><span class="special">;</span>
 
-    <span class="comment">// <a class="link" href="HyperOctree/write_nodes.html#idp47381154405760-bb">public member functions</a></span>
-    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> tuple_type<span class="special">&gt;</span> <span class="keyword">int</span> <a class="link" href="HyperOctree/write_nodes.html#idp47381154406160-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+    <span class="comment">// <a class="link" href="HyperOctree/write_nodes.html#idp46037507458416-bb">public member functions</a></span>
+    <span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">typename</span> tuple_type<span class="special">&gt;</span> <span class="keyword">int</span> <a class="link" href="HyperOctree/write_nodes.html#idp46037507458816-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">tuple_type</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
     <span class="comment">// public data members</span>
     <span class="keyword">int</span> <span class="identifier">num_nodes</span><span class="special">;</span>
     <span class="keyword">int</span> <span class="identifier">num_leaves</span><span class="special">;</span>
   <span class="special">}</span><span class="special">;</span>
   <span class="comment">// <a class="link" href="HyperOctree.html#Aboria.HyperOctreeconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="HyperOctree.html#idp47381154412480-bb"><span class="identifier">HyperOctree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="HyperOctree.html#idp46037507465136-bb"><span class="identifier">HyperOctree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="HyperOctree.html#idp47381154410160-bb">public member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp47381154410560-bb"><span class="identifier">build_tree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp47381154411520-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="HyperOctree.html#idp46037507462816-bb">public member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp46037507463216-bb"><span class="identifier">build_tree</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp46037507464176-bb"><span class="identifier">print_data_structure</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="HyperOctree.html#idp47381154412608-bb">public static functions</a></span>
-  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="HyperOctree.html#idp47381154413008-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="HyperOctree.html#idp46037507465264-bb">public static functions</a></span>
+  <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a class="link" href="HyperOctree.html#idp46037507465664-bb"><span class="identifier">ordered</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="HyperOctree.html#idp47381154413968-bb">private member functions</a></span>
-  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp47381154414384-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp47381154415344-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp47381154416304-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
-  <span class="keyword">const</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="HyperOctree.html#idp47381154420304-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="HyperOctree.html#idp47381154422160-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="HyperOctree.html#idp46037507466624-bb">private member functions</a></span>
+  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp46037507467040-bb"><span class="identifier">set_domain_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp46037507468000-bb"><span class="identifier">update_iterator_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">void</span> <a class="link" href="HyperOctree.html#idp46037507468960-bb"><span class="identifier">update_positions_impl</span></a><span class="special">(</span><span class="identifier">iterator</span><span class="special">,</span> <span class="identifier">iterator</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">int</span><span class="special">,</span> <span class="keyword">const</span> <span class="keyword">bool</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">const</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="HyperOctree.html#idp46037507472960-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a class="link" href="HyperOctree.html#idp46037507474816-bb"><span class="identifier">get_query_impl</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp46373928373392"></a><h2>Description</h2>
+<a name="idp47210561840720"></a><h2>Description</h2>
 <p>An hyper octree is the general n-dimensional analog of an octree (aside: a normal octree is only defined for three dimensions). This data structure is a tree, where each level of the tree splits each bucket along the middle of each dimension. Each new bucket formed by this split becomes a child bucket for that bucket. Once the number of particles within a box falls below a threshold value (default: 10) then it is a leaf of the tree with no children</p>
 <p>For example, consider a certain level of the tree in two dimensions which has 3 buckets, one a leaf with 9 particles, the other two non-leafs with 44 and 11 particles respectivly. The threshold value is set at 10. <span style="color: red">&lt;heading&gt;~~~ &lt;/heading&gt;</span>
 </p>
@@ -190,43 +190,43 @@ MathJax.Hub.Config({
 <p>~~~ 
 </p>
 <div class="refsect2">
-<a name="idp46373928396336"></a><h3>Template Parameters</h3>
+<a name="idp47210561863744"></a><h3>Template Parameters</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
 <pre class="literallayout"><span class="keyword">typename</span> Traits</pre>
 <p>an instatiation of <code class="computeroutput"><a class="link" href="TraitsCommon.html" title="Struct template TraitsCommon">TraitsCommon</a></code> </p>
 </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46373928400688"></a><h3>
+<a name="idp47210561868096"></a><h3>
 <a name="Aboria.HyperOctreeconstruct-copy-destruct"></a><code class="computeroutput">HyperOctree</code> 
         public
        construct/copy/destruct</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp47381154412480-bb"></a><span class="identifier">HyperOctree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><a name="idp46037507465136-bb"></a><span class="identifier">HyperOctree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46373928406560"></a><h3>
-<a name="idp47381154410160-bb"></a><code class="computeroutput">HyperOctree</code> public member functions</h3>
+<a name="idp47210561873968"></a><h3>
+<a name="idp46037507462816-bb"></a><code class="computeroutput">HyperOctree</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381154410560-bb"></a><span class="identifier">build_tree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381154411520-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46037507463216-bb"></a><span class="identifier">build_tree</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46037507464176-bb"></a><span class="identifier">print_data_structure</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46373928417984"></a><h3>
-<a name="idp47381154412608-bb"></a><code class="computeroutput">HyperOctree</code> public static functions</h3>
-<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp47381154413008-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
+<a name="idp47210561885392"></a><h3>
+<a name="idp46037507465264-bb"></a><code class="computeroutput">HyperOctree</code> public static functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem"><pre class="literallayout"><span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keyword">bool</span> <a name="idp46037507465664-bb"></a><span class="identifier">ordered</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp46373928425840"></a><h3>
-<a name="idp47381154413968-bb"></a><code class="computeroutput">HyperOctree</code> private member functions</h3>
+<a name="idp47210561893248"></a><h3>
+<a name="idp46037507466624-bb"></a><code class="computeroutput">HyperOctree</code> private member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381154414384-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381154415344-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp47381154416304-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46037507467040-bb"></a><span class="identifier">set_domain_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46037507468000-bb"></a><span class="identifier">update_iterator_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">void</span> <a name="idp46037507468960-bb"></a><span class="identifier">update_positions_impl</span><span class="special">(</span><span class="identifier">iterator</span> update_begin<span class="special">,</span> <span class="identifier">iterator</span> update_end<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">int</span> new_n<span class="special">,</span> 
                            <span class="keyword">const</span> <span class="keyword">bool</span> call_set_domain <span class="special">=</span> <span class="keyword">true</span><span class="special">)</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47381154420304-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
-<li class="listitem"><pre class="literallayout"><a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp47381154422160-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><span class="keyword">const</span> <a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp46037507472960-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a class="link" href="HyperOctreeQuery.html" title="Struct template HyperOctreeQuery">HyperOctreeQuery</a><span class="special">&lt;</span> <a class="link" href="Traits.html" title="Struct template Traits">Traits</a> <span class="special">&gt;</span> <span class="special">&amp;</span> <a name="idp46037507474816-bb"></a><span class="identifier">get_query_impl</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
 </ol></div>
 </div>
 </div>
