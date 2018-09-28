@@ -134,8 +134,13 @@ public:
   typedef typename traits_type::const_reference const_reference;
 
   ///
-  /// a tuple type containing raw references to value_types for each Variable
+  /// a tuple type containing raw pointers to value_types for each Variable
   typedef typename traits_type::raw_pointer raw_pointer;
+
+  ///
+  /// a tuple type containing const raw pointers to value_types for each
+  /// Variable
+  typedef typename traits_type::raw_const_pointer raw_const_pointer;
 
   ///
   /// a tuple type containing raw references to value_types for each Variable

@@ -380,13 +380,11 @@ public:
       }
 
       // init neighbour search
+      /*
       const int max_bucket_size =
           i == n_levels - 2 ? m_max_buffer_n : a.get_max_bucket_size();
-
-      if (i == n_levels - 2) {
-        CHECK(static_cast<size_t>(max_bucket_size) >= particles.size(),
-              "top level should have a single leaf bucket");
-      }
+          */
+      const int max_bucket_size = a.get_max_bucket_size();
 
       LOG(2, "\t: creating new particle set with "
                  << particles.size()
@@ -599,6 +597,36 @@ public:
     }
   };
 
+  struct wendland_interpolate {
+    typedef typename particles_t::query_type query_type;
+    typedef typename particles_t::position position;
+
+    vector_type &u_i;
+    const vector_type &u_i_plus_1;
+    const double interpolation_length_scale;
+    typename particles_t::raw_const_pointer lower_particles;
+    typename particles_t::raw_const_pointer upper_particles;
+    const query_type &upper_query;
+
+    void operator()(const int i) {
+      double sum_wu = 0;
+      double sum_w = 0;
+      const double c = 1.0 / interpolation_length_scale;
+      const auto &p_a = get<position>(lower_particles)[i];
+      for (auto j = euclidean_search(upper_query, p_a,
+                                     2 * interpolation_length_scale);
+           j != false; ++j) {
+        const auto &p_b = get<position>(*j);
+        const int upper_index = &p_b - get<position>(upper_particles);
+        const double r = j.dx().norm();
+        const double weight = std::pow(2.0 - r * c, 4) * (1.0 + 2.0 * r * c);
+        sum_wu += weight * u_i_plus_1[upper_index];
+        sum_w += weight;
+      }
+      u_i[i] += sum_wu / sum_w;
+    }
+  };
+
   void v_cycle(int level) const {
     LOG(3, "\trunning v_cycle on level " << level);
     const size_t i = level;
@@ -613,7 +641,7 @@ public:
       auto count = boost::make_counting_iterator(0);
       // pre-smoothing (u <- u + A-1 r)
       vector_type tmp = m_r[i];
-      for (int j = 0; j < 1; ++j) {
+      for (int j = 0; j < level + 1; ++j) {
         LOG(3, "\t\tpre-smoothing on level " << level);
         detail::for_each(
             count, count + m_indicies[i].size(),
@@ -643,9 +671,8 @@ public:
 
       // interpolate result to finer level
       // u(1) <-- u(1) + Rt*u(0)
-      LOG(3, "\t\tinterpolate result to level " << level);
+      /*
       auto &u_i = m_u[i];
-      auto &u_i_plus_1 = m_u[i + 1];
       detail::for_each(
           count, count + m_particles[i].size(),
           [&u_i, &u_i_plus_1,
@@ -653,11 +680,35 @@ public:
             const int lower_index = id[upper_index];
             u_i[lower_index] += u_i_plus_1[upper_index];
           });
+          */
+
+      const double volume =
+          (m_particles[i].get_max() - m_particles[i].get_min()).prod();
+      const double bucket_volume =
+          m_particles[i].get_max_bucket_size() * volume / m_particles[i].size();
+      const double interpolation_length_scale =
+          0.5 * std::pow(bucket_volume, 1.0 / m_particles[i].dimension);
+      LOG(2, "\t\tinterpolate result to level "
+                 << level << " using length scale "
+                 << interpolation_length_scale << " using bucket_volume"
+                 << bucket_volume << " using volume" << volume);
+      auto &u_i = m_u[i];
+      auto &u_i_plus_1 = m_u[i + 1];
+      detail::for_each(
+          count, count + m_u[i].size(),
+          wendland_interpolate{
+              u_i, u_i_plus_1, interpolation_length_scale,
+              iterator_to_raw_pointer(
+                  i == 0
+                      ? m_fineA->get_first_kernel().get_row_elements().begin()
+                      : m_particles[i - 1].begin()),
+              iterator_to_raw_pointer(m_particles[i].begin()),
+              m_particles[i].get_query()});
 
       // update residual and perform post-smoothing
       // r <- r - Au
       // u <- u + A-1 r
-      for (int j = 0; j < 1; ++j) {
+      for (int j = 0; j < level + 1; ++j) {
 
         LOG(3, "\t\tpost-smoothing on level " << level);
         if (i == 0) {
@@ -707,6 +758,7 @@ public:
       auto count = boost::make_counting_iterator(0);
       auto &u_i = m_u[i];
       auto &u_i_plus_1 = m_u[i + 1];
+      /*
       detail::for_each(
           count, count + m_particles[i].size(),
           [&u_i, &u_i_plus_1,
@@ -714,6 +766,24 @@ public:
             const int lower_index = id[upper_index];
             u_i[lower_index] += u_i_plus_1[upper_index];
           });
+          */
+      const double volume =
+          (m_particles[i].get_max() - m_particles[i].get_min()).prod();
+      const double bucket_volume =
+          m_particles[i].get_max_bucket_size() * volume / m_particles[i].size();
+      const double interpolation_length_scale =
+          0.5 * std::pow(bucket_volume, 1.0 / m_particles[i].dimension);
+
+      detail::for_each(
+          count, count + m_u[i].size(),
+          wendland_interpolate{
+              u_i, u_i_plus_1, interpolation_length_scale,
+              iterator_to_raw_pointer(
+                  i == 0
+                      ? m_fineA->get_first_kernel().get_row_elements().begin()
+                      : m_particles[i - 1].begin()),
+              iterator_to_raw_pointer(m_particles[i].begin()),
+              m_particles[i].get_query()});
 
       v_cycle(i);
     }
