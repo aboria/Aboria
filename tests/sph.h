@@ -191,11 +191,11 @@ public:
         3, std::vector, SearchMethod>
         sph_type;
     //->
-    //=        typedef Particles<
-    //=            std::tuple<kernel_radius, velocity, velocity_tmp, varh_omega,
-    //=                       density, total_force, is_fixed,
-    //=                       pressure_div_density2>, 3>
-    //=            sph_type;
+    //=typedef Particles<
+    //=    std::tuple<kernel_radius, velocity, velocity_tmp, varh_omega,
+    //=               density, total_force, is_fixed,
+    //=               pressure_div_density2>, 3>
+    //=    sph_type;
 
     typedef position_d<3> position;
     sph_type sph;
