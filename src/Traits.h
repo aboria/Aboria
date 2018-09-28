@@ -303,6 +303,7 @@ struct TraitsCommon<std::tuple<TYPES...>, DomainD, SelfD, traits>
   typedef typename iterator::getter_raw_pointer raw_pointer;
   typedef typename iterator::getter_raw_reference raw_reference;
   typedef typename const_iterator::getter_raw_reference raw_const_reference;
+  typedef typename const_iterator::getter_raw_pointer raw_const_pointer;
   typedef typename const_iterator::reference const_reference;
   typedef Aboria::getter_type<vectors_data_type, mpl_type_vector> data_type;
 
