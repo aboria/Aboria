@@ -1188,6 +1188,7 @@ protected:
 
 private:
   size_t m_max_buffer_n;
+  mutable std::array<double, 2> m_timing;
 
   connectivity_type m_indicies[2];
   connectivity_type m_buffer[2];
@@ -1211,11 +1212,15 @@ public:
   };
 
   SchwartzPreconditioner()
-      : m_isInitialized(false), m_max_buffer_n(300), m_multiplicitive(0),
-        m_levels(1), m_interpolate(false), m_use_root(true) {}
+      : m_isInitialized(false), m_max_buffer_n(300), m_timing{0, 0},
+        m_multiplicitive(0), m_levels(1), m_interpolate(false),
+        m_use_root(true) {}
 
   template <typename MatType>
-  explicit SchwartzPreconditioner(const MatType &mat) {
+  explicit SchwartzPreconditioner(const MatType &mat)
+      : m_isInitialized(false), m_max_buffer_n(300), m_timing{0, 0},
+        m_multiplicitive(0), m_levels(1), m_interpolate(false),
+        m_use_root(true) {
     compute(mat);
   }
 
@@ -1227,6 +1232,7 @@ public:
   void set_interpolate(bool arg) { m_interpolate = arg; }
   void set_levels(int arg) { m_levels = arg; }
   void set_use_root(int arg) { m_use_root = arg; }
+  const std::array<double, 2> &get_timing() { return m_timing; }
 
   template <typename MatType>
   SchwartzPreconditioner &analyzePattern(const MatType &mat) {
@@ -1575,7 +1581,9 @@ public:
                 iterator_to_raw_pointer(tmp_buffer.begin()),
                 iterator_to_raw_pointer(tmp_matrix.begin()),
                 iterator_to_raw_pointer(tmp_coupling_matrix.begin()),
-                m_max_buffer_n, a.get_max_bucket_size(), start_row,
+                (nodes.size() == 1) ? m_max_buffer_n
+                                    : a.get_max_bucket_size() * 4,
+                a.get_max_bucket_size(), start_row,
                 kernel.get_kernel_function(), query, i, nodes.size() == 1,
                 m_interpolate});
 
@@ -1596,7 +1604,9 @@ public:
                 iterator_to_raw_pointer(buffer.begin()),
                 iterator_to_raw_pointer(matrix.begin()),
                 iterator_to_raw_pointer(coupling_matrix.begin()),
-                m_max_buffer_n, a.get_max_bucket_size(), start_row,
+                (nodes.size() == 1) ? m_max_buffer_n
+                                    : a.get_max_bucket_size() * 4,
+                a.get_max_bucket_size(), start_row,
                 kernel.get_kernel_function(), query, i, nodes.size() == 1,
                 m_interpolate});
       }
@@ -1709,6 +1719,7 @@ public:
     void operator()(const int i) const {
       const storage_vector_type &buffer = m_domain_buffer[i];
       const storage_vector_type &indicies = m_domain_indicies[i];
+
       if (indicies.size() == 0)
         return;
 
@@ -1765,6 +1776,9 @@ public:
       // v1 <- C r
       x.setZero();
       vector_type b_copy = b;
+#if ABORIA_LOG_LEVEL > 1
+      auto t0 = Clock::now();
+#endif
       int i = 1;
       auto count = boost::make_counting_iterator(0);
       detail::for_each(
@@ -1778,6 +1792,14 @@ public:
 
       // v2 <- v1 + M-1 ( r - A v1)
       b_copy = b - m_A * x;
+#if ABORIA_LOG_LEVEL > 1
+      auto t1 = Clock::now();
+      m_timing[i] +=
+          std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+              .count();
+
+      t0 = Clock::now();
+#endif
       i = 0;
       detail::for_each(
           count, count + m_indicies[i].size(),
@@ -1790,6 +1812,14 @@ public:
 
       // v3 <- v2 + C ( r - (r - A v1) - A v2)
       b_copy = b - b_copy - m_A * x;
+#if ABORIA_LOG_LEVEL > 1
+      t1 = Clock::now();
+      m_timing[i] +=
+          std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+              .count();
+
+      t0 = Clock::now();
+#endif
       i = 1;
       detail::for_each(
           count, count + m_indicies[i].size(),
@@ -1800,12 +1830,23 @@ public:
               iterator_to_raw_pointer(m_coupling_matrix[i].begin()), x, b_copy,
               i, m_indicies[i].size() == 1, m_interpolate});
 
+#if ABORIA_LOG_LEVEL > 1
+      t1 = Clock::now();
+      m_timing[i] +=
+          std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+              .count();
+
+#endif
+
     } else if (m_multiplicitive == 1 && m_levels > 1) {
       // non-symmetric multiplicative
       x.setZero();
       vector_type b_copy = b;
 
       for (int i = 0; i < std::min(m_levels, 2); ++i) {
+#if ABORIA_LOG_LEVEL > 1
+        auto t0 = Clock::now();
+#endif
         solve_domain<Rhs, Dest> fsolve_domain{
             iterator_to_raw_pointer(m_indicies[i].begin()),
             iterator_to_raw_pointer(m_buffer[i].begin()),
@@ -1823,11 +1864,21 @@ public:
         if (i == 0) {
           b_copy -= m_A * x;
         }
+#if ABORIA_LOG_LEVEL > 1
+        auto t1 = Clock::now();
+        m_timing[i] +=
+            std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                .count();
+#endif
       }
     } else {
       x.setZero();
 
       for (int i = 0; i < std::min(m_levels, 2); ++i) {
+#if ABORIA_LOG_LEVEL > 1
+        auto t0 = Clock::now();
+#endif
+
         solve_domain<Rhs, Dest> fsolve_domain{
             iterator_to_raw_pointer(m_indicies[i].begin()),
             iterator_to_raw_pointer(m_buffer[i].begin()),
@@ -1841,6 +1892,12 @@ public:
 
         auto count = boost::make_counting_iterator(0);
         detail::for_each(count, count + m_indicies[i].size(), fsolve_domain);
+#if ABORIA_LOG_LEVEL > 1
+        auto t1 = Clock::now();
+        m_timing[i] +=
+            std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                .count();
+#endif
       }
     }
   }
