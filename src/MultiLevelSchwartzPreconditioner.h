@@ -448,7 +448,9 @@ public:
                 iterator_to_raw_pointer(nodes.begin()),
                 iterator_to_raw_pointer(tmp_indicies.begin()),
                 iterator_to_raw_pointer(tmp_buffer.begin()),
-                iterator_to_raw_pointer(tmp_matrix.begin()), m_max_buffer_n,
+                iterator_to_raw_pointer(tmp_matrix.begin()),
+                (nodes.size() == 1) ? m_max_buffer_n
+                                    : a.get_max_bucket_size() * 4,
                 a.get_max_bucket_size(), kernel.get_kernel_function(), query, i,
                 nodes.size() == 1});
 
@@ -465,7 +467,9 @@ public:
                 iterator_to_raw_pointer(nodes.begin()),
                 iterator_to_raw_pointer(indicies.begin()),
                 iterator_to_raw_pointer(buffer.begin()),
-                iterator_to_raw_pointer(matrix.begin()), m_max_buffer_n,
+                iterator_to_raw_pointer(matrix.begin()),
+                (nodes.size() == 1) ? m_max_buffer_n
+                                    : a.get_max_bucket_size() * 4,
                 a.get_max_bucket_size(), kernel.get_kernel_function(), query, i,
                 nodes.size() == 1});
       }
@@ -640,9 +644,17 @@ public:
     } else {
       auto count = boost::make_counting_iterator(0);
       // pre-smoothing (u <- u + A-1 r)
-      vector_type tmp = m_r[i];
-      for (int j = 0; j < level + 1; ++j) {
+      vector_type tmp;
+      for (int j = 0; j < std::pow(2, level); ++j) {
         LOG(3, "\t\tpre-smoothing on level " << level);
+        if (i == 0) {
+          tmp = m_r[0] - (*m_fineA) * m_u[0];
+        } else {
+          tmp = m_r[i] - m_A[i - 1] * m_u[i];
+        }
+
+        if (tmp.norm() < 1e-15)
+          break;
         detail::for_each(
             count, count + m_indicies[i].size(),
             solve_domain<decltype(tmp), decltype(m_u[i])>{
@@ -650,17 +662,11 @@ public:
                 iterator_to_raw_pointer(m_buffer[i].begin()),
                 iterator_to_raw_pointer(m_factorized_matrix[i].begin()), m_u[i],
                 tmp});
-
-        LOG(3, "\t\trestrict to level " << level + 1);
-        if (i == 0) {
-          tmp = m_r[0] - (*m_fineA) * m_u[0];
-        } else {
-          tmp = m_r[i] - m_A[i - 1] * m_u[i];
-        }
       }
       // restrict residual to coarser level
       // r <- R^j-1 (r - A u^j)
       // auto &r_i = m_r[i];
+      LOG(3, "\t\trestrict to level " << level + 1);
       detail::tabulate(m_r[i + 1].data(), m_r[i + 1].data() + m_r[i + 1].size(),
                        [&tmp, id = get<id>(m_particles[i].begin())](
                            const int index) { return tmp[id[index]]; });
@@ -671,8 +677,8 @@ public:
 
       // interpolate result to finer level
       // u(1) <-- u(1) + Rt*u(0)
-      /*
       auto &u_i = m_u[i];
+      auto &u_i_plus_1 = m_u[i + 1];
       detail::for_each(
           count, count + m_particles[i].size(),
           [&u_i, &u_i_plus_1,
@@ -680,15 +686,15 @@ public:
             const int lower_index = id[upper_index];
             u_i[lower_index] += u_i_plus_1[upper_index];
           });
-          */
 
+      /*
       const double volume =
           (m_particles[i].get_max() - m_particles[i].get_min()).prod();
       const double bucket_volume =
           m_particles[i].get_max_bucket_size() * volume / m_particles[i].size();
       const double interpolation_length_scale =
           0.5 * std::pow(bucket_volume, 1.0 / m_particles[i].dimension);
-      LOG(2, "\t\tinterpolate result to level "
+      LOG(3, "\t\tinterpolate result to level "
                  << level << " using length scale "
                  << interpolation_length_scale << " using bucket_volume"
                  << bucket_volume << " using volume" << volume);
@@ -704,11 +710,12 @@ public:
                       : m_particles[i - 1].begin()),
               iterator_to_raw_pointer(m_particles[i].begin()),
               m_particles[i].get_query()});
+              */
 
       // update residual and perform post-smoothing
       // r <- r - Au
       // u <- u + A-1 r
-      for (int j = 0; j < level + 1; ++j) {
+      for (int j = 0; j < std::pow(2, level); ++j) {
 
         LOG(3, "\t\tpost-smoothing on level " << level);
         if (i == 0) {
@@ -716,6 +723,9 @@ public:
         } else {
           tmp = m_r[i] - m_A[i - 1] * m_u[i];
         }
+
+        if (tmp.norm() < 1e-15)
+          break;
 
         // solve for this level
         detail::for_each(
@@ -747,6 +757,10 @@ public:
 
     // solve coarsest grid exactly
     const int top_level = m_indicies.size() - 1;
+    /*
+    std::cout << "r norm at top level is " << m_r[top_level].norm()
+              << std::endl;
+              */
     m_u[top_level] = vector_type::Zero(
         top_level == 0 ? x.size() : m_particles[top_level - 1].size());
     v_cycle(top_level);
@@ -758,7 +772,6 @@ public:
       auto count = boost::make_counting_iterator(0);
       auto &u_i = m_u[i];
       auto &u_i_plus_1 = m_u[i + 1];
-      /*
       detail::for_each(
           count, count + m_particles[i].size(),
           [&u_i, &u_i_plus_1,
@@ -766,7 +779,7 @@ public:
             const int lower_index = id[upper_index];
             u_i[lower_index] += u_i_plus_1[upper_index];
           });
-          */
+      /*
       const double volume =
           (m_particles[i].get_max() - m_particles[i].get_min()).prod();
       const double bucket_volume =
@@ -784,6 +797,7 @@ public:
                       : m_particles[i - 1].begin()),
               iterator_to_raw_pointer(m_particles[i].begin()),
               m_particles[i].get_query()});
+              */
 
       v_cycle(i);
     }

@@ -385,7 +385,7 @@ public:
     if (do_solve) {
 
       std::cout << "SOLVING IDENTITY" << std::endl;
-      Eigen::BiCGSTAB<Op, Eigen::IdentityPreconditioner> bicg;
+      Eigen::GMRES<Op, Eigen::IdentityPreconditioner> bicg;
 
       bicg.setMaxIterations(max_iter);
       // bicg.setTolerance(X);
@@ -416,7 +416,11 @@ public:
           << (phi_proposed - phi_test).norm() / phi_test.norm();
 
       std::cout << "SOLVING Schwartz" << std::endl;
+      /*
       Eigen::BiCGSTAB<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+          bicg2;
+          */
+      Eigen::GMRES<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
           bicg2;
       bicg2.setMaxIterations(max_iter);
       bicg2.preconditioner().set_max_buffer_n(Nbuffer);
@@ -465,8 +469,12 @@ public:
       //===============================================
       {
         std::cout << "SOLVING Schwartz (add)" << std::endl;
-        Eigen::BiCGSTAB<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        // Eigen::BiCGSTAB<Op,
+        // SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        //    bicg2;
+        Eigen::GMRES<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
+
         bicg2.setMaxIterations(max_iter);
         bicg2.preconditioner().set_max_buffer_n(Nbuffer);
         bicg2.preconditioner().set_levels(2);
@@ -506,12 +514,15 @@ public:
       //===============================================
       {
         std::cout << "SOLVING Schwartz (mult)" << std::endl;
-        Eigen::BiCGSTAB<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        // Eigen::BiCGSTAB<Op,
+        // SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
+        //    bicg2;
+        Eigen::GMRES<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
         bicg2.setMaxIterations(max_iter);
         bicg2.preconditioner().set_max_buffer_n(Nbuffer);
         bicg2.preconditioner().set_levels(2);
-        bicg2.preconditioner().set_multiplicative(true);
+        bicg2.preconditioner().set_multiplicative(1);
         // bicg2.preconditioner().set_decimate_factor(2);
         t0 = Clock::now();
         bicg2.compute(G);
@@ -543,12 +554,21 @@ public:
         out.out_solve_test_error[do_solve - 1]
             << " " << std::setw(out.width)
             << (phi_proposed - phi_test).norm() / phi_test.norm();
+
+        std::cout << "TIMING:" << std::endl;
+        std::cout << "\tlevel 0:" << bicg2.preconditioner().get_timing()[0]
+                  << " milliseconds" << std::endl;
+        std::cout << "\tlevel 1:" << bicg2.preconditioner().get_timing()[1]
+                  << " milliseconds" << std::endl;
       }
       //===============================================
       {
         std::cout << "SOLVING Schwartz (multi-level mult)" << std::endl;
-        Eigen::BiCGSTAB<Op, MultiLevelSchwartzPreconditioner<
-                                decltype(G), Eigen::LLT<Eigen::MatrixXd>>>
+        // Eigen::BiCGSTAB<Op, MultiLevelSchwartzPreconditioner<
+        //                        decltype(G), Eigen::LLT<Eigen::MatrixXd>>>
+        //    bicg2;
+        Eigen::GMRES<Op, MultiLevelSchwartzPreconditioner<
+                             decltype(G), Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
 
         /*
@@ -693,8 +713,12 @@ public:
 
     const int max_iter = 1000;
     const unsigned int D = Particles_t::dimension;
-    const size_t n_subdomain = Nsubdomain;
-    const int Nbuffer = 4 * n_subdomain;
+    int num_threads = omp_get_max_threads();
+    std::cout << "num_threads = " << num_threads << std::endl;
+    const int Nbuffer = 5 *
+                        std::pow(particles.size() / num_threads, 1.0 / 3.0) *
+                        std::pow(Nsubdomain, 2.0 / 3.0);
+    std::cout << "Nbuffer= " << Nbuffer << std::endl;
     typedef position_d<D> position;
 
     Particles_t knots(particles.size() - Ntest);
@@ -714,7 +738,7 @@ public:
 
     auto t0 = Clock::now();
     knots.init_neighbour_search(knots_box.bmin, knots_box.bmax,
-                                Vector<bool, D>::Constant(false), 10);
+                                Vector<bool, D>::Constant(false), Nsubdomain);
     auto t1 = Clock::now();
     out.out_ds_setup_time
         << " " << std::setw(out.width)
@@ -722,7 +746,7 @@ public:
                .count();
 
     test.init_neighbour_search(test_box.bmin, test_box.bmax,
-                               Vector<bool, D>::Constant(false), 10);
+                               Vector<bool, D>::Constant(false), Nsubdomain);
     std::cout << "FINISHED INIT NEIGHBOUR" << std::endl;
 
     auto self_kernel = [=] CUDA_HOST_DEVICE(raw_const_reference a,
@@ -856,7 +880,7 @@ public:
     for (int N = 8000; N < 30000; N *= 2) {
       for (double sigma = 0.9; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
-        for (size_t n_subdomain = 50; n_subdomain < 400; n_subdomain += 100) {
+        for (size_t n_subdomain = 1; n_subdomain < 2; n_subdomain += 1) {
           /*
           helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
