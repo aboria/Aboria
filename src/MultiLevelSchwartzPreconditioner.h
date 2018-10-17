@@ -50,7 +50,8 @@ class MultiLevelSchwartzPreconditioner {
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
   typedef Solver solver_type;
 
-  typedef detail::storage_vector_type storage_vector_type;
+  typedef detail::storage_vector_type<size_t> storage_vector_type;
+  typedef detail::storage_vector_type<double> storage_vector_double_type;
 
   typedef std::vector<std::vector<storage_vector_type>> connectivity_t;
   typedef std::vector<std::vector<solver_type>> solvers_t;
@@ -179,7 +180,9 @@ public:
       // allocate for buffer + indicies
       storage_vector_type buffer_tmp;
       storage_vector_type indicies_tmp;
+      // storage_vector_double_type buffer_r_tmp;
       buffer_tmp.resize(n_buffer);
+      // buffer_r_tmp.resize(n_buffer);
       indicies_tmp.resize(n_indicies);
 
       // add particles in bucket to indicies
@@ -204,6 +207,7 @@ public:
             if (is_ci) {
               indicies_tmp[i_indicies++] = index;
             } else {
+              // buffer_r_tmp[i_buffer] = (p - middle).squaredNorm();
               buffer_tmp[i_buffer++] = index;
             }
           }
@@ -241,8 +245,11 @@ public:
 #endif
           }
         };
+
         if (buffer_tmp.size() > m_max_buffer_n) {
           shuffle(buffer_tmp);
+          // detail::sort_by_key(buffer_r_tmp.begin(), buffer_r_tmp.end(),
+          //                    buffer_tmp.begin());
         }
         if (indicies_tmp.size() > m_max_bucket_n) {
           shuffle(indicies_tmp);
@@ -779,6 +786,13 @@ public:
             const int lower_index = id[upper_index];
             u_i[lower_index] += u_i_plus_1[upper_index];
           });
+      /*
+      std::cout << "r norm at level " << i << " is " << m_r[i].norm()
+                << std::endl;
+      std::cout << "u norm at level " << i << " is " << m_u[i].norm()
+                << std::endl;
+                */
+
       /*
       const double volume =
           (m_particles[i].get_max() - m_particles[i].get_min()).prod();
