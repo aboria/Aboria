@@ -577,15 +577,17 @@ public:
                                      decltype(G), Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
             */
-        bicg2.setMaxIterations(max_iter);
-        bicg2.preconditioner().set_max_buffer_n(Nbuffer);
-        bicg2.preconditioner().set_multiplicative(2);
-        t0 = Clock::now();
-        bicg2.compute(G);
+        if (0) {
+          bicg2.setMaxIterations(max_iter);
+          bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+          bicg2.preconditioner().set_multiplicative(2);
+          t0 = Clock::now();
+          bicg2.compute(G);
 
-        t1 = Clock::now();
-        gamma = bicg2.solve(phi);
-        t2 = Clock::now();
+          t1 = Clock::now();
+          gamma = bicg2.solve(phi);
+          t2 = Clock::now();
+        }
 
         out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
                                                << bicg2.iterations();
@@ -878,9 +880,9 @@ public:
     const double jitter = 1e-5;
 
     for (int N = minN; N < 70000; N *= 2) {
-      for (double sigma = 0.1; sigma < 2.0; sigma += 0.4) {
+      for (double sigma = 0.5; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
-        for (size_t n_subdomain = 1; n_subdomain < 2; n_subdomain += 1) {
+        for (size_t n_subdomain = 10; n_subdomain < 50; n_subdomain += 10) {
           /*
         helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
                               n_subdomain, out);

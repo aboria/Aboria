@@ -103,8 +103,8 @@ void apply_function_to_diagonal_blocks(
                                     std::integral_constant<unsigned int, 0>());
 }
 
-struct storage_vector_type {
-  size_t *m_data;
+template <typename T> struct storage_vector_type {
+  T *m_data;
   size_t m_size;
 
   storage_vector_type() : m_data(nullptr), m_size(0) {}
@@ -131,9 +131,9 @@ struct storage_vector_type {
     return *this;
   }
   CUDA_HOST_DEVICE
-  size_t *begin() const { return m_data; }
+  T *begin() const { return m_data; }
   CUDA_HOST_DEVICE
-  size_t *end() const { return m_data + m_size; }
+  T *end() const { return m_data + m_size; }
   CUDA_HOST_DEVICE
   size_t size() const { return m_size; }
   CUDA_HOST_DEVICE
@@ -141,14 +141,14 @@ struct storage_vector_type {
     // only supports reductions in size after initial resize
     ASSERT_CUDA(!m_data || n <= m_size);
     if (!m_data && n > 0) {
-      m_data = new size_t[n];
+      m_data = new T[n];
     }
     m_size = n;
   }
   CUDA_HOST_DEVICE
-  size_t &operator[](const int i) { return m_data[i]; }
+  T &operator[](const int i) { return m_data[i]; }
   CUDA_HOST_DEVICE
-  const size_t &operator[](const int i) const { return m_data[i]; }
+  const T &operator[](const int i) const { return m_data[i]; }
 };
 } // namespace detail
 
@@ -1177,7 +1177,7 @@ template <typename Solver> class SchwartzPreconditioner {
   typedef Eigen::Matrix<Scalar, Eigen::Dynamic, 1> vector_type;
   typedef Solver solver_type;
 
-  typedef detail::storage_vector_type storage_vector_type;
+  typedef detail::storage_vector_type<size_t> storage_vector_type;
 
   typedef std::vector<storage_vector_type> connectivity_type;
   typedef std::vector<solver_type> solvers_type;
