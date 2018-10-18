@@ -145,6 +145,7 @@ public:
     static const int Nops = 2;
     std::ofstream out_solve_setup_time[Nops];
     std::ofstream out_solve_solve_time[Nops];
+    std::ofstream out_solve_total_time[Nops];
     std::ofstream out_solve_solve_memory[Nops];
     std::ofstream out_solve_iterations[Nops];
     std::ofstream out_solve_error[Nops];
@@ -154,7 +155,7 @@ public:
 
       auto solve_header = [width = width + 1](auto &out) {
         out << std::setw(width) << "N " << std::setw(width) << "sigma "
-            << std::setw(width) << "D " << std::setw(width) << "order "
+            << std::setw(width) << "D " << std::setw(width) << "mult_b"
             << std::setw(width) << "Nsubdomain " << std::setw(width) << "chol "
             << std::setw(width) << "diag " << std::setw(width) << "srtz "
             << std::setw(width) << "srtz(add) " << std::setw(width)
@@ -167,7 +168,7 @@ public:
 
       auto op_header = [width = width + 1](auto &out) {
         out << std::setw(width) << "N " << std::setw(width) << "sigma "
-            << std::setw(width) << "D " << std::setw(width) << "order "
+            << std::setw(width) << "D " << std::setw(width) << "mult_b"
             << std::setw(width) << "Nsubdomain " << std::setw(width)
             << "matrix " << std::setw(width) << "dense " << std::setw(width)
             << "fmm " << std::setw(width) << "h2 " << std::endl;
@@ -175,7 +176,7 @@ public:
 
       auto ds_header = [width = width + 1](auto &out) {
         out << std::setw(width) << "N " << std::setw(width) << "sigma "
-            << std::setw(width) << "D " << std::setw(width) << "order "
+            << std::setw(width) << "D " << std::setw(width) << "mult_b"
             << std::setw(width) << "Nsubdomain " << std::setw(width) << "kdree "
             << std::setw(width) << std::endl;
       };
@@ -200,6 +201,10 @@ public:
         out_solve_solve_time[i].open(
             name + op_names[i] + "solve_solve_time.txt", std::ios::out);
         solve_header(out_solve_solve_time[i]);
+        out_solve_total_time[i].open(
+            name + op_names[i] + "solve_total_time.txt", std::ios::out);
+        solve_header(out_solve_total_time[i]);
+
         out_solve_solve_memory[i].open(
             name + op_names[i] + "solve_solve_memory.txt", std::ios::out);
         solve_header(out_solve_solve_memory[i]);
@@ -225,6 +230,7 @@ public:
       for (int i = 0; i < Nops; ++i) {
         out_solve_setup_time[i] << std::endl;
         out_solve_solve_time[i] << std::endl;
+        out_solve_total_time[i] << std::endl;
         out_solve_solve_memory[i] << std::endl;
         out_solve_iterations[i] << std::endl;
         out_solve_error[i] << std::endl;
@@ -233,11 +239,11 @@ public:
     }
 
     void new_line_start(const size_t N, const double sigma, const size_t D,
-                        const size_t order, const size_t Nsubdomain) {
+                        const size_t mult_buffer, const size_t Nsubdomain) {
       auto start = [&](auto &out) {
         out << std::setw(width) << N << " " << std::setw(width) << sigma << " "
-            << std::setw(width) << D << " " << std::setw(width) << order << " "
-            << std::setw(width) << Nsubdomain;
+            << std::setw(width) << D << " " << std::setw(width) << mult_buffer
+            << " " << std::setw(width) << Nsubdomain;
       };
 
       start(out_op_setup_time);
@@ -248,6 +254,7 @@ public:
       for (int i = 0; i < Nops; ++i) {
         start(out_solve_setup_time[i]);
         start(out_solve_solve_time[i]);
+        start(out_solve_total_time[i]);
         start(out_solve_solve_memory[i]);
         start(out_solve_iterations[i]);
         start(out_solve_error[i]);
@@ -264,6 +271,7 @@ public:
       for (int i = 0; i < Nops; ++i) {
         out_solve_setup_time[i].close();
         out_solve_solve_time[i].close();
+        out_solve_total_time[i].close();
         out_solve_solve_memory[i].close();
         out_solve_iterations[i].close();
         out_solve_error[i].close();
@@ -336,6 +344,11 @@ public:
             << " " << std::setw(out.width)
             << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
                    .count();
+        out.out_solve_total_time[i]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0)
+                   .count();
+
         out.out_solve_solve_memory[i]
             << " " << std::setw(out.width)
             << G.rows() * G.cols() * sizeof(double) / 1e9;
@@ -352,6 +365,7 @@ public:
         out.out_solve_error[i] << " " << std::setw(out.width) << -1;
         out.out_solve_setup_time[i] << " " << std::setw(out.width) << -1;
         out.out_solve_solve_time[i] << " " << std::setw(out.width) << -1;
+        out.out_solve_total_time[i] << " " << std::setw(out.width) << -1;
         out.out_solve_solve_memory[i] << " " << std::setw(out.width) << -1;
         out.out_solve_test_error[i] << " " << std::setw(out.width) << -1;
       }
@@ -406,6 +420,11 @@ public:
           << " " << std::setw(out.width)
           << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
                  .count();
+      out.out_solve_total_time[do_solve - 1]
+          << " " << std::setw(out.width)
+          << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0)
+                 .count();
+
       out.out_solve_solve_memory[do_solve - 1]
           << " " << std::setw(out.width) << G.rows() * sizeof(double) / 1e9;
 
@@ -453,6 +472,11 @@ public:
           << " " << std::setw(out.width)
           << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
                  .count();
+      out.out_solve_total_time[do_solve - 1]
+          << " " << std::setw(out.width)
+          << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0)
+                 .count();
+
       auto &knots = G.get_first_kernel().get_row_elements();
       const size_t ndomains = knots.size() / knots.get_max_bucket_size();
       const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
@@ -475,41 +499,66 @@ public:
         Eigen::GMRES<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
 
-        bicg2.setMaxIterations(max_iter);
-        bicg2.preconditioner().set_max_buffer_n(Nbuffer);
-        bicg2.preconditioner().set_levels(2);
-        bicg2.preconditioner().set_multiplicative(false);
-        // bicg2.preconditioner().set_decimate_factor(2);
-        t0 = Clock::now();
-        bicg2.compute(G);
+        if (Nbuffer < G.get_first_kernel().get_row_elements().size()) {
+          bicg2.setMaxIterations(max_iter);
+          bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+          bicg2.preconditioner().set_levels(2);
+          bicg2.preconditioner().set_multiplicative(false);
+          // bicg2.preconditioner().set_decimate_factor(2);
+          t0 = Clock::now();
+          bicg2.compute(G);
 
-        t1 = Clock::now();
-        gamma = bicg2.solve(phi);
-        t2 = Clock::now();
+          t1 = Clock::now();
+          gamma = bicg2.solve(phi);
+          t2 = Clock::now();
 
-        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
-                                               << bicg2.iterations();
-        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
-                                          << bicg2.error();
-        out.out_solve_setup_time[do_solve - 1]
-            << " " << std::setw(out.width)
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
-                   .count();
-        out.out_solve_solve_time[do_solve - 1]
-            << " " << std::setw(out.width)
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-                   .count();
-        const size_t ndomains = knots.size() / knots.get_max_bucket_size();
-        const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
-        out.out_solve_solve_memory[do_solve - 1]
-            << " " << std::setw(out.width)
-            << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+          out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                                 << bicg2.iterations();
+          out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                            << bicg2.error();
+          out.out_solve_setup_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                     .count();
+          out.out_solve_solve_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                     .count();
+          out.out_solve_total_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0)
+                     .count();
 
-        phi_proposed = Gtest * gamma;
+          const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+          const size_t domain_size =
+              0.75 * knots.get_max_bucket_size() + Nbuffer;
+          out.out_solve_solve_memory[do_solve - 1]
+              << " " << std::setw(out.width)
+              << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
 
-        out.out_solve_test_error[do_solve - 1]
-            << " " << std::setw(out.width)
-            << (phi_proposed - phi_test).norm() / phi_test.norm();
+          phi_proposed = Gtest * gamma;
+
+          out.out_solve_test_error[do_solve - 1]
+              << " " << std::setw(out.width)
+              << (phi_proposed - phi_test).norm() / phi_test.norm();
+        } else {
+          out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                            << -1;
+          out.out_solve_setup_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_solve_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_total_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+
+          out.out_solve_solve_memory[do_solve - 1]
+              << " " << std::setw(out.width) << -1;
+
+          out.out_solve_test_error[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+        }
       }
       //===============================================
       {
@@ -519,47 +568,73 @@ public:
         //    bicg2;
         Eigen::GMRES<Op, SchwartzPreconditioner<Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
-        bicg2.setMaxIterations(max_iter);
-        bicg2.preconditioner().set_max_buffer_n(Nbuffer);
-        bicg2.preconditioner().set_levels(2);
-        bicg2.preconditioner().set_multiplicative(1);
-        // bicg2.preconditioner().set_decimate_factor(2);
-        t0 = Clock::now();
-        bicg2.compute(G);
+        if (Nbuffer < G.get_first_kernel().get_row_elements().size()) {
+          bicg2.setMaxIterations(max_iter);
+          bicg2.preconditioner().set_max_buffer_n(Nbuffer);
+          bicg2.preconditioner().set_levels(2);
+          bicg2.preconditioner().set_multiplicative(1);
+          // bicg2.preconditioner().set_decimate_factor(2);
+          t0 = Clock::now();
+          bicg2.compute(G);
 
-        t1 = Clock::now();
-        gamma = bicg2.solve(phi);
-        t2 = Clock::now();
+          t1 = Clock::now();
+          gamma = bicg2.solve(phi);
+          t2 = Clock::now();
 
-        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
-                                               << bicg2.iterations();
-        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
-                                          << bicg2.error();
-        out.out_solve_setup_time[do_solve - 1]
-            << " " << std::setw(out.width)
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
-                   .count();
-        out.out_solve_solve_time[do_solve - 1]
-            << " " << std::setw(out.width)
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-                   .count();
-        const size_t ndomains = knots.size() / knots.get_max_bucket_size();
-        const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
-        out.out_solve_solve_memory[do_solve - 1]
-            << " " << std::setw(out.width)
-            << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+          out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                                 << bicg2.iterations();
+          out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                            << bicg2.error();
+          out.out_solve_setup_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                     .count();
+          out.out_solve_solve_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                     .count();
+          out.out_solve_total_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0)
+                     .count();
 
-        phi_proposed = Gtest * gamma;
+          const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+          const size_t domain_size =
+              0.75 * knots.get_max_bucket_size() + Nbuffer;
+          out.out_solve_solve_memory[do_solve - 1]
+              << " " << std::setw(out.width)
+              << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
 
-        out.out_solve_test_error[do_solve - 1]
-            << " " << std::setw(out.width)
-            << (phi_proposed - phi_test).norm() / phi_test.norm();
+          phi_proposed = Gtest * gamma;
 
-        std::cout << "TIMING:" << std::endl;
-        std::cout << "\tlevel 0:" << bicg2.preconditioner().get_timing()[0]
-                  << " milliseconds" << std::endl;
-        std::cout << "\tlevel 1:" << bicg2.preconditioner().get_timing()[1]
-                  << " milliseconds" << std::endl;
+          out.out_solve_test_error[do_solve - 1]
+              << " " << std::setw(out.width)
+              << (phi_proposed - phi_test).norm() / phi_test.norm();
+
+          std::cout << "TIMING:" << std::endl;
+          std::cout << "\tlevel 0:" << bicg2.preconditioner().get_timing()[0]
+                    << " milliseconds" << std::endl;
+          std::cout << "\tlevel 1:" << bicg2.preconditioner().get_timing()[1]
+                    << " milliseconds" << std::endl;
+
+        } else {
+          out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                            << -1;
+          out.out_solve_setup_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_solve_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_total_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+
+          out.out_solve_solve_memory[do_solve - 1]
+              << " " << std::setw(out.width) << -1;
+
+          out.out_solve_test_error[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+        }
       }
       //===============================================
       {
@@ -577,6 +652,7 @@ public:
                                      decltype(G), Eigen::LLT<Eigen::MatrixXd>>>
             bicg2;
             */
+        // if (Nbuffer < G.get_first_kernel().get_row_elements().size()) {
         if (0) {
           bicg2.setMaxIterations(max_iter);
           bicg2.preconditioner().set_max_buffer_n(Nbuffer);
@@ -587,31 +663,54 @@ public:
           t1 = Clock::now();
           gamma = bicg2.solve(phi);
           t2 = Clock::now();
+
+          out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                                 << bicg2.iterations();
+          out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                            << bicg2.error();
+          out.out_solve_setup_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                     .count();
+          out.out_solve_solve_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                     .count();
+          out.out_solve_total_time[do_solve - 1]
+              << " " << std::setw(out.width)
+              << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0)
+                     .count();
+
+          const size_t ndomains = knots.size() / knots.get_max_bucket_size();
+          const size_t domain_size =
+              0.75 * knots.get_max_bucket_size() + Nbuffer;
+          out.out_solve_solve_memory[do_solve - 1]
+              << " " << std::setw(out.width)
+              << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
+
+          phi_proposed = Gtest * gamma;
+
+          out.out_solve_test_error[do_solve - 1]
+              << " " << std::setw(out.width)
+              << (phi_proposed - phi_test).norm() / phi_test.norm();
+        } else {
+          out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                            << -1;
+          out.out_solve_setup_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_solve_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+          out.out_solve_total_time[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+
+          out.out_solve_solve_memory[do_solve - 1]
+              << " " << std::setw(out.width) << -1;
+
+          out.out_solve_test_error[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
         }
-
-        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
-                                               << bicg2.iterations();
-        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
-                                          << bicg2.error();
-        out.out_solve_setup_time[do_solve - 1]
-            << " " << std::setw(out.width)
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
-                   .count();
-        out.out_solve_solve_time[do_solve - 1]
-            << " " << std::setw(out.width)
-            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-                   .count();
-        const size_t ndomains = knots.size() / knots.get_max_bucket_size();
-        const size_t domain_size = 0.75 * knots.get_max_bucket_size() + Nbuffer;
-        out.out_solve_solve_memory[do_solve - 1]
-            << " " << std::setw(out.width)
-            << ndomains * std::pow(domain_size, 2) * sizeof(double) / 1e9;
-
-        phi_proposed = Gtest * gamma;
-
-        out.out_solve_test_error[do_solve - 1]
-            << " " << std::setw(out.width)
-            << (phi_proposed - phi_test).norm() / phi_test.norm();
       }
 
       //===============================================
@@ -623,37 +722,59 @@ public:
           0.5 * (-2.0 * knots.size() +
                  std::sqrt(4.0 * std::pow(knots.size(), 2) +
                            4.0 * ndomains * std::pow(domain_size, 2)));
-      bicg3.preconditioner().set_number_of_random_particles(Ninducing);
-      bicg3.preconditioner().set_lambda(1e-5);
-      t0 = Clock::now();
-      bicg3.compute(G);
-      t1 = Clock::now();
-      gamma = bicg3.solve(phi);
-      t2 = Clock::now();
+      if (0) {
+        bicg3.preconditioner().set_number_of_random_particles(Ninducing);
+        bicg3.preconditioner().set_lambda(1e-5);
+        t0 = Clock::now();
+        bicg3.compute(G);
+        t1 = Clock::now();
+        gamma = bicg3.solve(phi);
+        t2 = Clock::now();
 
-      out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
-                                             << bicg3.iterations();
-      out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
-                                        << bicg3.error();
-      out.out_solve_setup_time[do_solve - 1]
-          << " " << std::setw(out.width)
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
-                 .count();
-      out.out_solve_solve_time[do_solve - 1]
-          << " " << std::setw(out.width)
-          << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
-                 .count();
-      out.out_solve_solve_memory[do_solve - 1]
-          << " " << std::setw(out.width)
-          << (Ninducing * G.rows() + std::pow(Ninducing, 2)) * sizeof(double) /
-                 1e9;
+        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                               << bicg3.iterations();
+        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
+                                          << bicg3.error();
+        out.out_solve_setup_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t1 - t0)
+                   .count();
+        out.out_solve_solve_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t1)
+                   .count();
+        out.out_solve_total_time[do_solve - 1]
+            << " " << std::setw(out.width)
+            << std::chrono::duration_cast<std::chrono::milliseconds>(t2 - t0)
+                   .count();
 
-      phi_proposed = Gtest * gamma;
+        out.out_solve_solve_memory[do_solve - 1]
+            << " " << std::setw(out.width)
+            << (Ninducing * G.rows() + std::pow(Ninducing, 2)) *
+                   sizeof(double) / 1e9;
 
-      out.out_solve_test_error[do_solve - 1]
-          << " " << std::setw(out.width)
-          << (phi_proposed - phi_test).norm() / phi_test.norm();
+        phi_proposed = Gtest * gamma;
 
+        out.out_solve_test_error[do_solve - 1]
+            << " " << std::setw(out.width)
+            << (phi_proposed - phi_test).norm() / phi_test.norm();
+      } else {
+        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width) << -1;
+        out.out_solve_setup_time[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+        out.out_solve_solve_time[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+        out.out_solve_total_time[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+
+        out.out_solve_solve_memory[do_solve - 1] << " " << std::setw(out.width)
+                                                 << -1;
+
+        out.out_solve_test_error[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+      }
       /*
       std::cout << "SOLVING Nystrom Swartz" << std::endl;
       Eigen::BiCGSTAB<Op,
@@ -700,7 +821,8 @@ public:
   template <size_t Order, typename Particles_t, typename Kernel>
   void helper_param_sweep(const Particles_t &particles, const size_t Ntest,
                           const Kernel &kernel, const double jitter,
-                          const size_t Nsubdomain, output_files &out) {
+                          const size_t Nsubdomain, const int mult_buffer,
+                          output_files &out) {
 #ifdef HAVE_EIGEN
     typedef typename Particles_t::raw_const_reference raw_const_reference;
 
@@ -710,17 +832,20 @@ public:
     char **argv2 = &argv[0];
     init_h2lib(&argc, &argv2);
 
+    int num_threads = omp_get_max_threads();
+    std::cout << "num_threads = " << num_threads << std::endl;
+    const int coarse_size =
+        mult_buffer * std::pow(particles.size() / num_threads, 1.0 / 3.0) *
+        std::pow(Nsubdomain, 2.0 / 3.0);
+    std::cout << "mult_buffer = " << mult_buffer << std::endl;
+    std::cout << "coarse size = " << coarse_size << std::endl;
+
     out.new_line_start(particles.size() - Ntest, kernel.m_sigma,
-                       Particles_t::dimension, Order, Nsubdomain);
+                       Particles_t::dimension, mult_buffer, Nsubdomain);
 
     const int max_iter = 1000;
     const unsigned int D = Particles_t::dimension;
-    int num_threads = omp_get_max_threads();
-    std::cout << "num_threads = " << num_threads << std::endl;
-    const int Nbuffer = 5 *
-                        std::pow(particles.size() / num_threads, 1.0 / 3.0) *
-                        std::pow(Nsubdomain, 2.0 / 3.0);
-    std::cout << "Nbuffer= " << Nbuffer << std::endl;
+
     typedef position_d<D> position;
 
     Particles_t knots(particles.size() - Ntest);
@@ -779,7 +904,7 @@ public:
     helper_operator_matrix(Gmatrix.get_first_kernel().get_matrix(), Gmatrix,
                            phi, Gmatrix_test, phi_test, out, true);
     helper_operator(Gmatrix, Gmatrix, phi, Gmatrix_test, phi_test, max_iter,
-                    Nbuffer, out, 1);
+                    coarse_size, out, 1);
 
     std::cout << "CREATING DENSE OPERATOR" << std::endl;
     t0 = Clock::now();
@@ -795,11 +920,10 @@ public:
 
     std::cout << "APPLYING DENSE OPERATOR" << std::endl;
     helper_operator(Gdense, Gmatrix, phi, Gdense_test, phi_test, max_iter,
-                    Nbuffer, out, 0);
+                    coarse_size, out, 0);
 
     if (D < 1) {
       const size_t n_subdomain = std::pow(Order, D);
-      const int Nbuffer = 4 * n_subdomain;
 
       knots.init_neighbour_search(knots_box.bmin, knots_box.bmax,
                                   Vector<bool, D>::Constant(false),
@@ -831,7 +955,7 @@ public:
 
       std::cout << "APPLYING FMM OPERATOR" << std::endl;
       helper_operator(G_FMM, Gmatrix, phi, G_FMM_test, phi_test, max_iter,
-                      Nbuffer, out, 0);
+                      coarse_size, out, 0);
 
       std::cout << "CREATING H2 OPERATOR" << std::endl;
       const double eta = 2.0;
@@ -857,7 +981,7 @@ public:
                                           self_kernel, eta, beta);
 
       helper_operator(G_H2, Gmatrix, phi, G_H2_test, phi_test, max_iter,
-                      Nbuffer, out, 2);
+                      coarse_size, out, 2);
     }
 
     out.new_line_end();
@@ -866,7 +990,7 @@ public:
   }
 
   template <typename Kernel>
-  void helper_param_sweep_per_kernel(const int minN) {
+  void helper_sweep_particle_size_sigma(const int minN) {
     Kernel kernel;
 
     std::cout << "-------------------------------------------\n"
@@ -874,7 +998,7 @@ public:
               << "....\n"
               << "------------------------------------------" << std::endl;
 
-    output_files out(kernel.m_name);
+    output_files out(std::string("size_sigma_") + kernel.m_name);
 
     const size_t Ntest = 1000;
     const double jitter = 1e-5;
@@ -897,21 +1021,48 @@ public:
                                 */
 
           helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
-          /*
-          helper_param_sweep<5>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
-          helper_param_sweep<4>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
-          helper_param_sweep<10>(rosenbrock<2>(N, Ntest), Ntest, kernel, jitter,
-                                 n_subdomain, out);
-          helper_param_sweep<8>(rosenbrock<2>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
+                                n_subdomain, mult_buffer, out);
           helper_param_sweep<6>(rosenbrock<2>(N, Ntest), Ntest, kernel, jitter,
-                                n_subdomain, out);
+                                n_subdomain, mult_buffer, out);
           helper_param_sweep<10>(rosenbrock<1>(N, Ntest), Ntest, kernel, jitter,
-                                 n_subdomain, out);
-                                 */
+                                 n_subdomain, mult_buffer, out);
+        }
+      }
+    }
+  }
+
+  template <typename Kernel> void helper_sweep_dd_sizes(const int minN) {
+    Kernel kernel;
+
+    std::cout << "-------------------------------------------\n"
+              << "Running precon param sweep with kernel = " << kernel.m_name
+              << "....\n"
+              << "------------------------------------------" << std::endl;
+
+    output_files out(std::string("dd_sizes_") + kernel.m_name);
+
+    const size_t Ntest = 1000;
+    const double jitter = 1e-5;
+
+    for (int N = minN; N < 70000; N *= 2) {
+      for (double sigma = 0.01; sigma < 0.1; sigma += 0.04) {
+        kernel.set_sigma(sigma);
+        for (int mult_buffer = 2; mult_buffer <= std::pow(3, 3);
+             mult_buffer += 3) {
+          for (size_t n_subdomain = 2; n_subdomain <= 400; n_subdomain *= 2) {
+            helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel,
+                                  jitter, n_subdomain, mult_buffer, out);
+          }
+        }
+      }
+      for (double sigma = 0.1; sigma < 1.0; sigma += 0.4) {
+        kernel.set_sigma(sigma);
+        for (int mult_buffer = 2; mult_buffer <= std::pow(3, 3);
+             mult_buffer += 3) {
+          for (size_t n_subdomain = 2; n_subdomain <= 400; n_subdomain *= 2) {
+            helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel,
+                                  jitter, n_subdomain, mult_buffer, out);
+          }
         }
       }
     }
@@ -928,10 +1079,10 @@ public:
     helper_param_sweep_per_kernel<exponential_kernel>(32000);
   }
   void test_rational_quadratic(void) {
-    helper_param_sweep_per_kernel<rational_quadratic_kernel>(4000);
+    helper_sweep_particle_size_sigma<rational_quadratic_kernel>(2000);
   }
   void test_inverse_multiquadric(void) {
-    helper_param_sweep_per_kernel<inverse_multiquadric_kernel>(4000);
+    helper_sweep_particle_size_sigma<inverse_multiquadric_kernel>(2000);
   }
 };
 

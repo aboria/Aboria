@@ -439,6 +439,11 @@ public:
       matrix.resize(nodes.size());
       factorized_matrix.resize(nodes.size());
 
+      const int num_threads = omp_get_max_threads();
+      const int mult_buffer = m_max_buffer_n *
+                              std::pow(a.get_max_bucket_size(), -2.0 / 3.0) *
+                              std::pow(a.size() / num_threads, -1.0 / 3.0);
+
       if (traits_type::data_on_GPU) {
         // need to copy data from/to gpu
         typename traits_type::template vector<storage_vector_type> tmp_indicies(
@@ -456,8 +461,9 @@ public:
                 iterator_to_raw_pointer(tmp_indicies.begin()),
                 iterator_to_raw_pointer(tmp_buffer.begin()),
                 iterator_to_raw_pointer(tmp_matrix.begin()),
-                (nodes.size() == 1) ? m_max_buffer_n
-                                    : a.get_max_bucket_size() * 4,
+                (nodes.size() == 1)
+                    ? m_max_buffer_n
+                    : a.get_max_bucket_size() * (mult_buffer - 1),
                 a.get_max_bucket_size(), kernel.get_kernel_function(), query, i,
                 nodes.size() == 1});
 
@@ -475,8 +481,9 @@ public:
                 iterator_to_raw_pointer(indicies.begin()),
                 iterator_to_raw_pointer(buffer.begin()),
                 iterator_to_raw_pointer(matrix.begin()),
-                (nodes.size() == 1) ? m_max_buffer_n
-                                    : a.get_max_bucket_size() * 4,
+                (nodes.size() == 1)
+                    ? m_max_buffer_n
+                    : a.get_max_bucket_size() * (mult_buffer - 1),
                 a.get_max_bucket_size(), kernel.get_kernel_function(), query, i,
                 nodes.size() == 1});
       }
