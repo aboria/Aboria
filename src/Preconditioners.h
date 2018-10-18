@@ -1560,7 +1560,10 @@ public:
       if (i > 0) {
         coupling_matrix.resize(nodes.size());
       }
-
+      const int num_threads = omp_get_max_threads();
+      const int mult_buffer = m_max_buffer_n *
+                              std::pow(a.get_max_bucket_size(), -2.0 / 3.0) *
+                              std::pow(a.size() / num_threads, -1.0 / 3.0);
       if (traits_type::data_on_GPU) {
         // need to copy data from/to gpu
         typename traits_type::template vector<storage_vector_type> tmp_indicies(
@@ -1573,6 +1576,7 @@ public:
             coupling_matrix.size());
 
         auto count = traits_type::make_counting_iterator(0);
+
         detail::for_each(
             count, count + nodes.size(),
             process_node<typename Kernel::function_type, query_type>{
@@ -1581,8 +1585,9 @@ public:
                 iterator_to_raw_pointer(tmp_buffer.begin()),
                 iterator_to_raw_pointer(tmp_matrix.begin()),
                 iterator_to_raw_pointer(tmp_coupling_matrix.begin()),
-                (nodes.size() == 1) ? m_max_buffer_n
-                                    : a.get_max_bucket_size() * 4,
+                (nodes.size() == 1)
+                    ? m_max_buffer_n
+                    : a.get_max_bucket_size() * (mult_buffer - 1),
                 a.get_max_bucket_size(), start_row,
                 kernel.get_kernel_function(), query, i, nodes.size() == 1,
                 m_interpolate});
@@ -1604,8 +1609,9 @@ public:
                 iterator_to_raw_pointer(buffer.begin()),
                 iterator_to_raw_pointer(matrix.begin()),
                 iterator_to_raw_pointer(coupling_matrix.begin()),
-                (nodes.size() == 1) ? m_max_buffer_n
-                                    : a.get_max_bucket_size() * 4,
+                (nodes.size() == 1)
+                    ? m_max_buffer_n
+                    : a.get_max_bucket_size() * (mult_buffer - 1),
                 a.get_max_bucket_size(), start_row,
                 kernel.get_kernel_function(), query, i, nodes.size() == 1,
                 m_interpolate});
