@@ -62,7 +62,7 @@ namespace Aboria {
 // assume that these iterators, and query functions, are only called from device
 // code
 template <typename Query, int LNormNumber,
-          typename Transform = detail::IdentityTransform>
+          typename Transform = IdentityTransform>
 class search_iterator {
 
   typedef typename Query::particle_iterator particle_iterator;
@@ -788,8 +788,7 @@ detail::kd_tree_tag) {
 /// @param max_distance the maximum distance to search around @p centre
 ///
 template <
-    int LNormNumber, typename Query,
-    typename Transform = detail::IdentityTransform,
+    int LNormNumber, typename Query, typename Transform = IdentityTransform,
     typename SearchIterator = search_iterator<Query, LNormNumber, Transform>>
 CUDA_HOST_DEVICE SearchIterator distance_search(
     const Query &query, const typename Query::double_d &centre,
@@ -804,7 +803,7 @@ CUDA_HOST_DEVICE SearchIterator distance_search(
 /// <https://en.wikipedia.org/wiki/Chebyshev_distance>
 ///
 ///
-template <typename Query, typename Transform = detail::IdentityTransform,
+template <typename Query, typename Transform = IdentityTransform,
           typename SearchIterator = search_iterator<Query, -1, Transform>>
 CUDA_HOST_DEVICE SearchIterator chebyshev_search(
     const Query &query, const typename Query::double_d &centre,
@@ -819,7 +818,7 @@ CUDA_HOST_DEVICE SearchIterator chebyshev_search(
 /// <https://en.wikipedia.org/wiki/Taxicab_geometry>
 ///
 ///
-template <typename Query, typename Transform = detail::IdentityTransform,
+template <typename Query, typename Transform = IdentityTransform,
           typename SearchIterator = search_iterator<Query, 1, Transform>>
 CUDA_HOST_DEVICE SearchIterator manhatten_search(
     const Query &query, const typename Query::double_d &centre,
@@ -833,7 +832,7 @@ CUDA_HOST_DEVICE SearchIterator manhatten_search(
 /// <https://en.wikipedia.org/wiki/Euclidean_distance>
 ///
 ///
-template <typename Query, typename Transform = detail::IdentityTransform,
+template <typename Query, typename Transform = IdentityTransform,
           typename SearchIterator = search_iterator<Query, 2, Transform>>
 CUDA_HOST_DEVICE SearchIterator euclidean_search(
     const Query &query, const typename Query::double_d &centre,

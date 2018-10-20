@@ -392,7 +392,7 @@ template <typename Traits> struct KdtreeNanoflannQuery {
   typedef typename Traits::bool_d bool_d;
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   using query_iterator =
       tree_query_iterator<KdtreeNanoflannQuery, LNormNumber, Transform>;
   typedef value_type *root_iterator;
@@ -565,7 +565,7 @@ template <typename Traits> struct KdtreeNanoflannQuery {
 
   size_t number_of_buckets() const { return m_number_of_buckets; }
 
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   query_iterator<LNormNumber, Transform>
   get_buckets_near_point(const double_d &position, const double max_distance,
                          const Transform &transform = Transform()) const {

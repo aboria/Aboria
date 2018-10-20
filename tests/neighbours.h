@@ -893,7 +893,7 @@ public:
 
   template <unsigned int D, template <typename, typename> class VectorType,
             template <typename> class SearchMethod,
-            typename Transform = detail::IdentityTransform>
+            typename Transform = IdentityTransform>
   void helper_d_random(const int N, const double r, const int neighbour_n,
                        const bool is_periodic,
                        const bool push_back_construction,
@@ -1136,8 +1136,8 @@ public:
     auto t0 = Clock::now();
     Aboria::detail::for_each(
         particles.begin(), particles.end(),
-        brute_force_check<particles_type, detail::IdentityTransform>(
-            particles, min, max, r2, is_periodic, detail::IdentityTransform()));
+        brute_force_check<particles_type, IdentityTransform>(
+            particles, min, max, r2, is_periodic, IdentityTransform()));
     auto t1 = Clock::now();
     std::chrono::duration<double> dt_brute = t1 - t0;
 
@@ -1197,12 +1197,16 @@ public:
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_random(bool test_push_back = true) {
+    auto skew1 = create_linear_transform<1>(SkewTransform());
+    auto skew2 = create_linear_transform<2>(SkewTransform());
+
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false);
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, true, false);
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false,
-                                                 SkewTransform());
+                                                 skew1);
+
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, true, false,
-                                                 SkewTransform());
+                                                 skew1);
 
     if (test_push_back) {
       helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, true);
@@ -1212,9 +1216,9 @@ public:
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, false,
-                                                 SkewTransform());
+                                                 skew1);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, false,
-                                                 SkewTransform());
+                                                 skew1);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, true, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, false, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, false);
@@ -1223,13 +1227,13 @@ public:
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 1, false, false);
 
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, false,
-                                                 SkewTransform());
+                                                 skew2);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, false, false,
-                                                 SkewTransform());
+                                                 skew2);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 10, true, false,
-                                                 SkewTransform());
+                                                 skew2);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 10, false, false,
-                                                 SkewTransform());
+                                                 skew2);
 
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 100, true, false);
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 100, false, false);

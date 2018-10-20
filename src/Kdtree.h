@@ -653,7 +653,7 @@ template <typename Traits> struct KdtreeQuery {
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
 
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   using query_iterator =
       tree_query_iterator<KdtreeQuery, LNormNumber, Transform>;
 
@@ -808,7 +808,7 @@ public:
 
   size_t number_of_buckets() const { return m_number_of_buckets; }
 
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   query_iterator<LNormNumber, Transform>
   get_buckets_near_point(const double_d &position, const double max_distance,
                          const Transform &transform = Transform()) const {

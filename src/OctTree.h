@@ -706,7 +706,7 @@ template <typename Traits> struct HyperOctreeQuery {
   typedef typename Traits::bool_d bool_d;
   typedef typename Traits::int_d int_d;
   typedef typename Traits::unsigned_int_d unsigned_int_d;
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   using query_iterator =
       tree_query_iterator<HyperOctreeQuery, LNormNumber, Transform>;
   typedef depth_first_iterator<HyperOctreeQuery> root_iterator;
@@ -857,7 +857,7 @@ template <typename Traits> struct HyperOctreeQuery {
   size_t number_of_buckets() const { return m_number_of_nodes; }
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   CUDA_HOST_DEVICE query_iterator<LNormNumber, Transform>
   get_buckets_near_point(const double_d &position, const double max_distance,
                          const Transform &transform = Transform()) const {

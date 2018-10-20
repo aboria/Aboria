@@ -219,7 +219,7 @@ void radial_distribution_function(const T &particles, const double min,
 }
 
 /// Assumes 2D particle set since we are drawing to a 2D canvas
-template <typename Particles_t, typename Transform = detail::IdentityTransform>
+template <typename Particles_t, typename Transform = IdentityTransform>
 void draw_particles_with_search(
     std::string filename, const Particles_t &particles,
     const std::vector<Vector<double, 2>> &search_points, double search_radius,

@@ -141,7 +141,8 @@ template <unsigned int D> struct point_to_bucket_index {
     return (vindex + 1) * m_bucket_side_length + m_bounds.bmin;
   }
 
-  inline CUDA_HOST_DEVICE int find_bucket_centre(const int_d &vindex) const {
+  inline CUDA_HOST_DEVICE double_d
+  find_bucket_centre(const int_d &vindex) const {
     return (vindex + 0.5) * m_bucket_side_length + m_bounds.bmin;
   }
 
@@ -154,6 +155,7 @@ template <unsigned int D> struct point_to_bucket_index {
         m_inv_bucket_side_length[i]);
   }
 
+  /*
   CUDA_HOST_DEVICE
   double_d get_dist_to_bucket_unsigned(const double_d &r,
                                        const int_d &target_index) const {
@@ -219,6 +221,7 @@ template <unsigned int D> struct point_to_bucket_index {
       return r - ((index + 1) * m_bucket_side_length[i] + m_bounds.bmin[i]);
     }
   }
+  */
 };
 
 // Utility functions to encode leaves and children in single int

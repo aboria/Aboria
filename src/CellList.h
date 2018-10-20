@@ -919,7 +919,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   typedef typename Traits::reference particle_reference;
   typedef typename Traits::const_reference particle_const_reference;
   const static unsigned int dimension = Traits::dimension;
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   using query_iterator =
       lattice_iterator_within_distance<CellListQuery, LNormNumber, Transform>;
 
@@ -1153,7 +1153,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   /// @see lattice_iterator_within_distance
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber, typename Transform = detail::IdentityTransform>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   CUDA_HOST_DEVICE query_iterator<LNormNumber, Transform>
   get_buckets_near_point(const double_d &position, const double max_distance,
                          const Transform &transform = Transform()) const {

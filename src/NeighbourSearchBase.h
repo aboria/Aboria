@@ -47,6 +47,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SpatialUtil.h"
 #include "StaticVector.h"
 #include "Traits.h"
+#include "Transform.h"
 #include "Vector.h"
 #include "detail/Algorithms.h"
 #include "detail/Distance.h"
@@ -817,13 +818,13 @@ template <typename Traits> struct NeighbourQueryBase {
   /// @param max_distance the maximum distance of the buckets to be returned
   /// @param transform a transform function object allowing the user to search
   /// in a transformed space (e.g. shew coordinate systems). @see
-  /// detail::IdentityTransform for an example
+  /// IdentityTransform for an example
   /// @return an @ref iterator_range containing all the buckets found
   ///
   template <int LNormNumber, typename Transform>
   query_iterator<LNormNumber> get_buckets_near_point(
       const double_d &position, const double max_distance,
-      const Transform &transform = detail::IdentityTransform()) const;
+      const Transform &transform = IdentityTransform()) const;
 
   ///
   /// @brief returns all the bucket within an anisotropic distance of a point
@@ -1495,7 +1496,8 @@ public:
   CUDA_HOST_DEVICE
   tree_query_iterator(const iterator &copy)
       : m_query_point(copy.m_query_point),
-        m_max_distance2(copy.m_max_distance2), m_query(copy.m_query)
+        m_max_distance2(copy.m_max_distance2), m_query(copy.m_query),
+        m_transform(copy.m_transform)
 
   {
     for (size_t i = 0; i < copy.m_stack.size(); ++i) {
@@ -1576,8 +1578,9 @@ private:
   friend class boost::iterator_core_access;
 
   CUDA_HOST_DEVICE
-  double get_dist_to_bucket(const box_type &bucket, std::true_type) const {
-    double_d dx = 0.5 * (bucket.bmin + bucket.bmax) - m_query_point;
+  double get_dist_to_bucket(const box_type &bucket) const {
+    double_d dx =
+        m_transform(0.5 * (bucket.bmin + bucket.bmax) - m_query_point);
     for (int i = 0; i < dimension; ++i) {
       dx[i] = std::max(
           std::abs(dx[i]) - 0.5 * (bucket.bmax[i] - bucket.bmin[i]), 0.0);
@@ -1585,6 +1588,7 @@ private:
     return detail::distance_helper<LNormNumber>::norm2(dx);
   }
 
+  /*
   CUDA_HOST_DEVICE
   double get_dist_to_bucket(const box_type &bucket, std::false_type) const {
     double_d dx = 0.5 * (bucket.bmin + bucket.bmax) - m_query_point;
@@ -1598,12 +1602,12 @@ private:
     // relevent buckets, needs improvement
     return 0.9 * detail::distance_helper<LNormNumber>::norm2(m_transform(dx));
   }
+  */
 
   CUDA_HOST_DEVICE
   bool child_is_within_query(const child_iterator &node) {
     const box_type &bounds = m_query->get_bounds(node);
-    const double accum = get_dist_to_bucket(
-        bounds, std::is_same<Transform, detail::IdentityTransform>());
+    const double accum = get_dist_to_bucket(m_transform(bounds));
     // std::cout <<"accum = "<<accum<< std::endl;
     return (accum < m_max_distance2);
   }
@@ -1713,252 +1717,6 @@ private:
   Transform m_transform;
 };
 
-template <unsigned int D> class lattice_iterator {
-  typedef lattice_iterator<D> iterator;
-  typedef Vector<double, D> double_d;
-  typedef Vector<int, D> int_d;
-
-  // make a proxy int_d in case you ever
-  // want to get a pointer object to the
-  // reference (which are both of the
-  // same type)
-  struct proxy_int_d : public int_d {
-    CUDA_HOST_DEVICE
-    proxy_int_d() : int_d() {}
-
-    CUDA_HOST_DEVICE
-    proxy_int_d(const int_d &arg) : int_d(arg) {}
-
-    CUDA_HOST_DEVICE
-    proxy_int_d &operator&() { return *this; }
-
-    CUDA_HOST_DEVICE
-    const proxy_int_d &operator&() const { return *this; }
-
-    CUDA_HOST_DEVICE
-    const proxy_int_d &operator*() const { return *this; }
-
-    CUDA_HOST_DEVICE
-    proxy_int_d &operator*() { return *this; }
-
-    CUDA_HOST_DEVICE
-    const proxy_int_d *operator->() const { return this; }
-
-    CUDA_HOST_DEVICE
-    proxy_int_d *operator->() { return this; }
-  };
-
-  int_d m_min;
-  int_d m_max;
-  proxy_int_d m_index;
-  int_d m_size;
-  bool m_valid;
-
-public:
-  typedef proxy_int_d pointer;
-  typedef std::random_access_iterator_tag iterator_category;
-  typedef const proxy_int_d &reference;
-  typedef proxy_int_d value_type;
-  typedef std::ptrdiff_t difference_type;
-
-  CUDA_HOST_DEVICE
-  lattice_iterator() : m_valid(false) {}
-
-  CUDA_HOST_DEVICE
-  lattice_iterator(const int_d &min, const int_d &max)
-      : m_min(min), m_max(max), m_index(min), m_size(minus(max, min)),
-        m_valid(true) {}
-
-  CUDA_HOST_DEVICE
-  lattice_iterator(const int_d &min, const int_d &max, const int_d &index)
-      : m_min(min), m_max(max), m_index(index), m_size(minus(max, min)),
-        m_valid(true) {}
-
-  /*
-  CUDA_HOST_DEVICE
-  iterator& operator=(const iterator& copy) {
-      m_index = copy.m_index;
-      m_valid = copy.m_valid;
-      ASSERT_CUDA(m_valid?(m_index >= m_min).all()&&(m_index <
-  m_max).all():true); return *this;
-  }
-  */
-
-  CUDA_HOST_DEVICE
-  iterator &operator=(const int_d &copy) {
-    m_index = copy;
-    m_valid = (m_index >= m_min).all() && (m_index < m_max).all();
-    return *this;
-  }
-
-  CUDA_HOST_DEVICE
-  explicit operator size_t() const { return collapse_index_vector(m_index); }
-
-  CUDA_HOST_DEVICE
-  const lattice_iterator &get_child_iterator() const { return *this; }
-
-  CUDA_HOST_DEVICE
-  reference operator*() const { return dereference(); }
-
-  CUDA_HOST_DEVICE
-  reference operator->() const { return dereference(); }
-
-  CUDA_HOST_DEVICE
-  iterator &operator++() {
-    increment();
-    return *this;
-  }
-
-  CUDA_HOST_DEVICE
-  iterator operator++(int) {
-    iterator tmp(*this);
-    operator++();
-    return tmp;
-  }
-
-  CUDA_HOST_DEVICE
-  iterator operator+(const int n) {
-    iterator tmp(*this);
-    tmp.increment(n);
-    return tmp;
-  }
-
-  CUDA_HOST_DEVICE
-  iterator &operator+=(const int n) {
-    increment(n);
-    return *this;
-  }
-
-  CUDA_HOST_DEVICE
-  iterator &operator-=(const int n) {
-    increment(-n);
-    return *this;
-  }
-
-  CUDA_HOST_DEVICE
-  iterator operator-(const int n) {
-    iterator tmp(*this);
-    tmp.increment(-n);
-    return tmp;
-  }
-
-  CUDA_HOST_DEVICE
-  size_t operator-(const iterator &start) const {
-    int distance;
-    if (!m_valid) {
-      distance = start.collapse_index_vector(
-                     minus(minus(start.m_max, 1), start.m_index)) +
-                 1;
-    } else if (!start.m_valid) {
-      distance = collapse_index_vector(minus(m_index, m_min));
-    } else {
-      distance = collapse_index_vector(minus(m_index, start.m_index));
-    }
-    assert(distance > 0);
-    return distance;
-  }
-
-  CUDA_HOST_DEVICE
-  inline bool operator==(const iterator &rhs) const { return equal(rhs); }
-
-  CUDA_HOST_DEVICE
-  inline bool operator==(const bool rhs) const { return equal(rhs); }
-
-  CUDA_HOST_DEVICE
-  inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
-
-  CUDA_HOST_DEVICE
-  inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
-
-private:
-  static inline CUDA_HOST_DEVICE int_d minus(const int_d &arg1,
-                                             const int_d &arg2) {
-    int_d ret;
-    for (size_t i = 0; i < D; ++i) {
-      ret[i] = arg1[i] - arg2[i];
-    }
-    return ret;
-  }
-
-  static inline CUDA_HOST_DEVICE int_d minus(const int_d &arg1,
-                                             const int arg2) {
-    int_d ret;
-    for (size_t i = 0; i < D; ++i) {
-      ret[i] = arg1[i] - arg2;
-    }
-    return ret;
-  }
-
-  CUDA_HOST_DEVICE
-  int collapse_index_vector(const int_d &vindex) const {
-    int index = 0;
-    unsigned int multiplier = 1.0;
-    for (int i = D - 1; i >= 0; --i) {
-      if (i != D - 1) {
-        multiplier *= m_size[i + 1];
-      }
-      index += multiplier * vindex[i];
-    }
-    return index;
-  }
-
-  CUDA_HOST_DEVICE
-  int_d reassemble_index_vector(const int index) const {
-    int_d vindex;
-    int i = index;
-    for (int d = D - 1; d >= 0; --d) {
-      double div = (double)i / m_size[d];
-      vindex[d] = std::round((div - std::floor(div)) * m_size[d]);
-      i = std::floor(div);
-    }
-    return vindex;
-  }
-
-  CUDA_HOST_DEVICE
-  bool equal(iterator const &other) const {
-    if (!other.m_valid)
-      return !m_valid;
-    if (!m_valid)
-      return !other.m_valid;
-    for (size_t i = 0; i < D; ++i) {
-      if (m_index[i] != other.m_index[i]) {
-        return false;
-      }
-    }
-    return true;
-  }
-
-  CUDA_HOST_DEVICE
-  bool equal(const bool other) const { return m_valid == other; }
-
-  CUDA_HOST_DEVICE
-  reference dereference() const { return m_index; }
-
-  CUDA_HOST_DEVICE
-  void increment() {
-    for (int i = D - 1; i >= 0; --i) {
-      ++m_index[i];
-      if (m_index[i] < m_max[i])
-        break;
-      if (i != 0) {
-        m_index[i] = m_min[i];
-      } else {
-        m_valid = false;
-      }
-    }
-  }
-
-  CUDA_HOST_DEVICE
-  void increment(const int n) {
-    if (n == 1) {
-      increment();
-    } else {
-      int collapsed_index = collapse_index_vector(m_index);
-      m_index = reassemble_index_vector(collapsed_index += n);
-    }
-  }
-};
-
 template <typename Query, int LNormNumber, typename Transform>
 class lattice_iterator_within_distance {
   typedef lattice_iterator_within_distance<Query, LNormNumber, Transform>
@@ -1998,6 +1756,7 @@ class lattice_iterator_within_distance {
   };
 
   double_d m_query_point;
+  double_d m_half_bucket_length;
   double m_max_distance2;
   int m_quadrant;
   const Query *m_query;
@@ -2026,9 +1785,20 @@ public:
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
                 max_distance)),
         m_quadrant(0), m_query(query), m_valid(true), m_transform(transform) {
-    if (outside_domain(query_point, max_distance)) {
+    if (outside_domain(query_point)) {
       m_valid = false;
     } else {
+      if (std::is_same<Transform, IdentityTransform>::value) {
+        m_half_bucket_length =
+            0.5 * m_query->m_point_to_bucket_index.m_bucket_side_length;
+      } else {
+        const auto &bucket_side_length =
+            m_query->m_point_to_bucket_index.m_bucket_side_length;
+        bbox<dimension> bucket_bounds(-0.5 * bucket_side_length,
+                                      0.5 * bucket_side_length);
+        bucket_bounds = m_transform(bucket_bounds);
+        m_half_bucket_length = 0.5 * (bucket_bounds.bmax - bucket_bounds.bmin);
+      }
       reset_min_and_index();
     }
   }
@@ -2113,24 +1883,13 @@ private:
   }
 
   double get_min_distance_to_bucket(const int_d &bucket) {
-    return get_min_distance_to_bucket_impl(
-        bucket, std::is_same<Transform, detail::IdentityTransform>());
-  }
-
-  double get_min_distance_to_bucket_impl(const int_d &bucket, std::true_type) {
-    const double_d dx =
-        m_query->m_point_to_bucket_index.get_dist_to_bucket_unsigned(
-            m_query_point, bucket);
+    double_d dx = m_transform(
+        m_query->m_point_to_bucket_index.find_bucket_centre(bucket) -
+        m_query_point);
+    for (int i = 0; i < dimension; ++i) {
+      dx[i] = std::max(std::abs(dx[i]) - m_half_bucket_length[i], 0.0);
+    }
     return detail::distance_helper<LNormNumber>::norm2(dx);
-  }
-
-  double get_min_distance_to_bucket_impl(const int_d &bucket, std::false_type) {
-    double_d dx =
-        m_transform(m_query->m_point_to_bucket_index.get_dist_to_bucket_signed(
-            m_query_point, bucket));
-    // TODO: this 0.9 is a bit of a fudge factor to make sure we get all
-    // relevent buckets, needs improvement
-    return 0.9 * detail::distance_helper<LNormNumber>::norm2(dx);
   }
 
   CUDA_HOST_DEVICE
@@ -2189,64 +1948,17 @@ private:
   }
 
   CUDA_HOST_DEVICE
-  bool outside_domain(const double_d &position, const double max_distance) {
-    /*
-    m_base_index =
-        m_query->m_point_to_bucket_index.find_bucket_index_vector(position);
-        */
-    return outside_domain_impl(
-        position, max_distance,
-        typename std::is_same<Transform, detail::IdentityTransform>());
-  }
-
-  CUDA_HOST_DEVICE
-  /// outside_domain implementation for identity transforms
-  bool outside_domain_impl(const double_d &position, const double max_distance,
-                           std::true_type) {
-    int_d start = m_query->m_point_to_bucket_index.find_bucket_index_vector(
-        position - max_distance);
-    int_d end = m_query->m_point_to_bucket_index.find_bucket_index_vector(
-        position + max_distance);
-
-    bool no_buckets = false;
-    for (size_t i = 0; i < dimension; i++) {
-      if (start[i] > m_query->m_end_bucket[i]) {
-        no_buckets = true;
-      }
-      if (end[i] < 0) {
-        no_buckets = true;
-      }
+  bool outside_domain(const double_d &position) {
+    const auto &bounds = m_transform(m_query->get_bounds());
+    double_d dx = m_transform(0.5 * (bounds.bmin + bounds.bmax) - position);
+    for (int i = 0; i < dimension; ++i) {
+      dx[i] = std::max(
+          std::abs(dx[i]) - 0.5 * (bounds.bmax[i] - bounds.bmin[i]), 0.0);
     }
-    return no_buckets;
+    return detail::distance_helper<LNormNumber>::norm2(dx) > m_max_distance2;
   }
 
-  CUDA_HOST_DEVICE
-  /// outside_domain implementation for non-identity transforms
-  bool outside_domain_impl(const double_d &position, const double max_distance,
-                           std::false_type) {
-    // TODO: this should cull points that are clearly outside the domain
-    return false;
-    /*
-    double_d vertex;
-    for (int i = 0; i < 1 << dimension; ++i) {
-      for (int j = 0; j < dimension; ++j) {
-        const bool jth_bit = 1 == ((i >> j) & 1);
-        vertex[j] = position[j] + (jth_bit ? max_distance : -max_distance);
-      }
-      m_transform(vertex);
-      bbox<dimension> bounds = m_query->get_bounds();
-      m_transform(bounds.bmin);
-      m_transform(bounds.bmax);
-      if ((vertex >= bounds.bmin).all() && (vertex < bounds.bmax).all()) {
-        return false;
-      }
-    }
-    return true;
-    */
-  }
-
-  CUDA_HOST_DEVICE
-  void increment() {
+  CUDA_HOST_DEVICE void increment() {
     LOG_CUDA(3, "lattice_iterator_within_distance: increment :begin");
     for (int i = dimension - 1; i >= 0; --i) {
 
@@ -2295,7 +2007,7 @@ private:
     }
     LOG_CUDA(3, "lattice_iterator_within_distance: increment :end");
   }
-};
+}; // namespace Aboria
 
 } // namespace Aboria
 
