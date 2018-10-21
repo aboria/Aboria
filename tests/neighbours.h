@@ -441,12 +441,54 @@ public:
         particle_octtree_t;
     particle_octtree_t particle_octtree;
 
-/*`
+    /*`
 
 
 
-[endsect]
-[endsect]
+    [endsect]
+
+    [section Coordinate Transforms]
+
+    Aboria allows the user to search in a transformed coordinate space. This is
+    useful for example in searching in a skew coordinate system. All of the
+    distance search functions (e.g. [funcref Aboria::euclidean_search]), take an
+    optional parameter `transform`, which can be a user-defined type with
+    implements two overloaded `operator()` functions. The first takes a
+    [classref Aboria::Vector] point, and returns the same point in the
+    transformed space. The second takes a [classref Aboria::bbox] bounding box,
+    and returns the side length of the axis-aligned box that covers the given
+    box in the transformed coordinate system.
+
+    For convenience, Aboria provides a ready to use class for linear
+    transformations [classref Aboria::LinearTransform], which is created using
+    [funcref Aboria::create_linear_transform]. This class takes an arbitrary
+    point transform that is assumed to be linear with respect to the point
+    position. For example,
+
+
+    */
+
+    struct MyTransform {
+      inline vdouble3 operator()(const vdouble3 &v) const {
+        return vdouble2(v[0] + 0.3 * v[1], v[1], v[2]);
+      }
+    };
+    auto skew_x = create_linear_transform<3>(MyTransform());
+
+    for (auto i = euclidean_search(particles.get_query(), vdouble3::Constant(0),
+                                   radius, skew_x);
+         i != false; ++i) {
+      std::cout << "Found a particle with dx = " << i.dx()
+                << " and id = " << get<id>(*i) << "\n";
+    }
+
+    /*`
+
+    This searches within a new skew coordinate system
+
+    [endsect]
+
+    [endsect]
 
 */
 //]
