@@ -25,6 +25,8 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Functions.h
     ../src/Log.h
     ../src/Symbolic.h
+    ../src/Transform.h
+    ../src/LatticeIterator.h
     ../src/Traits.h
     ../src/Get.h
     ../src/Evaluate.h

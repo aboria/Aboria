@@ -779,13 +779,17 @@ detail::kd_tree_tag) {
 
 ///
 /// @brief returns a @ref search_iterator that iterates over all the particles
-/// within a given distance around a point
+/// within a given distance around a point. The user can optionally define a
+/// coordinate transform to apply before the search is performed
 ///
 /// @tparam Query the query object type
+/// @tparam Transform type of the user-defined coordinate system transform
 /// @tparam search_iterator<Query, 1> the search iterator type
 /// @param query the query object
 /// @param centre the central point of the search
 /// @param max_distance the maximum distance to search around @p centre
+/// @param transform a user defined coordinate transform (default: @ref
+/// IdentityTransform)
 ///
 template <
     int LNormNumber, typename Query, typename Transform = IdentityTransform,

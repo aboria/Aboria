@@ -1579,11 +1579,11 @@ private:
 
   CUDA_HOST_DEVICE
   double get_dist_to_bucket(const box_type &bucket) const {
+    const double_d half_bucket_side_length = 0.5 * m_transform(bucket);
     double_d dx =
         m_transform(0.5 * (bucket.bmin + bucket.bmax) - m_query_point);
     for (int i = 0; i < dimension; ++i) {
-      dx[i] = std::max(
-          std::abs(dx[i]) - 0.5 * (bucket.bmax[i] - bucket.bmin[i]), 0.0);
+      dx[i] = std::max(std::abs(dx[i]) - half_bucket_side_length[i], 0.0);
     }
     return detail::distance_helper<LNormNumber>::norm2(dx);
   }
@@ -1607,7 +1607,7 @@ private:
   CUDA_HOST_DEVICE
   bool child_is_within_query(const child_iterator &node) {
     const box_type &bounds = m_query->get_bounds(node);
-    const double accum = get_dist_to_bucket(m_transform(bounds));
+    const double accum = get_dist_to_bucket(bounds);
     // std::cout <<"accum = "<<accum<< std::endl;
     return (accum < m_max_distance2);
   }
@@ -1796,8 +1796,7 @@ public:
             m_query->m_point_to_bucket_index.m_bucket_side_length;
         bbox<dimension> bucket_bounds(-0.5 * bucket_side_length,
                                       0.5 * bucket_side_length);
-        bucket_bounds = m_transform(bucket_bounds);
-        m_half_bucket_length = 0.5 * (bucket_bounds.bmax - bucket_bounds.bmin);
+        m_half_bucket_length = 0.5 * m_transform(bucket_bounds);
       }
       reset_min_and_index();
     }
@@ -1949,11 +1948,11 @@ private:
 
   CUDA_HOST_DEVICE
   bool outside_domain(const double_d &position) {
-    const auto &bounds = m_transform(m_query->get_bounds());
+    const auto &bounds = m_query->get_bounds();
     double_d dx = m_transform(0.5 * (bounds.bmin + bounds.bmax) - position);
+    const double_d half_domain_side_length = 0.5 * m_transform(bounds);
     for (int i = 0; i < dimension; ++i) {
-      dx[i] = std::max(
-          std::abs(dx[i]) - 0.5 * (bounds.bmax[i] - bounds.bmin[i]), 0.0);
+      dx[i] = std::max(std::abs(dx[i]) - half_domain_side_length[i], 0.0);
     }
     return detail::distance_helper<LNormNumber>::norm2(dx) > m_max_distance2;
   }
