@@ -83,7 +83,7 @@ template <unsigned int D, typename T> struct LinearTransform {
     double max = 0;
     for (auto i = lattice_iterator<D>(int_d::Constant(0), int_d::Constant(2));
          i != false; ++i) {
-      for (int j = 0; j < D; ++j) {
+      for (size_t j = 0; j < D; ++j) {
         p[j] = (*i)[j] == 1 ? unit.bmax[j] : unit.bmin[j];
       }
       const double pnorm2 = m_point_transform(p).squaredNorm();
@@ -105,7 +105,7 @@ template <unsigned int D, typename T> struct LinearTransform {
   inline Vector<double, D> operator()(const bbox<D> &b) const {
     // store closest vertices to max eigen vector
     double_d max, min;
-    for (int i = 0; i < D; ++i) {
+    for (size_t i = 0; i < D; ++i) {
       const double centre = 0.5 * (b.bmax[i] + b.bmin[i]);
       if (m_eigen_vertices[i]) {
         max[i] = b.bmax[i] - centre;
@@ -121,7 +121,7 @@ template <unsigned int D, typename T> struct LinearTransform {
     min = m_point_transform(min);
 
     // work out new bounds
-    for (int i = 0; i < D; ++i) {
+    for (size_t i = 0; i < D; ++i) {
       const double tmp = std::max(max[i], min[i]);
       min[i] = std::min(max[i], min[i]);
       max[i] = tmp;

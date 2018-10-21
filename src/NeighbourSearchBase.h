@@ -1582,7 +1582,7 @@ private:
     const double_d half_bucket_side_length = 0.5 * m_transform(bucket);
     double_d dx =
         m_transform(0.5 * (bucket.bmin + bucket.bmax) - m_query_point);
-    for (int i = 0; i < dimension; ++i) {
+    for (size_t i = 0; i < dimension; ++i) {
       dx[i] = std::max(std::abs(dx[i]) - half_bucket_side_length[i], 0.0);
     }
     return detail::distance_helper<LNormNumber>::norm2(dx);
@@ -1885,7 +1885,7 @@ private:
     double_d dx = m_transform(
         m_query->m_point_to_bucket_index.find_bucket_centre(bucket) -
         m_query_point);
-    for (int i = 0; i < dimension; ++i) {
+    for (size_t i = 0; i < dimension; ++i) {
       dx[i] = std::max(std::abs(dx[i]) - m_half_bucket_length[i], 0.0);
     }
     return detail::distance_helper<LNormNumber>::norm2(dx);
@@ -1951,7 +1951,7 @@ private:
     const auto &bounds = m_query->get_bounds();
     double_d dx = m_transform(0.5 * (bounds.bmin + bounds.bmax) - position);
     const double_d half_domain_side_length = 0.5 * m_transform(bounds);
-    for (int i = 0; i < dimension; ++i) {
+    for (size_t i = 0; i < dimension; ++i) {
       dx[i] = std::max(std::abs(dx[i]) - half_domain_side_length[i], 0.0);
     }
     return detail::distance_helper<LNormNumber>::norm2(dx) > m_max_distance2;

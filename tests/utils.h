@@ -147,18 +147,14 @@ public:
 
     bbox<2> unit(vdouble2::Constant(-1), vdouble2::Constant(1));
     auto unitt = t(unit);
-    TS_ASSERT_EQUALS(unitt.bmin[0], -1.3);
-    TS_ASSERT_EQUALS(unitt.bmax[0], 1.3);
-    TS_ASSERT_EQUALS(unitt.bmin[1], -1);
-    TS_ASSERT_EQUALS(unitt.bmax[1], 1);
+    TS_ASSERT_EQUALS(unitt[0], 2.6);
+    TS_ASSERT_EQUALS(unitt[1], 2);
 
     bbox<2> unit2(vdouble2::Constant(0), vdouble2::Constant(1));
 
     auto unitt3 = t(unit2);
-    TS_ASSERT_DELTA(unitt3.bmin[0], -0.15, 1e-12);
-    TS_ASSERT_DELTA(unitt3.bmax[0], 1.15, 1e-12);
-    TS_ASSERT_EQUALS(unitt3.bmin[1], 0);
-    TS_ASSERT_EQUALS(unitt3.bmax[1], 1);
+    TS_ASSERT_EQUALS(unitt3[0], 1.3);
+    TS_ASSERT_EQUALS(unitt3[1], 1);
 
     auto skew2 = [](const vdouble2 &v) {
       return vdouble2(v[0] - 0.3 * v[1], v[1]);
@@ -167,10 +163,8 @@ public:
     TS_ASSERT_EQUALS(!(t2.m_eigen_vertices[0]), t2.m_eigen_vertices[1]);
 
     auto unitt2 = t2(unit);
-    TS_ASSERT_EQUALS(unitt2.bmin[0], -1.3);
-    TS_ASSERT_EQUALS(unitt2.bmax[0], 1.3);
-    TS_ASSERT_EQUALS(unitt2.bmin[1], -1);
-    TS_ASSERT_EQUALS(unitt2.bmax[1], 1);
+    TS_ASSERT_EQUALS(unitt2[0], 2.6);
+    TS_ASSERT_EQUALS(unitt2[1], 2);
   }
 
   void test_low_rank(void) {

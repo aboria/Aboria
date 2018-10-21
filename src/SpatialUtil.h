@@ -182,12 +182,12 @@ bool circle_intersect_cube(const Vector<double, D> &centre, const double radius,
   for (int i = 0; i < (1 << D); ++i) {
     // create vertex a
     Vector<double, D> a;
-    for (int j = 0; j < D; ++j) {
+    for (size_t j = 0; j < D; ++j) {
       const bool jth_bit_of_i = i & (1 << j);
       a[j] = jth_bit_of_i ? cube.bmax[j] : cube.bmin[j];
     }
     // number of edges from each vertex is equal to the number of dimensions
-    for (int j = 0; j < D; ++j) {
+    for (size_t j = 0; j < D; ++j) {
       const bool jth_bit_of_i = i & (1 << j);
       // b is equal to a except for the jth bit of i flipped
       // only count if jth bit of i is 0
@@ -201,7 +201,7 @@ bool circle_intersect_cube(const Vector<double, D> &centre, const double radius,
 
   // check if centre is within cube
   bool centre_in_cube = true;
-  for (int i = 0; i < D; ++i) {
+  for (size_t i = 0; i < D; ++i) {
     centre_in_cube &= centre[i] >= cube.bmin[i] && centre[i] < cube.bmax[i];
   }
 
