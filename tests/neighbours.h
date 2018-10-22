@@ -450,41 +450,60 @@ public:
     [section Coordinate Transforms]
 
     Aboria allows the user to search in a transformed coordinate space. This is
-    useful for example in searching in a skew coordinate system. All of the
-    distance search functions (e.g. [funcref Aboria::euclidean_search]), take an
-    optional parameter `transform`, which can be a user-defined type with
-    implements two overloaded `operator()` functions. The first takes a
-    [classref Aboria::Vector] point, and returns the same point in the
-    transformed space. The second takes a [classref Aboria::bbox] bounding box,
-    and returns the side length of the axis-aligned box that covers the given
-    box in the transformed coordinate system.
+    useful for example in searching in a skew coordinate system, which might be
+    neccessary if you wish to simulate a non-othorhombic periodic lattice
+    system. All of the distance search functions (e.g. [funcref
+    Aboria::euclidean_search]), take an optional parameter `transform`, which
+    must be a function object defining two overloaded  `operator()` functions.
+
+    # The first takes as an argument a [classref Aboria::Vector] point, and
+    returns the same point in the transformed space.
+    # The second takes a
+    [classref Aboria::bbox] bounding box, and returns the side length of the
+    axis-aligned box that covers the given box in the transformed coordinate
+    system.
 
     For convenience, Aboria provides a ready to use class for linear
     transformations [classref Aboria::LinearTransform], which is created using
-    [funcref Aboria::create_linear_transform]. This class takes an arbitrary
-    point transform that is assumed to be linear with respect to the point
-    position. For example,
+    [funcref Aboria::create_linear_transform]. This class only requires the user
+    to define the first `operator()` function above, and assumes that this point
+    transform is  linear with respect to the point position. For example,
 
 
     */
 
-    struct MyTransform {
-      inline vdouble3 operator()(const vdouble3 &v) const {
-        return vdouble2(v[0] + 0.3 * v[1], v[1], v[2]);
-      }
+    auto my_transform = [](const vdouble3 &v) {
+      return vdouble3(v[0] + 0.3 * v[1], v[1], v[2]);
     };
-    auto skew_x = create_linear_transform<3>(MyTransform());
+    auto skew_x = create_linear_transform<3>(my_transform);
 
     for (auto i = euclidean_search(particles.get_query(), vdouble3::Constant(0),
                                    radius, skew_x);
          i != false; ++i) {
       std::cout << "Found a particle with dx = " << i.dx()
+                << " position = " << get<position>(*i)
                 << " and id = " << get<id>(*i) << "\n";
     }
 
     /*`
 
-    This searches within a new skew coordinate system
+    The call to [funcref Aboria::euclidean_search] searches for points within a
+    radius of `radius` from the origin $(0,0,0)$, within new skew coordinate
+    system defined by the transformation given by the matrix $A$
+
+    $$
+    A = \begin{pmatrix}
+    1 & 0.3 & 0 \\\\
+    0 & 1   & 0 \\\\
+    0 & 0   & 1
+    \end{pmatrix}
+    $$
+
+    It is important to note that the `dx` vector returned by `i.dx()` in the
+    code above has been transformed to the new coordinate system, but all the
+    positions stored within the particle set (e.g. `get<position>(*i)`) will
+    still be in the ['original] coordinate system.
+
 
     [endsect]
 
