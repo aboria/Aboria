@@ -143,7 +143,7 @@ public:
       return vdouble2(v[0] + 0.3 * v[1], v[1]);
     };
     auto t = create_linear_transform<2>(skew);
-    TS_ASSERT_EQUALS(t.m_eigen_vertices[0], t.m_eigen_vertices[1]);
+    TS_ASSERT_EQUALS(t.get_eigen_vertices()[0], t.get_eigen_vertices()[1]);
 
     bbox<2> unit(vdouble2::Constant(-1), vdouble2::Constant(1));
     auto unitt = t(unit);
@@ -160,11 +160,20 @@ public:
       return vdouble2(v[0] - 0.3 * v[1], v[1]);
     };
     auto t2 = create_linear_transform<2>(skew2);
-    TS_ASSERT_EQUALS(!(t2.m_eigen_vertices[0]), t2.m_eigen_vertices[1]);
+    TS_ASSERT_EQUALS(!(t2.get_eigen_vertices()[0]), t2.get_eigen_vertices()[1]);
 
     auto unitt2 = t2(unit);
     TS_ASSERT_EQUALS(unitt2[0], 2.6);
     TS_ASSERT_EQUALS(unitt2[1], 2);
+
+    auto t3 = create_scale_transform(vdouble2(1, 2));
+    auto v_transformed = t3(vdouble2(2, 2));
+    TS_ASSERT_EQUALS(v_transformed[0], 2.0);
+    TS_ASSERT_EQUALS(v_transformed[1], 4.0);
+
+    auto unit_transformed = t3(unit);
+    TS_ASSERT_EQUALS(unit_transformed[0], 2.0);
+    TS_ASSERT_EQUALS(unit_transformed[1], 4.0);
   }
 
   void test_low_rank(void) {

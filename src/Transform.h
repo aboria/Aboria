@@ -58,7 +58,7 @@ struct IdentityTransform {
 };
 
 /// a linear transform (e.g. a skew coordinate transform)
-template <unsigned int D, typename T> struct LinearTransform {
+template <unsigned int D, typename T> class LinearTransform {
   using double_d = Vector<double, D>;
   using int_d = Vector<int, D>;
   using bool_d = Vector<bool, D>;
@@ -70,6 +70,11 @@ template <unsigned int D, typename T> struct LinearTransform {
   /// maximum eigen-vector (i.e. the vertex closest to the direction of maximum
   /// extension of the transformed box)
   bool_d m_eigen_vertices;
+
+public:
+  /// the transform stores the bounding box vertex that is maximally extended
+  /// from the centre by the transform, this getter returns this vertex
+  const bool_d &get_eigen_vertices() { return m_eigen_vertices; }
 
   /// takes a user-defined transform @p point_transform that is assumed to be
   /// linear. @p point_transform only has to defined an `operator()(const
@@ -131,10 +136,39 @@ template <unsigned int D, typename T> struct LinearTransform {
   }
 };
 
+/// a transform that scales the axis independently
+template <unsigned int D> class ScaleTransform {
+  using double_d = Vector<double, D>;
+  using int_d = Vector<int, D>;
+  using bool_d = Vector<bool, D>;
+
+  double_d m_scale;
+
+public:
+  ScaleTransform() = default;
+  ScaleTransform(const double_d &scale) : m_scale(scale) {}
+
+  /// transforms the point @p the the new coordinate system, returning the
+  /// result
+  inline double_d operator()(const double_d &v) const { return v * m_scale; }
+
+  /// transforms the box @p to the new coordinate system. Returns the side
+  /// length of the axis-aligned box that bounds the transformed box.
+  inline Vector<double, D> operator()(const bbox<D> &b) const {
+    return (b.bmax - b.bmin) * m_scale;
+  }
+};
+
 /// create a @ref LinearTransform
 template <unsigned int D, typename T>
 LinearTransform<D, T> create_linear_transform(const T &transform) {
   return LinearTransform<D, T>(transform);
+}
+
+/// create a @ref ScaleTransform
+template <unsigned int D>
+ScaleTransform<D> create_scale_transform(const Vector<double, D> &scale) {
+  return ScaleTransform<D>(scale);
 }
 
 } // namespace Aboria

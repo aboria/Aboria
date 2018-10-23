@@ -472,10 +472,13 @@ public:
 
     */
 
-    auto my_transform = [](const vdouble3 &v) {
-      return vdouble3(v[0] + 0.3 * v[1], v[1], v[2]);
+    struct MyTransform {
+      auto operator()(const vdouble3 &v) const {
+        return vdouble3(v[0] + 0.3 * v[1], v[1], v[2]);
+      }
     };
-    auto skew_x = create_linear_transform<3>(my_transform);
+
+    auto skew_x = create_linear_transform<3>(MyTransform());
 
     for (auto i = euclidean_search(particles.get_query(), vdouble3::Constant(0),
                                    radius, skew_x);
@@ -546,6 +549,16 @@ public:
     search =
         euclidean_search(test.get_query(), vdouble3(2 * radius, 0, 0), radius);
     TS_ASSERT_EQUALS(search.distance_to_end(), 0);
+
+    auto search2 = euclidean_search(
+        test.get_query(), vdouble3(radius / 2, radius / 2, 0), 1.0,
+        create_scale_transform(vdouble3::Constant(1.0 / radius)));
+    TS_ASSERT_EQUALS(search2.distance_to_end(), 1);
+
+    search2 = euclidean_search(
+        test.get_query(), vdouble3(2 * radius, 0, 0), 1.0,
+        create_scale_transform(vdouble3::Constant(1.0 / radius)));
+    TS_ASSERT_EQUALS(search2.distance_to_end(), 0);
   }
 
   template <template <typename, typename> class Vector,
