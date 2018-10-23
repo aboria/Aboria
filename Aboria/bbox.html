@@ -1,0 +1,166 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Struct template bbox</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.SpatialUtil_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/SpatialUtil.h&gt;">
+<link rel="prev" href="get_neighbouring_buckets.html" title="Function template get_neighbouring_buckets">
+<link rel="next" href="operator_idp46987475649728.html" title="Function template operator&lt;&lt;">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="get_neighbouring_buckets.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.SpatialUtil_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="operator_idp46987475649728.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.bbox"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Struct template bbox</span></h2>
+<p>Aboria::bbox &#8212; Contains the minimum and maximum extents of a hypercube in <code class="computeroutput">D</code> dimensional space. </p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.SpatialUtil_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/SpatialUtil.h&gt;">/home/travis/build/martinjrobins/Aboria/src/SpatialUtil.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">unsigned</span> <span class="keyword">int</span> D<span class="special">&gt;</span> 
+<span class="keyword">struct</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <span class="special">{</span>
+  <span class="comment">// types</span>
+  <span class="keyword">typedef</span> <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <a name="Aboria.bbox.double_d"></a><span class="identifier">double_d</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="bbox.html#Aboria.bboxconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="bbox.html#idp46987475647280-bb"><span class="identifier">bbox</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="bbox.html#idp46987475647408-bb"><span class="identifier">bbox</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="bbox.html#idp46987475648224-bb"><span class="identifier">bbox</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="bbox.html#idp46987475636080-bb">public member functions</a></span>
+  <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <a class="link" href="bbox.html#idp46987475636480-bb"><span class="keyword">operator</span><span class="special">+</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="bbox.html#idp46987475639568-bb"><span class="keyword">operator</span><span class="special">&lt;</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="bbox.html#idp46987475642512-bb"><span class="keyword">operator</span><span class="special">&lt;=</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <span class="keyword">bool</span> <a class="link" href="bbox.html#idp46987475645472-bb"><span class="identifier">is_empty</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// public data members</span>
+  <span class="identifier">double_d</span> <span class="identifier">bmin</span><span class="special">;</span>  <span class="comment">// minimum point in the box (i.e. lower left corner for D=2) </span>
+  <span class="identifier">double_d</span> <span class="identifier">bmax</span><span class="special">;</span>  <span class="comment">// maximum point in the box (i.e. upper right corner for D=2) </span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46801774491888"></a><h2>Description</h2>
+<p>
+</p>
+<div class="refsect2">
+<a name="idp46801774492560"></a><h3>Template Parameters</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
+<pre class="literallayout"><span class="keyword">unsigned</span> <span class="keyword">int</span> D</pre>
+<p>the number of spatial dimensions </p>
+</li></ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46801774496352"></a><h3>
+<a name="Aboria.bboxconstruct-copy-destruct"></a><code class="computeroutput">bbox</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idp46987475647280-bb"></a><span class="identifier">bbox</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp46987475647408-bb"></a><span class="identifier">bbox</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> p<span class="special">)</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp46987475648224-bb"></a><span class="identifier">bbox</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> min<span class="special">,</span> <span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> max<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46801774516384"></a><h3>
+<a name="idp46987475636080-bb"></a><code class="computeroutput">bbox</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <a name="idp46987475636480-bb"></a><span class="keyword">operator</span><span class="special">+</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>the bounding box covering both input boxes </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp46987475639568-bb"></a><span class="keyword">operator</span><span class="special">&lt;</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>true if lhs box is within rhs box </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp46987475642512-bb"></a><span class="keyword">operator</span><span class="special">&lt;=</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a> <span class="special">&amp;</span> arg<span class="special">)</span><span class="special">;</span></pre>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>true if lhs box is the same or within rhs box </p></td>
+</tr></tbody>
+</table></div>
+</li>
+<li class="listitem">
+<pre class="literallayout"><span class="keyword">bool</span> <a name="idp46987475645472-bb"></a><span class="identifier">is_empty</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<p>
+</p>
+<div class="variablelist"><table border="0" class="variablelist compact">
+<colgroup>
+<col align="left" valign="top">
+<col>
+</colgroup>
+<tbody><tr>
+<td><p><span class="term">Returns:</span></p></td>
+<td><p>true if box has no volume </p></td>
+</tr></tbody>
+</table></div>
+</li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="get_neighbouring_buckets.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.SpatialUtil_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="operator_idp46987475649728.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>

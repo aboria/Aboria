@@ -45,6 +45,8 @@ MathJax.Hub.Config({
 <dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.kd_trees">Kd-Trees</a></span></dt>
 <dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.hyper_oct_tree">Hyper
       Oct-Tree</a></span></dt>
+<dt><span class="section"><a href="neighbourhood_searching.html#aboria.neighbourhood_searching.coordinate_transforms">Coordinate
+      Transforms</a></span></dt>
 </dl></div>
 <p>
       The <code class="computeroutput"><a class="link" href="../Aboria/Particles.html" title="Class template Particles">Aboria::Particles</a></code> container
@@ -71,7 +73,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46631329136016-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475404800-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
@@ -115,7 +117,7 @@ MathJax.Hub.Config({
       When dereferenced, the neighbourhood iterator returns a constant reference
       to the found particle object, with type <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_reference">Aboria::Particles::const_reference</a></code>
       or <code class="computeroutput"><a class="link" href="../Aboria/search_iterator.html#Aboria.search_iterator.reference">Aboria::search_iterator::reference</a></code>.
-      You can also use the function <code class="computeroutput"><a class="link" href="../Aboria/search_iterator.html#idp46631329225216-bb">Aboria::search_iterator::dx()</a></code>
+      You can also use the function <code class="computeroutput"><a class="link" href="../Aboria/search_iterator.html#idp46987475495264-bb">Aboria::search_iterator::dx()</a></code>
       to access a vector $\mathbf{dx}_{ij}$ pointing to the found point from the
       query point. I.e. if $\mathbf{x}_i$ is the query point and $\mathbf{x}_j$ is
       the found point, then $\mathbf{dx}_{ij} = \mathbf{x}_j - \mathbf{x}_i$.
@@ -138,7 +140,7 @@ MathJax.Hub.Config({
 <p>
       Once you start to alter the positions of the particles, you will need to update
       the neighbourhood data structure that is used for the search. This is done
-      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46631329162400-bb">Aboria::Particles::update_positions</a></code>
+      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475431184-bb">Aboria::Particles::update_positions</a></code>
       function. For example, to move all the particles by a random value and then
       update the data structure, you would use the following code:
     </p>
@@ -152,7 +154,7 @@ MathJax.Hub.Config({
       searches would be incorrect
     </p>
 <p>
-      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46631329162400-bb">Aboria::Particles::update_positions</a></code>
+      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475431184-bb">Aboria::Particles::update_positions</a></code>
       can also take a pair of iterators corresponding to the range of particle positions
       you wish to update. For example, if you wish to only move and update a single
       particle, you could write
@@ -262,7 +264,7 @@ MathJax.Hub.Config({
         (i.e. same radius) is to be performed for every single particle in the set.
         If we want to use the same search radius <code class="computeroutput"><span class="identifier">radius</span></code>
         as before, we can ensure this is true by setting the <code class="computeroutput"><span class="identifier">n_particles_in_leaf</span></code>
-        argument of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46631329136016-bb">Aboria::Particles::init_neighbour_search</a></code>
+        argument of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475404800-bb">Aboria::Particles::init_neighbour_search</a></code>
         function to $n = N\frac{(radius)^D}{V}$, where $N$ is the total number of
         particles in the set, $V$ is the volume of the domain, and $D$ is the number
         of spatial dimensions. That is,
@@ -276,8 +278,8 @@ MathJax.Hub.Config({
         pairs. To enable this, Aboria provides the <code class="computeroutput"><a class="link" href="../Aboria/get_neighbouring_buckets.html" title="Function template get_neighbouring_buckets">Aboria::get_neighbouring_buckets</a></code>
         function, which returns an iterator that steps through all possible pairs
         of neighbouring buckets. The user can then iterate over each bucket pair,
-        looping through all the particle within in bucket using either the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46631326660032-bb">Aboria::CellListQuery::get_bucket_particles</a></code>
-        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46631326889680-bb">Aboria::CellListOrderedQuery::get_bucket_particles</a></code>
+        looping through all the particle within in bucket using either the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46987472928640-bb">Aboria::CellListQuery::get_bucket_particles</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46987473153744-bb">Aboria::CellListOrderedQuery::get_bucket_particles</a></code>
         functions. For example, to count up the number of neighbours within a distance
         of <code class="computeroutput"><span class="identifier">radius</span></code>, you might write:
       </p>
@@ -306,8 +308,8 @@ MathJax.Hub.Config({
 <p>
         The above code considers particle pairs within neighbouring buckets, but
         not those within the same bucket. These pairs can be obtained by simply looping
-        through all the buckets in the cell-list, using the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46631326692160-bb">Aboria::CellListQuery::get_subtree</a></code>
-        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46631326918496-bb">Aboria::CellListOrderedQuery::get_subtree</a></code>
+        through all the buckets in the cell-list, using the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46987472955632-bb">Aboria::CellListQuery::get_subtree</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46987473179152-bb">Aboria::CellListOrderedQuery::get_subtree</a></code>
         functions.
       </p>
 <p>
@@ -349,7 +351,7 @@ MathJax.Hub.Config({
         Each level of the tree divides the cells in the parent level along a certain
         dimension (the dimension is chosen based on the distribution of particles
         within the cell). Any cells that contain a number of particles that is smaller
-        than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46631329136016-bb">Aboria::Particles::init_neighbour_search</a></code>)
+        than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475404800-bb">Aboria::Particles::init_neighbour_search</a></code>)
         are marked as leaf cells, and are not divided on subsequent levels.
       </p>
 <p>
@@ -414,6 +416,71 @@ MathJax.Hub.Config({
     <span class="identifier">particle_octtree_t</span><span class="special">;</span>
 <span class="identifier">particle_octtree_t</span> <span class="identifier">particle_octtree</span><span class="special">;</span>
 </pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.neighbourhood_searching.coordinate_transforms"></a><a class="link" href="neighbourhood_searching.html#aboria.neighbourhood_searching.coordinate_transforms" title="Coordinate Transforms">Coordinate
+      Transforms</a>
+</h3></div></div></div>
+<p>
+        Aboria allows the user to search in a transformed coordinate space. This
+        is useful for example in searching in a skew coordinate system, which might
+        be neccessary if you wish to simulate a non-othorhombic periodic lattice
+        system. All of the distance search functions (e.g. <code class="computeroutput"><a class="link" href="../Aboria/euclidean_search.html" title="Function template euclidean_search">Aboria::euclidean_search</a></code>),
+        take an optional parameter <code class="computeroutput"><span class="identifier">transform</span></code>,
+        which must be a function object defining two overloaded <code class="computeroutput"><span class="keyword">operator</span><span class="special">()</span></code> functions.
+      </p>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+            The first takes as an argument a <code class="computeroutput"><a class="link" href="../Aboria/Vector.html" title="Class template Vector">Aboria::Vector</a></code>
+            point, and returns the same point in the transformed space.
+          </li>
+<li class="listitem">
+            The second takes a <code class="computeroutput"><a class="link" href="../Aboria/bbox.html" title="Struct template bbox">Aboria::bbox</a></code>
+            bounding box, and returns the side length of the axis-aligned box that
+            covers the given box in the transformed coordinate system.
+          </li>
+</ol></div>
+<p>
+        For convenience, Aboria provides a ready to use class for linear transformations
+        <code class="computeroutput"><a class="link" href="../Aboria/LinearTransform.html" title="Class template LinearTransform">Aboria::LinearTransform</a></code>,
+        which is created using <code class="computeroutput"><a class="link" href="api_overview.html#Aboria.create_linear_transform">Aboria::create_linear_transform</a></code>.
+        This class only requires the user to define the first <code class="computeroutput"><span class="keyword">operator</span><span class="special">()</span></code> function above, and assumes that this point
+        transform is linear with respect to the point position. For example,
+      </p>
+<pre class="programlisting"><span class="keyword">struct</span> <span class="identifier">MyTransform</span> <span class="special">{</span>
+  <span class="keyword">auto</span> <span class="keyword">operator</span><span class="special">()(</span><span class="keyword">const</span> <span class="identifier">vdouble3</span> <span class="special">&amp;</span><span class="identifier">v</span><span class="special">)</span> <span class="keyword">const</span> <span class="special">{</span>
+    <span class="keyword">return</span> <span class="identifier">vdouble3</span><span class="special">(</span><span class="identifier">v</span><span class="special">[</span><span class="number">0</span><span class="special">]</span> <span class="special">+</span> <span class="number">0.3</span> <span class="special">*</span> <span class="identifier">v</span><span class="special">[</span><span class="number">1</span><span class="special">],</span> <span class="identifier">v</span><span class="special">[</span><span class="number">1</span><span class="special">],</span> <span class="identifier">v</span><span class="special">[</span><span class="number">2</span><span class="special">]);</span>
+  <span class="special">}</span>
+<span class="special">};</span>
+
+<span class="keyword">auto</span> <span class="identifier">skew_x</span> <span class="special">=</span> <span class="identifier">create_linear_transform</span><span class="special">&lt;</span><span class="number">3</span><span class="special">&gt;(</span><span class="identifier">MyTransform</span><span class="special">());</span>
+
+<span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span> <span class="identifier">vdouble3</span><span class="special">::</span><span class="identifier">Constant</span><span class="special">(</span><span class="number">0</span><span class="special">),</span>
+                               <span class="identifier">radius</span><span class="special">,</span> <span class="identifier">skew_x</span><span class="special">);</span>
+     <span class="identifier">i</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+  <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"Found a particle with dx = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">i</span><span class="special">.</span><span class="identifier">dx</span><span class="special">()</span>
+            <span class="special">&lt;&lt;</span> <span class="string">" position = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(*</span><span class="identifier">i</span><span class="special">)</span>
+            <span class="special">&lt;&lt;</span> <span class="string">" and id = "</span> <span class="special">&lt;&lt;</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">id</span><span class="special">&gt;(*</span><span class="identifier">i</span><span class="special">)</span> <span class="special">&lt;&lt;</span> <span class="string">"\n"</span><span class="special">;</span>
+<span class="special">}</span>
+</pre>
+<p>
+        The call to <code class="computeroutput"><a class="link" href="../Aboria/euclidean_search.html" title="Function template euclidean_search">Aboria::euclidean_search</a></code>
+        searches for points within a radius of <code class="computeroutput"><span class="identifier">radius</span></code>
+        from the origin $(0,0,0)$, within new skew coordinate system defined by the
+        transformation given by the matrix $A$
+      </p>
+<p>
+        $$ A = \begin{pmatrix} 1 &amp; 0.3 &amp; 0 \\ 0 &amp; 1 &amp; 0 \\ 0 &amp;
+        0 &amp; 1 \end{pmatrix} $$
+      </p>
+<p>
+        It is important to note that the <code class="computeroutput"><span class="identifier">dx</span></code>
+        vector returned by <code class="computeroutput"><span class="identifier">i</span><span class="special">.</span><span class="identifier">dx</span><span class="special">()</span></code> in
+        the code above has been transformed to the new coordinate system, but all
+        the positions stored within the particle set (e.g. <code class="computeroutput"><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(*</span><span class="identifier">i</span><span class="special">)</span></code>) will still be in the <span class="emphasis"><em>original</em></span>
+        coordinate system.
+      </p>
 </div>
 </div>
 <table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>

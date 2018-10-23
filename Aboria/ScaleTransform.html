@@ -1,0 +1,95 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Class template ScaleTransform</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Transform_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Transform.h&gt;">
+<link rel="prev" href="LinearTransform.html" title="Class template LinearTransform">
+<link rel="next" href="vtkWriteGrid.html" title="Function template vtkWriteGrid">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="LinearTransform.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Transform_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="vtkWriteGrid.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="refentry">
+<a name="Aboria.ScaleTransform"></a><div class="titlepage"></div>
+<div class="refnamediv">
+<h2><span class="refentrytitle">Class template ScaleTransform</span></h2>
+<p>Aboria::ScaleTransform &#8212; a transform that scales the axis independently </p>
+</div>
+<h2 xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv-title">Synopsis</h2>
+<div xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" class="refsynopsisdiv"><pre class="synopsis"><span class="comment">// In header: &lt;<a class="link" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Transform_h" title="Header &lt;/home/travis/build/martinjrobins/Aboria/src/Transform.h&gt;">/home/travis/build/martinjrobins/Aboria/src/Transform.h</a>&gt;
+
+</span><span class="keyword">template</span><span class="special">&lt;</span><span class="keyword">unsigned</span> <span class="keyword">int</span> D<span class="special">&gt;</span> 
+<span class="keyword">class</span> <a class="link" href="ScaleTransform.html" title="Class template ScaleTransform">ScaleTransform</a> <span class="special">{</span>
+<span class="keyword">public</span><span class="special">:</span>
+  <span class="comment">// <a class="link" href="ScaleTransform.html#Aboria.ScaleTransformconstruct-copy-destruct">construct/copy/destruct</a></span>
+  <a class="link" href="ScaleTransform.html#idp46987476174352-bb"><span class="identifier">ScaleTransform</span></a><span class="special">(</span><span class="special">)</span> <span class="special">=</span> <span class="keyword">default</span><span class="special">;</span>
+  <a class="link" href="ScaleTransform.html#idp46987476174752-bb"><span class="identifier">ScaleTransform</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+
+  <span class="comment">// <a class="link" href="ScaleTransform.html#idp46987476168064-bb">public member functions</a></span>
+  <span class="identifier">double_d</span> <a class="link" href="ScaleTransform.html#idp46987476168464-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <a class="link" href="ScaleTransform.html#idp46987476171008-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a><span class="special">&lt;</span> <span class="identifier">D</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+<span class="special">}</span><span class="special">;</span></pre></div>
+<div class="refsect1">
+<a name="idp46801778420864"></a><h2>Description</h2>
+<div class="refsect2">
+<a name="idp46801778421280"></a><h3>
+<a name="Aboria.ScaleTransformconstruct-copy-destruct"></a><code class="computeroutput">ScaleTransform</code> 
+        public
+       construct/copy/destruct</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem"><pre class="literallayout"><a name="idp46987476174352-bb"></a><span class="identifier">ScaleTransform</span><span class="special">(</span><span class="special">)</span> <span class="special">=</span> <span class="keyword">default</span><span class="special">;</span></pre></li>
+<li class="listitem"><pre class="literallayout"><a name="idp46987476174752-bb"></a><span class="identifier">ScaleTransform</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> scale<span class="special">)</span><span class="special">;</span></pre></li>
+</ol></div>
+</div>
+<div class="refsect2">
+<a name="idp46801778434224"></a><h3>
+<a name="idp46987476168064-bb"></a><code class="computeroutput">ScaleTransform</code> public member functions</h3>
+<div class="orderedlist"><ol class="orderedlist" type="1">
+<li class="listitem">
+<pre class="literallayout"><span class="identifier">double_d</span> <a name="idp46987476168464-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> v<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>transforms the point <code class="computeroutput">the</code> the new coordinate system, returning the result </p>
+</li>
+<li class="listitem">
+<pre class="literallayout"><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <a name="idp46987476171008-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a><span class="special">&lt;</span> <span class="identifier">D</span> <span class="special">&gt;</span> <span class="special">&amp;</span> b<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<p>transforms the box <code class="computeroutput">to</code> the new coordinate system. Returns the side length of the axis-aligned box that bounds the transformed box. </p>
+</li>
+</ol></div>
+</div>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="LinearTransform.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../aboria/api_overview.html#header..home.travis.build.martinjrobins.Aboria.src.Transform_h"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="vtkWriteGrid.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
