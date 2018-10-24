@@ -73,7 +73,7 @@ MathJax.Hub.Config({
 </pre>
 <p>
       Before you can use the neighbourhood searching, you need to initialise the
-      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475404800-bb">Aboria::Particles::init_neighbour_search</a></code>
+      domain using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46914693159216-bb">Aboria::Particles::init_neighbour_search</a></code>
       function.
     </p>
 <p>
@@ -117,7 +117,7 @@ MathJax.Hub.Config({
       When dereferenced, the neighbourhood iterator returns a constant reference
       to the found particle object, with type <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#Aboria.Particles.const_reference">Aboria::Particles::const_reference</a></code>
       or <code class="computeroutput"><a class="link" href="../Aboria/search_iterator.html#Aboria.search_iterator.reference">Aboria::search_iterator::reference</a></code>.
-      You can also use the function <code class="computeroutput"><a class="link" href="../Aboria/search_iterator.html#idp46987475495264-bb">Aboria::search_iterator::dx()</a></code>
+      You can also use the function <code class="computeroutput"><a class="link" href="../Aboria/search_iterator.html#idp46914693249680-bb">Aboria::search_iterator::dx()</a></code>
       to access a vector $\mathbf{dx}_{ij}$ pointing to the found point from the
       query point. I.e. if $\mathbf{x}_i$ is the query point and $\mathbf{x}_j$ is
       the found point, then $\mathbf{dx}_{ij} = \mathbf{x}_j - \mathbf{x}_i$.
@@ -140,7 +140,7 @@ MathJax.Hub.Config({
 <p>
       Once you start to alter the positions of the particles, you will need to update
       the neighbourhood data structure that is used for the search. This is done
-      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475431184-bb">Aboria::Particles::update_positions</a></code>
+      using the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46914693185600-bb">Aboria::Particles::update_positions</a></code>
       function. For example, to move all the particles by a random value and then
       update the data structure, you would use the following code:
     </p>
@@ -154,7 +154,7 @@ MathJax.Hub.Config({
       searches would be incorrect
     </p>
 <p>
-      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475431184-bb">Aboria::Particles::update_positions</a></code>
+      The function <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46914693185600-bb">Aboria::Particles::update_positions</a></code>
       can also take a pair of iterators corresponding to the range of particle positions
       you wish to update. For example, if you wish to only move and update a single
       particle, you could write
@@ -264,7 +264,7 @@ MathJax.Hub.Config({
         (i.e. same radius) is to be performed for every single particle in the set.
         If we want to use the same search radius <code class="computeroutput"><span class="identifier">radius</span></code>
         as before, we can ensure this is true by setting the <code class="computeroutput"><span class="identifier">n_particles_in_leaf</span></code>
-        argument of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475404800-bb">Aboria::Particles::init_neighbour_search</a></code>
+        argument of the <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46914693159216-bb">Aboria::Particles::init_neighbour_search</a></code>
         function to $n = N\frac{(radius)^D}{V}$, where $N$ is the total number of
         particles in the set, $V$ is the volume of the domain, and $D$ is the number
         of spatial dimensions. That is,
@@ -278,8 +278,8 @@ MathJax.Hub.Config({
         pairs. To enable this, Aboria provides the <code class="computeroutput"><a class="link" href="../Aboria/get_neighbouring_buckets.html" title="Function template get_neighbouring_buckets">Aboria::get_neighbouring_buckets</a></code>
         function, which returns an iterator that steps through all possible pairs
         of neighbouring buckets. The user can then iterate over each bucket pair,
-        looping through all the particle within in bucket using either the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46987472928640-bb">Aboria::CellListQuery::get_bucket_particles</a></code>
-        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46987473153744-bb">Aboria::CellListOrderedQuery::get_bucket_particles</a></code>
+        looping through all the particle within in bucket using either the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46914690682976-bb">Aboria::CellListQuery::get_bucket_particles</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46914690908160-bb">Aboria::CellListOrderedQuery::get_bucket_particles</a></code>
         functions. For example, to count up the number of neighbours within a distance
         of <code class="computeroutput"><span class="identifier">radius</span></code>, you might write:
       </p>
@@ -308,8 +308,8 @@ MathJax.Hub.Config({
 <p>
         The above code considers particle pairs within neighbouring buckets, but
         not those within the same bucket. These pairs can be obtained by simply looping
-        through all the buckets in the cell-list, using the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46987472955632-bb">Aboria::CellListQuery::get_subtree</a></code>
-        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46987473179152-bb">Aboria::CellListOrderedQuery::get_subtree</a></code>
+        through all the buckets in the cell-list, using the <code class="computeroutput"><a class="link" href="../Aboria/CellListQuery.html#idp46914690710048-bb">Aboria::CellListQuery::get_subtree</a></code>
+        or <code class="computeroutput"><a class="link" href="../Aboria/CellListOrderedQuery.html#idp46914690933568-bb">Aboria::CellListOrderedQuery::get_subtree</a></code>
         functions.
       </p>
 <p>
@@ -351,7 +351,7 @@ MathJax.Hub.Config({
         Each level of the tree divides the cells in the parent level along a certain
         dimension (the dimension is chosen based on the distribution of particles
         within the cell). Any cells that contain a number of particles that is smaller
-        than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46987475404800-bb">Aboria::Particles::init_neighbour_search</a></code>)
+        than a given threshold (set in <code class="computeroutput"><a class="link" href="../Aboria/Particles.html#idp46914693159216-bb">Aboria::Particles::init_neighbour_search</a></code>)
         are marked as leaf cells, and are not divided on subsequent levels.
       </p>
 <p>
