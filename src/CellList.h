@@ -919,9 +919,9 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   typedef typename Traits::reference particle_reference;
   typedef typename Traits::const_reference particle_const_reference;
   const static unsigned int dimension = Traits::dimension;
-  template <int LNormNumber>
+  template <int LNormNumber, typename Transform = IdentityTransform>
   using query_iterator =
-      lattice_iterator_within_distance<CellListQuery, LNormNumber>;
+      lattice_iterator_within_distance<CellListQuery, LNormNumber, Transform>;
 
   typedef lattice_iterator<dimension> all_iterator;
   typedef lattice_iterator<dimension> child_iterator;
@@ -1153,34 +1153,17 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
   /// @see lattice_iterator_within_distance
   ///
   ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber = -1>
-  CUDA_HOST_DEVICE query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double max_distance) const {
+  template <int LNormNumber, typename Transform = IdentityTransform>
+  CUDA_HOST_DEVICE query_iterator<LNormNumber, Transform>
+  get_buckets_near_point(const double_d &position, const double max_distance,
+                         const Transform &transform = Transform()) const {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tget_buckets_near_point: position = "
                << position << " max_distance = " << max_distance);
 #endif
 
-    return query_iterator<LNormNumber>(position,
-                                       double_d::Constant(max_distance), this);
-  }
-
-  ///
-  /// @copydoc NeighbourQueryBase::get_buckets_near_point()
-  ///
-  /// @see lattice_iterator_within_distance
-  ///
-  ABORIA_HOST_DEVICE_IGNORE_WARN
-  template <int LNormNumber = -1>
-  CUDA_HOST_DEVICE query_iterator<LNormNumber>
-  get_buckets_near_point(const double_d &position,
-                         const double_d &max_distance) const {
-#ifndef __CUDA_ARCH__
-    LOG(4, "\tget_buckets_near_point: position = "
-               << position << " max_distance = " << max_distance);
-#endif
-    return query_iterator<LNormNumber>(position, max_distance, this);
+    return query_iterator<LNormNumber, Transform>(position, max_distance, this,
+                                                  transform);
   }
 
   ///

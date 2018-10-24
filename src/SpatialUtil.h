@@ -43,7 +43,7 @@ template <unsigned int D> struct bbox;
 #include "detail/SpatialUtil.h"
 
 namespace Aboria {
-    
+
 ///
 /// @brief Contains the minimum and maximum extents of a hypercube in @p D
 /// dimensional space
@@ -134,7 +134,82 @@ std::ostream &operator<<(std::ostream &out, const bbox<D> &b) {
   return out << "bbox(" << b.bmin << "<->" << b.bmax << ")";
 }
 
+/// @returns true if the hypersphere defined by \p centre and \p radius
+/// intersects with the 1D line defined by the two points \p a and \p b
+template <unsigned int D>
+bool circle_intersect_line(const Vector<double, D> &centre, const double radius,
+                           const Vector<double, D> &a,
+                           const Vector<double, D> &b) {
+
+  const Vector<double, D> a_minus_c = a - centre;
+  const Vector<double, D> dx = b - a;
+  const double dx_norm = dx.norm();
+  const double a_minus_c_along_ab = dx.dot(a_minus_c) / dx_norm;
+
+  const double under_sqrt = std::pow(a_minus_c_along_ab, 2) -
+                            a_minus_c.squaredNorm() + std::pow(radius, 2);
+
+  bool intersects;
+  if (under_sqrt > 0) {
+    // two intersections
+    const double after_sqrt = std::sqrt(under_sqrt);
+    const double d1 = -a_minus_c_along_ab - after_sqrt;
+    const double d2 = -a_minus_c_along_ab + after_sqrt;
+    intersects = (d1 >= 0 && d1 < dx_norm) || (d2 >= 0 && d2 < dx_norm);
+  } else if (under_sqrt == 0) {
+    // one intersection
+    const double d1 = -a_minus_c_along_ab;
+    intersects = d1 >= 0 && d1 < dx_norm;
+  } else {
+    // no intersections
+    intersects = false;
+  }
+
+  // check if one of the points is within the sphere
+  bool a_in_sphere = (a - centre).squaredNorm() <= std::pow(radius, 2);
+
+  return intersects || a_in_sphere;
 }
 
-#endif
+/// @returns true if the hypersphere defined by \p centre and \p radius
+/// intersects with the hypercube defined by \p cube
+template <unsigned int D>
+bool circle_intersect_cube(const Vector<double, D> &centre, const double radius,
+                           const bbox<D> &cube) {
 
+  // loop through vertices of cube and test all the possible edges
+  bool an_edge_intersects = false;
+  for (int i = 0; i < (1 << D); ++i) {
+    // create vertex a
+    Vector<double, D> a;
+    for (size_t j = 0; j < D; ++j) {
+      const bool jth_bit_of_i = i & (1 << j);
+      a[j] = jth_bit_of_i ? cube.bmax[j] : cube.bmin[j];
+    }
+    // number of edges from each vertex is equal to the number of dimensions
+    for (size_t j = 0; j < D; ++j) {
+      const bool jth_bit_of_i = i & (1 << j);
+      // b is equal to a except for the jth bit of i flipped
+      // only count if jth bit of i is 0
+      if (!jth_bit_of_i) {
+        Vector<double, D> b = a;
+        b[j] = cube.bmax[j];
+        an_edge_intersects |= circle_intersect_line(centre, radius, a, b);
+      }
+    }
+  }
+
+  // check if centre is within cube
+  bool centre_in_cube = true;
+  for (size_t i = 0; i < D; ++i) {
+    centre_in_cube &= centre[i] >= cube.bmin[i] && centre[i] < cube.bmax[i];
+  }
+
+  // intersection if either an edge intersects the sphere, or the centre of
+  // the sphere is within the hypercube
+  return an_edge_intersects || centre_in_cube;
+}
+
+} // namespace Aboria
+
+#endif

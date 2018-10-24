@@ -92,6 +92,7 @@ public:
     int index = ptob(vdouble3(0.5, 0.5, 0.5));
     TS_ASSERT_EQUALS(index_true, index);
 
+    /*
     int index2_true = 2;
     int index2 = ptob.get_min_index_by_quadrant(0.5 - 1e-5, 0, true);
     TS_ASSERT_EQUALS(index2_true, index2);
@@ -107,6 +108,72 @@ public:
     int index5_true = 2;
     int index5 = ptob.get_min_index_by_quadrant(0.5 + 1e-5, 0, false);
     TS_ASSERT_EQUALS(index5_true, index5);
+    */
+  }
+
+  void test_circle_cube_intersection(void) {
+    vdouble2 centre(0, 0);
+    double radius = 1;
+    bbox<2> cube(vdouble2(-0.1, -0.1), vdouble2(0.1, 0.1));
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
+    cube.bmin = vdouble2(-0.005, 0.11);
+    cube.bmax = vdouble2(0.005, 0.12);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
+    cube.bmin = vdouble2(-1.1, -5);
+    cube.bmax = vdouble2(-0.9, 5);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
+    cube.bmin = vdouble2(-1.1, -5);
+    cube.bmax = vdouble2(-1.01, 5);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), false);
+
+    cube.bmin = vdouble2(-1.1, -1.1);
+    cube.bmax = vdouble2(1.1, 1.1);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), true);
+
+    cube.bmin = vdouble2(0.99, 0.99);
+    cube.bmax = vdouble2(0.999, 0.999);
+    TS_ASSERT_EQUALS(circle_intersect_cube(centre, radius, cube), false);
+  }
+
+  void test_linear_transform(void) {
+    auto skew = [](const vdouble2 &v) {
+      return vdouble2(v[0] + 0.3 * v[1], v[1]);
+    };
+    auto t = create_linear_transform<2>(skew);
+    TS_ASSERT_EQUALS(t.get_eigen_vertices()[0], t.get_eigen_vertices()[1]);
+
+    bbox<2> unit(vdouble2::Constant(-1), vdouble2::Constant(1));
+    auto unitt = t(unit);
+    TS_ASSERT_EQUALS(unitt[0], 2.6);
+    TS_ASSERT_EQUALS(unitt[1], 2);
+
+    bbox<2> unit2(vdouble2::Constant(0), vdouble2::Constant(1));
+
+    auto unitt3 = t(unit2);
+    TS_ASSERT_EQUALS(unitt3[0], 1.3);
+    TS_ASSERT_EQUALS(unitt3[1], 1);
+
+    auto skew2 = [](const vdouble2 &v) {
+      return vdouble2(v[0] - 0.3 * v[1], v[1]);
+    };
+    auto t2 = create_linear_transform<2>(skew2);
+    TS_ASSERT_EQUALS(!(t2.get_eigen_vertices()[0]), t2.get_eigen_vertices()[1]);
+
+    auto unitt2 = t2(unit);
+    TS_ASSERT_EQUALS(unitt2[0], 2.6);
+    TS_ASSERT_EQUALS(unitt2[1], 2);
+
+    auto t3 = create_scale_transform(vdouble2(1, 2));
+    auto v_transformed = t3(vdouble2(2, 2));
+    TS_ASSERT_EQUALS(v_transformed[0], 2.0);
+    TS_ASSERT_EQUALS(v_transformed[1], 4.0);
+
+    auto unit_transformed = t3(unit);
+    TS_ASSERT_EQUALS(unit_transformed[0], 2.0);
+    TS_ASSERT_EQUALS(unit_transformed[1], 4.0);
   }
 
   void test_low_rank(void) {

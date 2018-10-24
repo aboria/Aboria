@@ -46,6 +46,10 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Aboria.h"
 #include <boost/math/constants/constants.hpp>
 
+#ifdef HAVE_CAIRO
+#include <cairo-svg.h>
+#endif
+
 #include <random>
 
 namespace Aboria {
@@ -212,6 +216,124 @@ void radial_distribution_function(const T &particles, const double min,
   }
 
   particles->reset_neighbour_search(old_size);
+}
+
+/// Assumes 2D particle set since we are drawing to a 2D canvas
+template <typename Particles_t, typename Transform = IdentityTransform>
+void draw_particles_with_search(
+    std::string filename, const Particles_t &particles,
+    const std::vector<Vector<double, 2>> &search_points, double search_radius,
+    const Transform &transform = Transform()) {
+#ifdef HAVE_CAIRO
+  using position = typename Particles_t::position;
+  const int image_size = 512;
+  cairo_surface_t *surface =
+      cairo_svg_surface_create(filename.c_str(), image_size, image_size);
+  cairo_svg_surface_restrict_to_version(surface, CAIRO_SVG_VERSION_1_2);
+  cairo_t *cr = cairo_create(surface);
+
+  auto query = particles.get_query();
+  vdouble2 min = particles.get_min();
+  vdouble2 max = particles.get_max();
+  auto dx = max - min;
+  cairo_scale(cr, image_size / dx[0], image_size / dx[1]);
+  cairo_translate(cr, -min[0], -min[1]);
+
+  cairo_set_source_rgba(cr, 0.5, 0, 0, 0.5);
+  vdouble2 lw(0.005, 0.005);
+  // cairo_device_to_user_distance(cr, &lw[0], &lw[1]);
+
+  // draw leaf buckets
+  cairo_set_line_width(cr, lw[0]);
+  for (auto i = query.get_subtree(); i != false; ++i) {
+    auto ci = i.get_child_iterator();
+    if (query.is_leaf_node(*ci)) {
+      // draw its outline
+      auto bounds = query.get_bounds(ci);
+      vdouble2 rect[4];
+      rect[0] = transform(vdouble2(bounds.bmin[0], bounds.bmin[1]));
+      rect[1] = transform(vdouble2(bounds.bmax[0], bounds.bmin[1]));
+      rect[2] = transform(vdouble2(bounds.bmax[0], bounds.bmax[1]));
+      rect[3] = transform(vdouble2(bounds.bmin[0], bounds.bmax[1]));
+      cairo_move_to(cr, rect[0][0], rect[0][1]);
+      for (int i = 1; i < 4; ++i) {
+        cairo_line_to(cr, rect[i][0], rect[i][1]);
+      }
+      cairo_close_path(cr);
+      cairo_stroke(cr);
+    }
+  }
+
+  // draw particles
+  const double PI = boost::math::constants::pi<double>();
+  for (size_t i = 0; i < particles.size(); ++i) {
+    bool within_search = false;
+    vdouble2 pos = transform(get<position>(particles)[i]);
+    for (auto &search_point : search_points) {
+      vdouble2 transformed_search_point = transform(search_point);
+
+      if ((pos - transformed_search_point).squaredNorm() <=
+          std::pow(search_radius, 2)) {
+        within_search = true;
+      }
+    }
+    if (within_search) {
+      cairo_set_source_rgba(cr, 1.0, 0.0, 0.0, 0.5);
+    } else {
+      cairo_set_source_rgba(cr, 0, 0, 0, 0.5);
+    }
+    cairo_arc(cr, pos[0], pos[1], lw[0], 0, 2 * PI);
+    cairo_fill(cr);
+  }
+
+  // draw search region and point
+  for (auto &search_point : search_points) {
+    cairo_set_source_rgba(cr, 0, 0, 0.5, 0.5);
+    vdouble2 transformed_search_point = transform(search_point);
+    cairo_arc(cr, transformed_search_point[0], transformed_search_point[1],
+              search_radius, 0, 2 * PI);
+    cairo_stroke(cr);
+    cairo_arc(cr, transformed_search_point[0], transformed_search_point[1],
+              lw[0], 0, 2 * PI);
+    cairo_fill(cr);
+
+    cairo_set_source_rgba(cr, 0, 0, 0.5, 0.2);
+    for (auto i = query.template get_buckets_near_point<2>(
+             search_point, search_radius, transform);
+         i != false; ++i) {
+      auto ci = i.get_child_iterator();
+      auto bounds = query.get_bounds(ci);
+      vdouble2 rect[4];
+      rect[0] = transform(vdouble2(bounds.bmin[0], bounds.bmin[1]));
+      rect[1] = transform(vdouble2(bounds.bmax[0], bounds.bmin[1]));
+      rect[2] = transform(vdouble2(bounds.bmax[0], bounds.bmax[1]));
+      rect[3] = transform(vdouble2(bounds.bmin[0], bounds.bmax[1]));
+
+      // colour in search buckets
+      cairo_move_to(cr, rect[0][0], rect[0][1]);
+      for (int i = 1; i < 4; ++i) {
+        cairo_line_to(cr, rect[i][0], rect[i][1]);
+      }
+      cairo_close_path(cr);
+      cairo_fill(cr);
+      for (auto j = query.get_bucket_particles(*ci); j != false; ++j) {
+        vdouble2 pos = transform(get<position>(*j));
+        cairo_arc(cr, pos[0], pos[1], lw[0], 0, 2 * PI);
+        cairo_fill(cr);
+      }
+    }
+    for (auto i =
+             euclidean_search(query, search_point, search_radius, transform);
+         i != false; ++i) {
+      vdouble2 pos = transform(get<position>(*i));
+      cairo_arc(cr, pos[0], pos[1], 2 * lw[0], 0, 2 * PI);
+      cairo_fill(cr);
+    }
+  }
+
+  cairo_destroy(cr);
+  cairo_surface_destroy(surface);
+#endif // HAVE_CAIRO
 }
 
 } // namespace Aboria

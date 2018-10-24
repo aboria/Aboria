@@ -129,7 +129,7 @@ template <int LNormNumber> struct distance_helper {
   }
 
   template <unsigned int D>
-  CUDA_HOST_DEVICE static inline double norm(const Vector<double, D> &vector) {
+  CUDA_HOST_DEVICE static inline double norm2(const Vector<double, D> &vector) {
     double accum = 0;
     for (size_t i = 0; i < D; ++i) {
       accum = accumulate_norm(accum, vector[i]);

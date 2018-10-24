@@ -1206,7 +1206,8 @@ public:
         // add particles in bucket to indicies
         // add particles in neighbouring buckets to buffer
         for (auto bucket = query.template get_buckets_near_point<-1>(
-                 middle, side + m_neighbourhood_buffer);
+                 middle, 1.0,
+                 create_scale_transform(1.0 / (side + m_neighbourhood_buffer)));
              bucket != false; ++bucket) {
           for (auto particle = query.get_bucket_particles(*bucket);
                particle != false; ++particle) {
@@ -1662,8 +1663,8 @@ public:
           const double_d w = bounds.bmax - bounds.bmin;
           if (m_sigma < 0.1 * w.maxCoeff()) {
             std::vector<child_iterator> pot_buckets;
-            for (auto it =
-                     query.template get_buckets_near_point<-1>(middle, 0.6 * w);
+            for (auto it = query.template get_buckets_near_point<-1>(
+                     middle, 1.0, create_scale_transform(1.0 / (0.6 * w)));
                  it != false; ++it) {
               // fill pot buckets (not self)
               const auto ci = it.get_child_iterator();

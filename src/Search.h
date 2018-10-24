@@ -61,10 +61,13 @@ namespace Aboria {
 /// a STL forward iterator type
 // assume that these iterators, and query functions, are only called from device
 // code
-template <typename Query, int LNormNumber> class search_iterator {
+template <typename Query, int LNormNumber,
+          typename Transform = IdentityTransform>
+class search_iterator {
 
   typedef typename Query::particle_iterator particle_iterator;
-  typedef typename Query::template query_iterator<LNormNumber> query_iterator;
+  typedef typename Query::template query_iterator<LNormNumber, Transform>
+      query_iterator;
   typedef typename Query::traits_type Traits;
   static const unsigned int dimension = Traits::dimension;
 
@@ -131,6 +134,8 @@ template <typename Query, int LNormNumber> class search_iterator {
   ///
   particle_iterator m_current_particle;
 
+  Transform m_transform;
+
 public:
   typedef p_pointer pointer;
   typedef std::forward_iterator_tag iterator_category;
@@ -173,7 +178,8 @@ public:
   ABORIA_HOST_DEVICE_IGNORE_WARN
   CUDA_HOST_DEVICE
   search_iterator(const Query &query, const double_d &r,
-                  const double max_distance)
+                  const double max_distance,
+                  const Transform transform = Transform())
       : m_valid(true), m_r(r), m_query(&query), m_max_distance(max_distance),
         m_max_distance2(
             detail::distance_helper<LNormNumber>::get_value_to_accumulate(
@@ -182,8 +188,10 @@ public:
         m_current_point(
             r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin)),
-        m_current_bucket(query.template get_buckets_near_point<LNormNumber>(
-            m_current_point, max_distance)) {
+        m_current_bucket(
+            query.template get_buckets_near_point<LNormNumber, Transform>(
+                m_current_point, max_distance, transform)),
+        m_transform(transform) {
 
 #if defined(__CUDA_ARCH__)
     CHECK_CUDA((!std::is_same<typename Traits::template vector<double>,
@@ -354,13 +362,14 @@ private:
 
     while (m_current_bucket == false) {
 #ifdef __CUDA_ARCH__
-        if (3 <= ABORIA_LOG_LEVEL) {                                             \
-            printf("\t\tgo_to_next periodic (search_iterator): m_current_periodic = (");
-            for (int i = 0; i < Traits::dimension; ++i) {
-                printf("%d,",(*m_current_periodic)[i]);
-            }
-            printf("\n,");
+      if (3 <= ABORIA_LOG_LEVEL) {
+        printf("\t\tgo_to_next periodic (search_iterator): m_current_periodic "
+               "= (");
+        for (int i = 0; i < Traits::dimension; ++i) {
+          printf("%d,", (*m_current_periodic)[i]);
         }
+        printf("\n,");
+      }
 #else
       LOG(3, "\tgo_to_next periodic (search_iterator): m_current_periodic = "
                  << *m_current_periodic);
@@ -377,8 +386,9 @@ private:
       m_current_point =
           m_r + (*m_current_periodic) *
                     (m_query->get_bounds().bmax - m_query->get_bounds().bmin);
-      m_current_bucket = m_query->template get_buckets_near_point<LNormNumber>(
-          m_current_point, m_max_distance);
+      m_current_bucket =
+          m_query->template get_buckets_near_point<LNormNumber, Transform>(
+              m_current_point, m_max_distance, m_transform);
     }
     return true;
   }
@@ -430,30 +440,22 @@ private:
     // const double_d& p = get<position>(*m_current_particle) +
     // m_particle_range.get_transpose();
     const double_d &p = get<position>(*m_current_particle);
-    // const double_d& transpose = m_particle_range.get_transpose();
-    double accum = 0;
-    bool outside = false;
-    for (size_t i = 0; i < Traits::dimension; i++) {
-      m_dx[i] = p[i] - m_current_point[i];
-      accum =
-          detail::distance_helper<LNormNumber>::accumulate_norm(accum, m_dx[i]);
-      if (accum > m_max_distance2) {
-        outside = true;
-        break;
-      }
-    }
+    m_dx = m_transform(p - m_current_point);
+    const double accum = detail::distance_helper<LNormNumber>::norm2(m_dx);
+    const bool outside = accum > m_max_distance2;
+
 #ifdef __CUDA_ARCH__
-    if (3 <= ABORIA_LOG_LEVEL) {                                             \
-        printf("\tcheck_candidate: m_r = (");
-        for (int i = 0; i < Traits::dimension; ++i) {
-            printf("%d,",m_current_point[i]);
-        }
-        printf(") other r = (");
-        for (int i = 0; i < Traits::dimension; ++i) {
-            printf("%d,",get<position>(*m_current_particle)[i]);
-        }
-        printf("). outside = %d",outside);
-    } 
+    if (3 <= ABORIA_LOG_LEVEL) {
+      printf("\tcheck_candidate: m_r = (");
+      for (int i = 0; i < Traits::dimension; ++i) {
+        printf("%d,", m_current_point[i]);
+      }
+      printf(") other r = (");
+      for (int i = 0; i < Traits::dimension; ++i) {
+        printf("%d,", get<position>(*m_current_particle)[i]);
+      }
+      printf("). outside = %d", outside);
+    }
 #else
     LOG(3, "\tcheck_candidate: m_r = " << m_current_point << " other r = "
                                        << get<position>(*m_current_particle)
@@ -512,15 +514,12 @@ template <typename Query> class bucket_pair_iterator {
   double_d m_position_offset;
 
 public:
-  typedef const std::tuple<const int_d &, const int_d &,
-                                                const double_d &> *pointer;
+  typedef const std::tuple<const int_d &, const int_d &, const double_d &>
+      *pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef const std::tuple<const int_d &, const int_d &,
-                                                const double_d &>
+  typedef const std::tuple<const int_d &, const int_d &, const double_d &>
       reference;
-  typedef const std::tuple<const int_d, const int_d,
-                                                const double_d>
-      value_type;
+  typedef const std::tuple<const int_d, const int_d, const double_d> value_type;
   typedef std::ptrdiff_t difference_type;
 
   ABORIA_HOST_DEVICE_IGNORE_WARN
@@ -780,20 +779,25 @@ detail::kd_tree_tag) {
 
 ///
 /// @brief returns a @ref search_iterator that iterates over all the particles
-/// within a given distance around a point
+/// within a given distance around a point. The user can optionally define a
+/// coordinate transform to apply before the search is performed
 ///
 /// @tparam Query the query object type
+/// @tparam Transform type of the user-defined coordinate system transform
 /// @tparam search_iterator<Query, 1> the search iterator type
 /// @param query the query object
 /// @param centre the central point of the search
 /// @param max_distance the maximum distance to search around @p centre
+/// @param transform a user defined coordinate transform (default: @ref
+/// IdentityTransform)
 ///
-template <int LNormNumber, typename Query,
-          typename SearchIterator = search_iterator<Query, LNormNumber>>
-CUDA_HOST_DEVICE SearchIterator
-distance_search(const Query &query, const typename Query::double_d &centre,
-                const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <
+    int LNormNumber, typename Query, typename Transform = IdentityTransform,
+    typename SearchIterator = search_iterator<Query, LNormNumber, Transform>>
+CUDA_HOST_DEVICE SearchIterator distance_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 
 ///
@@ -803,11 +807,12 @@ distance_search(const Query &query, const typename Query::double_d &centre,
 /// <https://en.wikipedia.org/wiki/Chebyshev_distance>
 ///
 ///
-template <typename Query, typename SearchIterator = search_iterator<Query, -1>>
-CUDA_HOST_DEVICE SearchIterator
-chebyshev_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <typename Query, typename Transform = IdentityTransform,
+          typename SearchIterator = search_iterator<Query, -1, Transform>>
+CUDA_HOST_DEVICE SearchIterator chebyshev_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 
 ///
@@ -817,11 +822,12 @@ chebyshev_search(const Query &query, const typename Query::double_d &centre,
 /// <https://en.wikipedia.org/wiki/Taxicab_geometry>
 ///
 ///
-template <typename Query, typename SearchIterator = search_iterator<Query, 1>>
-CUDA_HOST_DEVICE SearchIterator
-manhatten_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <typename Query, typename Transform = IdentityTransform,
+          typename SearchIterator = search_iterator<Query, 1, Transform>>
+CUDA_HOST_DEVICE SearchIterator manhatten_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 ///
 /// @copydoc distance_search()
@@ -830,11 +836,12 @@ manhatten_search(const Query &query, const typename Query::double_d &centre,
 /// <https://en.wikipedia.org/wiki/Euclidean_distance>
 ///
 ///
-template <typename Query, typename SearchIterator = search_iterator<Query, 2>>
-CUDA_HOST_DEVICE SearchIterator
-euclidean_search(const Query &query, const typename Query::double_d &centre,
-                 const double max_distance) {
-  return SearchIterator(query, centre, max_distance);
+template <typename Query, typename Transform = IdentityTransform,
+          typename SearchIterator = search_iterator<Query, 2, Transform>>
+CUDA_HOST_DEVICE SearchIterator euclidean_search(
+    const Query &query, const typename Query::double_d &centre,
+    const double max_distance, const Transform &transform = Transform()) {
+  return SearchIterator(query, centre, max_distance, transform);
 }
 
 ///

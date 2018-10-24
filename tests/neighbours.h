@@ -48,7 +48,11 @@ class NeighboursTest : public CxxTest::TestSuite {
 public:
   ABORIA_VARIABLE(scalar, double, "scalar")
   ABORIA_VARIABLE(neighbours_brute, int, "number of neighbours")
+  ABORIA_VARIABLE(bucket_neighbours_brute, int,
+                  "number of neighbouring buckets")
   ABORIA_VARIABLE(neighbours_aboria, int, "number of neighbours")
+  ABORIA_VARIABLE(bucket_neighbours_aboria, int,
+                  "number of neighbouring buckets")
 
   void test_documentation(void) {
 #if not defined(__CUDACC__)
@@ -437,12 +441,76 @@ public:
         particle_octtree_t;
     particle_octtree_t particle_octtree;
 
-/*`
+    /*`
 
 
 
-[endsect]
-[endsect]
+    [endsect]
+
+    [section Coordinate Transforms]
+
+    Aboria allows the user to search in a transformed coordinate space. This is
+    useful for example in searching in a skew coordinate system, which might be
+    neccessary if you wish to simulate a non-othorhombic periodic lattice
+    system. All of the distance search functions (e.g. [funcref
+    Aboria::euclidean_search]), take an optional parameter `transform`, which
+    must be a function object defining two overloaded  `operator()` functions.
+
+    # The first takes as an argument a [classref Aboria::Vector] point, and
+    returns the same point in the transformed space.
+    # The second takes a
+    [classref Aboria::bbox] bounding box, and returns the side length of the
+    axis-aligned box that covers the given box in the transformed coordinate
+    system.
+
+    For convenience, Aboria provides a ready to use class for linear
+    transformations [classref Aboria::LinearTransform], which is created using
+    [funcref Aboria::create_linear_transform]. This class only requires the user
+    to define the first `operator()` function above, and assumes that this point
+    transform is  linear with respect to the point position. For example,
+
+
+    */
+
+    struct MyTransform {
+      auto operator()(const vdouble3 &v) const {
+        return vdouble3(v[0] + 0.3 * v[1], v[1], v[2]);
+      }
+    };
+
+    auto skew_x = create_linear_transform<3>(MyTransform());
+
+    for (auto i = euclidean_search(particles.get_query(), vdouble3::Constant(0),
+                                   radius, skew_x);
+         i != false; ++i) {
+      std::cout << "Found a particle with dx = " << i.dx()
+                << " position = " << get<position>(*i)
+                << " and id = " << get<id>(*i) << "\n";
+    }
+
+    /*`
+
+    The call to [funcref Aboria::euclidean_search] searches for points within a
+    radius of `radius` from the origin $(0,0,0)$, within new skew coordinate
+    system defined by the transformation given by the matrix $A$
+
+    $$
+    A = \begin{pmatrix}
+    1 & 0.3 & 0 \\\\
+    0 & 1   & 0 \\\\
+    0 & 0   & 1
+    \end{pmatrix}
+    $$
+
+    It is important to note that the `dx` vector returned by `i.dx()` in the
+    code above has been transformed to the new coordinate system, but all the
+    positions stored within the particle set (e.g. `get<position>(*i)`) will
+    still be in the ['original] coordinate system.
+
+
+    [endsect]
+
+    [endsect]
 
 */
 //]
@@ -481,6 +549,16 @@ public:
     search =
         euclidean_search(test.get_query(), vdouble3(2 * radius, 0, 0), radius);
     TS_ASSERT_EQUALS(search.distance_to_end(), 0);
+
+    auto search2 = euclidean_search(
+        test.get_query(), vdouble3(radius / 2, radius / 2, 0), 1.0,
+        create_scale_transform(vdouble3::Constant(1.0 / radius)));
+    TS_ASSERT_EQUALS(search2.distance_to_end(), 1);
+
+    search2 = euclidean_search(
+        test.get_query(), vdouble3(2 * radius, 0, 0), 1.0,
+        create_scale_transform(vdouble3::Constant(1.0 / radius)));
+    TS_ASSERT_EQUALS(search2.distance_to_end(), 0);
   }
 
   template <template <typename, typename> class Vector,
@@ -634,7 +712,8 @@ public:
     void operator()(Reference arg) { get<neighbours_aboria>(arg) = 1; }
   };
 
-  template <typename ParticlesType> struct brute_force_check {
+  template <typename ParticlesType, typename Transform>
+  struct brute_force_check {
     typedef typename ParticlesType::raw_reference reference;
     typedef typename ParticlesType::raw_pointer pointer;
     typedef typename ParticlesType::raw_const_reference const_reference;
@@ -649,11 +728,12 @@ public:
     double_d max;
     double r2;
     bool is_periodic;
+    Transform transform;
 
     brute_force_check(ParticlesType &particles, double_d &min, double_d &max,
-                      double r2, bool is_periodic)
+                      double r2, bool is_periodic, const Transform &transform)
         : query(particles.get_query()), min(min), max(max), r2(r2),
-          is_periodic(is_periodic) {}
+          is_periodic(is_periodic), transform(transform) {}
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
@@ -667,12 +747,15 @@ public:
           for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
                                                int_d::Constant(2));
                periodic_it != false; ++periodic_it) {
-            if ((pi + (*periodic_it) * (max - min) - pj).squaredNorm() <= r2) {
+            const double_d dx =
+                transform(pj - pi - (*periodic_it) * (max - min));
+            if (dx.squaredNorm() <= r2) {
               count++;
             }
           }
         } else {
-          if ((pi - pj).squaredNorm() <= r2) {
+          double_d dx = transform(pj - pi);
+          if (dx.squaredNorm() <= r2) {
             count++;
           }
         }
@@ -680,7 +763,104 @@ public:
       get<neighbours_brute>(i) = count;
     }
   };
-  template <typename ParticlesType> struct aboria_check {
+
+  template <typename ParticlesType> struct brute_force_check_bucket {
+    typedef typename ParticlesType::raw_reference reference;
+    typedef typename ParticlesType::raw_pointer pointer;
+    typedef typename ParticlesType::raw_const_reference const_reference;
+    typedef typename ParticlesType::double_d double_d;
+    typedef typename ParticlesType::int_d int_d;
+    typedef typename ParticlesType::query_type query_type;
+    typedef typename ParticlesType::position position;
+    static const unsigned int D = ParticlesType::dimension;
+
+    query_type query;
+    double_d min;
+    double_d max;
+    double r;
+    bool is_periodic;
+
+    brute_force_check_bucket(ParticlesType &particles, double_d &min,
+                             double_d &max, double r2, bool is_periodic)
+        : query(particles.get_query()), min(min), max(max), r(std::sqrt(r2)),
+          is_periodic(is_periodic) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    void operator()(reference i) {
+      int count = 0;
+      double_d &pi = get<position>(i);
+      for (auto j = query.get_subtree(); j != false; ++j) {
+        if (query.is_leaf_node(*j)) {
+          auto bounds = query.get_bounds(j.get_child_iterator());
+          if (is_periodic) {
+            for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
+                                                 int_d::Constant(2));
+                 periodic_it != false; ++periodic_it) {
+              if (circle_intersect_cube(pi + (*periodic_it) * (max - min), r,
+                                        bounds)) {
+                count++;
+              }
+            }
+          } else {
+            if (circle_intersect_cube(pi, r, bounds)) {
+              count++;
+            }
+          }
+        }
+      }
+      get<bucket_neighbours_brute>(i) = count;
+    }
+  };
+
+  template <typename ParticlesType> struct aboria_check_bucket {
+    typedef typename ParticlesType::raw_reference reference;
+    typedef typename ParticlesType::raw_pointer pointer;
+    typedef typename ParticlesType::raw_const_reference const_reference;
+    typedef typename ParticlesType::double_d double_d;
+    typedef typename ParticlesType::int_d int_d;
+    typedef typename ParticlesType::query_type query_type;
+    typedef typename ParticlesType::position position;
+    static const unsigned int D = ParticlesType::dimension;
+
+    query_type query;
+    double r;
+    double r2;
+    bool is_periodic;
+
+    aboria_check_bucket(ParticlesType &particles, double r, bool is_periodic)
+        : query(particles.get_query()), r(r), r2(r * r),
+          is_periodic(is_periodic) {}
+
+    ABORIA_HOST_DEVICE_IGNORE_WARN
+    void operator()(reference i) {
+      int count = 0;
+      const auto &bounds = query.get_bounds();
+      if (is_periodic) {
+        for (lattice_iterator<D> periodic_it(int_d::Constant(-1),
+                                             int_d::Constant(2));
+             periodic_it != false; ++periodic_it) {
+          for (auto j = query.template get_buckets_near_point<2>(
+                   get<position>(i) +
+                       (*periodic_it) * (bounds.bmax - bounds.bmin),
+                   r);
+               j != false; ++j) {
+            (void)j;
+            count++;
+          }
+        }
+      } else {
+        for (auto j =
+                 query.template get_buckets_near_point<2>(get<position>(i), r);
+             j != false; ++j) {
+          (void)j;
+          count++;
+        }
+      }
+      get<bucket_neighbours_aboria>(i) = count;
+    }
+  };
+
+  template <typename ParticlesType, typename Transform> struct aboria_check {
     typedef typename ParticlesType::raw_reference reference;
     typedef typename ParticlesType::raw_pointer pointer;
     typedef typename ParticlesType::raw_const_reference const_reference;
@@ -692,15 +872,16 @@ public:
     query_type query;
     double r;
     double r2;
+    Transform transform;
 
-    aboria_check(ParticlesType &particles, double r)
-        : query(particles.get_query()), r(r), r2(r * r) {}
+    aboria_check(ParticlesType &particles, double r, const Transform &transform)
+        : query(particles.get_query()), r(r), r2(r * r), transform(transform) {}
 
     ABORIA_HOST_DEVICE_IGNORE_WARN
     void operator()(reference i) {
       int count = 0;
-      for (auto j = euclidean_search(query, get<position>(i), r); j != false;
-           ++j) {
+      for (auto j = euclidean_search(query, get<position>(i), r, transform);
+           j != false; ++j) {
         (void)j;
         count++;
       }
@@ -769,13 +950,32 @@ public:
     }
   };
 
+  template <typename Particles_t, typename Transform>
+  void helper_plot(std::false_type,
+                   const Vector<double, Particles_t::dimension> &search_point,
+                   std::string filename, const Particles_t &particles,
+                   const double search_radius, const Transform &transform) {}
+  template <typename Particles_t, typename Transform>
+  void helper_plot(std::true_type,
+                   const Vector<double, Particles_t::dimension> &search_point,
+                   std::string filename, const Particles_t &particles,
+                   const double search_radius, const Transform &transform) {
+    std::cout << "plotting with position " << search_point << std::endl;
+    draw_particles_with_search(filename, particles, {search_point},
+                               search_radius, transform);
+  }
+
   template <unsigned int D, template <typename, typename> class VectorType,
-            template <typename> class SearchMethod>
+            template <typename> class SearchMethod,
+            typename Transform = IdentityTransform>
   void helper_d_random(const int N, const double r, const int neighbour_n,
                        const bool is_periodic,
-                       const bool push_back_construction) {
-    typedef Particles<std::tuple<neighbours_brute, neighbours_aboria>, D,
-                      VectorType, SearchMethod>
+                       const bool push_back_construction,
+                       const Transform &transform = Transform()) {
+    typedef Particles<
+        std::tuple<neighbours_brute, neighbours_aboria, bucket_neighbours_brute,
+                   bucket_neighbours_aboria>,
+        D, VectorType, SearchMethod>
         particles_type;
     typedef position_d<D> position;
     typedef Vector<double, D> double_d;
@@ -787,8 +987,9 @@ public:
     double r2 = r * r;
 
     std::cout << "random test (D=" << D << " periodic= " << is_periodic
-              << "  N=" << N << " r=" << r
+              << "  N=" << N << " r=" << r << " neighbour_n=" << neighbour_n
               << " push_back_construction = " << push_back_construction
+              << " transform = " << typeid(transform).name()
               << "):" << std::endl;
 
     unsigned seed1 =
@@ -847,38 +1048,102 @@ public:
     // delete last particle
     particles.erase(particles.begin() + particles.size() - 1);
 
-    // brute force search
+    // plot search if 2D
+    std::string filename = "";
+    if (is_periodic) {
+      filename += "periodic";
+    } else {
+      filename += "non-periodic";
+    }
+    filename += "-" + std::to_string(N) + "-" + std::to_string(r);
+    if (push_back_construction) {
+      filename += "-push-back";
+    } else {
+      filename += "-no-push-back";
+    }
+    filename += std::string("-") + typeid(transform).name() + ".svg";
+
+    // brute force search: particle-particle
     auto t0 = Clock::now();
-    Aboria::detail::for_each(particles.begin(), particles.end(),
-                             brute_force_check<particles_type>(
-                                 particles, min, max, r2, is_periodic));
+    Aboria::detail::for_each(
+        particles.begin(), particles.end(),
+        brute_force_check<particles_type, Transform>(particles, min, max, r2,
+                                                     is_periodic, transform));
     auto t1 = Clock::now();
     std::chrono::duration<double> dt_brute = t1 - t0;
 
-    // Aboria search
+    // brute force search: particle-bucket
     t0 = Clock::now();
-    Aboria::detail::for_each(particles.begin(), particles.end(),
-                             aboria_check<particles_type>(particles, r));
+    // Aboria::detail::for_each(particles.begin(), particles.end(),
+    //                         brute_force_check_bucket<particles_type>(
+    //                             particles, min, max, r2, is_periodic));
+    t1 = Clock::now();
+    std::chrono::duration<double> dt_brute_bucket = t1 - t0;
+
+    // Aboria search: particle-particle
+    t0 = Clock::now();
+    Aboria::detail::for_each(
+        particles.begin(), particles.end(),
+        aboria_check<particles_type, Transform>(particles, r, transform));
     t1 = Clock::now();
     std::chrono::duration<double> dt_aboria = t1 - t0;
+
+    // Aboria search: particle-bucket
+    t0 = Clock::now();
+    Aboria::detail::for_each(
+        particles.begin(), particles.end(),
+        aboria_check_bucket<particles_type>(particles, r, is_periodic));
+    t1 = Clock::now();
+    std::chrono::duration<double> dt_aboria_bucket = t1 - t0;
+
+    bool plotted_error = false;
     for (size_t i = 0; i < particles.size(); ++i) {
       if (int(get<neighbours_brute>(particles)[i]) !=
           int(get<neighbours_aboria>(particles)[i])) {
         std::cout << "error in finding neighbours for p = "
                   << static_cast<const double_d &>(get<position>(particles)[i])
                   << " over radius " << r << std::endl;
+        if (!plotted_error) {
+          helper_plot(std::integral_constant<bool, D == 2>(),
+                      get<position>(particles)[i], filename, particles, r,
+                      transform);
+          plotted_error = true;
+        }
+
+        /*
         particles.print_data_structure();
+
 
         TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                          int(get<neighbours_aboria>(particles)[i]));
         return;
+        */
       }
       TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                        int(get<neighbours_aboria>(particles)[i]));
+      /*
+      if (int(get<bucket_neighbours_brute>(particles)[i]) !=
+          int(get<bucket_neighbours_aboria>(particles)[i])) {
+        std::cout << "error in finding neighbour buckets for p = "
+                  << static_cast<const double_d &>(get<position>(particles)[i])
+                  << " over radius " << r << std::endl;
+        particles.print_data_structure();
+
+        TS_ASSERT_EQUALS(int(get<bucket_neighbours_brute>(particles)[i]),
+                         int(get<bucket_neighbours_aboria>(particles)[i]));
+        return;
+      }
+      TS_ASSERT_EQUALS(int(get<bucket_neighbours_brute>(particles)[i]),
+                       int(get<bucket_neighbours_aboria>(particles)[i]));
+      */
     }
 
     std::cout << "\ttiming result: Aboria = " << dt_aboria.count()
               << " versus brute force = " << dt_brute.count() << std::endl;
+    std::cout << "\ttiming result for particle-bucket: Aboria = "
+              << dt_aboria_bucket.count()
+              << " versus brute force = " << dt_brute_bucket.count()
+              << std::endl;
   }
 
   template <unsigned int D, template <typename, typename> class VectorType,
@@ -943,9 +1208,10 @@ public:
 
     // brute force search
     auto t0 = Clock::now();
-    Aboria::detail::for_each(particles.begin(), particles.end(),
-                             brute_force_check<particles_type>(
-                                 particles, min, max, r2, is_periodic));
+    Aboria::detail::for_each(
+        particles.begin(), particles.end(),
+        brute_force_check<particles_type, IdentityTransform>(
+            particles, min, max, r2, is_periodic, IdentityTransform()));
     auto t1 = Clock::now();
     std::chrono::duration<double> dt_brute = t1 - t0;
 
@@ -993,12 +1259,28 @@ public:
     helper_d<4, VectorType, SearchMethod>(10, 1.0001, 10);
   }
 
+  struct SkewTransform {
+    inline vdouble1 operator()(const vdouble1 &v) const { return 0.7 * v; }
+    inline vdouble2 operator()(const vdouble2 &v) const {
+      return vdouble2(v[0] + 0.3 * v[1], v[1]);
+    }
+  };
+
+  template <template <typename> class SearchMethod> void helper_plot_search() {}
+
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_random(bool test_push_back = true) {
+    auto skew1 = create_linear_transform<1>(SkewTransform());
+    auto skew2 = create_linear_transform<2>(SkewTransform());
 
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false);
     helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, true, false);
+    helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, false,
+                                                 skew1);
+
+    helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, true, false,
+                                                 skew1);
 
     if (test_push_back) {
       helper_d_random<1, VectorType, SearchMethod>(14, 0.1, 1, false, true);
@@ -1007,12 +1289,26 @@ public:
 
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, false);
+    helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, true, false,
+                                                 skew1);
+    helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 10, false, false,
+                                                 skew1);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, true, false);
     helper_d_random<1, VectorType, SearchMethod>(1000, 0.1, 100, false, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, false, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 1, true, false);
     helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 1, false, false);
+
+    helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, true, false,
+                                                 skew2);
+    helper_d_random<2, VectorType, SearchMethod>(1000, 0.5, 10, false, false,
+                                                 skew2);
+    helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 10, true, false,
+                                                 skew2);
+    helper_d_random<2, VectorType, SearchMethod>(1000, 0.2, 10, false, false,
+                                                 skew2);
+
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 100, true, false);
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 100, false, false);
     helper_d_random<3, VectorType, SearchMethod>(1000, 0.2, 10, true, false);
@@ -1033,7 +1329,6 @@ public:
   template <template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_test_list_random_fast_bucketsearch(bool test_push_back = true) {
-
     helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(
         14, 0.1, false, false);
     helper_d_random_fast_bucketsearch<1, VectorType, SearchMethod>(14, 0.1,
