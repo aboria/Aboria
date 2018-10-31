@@ -653,6 +653,7 @@ public:
             bicg2;
             */
         // if (Nbuffer < G.get_first_kernel().get_row_elements().size()) {
+        /*
         if (0) {
           bicg2.setMaxIterations(max_iter);
           bicg2.preconditioner().set_max_buffer_n(Nbuffer);
@@ -694,23 +695,23 @@ public:
               << " " << std::setw(out.width)
               << (phi_proposed - phi_test).norm() / phi_test.norm();
         } else {
-          out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
-                                                 << -1;
-          out.out_solve_error[do_solve - 1] << " " << std::setw(out.width)
-                                            << -1;
-          out.out_solve_setup_time[do_solve - 1] << " " << std::setw(out.width)
-                                                 << -1;
-          out.out_solve_solve_time[do_solve - 1] << " " << std::setw(out.width)
-                                                 << -1;
-          out.out_solve_total_time[do_solve - 1] << " " << std::setw(out.width)
+        */
+        out.out_solve_iterations[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+        out.out_solve_error[do_solve - 1] << " " << std::setw(out.width) << -1;
+        out.out_solve_setup_time[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+        out.out_solve_solve_time[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+        out.out_solve_total_time[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+
+        out.out_solve_solve_memory[do_solve - 1] << " " << std::setw(out.width)
                                                  << -1;
 
-          out.out_solve_solve_memory[do_solve - 1]
-              << " " << std::setw(out.width) << -1;
-
-          out.out_solve_test_error[do_solve - 1] << " " << std::setw(out.width)
-                                                 << -1;
-        }
+        out.out_solve_test_error[do_solve - 1] << " " << std::setw(out.width)
+                                               << -1;
+        //}
       }
 
       //===============================================
@@ -1004,7 +1005,7 @@ public:
       for (double sigma = 0.9; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
         const int mult_buffera[2] = {5, 23};
-        const size_t n_subdomaina[2] = {64, 4};
+        const size_t n_subdomaina[2] = {64, 16};
         for (int i = 0; i < 2; ++i) {
           const int mult_buffer = mult_buffera[i];
           const size_t n_subdomain = n_subdomaina[i];
@@ -1086,7 +1087,7 @@ public:
       for (double sigma = 0.01; sigma < 0.1; sigma += 0.04) {
         kernel.set_sigma(sigma);
         const int mult_buffera[2] = {5, 23};
-        const size_t n_subdomaina[2] = {64, 4};
+        const size_t n_subdomaina[2] = {64, 16};
         for (int i = 0; i < 2; ++i) {
           const int mult_buffer = mult_buffera[i];
           const size_t n_subdomain = n_subdomaina[i];
@@ -1097,7 +1098,7 @@ public:
       for (double sigma = 0.1; sigma < 1.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
         const int mult_buffera[2] = {5, 23};
-        const size_t n_subdomaina[2] = {64, 4};
+        const size_t n_subdomaina[2] = {64, 16};
         for (int i = 0; i < 2; ++i) {
           const int mult_buffer = mult_buffera[i];
           const size_t n_subdomain = n_subdomaina[i];
