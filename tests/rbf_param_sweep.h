@@ -1006,7 +1006,11 @@ public:
     for (int N = 8000; N < 30000; N *= 2) {
       for (double sigma = 0.9; sigma < 2.0; sigma += 0.4) {
         kernel.set_sigma(sigma);
-        for (size_t n_subdomain = 10; n_subdomain < 50; n_subdomain += 10) {
+        const int mult_buffera[2] = {5, 23};
+        const size_t n_subdomaina[2] = {64, 4};
+        for (int i = 0; i < 2; ++i) {
+          const int mult_buffer = mult_buffera[i];
+          const size_t n_subdomain = n_subdomaina[i];
           /*
           helper_param_sweep<2>(rosenbrock<14>(N, Ntest), Ntest, kernel, jitter,
                                 n_subdomain, out);
@@ -1068,9 +1072,50 @@ public:
     }
   }
 
+  template <typename Kernel> void helper_sweep_3d(const int minN) {
+    Kernel kernel;
+
+    std::cout << "-------------------------------------------\n"
+              << "Running precon param sweep with kernel = " << kernel.m_name
+              << "....\n"
+              << "------------------------------------------" << std::endl;
+
+    output_files out(std::string("versus_N_3d_") + kernel.m_name);
+
+    const size_t Ntest = 1000;
+    const double jitter = 1e-5;
+
+    for (int N = minN; N < 70000; N *= 2) {
+      for (double sigma = 0.01; sigma < 0.1; sigma += 0.04) {
+        kernel.set_sigma(sigma);
+        const int mult_buffera[2] = {5, 23};
+        const size_t n_subdomaina[2] = {64, 4};
+        for (int i = 0; i < 2; ++i) {
+          const int mult_buffer = mult_buffera[i];
+          const size_t n_subdomain = n_subdomaina[i];
+          helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, mult_buffer, out);
+        }
+      }
+      for (double sigma = 0.1; sigma < 1.0; sigma += 0.4) {
+        kernel.set_sigma(sigma);
+        const int mult_buffera[2] = {5, 23};
+        const size_t n_subdomaina[2] = {64, 4};
+        for (int i = 0; i < 2; ++i) {
+          const int mult_buffer = mult_buffera[i];
+          const size_t n_subdomain = n_subdomaina[i];
+          helper_param_sweep<6>(rosenbrock<3>(N, Ntest), Ntest, kernel, jitter,
+                                n_subdomain, mult_buffer, out);
+        }
+      }
+    }
+  }
+
   void test_gaussian(void) {
     helper_param_sweep_per_kernel<gaussian_kernel>(16000);
   }
+  void test_gaussian_sweep_3d(void) { helper_sweep_3d<gaussian_kernel>(2000); }
+
   void test_matern(void) {
     helper_param_sweep_per_kernel<matern_kernel>(32000);
   }
