@@ -922,6 +922,7 @@ public:
     helper_operator(Gdense, Gmatrix, phi, Gdense_test, phi_test, max_iter,
                     coarse_size, out, 0);
 
+    /*
     if (D < 1) {
       const size_t n_subdomain = std::pow(Order, D);
 
@@ -970,11 +971,6 @@ public:
                  .count();
 
       size_t size = G_H2.get_first_kernel().get_h2_matrix().get_size();
-      /*
-      auto near_size =
-          GmaternH2.get_first_kernel().get_h2_matrix().get_near_size();
-          out.out_op_memory << " " << std::setw(out.width) << 0;
-          */
       out.out_op_memory << " " << std::setw(out.width) << size / 1e9;
 
       auto G_H2_test = create_h2_operator(test, knots, Order, kernel,
@@ -983,6 +979,7 @@ public:
       helper_operator(G_H2, Gmatrix, phi, G_H2_test, phi_test, max_iter,
                       coarse_size, out, 2);
     }
+    */
 
     out.new_line_end();
 
