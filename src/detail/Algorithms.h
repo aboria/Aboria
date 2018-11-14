@@ -125,7 +125,7 @@ template <typename T> struct upper_bound_impl {
   }
 };
 
-template <typename BidiIter typename Random>
+template <typename BidiIter, typename Random>
 BidiIter random_unique(BidiIter begin, BidiIter end, size_t num_random,
                        Random &gen) {
   size_t left = std::distance(begin, end);
