@@ -125,6 +125,20 @@ template <typename T> struct upper_bound_impl {
   }
 };
 
+template <typename BidiIter typename Random>
+BidiIter random_unique(BidiIter begin, BidiIter end, size_t num_random,
+                       Random &gen) {
+  size_t left = std::distance(begin, end);
+  while (num_random--) {
+    BidiIter r = begin;
+    std::advance(r, std::uniform_int_distribution<int>(0, left - 1)(gen));
+    std::swap(*begin, *r);
+    ++begin;
+    --left;
+  }
+  return begin;
+}
+
 template <class ForwardIt, class T>
 void fill(ForwardIt first, ForwardIt last, const T &value, std::true_type) {
   std::fill(first, last, value);
