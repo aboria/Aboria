@@ -1789,7 +1789,7 @@ public:
       auto count = boost::make_counting_iterator(0);
       detail::for_each(
           count, count + m_indicies[i].size(),
-          solve_domain<Rhs, Dest>{
+          solve_domain<vector_type, Dest>{
               iterator_to_raw_pointer(m_indicies[i].begin()),
               iterator_to_raw_pointer(m_buffer[i].begin()),
               iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
@@ -1809,7 +1809,7 @@ public:
       i = 0;
       detail::for_each(
           count, count + m_indicies[i].size(),
-          solve_domain<Rhs, Dest>{
+          solve_domain<vector_type, Dest>{
               iterator_to_raw_pointer(m_indicies[i].begin()),
               iterator_to_raw_pointer(m_buffer[i].begin()),
               iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
@@ -1829,7 +1829,7 @@ public:
       i = 1;
       detail::for_each(
           count, count + m_indicies[i].size(),
-          solve_domain<Rhs, Dest>{
+          solve_domain<vector_type, Dest>{
               iterator_to_raw_pointer(m_indicies[i].begin()),
               iterator_to_raw_pointer(m_buffer[i].begin()),
               iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
@@ -1853,7 +1853,7 @@ public:
 #if ABORIA_LOG_LEVEL > 1
         auto t0 = Clock::now();
 #endif
-        solve_domain<Rhs, Dest> fsolve_domain{
+        solve_domain<vector_type, Dest> fsolve_domain{
             iterator_to_raw_pointer(m_indicies[i].begin()),
             iterator_to_raw_pointer(m_buffer[i].begin()),
             iterator_to_raw_pointer(m_factorized_matrix[i].begin()),
