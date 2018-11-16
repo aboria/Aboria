@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define PRECONDITIONERS_H_
 
 #include <algorithm>
+#include <chrono>
 #include <fstream>
 #include <unordered_map>
 
@@ -50,6 +51,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Operators.h"
 
 namespace Aboria {
+typedef std::chrono::system_clock Clock;
 
 namespace detail {
 template <typename Function, typename Dest, unsigned int NI, unsigned int NJ,
