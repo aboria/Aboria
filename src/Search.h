@@ -621,6 +621,13 @@ public:
   }
 
   ///
+  /// @brief returns the bucket iterator to the current bucket
+  ///
+  ABORIA_HOST_DEVICE_IGNORE_WARN
+  CUDA_HOST_DEVICE
+  const query_iterator &get_bucket_iterator() const { return m_current_bucket; }
+
+  ///
   /// @brief returns the distance $r_b-r_a$ between the current candidate
   /// position $r_b$ an the central search point $r_a$
   ///
