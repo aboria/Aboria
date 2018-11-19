@@ -284,6 +284,7 @@ public:
   }
 
   const matrix_type &get_matrix() const { return m_matrix; }
+  matrix_type &get_matrix() { return m_matrix; }
 
   void assemble_matrix() {
     const RowElements &a = this->get_row_elements();

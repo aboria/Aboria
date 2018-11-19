@@ -1190,6 +1190,7 @@ protected:
 
 private:
   size_t m_max_buffer_n;
+  size_t m_mult_buffer;
   mutable std::array<double, 2> m_timing;
 
   connectivity_type m_indicies[2];
@@ -1214,15 +1215,15 @@ public:
   };
 
   SchwartzPreconditioner()
-      : m_isInitialized(false), m_max_buffer_n(300), m_timing{0, 0},
-        m_multiplicitive(0), m_levels(1), m_interpolate(false),
-        m_use_root(true) {}
+      : m_isInitialized(false), m_max_buffer_n(300),
+        m_mult_buffer(1), m_timing{0, 0}, m_multiplicitive(0), m_levels(1),
+        m_interpolate(false), m_use_root(true) {}
 
   template <typename MatType>
   explicit SchwartzPreconditioner(const MatType &mat)
-      : m_isInitialized(false), m_max_buffer_n(300), m_timing{0, 0},
-        m_multiplicitive(0), m_levels(1), m_interpolate(false),
-        m_use_root(true) {
+      : m_isInitialized(false), m_max_buffer_n(300),
+        m_mult_buffer(1), m_timing{0, 0}, m_multiplicitive(0), m_levels(1),
+        m_interpolate(false), m_use_root(true) {
     compute(mat);
   }
 
@@ -1230,6 +1231,7 @@ public:
   Index cols() const { return m_cols; }
 
   void set_max_buffer_n(size_t arg) { m_max_buffer_n = arg; }
+  void set_mult_buffer(size_t arg) { m_mult_buffer = arg; }
   void set_multiplicative(int arg) { m_multiplicitive = arg; }
   void set_interpolate(bool arg) { m_interpolate = arg; }
   void set_levels(int arg) { m_levels = arg; }
@@ -1563,9 +1565,6 @@ public:
         coupling_matrix.resize(nodes.size());
       }
       const int num_threads = omp_get_max_threads();
-      const int mult_buffer = m_max_buffer_n *
-                              std::pow(a.get_max_bucket_size(), -2.0 / 3.0) *
-                              std::pow(a.size() / num_threads, -1.0 / 3.0);
       if (traits_type::data_on_GPU) {
         // need to copy data from/to gpu
         typename traits_type::template vector<storage_vector_type> tmp_indicies(
@@ -1589,7 +1588,7 @@ public:
                 iterator_to_raw_pointer(tmp_coupling_matrix.begin()),
                 (nodes.size() == 1)
                     ? m_max_buffer_n
-                    : a.get_max_bucket_size() * (mult_buffer - 1),
+                    : a.get_max_bucket_size() * (m_mult_buffer - 1),
                 a.get_max_bucket_size(), start_row,
                 kernel.get_kernel_function(), query, i, nodes.size() == 1,
                 m_interpolate});
@@ -1613,7 +1612,7 @@ public:
                 iterator_to_raw_pointer(coupling_matrix.begin()),
                 (nodes.size() == 1)
                     ? m_max_buffer_n
-                    : a.get_max_bucket_size() * (mult_buffer - 1),
+                    : a.get_max_bucket_size() * (m_mult_buffer - 1),
                 a.get_max_bucket_size(), start_row,
                 kernel.get_kernel_function(), query, i, nodes.size() == 1,
                 m_interpolate});
