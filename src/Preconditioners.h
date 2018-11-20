@@ -142,7 +142,10 @@ template <typename T> struct storage_vector_type {
   void resize(const size_t n) {
     // only supports reductions in size after initial resize
     ASSERT_CUDA(!m_data || n <= m_size);
-    if (!m_data && n > 0) {
+    if (m_data) {
+      delete[] m_data;
+    }
+    if (n > 0) {
       m_data = new T[n];
     }
     m_size = n;
