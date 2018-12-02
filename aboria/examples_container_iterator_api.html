@@ -1,0 +1,451 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=US-ASCII">
+<title>Examples - Container/Iterator API</title>
+<link rel="stylesheet" href="../css/boostbook.css" type="text/css">
+<meta name="generator" content="DocBook XSL Stylesheets V1.78.1">
+<link rel="home" href="../index.html" title="Aboria 0.7">
+<link rel="up" href="../index.html" title="Aboria 0.7">
+<link rel="prev" href="symbolic_expressions.html" title="Symbolic Expressions">
+<link rel="next" href="examples_symbolic_api.html" title="Examples - Symbolic API">
+<script type="text/x-mathjax-config">
+MathJax.Hub.Config({
+  tex2jax: {
+    inlineMath: [['$','$'], ['\\(','\\)']],
+    processEscapes: true
+    },
+  TeX: {
+    extensions: ["AMSmath.js", "AMSsymbols.js"]
+    }
+});
+</script><script type="text/javascript" src="https://cdn.mathjax.org/mathjax/latest/MathJax.js?config=TeX-AMS_CHTML"></script><script>
+  (function(i,s,o,g,r,a,m){i['GoogleAnalyticsObject']=r;i[r]=i[r]||function(){
+  (i[r].q=i[r].q||[]).push(arguments)},i[r].l=1*new Date();a=s.createElement(o),
+  m=s.getElementsByTagName(o)[0];a.async=1;a.src=g;m.parentNode.insertBefore(a,m)
+  })(window,document,'script','https://www.google-analytics.com/analytics.js','ga');
+
+  ga('create', 'UA-48149829-4', 'auto');
+  ga('send', 'pageview');
+</script>
+</head>
+<body bgcolor="white" text="black" link="#0000FF" vlink="#840084" alink="#0000FF">
+<table cellpadding="2" width="100%"><tr><td valign="top"><img alt="Aboria" width="200" height="62" src="../images/aboria2.jpg"></td></tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="symbolic_expressions.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="examples_symbolic_api.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h2 class="title" style="clear: both">
+<a name="aboria.examples_container_iterator_api"></a><a class="link" href="examples_container_iterator_api.html" title="Examples - Container/Iterator API">Examples - Container/Iterator
+    API</a>
+</h2></div></div></div>
+<div class="toc"><dl class="toc">
+<dt><span class="section"><a href="examples_container_iterator_api.html#aboria.examples_container_iterator_api.neighbourhood_search">Neighbourhood
+      Search</a></span></dt>
+<dt><span class="section"><a href="examples_container_iterator_api.html#aboria.examples_container_iterator_api.molecular_dynamics_linear_spring">Molecular
+      Dynamics (Linear Spring) (MD)</a></span></dt>
+<dt><span class="section"><a href="examples_container_iterator_api.html#aboria.examples_container_iterator_api.1955_fput_experiment">1955
+      FPUT Experiment</a></span></dt>
+</dl></div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.examples_container_iterator_api.neighbourhood_search"></a><a class="link" href="examples_container_iterator_api.html#aboria.examples_container_iterator_api.neighbourhood_search" title="Neighbourhood Search">Neighbourhood
+      Search</a>
+</h3></div></div></div>
+<p>
+        This example creates $N$ randomly distributed particles in a periodic domain.
+        For each particle, the number of neighbouring particles within a certain
+        radius is counted.
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">random</span><span class="special">&gt;</span>
+
+<span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
+<span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
+    <span class="comment">// Create a 2d particle container with one additional variable which</span>
+    <span class="comment">// will hold the count for each particle</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">count</span><span class="special">,</span> <span class="keyword">int</span><span class="special">,</span> <span class="string">"number_of_neighbours"</span><span class="special">)</span>
+    <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;,</span><span class="number">2</span><span class="special">&gt;</span> <span class="identifier">container_type</span><span class="special">;</span>
+
+    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">container_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
+
+    <span class="comment">// set radius and number of particles</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">radius</span> <span class="special">=</span> <span class="number">0.5</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">100</span><span class="special">;</span>
+
+    <span class="comment">// create the $N$ particles</span>
+    <span class="identifier">container_type</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+
+    <span class="comment">// create N particles uniformly distributed</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">),</span> <span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">));</span>
+    <span class="special">}</span>
+
+    <span class="comment">// initiate neighbour search on a periodic 2d domain of side length L</span>
+    <span class="comment">// set average number of particles per cell to 1</span>
+    <span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">),</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="number">1</span><span class="special">,</span> <span class="number">1</span><span class="special">),</span>
+                                    <span class="identifier">vbool2</span><span class="special">(</span><span class="keyword">true</span><span class="special">,</span> <span class="keyword">true</span><span class="special">));</span>
+
+    <span class="comment">// count neighbours around each particle (note: includes self!) and store in</span>
+    <span class="comment">// `count` variable</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+      <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span>
+                                     <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">],</span> <span class="identifier">radius</span><span class="special">);</span>
+           <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">count</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]++;</span>
+      <span class="special">}</span>
+    <span class="special">}</span>
+  <span class="special">}</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.examples_container_iterator_api.molecular_dynamics_linear_spring"></a><a class="link" href="examples_container_iterator_api.html#aboria.examples_container_iterator_api.molecular_dynamics_linear_spring" title="Molecular Dynamics (Linear Spring) (MD)">Molecular
+      Dynamics (Linear Spring) (MD)</a>
+</h3></div></div></div>
+<p>
+        Simple Molecular Dynamics of $N$ particles interacting via a linear spring
+        potential.
+      </p>
+<p>
+        This example creates $N$ particles within a two-dimensional square domain,
+        with periodic boundary conditions.
+      </p>
+<p>
+        There is a linear spring force $\mathbf{f}_{ij}$ between particles $i$ and
+        $j$ with a rest separation of $r$ (constant for all particles), and a cutoff
+        at $r$. That is, if $\mathbf{r}_i$ is the position of particle $i$ and $\mathbf{dx}_{ij}=\mathbf{r}_j-\mathbf{r}_j$,
+        then
+      </p>
+<p>
+        $$ \mathbf{f}_{ij} = \begin{cases} \frac{r-|\mathbf{dx}_{ij}|}{|\mathbf{dx}_{ij}|}\mathbf{dx}_{ij},
+        &amp; \text{for } |\mathbf{dx}_{ij}|&lt;r \\ 0 &amp; \text{otherwise}. \end{cases}
+        $$
+      </p>
+<p>
+        We wish to use a leap frog integrator to evolve positions $\mathbf{r}_i$
+        using velocities $\mathbf{v}_i$ and accelerations $\mathbf{a}_i = \sum_j
+        \mathbf{f}_{ij}$. This gives the following update equations for each timestep
+        $n$
+      </p>
+<p>
+        \begin{align*} \mathbf{v}^{n+1}_i &amp;= \mathbf{v}^n_i + \frac{dt}{m_i}
+        \sum_j \mathbf{f}^n_{ij} \\ \mathbf{r}^{n+1}_i &amp;= \mathbf{r}^n_i + dt,
+        \mathbf{v}^{n+1}_i. \end{align*}
+      </p>
+<p>
+        We implement this in Aboria using the code given below. Firstly we create
+        the particle set data structure and add particles, ensuring that we have
+        an initial condition where all the spring forces are $\mathbf{f}_{ij}=0$.
+        Then we start the timestep loop, using our update equations given above.
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">math</span><span class="special">/</span><span class="identifier">constants</span><span class="special">/</span><span class="identifier">constants</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">math</span><span class="special">.</span><span class="identifier">h</span><span class="special">&gt;</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">random</span><span class="special">&gt;</span>
+
+<span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
+<span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">PI</span> <span class="special">=</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">math</span><span class="special">::</span><span class="identifier">constants</span><span class="special">::</span><span class="identifier">pi</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;();</span>
+
+    <span class="comment">// Create a 2d particle container with one additional variable</span>
+    <span class="comment">// "velocity", represented by a 2d double vector</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span> <span class="identifier">vdouble2</span><span class="special">,</span> <span class="string">"velocity"</span><span class="special">)</span>
+            <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;,</span><span class="number">2</span><span class="special">&gt;</span> <span class="identifier">container_type</span><span class="special">;</span>
+
+    <span class="keyword">typedef</span> <span class="keyword">typename</span> <span class="identifier">container_type</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
+    <span class="identifier">container_type</span> <span class="identifier">particles</span><span class="special">;</span>
+
+    <span class="comment">// set parameters for the MD simulation</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">timesteps</span> <span class="special">=</span> <span class="number">3000</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">nout</span> <span class="special">=</span> <span class="number">200</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">timesteps_per_out</span> <span class="special">=</span> <span class="identifier">timesteps</span> <span class="special">/</span> <span class="identifier">nout</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">L</span> <span class="special">=</span> <span class="number">31.0</span> <span class="special">/</span> <span class="number">1000.0</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">30</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">diameter</span> <span class="special">=</span> <span class="number">0.0022</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">k</span> <span class="special">=</span> <span class="number">1.0e01</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">dens</span> <span class="special">=</span> <span class="number">1160.0</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">mass</span> <span class="special">=</span> <span class="identifier">PI</span> <span class="special">*</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="number">0.5</span> <span class="special">*</span> <span class="identifier">diameter</span><span class="special">,</span> <span class="number">2</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">dens</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">reduced_mass</span> <span class="special">=</span> <span class="number">0.5</span> <span class="special">*</span> <span class="identifier">mass</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">dt</span> <span class="special">=</span> <span class="special">(</span><span class="number">1.0</span> <span class="special">/</span> <span class="number">50.0</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">PI</span> <span class="special">/</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">sqrt</span><span class="special">(</span><span class="identifier">k</span> <span class="special">/</span> <span class="identifier">reduced_mass</span><span class="special">);</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">v0</span> <span class="special">=</span> <span class="identifier">L</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">timesteps</span> <span class="special">*</span> <span class="identifier">dt</span><span class="special">);</span>
+
+    <span class="comment">// initiate neighbour search on a periodic 2d domain of side length L</span>
+    <span class="comment">// set average number of particles per cell to 1</span>
+    <span class="identifier">particles</span><span class="special">.</span><span class="identifier">init_neighbour_search</span><span class="special">(</span><span class="identifier">vdouble2</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">),</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">L</span><span class="special">,</span> <span class="identifier">L</span><span class="special">),</span>
+                                    <span class="identifier">vbool2</span><span class="special">(</span><span class="keyword">true</span><span class="special">,</span> <span class="keyword">true</span><span class="special">));</span>
+
+    <span class="comment">// create N particles, ensuring that they do not overlap, according</span>
+    <span class="comment">// to the set diameter. set the initial velocity in a random direction</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">uniform_real_distribution</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">uni</span><span class="special">(</span><span class="number">0</span><span class="special">,</span> <span class="number">1</span><span class="special">);</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+      <span class="keyword">bool</span> <span class="identifier">free_position</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
+
+      <span class="comment">// create new particle</span>
+      <span class="keyword">typename</span> <span class="identifier">container_type</span><span class="special">::</span><span class="identifier">value_type</span> <span class="identifier">p</span><span class="special">;</span>
+
+      <span class="comment">// set a random direction, and initialise velocity</span>
+      <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">theta</span> <span class="special">=</span> <span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">)</span> <span class="special">*</span> <span class="number">2</span> <span class="special">*</span> <span class="identifier">PI</span><span class="special">;</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">=</span> <span class="identifier">v0</span> <span class="special">*</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">cos</span><span class="special">(</span><span class="identifier">theta</span><span class="special">),</span> <span class="identifier">sin</span><span class="special">(</span><span class="identifier">theta</span><span class="special">));</span>
+
+      <span class="comment">// randomly choose positions within the domain until one is</span>
+      <span class="comment">// found with no other particles within a range equal to diameter</span>
+      <span class="keyword">while</span> <span class="special">(</span><span class="identifier">free_position</span> <span class="special">==</span> <span class="keyword">false</span><span class="special">)</span> <span class="special">{</span>
+        <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">)</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">(</span><span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">L</span><span class="special">,</span> <span class="identifier">uni</span><span class="special">(</span><span class="identifier">generator</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">L</span><span class="special">);</span>
+        <span class="identifier">free_position</span> <span class="special">=</span> <span class="keyword">true</span><span class="special">;</span>
+
+        <span class="comment">// loop over all neighbouring particles within a euclidean distance</span>
+        <span class="comment">// of size "diameter"</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">p</span><span class="special">),</span>
+                                       <span class="identifier">diameter</span><span class="special">);</span>
+             <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+          <span class="identifier">free_position</span> <span class="special">=</span> <span class="keyword">false</span><span class="special">;</span>
+          <span class="keyword">break</span><span class="special">;</span>
+        <span class="special">}</span>
+      <span class="special">}</span>
+      <span class="identifier">particles</span><span class="special">.</span><span class="identifier">push_back</span><span class="special">(</span><span class="identifier">p</span><span class="special">);</span>
+    <span class="special">}</span>
+
+    <span class="comment">// perform MD timestepping</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">io</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">io</span> <span class="special">&lt;</span> <span class="identifier">nout</span><span class="special">;</span> <span class="special">++</span><span class="identifier">io</span><span class="special">)</span> <span class="special">{</span>
+
+      <span class="comment">// on every i/o step write particle container to a vtk</span>
+      <span class="comment">// unstructured grid file</span>
+      <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="string">"."</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">flush</span><span class="special">;</span>
+<span class="preprocessor">#ifdef</span> <span class="identifier">HAVE_VTK</span>
+      <span class="identifier">vtkWriteGrid</span><span class="special">(</span><span class="string">"particles"</span><span class="special">,</span> <span class="identifier">io</span><span class="special">,</span> <span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_grid</span><span class="special">(</span><span class="keyword">true</span><span class="special">));</span>
+<span class="preprocessor">#endif</span>
+      <span class="keyword">for</span> <span class="special">(</span><span class="keyword">int</span> <span class="identifier">t</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">t</span> <span class="special">&lt;</span> <span class="identifier">timesteps_per_out</span><span class="special">;</span> <span class="identifier">t</span><span class="special">++)</span> <span class="special">{</span>
+
+        <span class="comment">// loop through particles and calculate velocity update</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">:</span> <span class="identifier">particles</span><span class="special">)</span> <span class="special">{</span>
+          <span class="keyword">auto</span> <span class="identifier">sum</span> <span class="special">=</span> <span class="identifier">vdouble2</span><span class="special">::</span><span class="identifier">Constant</span><span class="special">(</span><span class="number">0</span><span class="special">);</span>
+
+          <span class="comment">// use a range search with radius `diameter` to</span>
+          <span class="comment">// accelerate velocity update</span>
+          <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">j</span> <span class="special">=</span> <span class="identifier">euclidean_search</span><span class="special">(</span><span class="identifier">particles</span><span class="special">.</span><span class="identifier">get_query</span><span class="special">(),</span>
+                                         <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">),</span> <span class="identifier">diameter</span><span class="special">);</span>
+               <span class="identifier">j</span> <span class="special">!=</span> <span class="keyword">false</span><span class="special">;</span> <span class="special">++</span><span class="identifier">j</span><span class="special">)</span> <span class="special">{</span>
+            <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">r</span> <span class="special">=</span> <span class="identifier">j</span><span class="special">.</span><span class="identifier">dx</span><span class="special">().</span><span class="identifier">norm</span><span class="special">();</span>
+            <span class="keyword">if</span> <span class="special">(</span><span class="identifier">r</span> <span class="special">!=</span> <span class="number">0</span><span class="special">)</span> <span class="special">{</span>
+              <span class="identifier">sum</span> <span class="special">+=</span> <span class="special">-</span><span class="identifier">k</span> <span class="special">*</span> <span class="special">(</span><span class="identifier">diameter</span> <span class="special">/</span> <span class="identifier">r</span> <span class="special">-</span> <span class="number">1.0</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">j</span><span class="special">.</span><span class="identifier">dx</span><span class="special">();</span>
+            <span class="special">}</span>
+          <span class="special">}</span>
+          <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">+=</span> <span class="identifier">dt</span> <span class="special">*</span> <span class="identifier">sum</span> <span class="special">/</span> <span class="identifier">mass</span><span class="special">;</span>
+        <span class="special">}</span>
+
+        <span class="comment">// now loop through particles and use velocity</span>
+        <span class="comment">// to update the particle positions</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="keyword">auto</span> <span class="identifier">i</span> <span class="special">:</span> <span class="identifier">particles</span><span class="special">)</span> <span class="special">{</span>
+          <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">+=</span> <span class="identifier">dt</span> <span class="special">*</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">);</span>
+        <span class="special">}</span>
+
+        <span class="comment">// since we have changed the particle positions, we need</span>
+        <span class="comment">// to update the spatial data structures</span>
+        <span class="identifier">particles</span><span class="special">.</span><span class="identifier">update_positions</span><span class="special">();</span>
+      <span class="special">}</span>
+    <span class="special">}</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">cout</span> <span class="special">&lt;&lt;</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">endl</span><span class="special">;</span>
+  <span class="special">}</span>
+</pre>
+</div>
+<div class="section">
+<div class="titlepage"><div><div><h3 class="title">
+<a name="aboria.examples_container_iterator_api.1955_fput_experiment"></a><a class="link" href="examples_container_iterator_api.html#aboria.examples_container_iterator_api.1955_fput_experiment" title="1955 FPUT Experiment">1955
+      FPUT Experiment</a>
+</h3></div></div></div>
+<p>
+        The first-ever numerical experiment was performed in 1955 by Fermi, Pasta,
+        Ulam, and Tsingou. They simulated a lattice of particles, with nearest neighbour
+        particles connected by springs. The motion of the particles over time is
+        chaotic and quasi-periodic.
+      </p>
+<p>
+        This experiment was the first to demonstrate the importance of computer simulation
+        in the analysis of non-linear systems, and demonstrates the paradox that
+        many apparently chaotic systems exhibit periodic behaviour.
+      </p>
+<p>
+        We reproduce this experiment using Aboria below. Of course, being a 1D lattice
+        code, Aboria is overkill for this type of simulation, but given that the
+        first numerical experiment was a particle simulation I had to include it
+        in the examples.
+      </p>
+<p>
+        The equations of motion for each particle in terms of its displacement from
+        a rest configuration are
+      </p>
+<p>
+        $$ \frac{d^2 u_j}{dt^2} = \frac{c^2}{h^2} (u_{j+1}+u_{j-1}-2u_{j}) + \alpha
+        [(u_{j+1}-u_{j})^2 - (u_{j}-u_{j-1})^2] $$
+      </p>
+<p>
+        If we calculate the energy in the lowest mode
+      </p>
+<p>
+        $$ E_1 = 0.5(\dot{A_1}^2 + w_1^2 A_1^2) $$
+      </p>
+<p>
+        where $w_1^2 = 4 \sin^2(\pi/2N)$, and $A_1 = \sqrt{2/(N+1)}\sum_{n=1}^N u_n
+        \sin(n\pi/(N+1))$ and set up an initial condition with all the energy in
+        this lowest mode, then we see that while the energy initially diffuses away
+        to the higher modes, after a long enough time the energy returns to the lowest
+        modes until the system is in its original state.
+      </p>
+<p>
+        If you compile the code below with Cairo enabled, then it will output svg
+        files showing the image below. The circles are the particles, coloured red
+        by their displacement $u$, and the line shows the amount of energy in the
+        lowest mode versus time.
+      </p>
+<p>
+        <span class="inlinemediaobject"><object type="image/svg+xml" data="../images/fput/fput999.svg" width="640" height="128" align="middle"></object></span>
+      </p>
+<pre class="programlisting"><span class="preprocessor">#include</span> <span class="string">"Aboria.h"</span>
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">random</span><span class="special">&gt;</span>
+<span class="keyword">using</span> <span class="keyword">namespace</span> <span class="identifier">Aboria</span><span class="special">;</span>
+
+<span class="preprocessor">#include</span> <span class="special">&lt;</span><span class="identifier">boost</span><span class="special">/</span><span class="identifier">math</span><span class="special">/</span><span class="identifier">constants</span><span class="special">/</span><span class="identifier">constants</span><span class="special">.</span><span class="identifier">hpp</span><span class="special">&gt;</span>
+
+<span class="keyword">int</span> <span class="identifier">main</span><span class="special">()</span> <span class="special">{</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">PI</span> <span class="special">=</span> <span class="identifier">boost</span><span class="special">::</span><span class="identifier">math</span><span class="special">::</span><span class="identifier">constants</span><span class="special">::</span><span class="identifier">pi</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;();</span>
+
+    <span class="comment">// setup types</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">velocity</span><span class="special">,</span> <span class="identifier">vdouble1</span><span class="special">,</span> <span class="string">"velocity"</span><span class="special">)</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">acceleration</span><span class="special">,</span> <span class="identifier">vdouble1</span><span class="special">,</span> <span class="string">"acceleration"</span><span class="special">)</span>
+    <span class="identifier">ABORIA_VARIABLE</span><span class="special">(</span><span class="identifier">acceleration0</span><span class="special">,</span> <span class="identifier">vdouble1</span><span class="special">,</span> <span class="string">"old acceleration"</span><span class="special">)</span>
+    <span class="keyword">typedef</span> <span class="identifier">Particles</span><span class="special">&lt;</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">tuple</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">,</span> <span class="identifier">acceleration</span><span class="special">,</span> <span class="identifier">acceleration0</span><span class="special">&gt;,</span> <span class="number">1</span><span class="special">&gt;</span>
+        <span class="identifier">particles_t</span><span class="special">;</span>
+    <span class="keyword">typedef</span> <span class="identifier">particles_t</span><span class="special">::</span><span class="identifier">position</span> <span class="identifier">position</span><span class="special">;</span>
+
+    <span class="comment">// simulation parameters</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">c</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">alpha</span> <span class="special">=</span> <span class="number">0.25</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">h</span> <span class="special">=</span> <span class="number">1.0</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">scale</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">c</span><span class="special">,</span> <span class="number">2</span><span class="special">)</span> <span class="special">/</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">h</span><span class="special">,</span> <span class="number">2</span><span class="special">);</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">N</span> <span class="special">=</span> <span class="number">32</span><span class="special">;</span>
+
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">w1</span> <span class="special">=</span> <span class="number">2.0</span> <span class="special">*</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">sin</span><span class="special">(</span><span class="identifier">PI</span> <span class="special">/</span> <span class="special">(</span><span class="number">2.0</span> <span class="special">*</span> <span class="identifier">N</span><span class="special">));</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">Tf</span> <span class="special">=</span> <span class="number">160</span> <span class="special">*</span> <span class="number">2</span> <span class="special">*</span> <span class="identifier">PI</span> <span class="special">/</span> <span class="identifier">w1</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">long</span> <span class="identifier">timesteps</span> <span class="special">=</span> <span class="number">1000000</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">nout</span> <span class="special">=</span> <span class="number">1000</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">timesteps_per_out</span> <span class="special">=</span> <span class="identifier">timesteps</span> <span class="special">/</span> <span class="identifier">nout</span><span class="special">;</span>
+    <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">dt</span> <span class="special">=</span> <span class="keyword">static_cast</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;(</span><span class="identifier">Tf</span><span class="special">)</span> <span class="special">/</span> <span class="identifier">timesteps</span><span class="special">;</span>
+
+    <span class="comment">// create particles</span>
+    <span class="identifier">particles_t</span> <span class="identifier">particles</span><span class="special">(</span><span class="identifier">N</span><span class="special">);</span>
+
+    <span class="comment">// set intial variables, position here is simply a displacement</span>
+    <span class="comment">// for each particle away from its resting position</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">sin</span><span class="special">((</span><span class="identifier">i</span> <span class="special">+</span> <span class="number">1</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">PI</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">N</span> <span class="special">+</span> <span class="number">1</span><span class="special">));</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">acceleration</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">]</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+      <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">]</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+    <span class="special">}</span>
+
+    <span class="comment">// time loop</span>
+    <span class="identifier">std</span><span class="special">::</span><span class="identifier">vector</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;</span> <span class="identifier">energy</span><span class="special">(</span><span class="identifier">nout</span><span class="special">,</span> <span class="number">0</span><span class="special">);</span>
+    <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">out</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">out</span> <span class="special">&lt;</span> <span class="identifier">nout</span><span class="special">;</span> <span class="special">++</span><span class="identifier">out</span><span class="special">)</span> <span class="special">{</span>
+      <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">t</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">t</span> <span class="special">&lt;</span> <span class="identifier">timesteps_per_out</span><span class="special">;</span> <span class="special">++</span><span class="identifier">t</span><span class="special">)</span> <span class="special">{</span>
+        <span class="comment">// advance position: x1 = x0 + dt*v + 0.5*dt^2*a</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+          <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span>
+              <span class="identifier">dt</span> <span class="special">*</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+</span>
+              <span class="number">0.5</span> <span class="special">*</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">dt</span><span class="special">,</span> <span class="number">2</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">acceleration</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">];</span>
+        <span class="special">}</span>
+
+        <span class="comment">// calculate acceleration: a1 = f(x1)</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+          <span class="comment">// get displacements, taking into account boundary conditions</span>
+          <span class="comment">// of x0 = xN = 0</span>
+          <span class="keyword">const</span> <span class="keyword">double</span> <span class="special">&amp;</span><span class="identifier">x</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">];</span>
+          <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">xp1</span> <span class="special">=</span>
+              <span class="identifier">i</span> <span class="special">!=</span> <span class="identifier">N</span> <span class="special">-</span> <span class="number">1</span> <span class="special">?</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span> <span class="special">+</span> <span class="number">1</span><span class="special">][</span><span class="number">0</span><span class="special">]</span> <span class="special">:</span> <span class="number">0</span><span class="special">;</span>
+          <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">xm1</span> <span class="special">=</span> <span class="identifier">i</span> <span class="special">!=</span> <span class="number">0</span> <span class="special">?</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span> <span class="special">-</span> <span class="number">1</span><span class="special">][</span><span class="number">0</span><span class="special">]</span> <span class="special">:</span> <span class="number">0</span><span class="special">;</span>
+
+          <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">acceleration0</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">acceleration</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">];</span>
+          <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">acceleration</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">]</span> <span class="special">=</span>
+              <span class="identifier">scale</span> <span class="special">*</span> <span class="special">(</span><span class="identifier">xp1</span> <span class="special">+</span> <span class="identifier">xm1</span> <span class="special">-</span> <span class="number">2</span> <span class="special">*</span> <span class="identifier">x</span><span class="special">)</span> <span class="special">+</span>
+              <span class="identifier">alpha</span> <span class="special">*</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">xp1</span> <span class="special">-</span> <span class="identifier">x</span><span class="special">,</span> <span class="number">2</span><span class="special">)</span> <span class="special">-</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">x</span> <span class="special">-</span> <span class="identifier">xm1</span><span class="special">,</span> <span class="number">2</span><span class="special">));</span>
+        <span class="special">}</span>
+
+        <span class="comment">// advance velocity: v1 = v0 + 0.5*dt*(a0 + a1)</span>
+        <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+          <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+=</span> <span class="number">0.5</span> <span class="special">*</span> <span class="identifier">dt</span> <span class="special">*</span>
+                                         <span class="special">(</span><span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">acceleration0</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]</span> <span class="special">+</span>
+                                          <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">acceleration</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">]);</span>
+        <span class="special">}</span>
+      <span class="special">}</span>
+      <span class="comment">// calculate energy in the lowest mode</span>
+      <span class="comment">// (w1*A1)^2 = potential energy</span>
+      <span class="comment">// (Adot1)^2 = kinetic energy</span>
+      <span class="keyword">double</span> <span class="identifier">A1</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+      <span class="keyword">double</span> <span class="identifier">Adot1</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span>
+      <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="special">&amp;</span><span class="identifier">u</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">];</span>
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="special">&amp;</span><span class="identifier">v</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">velocity</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">];</span>
+        <span class="identifier">A1</span> <span class="special">+=</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">sqrt</span><span class="special">(</span><span class="number">2.0</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">N</span> <span class="special">+</span> <span class="number">1</span><span class="special">))</span> <span class="special">*</span> <span class="identifier">u</span> <span class="special">*</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">sin</span><span class="special">((</span><span class="identifier">i</span> <span class="special">+</span> <span class="number">1</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">PI</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">N</span> <span class="special">+</span> <span class="number">1</span><span class="special">));</span>
+        <span class="identifier">Adot1</span> <span class="special">+=</span>
+            <span class="identifier">std</span><span class="special">::</span><span class="identifier">sqrt</span><span class="special">(</span><span class="number">2.0</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">N</span> <span class="special">+</span> <span class="number">1</span><span class="special">))</span> <span class="special">*</span> <span class="identifier">v</span> <span class="special">*</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">sin</span><span class="special">((</span><span class="identifier">i</span> <span class="special">+</span> <span class="number">1</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">PI</span> <span class="special">/</span> <span class="special">(</span><span class="identifier">N</span> <span class="special">+</span> <span class="number">1</span><span class="special">));</span>
+      <span class="special">}</span>
+      <span class="identifier">energy</span><span class="special">[</span><span class="identifier">out</span><span class="special">]</span> <span class="special">=</span> <span class="number">0.5</span> <span class="special">*</span> <span class="special">(</span><span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">Adot1</span><span class="special">,</span> <span class="number">2</span><span class="special">)</span> <span class="special">+</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">pow</span><span class="special">(</span><span class="identifier">w1</span> <span class="special">*</span> <span class="identifier">A1</span><span class="special">,</span> <span class="number">2</span><span class="special">));</span>
+
+      <span class="comment">// visualise system if compiled with cairo</span>
+<span class="preprocessor">#ifdef</span> <span class="identifier">HAVE_CAIRO</span>
+      <span class="comment">// create surface</span>
+      <span class="keyword">const</span> <span class="keyword">int</span> <span class="identifier">image_size</span> <span class="special">=</span> <span class="number">512</span><span class="special">;</span>
+      <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">ratio</span> <span class="special">=</span> <span class="number">1.0</span> <span class="special">/</span> <span class="number">5.0</span><span class="special">;</span>
+      <span class="identifier">cairo_surface_t</span> <span class="special">*</span><span class="identifier">surface</span> <span class="special">=</span> <span class="identifier">cairo_svg_surface_create</span><span class="special">(</span>
+          <span class="special">(</span><span class="string">"fput"</span> <span class="special">+</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">to_string</span><span class="special">(</span><span class="identifier">out</span><span class="special">)</span> <span class="special">+</span> <span class="string">".svg"</span><span class="special">).</span><span class="identifier">c_str</span><span class="special">(),</span> <span class="identifier">image_size</span><span class="special">,</span>
+          <span class="identifier">image_size</span> <span class="special">*</span> <span class="identifier">ratio</span><span class="special">);</span>
+      <span class="identifier">cairo_svg_surface_restrict_to_version</span><span class="special">(</span><span class="identifier">surface</span><span class="special">,</span> <span class="identifier">CAIRO_SVG_VERSION_1_2</span><span class="special">);</span>
+      <span class="identifier">cairo_t</span> <span class="special">*</span><span class="identifier">cr</span> <span class="special">=</span> <span class="identifier">cairo_create</span><span class="special">(</span><span class="identifier">surface</span><span class="special">);</span>
+
+      <span class="comment">// set source</span>
+      <span class="identifier">cairo_scale</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="identifier">image_size</span><span class="special">,</span> <span class="identifier">image_size</span><span class="special">);</span>
+      <span class="identifier">cairo_set_source_rgba</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">1.0</span><span class="special">);</span>
+      <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">lw</span> <span class="special">=</span> <span class="number">0.01</span><span class="special">;</span>
+      <span class="identifier">cairo_set_line_width</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="identifier">lw</span><span class="special">);</span>
+
+      <span class="comment">// draw particles</span>
+      <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">0</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">N</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="special">&amp;</span><span class="identifier">u</span> <span class="special">=</span> <span class="identifier">get</span><span class="special">&lt;</span><span class="identifier">position</span><span class="special">&gt;(</span><span class="identifier">particles</span><span class="special">)[</span><span class="identifier">i</span><span class="special">][</span><span class="number">0</span><span class="special">];</span>
+        <span class="keyword">const</span> <span class="keyword">double</span> <span class="identifier">pos</span> <span class="special">=</span> <span class="number">0.1</span> <span class="special">*</span> <span class="identifier">u</span> <span class="special">+</span> <span class="special">(</span><span class="identifier">i</span> <span class="special">+</span> <span class="number">1</span><span class="special">)</span> <span class="special">*</span> <span class="identifier">dx</span><span class="special">;</span>
+        <span class="identifier">cairo_set_source_rgba</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="identifier">std</span><span class="special">::</span><span class="identifier">abs</span><span class="special">(</span><span class="identifier">u</span><span class="special">),</span> <span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">1.0</span><span class="special">);</span>
+        <span class="identifier">cairo_arc</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="identifier">pos</span><span class="special">,</span> <span class="number">0.5</span> <span class="special">*</span> <span class="identifier">ratio</span><span class="special">,</span> <span class="identifier">lw</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">2</span> <span class="special">*</span> <span class="identifier">PI</span><span class="special">);</span>
+        <span class="identifier">cairo_fill</span><span class="special">(</span><span class="identifier">cr</span><span class="special">);</span>
+      <span class="special">}</span>
+
+      <span class="comment">// draw energy</span>
+      <span class="identifier">cairo_set_source_rgba</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="number">1</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="number">0.8</span><span class="special">);</span>
+      <span class="identifier">cairo_move_to</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="number">0</span><span class="special">,</span> <span class="identifier">energy</span><span class="special">[</span><span class="number">0</span><span class="special">]</span> <span class="special">*</span> <span class="identifier">ratio</span><span class="special">);</span>
+      <span class="keyword">for</span> <span class="special">(</span><span class="identifier">size_t</span> <span class="identifier">i</span> <span class="special">=</span> <span class="number">1</span><span class="special">;</span> <span class="identifier">i</span> <span class="special">&lt;</span> <span class="identifier">out</span><span class="special">;</span> <span class="special">++</span><span class="identifier">i</span><span class="special">)</span> <span class="special">{</span>
+        <span class="identifier">cairo_line_to</span><span class="special">(</span><span class="identifier">cr</span><span class="special">,</span> <span class="keyword">static_cast</span><span class="special">&lt;</span><span class="keyword">double</span><span class="special">&gt;(</span><span class="identifier">i</span><span class="special">)</span> <span class="special">/</span> <span class="identifier">nout</span><span class="special">,</span>
+                      <span class="special">(</span><span class="number">1.0</span> <span class="special">-</span> <span class="number">10</span> <span class="special">*</span> <span class="identifier">energy</span><span class="special">[</span><span class="identifier">i</span><span class="special">])</span> <span class="special">*</span> <span class="identifier">ratio</span><span class="special">);</span>
+      <span class="special">}</span>
+      <span class="identifier">cairo_stroke</span><span class="special">(</span><span class="identifier">cr</span><span class="special">);</span>
+
+      <span class="comment">// clean up</span>
+      <span class="identifier">cairo_destroy</span><span class="special">(</span><span class="identifier">cr</span><span class="special">);</span>
+      <span class="identifier">cairo_surface_destroy</span><span class="special">(</span><span class="identifier">surface</span><span class="special">);</span>
+<span class="preprocessor">#endif</span> <span class="comment">// HAVE_CAIRO</span>
+    <span class="special">}</span>
+  <span class="special">}</span>
+</pre>
+</div>
+</div>
+<table xmlns:rev="http://www.cs.rpi.edu/~gregod/boost/tools/doc/revision" width="100%"><tr>
+<td align="left"></td>
+<td align="right"><div class="copyright-footer">Copyright &#169; 2015-2018 Martin
+      Robinson</div></td>
+</tr></table>
+<hr>
+<div class="spirit-nav">
+<a accesskey="p" href="symbolic_expressions.html"><img src="../images/prev.png" alt="Prev"></a><a accesskey="u" href="../index.html"><img src="../images/up.png" alt="Up"></a><a accesskey="h" href="../index.html"><img src="../images/home.png" alt="Home"></a><a accesskey="n" href="examples_symbolic_api.html"><img src="../images/next.png" alt="Next"></a>
+</div>
+</body>
+</html>
