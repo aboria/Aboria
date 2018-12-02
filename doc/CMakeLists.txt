@@ -70,6 +70,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
         ../tests/data_structures.h
         ../tests/symbolic.h
         ../tests/md.h
+        ../tests/example_container.h
         ../tests/bd.h
         ../tests/dem.h
         ../tests/fput.h

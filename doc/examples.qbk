@@ -1,8 +1,10 @@
 
-[section Examples]
+[section Examples - Container/Iterator API]
 
-
-[section Container/Iterator API]
+[section Neighbourhood Search]
+[import ../tests/example_container.h]
+[example_neighbour_search]
+[endsect]
 
 [section Molecular Dynamics (Linear Spring) (MD)]
 [import ../tests/md.h]
@@ -17,7 +19,7 @@
 [endsect]
 
 
-[section Symbolic API]
+[section Examples - Symbolic API]
 
 [section Molecular Dynamics (Linear Spring) (MD)]
 [md_symbolic]
@@ -29,9 +31,9 @@
 [bd]
 [endsect]
 
-[section Discrete Element Model (DEM)] 
+[section Discrete Element Model (DEM)]
 
-An Discrete Element Model example, simulating a polydisperse set of spherical 
+An Discrete Element Model example, simulating a polydisperse set of spherical
 particles falling onto an surface.
 
 [import ../tests/dem.h]
@@ -41,7 +43,7 @@ particles falling onto an surface.
 
 [section Smoothed Particle Hydrodynamics (SPH)]
 
-An Smoothed Particle Hydrodynamics example, simulating a 2D water column over a 
+An Smoothed Particle Hydrodynamics example, simulating a 2D water column over a
 no-slip boundary. The *x* and *y* directions are periodic.
 
 [import ../tests/sph.h]
@@ -51,7 +53,7 @@ no-slip boundary. The *x* and *y* directions are periodic.
 
 [endsect]
 
-[section Kernel Operator API]
+[section Examples - Kernel Operator API]
 
 [section Radial Basis Function (RBF) Interpolation]
 
@@ -63,8 +65,6 @@ no-slip boundary. The *x* and *y* directions are periodic.
 
 [import ../tests/rbf_pde.h]
 [rbf_pde]
-
-[endsect]
 
 [endsect]
 

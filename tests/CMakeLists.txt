@@ -44,6 +44,7 @@ if (Aboria_RUN_TESTS)
         DocGettingStartedTest
         ParallelTest
         H2Test
+        ExampleContainerTest
         )
     set(releaseonly_test_suites
         BDTest
@@ -150,7 +151,14 @@ set(IteratorsTest
     test_lattice_within_distance
     )
 
-
+set(ExampleContainerTestFile example_container.h)
+set(ExampleContainerTest
+    test_CellList
+    test_CellListOrdered
+    test_Kdtree
+    test_KdtreeNanoflann
+    test_HyperOctree
+    )
 
 set(SymbolicTestFile symbolic.h)
 set(SymbolicTest
