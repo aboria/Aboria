@@ -1109,17 +1109,13 @@ public:
     }
   }
 
-  void test_gaussian(void) {
-    helper_param_sweep_per_kernel<gaussian_kernel>(16000);
-  }
+  void test_gaussian(void) { helper_sweep_dd_sizes<gaussian_kernel>(16000); }
   void test_gaussian_sweep_3d(void) { helper_sweep_3d<gaussian_kernel>(2000); }
 
-  void test_matern(void) {
-    helper_param_sweep_per_kernel<matern_kernel>(32000);
-  }
+  void test_matern(void) { helper_sweep_dd_sizes<matern_kernel>(32000); }
 
   void test_exponential(void) {
-    helper_param_sweep_per_kernel<exponential_kernel>(32000);
+    helper_sweep_dd_sizes<exponential_kernel>(32000);
   }
   void test_rational_quadratic(void) {
     helper_sweep_particle_size_sigma<rational_quadratic_kernel>(2000);

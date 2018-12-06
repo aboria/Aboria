@@ -1567,7 +1567,7 @@ public:
       if (i > 0) {
         coupling_matrix.resize(nodes.size());
       }
-      const int num_threads = omp_get_max_threads();
+      // const int num_threads = omp_get_max_threads();
       if (traits_type::data_on_GPU) {
         // need to copy data from/to gpu
         typename traits_type::template vector<storage_vector_type> tmp_indicies(
