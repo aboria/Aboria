@@ -418,6 +418,16 @@ public:
     return ret;
   }
 
+  /// returns the sum of every element in the vector
+  CUDA_HOST_DEVICE
+  T sum() const {
+    T ret = 0;
+    for (size_t i = 0; i < N; ++i) {
+      ret += mem[i];
+    }
+    return ret;
+  }
+
   /// returns the raw memory array containing the data for the vector
   CUDA_HOST_DEVICE
   T *data() { return mem; }
