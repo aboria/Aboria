@@ -28,6 +28,7 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Traits.h
     ../src/Get.h
     ../src/Evaluate.h
+    ../src/Preconditioners/MultiGridPreconditioner.h
     ../src/Search.h
     ../src/Vector.h
     ../src/FastMultipoleMethod.h

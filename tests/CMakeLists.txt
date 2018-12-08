@@ -58,7 +58,6 @@ if (Aboria_RUN_TESTS)
         #RbfStokesTest
         )
     set(default_off_test_suites
-        RbfParamSweepTest
         SpeedTest
         BenchmarkFMM
         BenchmarkHPC
@@ -271,15 +270,11 @@ if (Aboria_USE_THRUST)
     )
 endif()
 
-set(RbfParamSweepTestFile rbf_param_sweep.h)
-set(RbfParamSweepTest
-    test_param_sweep
-    )
-
 set(RbfInterpolationTestFile rbf_interpolation.h)
 set(RbfInterpolationTest
     test_CellList
     test_CellListOrdered
+    test_nanoflann_kdtree
     test_kdtree
     test_HyperOctree
     )
