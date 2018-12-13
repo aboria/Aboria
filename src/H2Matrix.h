@@ -36,158 +36,166 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef H2_MATRIX_H_
 #define H2_MATRIX_H_
 
+#include "DualBreadthFirstSearch.h"
 #include "detail/FastMultipoleMethod.h"
 #include <Eigen/SparseCore>
 
 namespace Aboria {
 
-template <typename Expansions, typename ColParticles,
-          typename Query = typename ColParticles::query_type>
+template <typename Expansions, typename RowParticles, typename ColParticles>
 class H2Matrix {
-  typedef typename Query::traits_type traits_type;
-  typedef typename Query::reference reference;
-  typedef typename Query::pointer pointer;
-  static const unsigned int dimension = Query::dimension;
-  typedef position_d<dimension> position;
-  typedef typename Query::child_iterator child_iterator;
-  typedef typename Query::all_iterator all_iterator;
-  typedef typename traits_type::template vector_type<child_iterator>::type
-      child_iterator_vector_type;
-  typedef typename traits_type::template vector_type<
-      child_iterator_vector_type>::type connectivity_type;
+  using row_query_t = typename RowParticles::query_type;
+  using col_query_t = typename ColParticles::query_type;
+  using traits_t = row_query_t::traits_type;
+  using row_reference = row_query_t::reference;
+  using col_reference = col_query_t::reference;
+  using row_pointer = row_query_t::pointer;
+  using col_pointer = col_query_t::pointer;
 
-  typedef typename Eigen::SparseMatrix<double> sparse_matrix_type;
-  typedef typename Eigen::Matrix<double, Eigen::Dynamic, 1> column_vector_type;
-  typedef typename Eigen::Matrix<int, Eigen::Dynamic, 1> index_vector_type;
-  typedef typename Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic>
-      dense_matrix_type;
-  typedef typename Expansions::p_vector_type p_vector_type;
-  typedef typename Expansions::m_vector_type m_vector_type;
-  typedef typename Expansions::l2p_matrix_type l2p_matrix_type;
-  typedef typename Expansions::p2m_matrix_type p2m_matrix_type;
-  typedef typename Expansions::p2p_matrix_type p2p_matrix_type;
-  typedef typename Expansions::l2l_matrix_type l2l_matrix_type;
-  typedef typename Expansions::m2l_matrix_type m2l_matrix_type;
-  typedef typename traits_type::template vector_type<int>::type int_vector_type;
-  typedef typename traits_type::template vector_type<p_vector_type>::type
-      p_vectors_type;
-  typedef typename traits_type::template vector_type<m_vector_type>::type
-      m_vectors_type;
-  typedef typename traits_type::template vector_type<l2p_matrix_type>::type
-      l2p_matrices_type;
-  typedef typename traits_type::template vector_type<p2m_matrix_type>::type
-      p2m_matrices_type;
-  typedef typename traits_type::template vector_type<p2p_matrix_type>::type
-      p2p_matrices_type;
-  typedef typename traits_type::template vector_type<p2p_matrices_type>::type
-      vector_of_p2p_matrices_type;
-  typedef typename traits_type::template vector_type<l2l_matrix_type>::type
-      l2l_matrices_type;
-  typedef typename traits_type::template vector_type<m2l_matrix_type>::type
-      m2l_matrices_type;
-  typedef typename traits_type::template vector_type<m2l_matrices_type>::type
-      vector_of_m2l_matrices_type;
-  typedef typename traits_type::template vector_type<size_t>::type indices_type;
-  typedef typename traits_type::template vector_type<indices_type>::type
-      vector_of_indices_type;
+  static const unsigned int dimension = row_query_t::dimension;
+  using position = position_d<dimension>;
+  using row_child_iterator = row_query_t::child_iterator;
+  using col_child_iterator = col_query_t::child_iterator;
+
+  using dual_bf_search_t = DualBreadthFirstSearch<row_query_t, col_query_t>;
+  using level_t = dual_bf_search_t::value_type;
+  using pair_t = level_t::value_type;
+  using tree_t = traits_type::template vector_type<level_t>::type;
+
+  using p_vector_t = Expansions::p_vector_type;
+  using m_vector_t = Expansions::m_vector_type;
+  using l_vector_t = Expansions::l_vector_type;
+  using l2p_matrix_t = Expansions::l2p_matrix_type;
+  using p2m_matrix_t = Expansions::p2m_matrix_type;
+  using p2p_matrix_t = Expansions::p2p_matrix_type;
+  using l2l_matrix_t = Expansions::l2l_matrix_type;
+  using m2m_matrix_t = Expansions::m2m_matrix_type;
+  using m2l_matrix_t = Expansions::m2l_matrix_type;
+
+  struct dual_node_t {
+    pair_t m_ci_pair;
+    enum { P2P, M2L } tag;
+    union m_op {
+      p2p_matrix_t p2p;
+      m2l_matrix_t m2l;
+    };
+
+    node_t(const pair_t &ci_pair) : m_ci_pair(ci_pair) {}
+  };
+
+  struct row_node_t {
+    row_child_iterator m_ci;
+    l_vector_t m_l;
+    enum { INTERNAL, LEAF } tag;
+    union {
+      l2l_matrix_t l2l;
+      p2l_matrix_t p2l;
+    };
+
+    row_node_t(const row_child_iterator &ci) : m_ci(ci) {}
+  };
+
+  struct col_node_t {
+    col_child_iterator m_ci;
+    m_vector_t m_m;
+    enum { INTERNAL, LEAF } tag;
+    union {
+      l2l_matrix_t m2m;
+      p2l_matrix_t m2p;
+    };
+    col_node_t(const col_child_iterator &ci) : m_ci(ci) {}
+  };
+
+  using dual_level_t =
+      typename traits_type::template vector_type<dual_node_t>::type;
+  using row_level_t =
+      typename traits_type::template vector_type<row_node_t>::type;
+  using col_level_t =
+      typename traits_type::template vector_type<col_node_t>::type;
+
+  using dual_tree_t =
+      typename traits_type::template vector_type<dual_level_t>::type;
+  using row_tree_t =
+      typename traits_type::template vector_type<row_level_t>::type;
+  using col_tree_t =
+      typename traits_type::template vector_type<col_level_t>::type;
 
   typedef typename Query::particle_iterator particle_iterator;
   typedef typename particle_iterator::reference particle_reference;
   typedef bbox<dimension> box_type;
 
   // vectors used to cache values
-  mutable m_vectors_type m_W;
-  mutable m_vectors_type m_g;
-  mutable p_vectors_type m_source_vector;
-  mutable p_vectors_type m_target_vector;
-
-  l2p_matrices_type m_l2p_matrices;
-  p2m_matrices_type m_p2m_matrices;
-  l2l_matrices_type m_l2l_matrices;
-  vector_of_p2p_matrices_type m_p2p_matrices;
-  vector_of_m2l_matrices_type m_m2l_matrices;
-  vector_of_indices_type m_row_indices;
-  vector_of_indices_type m_col_indices;
-
-  int_vector_type m_ext_indicies;
-
-  connectivity_type m_strong_connectivity;
-  connectivity_type m_weak_connectivity;
+  mutable row_tree_t m_row_tree;
+  mutable col_tree_t m_col_tree;
+  dual_node_t m_dual_tree;
 
   Expansions m_expansions;
 
-  const Query *m_query;
-  const ColParticles *m_col_particles;
-  const size_t m_row_size;
+  const row_query_t *m_row_query;
+  const col_query_t *m_col_query;
 
 public:
   template <typename RowParticles>
   H2Matrix(const RowParticles &row_particles, const ColParticles &col_particles,
            const Expansions &expansions)
-      : m_query(&col_particles.get_query()), m_expansions(expansions),
-        m_col_particles(&col_particles), m_row_size(row_particles.size()) {
+      : m_row_query(&row_particles.get_query()),
+        m_col_query(&col_particles.get_query()), m_expansions(expansions) {
+
     // generate h2 matrix
-    const size_t n = m_query->number_of_buckets();
-    LOG(2, "H2Matrix: creating matrix with "
-               << n << " buckets, using " << row_particles.size()
-               << " row particles and " << col_particles.size()
-               << " column particles");
+    LOG(2, "H2Matrix: creating matrix using "
+               << row_particles.size() << " row particles and "
+               << col_particles.size() << " column particles");
+
     const bool row_equals_col = static_cast<const void *>(&row_particles) ==
                                 static_cast<const void *>(&col_particles);
-    m_W.resize(n);
-    m_g.resize(n);
-    m_l2l_matrices.resize(n);
-    m_m2l_matrices.resize(n);
-    m_row_indices.resize(n);
-    m_col_indices.resize(n);
-    m_ext_indicies.resize(n);
-    m_source_vector.resize(n);
-    m_target_vector.resize(n);
-    m_l2p_matrices.resize(n);
-    m_p2m_matrices.resize(n);
-    m_p2p_matrices.resize(n);
-    m_strong_connectivity.resize(n);
-    m_weak_connectivity.resize(n);
 
-    // setup row and column indices
-    if (!row_equals_col) {
-      LOG(2, "\trow particles are different to column particles");
-      for (size_t i = 0; i < row_particles.size(); ++i) {
-        // get target index
-        auto ci = m_query->get_bucket(get<position>(row_particles)[i]);
-        const size_t index = m_query->get_bucket_index(*ci);
-        m_row_indices[index].push_back(i);
-      }
-    }
-    for (auto &bucket : m_query->get_subtree()) {
-      if (m_query->is_leaf_node(bucket)) { // leaf node
-        const size_t index = m_query->get_bucket_index(bucket);
-        // get target_index
-        for (auto &p : m_query->get_bucket_particles(bucket)) {
-          const size_t i = &get<position>(p) - &get<position>(col_particles)[0];
-          m_col_indices[index].push_back(i);
-          if (row_equals_col) {
-            m_row_indices[index].push_back(i);
-          }
-        }
-
-        m_source_vector[index].resize(m_col_indices[index].size());
-        m_target_vector[index].resize(m_row_indices[index].size());
+    // construct row_tree
+    {
+      LOG(2, "\tconstructing row tree...");
+      bf_search_t bf_search(m_row_query);
+      m_row_tree.clear();
+      while (!bf_search) {
+        ++bf_search;
+        m_row_tree.emplace_back(bf_search->size());
+        detail::copy(bf_search->begin(), bf_search->end(),
+                     m_row_tree.back().begin());
       }
     }
 
-    // create a vector of column indicies for extended column matrix/vector
-    detail::transform_exclusive_scan(
-        m_source_vector.begin(), m_source_vector.end(), m_ext_indicies.begin(),
-        [](const p_vector_type &i) { return i.size(); }, 0, std::plus<int>());
-
-    // downward sweep of tree to generate matrices
-    LOG(2, "\tgenerating matrices...");
-    for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
-      const box_type &target_box = m_query->get_bounds(ci);
-      generate_matrices(child_iterator_vector_type(), box_type(), ci,
-                        row_particles, col_particles);
+    // construct col_tree
+    {
+      LOG(2, "\tconstructing col tree...");
+      bf_search_t bf_search(m_col_query);
+      m_col_tree.clear();
+      while (!bf_search) {
+        ++bf_search;
+        m_col_tree.emplace_back(bf_search->size());
+        detail::copy(bf_search->begin(), bf_search->end(),
+                     m_col_tree.back().begin());
+      }
     }
+
+    // construct dual_tree
+    {
+      LOG(2, "\tconstructing dual tree...");
+      dual_bf_search_t dual_bf_search(m_row_query, m_col_query);
+      m_tree.clear();
+      while (!dual_bf_search) {
+        ++dual_bf_search;
+        m_tree.emplace_back(dual_bf_search->size());
+        detail::tabulate(m_tree.back().begin(), m_tree.back().end(),
+                         [](const int i) {
+                           auto &pair = (*dual_bf_search)[i];
+                           const node_t new_node = pair;
+                           if (new_node.is_leaf()) {
+                             // "turn-off" node
+                             pair = level_t::value_type();
+                           }
+                           return new_node;
+                         });
+      }
+    }
+
     LOG(2, "\tdone");
   }
 
@@ -196,55 +204,6 @@ public:
   H2Matrix(H2Matrix &&matrix) = default;
 
   ~H2Matrix() = default;
-
-  // copy construct from another h2_matrix with different row_particles.
-  template <typename RowParticles>
-  H2Matrix(const H2Matrix<Expansions, ColParticles> &matrix,
-           const RowParticles &row_particles)
-      : m_W(matrix.m_W.size()), m_g(matrix.m_g.size()),
-        m_source_vector(matrix.m_source_vector),
-        m_ext_indicies(matrix.m_ext_indicies),
-        // m_target_vector(matrix.m_target_vector), \\going to redo
-        // m_l2p_matrices(matrix.m_l2p_matrices),     \\going to redo
-        m_p2m_matrices(matrix.m_p2m_matrices),
-        m_l2l_matrices(matrix.m_l2l_matrices),
-        // m_p2p_matrices(matrix.m_p2p_matrices), \\going to redo these
-        m_m2l_matrices(matrix.m_m2l_matrices),
-        // m_row_indices(matrix.m_row_indices), \\going to redo these
-        m_col_indices(matrix.m_col_indices),
-        m_strong_connectivity(matrix.m_strong_connectivity),
-        m_weak_connectivity(matrix.m_weak_connectivity),
-        m_query(matrix.m_query), m_expansions(matrix.m_expansions),
-        m_col_particles(matrix.m_col_particles),
-        m_row_size(row_particles.size()) {
-    const size_t n = m_query->number_of_buckets();
-    const bool row_equals_col = &row_particles == m_col_particles;
-    m_target_vector.resize(n);
-    m_row_indices.resize(n);
-    m_p2p_matrices.resize(n);
-    m_l2p_matrices.resize(n);
-
-    // setup row and column indices
-    if (row_equals_col) {
-      std::copy(std::begin(m_col_indices), std::end(m_col_indices),
-                std::begin(m_row_indices));
-    } else {
-      for (size_t i = 0; i < row_particles.size(); ++i) {
-        // get target index
-        auto ci = m_query->get_bucket(get<position>(row_particles)[i]);
-        const size_t index = m_query->get_bucket_index(*ci);
-        m_row_indices[index].push_back(i);
-      }
-    }
-    for (size_t i = 0; i < m_row_indices.size(); ++i) {
-      m_target_vector[i].resize(m_row_indices[i].size());
-    }
-
-    for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
-      const box_type &target_box = m_query->get_bounds(ci);
-      generate_row_matrices(ci, row_particles, *m_col_particles);
-    }
-  }
 
   // target_vector += A*source_vector
   template <typename VectorTypeTarget, typename VectorTypeSource>
