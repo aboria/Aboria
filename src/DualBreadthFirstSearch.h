@@ -65,12 +65,10 @@ public:
   typedef m_level_t &const reference;
   typedef std::ptrdiff_t difference_type;
 
-  CUDA_HOST_DEVICE
   DualBreadthFirstSearchIterator() {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
-  CUDA_HOST_DEVICE
   DualBreadthFirstSearchIterator(const RowQuery *row_query,
                                  const ColQuery *col_query)
       : m_row_query(row_query), m_col_query(col_query),
@@ -78,22 +76,17 @@ public:
                                      col_query->get_child_iterator())),
         m_depth(0) {}
 
-  CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
-  CUDA_HOST_DEVICE
   reference operator->() { return dereference(); }
-  CUDA_HOST_DEVICE
   iterator &operator++() {
     increment();
     return *this;
   }
-  CUDA_HOST_DEVICE
   iterator operator++(int) {
     iterator tmp(*this);
     operator++();
     return tmp;
   }
-  CUDA_HOST_DEVICE
   size_t operator-(iterator start) const {
     size_t count = 0;
     while (start != *this) {
@@ -102,20 +95,17 @@ public:
     }
     return count;
   }
-  CUDA_HOST_DEVICE
   inline bool operator==(const iterator &rhs) const { return equal(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
+  const m_num_children_t &get_num_children() { return m_num_children; }
+
 private:
-  CUDA_HOST_DEVICE
   void increment() {
 #ifndef __CUDA_ARCH__
     LOG(4, "\tincrement (dual_breadth_first_iterator) m_depth = " << m_depth);
@@ -165,17 +155,14 @@ private:
 #endif
   }
 
-  CUDA_HOST_DEVICE
   bool equal(iterator const &other) const {
     return m_depth == other.m_depth && m_query == other.m_query;
   }
 
-  CUDA_HOST_DEVICE
   bool equal(const bool other) const {
     return m_current_level.empty() != other;
   }
 
-  CUDA_HOST_DEVICE
   reference dereference() const { return m_current_level; }
 };
 

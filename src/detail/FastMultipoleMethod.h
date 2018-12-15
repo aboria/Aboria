@@ -173,14 +173,17 @@ struct BlackBoxExpansions {
   }
   */
 
-  template <typename ParticlesType>
-  static void P2M_matrix(p2m_matrix_type &matrix, const box_type &box,
-                         const std::vector<size_t> &indicies,
-                         const ParticlesType &particles) {
-    typedef typename ParticlesType::position position;
-    matrix.resize(ncheb * BlockCols, indicies.size() * BlockCols);
-    for (size_t i = 0; i < indicies.size(); ++i) {
-      const double_d &p = get<position>(particles)[indicies[i]];
+  template <typename Particles, typename Query = Particles::query_type,
+            typename ChildIterator = Query::child_iterator>
+  static void P2M_matrix(p2m_matrix_type &matrix, const Query &query,
+                         const ChildIterator &ci) {
+    typedef typename Particles::position position;
+    const int nparticles = m_query.get_particles auto particles =
+        m_query.get_bucket_particles(*ci);
+    const int n = particles.distance_to_end();
+    matrix.resize(ncheb * BlockCols, n * BlockCols);
+    for (; particles != false; ++particles) {
+      const double_d &p = get<position>(particles);
       detail::ChebyshevRnSingle<D, N> cheb_rn(p, box);
       lattice_iterator<dimension> mj(int_d::Constant(0), int_d::Constant(N));
       for (size_t j = 0; j < ncheb; ++j, ++mj) {
@@ -211,8 +214,12 @@ struct BlackBoxExpansions {
   }
 
 #ifdef HAVE_EIGEN
-  void M2M_matrix(m2m_matrix_type &matrix, const box_type &target_box,
-                  const box_type &source_box) const {
+  template <typename Query, typename ChildIterator = Query::child_iterator>
+  void M2M_matrix(m2m_matrix_type &matrix, const Query &query,
+                  const ChildIterator &ci_source,
+                  const ChildIterator &ci_target) const {
+    auto source_box = query.get_bounds(ci_source);
+    auto target_box = query.get_bounds(ci_target);
     for (size_t j = 0; j < ncheb; ++j) {
       const double_d &pj_unit_box = m_cheb_points[j];
       const double_d pj =

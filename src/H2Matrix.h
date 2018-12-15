@@ -74,6 +74,7 @@ class H2Matrix {
 
   struct dual_node_t {
     pair_t m_ci_pair;
+    int m_index_of_children;
     enum { P2P, M2L } tag;
     union m_op {
       p2p_matrix_t p2p;
@@ -85,24 +86,21 @@ class H2Matrix {
 
   struct row_node_t {
     row_child_iterator m_ci;
+    int m_index_of_children;
     l_vector_t m_l;
-    enum { INTERNAL, LEAF } tag;
-    union {
-      l2l_matrix_t l2l;
-      p2l_matrix_t p2l;
-    };
+    l2l_matrix_t l2l;
+    p2l_matrix_t p2l;
 
     row_node_t(const row_child_iterator &ci) : m_ci(ci) {}
   };
 
   struct col_node_t {
     col_child_iterator m_ci;
+    int m_index_of_children;
     m_vector_t m_m;
-    enum { INTERNAL, LEAF } tag;
-    union {
-      l2l_matrix_t m2m;
-      p2l_matrix_t m2p;
-    };
+    l2l_matrix_t m2m;
+    p2l_matrix_t m2p;
+
     col_node_t(const col_child_iterator &ci) : m_ci(ci) {}
   };
 
@@ -157,8 +155,22 @@ public:
       while (!bf_search) {
         ++bf_search;
         m_row_tree.emplace_back(bf_search->size());
-        detail::copy(bf_search->begin(), bf_search->end(),
-                     m_row_tree.back().begin());
+        detail::tabulate(
+            m_row_tree->begin(), m_row_tree->end(), [](const int i) {
+              row_node_t node;
+              node.m_ci = (*bf_search)[i];
+              node.m_index_of_children = bf_search->get_num_children()[i];
+              if (m_row_query->is_leaf(node.m_ci)) {
+                node.p2m.resize();
+                m_expansions.P2M_matrix(node.p2m, *m_row_query, node.m_ci);
+              } else {
+                for (child) {
+                  node.m2m m_expansions.M2M_matrix(chidl.node.p2m, *m_row_query,
+                                                   child.node.m_ci, node.m_ci);
+                }
+              }
+              return row_node_t(, bf_search->get_num_children[i], )
+            });
       }
     }
 
@@ -179,11 +191,11 @@ public:
     {
       LOG(2, "\tconstructing dual tree...");
       dual_bf_search_t dual_bf_search(m_row_query, m_col_query);
-      m_tree.clear();
+      m_dual_tree.clear();
       while (!dual_bf_search) {
         ++dual_bf_search;
-        m_tree.emplace_back(dual_bf_search->size());
-        detail::tabulate(m_tree.back().begin(), m_tree.back().end(),
+        m_dual_tree.emplace_back(dual_bf_search->size());
+        detail::tabulate(m_dual_tree.back().begin(), m_dual_tree.back().end(),
                          [](const int i) {
                            auto &pair = (*dual_bf_search)[i];
                            const node_t new_node = pair;
@@ -194,6 +206,8 @@ public:
                            return new_node;
                          });
       }
+      ASSERT(m_dual_tree.size() >= m_row_tree.size());
+      ASSERT(m_dual_tree.size() >= m_col_tree.size());
     }
 
     LOG(2, "\tdone");
@@ -220,48 +234,42 @@ public:
       }
     }
 
-    // upward sweep of tree
-    for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
-      mvm_upward_sweep(ci);
+    // upward sweep of the column tree
+    for (auto col_level = m_col_tree.rbegin(); col_level != m_col_tree.rend();
+         ++col_level) {
+      mvm_upward_sweep(col_level, source_vector);
     }
 
-    // downward sweep of tree.
-    for (child_iterator ci = m_query->get_children(); ci != false; ++ci) {
-      m_vector_type g = m_vector_type::Zero();
-      mvm_downward_sweep(g, ci);
-    }
-
-    // for all leaf nodes copy to target vector
-    for (auto &bucket : m_query->get_subtree()) {
-      if (m_query->is_leaf_node(bucket)) { // leaf node
-        const size_t index = m_query->get_bucket_index(bucket);
-        for (size_t i = 0; i < m_row_indices[index].size(); ++i) {
-          target_vector[m_row_indices[index][i]] += m_target_vector[index][i];
-        }
-      }
+    // downward sweep of row tree calculating interactions.
+    for (auto row_level = m_row_tree.begin(),
+              auto dual_level = m_dual_tree.begin();
+         row_level != m_row_tree.rend(); ++row_level) {
+      mvm_downward_sweep(row_level, target_vector);
+      mvm_pair_interactions(dual_level, target_vector);
     }
   }
 
   /// Convert H2 Matrix to an extended sparse matrix
   ///
   /// This creates an Eigen sparse matrix A that can be applied to
-  /// by the vector $[x W g]$ to produce $[y 0 0]$, i.e. $A*[x W g]' = [y 0 0]$,
-  /// where $x$ and $y$ are the input/output vector, i.e. $y = H2Matrix*x$, and
-  /// $W$ and $g$ are the multipole and local coefficients respectively.
+  /// by the vector $[x W g]$ to produce $[y 0 0]$, i.e. $A*[x W g]' = [y 0
+  /// 0]$, where $x$ and $y$ are the input/output vector, i.e. $y =
+  /// H2Matrix*x$, and $W$ and $g$ are the multipole and local coefficients
+  /// respectively.
   ///
   /// A is given by the block matrix representation:
   ///
   /// Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for
-  /// hierarchical matrices based on their extended sparse form. Retrieved from
-  /// http://arxiv.org/abs/1412.1253
+  /// hierarchical matrices based on their extended sparse form. Retrieved
+  /// from http://arxiv.org/abs/1412.1253
   ///
   ///             |P2P  0     0      L2P| |x  |   |y|
   /// A*[x W g] = |0   M2L    L2L-I  -I |*|W  | = |0|
   ///             |0   M2M-I  0       0 | |g_n|   |0|
   ///             |P2M  -I    0       0 | |g_l|   |0|
   ///
-  /// where $g_l$ is the $g$ vector for every leaf of the tree, and $g_n$ is the
-  /// remaining nodes. Note M2M = L2L'.
+  /// where $g_l$ is the $g$ vector for every leaf of the tree, and $g_n$ is
+  /// the remaining nodes. Note M2M = L2L'.
   ///
   /// TODO: this will only work for rows == columns
   sparse_matrix_type gen_extended_matrix() const {
@@ -522,14 +530,12 @@ public:
     row_index = 0;
     size_t col_index = 0;
     for (size_t i = 0; i < m_target_vector.size(); ++i) {
-        for (size_t pi = 0; pi < m_target_vector[i].size(); ++pi,++row_index) {
-            double sum = 0;
-            size_t count = 0;
-            col_index = 0;
-            for (size_t j = 0; j < m_source_vector.size(); ++j) {
-                for (size_t pj = 0; pj < m_source_vector[j].size();
-    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator it(A,col_index);
-    it ;++it) { if (it.row() == row_index) {
+        for (size_t pi = 0; pi < m_target_vector[i].size(); ++pi,++row_index)
+    { double sum = 0; size_t count = 0; col_index = 0; for (size_t j = 0; j <
+    m_source_vector.size(); ++j) { for (size_t pj = 0; pj <
+    m_source_vector[j].size();
+    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
+    it(A,col_index); it ;++it) { if (it.row() == row_index) {
                             //std::cout << "("<<it.row()<<","<<it.col()<<") =
     "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
                             count++;
@@ -572,8 +578,8 @@ public:
             col_index = 0;
             for (size_t j = 0; j < m_source_vector.size(); ++j) {
                 for (size_t pj = 0; pj < m_source_vector[j].size();
-    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator it(A,col_index);
-    it ;++it) { if (it.row() == row_index) {
+    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
+    it(A,col_index); it ;++it) { if (it.row() == row_index) {
                             //std::cout << "("<<it.row()<<","<<it.col()<<") =
     "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
                             count++;
@@ -604,8 +610,8 @@ public:
                 }
             }
             std::cout << "W: row "<<row_index<<" sum = "<<sum<<" should be
-    "<<0<< std::endl; std::cout << "count is "<<count<<std::endl; ASSERT(count >
-    0,"count == 0");
+    "<<0<< std::endl; std::cout << "count is "<<count<<std::endl; ASSERT(count
+    > 0,"count == 0");
         }
     }
     row_index = size_x+size_W;
@@ -616,8 +622,8 @@ public:
             col_index = 0;
             for (size_t j = 0; j < m_source_vector.size(); ++j) {
                 for (size_t pj = 0; pj < m_source_vector[j].size();
-    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator it(A,col_index);
-    it ;++it) { if (it.row() == row_index) {
+    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
+    it(A,col_index); it ;++it) { if (it.row() == row_index) {
                             //std::cout << "("<<it.row()<<","<<it.col()<<") =
     "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
                             count++;
@@ -647,7 +653,8 @@ public:
 
                 }
             }
-            std::cout << "g: row "<<row_index<<" sum = "<<sum<<" should be "<<0
+            std::cout << "g: row "<<row_index<<" sum = "<<sum<<" should be
+    "<<0
     << std::endl; std::cout << "count is "<<count<<std::endl; ASSERT(count >
     0,"count == 0");
         }
@@ -662,14 +669,14 @@ public:
 
   /// Convert H2 Matrix to an stripped down extended sparse matrix
   ///
-  /// This creates an Eigen sparse matrix A that can be used as a preconditioner
-  /// for the true extended sparse matrix
+  /// This creates an Eigen sparse matrix A that can be used as a
+  /// preconditioner for the true extended sparse matrix
   ///
   /// A is given by the block matrix representation:
   ///
   /// Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for
-  /// hierarchical matrices based on their extended sparse form. Retrieved from
-  /// http://arxiv.org/abs/1412.1253
+  /// hierarchical matrices based on their extended sparse form. Retrieved
+  /// from http://arxiv.org/abs/1412.1253
   ///
   ///             |I    0     0 | |x  |
   /// A*[x W g] = |0   M2L    0 |*|W  |
@@ -803,9 +810,9 @@ public:
     return A;
   }
 
-  // this function returns a vector of indicies map that correspond to a mapping
-  // between the extended column vector e_x to the standard column particle
-  // vector x
+  // this function returns a vector of indicies map that correspond to a
+  // mapping between the extended column vector e_x to the standard column
+  // particle vector x
   //
   // i.e. x = e_x[map]
   index_vector_type gen_column_map() const {
@@ -818,8 +825,9 @@ public:
     return map;
   }
 
-  // this function returns a vector of indicies map that correspond to a mapping
-  // between the extended row vector e_b to the standard row particle vector b
+  // this function returns a vector of indicies map that correspond to a
+  // mapping between the extended row vector e_b to the standard row particle
+  // vector b
   //
   // i.e. b = e_b[map]
   index_vector_type gen_row_map() const {
@@ -1081,7 +1089,8 @@ private:
     }
   }
 
-  m_vector_type &mvm_upward_sweep(const child_iterator &ci) const {
+  void mvm_upward_sweep(typename col_tree_t::reverse_iterator ci) const {
+
     const size_t my_index = m_query->get_bucket_index(*ci);
     const box_type &target_box = m_query->get_bounds(ci);
     LOG(3, "calculate_dive_P2M_and_M2M with bucket " << target_box);
