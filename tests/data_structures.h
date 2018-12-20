@@ -499,12 +499,13 @@ public:
     auto query = particles.get_query();
     auto i = query.breadth_first();
     int count_levels = 1;
-    int count_buckets = 1;
+    int count_buckets = 0;
     bool tree = false;
     for (; i != false; ++i) {
       tree = true;
       ++count_levels;
-      count_buckets += (*i).size();
+      count_buckets += i->size();
+      std::cout << count_buckets << std::endl;
     }
 
     // check that total number of levels are correct
@@ -597,11 +598,11 @@ public:
     int count_subtree = 0;
     for (auto i = subsample_query.get_subtree(); i != false;
          ++i, ++count_subtree) {
-      auto bounds = subsample_query.get_bounds(i);
+      auto bounds = subsample_query.get_bounds(i.get_child_iterator());
       int count = 0;
       for (auto p = subsample_query.get_bucket_particles(*i); p != false;
            ++p, ++count) {
-        TS_ASSERT(bounds.is_in_inclusive(get<position>(p)));
+        TS_ASSERT(bounds.is_in_inclusive(get<position>(*p)));
       }
       TS_ASSERT_LESS_THAN_EQUALS(count, nsubsample);
       if (!subsample_query.is_leaf_node(*i)) {
@@ -660,10 +661,6 @@ public:
   }
 
   void test_breadth_first_iterator() {
-    std::cout << "bf-search CellList" << std::endl;
-    helper_breadth_first_iterator<std::vector, CellList>();
-    std::cout << "bf-search CellListOrdered" << std::endl;
-    helper_breadth_first_iterator<std::vector, CellListOrdered>();
     std::cout << "bf-search Kdtree" << std::endl;
     helper_breadth_first_iterator<std::vector, Kdtree>();
     std::cout << "bf-search KdtreeNanoflann" << std::endl;
@@ -673,10 +670,6 @@ public:
   }
 
   void test_depth_first_iterator() {
-    std::cout << "df-search CellList" << std::endl;
-    helper_depth_first_iterator<std::vector, CellList>();
-    std::cout << "df-search CellListOrdered" << std::endl;
-    helper_depth_first_iterator<std::vector, CellListOrdered>();
     std::cout << "df-search Kdtree" << std::endl;
     helper_depth_first_iterator<std::vector, Kdtree>();
     std::cout << "df-search KdtreeNanoflann" << std::endl;
@@ -686,10 +679,6 @@ public:
   }
 
   void test_subsample_query() {
-    std::cout << "df-search CellList" << std::endl;
-    helper_subsample_query<std::vector, CellList>();
-    std::cout << "df-search CellListOrdered" << std::endl;
-    helper_subsample_query<std::vector, CellListOrdered>();
     std::cout << "df-search Kdtree" << std::endl;
     helper_subsample_query<std::vector, Kdtree>();
     std::cout << "df-search KdtreeNanoflann" << std::endl;

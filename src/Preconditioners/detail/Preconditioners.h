@@ -137,6 +137,9 @@ template <typename T> struct storage_vector_type {
   T *end() const { return m_data + m_size; }
   CUDA_HOST_DEVICE
   size_t size() const { return m_size; }
+
+  CUDA_HOST_DEVICE
+  T *data() const { return m_data; }
   CUDA_HOST_DEVICE
   void resize(const size_t n) {
     // only supports reductions in size after initial resize

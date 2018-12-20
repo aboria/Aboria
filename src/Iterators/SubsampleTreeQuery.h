@@ -56,8 +56,8 @@ class subsample_iterator {
 
   const Query *m_query;
 
-  size_t *m_indicies_current;
-  size_t *m_indicies_end;
+  const size_t *m_indicies_current;
+  const size_t *m_indicies_end;
 
 public:
   typedef Traits traits_type;
@@ -71,7 +71,7 @@ public:
   subsample_iterator() {}
 
   CUDA_HOST_DEVICE
-  subsample_iterator(const Query &query, const size_t *begin, const size_t *end)
+  subsample_iterator(const Query *query, const size_t *begin, const size_t *end)
       : m_query(query), m_indicies_current(begin), m_indicies_end(end) {}
 
   size_t distance_to_end() const { return m_indicies_end - m_indicies_current; }
@@ -154,6 +154,11 @@ struct SubsampleTreeQuery {
   const static unsigned int dimension = Query::dimension;
   typedef Traits traits_type;
 
+  using bool_d = typename Traits::bool_d;
+  using double_d = typename Traits::double_d;
+  using raw_pointer = typename Traits::raw_pointer;
+  using position = typename Traits::position;
+
   template <int LNormNumber>
   using query_iterator = typename Query::template query_iterator<LNormNumber>;
 
@@ -161,18 +166,19 @@ struct SubsampleTreeQuery {
   using bounds_query_iterator =
       typename Query::template bounds_query_iterator<LNormNumber>;
 
-  using all_iterator = Query::all_iterator;
-  using breadth_first_iterator = Query::breadth_first_iterator;
-  using child_iterator = Query::child_iterator;
+  using all_iterator = typename Query::all_iterator;
+  using breadth_first_iterator = typename Query::breadth_first_iterator;
+  using child_iterator = typename Query::child_iterator;
 
-  using value_type = Query::value_type;
-  using reference = Query::reference;
-  using pointer = Query::pointer;
-  using particle_iterator = subsample_iterator;
-  using box_type = Query::box_type;
+  using value_type = typename Query::value_type;
+  using reference = typename Query::reference;
+  using pointer = typename Query::pointer;
+  using particle_iterator = subsample_iterator<Query>;
+  using box_type = typename Query::box_type;
 
-  typedef detail::storage_vector_type<size_t> storage_vector_t;
-  using indicies_t = traits_type::template vector_type<storage_vector_t>::type;
+  using storage_vector_t = detail::storage_vector_type<size_t>;
+  using indicies_t =
+      typename traits_type::template vector_type<storage_vector_t>::type;
 
   const Query &m_query;
   const size_t m_max_points_per_bucket;
@@ -186,34 +192,35 @@ struct SubsampleTreeQuery {
     // go up the tree subsampling points
     for (auto level = tree.rbegin(); level != tree.rend(); ++level) {
       detail::for_each(
-          level.begin(), level.end(),
+          level->begin(), level->end(),
           [max = m_max_points_per_bucket, query = m_query,
            indicies = iterator_to_raw_pointer(m_indicies.begin())](
               const child_iterator ci) {
-            const size_t index = get_bucket_index(*ci);
+            const size_t index = query.get_bucket_index(*ci);
             const auto p0 = get<position>(query.get_particles_begin());
             if (query.is_leaf_node(*ci)) {
               // get all leaf particles
               auto p = query.get_bucket_particles(*ci);
               const size_t n = p.distance_to_end();
               indicies[index].resize(n);
+              int i = 0;
               for (; p != false; ++p) {
-                const size_t pindex = &(get<position>(p)) - p0;
-                indicies[index][i] = pindex;
+                const size_t pindex = &(get<position>(*p)) - p0;
+                indicies[index][i++] = pindex;
               }
             } else {
               // get all particles from children
               for (auto child_ci = query.get_children(ci); child_ci != false;
                    ++child_ci) {
-                const size_t cindex = get_bucket_index(*child_ci);
+                const size_t cindex = query.get_bucket_index(*child_ci);
                 if (query.is_leaf_node(*ci)) {
                   // get all particles from leaf
                   auto p = query.get_bucket_particles(*child_ci);
                   const size_t n = p.distance_to_end();
-                  const int i = indicies[index].size();
+                  int i = indicies[index].size();
                   indicies[index].resize(i + n);
                   for (; p != false; ++p) {
-                    const size_t pindex = &(get<position>(p)) - p0;
+                    const size_t pindex = &(get<position>(*p)) - p0;
                     indicies[index][i++] = pindex;
                   }
                 } else {
@@ -235,8 +242,8 @@ struct SubsampleTreeQuery {
             gen.discard(index * max);
 
             // sample max_points_per_bucket
-            random_unique(indicies[index].begin(), indices[index].end(), max,
-                          gen);
+            detail::random_unique(indicies[index].begin(),
+                                  indicies[index].end(), max, gen);
             indicies[index].resize(max);
           });
     }
@@ -257,7 +264,7 @@ struct SubsampleTreeQuery {
   bool is_leaf_node(reference bucket) const {
     return m_query.is_leaf_node(bucket);
   }
-  static bool is_tree() { return m_query.is_tree(); }
+  bool is_tree() { return m_query.is_tree(); }
 
   /*
    * end functions for tree_query_iterator
@@ -290,7 +297,7 @@ struct SubsampleTreeQuery {
   particle_iterator get_bucket_particles(reference bucket) const {
     // now both leafs and internal bucket "have" particles
     const size_t index = get_bucket_index(bucket);
-    return particle_iterator(this, m_indicies[index].data(),
+    return particle_iterator(&m_query, m_indicies[index].data(),
                              m_indicies[index].data() +
                                  m_indicies[index].size());
   }
@@ -338,7 +345,7 @@ struct SubsampleTreeQuery {
   query_iterator<LNormNumber>
   get_buckets_near_point(const double_d &position,
                          const double_d &max_distance) const {
-    return m_query.get_buckets_near_point<LNormNumber>(bounds, max_distance);
+    return m_query.get_buckets_near_point<LNormNumber>(position, max_distance);
   }
 
   all_iterator get_subtree(const child_iterator &ci) const {

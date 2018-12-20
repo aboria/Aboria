@@ -41,7 +41,7 @@ namespace Aboria {
 template <typename Query> class BreadthFirstSearchIterator {
   using iterator = BreadthFirstSearchIterator<Query>;
   typedef typename Query::child_iterator child_iterator;
-  typedef typename Query::Traits traits_t;
+  typedef typename Query::traits_type traits_t;
 
   typedef
       typename traits_t::template vector_type<child_iterator>::type m_level_t;
@@ -66,13 +66,12 @@ public:
   /// list
   CUDA_HOST_DEVICE
   BreadthFirstSearchIterator(const Query *query)
-      : m_query(query), m_current_level(query->get_child_iterator()),
-        m_depth(0) {}
+      : m_query(query), m_current_level{query->get_root()}, m_depth(0) {}
 
   CUDA_HOST_DEVICE
-  reference operator*() const { return dereference(); }
+  reference operator*() { return dereference(); }
   CUDA_HOST_DEVICE
-  pointer operator->() { return &dereference(); }
+  value_type *operator->() { return &dereference(); }
   CUDA_HOST_DEVICE
   iterator &operator++() {
     increment();
@@ -112,13 +111,13 @@ private:
     LOG(4, "\tincrement (breadth_first_iterator) m_depth = " << m_depth);
 #endif
     // count number of children
-    auto count_children = [](child_iterator ci) {
-      return ci.number_of_children();
+    auto count_children = [query = *m_query](child_iterator ci) {
+      return query.get_children(ci).distance_to_end();
     };
     m_num_children.resize(m_current_level.size());
     detail::transform_exclusive_scan(
         m_current_level.begin(), m_current_level.end(), m_num_children.begin(),
-        count_children, std::plus<int>());
+        count_children, 0, std::plus<int>());
     int num_children = *(m_num_children.end() - 1) +
                        count_children(*(m_current_level.end() - 1));
 
@@ -129,13 +128,11 @@ private:
             m_current_level.begin(), m_num_children.begin())),
         traits_t::make_zip_iterator(
             traits_t::make_tuple(m_current_level.end(), m_num_children.end())),
-        m_next_level.end(),
-        [_m_query = m_query, _m_next_level = iterator_to_raw_pointer(
-                                 m_next_level.begin())](auto i) {
+        [query = *m_query, _m_next_level = iterator_to_raw_pointer(
+                               m_next_level.begin())](auto i) {
           auto parent = i.template get<0>();
           int next_index = i.template get<1>();
-          for (auto ci = _m_query->get_child_iterator(parent); ci != false;
-               ++ci) {
+          for (auto ci = query.get_children(parent); ci != false; ++ci) {
             _m_next_level[next_index++] = ci;
           }
         });
@@ -159,17 +156,17 @@ private:
   }
 
   CUDA_HOST_DEVICE
-  reference dereference() const { return m_current_level; }
+  reference dereference() { return m_current_level; }
 };
 
 template <typename Query> auto make_flat_tree(const Query &query) {
   typedef typename Query::child_iterator child_iterator;
-  typedef typename Query::Traits traits_t;
+  typedef typename Query::traits_type traits_t;
   typedef typename traits_t::template vector_type<child_iterator>::type level_t;
   typedef typename traits_t::template vector_type<level_t>::type tree_t;
 
   tree_t tree;
-  for (auto bf_it = BreadthFirstSearchIterator<Query>(query); bf_it != false;
+  for (auto bf_it = BreadthFirstSearchIterator<Query>(&query); bf_it != false;
        ++bf_it) {
     tree.push_back(*bf_it);
   }

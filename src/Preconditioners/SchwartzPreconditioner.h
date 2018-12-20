@@ -432,13 +432,17 @@ template <typename Rhs, typename Dest, typename Solver> struct solve_domain {
                const Rhs &b, const Eigen::VectorXd &m_count)
       : m_domain_indicies(m_domain_indicies), m_domain_buffer(m_domain_buffer),
         domain_factorized_matrix(domain_factorized_matrix), x(x), b(b),
-        m_count(m_count), lock(ATOMIC_FLAG_INIT) {}
+        m_count(m_count) {
+    lock.clear();
+  }
 
   solve_domain(const solve_domain &other)
       : m_domain_indicies(other.m_domain_indicies),
         m_domain_buffer(other.m_domain_buffer),
         domain_factorized_matrix(other.domain_factorized_matrix), x(other.x),
-        b(other.b), m_count(other.m_count), lock(ATOMIC_FLAG_INIT) {}
+        b(other.b), m_count(other.m_count) {
+    lock.clear();
+  }
 
   void operator()(const int i) const {
     const storage_vector_type &buffer = m_domain_buffer[i];
@@ -1148,7 +1152,6 @@ public:
   template <typename X_Vector, typename B_Vector>
   void gauss_seidel(const B_Vector &b, X_Vector &x_k, const int level,
                     const bool lower) const {
-    const int n = b.size();
     const auto &A =
         level == 0 ? m_fineA->get_first_kernel().get_matrix() : m_A[level - 1];
     ASSERT(x_k.size() == n, "x_k has inconsistent size");
