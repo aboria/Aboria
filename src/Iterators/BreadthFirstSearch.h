@@ -128,29 +128,21 @@ public:
   template <typename T> void filter_with_gather(T &f, vector_ci &store) {
     m_counts.resize(m_level.size());
     detail::transform(m_level.begin(), m_level.end(), m_counts.begin(),
-                      count_children_with_filter{count_children{*m_query}, f});
+                      count_filtered{count_children{*m_query}, f});
+
     store.resize(m_level.size());
     auto new_end =
         detail::copy_if(m_level.begin(), m_level.end(), m_counts.begin(),
                         store.begin(), [](const int i) { return i == 0 });
 
     store.erase(new_end, store.end());
-    detail::transform_exclusive_scan(m_counts.begin(), m_counts.end(),
-                                     m_counts.begin(), 0, detail::plus());
+    detail::exclusive_scan(m_counts.begin(), m_counts.end(), m_counts.begin(),
+                           0);
+
     m_filtered = true;
   }
 
   template <typename T> struct count_filtered {
-    count_children m_cc;
-    T m_filter;
-
-    CUDA_HOST_DEVICE
-    int operator()(const child_iterator &ci) {
-      return m_filter(ci) ? 0 : m_cc(ci);
-    }
-  };
-
-  template <typename T> struct count_children_with_filter {
     count_children m_cc;
     T m_filter;
 
