@@ -54,10 +54,11 @@ class DualBreadthFirstSearchIterator {
   typedef typename traits_t::template vector_type<int>::type m_num_children_t;
   const RowQuery *m_row_query;
   const ColQuery *m_col_query;
-  m_level_t m_current_level;
-  m_num_children_t m_num_children;
+  m_level_t m_level;
+  m_num_children_t m_counts;
   m_level_t m_next_level;
-  int m_depth;
+  int m_level_num;
+  bool m_all_leafs;
 
 public:
   typedef m_level_t value_type;
@@ -66,28 +67,53 @@ public:
   typedef m_level_t &reference;
   typedef std::ptrdiff_t difference_type;
 
-  DualBreadthFirstSearchIterator() {}
+  DualBreadthFirstSearchIterator() : m_all_leafs(true) {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
-  DualBreadthFirstSearchIterator(const RowQuery *row_query,
+  DualBreadthFirstSearchIterator(const row_child_iterator &start_row_ci,
+                                 const RowQuery *row_query,
+                                 const col_child_iterator &start_col_ci,
                                  const ColQuery *col_query)
-      : m_row_query(row_query), m_col_query(col_query),
-        m_current_level(row_col_pair(row_query->get_child_iterator(),
-                                     col_query->get_child_iterator())),
-        m_depth(0) {}
+      : m_all_leafs(true), m_level_num(1), m_row_query(row_query),
+        m_col_query(col_query) {
+    if (start_row_ci != false && start_col_ci != false) {
+      m_level.resize(start_row_ci.distance_to_end() *
+                     start_col_ci.distance_to_end());
+      int i = 0;
+      for (auto ci = start_row_ci; ci != false; ++ci) {
+        for (auto cj = start_col_ci; cj != false; ++cj) {
+          m_level[i++] = row_col_pair(ci, cj);
+        }
+      }
+      m_all_leafs =
+          row_query->number_of_levels() * col_query->number_of_levels() == 1;
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tbf_iterator (constructor): start is false, no "
+             "children to search.");
+#endif
+    }
+  }
 
-  reference operator*() const { return dereference(); }
-  pointer operator->() { return &dereference(); }
+  reference previous() { return m_next_level; }
+
+  CUDA_HOST_DEVICE
+  reference operator*() { return dereference(); }
+  CUDA_HOST_DEVICE
+  pointer operator->() { return dereference(); }
+  CUDA_HOST_DEVICE
   iterator &operator++() {
     increment();
     return *this;
   }
+  CUDA_HOST_DEVICE
   iterator operator++(int) {
     iterator tmp(*this);
     operator++();
     return tmp;
   }
+  CUDA_HOST_DEVICE
   size_t operator-(iterator start) const {
     size_t count = 0;
     while (start != *this) {
@@ -96,84 +122,142 @@ public:
     }
     return count;
   }
+  CUDA_HOST_DEVICE
   inline bool operator==(const iterator &rhs) const { return equal(rhs); }
 
+  CUDA_HOST_DEVICE
   inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
 
+  CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
+  CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
-  const m_num_children_t &get_num_children() { return m_num_children; }
+  struct count_children {
+    const Query m_query;
+
+    CUDA_HOST_DEVICE
+    int operator()(const row_col_pair &rc_pair) {
+
+      const int nrow =
+          m_row_query.is_leaf_node(*rc_pair.row)
+              ? 1
+              : m_row_query.get_children(rc_pair.row).distance_to_end();
+      const int ncol =
+          m_col_query.is_leaf_node(*rc_pair.col)
+              ? 1
+              : m_row_query.get_children(rc_pair.col).distance_to_end();
+
+      return nrow * ncol;
+    }
+  };
+
+  struct copy_children_and_leafs {
+    int *m_counts;
+    const RowQuery m_row_query;
+    const ColQuery m_col_query;
+    row_col_pair *m_next_level;
+    row_col_pair *m_level;
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      auto &rc_pair = m_level[i];
+      int next_level_index = m_counts[i];
+      if (m_row_query.is_leaf_node(*rc_pair.row) &&
+          m_col_query.is_leaf_node(*rc_pair.col)) {
+        m_next_level[next_level_index] = rc_pair;
+      } else if (m_row_query.is_leaf_node(*rc_pair.row)) {
+        for (auto col_ci = m_col_query->get_children(rc_pair.col);
+             col_ci != false; ++col_ci) {
+          m_next_level[next_level_index++] = row_col_pair(rc_pair.row, col_ci);
+        }
+      } else if (m_col_query.is_leaf_node(*rc_pair.col)) {
+        for (auto row_ci = m_row_query->get_children(rc_pair.row);
+             row_ci != false; ++row_ci) {
+          m_next_level[next_level_index++] = row_col_pair(row_ci, rc_pair.col);
+        }
+      } else {
+        for (auto row_ci = m_row_query->get_children(rc_pair.row);
+             row_ci != false; ++row_ci) {
+          for (auto col_ci = m_col_query->get_children(rc_pair.col);
+               col_ci != false; ++col_ci) {
+            m_next_level[next_level_index++] = row_col_pair(row_ci, col_ci);
+          }
+        }
+      }
+    }
+  };
 
 private:
+  CUDA_HOST_DEVICE
   void increment() {
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tincrement (dual_breadth_first_iterator) m_depth = " << m_depth);
+    LOG(4, "\tincrement (bf_iterator): m_level size = " << m_level.size());
 #endif
-    // count number of children
-    auto count_children = [](auto rc_pair) {
-      const int nrow = rc_pair.row.number_of_children();
-      const int ncol = rc_pair.col.number_of_children();
-      const int ret = std::max(nrow, 1) * std::max(ncol, 1);
-      return ret == 1 ? 0 : ret;
-    };
+    // m_level [ci0, ci1, ci2, ...]
+    // exclusive scan for # children + # leafs: n_child
+    // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
+    // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
 
-    m_num_children.resize(m_current_level.size());
-    detail::transform_exclusive_scan(
-        m_current_level.begin(), m_current_level.end(), m_num_children.begin(),
-        count_children, std::plus<int>());
-    int num_children = *(m_num_children.end() - 1) +
-                       count_children(*(m_current_level.end() - 1));
+    m_counts.resize(m_level.size());
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_children{*m_query},
+                                     0, detail::plus());
 
-    // create new level
-    m_next_level.resize(num_children);
-    detail::for_each(
-        traits_t::make_zip_iterator(traits_t::make_tuple(
-            m_current_level.begin(), m_num_children.begin())),
-        traits_t::make_zip_iterator(
-            traits_t::make_tuple(m_current_level.end(), m_num_children.end())),
-        m_next_level.end(),
-        [_m_row_query = m_row_query, _m_col_query = m_col_query,
-         _m_next_level =
-             iterator_to_raw_pointer(m_next_level.begin())](auto i) {
-          auto row_parent = i.template get<0>().row;
-          auto col_parent = i.template get<0>().col;
-          int next_index = i.template get<1>();
-          for (auto row_ci = _m_row_query->get_child_iterator(row_parent);
-               row_ci != false; ++row_ci) {
-            for (auto col_ci = _m_col_query->get_child_iterator(col_parent);
-                 col_ci != false; ++col_ci) {
-              _m_next_level[next_index++] = row_col_pair(row_ci, col_ci);
-            }
-          }
-        });
+    // resize for new children and leafs
+    const int nchildren = static_cast<int>(m_counts.back()) +
+                          count_children{*m_query}(m_level.back());
+    m_all_leafs = nchildren == static_cast<int>(m_level.size());
 
-    // swap to current level
-    m_current_level.swap(m_next_level);
+    // don't bother doing next level if they are all leafs
+    if (m_all_leafs)
+      return;
 
+    m_next_level.resize(nchildren);
+
+// tabulate m_level to copy children to m_next_level, or leafs to
+// m_leafs
+#if defined(__CUDACC__)
+    typedef typename thrust::detail::iterator_category_to_system<
+        typename Query::traits_type::vector_int::iterator::iterator_category>::
+        type system;
+    thrust::counting_iterator<int, system> count(0);
+#else
+    auto count = Query::traits_type::make_counting_iterator(0);
+#endif
+    detail::for_each(count, count + m_level.size(),
+                     copy_children_and_leafs{
+                         iterator_to_raw_pointer(m_counts.begin()), *m_query,
+                         iterator_to_raw_pointer(m_next_level.begin()),
+                         iterator_to_raw_pointer(m_level.begin())});
+
+    // swap level back to m_level and increment level count
+    m_level.swap(m_next_level);
+    m_level_num++;
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tend increment (dual_breadth_first_iterator):");
+    LOG(4, "\tend increment (bf_iterator):");
 #endif
   }
 
+  CUDA_HOST_DEVICE
   bool equal(iterator const &other) const {
-    return m_depth == other.m_depth && m_row_query == other.m_row_query &&
-           m_col_query == other.m_col_query;
+    return m_query == other.m_query && m_level_num == other.m_level_num;
   }
 
-  bool equal(const bool other) const {
-    return m_current_level.empty() != other;
+  CUDA_HOST_DEVICE bool equal(const bool other) const {
+    return m_all_leafs != other;
   }
 
-  reference dereference() const { return m_current_level; }
+  CUDA_HOST_DEVICE
+  reference dereference() const { return m_level; }
 };
 
 template <typename RowQuery, typename ColQuery>
 auto create_dual_breadth_first_iterator(const RowQuery &row_query,
                                         const ColQuery &col_query) {
-  return DualBreadthFirstSearchIterator<RowQuery, ColQuery>(row_query,
-                                                            col_query);
+  return DualBreadthFirstSearchIterator<RowQuery, ColQuery>(
+      row_query.get_children(), row_query, col_query.get_children(), col_query);
 }
 
 } // namespace Aboria

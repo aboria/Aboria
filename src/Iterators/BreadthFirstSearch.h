@@ -39,39 +39,51 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 namespace Aboria {
 
 template <typename Query> class BreadthFirstSearchIterator {
-  using iterator = BreadthFirstSearchIterator<Query>;
+  typedef bf_iterator<Query> iterator;
   typedef typename Query::child_iterator child_iterator;
-  typedef typename Query::traits_type traits_t;
-
-  typedef
-      typename traits_t::template vector_type<child_iterator>::type m_level_t;
-  typedef typename traits_t::template vector_type<int>::type m_num_children_t;
-  const Query *m_query;
-  m_level_t m_current_level;
-  m_num_children_t m_num_children;
-  m_level_t m_next_level;
-  int m_depth;
+  static const unsigned int dimension = Query::dimension;
+  typedef Vector<double, dimension> double_d;
+  typedef Vector<int, dimension> int_d;
+  typedef typename Query::traits_type traits_type;
+  typedef typename traits_type::template vector<child_iterator> vector_ci;
+  typedef typename traits_type::template vector<int> vector_int;
 
 public:
-  typedef m_level_t value_type;
-  typedef m_level_t *pointer;
+  typedef vector_ci value_type;
+  typedef vector_ci *pointer;
+  typedef vector_ci &reference;
   typedef std::forward_iterator_tag iterator_category;
-  typedef m_level_t &reference;
   typedef std::ptrdiff_t difference_type;
 
   CUDA_HOST_DEVICE
-  BreadthFirstSearchIterator() {}
+  bf_iterator() : m_all_leafs(true) {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
   CUDA_HOST_DEVICE
-  BreadthFirstSearchIterator(const Query *query)
-      : m_query(query), m_current_level{query->get_root()}, m_depth(0) {}
+  bf_iterator(const child_iterator &start_node, const Query *query)
+      : m_all_leafs(true), m_level_num(1), m_query(query) {
+    if (start_node != false) {
+      m_level.resize(start_node.distance_to_end());
+      int i = 0;
+      for (auto ci = start_node; ci != false; ++ci, ++i) {
+        m_level[i] = ci;
+      }
+      m_all_leafs = query->number_of_levels() == 1;
+    } else {
+#ifndef __CUDA_ARCH__
+      LOG(3, "\tbf_iterator (constructor): start is false, no "
+             "children to search.");
+#endif
+    }
+  }
+
+  reference previous() { return m_next_level; }
 
   CUDA_HOST_DEVICE
   reference operator*() { return dereference(); }
   CUDA_HOST_DEVICE
-  value_type *operator->() { return &dereference(); }
+  pointer operator->() { return dereference(); }
   CUDA_HOST_DEVICE
   iterator &operator++() {
     increment();
@@ -104,59 +116,108 @@ public:
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
+  struct count_children {
+    const Query m_query;
+
+    CUDA_HOST_DEVICE
+    int operator()(const child_iterator &ci) {
+      const int nchild = m_query.is_leaf_node(*ci)
+                             ? 1
+                             : m_query.get_children(ci).distance_to_end();
+      return nchild;
+    }
+  };
+
+  struct copy_children_and_leafs {
+    int *m_counts;
+    const Query m_query;
+    child_iterator *m_next_level;
+    child_iterator *m_level;
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      auto ci = m_level[i];
+      if (m_query.is_leaf_node(*ci)) {
+        m_next_level[m_counts[i]] = ci;
+      } else {
+        auto child = m_query.get_children(ci);
+        for (int next_level_index = m_counts[i]; child != false;
+             ++child, ++next_level_index) {
+          m_next_level[next_level_index] = child;
+        }
+      }
+    }
+  };
+
 private:
   CUDA_HOST_DEVICE
   void increment() {
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tincrement (breadth_first_iterator) m_depth = " << m_depth);
+    LOG(4, "\tincrement (bf_iterator): m_level size = " << m_level.size());
 #endif
-    // count number of children
-    auto count_children = [query = *m_query](child_iterator ci) {
-      return query.get_children(ci).distance_to_end();
-    };
-    m_num_children.resize(m_current_level.size());
-    detail::transform_exclusive_scan(
-        m_current_level.begin(), m_current_level.end(), m_num_children.begin(),
-        count_children, 0, std::plus<int>());
-    int num_children = *(m_num_children.end() - 1) +
-                       count_children(*(m_current_level.end() - 1));
+    // m_level [ci0, ci1, ci2, ...]
+    // exclusive scan for # children + # leafs: n_child
+    // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
+    // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
 
-    // create new level
-    m_next_level.resize(num_children);
-    detail::for_each(
-        traits_t::make_zip_iterator(traits_t::make_tuple(
-            m_current_level.begin(), m_num_children.begin())),
-        traits_t::make_zip_iterator(
-            traits_t::make_tuple(m_current_level.end(), m_num_children.end())),
-        [query = *m_query, _m_next_level = iterator_to_raw_pointer(
-                               m_next_level.begin())](auto i) {
-          auto parent = i.template get<0>();
-          int next_index = i.template get<1>();
-          for (auto ci = query.get_children(parent); ci != false; ++ci) {
-            _m_next_level[next_index++] = ci;
-          }
-        });
+    m_counts.resize(m_level.size());
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_children{*m_query},
+                                     0, detail::plus());
 
-    // swap to current level
-    m_current_level.swap(m_next_level);
+    // resize for new children and leafs
+    const int nchildren = static_cast<int>(m_counts.back()) +
+                          count_children{*m_query}(m_level.back());
+    m_all_leafs = nchildren == static_cast<int>(m_level.size());
 
+    // don't bother doing next level if they are all leafs
+    if (m_all_leafs)
+      return;
+
+    m_next_level.resize(nchildren);
+
+// tabulate m_level to copy children to m_next_level, or leafs to
+// m_leafs
+#if defined(__CUDACC__)
+    typedef typename thrust::detail::iterator_category_to_system<
+        typename Query::traits_type::vector_int::iterator::iterator_category>::
+        type system;
+    thrust::counting_iterator<int, system> count(0);
+#else
+    auto count = Query::traits_type::make_counting_iterator(0);
+#endif
+    detail::for_each(count, count + m_level.size(),
+                     copy_children_and_leafs{
+                         iterator_to_raw_pointer(m_counts.begin()), *m_query,
+                         iterator_to_raw_pointer(m_next_level.begin()),
+                         iterator_to_raw_pointer(m_level.begin())});
+
+    // swap level back to m_level and increment level count
+    m_level.swap(m_next_level);
+    m_level_num++;
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tend increment (breadth_first_iterator):");
+    LOG(4, "\tend increment (bf_iterator):");
 #endif
   }
 
   CUDA_HOST_DEVICE
   bool equal(iterator const &other) const {
-    return m_depth == other.m_depth && m_query == other.m_query;
+    return m_query == other.m_query && m_level_num == other.m_level_num;
+  }
+
+  CUDA_HOST_DEVICE bool equal(const bool other) const {
+    return m_all_leafs != other;
   }
 
   CUDA_HOST_DEVICE
-  bool equal(const bool other) const {
-    return m_current_level.empty() != other;
-  }
+  reference dereference() const { return m_level; }
 
-  CUDA_HOST_DEVICE
-  reference dereference() { return m_current_level; }
+  vector_ci m_level;
+  vector_ci m_next_level;
+  vector_int m_counts;
+  bool m_all_leafs;
+  size_t m_level_num;
+  const Query *m_query;
 };
 
 template <typename Query> auto make_flat_tree(const Query &query) {
