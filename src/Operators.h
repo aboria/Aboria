@@ -44,6 +44,7 @@ class MatrixReplacement;
 }
 
 #ifdef HAVE_EIGEN
+#include "Kernels.h"
 #include "detail/Operators.h"
 
 namespace Eigen {

@@ -177,6 +177,11 @@ set(SpatialDataStructuresTest
     test_CellListOrdered
     test_HyperOctree
     test_kdtree
+    test_depth_first_iterator
+    test_breadth_first_iterator
+    test_subsample_query
+    test_dummy_root
+    test_visualise_data_structures
     )
 
 set(NeighboursTestFile neighbours.h)

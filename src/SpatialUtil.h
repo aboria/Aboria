@@ -92,6 +92,18 @@ template <unsigned int D> struct bbox {
   }
 
   ///
+  /// @return true if \p point is within the bounding box, including
+  /// the maximum extent
+  ///
+  CUDA_HOST_DEVICE bool is_in_inclusive(const double_d &point) const {
+    bool ret = true;
+    for (size_t i = 0; i < D; ++i) {
+      ret &= point[i] >= bmin[i] && point[i] <= bmax[i];
+    }
+    return ret;
+  }
+
+  ///
   /// @return translate the bounding box
   ///
   inline CUDA_HOST_DEVICE bbox &operator+=(const double_d &arg) {

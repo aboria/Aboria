@@ -13,11 +13,11 @@ if(CMAKE_SYSTEM_NAME STREQUAL Linux)
     ../src/Aboria.h
     ../src/Particles.h
     ../src/Variable.h
-    ../src/CellListOrdered.h
-    ../src/CellList.h
-    ../src/NanoFlannAdaptor.h
-    ../src/Kdtree.h
-    ../src/OctTree.h
+    ../src/SpatialDataStructures/CellListOrdered.h
+    ../src/SpatialDataStructures/CellList.h
+    ../src/SpatialDataStructures/NanoFlannAdaptor.h
+    ../src/SpatialDataStructures/Kdtree.h
+    ../src/SpatialDataStructures/OctTree.h
     ../src/NeighbourSearchBase.h
     ../src/Operators.h
     ../src/Chebyshev.h

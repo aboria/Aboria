@@ -499,19 +499,50 @@ public:
     auto query = particles.get_query();
     auto i = query.breadth_first();
     int count_levels = 1;
+    int count_buckets = 1;
     bool tree = false;
     for (; i != false; ++i) {
       tree = true;
       ++count_levels;
+      count_buckets += (*i).size();
     }
 
     // check that total number of levels are correct
     TS_ASSERT_EQUALS(count_levels, query.number_of_levels() + (tree ? 1 : 0));
+    TS_ASSERT_EQUALS(count_buckets, query.number_of_buckets());
+  }
 
-    // check that remains are all leafs
-    for (auto ci : *i) {
-      TS_ASSERT(query.is_leaf_node(*ci));
+  template <template <typename, typename> class Vector,
+            template <typename> class SearchMethod>
+  void helper_dual_breadth_first_iterator() {
+    using Particles_t = Particles<std::tuple<>, 2, Vector, SearchMethod>;
+    using position = typename Particles_t::position;
+
+    const int N = 1000;
+    const int nbucket = 5;
+    Particles_t particles(N);
+    std::normal_distribution<double> normal(0.5, 0.2);
+    for (size_t i = 0; i < particles.size(); ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] = vdouble2(normal(gen), normal(gen));
     }
+    particles.init_neighbour_search(vdouble2::Constant(0),
+                                    vdouble2::Constant(1),
+                                    vdouble2::Constant(false), nbucket);
+
+    auto query = particles.get_query();
+
+    auto i = create_dual_breadth_first_iterator(query, query);
+    auto j = query.breadth_first();
+    int count_levels = 1;
+    bool tree = false;
+    for (; i != false; ++i, ++j) {
+      TS_ASSERT_EQUALS(j, true);
+      TS_ASSERT_EQUALS(std::pow(j->size(), 2), i->size());
+      tree = true;
+      ++count_levels;
+    }
+    TS_ASSERT_EQUALS(j, false);
   }
 
   template <template <typename, typename> class Vector,
@@ -540,6 +571,44 @@ public:
 
     // check that total number of buckets and levels are correct
     TS_ASSERT_EQUALS(count_cells, query.number_of_buckets());
+  }
+
+  template <template <typename, typename> class Vector,
+            template <typename> class SearchMethod>
+  void helper_subsample_query() {
+    using Particles_t = Particles<std::tuple<>, 2, Vector, SearchMethod>;
+    using position = typename Particles_t::position;
+
+    const int N = 1000;
+    const int nbucket = 5;
+    const int nsubsample = 3;
+    Particles_t particles(N);
+    std::normal_distribution<double> normal(0.5, 0.2);
+    for (size_t i = 0; i < particles.size(); ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] = vdouble2(normal(gen), normal(gen));
+    }
+    particles.init_neighbour_search(vdouble2::Constant(0),
+                                    vdouble2::Constant(1),
+                                    vdouble2::Constant(false), nbucket);
+
+    auto query = particles.get_query();
+    auto subsample_query = create_subsample_query(query, nsubsample);
+    int count_subtree = 0;
+    for (auto i = subsample_query.get_subtree(); i != false;
+         ++i, ++count_subtree) {
+      auto bounds = subsample_query.get_bounds(i);
+      int count = 0;
+      for (auto p = subsample_query.get_bucket_particles(*i); p != false;
+           ++p, ++count) {
+        TS_ASSERT(bounds.is_in_inclusive(get<position>(p)));
+      }
+      TS_ASSERT_LESS_THAN_EQUALS(count, nsubsample);
+      if (!subsample_query.is_leaf_node(*i)) {
+        TS_ASSERT_EQUALS(count, nsubsample);
+      }
+    }
+    TS_ASSERT_EQUALS(count_subtree, query.number_of_buckets());
   }
 
   template <template <typename, typename> class Vector,
@@ -614,6 +683,19 @@ public:
     helper_depth_first_iterator<std::vector, KdtreeNanoflann>();
     std::cout << "df-search HyperOctree" << std::endl;
     helper_depth_first_iterator<std::vector, HyperOctree>();
+  }
+
+  void test_subsample_query() {
+    std::cout << "df-search CellList" << std::endl;
+    helper_subsample_query<std::vector, CellList>();
+    std::cout << "df-search CellListOrdered" << std::endl;
+    helper_subsample_query<std::vector, CellListOrdered>();
+    std::cout << "df-search Kdtree" << std::endl;
+    helper_subsample_query<std::vector, Kdtree>();
+    std::cout << "df-search KdtreeNanoflann" << std::endl;
+    helper_subsample_query<std::vector, KdtreeNanoflann>();
+    std::cout << "df-search HyperOctree" << std::endl;
+    helper_subsample_query<std::vector, HyperOctree>();
   }
 
   void test_dummy_root() {

@@ -33,57 +33,61 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
-#ifndef BREADTH_FIRST_SEARCH_BASE_H_
-#define BREADTH_FIRST_SEARCH_BASE_H_
+#ifndef DUAL_BREADTH_FIRST_SEARCH_BASE_H_
+#define DUAL_BREADTH_FIRST_SEARCH_BASE_H_
 
 namespace Aboria {
 
-template <typename Query> class BreadthFirstSearchIterator {
-  typedef typename Query::child_iterator child_iterator;
-  typedef typename Query::Traits traits_t;
+template <typename RowQuery, typename ColQuery>
+class DualBreadthFirstSearchIterator {
+  using iterator = DualBreadthFirstSearchIterator<RowQuery, ColQuery>;
+  typedef typename RowQuery::child_iterator row_child_iterator;
+  typedef typename ColQuery::child_iterator col_child_iterator;
+  typedef typename RowQuery::Traits traits_t;
 
-  typedef
-      typename traits_t::template vector_type<child_iterator>::type m_level_t;
+  struct row_col_pair {
+    row_child_iterator row;
+    col_child_iterator col;
+  };
+
+  typedef typename traits_t::template vector_type<row_col_pair>::type m_level_t;
   typedef typename traits_t::template vector_type<int>::type m_num_children_t;
-  const Query *m_query;
+  const RowQuery *m_row_query;
+  const ColQuery *m_col_query;
   m_level_t m_current_level;
   m_num_children_t m_num_children;
   m_level_t m_next_level;
   int m_depth;
 
 public:
-  typedef const m_level_t value_type;
-  typedef m_level_t *const pointer;
+  typedef m_level_t value_type;
+  typedef m_level_t *pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef m_level_t &const reference;
+  typedef m_level_t &reference;
   typedef std::ptrdiff_t difference_type;
 
-  CUDA_HOST_DEVICE
-  BreadthFirstSearchIterator() {}
+  DualBreadthFirstSearchIterator() {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
-  CUDA_HOST_DEVICE
-  BreadthFirstSearchIterator(const Query *query)
-      : m_query(query), m_current_level(query->get_child_iterator()),
+  DualBreadthFirstSearchIterator(const RowQuery *row_query,
+                                 const ColQuery *col_query)
+      : m_row_query(row_query), m_col_query(col_query),
+        m_current_level(row_col_pair(row_query->get_child_iterator(),
+                                     col_query->get_child_iterator())),
         m_depth(0) {}
 
-  CUDA_HOST_DEVICE
   reference operator*() const { return dereference(); }
-  CUDA_HOST_DEVICE
-  reference operator->() { return dereference(); }
-  CUDA_HOST_DEVICE
+  pointer operator->() { return &dereference(); }
   iterator &operator++() {
     increment();
     return *this;
   }
-  CUDA_HOST_DEVICE
   iterator operator++(int) {
     iterator tmp(*this);
     operator++();
     return tmp;
   }
-  CUDA_HOST_DEVICE
   size_t operator-(iterator start) const {
     size_t count = 0;
     while (start != *this) {
@@ -92,28 +96,29 @@ public:
     }
     return count;
   }
-  CUDA_HOST_DEVICE
   inline bool operator==(const iterator &rhs) const { return equal(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator!=(const iterator &rhs) const { return !operator==(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator==(const bool rhs) const { return equal(rhs); }
 
-  CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
+  const m_num_children_t &get_num_children() { return m_num_children; }
+
 private:
-  CUDA_HOST_DEVICE
   void increment() {
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tincrement (breadth_first_iterator) m_depth = " << m_depth);
+    LOG(4, "\tincrement (dual_breadth_first_iterator) m_depth = " << m_depth);
 #endif
     // count number of children
-    auto count_children = [](child_iterator ci) {
-      return ci.number_of_children();
+    auto count_children = [](auto rc_pair) {
+      const int nrow = rc_pair.row.number_of_children();
+      const int ncol = rc_pair.col.number_of_children();
+      const int ret = std::max(nrow, 1) * std::max(ncol, 1);
+      return ret == 1 ? 0 : ret;
     };
+
     m_num_children.resize(m_current_level.size());
     detail::transform_exclusive_scan(
         m_current_level.begin(), m_current_level.end(), m_num_children.begin(),
@@ -129,13 +134,18 @@ private:
         traits_t::make_zip_iterator(
             traits_t::make_tuple(m_current_level.end(), m_num_children.end())),
         m_next_level.end(),
-        [_m_query = m_query, _m_next_level = iterator_to_raw_pointer(
-                                 m_next_level.begin())](auto i) {
-          auto parent = i.template <0>();
-          for (auto ci = _m_query->get_child_iterator(parent),
-                    int next_index = i.template get<1>();
-               ci != false; ++ci, ++next_index) {
-            _m_next_level[next_index] = ci;
+        [_m_row_query = m_row_query, _m_col_query = m_col_query,
+         _m_next_level =
+             iterator_to_raw_pointer(m_next_level.begin())](auto i) {
+          auto row_parent = i.template get<0>().row;
+          auto col_parent = i.template get<0>().col;
+          int next_index = i.template get<1>();
+          for (auto row_ci = _m_row_query->get_child_iterator(row_parent);
+               row_ci != false; ++row_ci) {
+            for (auto col_ci = _m_col_query->get_child_iterator(col_parent);
+                 col_ci != false; ++col_ci) {
+              _m_next_level[next_index++] = row_col_pair(row_ci, col_ci);
+            }
           }
         });
 
@@ -143,36 +153,29 @@ private:
     m_current_level.swap(m_next_level);
 
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tend increment (breadth_first_iterator):");
+    LOG(4, "\tend increment (dual_breadth_first_iterator):");
 #endif
   }
 
-  CUDA_HOST_DEVICE
   bool equal(iterator const &other) const {
-    return m_depth == other.m_depth && m_query == other.m_query;
+    return m_depth == other.m_depth && m_row_query == other.m_row_query &&
+           m_col_query == other.m_col_query;
   }
 
-  CUDA_HOST_DEVICE
   bool equal(const bool other) const {
     return m_current_level.empty() != other;
   }
 
-  CUDA_HOST_DEVICE
   reference dereference() const { return m_current_level; }
 };
 
-template <typename Query> auto make_flat_tree(const Query &query) {
-  typedef typename Query::child_iterator child_iterator;
-  typedef typename Query::Traits traits_t;
-  typedef typename traits_t::template vector_type<child_iterator>::type level_t;
-  typedef typename traits_t::template vector_type<m_level_t>::type tree_t;
-
-  tree_t tree;
-  for (auto bf_it = BreadthFirstSearchIterator(query); bf_it != false;
-       ++bf_it) {
-    tree.push_back(*bf_it)
-  }
-  return tree;
+template <typename RowQuery, typename ColQuery>
+auto create_dual_breadth_first_iterator(const RowQuery &row_query,
+                                        const ColQuery &col_query) {
+  return DualBreadthFirstSearchIterator<RowQuery, ColQuery>(row_query,
+                                                            col_query);
 }
 
 } // namespace Aboria
+
+#endif

@@ -44,8 +44,8 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <boost/iterator/counting_iterator.hpp>
 #include <boost/range/adaptors.hpp>
 
-#include "CellList.h"
 #include "Get.h"
+#include "SpatialDataStructures/CellList.h"
 #include "Traits.h"
 #include "Variable.h"
 #include "Vector.h"

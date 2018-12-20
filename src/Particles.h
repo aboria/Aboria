@@ -62,8 +62,8 @@ template <typename VAR, unsigned int DomainD,
 class Particles;
 }
 
-#include "CellList.h"
 #include "Get.h"
+#include "SpatialDataStructures/CellList.h"
 #include "Traits.h"
 #include "Variable.h"
 #include "Vector.h"
