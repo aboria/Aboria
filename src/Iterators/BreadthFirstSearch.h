@@ -56,13 +56,13 @@ public:
   typedef std::ptrdiff_t difference_type;
 
   CUDA_HOST_DEVICE
-  bf_iterator() : m_all_leafs(true) {}
+  bf_iterator() : m_all_leafs(true), m_filtered(false) {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
   CUDA_HOST_DEVICE
   bf_iterator(const child_iterator &start_node, const Query *query)
-      : m_all_leafs(true), m_level_num(1), m_query(query) {
+      : m_all_leafs(true), m_level_num(1), m_query(query), m_filtered(false) {
     if (start_node != false) {
       m_level.resize(start_node.distance_to_end());
       int i = 0;
@@ -116,6 +116,50 @@ public:
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
+  template <typename T> void filter(T &f) {
+    m_counts.resize(m_level.size());
+    detail::transform_exclusive_scan(
+        m_level.begin(), m_level.end(), m_counts.begin(),
+        count_children_with_filter{count_children{*m_query}, f}, 0,
+        detail::plus());
+    m_filtered = true;
+  }
+
+  template <typename T> void filter_with_gather(T &f, vector_ci &store) {
+    m_counts.resize(m_level.size());
+    detail::transform(m_level.begin(), m_level.end(), m_counts.begin(),
+                      count_children_with_filter{count_children{*m_query}, f});
+    store.resize(m_level.size());
+    auto new_end =
+        detail::copy_if(m_level.begin(), m_level.end(), m_counts.begin(),
+                        store.begin(), [](const int i) { return i == 0 });
+
+    store.erase(new_end, store.end());
+    detail::transform_exclusive_scan(m_counts.begin(), m_counts.end(),
+                                     m_counts.begin(), 0, detail::plus());
+    m_filtered = true;
+  }
+
+  template <typename T> struct count_filtered {
+    count_children m_cc;
+    T m_filter;
+
+    CUDA_HOST_DEVICE
+    int operator()(const child_iterator &ci) {
+      return m_filter(ci) ? 0 : m_cc(ci);
+    }
+  };
+
+  template <typename T> struct count_children_with_filter {
+    count_children m_cc;
+    T m_filter;
+
+    CUDA_HOST_DEVICE
+    int operator()(const child_iterator &ci) {
+      return m_filter(ci) ? 0 : m_cc(ci);
+    }
+  };
+
   struct count_children {
     const Query m_query;
 
@@ -160,10 +204,14 @@ private:
     // (std::vector<Vector<int,2>> = [{0,0}, {3,0}, {3,1}, ..., {N-#child
     // cin,NL-#child==0}] resize m_next_level(N) resize m_leafs(NL)
 
-    m_counts.resize(m_level.size());
-    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
-                                     m_counts.begin(), count_children{*m_query},
-                                     0, detail::plus());
+    if (m_filtered) {
+      m_filtered = false;
+    } else {
+      m_counts.resize(m_level.size());
+      detail::transform_exclusive_scan(
+          m_level.begin(), m_level.end(), m_counts.begin(),
+          count_children{*m_query}, 0, detail::plus());
+    }
 
     // resize for new children and leafs
     const int nchildren = static_cast<int>(m_counts.back()) +
@@ -216,6 +264,7 @@ private:
   vector_ci m_next_level;
   vector_int m_counts;
   bool m_all_leafs;
+  bool m_filtered;
   size_t m_level_num;
   const Query *m_query;
 };
