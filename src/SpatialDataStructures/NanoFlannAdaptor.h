@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define NANOFLANN_ADAPTOR_H_
 
 #include "Get.h"
+#include "Iterators/BreadthFirstSearch.h"
 #include "Log.h"
 #include "NeighbourSearchBase.h"
 #include "SpatialUtil.h"
@@ -411,7 +412,8 @@ template <typename Traits> struct KdtreeNanoflannQuery {
 
   typedef value_type *root_iterator;
   typedef depth_first_iterator<KdtreeNanoflannQuery> all_iterator;
-  typedef bf_iterator<KdtreeNanoflannQuery> breadth_first_iterator;
+  typedef BreadthFirstSearchIterator<KdtreeNanoflannQuery>
+      breadth_first_iterator;
   typedef nanoflann_child_iterator<Traits> child_iterator;
   typedef ranges_iterator<Traits> particle_iterator;
   typedef bbox<dimension> box_type;

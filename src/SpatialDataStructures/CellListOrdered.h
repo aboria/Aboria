@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include "CudaInclude.h"
 #include "Get.h"
+#include "Iterators/BreadthFirstSearch.h"
 #include "NeighbourSearchBase.h"
 #include "SpatialUtil.h"
 #include "Traits.h"
@@ -299,7 +300,8 @@ struct CellListOrderedQuery : public NeighbourQueryBase<Traits> {
       lattice_iterator_around_bounds<CellListOrderedQuery, LNormNumber>;
 
   typedef lattice_iterator<dimension> all_iterator;
-  typedef bf_iterator<CellListOrderedQuery> breadth_first_iterator;
+  typedef BreadthFirstSearchIterator<CellListOrderedQuery>
+      breadth_first_iterator;
   typedef lattice_iterator<dimension> child_iterator;
   typedef typename query_iterator<2>::reference reference;
   typedef typename query_iterator<2>::pointer pointer;

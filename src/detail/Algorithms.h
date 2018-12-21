@@ -623,10 +623,20 @@ OutputIt exclusive_scan(InputIt first, InputIt last, OutputIt d_first, T init,
   // C++17 code here
   return std::exclusive_scan(first, last, d_first, init);
 #else
-  if (first != last) {
-    *d_first++ = init;
-    for (; first != last - 1; ++first, ++d_first) {
-      *d_first = *(d_first - 1) + *first;
+  if (first != last) { // handle case where first == d_first
+    if (static_cast<void *>(&*first) != static_cast<void *>(&*d_first)) {
+      *d_first++ = init;
+      for (; first != last - 1; ++first, ++d_first) {
+        *d_first = *(d_first - 1) + *first;
+      }
+    } else {
+      typename OutputIt::value_type tmp = *d_first;
+      const int n = std::distance(first, last);
+      *d_first++ = init;
+      for (int i = 0; i < n - 1; ++i) {
+        tmp += *(d_first - 1);
+        std::swap(tmp, *d_first++);
+      }
     }
   }
   return d_first;

@@ -1154,9 +1154,9 @@ public:
                     const bool lower) const {
     const auto &A =
         level == 0 ? m_fineA->get_first_kernel().get_matrix() : m_A[level - 1];
-    ASSERT(x_k.size() == n, "x_k has inconsistent size");
-    ASSERT(A.rows() == n, "operator has inconsistent rows");
-    ASSERT(A.cols() == n, "operator has inconsistent rows");
+    ASSERT(x_k.size() == b.size(), "x_k has inconsistent size");
+    ASSERT(A.rows() == b.size(), "operator has inconsistent rows");
+    ASSERT(A.cols() == b.size(), "operator has inconsistent rows");
 
     if (lower) {
       x_k = b - A.template triangularView<Eigen::StrictlyUpper>() * x_k;

@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define KDTREE_H_
 
 #include "Get.h"
+#include "Iterators/BreadthFirstSearch.h"
 #include "Log.h"
 #include "NeighbourSearchBase.h"
 #include "SpatialUtil.h"
@@ -672,7 +673,7 @@ template <typename Traits> struct KdtreeQuery {
       tree_box_query_iterator<KdtreeQuery, LNormNumber>;
 
   typedef depth_first_iterator<KdtreeQuery> all_iterator;
-  typedef bf_iterator<KdtreeQuery> breadth_first_iterator;
+  typedef BreadthFirstSearchIterator<KdtreeQuery> breadth_first_iterator;
   typedef KdtreeChildIterator<KdtreeQuery> child_iterator;
 
   typedef typename child_iterator::value_type value_type;

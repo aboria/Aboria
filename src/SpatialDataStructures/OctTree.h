@@ -43,6 +43,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define OCTTREE_H_
 
 #include "CudaInclude.h"
+#include "Iterators/BreadthFirstSearch.h"
 #include "Particles.h"
 #include "SpatialUtil.h"
 #include "detail/Algorithms.h"
@@ -729,7 +730,7 @@ template <typename Traits> struct HyperOctreeQuery {
 
   typedef depth_first_iterator<HyperOctreeQuery> root_iterator;
   typedef depth_first_iterator<HyperOctreeQuery> all_iterator;
-  typedef bf_iterator<HyperOctreeQuery> breadth_first_iterator;
+  typedef BreadthFirstSearchIterator<HyperOctreeQuery> breadth_first_iterator;
   typedef octree_child_iterator<dimension> child_iterator;
   typedef typename child_iterator::reference reference;
   typedef typename child_iterator::pointer pointer;

@@ -36,10 +36,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef BREADTH_FIRST_SEARCH_BASE_H_
 #define BREADTH_FIRST_SEARCH_BASE_H_
 
+#include "Vector.h"
+#include "detail/Algorithms.h"
+
 namespace Aboria {
 
 template <typename Query> class BreadthFirstSearchIterator {
-  typedef bf_iterator<Query> iterator;
+  typedef BreadthFirstSearchIterator<Query> iterator;
   typedef typename Query::child_iterator child_iterator;
   static const unsigned int dimension = Query::dimension;
   typedef Vector<double, dimension> double_d;
@@ -48,31 +51,40 @@ template <typename Query> class BreadthFirstSearchIterator {
   typedef typename traits_type::template vector<child_iterator> vector_ci;
   typedef typename traits_type::template vector<int> vector_int;
 
+  bool m_finished;
+  size_t m_level_num;
+  vector_ci m_level;
+  vector_ci m_next_level;
+  vector_int m_counts;
+  const Query *m_query;
+  bool m_filtered;
+
 public:
-  typedef vector_ci value_type;
-  typedef vector_ci *pointer;
-  typedef vector_ci &reference;
+  typedef const vector_ci value_type;
+  typedef vector_ci const *pointer;
+  typedef vector_ci const &reference;
   typedef std::forward_iterator_tag iterator_category;
   typedef std::ptrdiff_t difference_type;
 
   CUDA_HOST_DEVICE
-  bf_iterator() : m_all_leafs(true), m_filtered(false) {}
+  BreadthFirstSearchIterator() : m_finished(true), m_filtered(false) {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
   CUDA_HOST_DEVICE
-  bf_iterator(const child_iterator &start_node, const Query *query)
-      : m_all_leafs(true), m_level_num(1), m_query(query), m_filtered(false) {
+  BreadthFirstSearchIterator(const child_iterator &start_node,
+                             const Query *query)
+      : m_finished(false), m_level_num(1), m_query(query), m_filtered(false) {
     if (start_node != false) {
       m_level.resize(start_node.distance_to_end());
       int i = 0;
       for (auto ci = start_node; ci != false; ++ci, ++i) {
         m_level[i] = ci;
       }
-      m_all_leafs = query->number_of_levels() == 1;
     } else {
+      m_finished = true;
 #ifndef __CUDA_ARCH__
-      LOG(3, "\tbf_iterator (constructor): start is false, no "
+      LOG(3, "\tBreadthFirstSearchIterator (constructor): start is false, no "
              "children to search.");
 #endif
     }
@@ -83,7 +95,7 @@ public:
   CUDA_HOST_DEVICE
   reference operator*() { return dereference(); }
   CUDA_HOST_DEVICE
-  pointer operator->() { return dereference(); }
+  pointer operator->() { return &dereference(); }
   CUDA_HOST_DEVICE
   iterator &operator++() {
     increment();
@@ -116,42 +128,6 @@ public:
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
-  template <typename T> void filter(T &f) {
-    m_counts.resize(m_level.size());
-    detail::transform_exclusive_scan(
-        m_level.begin(), m_level.end(), m_counts.begin(),
-        count_children_with_filter{count_children{*m_query}, f}, 0,
-        detail::plus());
-    m_filtered = true;
-  }
-
-  template <typename T> void filter_with_gather(T &f, vector_ci &store) {
-    m_counts.resize(m_level.size());
-    detail::transform(m_level.begin(), m_level.end(), m_counts.begin(),
-                      count_filtered{count_children{*m_query}, f});
-
-    store.resize(m_level.size());
-    auto new_end =
-        detail::copy_if(m_level.begin(), m_level.end(), m_counts.begin(),
-                        store.begin(), [](const int i) { return i == 0 });
-
-    store.erase(new_end, store.end());
-    detail::exclusive_scan(m_counts.begin(), m_counts.end(), m_counts.begin(),
-                           0);
-
-    m_filtered = true;
-  }
-
-  template <typename T> struct count_filtered {
-    count_children m_cc;
-    T m_filter;
-
-    CUDA_HOST_DEVICE
-    int operator()(const child_iterator &ci) {
-      return m_filter(ci) ? 0 : m_cc(ci);
-    }
-  };
-
   struct count_children {
     const Query m_query;
 
@@ -164,15 +140,26 @@ public:
     }
   };
 
+  template <typename T> struct count_filtered {
+    count_children m_cc;
+    T m_filter;
+
+    CUDA_HOST_DEVICE
+    int operator()(const child_iterator &ci) {
+      return m_filter(ci) ? 0 : m_cc(ci);
+    }
+  };
+
   struct copy_children_and_leafs {
     int *m_counts;
     const Query m_query;
     child_iterator *m_next_level;
     child_iterator *m_level;
+    int m_nchildren;
 
-    CUDA_HOST_DEVICE
-    void operator()(const int i) {
+    void work(const int i) {
       auto ci = m_level[i];
+
       if (m_query.is_leaf_node(*ci)) {
         m_next_level[m_counts[i]] = ci;
       } else {
@@ -183,13 +170,63 @@ public:
         }
       }
     }
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      // if filtered do nothing
+      if (m_counts[i + 1] == m_counts[i])
+        return;
+
+      work(i);
+    }
   };
+
+  template <typename T> void filter(const T &f) {
+    m_counts.resize(m_level.size());
+    auto count_f = count_filtered<T>{count_children{*m_query}, f};
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_f, 0,
+                                     detail::plus());
+
+    const size_t nchildren =
+        static_cast<int>(m_counts.back()) + count_f(m_level.back());
+
+    m_next_level.resize(nchildren);
+
+    m_filtered = true;
+  }
+
+  template <typename T> void filter_with_gather(const T &f, vector_ci &store) {
+    m_counts.resize(m_level.size());
+    detail::transform(m_level.begin(), m_level.end(), m_counts.begin(),
+                      count_filtered<T>{count_children{*m_query}, f});
+
+    store.resize(m_level.size());
+
+    auto new_end =
+        detail::copy_if(m_level.begin(), m_level.end(), m_counts.begin(),
+                        store.begin(), [](const int i) { return i == 0; });
+
+    store.erase(new_end, store.end());
+
+    size_t nchildren = m_counts.back();
+
+    detail::exclusive_scan(m_counts.begin(), m_counts.end(), m_counts.begin(),
+                           0);
+
+    nchildren += m_counts.back();
+
+    m_next_level.resize(nchildren);
+
+    m_filtered = true;
+  }
 
 private:
   CUDA_HOST_DEVICE
   void increment() {
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tincrement (bf_iterator): m_level size = " << m_level.size());
+    LOG(4, "\tincrement (BreadthFirstSearchIterator): m_level size = "
+               << m_level.size());
 #endif
     // m_level [ci0, ci1, ci2, ...]
     // exclusive scan for # children + # leafs: n_child
@@ -203,18 +240,22 @@ private:
       detail::transform_exclusive_scan(
           m_level.begin(), m_level.end(), m_counts.begin(),
           count_children{*m_query}, 0, detail::plus());
+
+      const size_t nchildren =
+          m_counts.back() + count_children{*m_query}(m_level.back());
+
+      m_next_level.resize(nchildren);
     }
 
     // resize for new children and leafs
-    const int nchildren = static_cast<int>(m_counts.back()) +
-                          count_children{*m_query}(m_level.back());
-    m_all_leafs = nchildren == static_cast<int>(m_level.size());
+    m_finished = m_next_level.size() == 0;
 
     // don't bother doing next level if they are all leafs
-    if (m_all_leafs)
+    if (m_finished) {
+      m_level.swap(m_next_level);
+      m_level_num++;
       return;
-
-    m_next_level.resize(nchildren);
+    }
 
 // tabulate m_level to copy children to m_next_level, or leafs to
 // m_leafs
@@ -226,17 +267,23 @@ private:
 #else
     auto count = Query::traits_type::make_counting_iterator(0);
 #endif
-    detail::for_each(count, count + m_level.size(),
-                     copy_children_and_leafs{
-                         iterator_to_raw_pointer(m_counts.begin()), *m_query,
-                         iterator_to_raw_pointer(m_next_level.begin()),
-                         iterator_to_raw_pointer(m_level.begin())});
+    auto copy_f = copy_children_and_leafs{
+        iterator_to_raw_pointer(m_counts.begin()), *m_query,
+        iterator_to_raw_pointer(m_next_level.begin()),
+        iterator_to_raw_pointer(m_level.begin())};
+
+    detail::for_each(count, count + m_level.size() - 1, copy_f);
+
+    if (m_counts.back() != static_cast<int>(m_next_level.size())) {
+      // last ci is not filtered
+      copy_f.work(m_level.size() - 1);
+    }
 
     // swap level back to m_level and increment level count
     m_level.swap(m_next_level);
     m_level_num++;
 #ifndef __CUDA_ARCH__
-    LOG(4, "\tend increment (bf_iterator):");
+    LOG(4, "\tend increment (BreadthFirstSearchIterator):");
 #endif
   }
 
@@ -246,19 +293,11 @@ private:
   }
 
   CUDA_HOST_DEVICE bool equal(const bool other) const {
-    return m_all_leafs != other;
+    return m_finished != other;
   }
 
   CUDA_HOST_DEVICE
   reference dereference() const { return m_level; }
-
-  vector_ci m_level;
-  vector_ci m_next_level;
-  vector_int m_counts;
-  bool m_all_leafs;
-  bool m_filtered;
-  size_t m_level_num;
-  const Query *m_query;
 };
 
 template <typename Query> auto make_flat_tree(const Query &query) {
@@ -268,9 +307,11 @@ template <typename Query> auto make_flat_tree(const Query &query) {
   typedef typename traits_t::template vector_type<level_t>::type tree_t;
 
   tree_t tree;
-  for (auto bf_it = BreadthFirstSearchIterator<Query>(&query); bf_it != false;
-       ++bf_it) {
+  for (auto bf_it =
+           BreadthFirstSearchIterator<Query>(query.get_children(), &query);
+       bf_it != false; ++bf_it) {
     tree.push_back(*bf_it);
+    bf_it.filter([&](auto ci) { return query.is_leaf_node(*ci); });
   }
   return tree;
 }

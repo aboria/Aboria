@@ -43,32 +43,32 @@ class DualBreadthFirstSearchIterator {
   using iterator = DualBreadthFirstSearchIterator<RowQuery, ColQuery>;
   typedef typename RowQuery::child_iterator row_child_iterator;
   typedef typename ColQuery::child_iterator col_child_iterator;
-  typedef typename RowQuery::Traits traits_t;
+  typedef typename RowQuery::traits_type traits_t;
 
   struct row_col_pair {
     row_child_iterator row;
     col_child_iterator col;
   };
 
-  typedef typename traits_t::template vector_type<row_col_pair>::type m_level_t;
-  typedef typename traits_t::template vector_type<int>::type m_num_children_t;
+  typedef typename traits_t::template vector_type<row_col_pair>::type level_t;
+  typedef typename traits_t::template vector_type<int>::type num_children_t;
   const RowQuery *m_row_query;
   const ColQuery *m_col_query;
-  m_level_t m_level;
-  m_num_children_t m_counts;
-  m_level_t m_next_level;
+  level_t m_level;
+  num_children_t m_counts;
+  level_t m_next_level;
   int m_level_num;
-  bool m_all_leafs;
+  bool m_finished;
   bool m_filtered;
 
 public:
-  typedef m_level_t value_type;
-  typedef m_level_t *pointer;
+  typedef level_t const value_type;
+  typedef level_t const *pointer;
   typedef std::forward_iterator_tag iterator_category;
-  typedef m_level_t &reference;
+  typedef level_t const &reference;
   typedef std::ptrdiff_t difference_type;
 
-  DualBreadthFirstSearchIterator() : m_all_leafs(true), m_filtered(false) {}
+  DualBreadthFirstSearchIterator() : m_finished(true), m_filtered(false) {}
 
   /// this constructor is used to start the iterator at the head of a bucket
   /// list
@@ -76,20 +76,19 @@ public:
                                  const RowQuery *row_query,
                                  const col_child_iterator &start_col_ci,
                                  const ColQuery *col_query)
-      : m_all_leafs(true), m_level_num(1), m_row_query(row_query),
-        m_col_query(col_query), m_filtered(false) {
+      : m_row_query(row_query), m_col_query(col_query), m_level_num(1),
+        m_finished(false), m_filtered(false) {
     if (start_row_ci != false && start_col_ci != false) {
       m_level.resize(start_row_ci.distance_to_end() *
                      start_col_ci.distance_to_end());
       int i = 0;
       for (auto ci = start_row_ci; ci != false; ++ci) {
         for (auto cj = start_col_ci; cj != false; ++cj) {
-          m_level[i++] = row_col_pair(ci, cj);
+          m_level[i++] = row_col_pair{ci, cj};
         }
       }
-      m_all_leafs =
-          row_query->number_of_levels() * col_query->number_of_levels() == 1;
     } else {
+      m_finished = true;
 #ifndef __CUDA_ARCH__
       LOG(3, "\tbf_iterator (constructor): start is false, no "
              "children to search.");
@@ -102,7 +101,7 @@ public:
   CUDA_HOST_DEVICE
   reference operator*() { return dereference(); }
   CUDA_HOST_DEVICE
-  pointer operator->() { return dereference(); }
+  pointer operator->() { return &dereference(); }
   CUDA_HOST_DEVICE
   iterator &operator++() {
     increment();
@@ -135,44 +134,9 @@ public:
   CUDA_HOST_DEVICE
   inline bool operator!=(const bool rhs) const { return !operator==(rhs); }
 
-  template <typename T> void filter(T &f) {
-    m_counts.resize(m_level.size());
-    detail::transform_exclusive_scan(
-        m_level.begin(), m_level.end(), m_counts.begin(),
-        count_children_with_filter{count_children{*m_query}, f}, 0,
-        detail::plus());
-    m_filtered = true;
-  }
-
-  template <typename T> void filter_with_gather(T &f, level_t &store) {
-    m_counts.resize(m_level.size());
-    detail::transform(m_level.begin(), m_level.end(), m_counts.begin(),
-                      count_filtered{count_children{*m_query}, f});
-
-    store.resize(m_level.size());
-    auto new_end =
-        detail::copy_if(m_level.begin(), m_level.end(), m_counts.begin(),
-                        store.begin(), [](const int i) { return i == 0 });
-
-    store.erase(new_end, store.end());
-    detail::exclusive_scan(m_counts.begin(), m_counts.end(), m_counts.begin(),
-                           0);
-
-    m_filtered = true;
-  }
-
-  template <typename T> struct count_filtered {
-    count_children m_cc;
-    T m_filter;
-
-    CUDA_HOST_DEVICE
-    int operator()(const row_col_pair &rc_pair) {
-      return m_filter(rc_pair) ? 0 : m_cc(rc_pair);
-    }
-  };
-
   struct count_children {
-    const Query m_query;
+    const RowQuery m_row_query;
+    const ColQuery m_col_query;
 
     CUDA_HOST_DEVICE
     int operator()(const row_col_pair &rc_pair) {
@@ -190,6 +154,16 @@ public:
     }
   };
 
+  template <typename T> struct count_filtered {
+    count_children m_cc;
+    T m_filter;
+
+    CUDA_HOST_DEVICE
+    int operator()(const row_col_pair &rc_pair) {
+      return m_filter(rc_pair) ? 0 : m_cc(rc_pair);
+    }
+  };
+
   struct copy_children_and_leafs {
     int *m_counts;
     const RowQuery m_row_query;
@@ -198,33 +172,81 @@ public:
     row_col_pair *m_level;
 
     CUDA_HOST_DEVICE
-    void operator()(const int i) {
+    void work(const int i) {
       auto &rc_pair = m_level[i];
       int next_level_index = m_counts[i];
       if (m_row_query.is_leaf_node(*rc_pair.row) &&
           m_col_query.is_leaf_node(*rc_pair.col)) {
         m_next_level[next_level_index] = rc_pair;
       } else if (m_row_query.is_leaf_node(*rc_pair.row)) {
-        for (auto col_ci = m_col_query->get_children(rc_pair.col);
+        for (auto col_ci = m_col_query.get_children(rc_pair.col);
              col_ci != false; ++col_ci) {
-          m_next_level[next_level_index++] = row_col_pair(rc_pair.row, col_ci);
+          m_next_level[next_level_index++] = row_col_pair{rc_pair.row, col_ci};
         }
       } else if (m_col_query.is_leaf_node(*rc_pair.col)) {
-        for (auto row_ci = m_row_query->get_children(rc_pair.row);
+        for (auto row_ci = m_row_query.get_children(rc_pair.row);
              row_ci != false; ++row_ci) {
-          m_next_level[next_level_index++] = row_col_pair(row_ci, rc_pair.col);
+          m_next_level[next_level_index++] = row_col_pair{row_ci, rc_pair.col};
         }
       } else {
-        for (auto row_ci = m_row_query->get_children(rc_pair.row);
+        for (auto row_ci = m_row_query.get_children(rc_pair.row);
              row_ci != false; ++row_ci) {
-          for (auto col_ci = m_col_query->get_children(rc_pair.col);
+          for (auto col_ci = m_col_query.get_children(rc_pair.col);
                col_ci != false; ++col_ci) {
-            m_next_level[next_level_index++] = row_col_pair(row_ci, col_ci);
+            m_next_level[next_level_index++] = row_col_pair{row_ci, col_ci};
           }
         }
       }
     }
+
+    CUDA_HOST_DEVICE
+    void operator()(const int i) {
+      // if filtered do nothing
+      if (m_counts[i + 1] == m_counts[i])
+        return;
+
+      work(i);
+    }
   };
+
+  template <typename T> void filter(const T &f) {
+    m_counts.resize(m_level.size());
+    auto count_f =
+        count_filtered<T>{count_children{*m_row_query, *m_col_query}, f};
+    detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
+                                     m_counts.begin(), count_f, 0,
+                                     detail::plus());
+    const size_t nchildren =
+        static_cast<int>(m_counts.back()) + count_f(m_level.back());
+
+    m_next_level.resize(nchildren);
+
+    m_filtered = true;
+  }
+
+  template <typename T> void filter_with_gather(const T &f, level_t &store) {
+    m_counts.resize(m_level.size());
+    detail::transform(
+        m_level.begin(), m_level.end(), m_counts.begin(),
+        count_filtered<T>{count_children{*m_row_query, *m_col_query}, f});
+
+    store.resize(m_level.size());
+    auto new_end =
+        detail::copy_if(m_level.begin(), m_level.end(), m_counts.begin(),
+                        store.begin(), [](const int i) { return i == 0; });
+
+    store.erase(new_end, store.end());
+
+    size_t nchildren = m_counts.back();
+    detail::exclusive_scan(m_counts.begin(), m_counts.end(), m_counts.begin(),
+                           0);
+
+    nchildren += m_counts.back();
+
+    m_next_level.resize(nchildren);
+
+    m_filtered = true;
+  }
 
 private:
   CUDA_HOST_DEVICE
@@ -243,35 +265,46 @@ private:
       m_counts.resize(m_level.size());
       detail::transform_exclusive_scan(
           m_level.begin(), m_level.end(), m_counts.begin(),
-          count_children{*m_query}, 0, detail::plus());
+          count_children{*m_row_query, *m_col_query}, 0, detail::plus());
+
+      // resize for new children and leafs
+      const int nchildren =
+          static_cast<int>(m_counts.back()) +
+          count_children{*m_row_query, *m_col_query}(m_level.back());
+
+      m_next_level.resize(nchildren);
     }
 
-    // resize for new children and leafs
-    const int nchildren = static_cast<int>(m_counts.back()) +
-                          count_children{*m_query}(m_level.back());
-    m_all_leafs = nchildren == static_cast<int>(m_level.size());
+    m_finished = m_next_level.size() == 0;
 
-    // don't bother doing next level if they are all leafs
-    if (m_all_leafs)
+    // don't bother doing next level if finished
+    if (m_finished) {
+      m_level.swap(m_next_level);
+      m_level_num++;
       return;
-
-    m_next_level.resize(nchildren);
+    }
 
 // tabulate m_level to copy children to m_next_level, or leafs to
 // m_leafs
 #if defined(__CUDACC__)
     typedef typename thrust::detail::iterator_category_to_system<
-        typename Query::traits_type::vector_int::iterator::iterator_category>::
-        type system;
+        typename traits_t::vector_int::iterator::iterator_category>::type
+        system;
     thrust::counting_iterator<int, system> count(0);
 #else
-    auto count = Query::traits_type::make_counting_iterator(0);
+    auto count = traits_t::make_counting_iterator(0);
 #endif
-    detail::for_each(count, count + m_level.size(),
-                     copy_children_and_leafs{
-                         iterator_to_raw_pointer(m_counts.begin()), *m_query,
-                         iterator_to_raw_pointer(m_next_level.begin()),
-                         iterator_to_raw_pointer(m_level.begin())});
+
+    auto copy_f = copy_children_and_leafs{
+        iterator_to_raw_pointer(m_counts.begin()), *m_row_query, *m_col_query,
+        iterator_to_raw_pointer(m_next_level.begin()),
+        iterator_to_raw_pointer(m_level.begin())};
+    detail::for_each(count, count + m_level.size() - 1, copy_f);
+
+    if (m_counts.back() != static_cast<int>(m_next_level.size())) {
+      // last ci is not filtered
+      copy_f.work(m_level.size() - 1);
+    }
 
     // swap level back to m_level and increment level count
     m_level.swap(m_next_level);
@@ -283,11 +316,12 @@ private:
 
   CUDA_HOST_DEVICE
   bool equal(iterator const &other) const {
-    return m_query == other.m_query && m_level_num == other.m_level_num;
+    return m_row_query == other.m_row_query &&
+           m_col_query == other.m_col_query && m_level_num == other.m_level_num;
   }
 
   CUDA_HOST_DEVICE bool equal(const bool other) const {
-    return m_all_leafs != other;
+    return m_finished != other;
   }
 
   CUDA_HOST_DEVICE
@@ -298,7 +332,8 @@ template <typename RowQuery, typename ColQuery>
 auto create_dual_breadth_first_iterator(const RowQuery &row_query,
                                         const ColQuery &col_query) {
   return DualBreadthFirstSearchIterator<RowQuery, ColQuery>(
-      row_query.get_children(), row_query, col_query.get_children(), col_query);
+      row_query.get_children(), &row_query, col_query.get_children(),
+      &col_query);
 }
 
 } // namespace Aboria

@@ -497,20 +497,68 @@ public:
                                     vdouble2::Constant(false), nbucket);
 
     auto query = particles.get_query();
-    auto i = query.breadth_first();
     int count_levels = 1;
-    int count_buckets = 0;
     bool tree = false;
-    for (; i != false; ++i) {
+    int n_leafs;
+    for (auto i = query.breadth_first(); i->size() != i.previous().size();
+         ++i) {
       tree = true;
       ++count_levels;
-      count_buckets += i->size();
-      std::cout << count_buckets << std::endl;
+      /*
+      std::cout << "START_LEVEL" << std::endl;
+      for (auto j = i->begin(); j != i->end(); ++j) {
+        std::cout << query.get_bounds(*j) << " " << std::endl;
+      }
+      std::cout << "FINISH" << std::endl;
+      */
+      n_leafs = i->size();
+    }
+    TS_ASSERT_EQUALS(count_levels, query.number_of_levels() + (tree ? 1 : 0));
+
+    count_levels = 1;
+    int count_buckets = 0;
+    for (auto j = query.breadth_first(); j != false; ++j) {
+      ++count_levels;
+      count_buckets += j->size();
+      j.filter([&](auto ci) { return query.is_leaf_node(*ci); });
+      /*
+      std::cout << "START_LEVEL" << std::endl;
+      for (auto k = j->begin(); k != j->end(); ++k) {
+        std::cout << query.get_bounds(*k) << " " << std::endl;
+      }
+      std::cout << "FINISH" << std::endl;
+      */
     }
 
     // check that total number of levels are correct
-    TS_ASSERT_EQUALS(count_levels, query.number_of_levels() + (tree ? 1 : 0));
     TS_ASSERT_EQUALS(count_buckets, query.number_of_buckets());
+
+    count_buckets = 0;
+    int count_leafs = 0;
+    for (auto j = query.breadth_first(); j != false; ++j) {
+      count_buckets += j->size();
+      using child_iterator_t = typename Particles_t::query_type::child_iterator;
+      std::vector<child_iterator_t> store;
+      j.filter_with_gather([&](auto ci) { return query.is_leaf_node(*ci); },
+                           store);
+
+      count_leafs += store.size();
+      for (auto ci : store) {
+        TS_ASSERT(query.is_leaf_node(*ci));
+      }
+      std::cout << j->size() << " " << store.size() << std::endl;
+      /*
+      std::cout << "START_LEVEL" << std::endl;
+      for (auto k = j->begin(); k != j->end(); ++k) {
+        std::cout << query.get_bounds(*k) << " " << std::endl;
+      }
+      std::cout << "FINISH" << std::endl;
+      */
+    }
+
+    // check that total number of levels are correct
+    TS_ASSERT_EQUALS(count_buckets, query.number_of_buckets());
+    TS_ASSERT_EQUALS(count_leafs, n_leafs);
   }
 
   template <template <typename, typename> class Vector,
@@ -533,17 +581,58 @@ public:
 
     auto query = particles.get_query();
 
-    auto i = create_dual_breadth_first_iterator(query, query);
     auto j = query.breadth_first();
     int count_levels = 1;
-    bool tree = false;
-    for (; i != false; ++i, ++j) {
+    for (auto i = create_dual_breadth_first_iterator(query, query);
+         i->size() != i.previous().size(); ++i, ++j) {
       TS_ASSERT_EQUALS(j, true);
       TS_ASSERT_EQUALS(std::pow(j->size(), 2), i->size());
-      tree = true;
       ++count_levels;
     }
-    TS_ASSERT_EQUALS(j, false);
+
+    count_levels = 1;
+    int count_pairs = 0;
+    for (auto j = create_dual_breadth_first_iterator(query, query); j != false;
+         ++j) {
+      count_pairs += j->size();
+      j.filter([&](auto ci_pair) {
+        return query.is_leaf_node(*ci_pair.row) &&
+               query.is_leaf_node(*ci_pair.col);
+      });
+      /*
+      std::cout << "START_LEVEL" << std::endl;
+      for (auto k = j->begin(); k != j->end(); ++k) {
+        std::cout << query.get_bounds(*k) << " " << std::endl;
+      }
+      std::cout << "FINISH" << std::endl;
+      */
+    }
+    // should finish, TODO: how else to test this!?!?!
+    //
+    //
+    count_pairs = 0;
+    for (auto j = create_dual_breadth_first_iterator(query, query); j != false;
+         ++j) {
+      count_pairs += j->size();
+      using child_iterator_pair_t =
+          typename decltype(j)::value_type::value_type;
+      std::vector<child_iterator_pair_t> store;
+      j.filter_with_gather(
+          [&](auto ci_pair) {
+            return query.is_leaf_node(*ci_pair.row) &&
+                   query.is_leaf_node(*ci_pair.col);
+          },
+          store);
+      std::cout << j->size() << " " << store.size() << std::endl;
+      /*
+      std::cout << "START_LEVEL" << std::endl;
+      for (auto k = j->begin(); k != j->end(); ++k) {
+        std::cout << query.get_bounds(*k) << " " << std::endl;
+      }
+      std::cout << "FINISH" << std::endl;
+      */
+    }
+    // should finish, TODO: how else to test this!?!?!
   }
 
   template <template <typename, typename> class Vector,
@@ -667,6 +756,15 @@ public:
     helper_breadth_first_iterator<std::vector, KdtreeNanoflann>();
     std::cout << "bf-search HyperOctree" << std::endl;
     helper_breadth_first_iterator<std::vector, HyperOctree>();
+  }
+
+  void test_dual_breadth_first_iterator() {
+    std::cout << "dual bf-search Kdtree" << std::endl;
+    helper_dual_breadth_first_iterator<std::vector, Kdtree>();
+    std::cout << "dual bf-search KdtreeNanoflann" << std::endl;
+    helper_dual_breadth_first_iterator<std::vector, KdtreeNanoflann>();
+    std::cout << "dual bf-search HyperOctree" << std::endl;
+    helper_dual_breadth_first_iterator<std::vector, HyperOctree>();
   }
 
   void test_depth_first_iterator() {

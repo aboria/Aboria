@@ -37,6 +37,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define BUCKETSEARCH_SERIAL_H_
 
 #include "Get.h"
+#include "Iterators/BreadthFirstSearch.h"
 #include "Log.h"
 #include "NeighbourSearchBase.h"
 #include "SpatialUtil.h"
@@ -928,7 +929,7 @@ struct CellListQuery : public NeighbourQueryBase<Traits> {
       lattice_iterator_around_bounds<CellListQuery, LNormNumber>;
 
   typedef lattice_iterator<dimension> all_iterator;
-  typedef bf_iterator<CellListQuery> breadth_first_iterator;
+  typedef BreadthFirstSearchIterator<CellListQuery> breadth_first_iterator;
   typedef lattice_iterator<dimension> child_iterator;
   typedef typename query_iterator<2>::reference reference;
   typedef typename query_iterator<2>::pointer pointer;
