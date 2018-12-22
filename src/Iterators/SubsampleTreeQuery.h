@@ -191,6 +191,7 @@ struct SubsampleTreeQuery {
     auto tree = make_flat_tree(m_query);
     // go up the tree subsampling points
     for (auto level = tree.rbegin(); level != tree.rend(); ++level) {
+      // std::cout << "working on level of size" << level->size() << std::endl;
       detail::for_each(
           level->begin(), level->end(),
           [max = m_max_points_per_bucket, query = m_query,
@@ -198,7 +199,9 @@ struct SubsampleTreeQuery {
               const child_iterator ci) {
             const size_t index = query.get_bucket_index(*ci);
             const auto p0 = get<position>(query.get_particles_begin());
+            // std::cout << "working on bucket " << index << std::endl;
             if (query.is_leaf_node(*ci)) {
+              // std::cout << "is leaf: ";
               // get all leaf particles
               auto p = query.get_bucket_particles(*ci);
               const size_t n = p.distance_to_end();
@@ -206,33 +209,40 @@ struct SubsampleTreeQuery {
               int i = 0;
               for (; p != false; ++p) {
                 const size_t pindex = &(get<position>(*p)) - p0;
+                // std::cout << pindex << " ";
                 indicies[index][i++] = pindex;
               }
+              // std::cout << std::endl;
             } else {
-              // get all particles from children
+              // std::cout << "is not leaf: " << std::endl;
+              // count children particles
+              int nchildren = 0;
               for (auto child_ci = query.get_children(ci); child_ci != false;
                    ++child_ci) {
                 const size_t cindex = query.get_bucket_index(*child_ci);
-                if (query.is_leaf_node(*ci)) {
-                  // get all particles from leaf
-                  auto p = query.get_bucket_particles(*child_ci);
-                  const size_t n = p.distance_to_end();
-                  int i = indicies[index].size();
-                  indicies[index].resize(i + n);
-                  for (; p != false; ++p) {
-                    const size_t pindex = &(get<position>(*p)) - p0;
-                    indicies[index][i++] = pindex;
-                  }
-                } else {
-                  // get all previously sampled particles
-                  const size_t n = indicies[cindex].size();
-                  const int i = indicies[index].size();
-                  indicies[index].resize(i + n);
-                  detail::copy(indicies[cindex].begin(), indicies[cindex].end(),
-                               indicies[index].begin() + i);
-                }
+                nchildren += indicies[cindex].size();
               }
+
+              indicies[index].resize(nchildren);
+
+              // get all particles from children
+              int ichildren = 0;
+              for (auto child_ci = query.get_children(ci); child_ci != false;
+                   ++child_ci) {
+                const size_t cindex = query.get_bucket_index(*child_ci);
+                // get all previously sampled particles
+                // for (auto pindex : indicies[cindex]) {
+                // std::cout << pindex << " ";
+                //}
+                detail::copy(indicies[cindex].begin(), indicies[cindex].end(),
+                             indicies[index].begin() + ichildren);
+                ichildren += indicies[cindex].size();
+              }
+              // std::cout.flush();
+              ASSERT_CUDA(ichildren == nchildren);
+              // std::cout << std::endl;
             }
+
 #if defined(__CUDACC__)
             thrust::default_random_engine gen;
 #else
@@ -244,7 +254,12 @@ struct SubsampleTreeQuery {
             // sample max_points_per_bucket
             detail::random_unique(indicies[index].begin(),
                                   indicies[index].end(), max, gen);
-            indicies[index].resize(max);
+            indicies[index].resize(std::min(max, indicies[index].size()));
+            // std::cout << "chosen: ";
+            // for (auto index : indicies[index]) {
+            //  std::cout << index << " ";
+            //}
+            // std::cout << std::endl;
           });
     }
   }
@@ -297,6 +312,7 @@ struct SubsampleTreeQuery {
   particle_iterator get_bucket_particles(reference bucket) const {
     // now both leafs and internal bucket "have" particles
     const size_t index = get_bucket_index(bucket);
+    ASSERT_CUDA(index < m_indicies.size());
     return particle_iterator(&m_query, m_indicies[index].data(),
                              m_indicies[index].data() +
                                  m_indicies[index].size());
@@ -376,7 +392,7 @@ struct SubsampleTreeQuery {
   }
 
   unsigned number_of_levels() const { return m_query.number_of_levels(); }
-};
+}; // namespace Aboria
 
 template <typename Query>
 auto create_subsample_query(const Query &query, const size_t max) {

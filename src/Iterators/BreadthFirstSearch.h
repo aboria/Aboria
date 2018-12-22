@@ -181,7 +181,7 @@ public:
     }
   };
 
-  template <typename T> void filter(const T &f) {
+  template <typename T> const vector_int &filter(const T &f) {
     m_counts.resize(m_level.size());
     auto count_f = count_filtered<T>{count_children{*m_query}, f};
     detail::transform_exclusive_scan(m_level.begin(), m_level.end(),
@@ -194,9 +194,11 @@ public:
     m_next_level.resize(nchildren);
 
     m_filtered = true;
+    return m_counts;
   }
 
-  template <typename T> void filter_with_gather(const T &f, vector_ci &store) {
+  template <typename T>
+  const vector_int &filter_with_gather(const T &f, vector_ci &store) {
     m_counts.resize(m_level.size());
     detail::transform(m_level.begin(), m_level.end(), m_counts.begin(),
                       count_filtered<T>{count_children{*m_query}, f});
@@ -219,6 +221,8 @@ public:
     m_next_level.resize(nchildren);
 
     m_filtered = true;
+
+    return m_counts;
   }
 
 private:

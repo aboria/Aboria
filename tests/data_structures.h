@@ -688,9 +688,12 @@ public:
     for (auto i = subsample_query.get_subtree(); i != false;
          ++i, ++count_subtree) {
       auto bounds = subsample_query.get_bounds(i.get_child_iterator());
+      // std::cout << "in bucket with bounds = " << bounds << std::endl;
       int count = 0;
       for (auto p = subsample_query.get_bucket_particles(*i); p != false;
            ++p, ++count) {
+        // std::cout << "has particle with position = " << get<position>(*p)
+        //          << std::endl;
         TS_ASSERT(bounds.is_in_inclusive(get<position>(*p)));
       }
       TS_ASSERT_LESS_THAN_EQUALS(count, nsubsample);
