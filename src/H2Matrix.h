@@ -73,7 +73,8 @@ class H2Matrix {
   using m2l_matrix_t = Expansions::m2l_matrix_type;
 
   struct dual_node_t {
-    pair_t m_ci_pair;
+    row_node_t *m_row;
+    col_node_t *m_col;
     enum { P2P, M2L } tag;
     union m_op {
       p2p_matrix_t p2p;
@@ -86,6 +87,7 @@ class H2Matrix {
   struct row_node_t {
     row_child_iterator m_ci;
     int m_children_index[2];
+    l_vector_t m_vector;
     l2l_matrix_t m2m;
     p2l_matrix_t m2p;
     row_node_t(const row_child_iterator &ci) : m_ci(ci) {}
@@ -94,6 +96,7 @@ class H2Matrix {
   struct col_node_t {
     col_child_iterator m_ci;
     int m_children_index[2];
+    m_vector_t m_vector;
     l2l_matrix_t m2m;
     p2l_matrix_t m2p;
     col_node_t(const col_child_iterator &ci) : m_ci(ci) {}
@@ -127,16 +130,265 @@ class H2Matrix {
   col_tree_t m_col_tree;
   dual_node_t m_dual_tree;
 
-  mutable row_vector_storage_t m_row_vectors;
-  mutable col_vector_storage_t m_col_vectors;
-
   Expansions m_expansions;
 
   const row_query_t *m_row_query;
   const col_query_t *m_col_query;
 
 private:
-  void upward_col_sweep() {
+  template <typename VectorTypeSource>
+  void upward_col_sweep(const VectorTypeSource &source_vector) const {
+    // upward sweep of the column tree
+    for (auto level = m_col_tree.rbegin(); level != m_col_tree.rend();
+         ++level) {
+      detail::for_each(
+          level->begin(), level->end(),
+          [source_vector = source_vector.data(),
+           next_level = iterator_to_raw_pointer((level + 1).begin())](
+              const col_node_t &node) {
+            const int vindex = col_query.get_bucket_index(*node.m_ci);
+            const auto p0 = get<position>(col_query.get_particles_begin());
+            if (col_query.is_leaf_node(*node.m_ci)) {
+
+              int j = 0;
+              for (auto p = col_query.get_bucket_particles(*node.m_ci);
+                   p != false; ++p, ++j) {
+                const int index = &get<position>(*p) - p0;
+                for (int i = 0; i < node.m_p2m.rows(); ++i) {
+                  node.m_vector[i] += node.m_p2m(i, j) * source_vector[index];
+                }
+              }
+            } else {
+              for (int i = node.children_index[0]; i < node.children_index[1];
+                   ++i) {
+                const auto &child_node = next_level[i];
+                node.m_vector += child_node.m_m2m * child_node.m_vector;
+              }
+            }
+          });
+    }
+  }
+
+  template <typename VectorTypeTarget, typename VectorTypeSource>
+  void downward_row_sweep(VectorTypeTarget &target_vector,
+                          const VectorTypeSource &source_vector) {
+    // zero initial row vectors
+    row_level = m_row_tree.begin();
+    detail::for_each(row_level->begin(), row_level->end(),
+                     [](row_node_t &node) { node.m_vector = 0; });
+
+    // probably should be empty!?!?
+    auto level = m_dual_tree.begin();
+    CHECK(level->size() == 0, "dual tree should be empty here");
+    ++level;
+
+    // go down
+    for (; level != m_dual_tree.end(); ++level) {
+
+      // move vectors down the tree
+      if (row_level != m_row_tree.end()) {
+        detail::for_each(
+            row_level->begin(), row_level->end(),
+            [target_vector = target_vector.data(),
+             next_level = iterator_to_raw_pointer((row_level + 1).begin())](
+                row_node_t &node) {
+              if (row_query.is_leaf_node(*node.m_ci)) {
+                int j = 0;
+                const auto p0 = get<position>(row_query.get_particles_begin());
+                for (auto p = row_query.get_bucket_particles(*node.m_ci);
+                     p != false; ++p, ++j) {
+                  const int index = &get<position>(*p) - p0;
+                  for (int i = 0; i < node.m_p2m.rows(); ++i) {
+                    target_vector[index] += node.m_p2m(i, j) * node.m_vector[i];
+                  }
+                }
+              } else {
+                for (int i = node.children_index[0]; i < node.children_index[1];
+                     ++i) {
+                  const auto &child_node = next_level[i];
+                  child_node.m_vector = child_node.m_m2m * node.m_vector;
+                }
+              }
+            });
+        ++row_level;
+      }
+
+      // calculate interactions between vectors
+      detail::for_each(
+          level->begin(), level->end(),
+          [source_vector = source_vector.data(),
+           target_vector = target_vector.data(), row_query = *m_row_query,
+           col_query = *m_col_query](dual_node_t &node) {
+            if (row_query.is_leaf_node(*node.m_row->m_ci)) {
+              ASSERT_CUDA(col_query.is_leaf_node(*node.m_col->m_ci));
+              // do p2p
+              const auto row_p0 =
+                  get<position>(row_query.get_particles_begin());
+              const auto col_p0 =
+                  get<position>(col_query.get_particles_begin());
+              int i = 0;
+              for (auto row_p = row_query.get_bucket_particles(*node.m_ci);
+                   row_p != false; ++row_p, ++i) {
+                const int row_index = &get<position>(*row_p) - p0;
+                int j = 0;
+                for (auto col_p = row_query.get_bucket_particles(*node.m_ci);
+                     col_p != false; ++col_p, ++j) {
+                  const int col_index = &get<position>(*col_p) - p0;
+                  target_vector[row_index] +=
+                      node.m_p2p(i, j) * source_vector[col_index];
+                }
+              }
+            } else {
+              node.m_row->m_vector += node.m_op.m_m2l * node.m_col->m_vector;
+            }
+          });
+    }
+
+    void construct_dual_tree() {
+      m_dual_tree.clear();
+      for (auto i =
+               create_dual_breadth_first_iterator(m_row_query, m_col_query);
+           i != false; ++i) {
+        // create dual tree
+        m_dual_tree.emplace_back(i->size());
+        i.filter_with_gather(
+            [&](const pair_t &ci_pair) {
+              // TODO: put condition here
+              return query.is_leaf_node(*ci_pair.row) &&
+                     query.is_leaf_node(*ci_pair.col);
+            },
+            m_dual_tree.back());
+
+        // fill out matrices
+        detail::for_each(
+            m_dual_tree.back().begin(),
+            m_dual_tree.back()
+                .end()[row_query = *m_row_query, col_query = *m_col_query,
+                       expansions = m_expansions](const dual_node_t &node) {
+                  if (row_query.is_leaf_node(*node.m_row->m_ci)) {
+                    ASSERT_CUDA(col_query.is_leaf_node(*node.m_col->m_ci));
+                    expansions.P2P_matrix(node.p2p, row_query,
+                                          node.m_row->m_ci);
+                  } else {
+                    expansions.M2L_matrix(node.p2p, row_query,
+                                          node.m_row->m_ci);
+                  }
+                  return node;
+                });
+      }
+    }
+
+    template <typename Query, typename Tree>
+    void construct_single_tree(const Query *p_query, Tree &tree) {
+      tree.clear();
+      // store flat tree with ci's and first children indicies
+      for (auto bf_it = p_query->breadth_first(); bf_it != false; ++bf_it) {
+        auto children_index = bf_it.filter(
+            [query = *p_query](auto ci) { return query.is_leaf_node(*ci); });
+        tree.emplace_back(bf_it->size());
+        detail::tabulate(
+            tree.back()->begin(), tree.back()->end(),
+            [children_index = iterator_to_raw_pointer(children_index.begin()),
+             bf_it = iterator_to_raw_pointer(bf_it->begin())](const int i) {
+              typename Tree::value_type::value_type node;
+              node.m_ci = bf_it[i];
+              node.m_children_index[0] = children_index[i];
+              return node;
+            });
+      }
+// fill in last children_index start from second last level
+#if defined(__CUDACC__)
+      typedef typename thrust::detail::iterator_category_to_system<
+          typename Query::traits_type::vector_int::iterator::
+              iterator_category>::type system;
+      thrust::counting_iterator<int, system> count(0);
+#else
+      auto count = Query::traits_type::make_counting_iterator(0);
+#endif
+      for (auto i = tree.rbegin() + 1; i != tree.rend(), ++i) {
+        // set the last child index to the start child index of the
+        // neighbouring node
+        detail::for_each(
+            count, count + i->size() - 1,
+            [level = iterator_to_raw_pointer(i->begin())](const int i) {
+              level[i].m_children_index[1] =
+                  level[i + 1].m_children_index[0] return node;
+            });
+        // set the last child of the last node to the size of the level below
+        i->back().m_children_index[1] = (i - 1)->size();
+      }
+
+      // now create matricies
+      // do finest level (no children)
+      auto i = tree.rbegin();
+      detail::for_each(
+          i->begin(), i->end(),
+          [query = *p_query](typename Tree::value_type::value_type &node) {
+            m_expansions.P2M_matrix(node.p2m, query, node.m_ci);
+          });
+      // do the rest
+      for (auto i = tree.rbegin(); i != tree.rend(), ++i) {
+        detail::for_each(
+            i->begin(), i->end(),
+            [query = *p_query,
+             child_level = iterator_to_raw_pointer((i - 1)->begin())](
+                typename Tree::value_type::value_type &node) {
+              if (query->is_leaf(node.m_ci)) {
+                m_expansions.P2M_matrix(node.p2m, query, node.m_ci);
+              } else {
+                for (child_index = node.m_children_index[0];
+                     child_index < node.m_children_index[1]; ++child_index) {
+                  auto &child_node = child_level[child_index];
+                  m_expansions.M2M_matrix(child_node.m2m, *query,
+                                          child_node.m_ci, node.m_ci);
+                }
+              }
+            });
+      }
+    }
+
+  public:
+    template <typename RowParticles>
+    H2Matrix(const RowParticles &row_particles,
+             const ColParticles &col_particles, const Expansions &expansions)
+        : m_row_query(&row_particles.get_query()),
+          m_col_query(&col_particles.get_query()), m_expansions(expansions) {
+      // generate h2 matrix
+      LOG(2, "H2Matrix: creating matrix using "
+                 << row_particles.size() << " row particles and "
+                 << col_particles.size() << " column particles");
+
+      const bool row_equals_col = static_cast<const void *>(&row_particles) ==
+                                  static_cast<const void *>(&col_particles);
+
+      LOG(2, "\tconstructing row tree...");
+      construct_single_tree(m_row_query, m_row_tree);
+      m_row_vectors.resize(m_row_query->number_of_buckets());
+
+      LOG(2, "\tconstructing col tree...");
+      construct_single_tree(m_col_query, m_col_tree);
+      m_col_vectors.resize(m_col_query->number_of_buckets());
+
+      LOG(2, "\tconstructing dual tree...");
+      construct_dual_tree();
+
+      ASSERT(m_dual_tree.size() >= m_row_tree.size());
+      ASSERT(m_dual_tree.size() >= m_col_tree.size());
+    }
+
+    LOG(2, "\tdone");
+  }
+
+  H2Matrix(const H2Matrix &matrix) = default;
+
+  H2Matrix(H2Matrix &&matrix) = default;
+
+  ~H2Matrix() = default;
+
+  // target_vector += A*source_vector
+  template <typename VectorTypeTarget, typename VectorTypeSource>
+  void matrix_vector_multiply(VectorTypeTarget &target_vector,
+                              const VectorTypeSource &source_vector) const {
 
 #if defined(__CUDACC__)
     typedef typename thrust::detail::iterator_category_to_system<
@@ -147,1088 +399,918 @@ private:
     auto count = Query::traits_type::make_counting_iterator(0);
 #endif
     // upward sweep of the column tree
-    for (auto level = m_col_tree.rbegin(); level != m_col_tree.rend();
-         ++level) {
+    for (auto col_level = m_col_tree.rbegin(); col_level != m_col_tree.rend();
+         ++col_level) {
       detail::for_each(count, count + col_level->size(), [](const int i) {
-        const auto &node = level[i];
-        const int vindex = col_query.get_bucket_index(*node.m_ci);
-        if (col_query.is_leaf_node(*node.m_ci)) {
-
-          m_col_vecnode.m_p2m *m_col_vectors[vindex];
-        } else {
-        }
+        if (leaf)
+          do
+            p2m else do m2m
       });
     }
-  }
 
-  void downward_row_sweep() {}
+    for (auto col_level = m_col_tree.rbegin(); col_level != m_col_tree.rend();
+         ++col_level) {
+      mvm_upward_sweep(col_level, source_vector);
+    }
 
-  void construct_dual_tree() {
-    m_dual_tree.clear();
-    for (auto i = create_dual_breadth_first_iterator(m_row_query, m_col_query);
-         i != false; ++i) {
-      m_dual_tree.emplace_back(i->size());
-      level_t store;
-      i.filter_with_gather(
-          [&](const pair_t &ci_pair) {
-            // TODO: put condition here
-            return query.is_leaf_node(*ci_pair.row) &&
-                   query.is_leaf_node(*ci_pair.col);
-          },
-          store);
-      detail::transform(
-          store.begin(), store.end(), m_dual_tree.back().begin(),
-          [row_query = *m_row_query, col_query = *m_col_query,
-           expansions = m_expansions](const pair_t &ci_pair) {
-            dual_node_t node;
-            node.m_ci_pair = ci_pair;
-            if (row_query.is_leaf_node(*ci_pair.row)) {
-              ASSERT_CUDA(col_query.is_leaf_node(*ci_pair.col));
-              expansions.P2P_matrix(node.p2p, row_query, node.m_ci_pair.row);
-            } else {
-              expansions.M2L_matrix(node.p2p, row_query, node.m_ci_pair.row);
-            }
-            return node;
-          });
+    // downward sweep of row tree calculating interactions.
+    for (auto row_level = m_row_tree.begin(),
+              auto dual_level = m_dual_tree.begin();
+         row_level != m_row_tree.rend(); ++row_level) {
+      mvm_downward_sweep(row_level, target_vector);
+      mvm_pair_interactions(dual_level, target_vector);
     }
   }
 
-  template <typename Query, typename Tree>
-  void construct_single_tree(const Query *p_query, Tree &tree) {
-    tree.clear();
-    // store flat tree with ci's and first children indicies
-    for (auto bf_it = p_query->breadth_first(); bf_it != false; ++bf_it) {
-      auto children_index = bf_it.filter(
-          [query = *p_query](auto ci) { return query.is_leaf_node(*ci); });
-      tree.emplace_back(bf_it->size());
-      detail::tabulate(
-          tree.back()->begin(), tree.back()->end(),
-          [children_index = iterator_to_raw_pointer(children_index.begin()),
-           bf_it = iterator_to_raw_pointer(bf_it->begin())](const int i) {
-            typename Tree::value_type::value_type node;
-            node.m_ci = bf_it[i];
-            node.m_children_index[0] = children_index[i];
-            return node;
-          });
-    }
-// fill in last children_index start from second last level
-#if defined(__CUDACC__)
-    typedef typename thrust::detail::iterator_category_to_system<
-        typename Query::traits_type::vector_int::iterator::iterator_category>::
-        type system;
-    thrust::counting_iterator<int, system> count(0);
-#else
-    auto count = Query::traits_type::make_counting_iterator(0);
-#endif
-    for (auto i = tree.rbegin() + 1; i != tree.rend(), ++i) {
-      // set the last child index to the start child index of the neighbouring
-      // node
-      detail::for_each(
-          count, count + i->size() - 1,
-          [level = iterator_to_raw_pointer(i->begin())](const int i) {
-            level[i].m_children_index[1] =
-                level[i + 1].m_children_index[0] return node;
-          });
-      // set the last child of the last node to the size of the level below
-      i->back().m_children_index[1] = (i - 1)->size();
-    }
+  /// Convert H2 Matrix to an extended sparse matrix
+  ///
+  /// This creates an Eigen sparse matrix A that can be applied to
+  /// by the vector $[x W g]$ to produce $[y 0 0]$, i.e. $A*[x W g]' = [y 0
+  /// 0]$, where $x$ and $y$ are the input/output vector, i.e. $y =
+  /// H2Matrix*x$, and $W$ and $g$ are the multipole and local coefficients
+  /// respectively.
+  ///
+  /// A is given by the block matrix representation:
+  ///
+  /// Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for
+  /// hierarchical matrices based on their extended sparse form. Retrieved
+  /// from http://arxiv.org/abs/1412.1253
+  ///
+  ///             |P2P  0     0      L2P| |x  |   |y|
+  /// A*[x W g] = |0   M2L    L2L-I  -I |*|W  | = |0|
+  ///             |0   M2M-I  0       0 | |g_n|   |0|
+  ///             |P2M  -I    0       0 | |g_l|   |0|
+  ///
+  /// where $g_l$ is the $g$ vector for every leaf of the tree, and $g_n$ is
+  /// the remaining nodes. Note M2M = L2L'.
+  ///
+  /// TODO: this will only work for rows == columns
+  sparse_matrix_type gen_extended_matrix() const {
+    const size_t size_x = m_col_particles->size();
+    ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,
+           "not using compile time m size");
+    const size_t vector_size = m_vector_type::RowsAtCompileTime;
 
-    // now create matricies
-    // do finest level (no children)
-    auto i = tree.rbegin();
-    detail::for_each(
-        i->begin(), i->end(),
-        [query = *p_query](typename Tree::value_type::value_type &node) {
-          m_expansions.P2M_matrix(node.p2m, query, node.m_ci);
-        });
-    // do the rest
-    for (auto i = tree.rbegin(); i != tree.rend(), ++i) {
-      detail::for_each(
-          i->begin(), i->end(),
-          [query = *p_query,
-           child_level = iterator_to_raw_pointer((i - 1)->begin())](
-              typename Tree::value_type::value_type &node) {
-            if (query->is_leaf(node.m_ci)) {
-              m_expansions.P2M_matrix(node.p2m, query, node.m_ci);
-            } else {
-              for (child_index = node.m_children_index[0];
-                   child_index < node.m_children_index[1]; ++child_index) {
-                auto &child_node = child_level[child_index];
-                m_expansions.M2M_matrix(child_node.m2m, *query, child_node.m_ci,
-                                        node.m_ci);
-              }
-            }
-          });
-    }
-  }
+    const size_t size_W = m_W.size() * vector_size;
+    const size_t size_g = m_g.size() * vector_size;
+    const size_t n = size_x + size_W + size_g;
 
-public:
-  template <typename RowParticles>
-  H2Matrix(const RowParticles &row_particles, const ColParticles &col_particles,
-           const Expansions &expansions)
-      : m_row_query(&row_particles.get_query()),
-        m_col_query(&col_particles.get_query()), m_expansions(expansions) {
+    std::vector<int> reserve(n, 0);
 
-    // generate h2 matrix
-    LOG(2, "H2Matrix: creating matrix using "
-               << row_particles.size() << " row particles and "
-               << col_particles.size() << " column particles");
-
-    const bool row_equals_col = static_cast<const void *>(&row_particles) ==
-                                static_cast<const void *>(&col_particles);
-
-    LOG(2, "\tconstructing row tree...");
-    construct_single_tree(m_row_query, m_row_tree);
-    m_row_vectors.resize(m_row_query->number_of_buckets());
-
-    LOG(2, "\tconstructing col tree...");
-    construct_single_tree(m_col_query, m_col_tree);
-    m_col_vectors.resize(m_col_query->number_of_buckets());
-
-    LOG(2, "\tconstructing dual tree...");
-    construct_dual_tree();
-
-    ASSERT(m_dual_tree.size() >= m_row_tree.size());
-    ASSERT(m_dual_tree.size() >= m_col_tree.size());
-  }
-
-  LOG(2, "\tdone");
-}
-
-H2Matrix(const H2Matrix &matrix) = default;
-
-H2Matrix(H2Matrix &&matrix) = default;
-
-~H2Matrix() = default;
-
-// target_vector += A*source_vector
-template <typename VectorTypeTarget, typename VectorTypeSource>
-void matrix_vector_multiply(VectorTypeTarget &target_vector,
-                            const VectorTypeSource &source_vector) const {
-
-#if defined(__CUDACC__)
-  typedef typename thrust::detail::iterator_category_to_system<
-      typename Query::traits_type::vector_int::iterator::iterator_category>::
-      type system;
-  thrust::counting_iterator<int, system> count(0);
-#else
-  auto count = Query::traits_type::make_counting_iterator(0);
-#endif
-  // upward sweep of the column tree
-  for (auto col_level = m_col_tree.rbegin(); col_level != m_col_tree.rend();
-       ++col_level) {
-    detail::for_each(count, count + col_level->size(), [](const int i) {
-      if (leaf)
-        do
-          p2m else do m2m
-    });
-  }
-
-  for (auto col_level = m_col_tree.rbegin(); col_level != m_col_tree.rend();
-       ++col_level) {
-    mvm_upward_sweep(col_level, source_vector);
-  }
-
-  // downward sweep of row tree calculating interactions.
-  for (auto row_level = m_row_tree.begin(),
-            auto dual_level = m_dual_tree.begin();
-       row_level != m_row_tree.rend(); ++row_level) {
-    mvm_downward_sweep(row_level, target_vector);
-    mvm_pair_interactions(dual_level, target_vector);
-  }
-}
-
-/// Convert H2 Matrix to an extended sparse matrix
-///
-/// This creates an Eigen sparse matrix A that can be applied to
-/// by the vector $[x W g]$ to produce $[y 0 0]$, i.e. $A*[x W g]' = [y 0
-/// 0]$, where $x$ and $y$ are the input/output vector, i.e. $y =
-/// H2Matrix*x$, and $W$ and $g$ are the multipole and local coefficients
-/// respectively.
-///
-/// A is given by the block matrix representation:
-///
-/// Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for
-/// hierarchical matrices based on their extended sparse form. Retrieved
-/// from http://arxiv.org/abs/1412.1253
-///
-///             |P2P  0     0      L2P| |x  |   |y|
-/// A*[x W g] = |0   M2L    L2L-I  -I |*|W  | = |0|
-///             |0   M2M-I  0       0 | |g_n|   |0|
-///             |P2M  -I    0       0 | |g_l|   |0|
-///
-/// where $g_l$ is the $g$ vector for every leaf of the tree, and $g_n$ is
-/// the remaining nodes. Note M2M = L2L'.
-///
-/// TODO: this will only work for rows == columns
-sparse_matrix_type gen_extended_matrix() const {
-
-  const size_t size_x = m_col_particles->size();
-  ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,
-         "not using compile time m size");
-  const size_t vector_size = m_vector_type::RowsAtCompileTime;
-
-  const size_t size_W = m_W.size() * vector_size;
-  const size_t size_g = m_g.size() * vector_size;
-  const size_t n = size_x + size_W + size_g;
-
-  std::vector<int> reserve(n, 0);
-
-  // sizes for first x columns
-  auto reserve0 = std::begin(reserve);
-  for (size_t i = 0; i < m_source_vector.size(); ++i) {
-    const size_t n = m_source_vector[i].size();
-    // p2m
-    std::transform(reserve0, reserve0 + n, reserve0,
-                   [](const int count) { return count + vector_size; });
-    // p2p
-    for (size_t j = 0; j < m_strong_connectivity[i].size(); ++j) {
-      size_t index = m_query->get_bucket_index(*m_strong_connectivity[i][j]);
-      const size_t target_size = m_target_vector[index].size();
-      std::transform(
-          reserve0, reserve0 + n, reserve0,
-          [target_size](const int count) { return count + target_size; });
-    }
-    reserve0 += m_source_vector[i].size();
-  }
-
-  // sizes for W columns
-  // m2l
-  for (size_t i = 0; i < m_source_vector.size(); ++i) {
-    for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
-      std::transform(reserve0 + i * vector_size,
-                     reserve0 + (i + 1) * vector_size,
-                     reserve0 + i * vector_size,
+    // sizes for first x columns
+    auto reserve0 = std::begin(reserve);
+    for (size_t i = 0; i < m_source_vector.size(); ++i) {
+      const size_t n = m_source_vector[i].size();
+      // p2m
+      std::transform(reserve0, reserve0 + n, reserve0,
                      [](const int count) { return count + vector_size; });
-    }
-  }
-  // m2m-I or -I
-  std::transform(reserve0, reserve0 + size_W, reserve0,
-                 [](const int count) { return count + 1; });
-
-  auto subtree_range = m_query->get_subtree();
-  for (auto bucket_it = subtree_range.begin(); bucket_it != subtree_range.end();
-       ++bucket_it) {
-    const size_t i = m_query->get_bucket_index(*bucket_it);
-    // row is the index of the parent
-    const size_t row_index = size_x + size_W + i * vector_size;
-    // m2m
-    if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
-      for (child_iterator cj =
-               m_query->get_children(bucket_it.get_child_iterator());
-           cj != false; ++cj) {
-        const size_t j = m_query->get_bucket_index(*cj);
-        std::transform(reserve0 + j * vector_size,
-                       reserve0 + (j + 1) * vector_size,
-                       reserve0 + j * vector_size,
-                       [](const int count) { return count + vector_size; });
+      // p2p
+      for (size_t j = 0; j < m_strong_connectivity[i].size(); ++j) {
+        size_t index = m_query->get_bucket_index(*m_strong_connectivity[i][j]);
+        const size_t target_size = m_target_vector[index].size();
+        std::transform(
+            reserve0, reserve0 + n, reserve0,
+            [target_size](const int count) { return count + target_size; });
       }
+      reserve0 += m_source_vector[i].size();
     }
-  }
 
-  // sizes for g columns
-  reserve0 += size_W;
-
-  // looping over columns
-  for (auto bucket_it = subtree_range.begin(); bucket_it != subtree_range.end();
-       ++bucket_it) {
-    const size_t i = m_query->get_bucket_index(*bucket_it);
-    // col is the index of the parent
-    const size_t col_index = size_x + size_W + i * vector_size;
-
-    // L2P & -I
-    const size_t target_size = m_target_vector[i].size();
-    std::transform(reserve0 + i * vector_size, reserve0 + (i + 1) * vector_size,
-                   reserve0 + i * vector_size,
-                   [&](const int count) { return count + target_size + 1; });
-
-    // L2L
-    if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
-      for (child_iterator cj =
-               m_query->get_children(bucket_it.get_child_iterator());
-           cj != false; ++cj) {
+    // sizes for W columns
+    // m2l
+    for (size_t i = 0; i < m_source_vector.size(); ++i) {
+      for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
         std::transform(reserve0 + i * vector_size,
                        reserve0 + (i + 1) * vector_size,
                        reserve0 + i * vector_size,
-                       [&](const int count) { return count + vector_size; });
+                       [](const int count) { return count + vector_size; });
       }
     }
-  }
+    // m2m-I or -I
+    std::transform(reserve0, reserve0 + size_W, reserve0,
+                   [](const int count) { return count + 1; });
 
-  LOG(2, "\tcreating " << n << "x" << n << " extended sparse matrix");
-  LOG(3, "\tnote: vector_size = " << vector_size);
-  LOG(3, "\tnote: size_W is = " << size_W);
-  LOG(3, "\tnote: size_g is = " << size_g);
-  for (size_t i = 0; i < n; ++i) {
-    LOG(4, "\tfor column " << i << ", reserving " << reserve[i] << " rows");
-  }
-
-  // create matrix and reserve space
-  sparse_matrix_type A(n, n);
-  A.reserve(reserve);
-
-  // fill in P2P
-  size_t row_index = 0;
-  // loop over rows, filling in columns as we go
-  for (size_t i = 0; i < m_target_vector.size(); ++i) {
-    for (size_t j = 0; j < m_strong_connectivity[i].size(); ++j) {
-      size_t source_index =
-          m_query->get_bucket_index(*m_strong_connectivity[i][j]);
-      // loop over n particles (the n rows in this bucket)
-      for (size_t p = 0; p < m_target_vector[i].size(); ++p) {
-        // p2p - loop over number of source particles (the columns)
-        for (size_t sp = 0; sp < m_source_vector[source_index].size(); ++sp) {
-          A.insert(row_index + p, m_ext_indicies[source_index] + sp) =
-              m_p2p_matrices[i][j](p, sp);
-        }
-      }
-    }
-    row_index += m_target_vector[i].size();
-  }
-
-  // fill in P2M
-  // loop over cols this time
-  for (size_t i = 0; i < m_source_vector.size(); ++i) {
-    // loop over n particles (the n cols in this bucket)
-    for (size_t p = 0; p < m_source_vector[i].size(); ++p) {
-      // p2m - loop over size of multipoles (the rows)
+    auto subtree_range = m_query->get_subtree();
+    for (auto bucket_it = subtree_range.begin();
+         bucket_it != subtree_range.end(); ++bucket_it) {
+      const size_t i = m_query->get_bucket_index(*bucket_it);
+      // row is the index of the parent
       const size_t row_index = size_x + size_W + i * vector_size;
-      for (int m = 0; m < vector_size; ++m) {
-        A.insert(row_index + m, m_ext_indicies[i] + p) =
-            m_p2m_matrices[i](m, p);
-      }
-    }
-  }
-
-  // fill in W columns
-  // m2l
-  // loop over rows
-  for (size_t i = 0; i < m_source_vector.size(); ++i) {
-    for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
-      const size_t row_index = size_x + i * vector_size;
-      const size_t index =
-          m_query->get_bucket_index(*m_weak_connectivity[i][j]);
-      const size_t col_index = size_x + index * vector_size;
-      for (int im = 0; im < vector_size; ++im) {
-        for (int jm = 0; jm < vector_size; ++jm) {
-          A.insert(row_index + im, col_index + jm) =
-              m_m2l_matrices[i][j](im, jm);
+      // m2m
+      if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
+        for (child_iterator cj =
+                 m_query->get_children(bucket_it.get_child_iterator());
+             cj != false; ++cj) {
+          const size_t j = m_query->get_bucket_index(*cj);
+          std::transform(reserve0 + j * vector_size,
+                         reserve0 + (j + 1) * vector_size,
+                         reserve0 + j * vector_size,
+                         [](const int count) { return count + vector_size; });
         }
       }
     }
-  }
 
-  // m2m - I or -I
-  // looping over rows (parents)
-  for (auto bucket_it = subtree_range.begin(); bucket_it != subtree_range.end();
-       ++bucket_it) {
-    const size_t i = m_query->get_bucket_index(*bucket_it);
-    // row is the index of the parent
-    const size_t row_index = size_x + size_W + i * vector_size;
+    // sizes for g columns
+    reserve0 += size_W;
 
-    // -I
-    const size_t col_index = size_x + i * vector_size;
-    for (int im = 0; im < vector_size; ++im) {
-      A.insert(row_index + im, col_index + im) = -1;
+    // looping over columns
+    for (auto bucket_it = subtree_range.begin();
+         bucket_it != subtree_range.end(); ++bucket_it) {
+      const size_t i = m_query->get_bucket_index(*bucket_it);
+      // col is the index of the parent
+      const size_t col_index = size_x + size_W + i * vector_size;
+
+      // L2P & -I
+      const size_t target_size = m_target_vector[i].size();
+      std::transform(reserve0 + i * vector_size,
+                     reserve0 + (i + 1) * vector_size,
+                     reserve0 + i * vector_size,
+                     [&](const int count) { return count + target_size + 1; });
+
+      // L2L
+      if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
+        for (child_iterator cj =
+                 m_query->get_children(bucket_it.get_child_iterator());
+             cj != false; ++cj) {
+          std::transform(reserve0 + i * vector_size,
+                         reserve0 + (i + 1) * vector_size,
+                         reserve0 + i * vector_size,
+                         [&](const int count) { return count + vector_size; });
+        }
+      }
     }
 
-    // m2m
-    if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
-      for (child_iterator cj =
-               m_query->get_children(bucket_it.get_child_iterator());
-           cj != false; ++cj) {
-        const size_t j = m_query->get_bucket_index(*cj);
-        size_t col_index = size_x + j * vector_size;
-        // std::cout << "inserting at ("<<row_index<<","<<col_index<<")" <<
-        // std::endl;
-        for (int im = 0; im < vector_size; ++im) {
-          for (int jm = 0; jm < vector_size; ++jm) {
-            A.insert(row_index + im, col_index + jm) =
-                m_l2l_matrices[j](jm, im);
+    LOG(2, "\tcreating " << n << "x" << n << " extended sparse matrix");
+    LOG(3, "\tnote: vector_size = " << vector_size);
+    LOG(3, "\tnote: size_W is = " << size_W);
+    LOG(3, "\tnote: size_g is = " << size_g);
+    for (size_t i = 0; i < n; ++i) {
+      LOG(4, "\tfor column " << i << ", reserving " << reserve[i] << " rows");
+    }
+
+    // create matrix and reserve space
+    sparse_matrix_type A(n, n);
+    A.reserve(reserve);
+
+    // fill in P2P
+    size_t row_index = 0;
+    // loop over rows, filling in columns as we go
+    for (size_t i = 0; i < m_target_vector.size(); ++i) {
+      for (size_t j = 0; j < m_strong_connectivity[i].size(); ++j) {
+        size_t source_index =
+            m_query->get_bucket_index(*m_strong_connectivity[i][j]);
+        // loop over n particles (the n rows in this bucket)
+        for (size_t p = 0; p < m_target_vector[i].size(); ++p) {
+          // p2p - loop over number of source particles (the columns)
+          for (size_t sp = 0; sp < m_source_vector[source_index].size(); ++sp) {
+            A.insert(row_index + p, m_ext_indicies[source_index] + sp) =
+                m_p2p_matrices[i][j](p, sp);
           }
-        }
-      }
-    }
-  }
-
-  // fill in g columns
-  // looping over rows
-  // L2P
-  row_index = 0;
-  for (size_t i = 0; i < m_target_vector.size(); ++i) {
-    if (m_target_vector[i].size() > 0) { // leaf node
-      size_t col_index = size_x + size_W + i * vector_size;
-      for (size_t p = 0; p < m_target_vector[i].size(); ++p) {
-        for (int m = 0; m < vector_size; ++m) {
-          A.insert(row_index + p, col_index + m) = m_l2p_matrices[i](p, m);
         }
       }
       row_index += m_target_vector[i].size();
     }
-  }
 
-  // looping over columns
-  for (auto bucket_it = subtree_range.begin(); bucket_it != subtree_range.end();
-       ++bucket_it) {
-    const size_t i = m_query->get_bucket_index(*bucket_it);
-    // col is the index of the parent
-    const size_t col_index = size_x + size_W + i * vector_size;
-
-    // -I
-    const size_t row_index = size_x + i * vector_size;
-    for (int im = 0; im < vector_size; ++im) {
-      A.insert(row_index + im, col_index + im) = -1;
+    // fill in P2M
+    // loop over cols this time
+    for (size_t i = 0; i < m_source_vector.size(); ++i) {
+      // loop over n particles (the n cols in this bucket)
+      for (size_t p = 0; p < m_source_vector[i].size(); ++p) {
+        // p2m - loop over size of multipoles (the rows)
+        const size_t row_index = size_x + size_W + i * vector_size;
+        for (int m = 0; m < vector_size; ++m) {
+          A.insert(row_index + m, m_ext_indicies[i] + p) =
+              m_p2m_matrices[i](m, p);
+        }
+      }
     }
 
-    // L2L
-    if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
-      for (child_iterator cj =
-               m_query->get_children(bucket_it.get_child_iterator());
-           cj != false; ++cj) {
-        const size_t j = m_query->get_bucket_index(*cj);
-        size_t row_index = size_x + j * vector_size;
-        // std::cout << "inserting at ("<<row_index<<","<<col_index<<")" <<
-        // std::endl;
+    // fill in W columns
+    // m2l
+    // loop over rows
+    for (size_t i = 0; i < m_source_vector.size(); ++i) {
+      for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
+        const size_t row_index = size_x + i * vector_size;
+        const size_t index =
+            m_query->get_bucket_index(*m_weak_connectivity[i][j]);
+        const size_t col_index = size_x + index * vector_size;
         for (int im = 0; im < vector_size; ++im) {
           for (int jm = 0; jm < vector_size; ++jm) {
             A.insert(row_index + im, col_index + jm) =
-                m_l2l_matrices[j](im, jm);
+                m_m2l_matrices[i][j](im, jm);
           }
         }
       }
     }
-  }
 
-  A.makeCompressed();
+    // m2m - I or -I
+    // looping over rows (parents)
+    for (auto bucket_it = subtree_range.begin();
+         bucket_it != subtree_range.end(); ++bucket_it) {
+      const size_t i = m_query->get_bucket_index(*bucket_it);
+      // row is the index of the parent
+      const size_t row_index = size_x + size_W + i * vector_size;
+
+      // -I
+      const size_t col_index = size_x + i * vector_size;
+      for (int im = 0; im < vector_size; ++im) {
+        A.insert(row_index + im, col_index + im) = -1;
+      }
+
+      // m2m
+      if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
+        for (child_iterator cj =
+                 m_query->get_children(bucket_it.get_child_iterator());
+             cj != false; ++cj) {
+          const size_t j = m_query->get_bucket_index(*cj);
+          size_t col_index = size_x + j * vector_size;
+          // std::cout << "inserting at ("<<row_index<<","<<col_index<<")" <<
+          // std::endl;
+          for (int im = 0; im < vector_size; ++im) {
+            for (int jm = 0; jm < vector_size; ++jm) {
+              A.insert(row_index + im, col_index + jm) =
+                  m_l2l_matrices[j](jm, im);
+            }
+          }
+        }
+      }
+    }
+
+    // fill in g columns
+    // looping over rows
+    // L2P
+    row_index = 0;
+    for (size_t i = 0; i < m_target_vector.size(); ++i) {
+      if (m_target_vector[i].size() > 0) { // leaf node
+        size_t col_index = size_x + size_W + i * vector_size;
+        for (size_t p = 0; p < m_target_vector[i].size(); ++p) {
+          for (int m = 0; m < vector_size; ++m) {
+            A.insert(row_index + p, col_index + m) = m_l2p_matrices[i](p, m);
+          }
+        }
+        row_index += m_target_vector[i].size();
+      }
+    }
+
+    // looping over columns
+    for (auto bucket_it = subtree_range.begin();
+         bucket_it != subtree_range.end(); ++bucket_it) {
+      const size_t i = m_query->get_bucket_index(*bucket_it);
+      // col is the index of the parent
+      const size_t col_index = size_x + size_W + i * vector_size;
+
+      // -I
+      const size_t row_index = size_x + i * vector_size;
+      for (int im = 0; im < vector_size; ++im) {
+        A.insert(row_index + im, col_index + im) = -1;
+      }
+
+      // L2L
+      if (!m_query->is_leaf_node(*bucket_it)) { // non leaf node
+        for (child_iterator cj =
+                 m_query->get_children(bucket_it.get_child_iterator());
+             cj != false; ++cj) {
+          const size_t j = m_query->get_bucket_index(*cj);
+          size_t row_index = size_x + j * vector_size;
+          // std::cout << "inserting at ("<<row_index<<","<<col_index<<")" <<
+          // std::endl;
+          for (int im = 0; im < vector_size; ++im) {
+            for (int jm = 0; jm < vector_size; ++jm) {
+              A.insert(row_index + im, col_index + jm) =
+                  m_l2l_matrices[j](im, jm);
+            }
+          }
+        }
+      }
+    }
+
+    A.makeCompressed();
 
 #ifndef NDEBUG
-  for (size_t i = 0; i < n; ++i) {
-    size_t count = 0;
-    for (sparse_matrix_type::InnerIterator it(A, i); it; ++it) {
-      count++;
-      ASSERT(!std::isnan(it.value()),
-             "entry (" << it.row() << "," << it.col() << ") is nan");
+    for (size_t i = 0; i < n; ++i) {
+      size_t count = 0;
+      for (sparse_matrix_type::InnerIterator it(A, i); it; ++it) {
+        count++;
+        ASSERT(!std::isnan(it.value()),
+               "entry (" << it.row() << "," << it.col() << ") is nan");
+      }
+      ASSERT(count == reserve[i], "column " << i << " reserved size "
+                                            << reserve[i] << " and final count "
+                                            << count << " do not agree");
+      ASSERT(count > 0, "column " << i << " has zero entries");
     }
-    ASSERT(count == reserve[i], "column " << i << " reserved size "
-                                          << reserve[i] << " and final count "
-                                          << count << " do not agree");
-    ASSERT(count > 0, "column " << i << " has zero entries");
-  }
-  /*
-  row_index = 0;
-  size_t col_index = 0;
-  for (size_t i = 0; i < m_target_vector.size(); ++i) {
-      for (size_t pi = 0; pi < m_target_vector[i].size(); ++pi,++row_index)
-  { double sum = 0; size_t count = 0; col_index = 0; for (size_t j = 0; j <
-  m_source_vector.size(); ++j) { for (size_t pj = 0; pj <
-  m_source_vector[j].size();
-  ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
-  it(A,col_index); it ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
-                          count++;
-                      }
-                  }
-              }
-          }
-          for (size_t j = 0; j < m_W.size(); ++j) {
-              for (int mj = 0; mj < vector_size; ++mj,++col_index) {
-                  for (sparse_matrix_type::InnerIterator it(A,col_index); it
-  ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_W[j][mj]; count++;
-                      }
-                  }
+    /*
+    row_index = 0;
+    size_t col_index = 0;
+    for (size_t i = 0; i < m_target_vector.size(); ++i) {
+        for (size_t pi = 0; pi < m_target_vector[i].size(); ++pi,++row_index)
+    { double sum = 0; size_t count = 0; col_index = 0; for (size_t j = 0; j <
+    m_source_vector.size(); ++j) { for (size_t pj = 0; pj <
+    m_source_vector[j].size();
+    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
+    it(A,col_index); it ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
+                            count++;
+                        }
+                    }
+                }
+            }
+            for (size_t j = 0; j < m_W.size(); ++j) {
+                for (int mj = 0; mj < vector_size; ++mj,++col_index) {
+                    for (sparse_matrix_type::InnerIterator it(A,col_index); it
+    ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_W[j][mj]; count++;
+                        }
+                    }
 
-              }
-          }
-          for (size_t j = 0; j < m_g.size(); ++j) {
-              for (int mj = 0; mj < vector_size; ++mj,++col_index) {
-                  for (sparse_matrix_type::InnerIterator it(A,col_index); it
-  ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_g[j][mj]; count++;
-                      }
-                  }
+                }
+            }
+            for (size_t j = 0; j < m_g.size(); ++j) {
+                for (int mj = 0; mj < vector_size; ++mj,++col_index) {
+                    for (sparse_matrix_type::InnerIterator it(A,col_index); it
+    ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_g[j][mj]; count++;
+                        }
+                    }
 
-              }
-          }
-          std::cout << "X: row "<<row_index<<" sum = "<<sum<<" should be
-  "<<m_target_vector[i][pi] << std::endl; std::cout << "count is
-  "<<count<<std::endl; ASSERT(count > 0,"count == 0");
-      }
-  }
-  row_index = size_x;
-  for (size_t i = 0; i < m_W.size(); ++i) {
-      for (int mi = 0; mi < vector_size; ++mi,++row_index) {
-          double sum = 0;
-          size_t count = 0;
-          col_index = 0;
-          for (size_t j = 0; j < m_source_vector.size(); ++j) {
-              for (size_t pj = 0; pj < m_source_vector[j].size();
-  ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
-  it(A,col_index); it ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
-                          count++;
-                      }
-                  }
-              }
-          }
-          for (size_t j = 0; j < m_W.size(); ++j) {
-              for (int mj = 0; mj < vector_size; ++mj,++col_index) {
-                  for (sparse_matrix_type::InnerIterator it(A,col_index); it
-  ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_W[j][mj]; count++;
-                      }
-                  }
+                }
+            }
+            std::cout << "X: row "<<row_index<<" sum = "<<sum<<" should be
+    "<<m_target_vector[i][pi] << std::endl; std::cout << "count is
+    "<<count<<std::endl; ASSERT(count > 0,"count == 0");
+        }
+    }
+    row_index = size_x;
+    for (size_t i = 0; i < m_W.size(); ++i) {
+        for (int mi = 0; mi < vector_size; ++mi,++row_index) {
+            double sum = 0;
+            size_t count = 0;
+            col_index = 0;
+            for (size_t j = 0; j < m_source_vector.size(); ++j) {
+                for (size_t pj = 0; pj < m_source_vector[j].size();
+    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
+    it(A,col_index); it ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
+                            count++;
+                        }
+                    }
+                }
+            }
+            for (size_t j = 0; j < m_W.size(); ++j) {
+                for (int mj = 0; mj < vector_size; ++mj,++col_index) {
+                    for (sparse_matrix_type::InnerIterator it(A,col_index); it
+    ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_W[j][mj]; count++;
+                        }
+                    }
 
-              }
-          }
-          for (size_t j = 0; j < m_g.size(); ++j) {
-              for (int mj = 0; mj < vector_size; ++mj,++col_index) {
-                  for (sparse_matrix_type::InnerIterator it(A,col_index); it
-  ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_g[j][mj]; count++;
-                      }
-                  }
+                }
+            }
+            for (size_t j = 0; j < m_g.size(); ++j) {
+                for (int mj = 0; mj < vector_size; ++mj,++col_index) {
+                    for (sparse_matrix_type::InnerIterator it(A,col_index); it
+    ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_g[j][mj]; count++;
+                        }
+                    }
 
-              }
-          }
-          std::cout << "W: row "<<row_index<<" sum = "<<sum<<" should be
-  "<<0<< std::endl; std::cout << "count is "<<count<<std::endl; ASSERT(count
-  > 0,"count == 0");
-      }
-  }
-  row_index = size_x+size_W;
-  for (size_t i = 0; i < m_g.size(); ++i) {
-      for (int mi = 0; mi < vector_size; ++mi,++row_index) {
-          double sum = 0;
-          size_t count = 0;
-          col_index = 0;
-          for (size_t j = 0; j < m_source_vector.size(); ++j) {
-              for (size_t pj = 0; pj < m_source_vector[j].size();
-  ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
-  it(A,col_index); it ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
-                          count++;
-                      }
-                  }
-              }
-          }
-          for (size_t j = 0; j < m_W.size(); ++j) {
-              for (int mj = 0; mj < vector_size; ++mj,++col_index) {
-                  for (sparse_matrix_type::InnerIterator it(A,col_index); it
-  ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_W[j][mj]; count++;
-                      }
-                  }
+                }
+            }
+            std::cout << "W: row "<<row_index<<" sum = "<<sum<<" should be
+    "<<0<< std::endl; std::cout << "count is "<<count<<std::endl; ASSERT(count
+    > 0,"count == 0");
+        }
+    }
+    row_index = size_x+size_W;
+    for (size_t i = 0; i < m_g.size(); ++i) {
+        for (int mi = 0; mi < vector_size; ++mi,++row_index) {
+            double sum = 0;
+            size_t count = 0;
+            col_index = 0;
+            for (size_t j = 0; j < m_source_vector.size(); ++j) {
+                for (size_t pj = 0; pj < m_source_vector[j].size();
+    ++pj,++col_index) { for (sparse_matrix_type::InnerIterator
+    it(A,col_index); it ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_source_vector[j][pj];
+                            count++;
+                        }
+                    }
+                }
+            }
+            for (size_t j = 0; j < m_W.size(); ++j) {
+                for (int mj = 0; mj < vector_size; ++mj,++col_index) {
+                    for (sparse_matrix_type::InnerIterator it(A,col_index); it
+    ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_W[j][mj]; count++;
+                        }
+                    }
 
-              }
-          }
-          for (size_t j = 0; j < m_g.size(); ++j) {
-              for (int mj = 0; mj < vector_size; ++mj,++col_index) {
-                  for (sparse_matrix_type::InnerIterator it(A,col_index); it
-  ;++it) { if (it.row() == row_index) {
-                          //std::cout << "("<<it.row()<<","<<it.col()<<") =
-  "<<it.value() << std::endl; sum += it.value()*m_g[j][mj]; count++;
-                      }
-                  }
+                }
+            }
+            for (size_t j = 0; j < m_g.size(); ++j) {
+                for (int mj = 0; mj < vector_size; ++mj,++col_index) {
+                    for (sparse_matrix_type::InnerIterator it(A,col_index); it
+    ;++it) { if (it.row() == row_index) {
+                            //std::cout << "("<<it.row()<<","<<it.col()<<") =
+    "<<it.value() << std::endl; sum += it.value()*m_g[j][mj]; count++;
+                        }
+                    }
 
-              }
-          }
-          std::cout << "g: row "<<row_index<<" sum = "<<sum<<" should be
-  "<<0
-  << std::endl; std::cout << "count is "<<count<<std::endl; ASSERT(count >
-  0,"count == 0");
-      }
-  }
-  */
+                }
+            }
+            std::cout << "g: row "<<row_index<<" sum = "<<sum<<" should be
+    "<<0
+    << std::endl; std::cout << "count is "<<count<<std::endl; ASSERT(count >
+    0,"count == 0");
+        }
+    }
+    */
 
 #endif
 
-  LOG(2, "\tdone");
-  return A;
-}
-
-/// Convert H2 Matrix to an stripped down extended sparse matrix
-///
-/// This creates an Eigen sparse matrix A that can be used as a
-/// preconditioner for the true extended sparse matrix
-///
-/// A is given by the block matrix representation:
-///
-/// Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for
-/// hierarchical matrices based on their extended sparse form. Retrieved
-/// from http://arxiv.org/abs/1412.1253
-///
-///             |I    0     0 | |x  |
-/// A*[x W g] = |0   M2L    0 |*|W  |
-///             |0    0     I | |g  |
-///
-/// TODO: this will only work for rows == columns
-sparse_matrix_type gen_stripped_extended_matrix() const {
-
-  const size_t size_x = m_col_particles->size();
-  ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,
-         "not using compile time m size");
-  const size_t vector_size = m_vector_type::RowsAtCompileTime;
-
-  const size_t size_W = m_W.size() * vector_size;
-  const size_t size_g = m_g.size() * vector_size;
-  const size_t n = size_x + size_W + size_g;
-
-  std::vector<int> reserve(n, 0);
-
-  // sizes for first x columns
-  auto reserve0 = std::begin(reserve);
-  std::transform(reserve0, reserve0 + size_x, reserve0,
-                 [](const int count) { return count + 1; });
-
-  reserve0 += size_x;
-
-  // sizes for W columns
-  // m2l
-  for (size_t i = 0; i < m_source_vector.size(); ++i) {
-    if (m_weak_connectivity[i].size() == 0) {
-      std::transform(reserve0 + i * vector_size,
-                     reserve0 + (i + 1) * vector_size,
-                     reserve0 + i * vector_size,
-                     [](const int count) { return count + 1; });
-    }
-
-    for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
-      std::transform(reserve0 + i * vector_size,
-                     reserve0 + (i + 1) * vector_size,
-                     reserve0 + i * vector_size,
-                     [](const int count) { return count + vector_size; });
-    }
+    LOG(2, "\tdone");
+    return A;
   }
 
-  // sizes for g columns
-  reserve0 += size_W;
+  /// Convert H2 Matrix to an stripped down extended sparse matrix
+  ///
+  /// This creates an Eigen sparse matrix A that can be used as a
+  /// preconditioner for the true extended sparse matrix
+  ///
+  /// A is given by the block matrix representation:
+  ///
+  /// Sushnikova, D., & Oseledets, I. V. (2014). Preconditioners for
+  /// hierarchical matrices based on their extended sparse form. Retrieved
+  /// from http://arxiv.org/abs/1412.1253
+  ///
+  ///             |I    0     0 | |x  |
+  /// A*[x W g] = |0   M2L    0 |*|W  |
+  ///             |0    0     I | |g  |
+  ///
+  /// TODO: this will only work for rows == columns
+  sparse_matrix_type gen_stripped_extended_matrix() const {
+    const size_t size_x = m_col_particles->size();
+    ASSERT(m_vector_type::RowsAtCompileTime != Eigen::Dynamic,
+           "not using compile time m size");
+    const size_t vector_size = m_vector_type::RowsAtCompileTime;
 
-  std::transform(reserve0, reserve0 + size_g, reserve0,
-                 [](const int count) { return count + 1; });
+    const size_t size_W = m_W.size() * vector_size;
+    const size_t size_g = m_g.size() * vector_size;
+    const size_t n = size_x + size_W + size_g;
 
-  LOG(2,
-      "\tcreating " << n << "x" << n << " approximate extended sparse matrix");
-  LOG(3, "\tnote: vector_size = " << vector_size);
-  LOG(3, "\tnote: size_W is = " << size_W);
-  LOG(3, "\tnote: size_g is = " << size_g);
-  for (size_t i = 0; i < n; ++i) {
-    LOG(4, "\tfor column " << i << ", reserving " << reserve[i] << " rows");
-  }
+    std::vector<int> reserve(n, 0);
 
-  // create matrix and reserve space
-  sparse_matrix_type A(n, n);
-  A.reserve(reserve);
+    // sizes for first x columns
+    auto reserve0 = std::begin(reserve);
+    std::transform(reserve0, reserve0 + size_x, reserve0,
+                   [](const int count) { return count + 1; });
 
-  // fill in x columns
-  // loop over rows
-  size_t row_index = 0;
-  for (size_t i = 0; i < m_target_vector.size(); ++i) {
-    for (size_t p = 0; p < m_target_vector[i].size(); ++p) {
-      A.insert(row_index + p, row_index + p) = 1;
+    reserve0 += size_x;
+
+    // sizes for W columns
+    // m2l
+    for (size_t i = 0; i < m_source_vector.size(); ++i) {
+      if (m_weak_connectivity[i].size() == 0) {
+        std::transform(reserve0 + i * vector_size,
+                       reserve0 + (i + 1) * vector_size,
+                       reserve0 + i * vector_size,
+                       [](const int count) { return count + 1; });
+      }
+
+      for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
+        std::transform(reserve0 + i * vector_size,
+                       reserve0 + (i + 1) * vector_size,
+                       reserve0 + i * vector_size,
+                       [](const int count) { return count + vector_size; });
+      }
     }
-    row_index += m_target_vector[i].size();
-  }
 
-  // fill in W columns
-  // m2l
-  // loop over rows
-  for (size_t i = 0; i < m_source_vector.size(); ++i) {
-    const size_t row_index = size_x + i * vector_size;
+    // sizes for g columns
+    reserve0 += size_W;
 
-    if (m_weak_connectivity[i].size() == 0) {
+    std::transform(reserve0, reserve0 + size_g, reserve0,
+                   [](const int count) { return count + 1; });
+
+    LOG(2, "\tcreating " << n << "x" << n
+                         << " approximate extended sparse matrix");
+    LOG(3, "\tnote: vector_size = " << vector_size);
+    LOG(3, "\tnote: size_W is = " << size_W);
+    LOG(3, "\tnote: size_g is = " << size_g);
+    for (size_t i = 0; i < n; ++i) {
+      LOG(4, "\tfor column " << i << ", reserving " << reserve[i] << " rows");
+    }
+
+    // create matrix and reserve space
+    sparse_matrix_type A(n, n);
+    A.reserve(reserve);
+
+    // fill in x columns
+    // loop over rows
+    size_t row_index = 0;
+    for (size_t i = 0; i < m_target_vector.size(); ++i) {
+      for (size_t p = 0; p < m_target_vector[i].size(); ++p) {
+        A.insert(row_index + p, row_index + p) = 1;
+      }
+      row_index += m_target_vector[i].size();
+    }
+
+    // fill in W columns
+    // m2l
+    // loop over rows
+    for (size_t i = 0; i < m_source_vector.size(); ++i) {
+      const size_t row_index = size_x + i * vector_size;
+
+      if (m_weak_connectivity[i].size() == 0) {
+        for (int m = 0; m < vector_size; ++m) {
+          A.insert(row_index + m, row_index + m) = 1;
+        }
+      }
+
+      for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
+        const size_t index =
+            m_query->get_bucket_index(*m_weak_connectivity[i][j]);
+        const size_t col_index = size_x + index * vector_size;
+        for (int im = 0; im < vector_size; ++im) {
+          for (int jm = 0; jm < vector_size; ++jm) {
+            if (m_m2l_matrices[i][j](im, jm) < 1e-10) {
+              std::cout << "tooo small!!!!! " << m_m2l_matrices[i][j](im, jm)
+                        << std::endl;
+            }
+            A.insert(row_index + im, col_index + jm) =
+                m_m2l_matrices[i][j](im, jm);
+          }
+        }
+      }
+    }
+
+    // fill in g columns
+    // looping over rows
+    for (size_t i = 0; i < m_target_vector.size(); ++i) {
+      const size_t row_index = size_x + size_W + i * vector_size;
       for (int m = 0; m < vector_size; ++m) {
         A.insert(row_index + m, row_index + m) = 1;
       }
     }
 
-    for (size_t j = 0; j < m_weak_connectivity[i].size(); ++j) {
-      const size_t index =
-          m_query->get_bucket_index(*m_weak_connectivity[i][j]);
-      const size_t col_index = size_x + index * vector_size;
-      for (int im = 0; im < vector_size; ++im) {
-        for (int jm = 0; jm < vector_size; ++jm) {
-          if (m_m2l_matrices[i][j](im, jm) < 1e-10) {
-            std::cout << "tooo small!!!!! " << m_m2l_matrices[i][j](im, jm)
-                      << std::endl;
-          }
-          A.insert(row_index + im, col_index + jm) =
-              m_m2l_matrices[i][j](im, jm);
-        }
-      }
-    }
-  }
-
-  // fill in g columns
-  // looping over rows
-  for (size_t i = 0; i < m_target_vector.size(); ++i) {
-    const size_t row_index = size_x + size_W + i * vector_size;
-    for (int m = 0; m < vector_size; ++m) {
-      A.insert(row_index + m, row_index + m) = 1;
-    }
-  }
-
-  A.makeCompressed();
+    A.makeCompressed();
 
 #ifndef NDEBUG
-  for (size_t i = 0; i < n; ++i) {
-    size_t count = 0;
-    for (sparse_matrix_type::InnerIterator it(A, i); it; ++it) {
-      count++;
-      ASSERT(!std::isnan(it.value()),
-             "entry (" << it.row() << "," << it.col() << ") is nan");
+    for (size_t i = 0; i < n; ++i) {
+      size_t count = 0;
+      for (sparse_matrix_type::InnerIterator it(A, i); it; ++it) {
+        count++;
+        ASSERT(!std::isnan(it.value()),
+               "entry (" << it.row() << "," << it.col() << ") is nan");
+      }
+      ASSERT(count == reserve[i], "column " << i << " reserved size "
+                                            << reserve[i] << " and final count "
+                                            << count << " do not agree");
+      ASSERT(count > 0, "column " << i << " has zero entries");
     }
-    ASSERT(count == reserve[i], "column " << i << " reserved size "
-                                          << reserve[i] << " and final count "
-                                          << count << " do not agree");
-    ASSERT(count > 0, "column " << i << " has zero entries");
-  }
 
 #endif
 
-  LOG(2, "\tdone");
-  return A;
-}
-
-// this function returns a vector of indicies map that correspond to a
-// mapping between the extended column vector e_x to the standard column
-// particle vector x
-//
-// i.e. x = e_x[map]
-index_vector_type gen_column_map() const {
-  index_vector_type map(m_col_particles->size());
-  for (size_t i = 0; i < m_col_indices.size(); ++i) {
-    for (size_t p = 0; p < m_col_indices[i].size(); ++p) {
-      map[m_col_indices[i][p]] = m_ext_indicies[i] + p;
-    }
+    LOG(2, "\tdone");
+    return A;
   }
-  return map;
-}
 
-// this function returns a vector of indicies map that correspond to a
-// mapping between the extended row vector e_b to the standard row particle
-// vector b
-//
-// i.e. b = e_b[map]
-index_vector_type gen_row_map() const {
-  index_vector_type map(m_row_size);
-  size_t index = 0;
-  for (size_t i = 0; i < m_row_indices.size(); ++i) {
-    for (size_t p = 0; p < m_row_indices[i].size(); ++p, index++) {
-      map[m_row_indices[i][p]] = index;
-    }
-  }
-  return map;
-}
-
-/*
-size_t get_column_extended_vector_size() const {
-    const size_t size_x = m_col_particles.size();
-    const size_t vector_size = m_vector_type::RowsAtCompileTime;
-    const size_t size_W = m_W.size()*vector_size;
-    const size_t size_g = m_g.size()*vector_size;
-    const size_t n = size_x + size_W + size_g;
-    return n;
-}
-size_t get_row_extended_vector_size() const {
-    const size_t size_x = m_row_size;
-    const size_t vector_size = m_vector_type::RowsAtCompileTime;
-    const size_t size_W = m_W.size()*vector_size;
-    const size_t size_g = m_g.size()*vector_size;
-    const size_t n = size_x + size_W + size_g;
-    return n;
-}
-*/
-
-template <typename VectorTypeSource>
-column_vector_type
-gen_extended_vector(const VectorTypeSource &source_vector) const {
-  const size_t size_x = source_vector.size();
-  ASSERT(size_x == m_col_particles->size(),
-         "source vector not same size as column particles");
-  const size_t vector_size = m_vector_type::RowsAtCompileTime;
-  const size_t size_W = m_W.size() * vector_size;
-  const size_t size_g = m_g.size() * vector_size;
-  const size_t n = size_x + size_W + size_g;
-
-  column_vector_type extended_vector(n);
-
-  // x
-  for (auto &bucket : m_query->get_subtree()) {
-    if (m_query->is_leaf_node(bucket)) { // leaf node
-      const size_t index = m_query->get_bucket_index(bucket);
-      for (size_t i = 0; i < m_col_indices[index].size(); ++i) {
-        extended_vector[m_ext_indicies[index] + i] =
-            source_vector[m_col_indices[index][i]];
+  // this function returns a vector of indicies map that correspond to a
+  // mapping between the extended column vector e_x to the standard column
+  // particle vector x
+  //
+  // i.e. x = e_x[map]
+  index_vector_type gen_column_map() const {
+    index_vector_type map(m_col_particles->size());
+    for (size_t i = 0; i < m_col_indices.size(); ++i) {
+      for (size_t p = 0; p < m_col_indices[i].size(); ++p) {
+        map[m_col_indices[i][p]] = m_ext_indicies[i] + p;
       }
     }
+    return map;
   }
 
-  // zero remainder
-  for (int i = size_x; i < n; ++i) {
-    extended_vector[i] = 0;
-  }
-
-  return extended_vector;
-}
-
-column_vector_type get_internal_state() const {
-  const size_t size_x = m_ext_indicies.back() + m_source_vector.back().size();
-  ASSERT(size_x == m_col_particles->size(),
-         "source vector not same size as column particles");
-  const size_t vector_size = m_vector_type::RowsAtCompileTime;
-  const size_t size_W = m_W.size() * vector_size;
-  const size_t size_g = m_g.size() * vector_size;
-  const size_t n = size_x + size_W + size_g;
-
-  column_vector_type extended_vector(n);
-  LOG(2, "get_internal_state:");
-
-  // x
-  LOG(4, "x");
-  for (size_t i = 0; i < m_source_vector.size(); ++i) {
-    for (size_t p = 0; p < m_source_vector[i].size(); ++p) {
-      extended_vector[m_ext_indicies[i] + p] = m_source_vector[i][p];
-      LOG(4, "row " << m_ext_indicies[i] + p << " value "
-                    << extended_vector[m_ext_indicies[i] + p]);
-    }
-  }
-
-  // W
-  LOG(4, "W");
-  for (size_t i = 0; i < m_W.size(); ++i) {
-    for (int m = 0; m < vector_size; ++m) {
-      extended_vector[size_x + i * vector_size + m] = m_W[i][m];
-      LOG(4, "row " << size_x + i * vector_size + m << " value "
-                    << extended_vector[size_x + i * vector_size + m]);
-    }
-  }
-
-  // g
-  LOG(4, "g");
-  for (size_t i = 0; i < m_g.size(); ++i) {
-    for (int m = 0; m < vector_size; ++m) {
-      extended_vector[size_x + size_W + i * vector_size + m] = m_g[i][m];
-      LOG(4, "row " << size_x + size_W + i * vector_size + m << " value "
-                    << extended_vector[size_x + size_W + i * vector_size + m]);
-    }
-  }
-
-  return extended_vector;
-}
-
-column_vector_type
-filter_extended_vector(const column_vector_type &extended_vector) const {
-  const size_t size_x = m_col_particles->size();
-  const size_t vector_size = m_vector_type::RowsAtCompileTime;
-  const size_t size_W = m_W.size() * vector_size;
-  const size_t size_g = m_g.size() * vector_size;
-  const size_t n = size_x + size_W + size_g;
-
-  column_vector_type filtered_vector(size_x);
-
-  // x
-  for (auto &bucket : m_query->get_subtree()) {
-    if (m_query->is_leaf_node(bucket)) { // leaf node
-      const size_t index = m_query->get_bucket_index(bucket);
-      for (size_t i = 0; i < m_row_indices[index].size(); ++i) {
-        filtered_vector[m_row_indices[index][i]] =
-            extended_vector[m_ext_indicies[index] + i];
+  // this function returns a vector of indicies map that correspond to a
+  // mapping between the extended row vector e_b to the standard row particle
+  // vector b
+  //
+  // i.e. b = e_b[map]
+  index_vector_type gen_row_map() const {
+    index_vector_type map(m_row_size);
+    size_t index = 0;
+    for (size_t i = 0; i < m_row_indices.size(); ++i) {
+      for (size_t p = 0; p < m_row_indices[i].size(); ++p, index++) {
+        map[m_row_indices[i][p]] = index;
       }
     }
+    return map;
   }
 
-  return filtered_vector;
-}
+  /*
+  size_t get_column_extended_vector_size() const {
+      const size_t size_x = m_col_particles.size();
+      const size_t vector_size = m_vector_type::RowsAtCompileTime;
+      const size_t size_W = m_W.size()*vector_size;
+      const size_t size_g = m_g.size()*vector_size;
+      const size_t n = size_x + size_W + size_g;
+      return n;
+  }
+  size_t get_row_extended_vector_size() const {
+      const size_t size_x = m_row_size;
+      const size_t vector_size = m_vector_type::RowsAtCompileTime;
+      const size_t size_W = m_W.size()*vector_size;
+      const size_t size_g = m_g.size()*vector_size;
+      const size_t n = size_x + size_W + size_g;
+      return n;
+  }
+  */
+
+  template <typename VectorTypeSource>
+  column_vector_type
+  gen_extended_vector(const VectorTypeSource &source_vector) const {
+    const size_t size_x = source_vector.size();
+    ASSERT(size_x == m_col_particles->size(),
+           "source vector not same size as column particles");
+    const size_t vector_size = m_vector_type::RowsAtCompileTime;
+    const size_t size_W = m_W.size() * vector_size;
+    const size_t size_g = m_g.size() * vector_size;
+    const size_t n = size_x + size_W + size_g;
+
+    column_vector_type extended_vector(n);
+
+    // x
+    for (auto &bucket : m_query->get_subtree()) {
+      if (m_query->is_leaf_node(bucket)) { // leaf node
+        const size_t index = m_query->get_bucket_index(bucket);
+        for (size_t i = 0; i < m_col_indices[index].size(); ++i) {
+          extended_vector[m_ext_indicies[index] + i] =
+              source_vector[m_col_indices[index][i]];
+        }
+      }
+    }
+
+    // zero remainder
+    for (int i = size_x; i < n; ++i) {
+      extended_vector[i] = 0;
+    }
+
+    return extended_vector;
+  }
+
+  column_vector_type get_internal_state() const {
+    const size_t size_x = m_ext_indicies.back() + m_source_vector.back().size();
+    ASSERT(size_x == m_col_particles->size(),
+           "source vector not same size as column particles");
+    const size_t vector_size = m_vector_type::RowsAtCompileTime;
+    const size_t size_W = m_W.size() * vector_size;
+    const size_t size_g = m_g.size() * vector_size;
+    const size_t n = size_x + size_W + size_g;
+
+    column_vector_type extended_vector(n);
+    LOG(2, "get_internal_state:");
+
+    // x
+    LOG(4, "x");
+    for (size_t i = 0; i < m_source_vector.size(); ++i) {
+      for (size_t p = 0; p < m_source_vector[i].size(); ++p) {
+        extended_vector[m_ext_indicies[i] + p] = m_source_vector[i][p];
+        LOG(4, "row " << m_ext_indicies[i] + p << " value "
+                      << extended_vector[m_ext_indicies[i] + p]);
+      }
+    }
+
+    // W
+    LOG(4, "W");
+    for (size_t i = 0; i < m_W.size(); ++i) {
+      for (int m = 0; m < vector_size; ++m) {
+        extended_vector[size_x + i * vector_size + m] = m_W[i][m];
+        LOG(4, "row " << size_x + i * vector_size + m << " value "
+                      << extended_vector[size_x + i * vector_size + m]);
+      }
+    }
+
+    // g
+    LOG(4, "g");
+    for (size_t i = 0; i < m_g.size(); ++i) {
+      for (int m = 0; m < vector_size; ++m) {
+        extended_vector[size_x + size_W + i * vector_size + m] = m_g[i][m];
+        LOG(4,
+            "row " << size_x + size_W + i * vector_size + m << " value "
+                   << extended_vector[size_x + size_W + i * vector_size + m]);
+      }
+    }
+
+    return extended_vector;
+  }
+
+  column_vector_type
+  filter_extended_vector(const column_vector_type &extended_vector) const {
+    const size_t size_x = m_col_particles->size();
+    const size_t vector_size = m_vector_type::RowsAtCompileTime;
+    const size_t size_W = m_W.size() * vector_size;
+    const size_t size_g = m_g.size() * vector_size;
+    const size_t n = size_x + size_W + size_g;
+
+    column_vector_type filtered_vector(size_x);
+
+    // x
+    for (auto &bucket : m_query->get_subtree()) {
+      if (m_query->is_leaf_node(bucket)) { // leaf node
+        const size_t index = m_query->get_bucket_index(bucket);
+        for (size_t i = 0; i < m_row_indices[index].size(); ++i) {
+          filtered_vector[m_row_indices[index][i]] =
+              extended_vector[m_ext_indicies[index] + i];
+        }
+      }
+    }
+
+    return filtered_vector;
+  }
 
 private:
-template <typename RowParticles>
-void generate_matrices(
-    const child_iterator_vector_type &parents_strong_connections,
-    const box_type &box_parent, const child_iterator &ci,
-    const RowParticles &row_particles, const ColParticles &col_particles) {
+  template <typename RowParticles>
+  void generate_matrices(
+      const child_iterator_vector_type &parents_strong_connections,
+      const box_type &box_parent, const child_iterator &ci,
+      const RowParticles &row_particles, const ColParticles &col_particles) {
+    const box_type &target_box = m_query->get_bounds(ci);
+    size_t target_index = m_query->get_bucket_index(*ci);
+    LOG(3, "generate_matrices with bucket " << target_box);
 
-  const box_type &target_box = m_query->get_bounds(ci);
-  size_t target_index = m_query->get_bucket_index(*ci);
-  LOG(3, "generate_matrices with bucket " << target_box);
+    detail::theta_condition<dimension> theta(target_box.bmin, target_box.bmax);
 
-  detail::theta_condition<dimension> theta(target_box.bmin, target_box.bmax);
+    // add strongly connected buckets to current connectivity list
+    if (parents_strong_connections.empty()) {
+      for (child_iterator cj = m_query->get_children(); cj != false; ++cj) {
+        const box_type &source_box = m_query->get_bounds(cj);
+        if (theta.check(source_box.bmin, source_box.bmax)) {
+          // add strongly connected buckets to current connectivity list
+          m_strong_connectivity[target_index].push_back(cj);
+        } else {
+          // from weakly connected buckets,
+          // add connectivity and generate m2l matricies
+          size_t source_index = m_query->get_bucket_index(*cj);
+          m_m2l_matrices[target_index].emplace_back();
+          m_expansions.M2L_matrix(*(m_m2l_matrices[target_index].end() - 1),
+                                  target_box, source_box);
+          m_weak_connectivity[target_index].push_back(cj);
+        }
+      }
+    } else {
 
-  // add strongly connected buckets to current connectivity list
-  if (parents_strong_connections.empty()) {
-    for (child_iterator cj = m_query->get_children(); cj != false; ++cj) {
-      const box_type &source_box = m_query->get_bounds(cj);
-      if (theta.check(source_box.bmin, source_box.bmax)) {
-        // add strongly connected buckets to current connectivity list
-        m_strong_connectivity[target_index].push_back(cj);
-      } else {
-        // from weakly connected buckets,
-        // add connectivity and generate m2l matricies
-        size_t source_index = m_query->get_bucket_index(*cj);
-        m_m2l_matrices[target_index].emplace_back();
-        m_expansions.M2L_matrix(*(m_m2l_matrices[target_index].end() - 1),
-                                target_box, source_box);
-        m_weak_connectivity[target_index].push_back(cj);
+      // transfer matrix with parent if not at start
+      m_expansions.L2L_matrix(m_l2l_matrices[target_index], target_box,
+                              box_parent);
+
+      for (const child_iterator &source : parents_strong_connections) {
+        if (m_query->is_leaf_node(*source)) {
+          m_strong_connectivity[target_index].push_back(source);
+        } else {
+          for (child_iterator cj = m_query->get_children(source); cj != false;
+               ++cj) {
+            const box_type &source_box = m_query->get_bounds(cj);
+            if (theta.check(source_box.bmin, source_box.bmax)) {
+              m_strong_connectivity[target_index].push_back(cj);
+            } else {
+              size_t source_index = m_query->get_bucket_index(*cj);
+              m_m2l_matrices[target_index].emplace_back();
+              m_expansions.M2L_matrix(*(m_m2l_matrices[target_index].end() - 1),
+                                      target_box, source_box);
+              m_weak_connectivity[target_index].push_back(cj);
+            }
+          }
+        }
       }
     }
-  } else {
+    if (!m_query->is_leaf_node(*ci)) { // leaf node
+      for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
+        generate_matrices(m_strong_connectivity[target_index], target_box, cj,
+                          row_particles, col_particles);
+      }
+    } else {
+      m_expansions.P2M_matrix(m_p2m_matrices[target_index], target_box,
+                              m_col_indices[target_index], col_particles);
+      m_expansions.L2P_matrix(m_l2p_matrices[target_index], target_box,
+                              m_row_indices[target_index], row_particles);
 
-    // transfer matrix with parent if not at start
-    m_expansions.L2L_matrix(m_l2l_matrices[target_index], target_box,
-                            box_parent);
-
-    for (const child_iterator &source : parents_strong_connections) {
-      if (m_query->is_leaf_node(*source)) {
-        m_strong_connectivity[target_index].push_back(source);
-      } else {
-        for (child_iterator cj = m_query->get_children(source); cj != false;
-             ++cj) {
-          const box_type &source_box = m_query->get_bounds(cj);
-          if (theta.check(source_box.bmin, source_box.bmax)) {
-            m_strong_connectivity[target_index].push_back(cj);
-          } else {
-            size_t source_index = m_query->get_bucket_index(*cj);
-            m_m2l_matrices[target_index].emplace_back();
-            m_expansions.M2L_matrix(*(m_m2l_matrices[target_index].end() - 1),
-                                    target_box, source_box);
-            m_weak_connectivity[target_index].push_back(cj);
+      child_iterator_vector_type strong_copy =
+          m_strong_connectivity[target_index];
+      m_strong_connectivity[target_index].clear();
+      for (child_iterator &source : strong_copy) {
+        if (m_query->is_leaf_node(*source)) {
+          m_p2p_matrices[target_index].emplace_back();
+          m_strong_connectivity[target_index].push_back(source);
+          size_t source_index = m_query->get_bucket_index(*source);
+          m_expansions.P2P_matrix(*(m_p2p_matrices[target_index].end() - 1),
+                                  m_row_indices[target_index],
+                                  m_col_indices[source_index], row_particles,
+                                  col_particles);
+        } else {
+          auto range = m_query->get_subtree(source);
+          for (all_iterator i = range.begin(); i != range.end(); ++i) {
+            if (m_query->is_leaf_node(*i)) {
+              m_strong_connectivity[target_index].push_back(
+                  i.get_child_iterator());
+              m_p2p_matrices[target_index].emplace_back();
+              size_t index = m_query->get_bucket_index(*i);
+              m_expansions.P2P_matrix(*(m_p2p_matrices[target_index].end() - 1),
+                                      m_row_indices[target_index],
+                                      m_col_indices[index], row_particles,
+                                      col_particles);
+            }
           }
         }
       }
     }
   }
-  if (!m_query->is_leaf_node(*ci)) { // leaf node
-    for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
-      generate_matrices(m_strong_connectivity[target_index], target_box, cj,
-                        row_particles, col_particles);
-    }
-  } else {
-    m_expansions.P2M_matrix(m_p2m_matrices[target_index], target_box,
-                            m_col_indices[target_index], col_particles);
-    m_expansions.L2P_matrix(m_l2p_matrices[target_index], target_box,
-                            m_row_indices[target_index], row_particles);
 
-    child_iterator_vector_type strong_copy =
-        m_strong_connectivity[target_index];
-    m_strong_connectivity[target_index].clear();
-    for (child_iterator &source : strong_copy) {
-      if (m_query->is_leaf_node(*source)) {
+  template <typename RowParticles>
+  void generate_row_matrices(const child_iterator &ci,
+                             const RowParticles &row_particles,
+                             const ColParticles &col_particles) {
+    const box_type &target_box = m_query->get_bounds(ci);
+    size_t target_index = m_query->get_bucket_index(*ci);
+    LOG(3, "generate_row_matrices with bucket " << target_box);
+
+    if (!m_query->is_leaf_node(*ci)) { // leaf node
+      for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
+        generate_row_matrices(cj, row_particles, col_particles);
+      }
+    } else {
+      m_expansions.L2P_matrix(m_l2p_matrices[target_index], target_box,
+                              m_row_indices[target_index], row_particles);
+
+      for (child_iterator &source : m_strong_connectivity[target_index]) {
+        ASSERT(m_query->is_leaf_node(*source), "should be leaf node");
         m_p2p_matrices[target_index].emplace_back();
-        m_strong_connectivity[target_index].push_back(source);
         size_t source_index = m_query->get_bucket_index(*source);
         m_expansions.P2P_matrix(*(m_p2p_matrices[target_index].end() - 1),
                                 m_row_indices[target_index],
                                 m_col_indices[source_index], row_particles,
                                 col_particles);
-      } else {
-        auto range = m_query->get_subtree(source);
-        for (all_iterator i = range.begin(); i != range.end(); ++i) {
-          if (m_query->is_leaf_node(*i)) {
-            m_strong_connectivity[target_index].push_back(
-                i.get_child_iterator());
-            m_p2p_matrices[target_index].emplace_back();
-            size_t index = m_query->get_bucket_index(*i);
-            m_expansions.P2P_matrix(*(m_p2p_matrices[target_index].end() - 1),
-                                    m_row_indices[target_index],
-                                    m_col_indices[index], row_particles,
-                                    col_particles);
-          }
-        }
       }
     }
   }
-}
 
-template <typename RowParticles>
-void generate_row_matrices(const child_iterator &ci,
-                           const RowParticles &row_particles,
-                           const ColParticles &col_particles) {
-
-  const box_type &target_box = m_query->get_bounds(ci);
-  size_t target_index = m_query->get_bucket_index(*ci);
-  LOG(3, "generate_row_matrices with bucket " << target_box);
-
-  if (!m_query->is_leaf_node(*ci)) { // leaf node
-    for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
-      generate_row_matrices(cj, row_particles, col_particles);
+  void mvm_upward_sweep(typename col_tree_t::reverse_iterator ci) const {
+    const size_t my_index = m_query->get_bucket_index(*ci);
+    const box_type &target_box = m_query->get_bounds(ci);
+    LOG(3, "calculate_dive_P2M_and_M2M with bucket " << target_box);
+    m_vector_type &W = m_W[my_index];
+    if (m_query->is_leaf_node(*ci)) { // leaf node
+      W = m_p2m_matrices[my_index] * m_source_vector[my_index];
+    } else {
+      // do M2M
+      W = m_vector_type::Zero();
+      for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
+        const size_t child_index = m_query->get_bucket_index(*cj);
+        m_vector_type &child_W = mvm_upward_sweep(cj);
+        W += m_l2l_matrices[child_index].transpose() * child_W;
+      }
     }
-  } else {
-    m_expansions.L2P_matrix(m_l2p_matrices[target_index], target_box,
-                            m_row_indices[target_index], row_particles);
-
-    for (child_iterator &source : m_strong_connectivity[target_index]) {
-      ASSERT(m_query->is_leaf_node(*source), "should be leaf node");
-      m_p2p_matrices[target_index].emplace_back();
-      size_t source_index = m_query->get_bucket_index(*source);
-      m_expansions.P2P_matrix(*(m_p2p_matrices[target_index].end() - 1),
-                              m_row_indices[target_index],
-                              m_col_indices[source_index], row_particles,
-                              col_particles);
-    }
-  }
-}
-
-void mvm_upward_sweep(typename col_tree_t::reverse_iterator ci) const {
-
-  const size_t my_index = m_query->get_bucket_index(*ci);
-  const box_type &target_box = m_query->get_bounds(ci);
-  LOG(3, "calculate_dive_P2M_and_M2M with bucket " << target_box);
-  m_vector_type &W = m_W[my_index];
-  if (m_query->is_leaf_node(*ci)) { // leaf node
-    W = m_p2m_matrices[my_index] * m_source_vector[my_index];
-  } else {
-    // do M2M
-    W = m_vector_type::Zero();
-    for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
-      const size_t child_index = m_query->get_bucket_index(*cj);
-      m_vector_type &child_W = mvm_upward_sweep(cj);
-      W += m_l2l_matrices[child_index].transpose() * child_W;
-    }
-  }
-  return W;
-}
-
-void mvm_downward_sweep(const m_vector_type &g_parent,
-                        const child_iterator &ci) const {
-  const box_type &target_box = m_query->get_bounds(ci);
-  LOG(3, "calculate_dive_M2L_and_L2L with bucket " << target_box);
-  size_t target_index = m_query->get_bucket_index(*ci);
-  m_vector_type &g = m_g[target_index];
-
-  // L2L
-  g = m_l2l_matrices[target_index] * g_parent;
-
-  // M2L (weakly connected buckets)
-  for (size_t i = 0; i < m_weak_connectivity[target_index].size(); ++i) {
-    const child_iterator &source_ci = m_weak_connectivity[target_index][i];
-    size_t source_index = m_query->get_bucket_index(*source_ci);
-    g += m_m2l_matrices[target_index][i] * m_W[source_index];
+    return W;
   }
 
-  if (!m_query->is_leaf_node(*ci)) { // dive down to next level
-    for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
-      mvm_downward_sweep(g, cj);
-    }
-  } else {
-    m_target_vector[target_index] = m_l2p_matrices[target_index] * g;
+  void mvm_downward_sweep(const m_vector_type &g_parent,
+                          const child_iterator &ci) const {
+    const box_type &target_box = m_query->get_bounds(ci);
+    LOG(3, "calculate_dive_M2L_and_L2L with bucket " << target_box);
+    size_t target_index = m_query->get_bucket_index(*ci);
+    m_vector_type &g = m_g[target_index];
 
-    // direct evaluation (strongly connected buckets)
-    for (size_t i = 0; i < m_strong_connectivity[target_index].size(); ++i) {
-      const child_iterator &source_ci = m_strong_connectivity[target_index][i];
+    // L2L
+    g = m_l2l_matrices[target_index] * g_parent;
+
+    // M2L (weakly connected buckets)
+    for (size_t i = 0; i < m_weak_connectivity[target_index].size(); ++i) {
+      const child_iterator &source_ci = m_weak_connectivity[target_index][i];
       size_t source_index = m_query->get_bucket_index(*source_ci);
-      m_target_vector[target_index] +=
-          m_p2p_matrices[target_index][i] * m_source_vector[source_index];
+      g += m_m2l_matrices[target_index][i] * m_W[source_index];
+    }
+
+    if (!m_query->is_leaf_node(*ci)) { // dive down to next level
+      for (child_iterator cj = m_query->get_children(ci); cj != false; ++cj) {
+        mvm_downward_sweep(g, cj);
+      }
+    } else {
+      m_target_vector[target_index] = m_l2p_matrices[target_index] * g;
+
+      // direct evaluation (strongly connected buckets)
+      for (size_t i = 0; i < m_strong_connectivity[target_index].size(); ++i) {
+        const child_iterator &source_ci =
+            m_strong_connectivity[target_index][i];
+        size_t source_index = m_query->get_bucket_index(*source_ci);
+        m_target_vector[target_index] +=
+            m_p2p_matrices[target_index][i] * m_source_vector[source_index];
+      }
     }
   }
-}
 }; // namespace Aboria
 
 /*
