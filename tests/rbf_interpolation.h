@@ -284,11 +284,6 @@ public:
     const double delta = std::pow(double(N), -1.0 / 2.0);
     const double h = hfac * delta;
     std::cout << "using h = " << h << std::endl;
-    const double RASM_size = 2 * h;
-    const int RASM_n = N * std::pow(RASM_size, 2) / (max - min).prod();
-    const double RASM_buffer = 0.9 * RASM_size;
-    std::cout << "RASM_size = " << RASM_size << " RASM_n = " << RASM_n
-              << " RASM_buffer = " << RASM_buffer << std::endl;
 
     typename ParticlesType::value_type p;
 
@@ -360,7 +355,7 @@ public:
     }
     std::cout << "rms_error for compact support, at centers  = "
               << std::sqrt(rms_error / scale) << std::endl;
-    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 1e-4);
+    TS_ASSERT_LESS_THAN(std::sqrt(rms_error / scale), 2e-3);
 
     rms_error = 0;
     scale = 0;

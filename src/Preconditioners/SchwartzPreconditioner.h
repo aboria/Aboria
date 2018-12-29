@@ -816,7 +816,7 @@ public:
     const query_t &query =
         i == 0 ? a.get_query() : m_particles[i - 1].get_query();
     auto df_search = query.breadth_first();
-    for (; df_search != false; ++df_search) {
+    for (; df_search->size() != df_search.previous().size(); ++df_search) {
     }
 
     typename query_t::breadth_first_iterator::value_type root_node_vector = {
