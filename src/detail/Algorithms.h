@@ -139,6 +139,76 @@ BidiIter random_unique(BidiIter begin, BidiIter end, size_t num_random,
   return begin;
 }
 
+/*
+template <typename InputIterator1, typename InputIterator2,
+          typename UnaryFunction>
+void partition_by_key(InputIterator1 first_key, InputIterator1 last_key,
+                      InputIterator2 first_data, UnaryFunction f) {
+  // partition according to a unary function
+  //
+  //(Sengupta, S., Harris, M., Zhang, Y., & Owens, J. D. (2007). Scan
+  // primitives for GPU computing. Graphics …, 97–106.
+  // http://doi.org/10.2312/EGGH/EGGH07/097-106)
+  const int N = std::distance(first_key, last_key);
+  vector_int e(N);
+  vector_int f(N);
+  vector_int addr(N);
+
+  // [t f t f f t f] #in
+  // [0 1 0 1 1 0 1] #e = set 1 in false elts.
+  auto data_key_it =
+      Traits::make_zip_iterator(Traits::make_tuple(first_data, first_key));
+  detail::transform(data_key_it, data_key_it + N, e.begin(), f);
+
+  // [0 0 1 1 2 3 3] #f = enumerate with false=1
+  detail::exclusive_scan_by_key(first_key, last_key, e.begin(), f.begin(), 0);
+
+  // [4 4 4 4 4 4 4] # add two last elts. in e, f and scan copy to
+  // segment
+  //                 # ==total # of falses
+  detail::inclusive_scan_by_key(
+      Traits::make_reverse_iterator(last_key),Traits::make_reverse_iterator(first_key),
+      Traits::make_zip_iterator(Traits::make_tuple(e.rbegin(),
+f.rbegin())),f.rbegin(),equal_to<InputIterator1::value_type>(),max<
+                   [_e = iterator_to_raw_pointer(e.begin()),
+                    _f = iterator_to_raw_pointer(f.begin()),
+                    _parents_leaf = iterator_to_raw_pointer(
+                        parents_leaf.begin())](const int i) {
+                     const int last_particle_index = _parents_leaf[i][1] - 1;
+                     return _e[last_particle_index] + _f[last_particle_index];
+                   });
+
+  //[0 1 2 3 4 5 6]  # each thread knows its id
+  //[4 5 5 6 6 6 7]  # t = id - f + NF
+  //[4 0 5 1 2 6 3]  # addr = e ? leaf[0] + f : t
+  detail::tabulate(
+      addr.begin(), addr.end(),
+      [_num_points = static_cast<int>(num_points),
+       _addr = iterator_to_raw_pointer(addr.begin()),
+       _e = iterator_to_raw_pointer(e.begin()),
+       _f = iterator_to_raw_pointer(f.begin()),
+       _parents_nf = iterator_to_raw_pointer(parents_nf.begin()),
+       _parents_leaf = iterator_to_raw_pointer(parents_leaf.begin()),
+       _particle_node =
+           iterator_to_raw_pointer(m_particle_node.begin())](const int i) {
+        const int node_index = _particle_node[i];
+        if (node_index >= 0) {
+          return _e[i] ? (i / _num_points) * _num_points +
+                             _parents_leaf[node_index][0] + _f[i]
+                       : i - _f[i] + _parents_nf[node_index];
+        } else {
+          return i;
+        }
+      });
+
+
+  //[f f f f t t t]  # out[addr] = in (scatter)
+  detail::scatter(m_particle_indicies.begin(), m_particle_indicies.end(),
+                  addr.begin(), particle_indicies2.begin());
+  m_particle_indicies.swap(particle_indicies2);
+}
+*/
+
 template <class ForwardIt, class T>
 void fill(ForwardIt first, ForwardIt last, const T &value, std::true_type) {
   std::fill(first, last, value);
