@@ -242,6 +242,8 @@ struct TraitsCommon<std::tuple<TYPES...>, DomainD, SelfD, traits>
       vector_unsigned_int_const_iterator;
   typedef
       typename traits::template vector_type<Vector<int, 2>>::type vector_int2;
+  typedef
+      typename traits::template vector_type<Vector<bool, 2>>::type vector_bool2;
 
   typedef Vector<double, dimension> double_d;
   typedef Vector<int, dimension> int_d;

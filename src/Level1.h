@@ -49,6 +49,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "Iterators/SubsampleTreeQuery.h"
 #include "Particles.h"
 #include "PrintTuple.h"
+#include "SpatialDataStructures/BallTree.h"
 #include "SpatialDataStructures/CellList.h"
 #include "SpatialDataStructures/CellListOrdered.h"
 #include "SpatialDataStructures/Kdtree.h"
