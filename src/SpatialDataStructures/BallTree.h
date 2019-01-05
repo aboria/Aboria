@@ -187,6 +187,10 @@ private:
     mutable double *_particle_projection;
 
     void sort(const vint2 &particles) const {
+      // if only one particle do nothing
+      if (particles[1] - particles[0] <= 1) {
+        return;
+      }
       vint2 outer;
       double max_dx2 = 0;
       for (int i = particles[0]; i < particles[1]; ++i) {
@@ -261,11 +265,13 @@ private:
             return vbool2(nchild1 > _threshold, nchild2 > _threshold);
           });
 
+      /*
       std::cout << "parents_child_is_non_leaf: ";
       for (int i = 0; i < num_parents; ++i) {
         std::cout << parents_child_is_non_leaf[i] << " ";
       }
       std::cout << std::endl;
+      */
 
       // find indicies of first children for next iteration
       vector_int parents_first_child_index(num_parents);
@@ -274,11 +280,13 @@ private:
           parents_first_child_index.begin(),
           [](const vbool2 &i) { return i[0] + i[1]; }, 0, detail::plus());
 
+      /*
       std::cout << "parents_first_child_index: ";
       for (int i = 0; i < num_parents; ++i) {
         std::cout << parents_first_child_index[i] << " ";
       }
       std::cout << std::endl;
+      */
 
       // form children in main data structure
       const int num_children = 2 * parents_leaf.size();
@@ -290,6 +298,7 @@ private:
           Traits::make_zip_iterator(Traits::make_tuple(
               m_nodes_first_child.begin(), m_nodes_particles.begin())) +
           level_start_index;
+
       detail::tabulate(
           new_level_it, new_level_it + num_children,
           [_next_level_start_index = level_start_index + num_children,
@@ -337,23 +346,25 @@ private:
             }
 
             // sort by new split if more one particle
-            if (particles[1] - particles[0] > 1) {
-              _sort_function.sort(particles);
-            }
+            _sort_function.sort(particles);
 
             return Traits::make_tuple(first_child, particles);
           });
 
+      /*
       std::cout << "m_nodes_first_child: ";
-      for (int i = 0; i < num_children; ++i) {
+      for (int i = level_start_index; i < level_start_index + num_children;
+           ++i) {
         std::cout << m_nodes_first_child[i] << " ";
       }
       std::cout << std::endl;
       std::cout << "m_nodes_particles: ";
-      for (int i = 0; i < num_children; ++i) {
+      for (int i = level_start_index; i < level_start_index + num_children;
+           ++i) {
         std::cout << m_nodes_particles[i] << " ";
       }
       std::cout << std::endl;
+      */
 
       // setup parents for next iteration (i.e. remove all leaf nodes)
 
