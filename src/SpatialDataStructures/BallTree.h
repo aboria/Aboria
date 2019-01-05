@@ -42,6 +42,7 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "SpatialUtil.h"
 #include "Traits.h"
 #include "Vector.h"
+#include "miniball/main/Seb.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <iostream>
 #include <set>
@@ -192,21 +193,31 @@ private:
   struct sort_by_split {
     double_d *_p;
     int *_particle_indicies;
-    mutable double *_particle_projection;
 
-    void get_centre_and_radius(const vint2 &particles, double_d &centre,
-                               double &radius) const {
+    double_d &operator()(const int i) { return _p[_particle_indicies[i]]; }
 
-      if (particles[1] - particles[0] <= 1) {
-        centre = _p[_particle_indicies[particles[0]]];
+    void get_centre_and_radius(const int p_start, const int p_end,
+                               double_d &centre, double &radius) const {
+
+      if (p_end - p_start <= 1) {
+        centre = _p[_particle_indicies[p_start]];
         radius = 0.0;
       } else {
-        // assumes sort() has already been called on particles
-        const double_d &a = _p[_particle_indicies[particles[0]]];
-        const double_d &b = _p[_particle_indicies[particles[1] - 1]];
+        Seb::Smallest_enclosing_ball<double, double_d, sort_by_split> miniball(
+            D, *this);
+
+        auto ci = miniball.center_begin();
+        for (int i = 0; i < D; ++i, ++ci) {
+          centre[i] = *ci;
+        }
+        radius = miniball.radius();
+
+        /*
+        const double_d &a = _p[_particle_indicies[p_start]];
+        const double_d &b = _p[_particle_indicies[p_end - 1]];
         centre = 0.5 * (a + b);
         radius = (a - centre).squaredNorm();
-        for (int i = particles[0]; i < particles[1]; ++i) {
+        for (int i = p_start; i < p_end; ++i) {
           const double_d &p = _p[_particle_indicies[i]];
           const double dx2 = (p - centre).squaredNorm();
           if (dx2 > radius) {
@@ -214,9 +225,10 @@ private:
           }
         }
         radius = std::sqrt(radius) + std::numeric_limits<double>::epsilon();
+      */
       }
       // check that every point is in bounds
-      for (int i = particles[0]; i < particles[1]; ++i) {
+      for (int i = p_start; i < p_end; ++i) {
         const double_d &p = _p[_particle_indicies[i]];
         if ((p - centre).squaredNorm() > std::pow(radius, 2)) {
           std::cout << "EROROROROR " << p << " " << centre << " " << radius
@@ -224,15 +236,19 @@ private:
         }
       }
     }
-    void sort(const vint2 &particles) const {
+
+    // note: centre and radius define an exact circle enclosing the points (i.e.
+    // will pass through the points that are maximally separated)
+    int partition(const int p_start, const int p_end, const double_d &centre,
+                  const double &radius) const {
       // if only one particle do nothing
-      if (particles[1] - particles[0] <= 1) {
-        return;
+      if (p_end - p_start <= 1) {
+        return p_start;
       }
       vint2 outer;
       double max_dx2 = 0;
-      for (int i = particles[0]; i < particles[1]; ++i) {
-        for (int j = particles[0]; j < particles[1]; ++j) {
+      for (int i = p_start; i < p_end; ++i) {
+        for (int j = p_start; j < p_end; ++j) {
           const double_d &pi = _p[_particle_indicies[i]];
           const double_d &pj = _p[_particle_indicies[j]];
           const double dx2 = (pi - pj).squaredNorm();
@@ -243,36 +259,56 @@ private:
           }
         }
       }
+      vint2 outer2;
+      const double r2 =
+          std::pow(radius - std::numeric_limits<double>::epsilon(), 2);
+      max_dx2 = 0;
+      for (int i = p_start; i < p_end; ++i) {
+        const double_d &pi = _p[_particle_indicies[i]];
+        if ((pi - centre).squaredNorm() < r2)
+          continue;
+        for (int j = p_start; j < p_end; ++j) {
+          const double_d &pj = _p[_particle_indicies[j]];
+          const double dx2 = (pi - pj).squaredNorm();
+          if (dx2 > max_dx2) {
+            outer2[0] = i;
+            outer2[1] = j;
+            max_dx2 = dx2;
+          }
+        }
+      }
+      if ((outer != outer2).any()) {
+        std::cout << "EROREROREOREREORR: " << outer << " " << outer2
+                  << std::endl;
+      }
       // point projection of each particle onto line defined by AB:
       // dot(AP,AB) / dot(AB,AB)
       const double_d &a = _p[_particle_indicies[outer[0]]];
       const double_d &b = _p[_particle_indicies[outer[1]]];
+      /*
       const double_d ab = b - a;
       const double dot_ab_ab = ab.squaredNorm();
-      for (int i = particles[0]; i < particles[1]; ++i) {
+      for (int i = p_start; i < p_end; ++i) {
         const double_d &pi = _p[_particle_indicies[i]];
-        _particle_projection[i] = (pi - a).dot(ab) / dot_ab_ab;
+        _partition[i] = (pi - a).squaredNorm() <= (pi - b).squaredNorm();
       }
+      */
 
-      // sort particles by projection
-      detail::sort_by_key(_particle_projection + particles[0],
-                          _particle_projection + particles[1],
-                          _particle_indicies + particles[0]);
-
-      // check middle
-      const int midi = (particles[1] + particles[0]) / 2;
-      const double &mid = _particle_projection[midi];
-      const double &mid1 = _particle_projection[midi - 1];
-      if (mid <= mid1) {
-        std::cout << "ERRRRRRROOOOOORRRRRR " << mid1 << " " << mid << std::endl;
-      }
+      // partition particles by closest point
+      detail::partition(_particle_indicies + p_start,
+                        _particle_indicies + p_end, [&](const int i) {
+                          const double_d &pi = _p[i];
+                          return (pi - a).squaredNorm() <=
+                                 (pi - b).squaredNorm();
+                        });
     }
   };
   void build_tree() {
     const size_t num_points = this->m_alive_indices.size();
 
     // setup nodes
-    vector_int2 parents_leaf(1, vint2(0, num_points));
+    vector_int3 parents_leaf(1, vint3(0, 0, num_points));
+    vector_int parents_split(1);
 
     // do intial sorting by split direction
     vector_double particle_projection(num_points);
@@ -280,20 +316,24 @@ private:
         iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
         iterator_to_raw_pointer(m_particle_indicies.begin()),
         iterator_to_raw_pointer(particle_projection.begin())};
-    sort_function.sort(parents_leaf[0]);
 
-    // setup tree
+    // setup tree with a single node
     m_nodes_first_child.resize(1);
     m_nodes_particles.resize(1);
     m_nodes_particles[0] = vint2(0, num_points);
     m_nodes_centre.resize(1);
     m_nodes_radius.resize(1);
-    sort_function.get_centre_and_radius(m_nodes_particles[0], m_nodes_centre[0],
+    sort_function.get_centre_and_radius(m_nodes_particles[0],
+                                        m_nodes_particles[1], m_nodes_centre[0],
                                         m_nodes_radius[0]);
+
     m_number_of_levels = 1;
 
     if (num_points > this->m_n_particles_in_leaf) {
       m_nodes_first_child[0] = 1;
+      parents_leaf[0][1] =
+          sort_function.partition(parents_leaf[0][0], parents_leaf[0][2],
+                                  m_nodes_centre[0], m_nodes_radius);
     } else {
       m_nodes_first_child[0] = -1;
       parents_leaf.clear();
@@ -309,9 +349,9 @@ private:
       detail::transform(
           parents_leaf.begin(), parents_leaf.end(),
           parents_child_is_non_leaf.begin(),
-          [_threshold = this->m_n_particles_in_leaf](const vint2 &leaf) {
-            const int nparent = leaf[1] - leaf[0];
-            const int nchild1 = nparent / 2;
+          [_threshold = this->m_n_particles_in_leaf](const vint3 &leaf) {
+            const int nparent = leaf[2] - leaf[0];
+            const int nchild1 = leaf[1] - leaf[0];
             const int nchild2 = nparent - nchild1;
             return vbool2(nchild1 > _threshold, nchild2 > _threshold);
           });
@@ -363,9 +403,9 @@ private:
                iterator_to_raw_pointer(parents_child_is_non_leaf.begin()),
            _sort_function = sort_function](const int i) {
             const int parent_index = i / 2;
-            const vint2 &leaf = _parents_leaf[parent_index];
-            const int nparent = leaf[1] - leaf[0];
-            const int nchild1 = nparent / 2;
+            const vint3 &leaf = _parents_leaf[parent_index];
+            const int nparent = leaf[2] - leaf[0];
+            const int nchild1 = leaf[1] - leaf[0];
             const vbool2 &is_non_leaf =
                 _parents_child_is_non_leaf[parent_index];
 
@@ -374,7 +414,7 @@ private:
 
             if (i % 2) {
               // second child
-              particles = vint2(leaf[0] + nchild1, leaf[1]);
+              particles = vint2(leaf[1], leaf[2]);
               if (is_non_leaf[1]) {
                 // has a child
                 first_child =
@@ -387,7 +427,7 @@ private:
               }
             } else {
               // first child
-              particles = vint2(leaf[0], leaf[0] + nchild1);
+              particles = vint2(leaf[0], leaf[1]);
               if (is_non_leaf[0]) {
                 // has a child
                 first_child = _next_level_start_index +
@@ -400,7 +440,7 @@ private:
             }
 
             // sort by new split if more one particle
-            _sort_function.sort(particles);
+            const int split = _sort_function.sort(particles);
 
             double_d centre;
             double radius;
