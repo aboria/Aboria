@@ -245,6 +245,7 @@ void draw_particles_with_search(
     if (query.is_leaf_node(*ci)) {
       // draw its outline
       auto bounds = query.get_bounds(ci);
+      std::cout << "found leaf, bounds are " << bounds << std::endl;
       vdouble2 rect[4];
       rect[0] = vdouble2(bounds.bmin[0], bounds.bmin[1]);
       rect[1] = vdouble2(bounds.bmax[0], bounds.bmin[1]);
@@ -293,8 +294,8 @@ void draw_particles_with_search(
     cairo_fill(cr);
 
     cairo_set_source_rgba(cr, 0, 0, 0.5, 0.2);
-    for (auto i = query.template get_buckets_near_point<2>(
-             search_point, search_radius, transform);
+    for (auto i = query.template get_buckets_near_point<2>(search_point,
+                                                           search_radius);
          i != false; ++i) {
       auto ci = i.get_child_iterator();
       auto bounds = query.get_bounds(ci);

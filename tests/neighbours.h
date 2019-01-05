@@ -878,12 +878,12 @@ public:
     }
   };
 
-  template <typename Particles_t, typename Transform>
+  template <typename Particles_t>
   void helper_plot(std::false_type,
                    const Vector<double, Particles_t::dimension> &search_point,
                    std::string filename, const Particles_t &particles,
                    const double search_radius) {}
-  template <typename Particles_t, typename Transform>
+  template <typename Particles_t>
   void helper_plot(std::true_type,
                    const Vector<double, Particles_t::dimension> &search_point,
                    std::string filename, const Particles_t &particles,
@@ -971,6 +971,21 @@ public:
     // delete last particle
     particles.erase(particles.begin() + particles.size() - 1);
 
+    // plot search if 2D
+    std::string filename = "";
+    if (is_periodic) {
+      filename += "periodic";
+    } else {
+      filename += "non-periodic";
+    }
+    filename += "-" + std::to_string(N) + "-" + std::to_string(r);
+    if (push_back_construction) {
+      filename += "-push-back";
+    } else {
+      filename += "-no-push-back";
+    }
+    filename += ".svg";
+
     // brute force search
     auto t0 = Clock::now();
     Aboria::detail::for_each(particles.begin(), particles.end(),
@@ -992,9 +1007,8 @@ public:
                   << static_cast<const double_d &>(get<position>(particles)[i])
                   << " over radius " << r << std::endl;
         particles.print_data_structure();
-        helper_plot(std::integral_type<bool, D == 2>(),
-                    get<position>(particles)[i], std::string filename,
-                    particles, r);
+        helper_plot(std::integral_constant<bool, D == 2>(),
+                    get<position>(particles)[i], filename, particles, r);
 
         TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                          int(get<neighbours_aboria>(particles)[i]));

@@ -77,6 +77,10 @@ public:
 
     this->m_query.m_nodes_first_child =
         iterator_to_raw_pointer(m_nodes_first_child.begin());
+    this->m_query.m_nodes_centre =
+        iterator_to_raw_pointer(m_nodes_centre.begin());
+    this->m_query.m_nodes_radius =
+        iterator_to_raw_pointer(m_nodes_radius.begin());
     this->m_query.m_nodes_particles =
         iterator_to_raw_pointer(m_nodes_particles.begin());
     this->m_query.m_number_of_buckets = m_nodes_first_child.size();
@@ -170,6 +174,10 @@ private:
 
     this->m_query.m_nodes_first_child =
         iterator_to_raw_pointer(m_nodes_first_child.begin());
+    this->m_query.m_nodes_centre =
+        iterator_to_raw_pointer(m_nodes_centre.begin());
+    this->m_query.m_nodes_radius =
+        iterator_to_raw_pointer(m_nodes_radius.begin());
     this->m_query.m_nodes_particles =
         iterator_to_raw_pointer(m_nodes_particles.begin());
     this->m_query.m_number_of_buckets = m_nodes_first_child.size();
@@ -186,6 +194,36 @@ private:
     int *_particle_indicies;
     mutable double *_particle_projection;
 
+    void get_centre_and_radius(const vint2 &particles, double_d &centre,
+                               double &radius) const {
+
+      if (particles[1] - particles[0] <= 1) {
+        centre = _p[_particle_indicies[particles[0]]];
+        radius = 0.0;
+      } else {
+        // assumes sort() has already been called on particles
+        const double_d &a = _p[_particle_indicies[particles[0]]];
+        const double_d &b = _p[_particle_indicies[particles[1] - 1]];
+        centre = 0.5 * (a + b);
+        radius = (a - centre).squaredNorm();
+        for (int i = particles[0]; i < particles[1]; ++i) {
+          const double_d &p = _p[_particle_indicies[i]];
+          const double dx2 = (p - centre).squaredNorm();
+          if (dx2 > radius) {
+            radius = dx2;
+          }
+        }
+        radius = std::sqrt(radius) + std::numeric_limits<double>::epsilon();
+      }
+      // check that every point is in bounds
+      for (int i = particles[0]; i < particles[1]; ++i) {
+        const double_d &p = _p[_particle_indicies[i]];
+        if ((p - centre).squaredNorm() > std::pow(radius, 2)) {
+          std::cout << "EROROROROR " << p << " " << centre << " " << radius
+                    << " " << (p - centre).norm() << std::endl;
+        }
+      }
+    }
     void sort(const vint2 &particles) const {
       // if only one particle do nothing
       if (particles[1] - particles[0] <= 1) {
@@ -220,6 +258,14 @@ private:
       detail::sort_by_key(_particle_projection + particles[0],
                           _particle_projection + particles[1],
                           _particle_indicies + particles[0]);
+
+      // check middle
+      const int midi = (particles[1] + particles[0]) / 2;
+      const double &mid = _particle_projection[midi];
+      const double &mid1 = _particle_projection[midi - 1];
+      if (mid <= mid1) {
+        std::cout << "ERRRRRRROOOOOORRRRRR " << mid1 << " " << mid << std::endl;
+      }
     }
   };
   void build_tree() {
@@ -240,7 +286,12 @@ private:
     m_nodes_first_child.resize(1);
     m_nodes_particles.resize(1);
     m_nodes_particles[0] = vint2(0, num_points);
+    m_nodes_centre.resize(1);
+    m_nodes_radius.resize(1);
+    sort_function.get_centre_and_radius(m_nodes_particles[0], m_nodes_centre[0],
+                                        m_nodes_radius[0]);
     m_number_of_levels = 1;
+
     if (num_points > this->m_n_particles_in_leaf) {
       m_nodes_first_child[0] = 1;
     } else {
@@ -293,10 +344,13 @@ private:
       const int level_start_index = m_nodes_first_child.size();
       m_nodes_first_child.resize(level_start_index + num_children);
       m_nodes_particles.resize(level_start_index + num_children);
+      m_nodes_centre.resize(level_start_index + num_children);
+      m_nodes_radius.resize(level_start_index + num_children);
 
       auto new_level_it =
           Traits::make_zip_iterator(Traits::make_tuple(
-              m_nodes_first_child.begin(), m_nodes_particles.begin())) +
+              m_nodes_first_child.begin(), m_nodes_particles.begin(),
+              m_nodes_centre.begin(), m_nodes_radius.begin())) +
           level_start_index;
 
       detail::tabulate(
@@ -348,7 +402,11 @@ private:
             // sort by new split if more one particle
             _sort_function.sort(particles);
 
-            return Traits::make_tuple(first_child, particles);
+            double_d centre;
+            double radius;
+            _sort_function.get_centre_and_radius(particles, centre, radius);
+
+            return Traits::make_tuple(first_child, particles, centre, radius);
           });
 
       /*
@@ -412,6 +470,8 @@ private:
 
   vector_int m_nodes_first_child;
   vector_int2 m_nodes_particles;
+  vector_double_d m_nodes_centre;
+  vector_double m_nodes_radius;
 
   vector_int m_particle_indicies;
   int m_number_of_levels;
@@ -542,6 +602,8 @@ template <typename Traits> struct BalltreeQuery {
 
   int *m_nodes_first_child;
   vint2 *m_nodes_particles;
+  double_d *m_nodes_centre;
+  double *m_nodes_radius;
   int m_dummy_root{-1};
 
   size_t *m_id_map_key;
@@ -626,13 +688,9 @@ public:
   ///
   const box_type get_bounds(const child_iterator &ci) const {
     const int cindex = get_child_index(*ci);
-    const double_d &a =
-        get<position>(m_particles_begin)[m_nodes_particles[cindex][0]];
-    const double_d &b =
-        get<position>(m_particles_begin)[m_nodes_particles[cindex][1] - 1];
-    const double_d c = 0.5 * (a + b);
-    const double r = (c - a).norm();
-    return box_type(c - r, c + r);
+    const double_d &c = m_nodes_centre[cindex];
+    const double &r = m_nodes_radius[cindex];
+    return box_type(c - r, c + r + std::numeric_limits<double>::epsilon());
   }
 
   particle_iterator get_bucket_particles(reference bucket) const {
@@ -656,21 +714,16 @@ public:
       return;
     }
 
-    const int cindex = get_parent_index(*ci);
-
-    const int aindex = m_nodes_particles[cindex][0];
-    const int bindex = m_nodes_particles[cindex][1] - 1;
-    if (aindex == bindex) {
-      // if only one particle do nothing
-      return;
-    }
-    const double_d &a = get<position>(m_particles_begin)[aindex];
-    const double_d &b = get<position>(m_particles_begin)[bindex];
+    // find line between two children's centres
+    const double_d &a = m_nodes_centre[get_child_index(*ci)];
+    const double_d &b = m_nodes_centre[get_child_index(*(ci + 1))];
     const double_d ab = b - a;
 
+    // project position onto this line
     const double position_projection =
         (position - a).dot(ab) / ab.squaredNorm();
 
+    // if position is on the side of the other child, advance iterator
     if (position_projection > 0.5)
       ++ci;
   }
