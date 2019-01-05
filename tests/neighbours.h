@@ -878,6 +878,21 @@ public:
     }
   };
 
+  template <typename Particles_t, typename Transform>
+  void helper_plot(std::false_type,
+                   const Vector<double, Particles_t::dimension> &search_point,
+                   std::string filename, const Particles_t &particles,
+                   const double search_radius) {}
+  template <typename Particles_t, typename Transform>
+  void helper_plot(std::true_type,
+                   const Vector<double, Particles_t::dimension> &search_point,
+                   std::string filename, const Particles_t &particles,
+                   const double search_radius) {
+    std::cout << "plotting with position " << search_point << std::endl;
+    draw_particles_with_search(filename, particles, {search_point},
+                               search_radius);
+  }
+
   template <unsigned int D, template <typename, typename> class VectorType,
             template <typename> class SearchMethod>
   void helper_d_random(const int N, const double r, const int neighbour_n,
@@ -977,6 +992,9 @@ public:
                   << static_cast<const double_d &>(get<position>(particles)[i])
                   << " over radius " << r << std::endl;
         particles.print_data_structure();
+        helper_plot(std::integral_type<bool, D == 2>(),
+                    get<position>(particles)[i], std::string filename,
+                    particles, r);
 
         TS_ASSERT_EQUALS(int(get<neighbours_brute>(particles)[i]),
                          int(get<neighbours_aboria>(particles)[i]));
