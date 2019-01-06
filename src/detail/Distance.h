@@ -158,6 +158,25 @@ CUDA_HOST_DEVICE bool boxes_within_distance(const bbox<D> &a, const bbox<D> &b,
   return squaredNorm <= distance2;
 }
 
+template <int LNormNumber, unsigned int D>
+CUDA_HOST_DEVICE bool spheres_within_distance(const bbox<D> &a,
+                                              const bbox<D> &b,
+                                              const double distance2) {
+  using double_d = Vector<double, D>;
+  const double_d ca = 0.5 * (a.bmin + a.bmax);
+  const double ra = (a.bmin - ca).norm();
+  const double_d cb = 0.5 * (b.bmin + b.bmax);
+  const double rb = (b.bmin - cb).norm();
+  const double_d cab = ca - cb;
+  const double distab = (ca - cb).norm();
+  const double new_dist = distab - ra - rb;
+  if (new_dist < 0) {
+    return true;
+  }
+  const double_d dist = (cab / distab) * new_dist;
+  return detail::distance_helper<LNormNumber>::norm(dist) <= distance2;
+}
+
 } // namespace detail
 } // namespace Aboria
 

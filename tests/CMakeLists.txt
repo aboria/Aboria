@@ -189,6 +189,7 @@ set(NeighboursTest
     test_std_vector_CellList
     test_std_vector_CellListOrdered
     test_std_vector_Kdtree
+    test_std_vector_Balltree
     test_std_vector_KdtreeNanoflann
     test_std_vector_HyperOctree
     test_documentation

@@ -1,35 +1,35 @@
 /*
 
-Copyright (c) 2005-2016, University of Oxford.
-All rights reserved.
+   Copyright (c) 2005-2016, University of Oxford.
+   All rights reserved.
 
-University of Oxford means the Chancellor, Masters and Scholars of the
-University of Oxford, having an administrative office at Wellington
-Square, Oxford OX1 2JD, UK.
+   University of Oxford means the Chancellor, Masters and Scholars of the
+   University of Oxford, having an administrative office at Wellington
+   Square, Oxford OX1 2JD, UK.
 
-This file is part of Aboria.
+   This file is part of Aboria.
 
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions are met:
+   Redistribution and use in source and binary forms, with or without
+   modification, are permitted provided that the following conditions are met:
  * Redistributions of source code must retain the above copyright notice,
-   this list of conditions and the following disclaimer.
+ this list of conditions and the following disclaimer.
  * Redistributions in binary form must reproduce the above copyright notice,
-   this list of conditions and the following disclaimer in the documentation
-   and/or other materials provided with the distribution.
+ this list of conditions and the following disclaimer in the documentation
+ and/or other materials provided with the distribution.
  * Neither the name of the University of Oxford nor the names of its
-   contributors may be used to endorse or promote products derived from this
-   software without specific prior written permission.
+ contributors may be used to endorse or promote products derived from this
+ software without specific prior written permission.
 
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
-GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
-HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
-LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
-OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+ AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+ IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+ ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
+ LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+ CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE
+ GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+ HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT
+ LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT
+ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
 
@@ -37,12 +37,13 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define BALL_TREE_H_
 
 #include "Get.h"
+#include "Iterators/BalltreeIterators.h"
 #include "Log.h"
 #include "NeighbourSearchBase.h"
 #include "SpatialUtil.h"
 #include "Traits.h"
 #include "Vector.h"
-#include "miniball/main/Seb.h"
+#include "miniball/cpp/main/Seb.h"
 #include <boost/iterator/iterator_facade.hpp>
 #include <iostream>
 #include <set>
@@ -63,6 +64,9 @@ class Balltree : public neighbour_search_base<Balltree<Traits>, Traits,
   typedef typename Traits::vector_int vector_int;
   typedef typename Traits::vector_int2 vector_int2;
   typedef typename Traits::vector_bool2 vector_bool2;
+
+  typedef typename Traits::template vector_type<vint3>::type vector_int3;
+
   typedef typename Traits::vector_double vector_double;
   typedef typename Traits::vector_double_d vector_double_d;
   typedef typename Traits::iterator iterator;
@@ -151,17 +155,17 @@ private:
                  m_particle_indicies.begin());
 
     /*
-    for (size_t i = 0; i < dimension; ++i) {
-      std::cout << "dimension " << i << std::endl;
-      for (size_t j = i * num_points; j < (i + 1) * num_points; ++j) {
-        std::cout << "particle_indicies[" << j
-                  << "] = " << m_particle_indicies[j] << " ("
-                  << get<position>(
-                         this->m_particles_begin)[m_particle_indicies[j]]
-                  << ")" << std::endl;
-      }
-    }
-    */
+       for (size_t i = 0; i < dimension; ++i) {
+       std::cout << "dimension " << i << std::endl;
+       for (size_t j = i * num_points; j < (i + 1) * num_points; ++j) {
+       std::cout << "particle_indicies[" << j
+       << "] = " << m_particle_indicies[j] << " ("
+       << get<position>(
+       this->m_particles_begin)[m_particle_indicies[j]]
+       << ")" << std::endl;
+       }
+       }
+       */
 
     // build the tree
     LOG(3, "update_positions_impl(balltree): build tree");
@@ -190,11 +194,21 @@ private:
   BalltreeQuery<Traits> &get_query_impl() { return m_query; }
 
 private:
+  struct accessor {
+    const double_d *_p;
+    const int *_particle_indicies;
+    const int start;
+    const int end;
+
+    const double_d &operator[](const int i) const {
+      return _p[_particle_indicies[i + start]];
+    }
+
+    const size_t size() const { return end - start; }
+  };
   struct sort_by_split {
     double_d *_p;
     int *_particle_indicies;
-
-    double_d &operator()(const int i) { return _p[_particle_indicies[i]]; }
 
     void get_centre_and_radius(const int p_start, const int p_end,
                                double_d &centre, double &radius) const {
@@ -203,42 +217,49 @@ private:
         centre = _p[_particle_indicies[p_start]];
         radius = 0.0;
       } else {
-        Seb::Smallest_enclosing_ball<double, double_d, sort_by_split> miniball(
-            D, *this);
+        Seb::Smallest_enclosing_ball<double, double_d, accessor> miniball(
+            dimension, accessor{_p, _particle_indicies, p_start, p_end});
 
         auto ci = miniball.center_begin();
-        for (int i = 0; i < D; ++i, ++ci) {
+        for (int i = 0; i < dimension; ++i, ++ci) {
           centre[i] = *ci;
         }
         radius = miniball.radius();
 
         /*
-        const double_d &a = _p[_particle_indicies[p_start]];
-        const double_d &b = _p[_particle_indicies[p_end - 1]];
-        centre = 0.5 * (a + b);
-        radius = (a - centre).squaredNorm();
-        for (int i = p_start; i < p_end; ++i) {
-          const double_d &p = _p[_particle_indicies[i]];
-          const double dx2 = (p - centre).squaredNorm();
-          if (dx2 > radius) {
-            radius = dx2;
-          }
-        }
-        radius = std::sqrt(radius) + std::numeric_limits<double>::epsilon();
-      */
+           const double_d &a = _p[_particle_indicies[p_start]];
+           const double_d &b = _p[_particle_indicies[p_end - 1]];
+           centre = 0.5 * (a + b);
+           radius = (a - centre).squaredNorm();
+           for (int i = p_start; i < p_end; ++i) {
+           const double_d &p = _p[_particle_indicies[i]];
+           const double dx2 = (p - centre).squaredNorm();
+           if (dx2 > radius) {
+           radius = dx2;
+           }
+           }
+           radius = std::sqrt(radius) + std::numeric_limits<double>::epsilon();
+           */
       }
-      // check that every point is in bounds
+      // ensure that every point is in bounds
+      double radius2 = std::pow(radius, 2);
       for (int i = p_start; i < p_end; ++i) {
         const double_d &p = _p[_particle_indicies[i]];
-        if ((p - centre).squaredNorm() > std::pow(radius, 2)) {
-          std::cout << "EROROROROR " << p << " " << centre << " " << radius
-                    << " " << (p - centre).norm() << std::endl;
+        const double r2 = (p - centre).squaredNorm();
+        if (r2 > radius2) {
+          radius = std::sqrt(r2);
+          radius2 = std::pow(radius, 2);
+          /*
+          std::cout << "EROROROROR " << p << " " << centre << " "
+                    << radius - (p - centre).norm() << " "
+                    << std::numeric_limits<double>::epsilon() << std::endl;
+                    */
         }
       }
     }
 
-    // note: centre and radius define an exact circle enclosing the points (i.e.
-    // will pass through the points that are maximally separated)
+    // note: centre and radius define an exact circle enclosing the points
+    // (i.e. will pass through the points that are maximally separated)
     int partition(const int p_start, const int p_end, const double_d &centre,
                   const double &radius) const {
       // if only one particle do nothing
@@ -259,10 +280,11 @@ private:
           }
         }
       }
+      /*
       vint2 outer2;
-      const double r2 =
-          std::pow(radius - std::numeric_limits<double>::epsilon(), 2);
-      max_dx2 = 0;
+      // why does this need to be 0.7???
+      const double r2 = std::pow(0.7 * radius, 2);
+      double max_dx2_2 = 0;
       for (int i = p_start; i < p_end; ++i) {
         const double_d &pi = _p[_particle_indicies[i]];
         if ((pi - centre).squaredNorm() < r2)
@@ -270,37 +292,44 @@ private:
         for (int j = p_start; j < p_end; ++j) {
           const double_d &pj = _p[_particle_indicies[j]];
           const double dx2 = (pi - pj).squaredNorm();
-          if (dx2 > max_dx2) {
+          if (dx2 > max_dx2_2) {
             outer2[0] = i;
             outer2[1] = j;
-            max_dx2 = dx2;
+            max_dx2_2 = dx2;
           }
         }
       }
-      if ((outer != outer2).any()) {
-        std::cout << "EROREROREOREREORR: " << outer << " " << outer2
+      if ((outer != outer2).any() &&
+          (outer[0] != outer2[1] || outer[1] != outer2[0])) {
+        std::cout << "EROREROREOREREORR: " << outer << " " << outer2 << " "
+                  << max_dx2 << " " << max_dx2_2 << " " << radius << " "
+                  << (_p[_particle_indicies[outer[0]]] - centre).norm() - radius
+                  << " "
+                  << (_p[_particle_indicies[outer[1]]] - centre).norm() - radius
                   << std::endl;
       }
+      */
       // point projection of each particle onto line defined by AB:
       // dot(AP,AB) / dot(AB,AB)
       const double_d &a = _p[_particle_indicies[outer[0]]];
       const double_d &b = _p[_particle_indicies[outer[1]]];
       /*
-      const double_d ab = b - a;
-      const double dot_ab_ab = ab.squaredNorm();
-      for (int i = p_start; i < p_end; ++i) {
-        const double_d &pi = _p[_particle_indicies[i]];
-        _partition[i] = (pi - a).squaredNorm() <= (pi - b).squaredNorm();
-      }
-      */
+         const double_d ab = b - a;
+         const double dot_ab_ab = ab.squaredNorm();
+         for (int i = p_start; i < p_end; ++i) {
+         const double_d &pi = _p[_particle_indicies[i]];
+         _partition[i] = (pi - a).squaredNorm() <= (pi - b).squaredNorm();
+         }
+         */
 
       // partition particles by closest point
-      detail::partition(_particle_indicies + p_start,
-                        _particle_indicies + p_end, [&](const int i) {
-                          const double_d &pi = _p[i];
-                          return (pi - a).squaredNorm() <=
-                                 (pi - b).squaredNorm();
-                        });
+      auto split_it = detail::partition(
+          _particle_indicies + p_start, _particle_indicies + p_end,
+          [&](const int i) {
+            const double_d &pi = _p[i];
+            return (pi - a).squaredNorm() <= (pi - b).squaredNorm();
+          });
+      return split_it - _particle_indicies;
     }
   };
   void build_tree() {
@@ -311,11 +340,9 @@ private:
     vector_int parents_split(1);
 
     // do intial sorting by split direction
-    vector_double particle_projection(num_points);
     auto sort_function = sort_by_split{
         iterator_to_raw_pointer(get<position>(this->m_particles_begin)),
-        iterator_to_raw_pointer(m_particle_indicies.begin()),
-        iterator_to_raw_pointer(particle_projection.begin())};
+        iterator_to_raw_pointer(m_particle_indicies.begin())};
 
     // setup tree with a single node
     m_nodes_first_child.resize(1);
@@ -323,9 +350,9 @@ private:
     m_nodes_particles[0] = vint2(0, num_points);
     m_nodes_centre.resize(1);
     m_nodes_radius.resize(1);
-    sort_function.get_centre_and_radius(m_nodes_particles[0],
-                                        m_nodes_particles[1], m_nodes_centre[0],
-                                        m_nodes_radius[0]);
+    sort_function.get_centre_and_radius(m_nodes_particles[0][0],
+                                        m_nodes_particles[0][1],
+                                        m_nodes_centre[0], m_nodes_radius[0]);
 
     m_number_of_levels = 1;
 
@@ -333,7 +360,7 @@ private:
       m_nodes_first_child[0] = 1;
       parents_leaf[0][1] =
           sort_function.partition(parents_leaf[0][0], parents_leaf[0][2],
-                                  m_nodes_centre[0], m_nodes_radius);
+                                  m_nodes_centre[0], m_nodes_radius[0]);
     } else {
       m_nodes_first_child[0] = -1;
       parents_leaf.clear();
@@ -357,12 +384,12 @@ private:
           });
 
       /*
-      std::cout << "parents_child_is_non_leaf: ";
-      for (int i = 0; i < num_parents; ++i) {
-        std::cout << parents_child_is_non_leaf[i] << " ";
-      }
-      std::cout << std::endl;
-      */
+         std::cout << "parents_child_is_non_leaf: ";
+         for (int i = 0; i < num_parents; ++i) {
+         std::cout << parents_child_is_non_leaf[i] << " ";
+         }
+         std::cout << std::endl;
+         */
 
       // find indicies of first children for next iteration
       vector_int parents_first_child_index(num_parents);
@@ -372,12 +399,12 @@ private:
           [](const vbool2 &i) { return i[0] + i[1]; }, 0, detail::plus());
 
       /*
-      std::cout << "parents_first_child_index: ";
-      for (int i = 0; i < num_parents; ++i) {
-        std::cout << parents_first_child_index[i] << " ";
-      }
-      std::cout << std::endl;
-      */
+         std::cout << "parents_first_child_index: ";
+         for (int i = 0; i < num_parents; ++i) {
+         std::cout << parents_first_child_index[i] << " ";
+         }
+         std::cout << std::endl;
+         */
 
       // form children in main data structure
       const int num_children = 2 * parents_leaf.size();
@@ -404,8 +431,6 @@ private:
            _sort_function = sort_function](const int i) {
             const int parent_index = i / 2;
             const vint3 &leaf = _parents_leaf[parent_index];
-            const int nparent = leaf[2] - leaf[0];
-            const int nchild1 = leaf[1] - leaf[0];
             const vbool2 &is_non_leaf =
                 _parents_child_is_non_leaf[parent_index];
 
@@ -439,30 +464,28 @@ private:
               }
             }
 
-            // sort by new split if more one particle
-            const int split = _sort_function.sort(particles);
-
             double_d centre;
             double radius;
-            _sort_function.get_centre_and_radius(particles, centre, radius);
+            _sort_function.get_centre_and_radius(particles[0], particles[1],
+                                                 centre, radius);
 
             return Traits::make_tuple(first_child, particles, centre, radius);
           });
 
       /*
-      std::cout << "m_nodes_first_child: ";
-      for (int i = level_start_index; i < level_start_index + num_children;
-           ++i) {
-        std::cout << m_nodes_first_child[i] << " ";
-      }
-      std::cout << std::endl;
-      std::cout << "m_nodes_particles: ";
-      for (int i = level_start_index; i < level_start_index + num_children;
-           ++i) {
-        std::cout << m_nodes_particles[i] << " ";
-      }
-      std::cout << std::endl;
-      */
+         std::cout << "m_nodes_first_child: ";
+         for (int i = level_start_index; i < level_start_index + num_children;
+         ++i) {
+         std::cout << m_nodes_first_child[i] << " ";
+         }
+         std::cout << std::endl;
+         std::cout << "m_nodes_particles: ";
+         for (int i = level_start_index; i < level_start_index + num_children;
+         ++i) {
+         std::cout << m_nodes_particles[i] << " ";
+         }
+         std::cout << std::endl;
+         */
 
       // setup parents for next iteration (i.e. remove all leaf nodes)
 
@@ -470,7 +493,7 @@ private:
                                   parents_child_is_non_leaf.back()[0] +
                                   parents_child_is_non_leaf.back()[1];
 
-      vector_int2 parents_leaf2(new_num_parents);
+      vector_int3 parents_leaf2(new_num_parents);
 
 #if defined(__CUDACC__)
       typedef typename thrust::detail::iterator_category_to_system<
@@ -483,19 +506,27 @@ private:
       detail::for_each(
           count, count + num_parents,
           [_parents_leaf = iterator_to_raw_pointer(parents_leaf.begin()),
+           _nodes_centre = iterator_to_raw_pointer(m_nodes_centre.begin() +
+                                                   level_start_index),
+           _nodes_radius = iterator_to_raw_pointer(m_nodes_radius.begin() +
+                                                   level_start_index),
            _parents_leaf2 = iterator_to_raw_pointer(parents_leaf2.begin()),
            _parents_child_is_non_leaf =
                iterator_to_raw_pointer(parents_child_is_non_leaf.begin()),
-           _parents_first_child_index = iterator_to_raw_pointer(
-               parents_first_child_index.begin())](const int i) {
+           _parents_first_child_index =
+               iterator_to_raw_pointer(parents_first_child_index.begin()),
+           _sort_function = sort_function](const int i) {
             int child_index = _parents_first_child_index[i];
-            const vint2 &leaf = _parents_leaf[i];
-            const int nchild1 = (leaf[1] - leaf[0]) / 2;
-            if (_parents_child_is_non_leaf[i][0]) {
-              _parents_leaf2[child_index++] = vint2(leaf[0], leaf[0] + nchild1);
-            }
-            if (_parents_child_is_non_leaf[i][1]) {
-              _parents_leaf2[child_index] = vint2(leaf[0] + nchild1, leaf[1]);
+            const vint3 &leaf = _parents_leaf[i];
+            for (int c = 0; c < 2; ++c) {
+              if (_parents_child_is_non_leaf[i][c]) {
+                const double_d &centre = _nodes_centre[2 * i + c];
+                const double &radius = _nodes_radius[2 * i + c];
+                const int split = _sort_function.partition(leaf[c], leaf[c + 1],
+                                                           centre, radius);
+                _parents_leaf2[child_index++] =
+                    vint3(leaf[c], split, leaf[c + 1]);
+              }
             }
           });
 
@@ -611,14 +642,12 @@ template <typename Traits> struct BalltreeQuery {
   typedef typename Traits::unsigned_int_d unsigned_int_d;
   typedef typename Traits::position position;
 
-  // TODO: replace this with something that respects the sphere bounds
   template <int LNormNumber>
-  using query_iterator = tree_query_iterator<BalltreeQuery, LNormNumber>;
+  using query_iterator = balltree_query_iterator<BalltreeQuery, LNormNumber>;
 
-  // TODO: replace this with something that respects the sphere bounds
   template <int LNormNumber>
   using bounds_query_iterator =
-      tree_box_query_iterator<BalltreeQuery, LNormNumber>;
+      balltree_box_query_iterator<BalltreeQuery, LNormNumber>;
 
   typedef depth_first_iterator<BalltreeQuery> all_iterator;
   typedef BreadthFirstSearchIterator<BalltreeQuery> breadth_first_iterator;
