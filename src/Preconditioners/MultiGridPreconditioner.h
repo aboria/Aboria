@@ -78,7 +78,7 @@ public:
   Index rows() const { return m_rows; }
   Index cols() const { return m_cols; }
 
-  void set_max_buffer_n(size_t arg) { m_decom.set_max_buffer_n(arg); }
+  // void set_max_buffer_n(size_t arg) { m_decom.set_max_buffer_n(arg); }
 
   void set_mult_buffer(size_t arg) { m_decom.set_mult_buffer(arg); }
   void set_smoother_weighting(double arg) {

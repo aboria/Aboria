@@ -986,7 +986,8 @@ public:
                   std::log(2)) +
         1;
     const int n_levels = std::min(max_levels, potential_n_levels);
-    LOG(2, "SchwartzDecomposition: creating " << n_levels << " levels");
+    LOG(2, "SchwartzDecomposition: m_max_buffer_n = "
+               << m_max_buffer_n << ", creating " << n_levels << " levels");
 
     construct_levels(n_levels);
     construct_domain_particle_count(n_levels);
