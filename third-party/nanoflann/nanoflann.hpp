@@ -52,6 +52,7 @@
 #include <cmath>   // for abs()
 #include <cstdio>  // for fwrite()
 #include <cstdlib> // for abs()
+#include <iostream>
 #include <limits>
 #include <stdexcept>
 #include <vector>
@@ -837,6 +838,24 @@ private:
       const KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, IndexType>
           &) = default;
 
+  /** Deep copy constructor) */
+  KDTreeSingleIndexAdaptor(
+      const KDTreeSingleIndexAdaptor<Distance, DatasetAdaptor, DIM, IndexType>
+          &other,
+      const DatasetAdaptor &inputData)
+      : vind_begin(other.vind_begin), m_leaf_max_size(other.m_leaf_max_size),
+        dataset(inputData), index_params(other.index_params),
+        m_size(other.m_size), m_number_of_nodes(other.m_number_of_nodes),
+        m_number_of_levels(other.m_number_of_levels),
+        m_size_at_index_build(other.m_size_at_index_build), dim(other.dim),
+        root_node(NULL), root_bbox(other.root_bbox), distance(inputData)
+
+  {
+    // pool uses default initialisation
+    // create new tree as copy of other.root_node
+    root_node = copyTree(other.root_node);
+  };
+
 public:
   typedef typename Distance::ElementType ElementType;
   typedef typename Distance::DistanceType DistanceType;
@@ -863,13 +882,14 @@ protected:
                                 //!< index was built
   int dim;                      //!< Dimensionality of each data point
 
-  /*--------------------- Internal Data Structures --------------------------*/
+  /*--------------------- Internal Data Structures
+   * --------------------------*/
   struct Interval {
     ElementType low, high;
   };
 
-  /** Define "BoundingBox" as a fixed-size or variable-size container depending
-   * on "DIM" */
+  /** Define "BoundingBox" as a fixed-size or variable-size container
+   * depending on "DIM" */
   typedef
       typename array_or_vector_selector<DIM, Interval>::container_t BoundingBox;
 
@@ -879,8 +899,8 @@ protected:
       distance_vector_t;
 
   struct Node {
-    /** Union used because a node can be either a LEAF node or a non-leaf node,
-     * so both data fields are never used simultaneously */
+    /** Union used because a node can be either a LEAF node or a non-leaf
+     * node, so both data fields are never used simultaneously */
     union {
       struct leaf {
         IndexType left, right; //!< Indices of points in leaf node
@@ -919,8 +939,8 @@ public:
    * Refer to docs in README.md or online in
    * https://github.com/jlblancoc/nanoflann
    *
-   * The KD-Tree point dimension (the length of each point in the datase, e.g. 3
-   * for 3D points) is determined by means of:
+   * The KD-Tree point dimension (the length of each point in the datase, e.g.
+   * 3 for 3D points) is determined by means of:
    *  - The \a DIM template parameter if >0 (highest priority)
    *  - Otherwise, the \a dimensionality parameter of this constructor.
    *
@@ -973,6 +993,22 @@ public:
     // ensure root node is not counted in number of nodes
     m_number_of_nodes = std::numeric_limits<size_t>::max();
     root_node = divideTree(0, m_size, root_bbox, 0); // construct the tree
+  }
+
+  /**
+   * Updates the index if particles are deleted
+   */
+  void updateIndex(const IndexType update_start_index,
+                   typename std::vector<IndexType>::iterator new_indicies_begin,
+                   typename std::vector<IndexType>::iterator new_indicies_end) {
+    vind_begin = new_indicies_begin;
+    m_number_of_nodes = std::numeric_limits<size_t>::max();
+    m_number_of_levels = 0;
+
+    updateTree(root_node, 0, 0, update_start_index);
+
+    m_size = dataset.kdtree_get_point_count();
+    m_size_at_index_build = m_size;
   }
 
   /** Returns number of points in dataset  */
@@ -1035,8 +1071,8 @@ public:
   }
 
   /**
-   * Find set of nearest cells to vec[0:dim-1]. Their indices are stored inside
-   * the result object.
+   * Find set of nearest cells to vec[0:dim-1]. Their indices are stored
+   * inside the result object.
    *
    * Params:
    *     result = the result object in which the low-high indices of each
@@ -1087,16 +1123,16 @@ public:
   }
 
   /**
-   * Find all the neighbors to \a query_point[0:dim-1] within a maximum radius.
-   *  The output is given as a vector of pairs, of which the first element is a
-   * point index and the second the corresponding distance. Previous contents of
-   * \a IndicesDists are cleared.
+   * Find all the neighbors to \a query_point[0:dim-1] within a maximum
+   * radius. The output is given as a vector of pairs, of which the first
+   * element is a point index and the second the corresponding distance.
+   * Previous contents of \a IndicesDists are cleared.
    *
    *  If searchParams.sorted==true, the output list is sorted by ascending
    * distances.
    *
-   *  For a better performance, it is advisable to do a .reserve() on the vector
-   * if you have any wild guess about the number of expected matches.
+   *  For a better performance, it is advisable to do a .reserve() on the
+   * vector if you have any wild guess about the number of expected matches.
    *
    *  \sa knnSearch, findNeighbors, radiusSearchCustomCallback
    * \return The number of points within the given radius (i.e. indices.size()
@@ -1116,8 +1152,8 @@ public:
 
   /**
    * Just like radiusSearch() but with a custom callback class for each point
-   * found in the radius of the query. See the source of RadiusResultSet<> as a
-   * start point for your own classes. \sa radiusSearch
+   * found in the radius of the query. See the source of RadiusResultSet<> as
+   * a start point for your own classes. \sa radiusSearch
    */
   template <class SEARCH_CALLBACK>
   size_t radiusSearchCustomCallback(
@@ -1135,10 +1171,10 @@ private:
   /*
           void init_vind()
           {
-                  // Create a permutable array of indices to the input vectors.
-                  m_size = dataset.kdtree_get_point_count();
-                  if (vind.size()!=m_size) vind.resize(m_size);
-                  for (size_t i = 0; i < m_size; i++) vind[i] = i;
+                  // Create a permutable array of indices to the input
+     vectors. m_size = dataset.kdtree_get_point_count(); if
+     (vind.size()!=m_size) vind.resize(m_size); for (size_t i = 0; i < m_size;
+     i++) vind[i] = i;
           }
   */
 
@@ -1262,6 +1298,149 @@ private:
     return node;
   }
 
+  NodePtr copyTree(const NodePtr old_node) {
+
+    NodePtr node = pool.allocate<Node>(); // allocate memory
+    node->index = old_node->index;
+    const bool is_leaf = old_node->child1 == NULL && old_node->child2 == NULL;
+
+    // If too few exemplars remain, then make this a leaf node.
+    // Have to have at least one level
+    if (is_leaf) {
+      node->child1 = node->child2 = NULL; /* Mark as leaf node. */
+      node->node_type.lr.left = old_node->node_type.lr.left;
+      node->node_type.lr.right = old_node->node_type.lr.right;
+
+    } else {
+      node->node_type.sub.divfeat = old_node->node_type.sub.divfeat;
+
+      node->child1 = copyTree(old_node->child1);
+      node->child2 = copyTree(old_node->child2);
+
+      node->node_type.sub.divlow = old_node->node_type.sub.divlow;
+      node->node_type.sub.divhigh = old_node->node_type.sub.divhigh;
+    }
+
+    // INSERT
+    node->bbox = old_node->bbox;
+
+    return node;
+  }
+
+  IndexType updateTree(NodePtr node, const IndexType new_left, unsigned level,
+                       const IndexType update_start_index) {
+
+    node->index = m_number_of_nodes++;
+    const bool is_leaf = node->child1 == NULL && node->child2 == NULL;
+    IndexType new_right;
+
+    if (is_leaf) {
+      /*
+      for (int i = 0; i < level; ++i) {
+        std::cout << "\t";
+      }
+      std::cout << "leaf with particles (" << node->node_type.lr.left << ","
+                << node->node_type.lr.right
+                << ") update_start_index = " << update_start_index << std::endl;
+                */
+      node->node_type.lr.left = new_left;
+      if (node->node_type.lr.right > update_start_index) {
+        node->node_type.lr.right =
+            vind_begin[node->node_type.lr.right - update_start_index] +
+            update_start_index;
+      }
+      new_right = node->node_type.lr.right;
+      /*
+      for (int i = 0; i < level; ++i) {
+        std::cout << "\t";
+      }
+      std::cout << "\tnow with particles (" << node->node_type.lr.left << ","
+                << node->node_type.lr.right << ")" << std::endl;
+                */
+
+      // compute bounding-box of leaf points
+      /*
+                      for (int i=0; i<(DIM>0 ? DIM : dim); ++i) {
+                              bbox[i].low = dataset_get(vind_begin[left],i);
+                              bbox[i].high = dataset_get(vind_begin[left],i);
+                      }
+                      for (IndexType k=left+1; k<right; ++k) {
+                              for (int i=0; i<(DIM>0 ? DIM : dim); ++i) {
+                                      if
+         (bbox[i].low>dataset_get(vind_begin[k],i))
+         bbox[i].low=dataset_get(vind_begin[k],i); if
+         (bbox[i].high<dataset_get(vind_begin[k],i))
+         bbox[i].high=dataset_get(vind_begin[k],i);
+                              }
+                      }
+      */
+    } else {
+      /*
+      for (int i = 0; i < level; ++i) {
+        std::cout << "\t";
+      }
+      std::cout << "non-leaf" << std::endl;
+      */
+      size_t old_number_of_nodes = m_number_of_nodes;
+      IndexType idx =
+          updateTree(node->child1, new_left, level + 1, update_start_index);
+      new_right = updateTree(node->child2, idx, level + 1, update_start_index);
+
+      if ((new_right - new_left) <= static_cast<IndexType>(m_leaf_max_size)) {
+        // should be a leaf now
+        node->child1 = node->child2 = NULL;
+        node->node_type.lr.left = new_left;
+        node->node_type.lr.right = new_right;
+
+        // restore old number of nodes
+        m_number_of_nodes = old_number_of_nodes;
+
+        /*
+        for (int i = 0; i < level; ++i) {
+          std::cout << "\t";
+        }
+        std::cout << "now leaf with particles (" << new_left << "," << new_right
+                  << ")" << std::endl;
+                  */
+      } else {
+        if (idx - new_left == 0) {
+          // empty left child
+          node = node->child2;
+          m_number_of_levels = std::max(m_number_of_levels, level);
+          /*
+          for (int i = 0; i < level; ++i) {
+            std::cout << "\t";
+          }
+          std::cout << "deleted child1" << std::endl;
+          */
+        } else if (new_right - idx == 0) {
+          // empty right child
+          node = node->child1;
+          m_number_of_levels = std::max(m_number_of_levels, level);
+          /*
+          for (int i = 0; i < level; ++i) {
+            std::cout << "\t";
+          }
+          std::cout << "deleted child2" << std::endl;
+          */
+        } else {
+
+          // count the children in the number of level count
+          m_number_of_levels = std::max(m_number_of_levels, level + 1);
+          /*
+          for (int i = 0; i < level; ++i) {
+            std::cout << "\t";
+          }
+          std::cout << "still non-leaf, with particles (" << new_left << ","
+                    << new_right << ")" << std::endl;
+                    */
+        }
+      }
+    }
+
+    return new_right;
+  }
+
   void computeMinMax(IndexType *ind, IndexType count, int element,
                      ElementType &min_elem, ElementType &max_elem) {
     min_elem = dataset_get(ind[0], element);
@@ -1325,8 +1504,8 @@ private:
   }
 
   /**
-   *  Subdivide the list of points by a plane perpendicular on axe corresponding
-   *  to the 'cutfeat' dimension at 'cutval' position.
+   *  Subdivide the list of points by a plane perpendicular on axe
+   * corresponding to the 'cutfeat' dimension at 'cutval' position.
    *
    *  On return:
    *  dataset[ind[0..lim1-1]][cutfeat]<cutval
@@ -1495,9 +1674,9 @@ private:
 
 public:
   /**  Stores the index in a binary file.
-   *   IMPORTANT NOTE: The set of data points is NOT stored in the file, so when
-   * loading the index object it must be constructed associated to the same
-   * source of data points used while building it. See the example:
+   *   IMPORTANT NOTE: The set of data points is NOT stored in the file, so
+   * when loading the index object it must be constructed associated to the
+   * same source of data points used while building it. See the example:
    * examples/saveload_example.cpp \sa loadIndex  */
   void saveIndex(FILE *stream) {
     save_value(stream, m_size);
@@ -1509,9 +1688,9 @@ public:
   }
 
   /**  Loads a previous index from a binary file.
-   *   IMPORTANT NOTE: The set of data points is NOT stored in the file, so the
-   * index object must be constructed associated to the same source of data
-   * points used while building the index. See the example:
+   *   IMPORTANT NOTE: The set of data points is NOT stored in the file, so
+   * the index object must be constructed associated to the same source of
+   * data points used while building the index. See the example:
    * examples/saveload_example.cpp \sa loadIndex  */
   void loadIndex(FILE *stream) {
     load_value(stream, m_size);
@@ -1534,12 +1713,13 @@ public:
  * 	// Fill out "mat"...
  *
  * 	typedef KDTreeEigenMatrixAdaptor< Eigen::Matrix<num_t,Dynamic,Dynamic> >
- * my_kd_tree_t; const int max_leaf = 10; my_kd_tree_t   mat_index(dimdim, mat,
- * max_leaf ); mat_index.index->buildIndex(); mat_index.index->... \endcode
+ * my_kd_tree_t; const int max_leaf = 10; my_kd_tree_t   mat_index(dimdim,
+ * mat, max_leaf ); mat_index.index->buildIndex(); mat_index.index->...
+ * \endcode
  *
  *  \tparam DIM If set to >0, it specifies a compile-time fixed dimensionality
- * for the points in the data set, allowing more compiler optimizations. \tparam
- * Distance The distance metric to use: nanoflann::metric_L1,
+ * for the points in the data set, allowing more compiler optimizations.
+ * \tparam Distance The distance metric to use: nanoflann::metric_L1,
  * nanoflann::metric_L2, nanoflann::metric_L2_Simple, etc.
  */
 template <class MatrixType, int DIM = -1, class Distance = nanoflann::metric_L2>
@@ -1563,8 +1743,8 @@ struct KDTreeEigenMatrixAdaptor {
       throw std::runtime_error(
           "Error: 'dimensionality' must match column count in data matrix");
     if (DIM > 0 && static_cast<int>(dims) != DIM)
-      throw std::runtime_error(
-          "Data set dimensionality does not match the 'DIM' template argument");
+      throw std::runtime_error("Data set dimensionality does not match the "
+                               "'DIM' template argument");
     index =
         new index_t(dims, *this /* adaptor */,
                     nanoflann::KDTreeSingleIndexAdaptorParams(leaf_max_size));
@@ -1572,7 +1752,8 @@ struct KDTreeEigenMatrixAdaptor {
   }
 
 private:
-  /** Hidden copy constructor, to disallow copying this class (Not implemented)
+  /** Hidden copy constructor, to disallow copying this class (Not
+   * implemented)
    */
   KDTreeEigenMatrixAdaptor(const self_t &);
 
@@ -1623,9 +1804,9 @@ public:
 
   // Optional bounding-box computation: return false to default to a standard
   // bbox computation loop.
-  //   Return true if the BBOX was already computed by the class and returned in
-  //   "bb" so it can be avoided to redo it again. Look at bb.size() to find out
-  //   the expected dimensionality (e.g. 2 or 3 for point clouds)
+  //   Return true if the BBOX was already computed by the class and returned
+  //   in "bb" so it can be avoided to redo it again. Look at bb.size() to
+  //   find out the expected dimensionality (e.g. 2 or 3 for point clouds)
   template <class BBOX> bool kdtree_get_bbox(BBOX & /*bb*/) const {
     return false;
   }

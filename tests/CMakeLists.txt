@@ -182,6 +182,7 @@ set(SpatialDataStructuresTest
     test_subsample_query
     test_dummy_root
     test_visualise_data_structures
+    test_copy_data_structure
     )
 
 set(NeighboursTestFile neighbours.h)

@@ -227,11 +227,11 @@ public:
 
   /// copy-constructor. performs deep copying of all particles from \p other
   /// to \a *this
-  Particles(const particles_type &other) = default;
-  /*
-  : data(other.data), search(other.search), next_id(other.next_id),
-    searchable(other.searchable), seed(other.seed) {}
-    */
+  Particles(const particles_type &other)
+      : data(other.data), next_id(other.next_id), searchable(other.searchable),
+        seed(other.seed), search(other.search) {
+    search.update_iterators(begin(), end());
+  }
 
   /// range-based copy-constructor. performs deep copying of all
   /// particles from \p first to \p last
@@ -368,11 +368,7 @@ public:
   iterator erase(iterator i, const bool update_neighbour_search = true) {
     const size_t i_position = i - begin();
     *get<alive>(i) = false;
-    if (search.ordered()) {
-      update_positions(begin(), end());
-    } else {
-      update_positions(i, end());
-    }
+    update_alive(i, end());
     return begin() + i_position;
   }
 
@@ -385,11 +381,7 @@ public:
                  const bool update_neighbour_search = true) {
     const size_t index_end = last - begin();
     detail::fill(get<alive>(first), get<alive>(last), false);
-    if (search.ordered()) {
-      update_positions(begin(), end());
-    } else {
-      update_positions(first, end());
-    }
+    update_alive(first, end());
     return begin() + index_end;
   }
 
@@ -545,6 +537,15 @@ public:
   /// that have their `alive` flags set to false.
   ///
   void update_positions() { update_positions(begin(), end()); }
+
+  void update_alive(iterator update_begin, iterator update_end) {
+    if (search.update_alive(begin(), end(), update_begin, update_end)) {
+      reorder(update_begin, update_end, search.get_alive_indicies().begin(),
+              search.get_alive_indicies().end());
+    }
+  }
+
+  void update_alive() { update_alive(begin(), end()); }
 
   // Need to be mark as device to enable get functions being device/host
   CUDA_HOST_DEVICE

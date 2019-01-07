@@ -301,6 +301,107 @@ public:
     std::cout << std::endl;
   }
 
+  int update_alive_indicies(size_t update_n, size_t update_start_index,
+                            size_t update_end_index) {
+    // m_alive_sum will hold a cummulative sum of the living
+    // num_dead holds total number of the dead
+    // num_alive_new holds total number of the living that are new particles
+    int num_dead = 0;
+    m_alive_sum.resize(update_n + 1);
+    detail::exclusive_scan(get<alive>(m_particles_begin) + update_start_index,
+                           get<alive>(m_particles_begin) + update_end_index,
+                           m_alive_sum.begin(), 0);
+    m_alive_sum.back() = *(m_alive_sum.end() - 2) +
+                         static_cast<int>(*(get<alive>(m_particles_begin) +
+                                            update_end_index - 1));
+    num_dead = update_n - m_alive_sum.back();
+    /*
+    if (update_n > new_n) {
+        const int num_alive_old = m_alive_sum[update_n-new_n+1];
+        num_alive_new = num_alive-num_alive_old;
+    } else {
+        num_alive_new = num_alive;
+    }
+    */
+
+    CHECK(update_end_index == (m_particles_end - m_particles_begin) ||
+              num_dead == 0,
+          "cannot delete dead points if not updating the end of the vector");
+
+    // m_alive_indices holds particle set indicies that are alive
+    m_alive_indices.resize(update_n - num_dead);
+
+#if defined(__CUDACC__)
+    typedef typename thrust::detail::iterator_category_to_system<
+        typename vector_int::iterator::iterator_category>::type system;
+    thrust::counting_iterator<unsigned int, system> count_start(
+        update_start_index);
+    thrust::counting_iterator<unsigned int, system> count_end(update_end_index);
+#else
+    auto count_start = Traits::make_counting_iterator(update_start_index);
+    auto count_end = Traits::make_counting_iterator(update_end_index);
+#endif
+
+    // scatter alive indicies to m_alive_indicies
+    detail::scatter_if(count_start, count_end, // items to scatter
+                       m_alive_sum.begin(),    // map
+                       get<alive>(m_particles_begin) +
+                           update_start_index, // scattered if true
+                       m_alive_indices.begin());
+
+    return num_dead;
+  }
+
+  void update_id_map(int new_n, int num_dead, size_t update_start_index,
+                     size_t update_end_index, size_t dead_and_alive_n) {
+    LOG(2, "neighbour_search_base: update_id_map:");
+    // if no new particles, no dead, no reorder, or no init than can assume
+    // that previous id map is correct
+    if (cast().ordered() || new_n > 0 || num_dead > 0 ||
+        m_id_map_key.size() == 0) {
+      m_id_map_key.resize(dead_and_alive_n - num_dead);
+      m_id_map_value.resize(dead_and_alive_n - num_dead);
+
+      // before update range
+      if (update_start_index > 0) {
+        detail::sequence(m_id_map_value.begin(),
+                         m_id_map_value.begin() + update_start_index);
+        detail::copy(get<id>(m_particles_begin),
+                     get<id>(m_particles_begin) + update_start_index,
+                     m_id_map_key.begin());
+      }
+
+      // after update range
+      ASSERT(update_end_index == dead_and_alive_n,
+             "if not updateing last particle then should not get here");
+
+      // update range
+      /*
+      detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
+                   m_id_map_value.begin()+update_start_index,
+                   [&](const int index) {
+                      const int index_into_update = index -
+      update_start_index; const int num_dead_before_index = index_into_update
+      - m_alive_sum[index_into_update]; return index - num_dead_before_index;
+                   });
+                   */
+      detail::sequence(m_id_map_value.begin() + update_start_index,
+                       m_id_map_value.end(), update_start_index);
+      auto raw_id = iterator_to_raw_pointer(get<id>(m_particles_begin));
+      detail::transform(
+          m_alive_indices.begin(), m_alive_indices.end(),
+          m_id_map_key.begin() + update_start_index,
+          [=] CUDA_HOST_DEVICE(const int index) { return raw_id[index]; });
+      detail::sort_by_key(m_id_map_key.begin(), m_id_map_key.end(),
+                          m_id_map_value.begin());
+#ifndef __CUDA_ARCH__
+      if (4 <= ABORIA_LOG_LEVEL) {
+        print_id_map();
+      }
+#endif
+    }
+  }
+
   ///
   /// @brief This is the base function for updates to any of the spatial
   ///        data structures. It handles the domain enforcement, the deletion
@@ -308,10 +409,10 @@ public:
   ///        the `update_positions_impl` of the Derived class.
   ///
   /// One of the key responsibilities of this function is to set
-  /// #m_alive_indices, which is a vector of indices that are still alive after
-  /// taking into account the `alive` flags and the position of the particles
-  /// within the domain. The Particles::update_positions() function uses this
-  /// vector to delete and reorder the particles in the container
+  /// #m_alive_indices, which is a vector of indices that are still alive
+  /// after taking into account the `alive` flags and the position of the
+  /// particles within the domain. The Particles::update_positions() function
+  /// uses this vector to delete and reorder the particles in the container
   ///
   /// @param begin The `begin` iterator of the particle set
   /// @param end The `end` iterator of the particle set
@@ -319,12 +420,13 @@ public:
   ///        be updated
   /// @param update_end The `end` iterator of the range of particles to be
   /// updated.
-  ///                   Note that if any particles are to be deleted, this must
-  ///                   be the same as @p end
+  ///                   Note that if any particles are to be deleted, this
+  ///                   must be the same as @p end
   /// @param delete_dead_particles If `true` (the default), the function will
   /// ensure that
-  ///        the particles with an `false` `alive` variable are removed from the
-  ///        particle set. Note that this function does not actually do this
+  ///        the particles with an `false` `alive` variable are removed from
+  ///        the particle set. Note that this function does not actually do
+  ///        this
   /// @return true if the particles need to be reordered/deleted
   /// @return false if the particles don't need to be reordered/deleted
   ///
@@ -368,102 +470,68 @@ public:
     // m_alive_sum will hold a cummulative sum of the living
     // num_dead holds total number of the dead
     // num_alive_new holds total number of the living that are new particles
-    int num_dead = 0;
-    m_alive_sum.resize(update_n);
-    if (delete_dead_particles) {
-      detail::exclusive_scan(get<alive>(update_begin), get<alive>(update_end),
-                             m_alive_sum.begin(), 0);
-      const int num_alive =
-          m_alive_sum.back() + static_cast<int>(*get<alive>(update_end - 1));
-      num_dead = update_n - num_alive;
-      /*
-      if (update_n > new_n) {
-          const int num_alive_old = m_alive_sum[update_n-new_n+1];
-          num_alive_new = num_alive-num_alive_old;
-      } else {
-          num_alive_new = num_alive;
-      }
-      */
-    } else {
-      detail::sequence(m_alive_sum.begin(), m_alive_sum.end());
-    }
-
-    CHECK(update_end == end || num_dead == 0,
-          "cannot delete dead points if not updating the end of the vector");
+    int num_dead =
+        update_alive_indicies(update_n, update_start_index, update_end_index);
 
     LOG(2, "neighbour_search_base: update_positions: found "
                << num_dead << " dead points, and " << new_n << " new points");
-
-    // m_alive_indices holds particle set indicies that are alive
-    m_alive_indices.resize(update_n - num_dead);
-
-#if defined(__CUDACC__)
-    typedef typename thrust::detail::iterator_category_to_system<
-        typename vector_int::iterator::iterator_category>::type system;
-    thrust::counting_iterator<unsigned int, system> count_start(
-        update_start_index);
-    thrust::counting_iterator<unsigned int, system> count_end(update_end_index);
-#else
-    auto count_start = Traits::make_counting_iterator(update_start_index);
-    auto count_end = Traits::make_counting_iterator(update_end_index);
-#endif
-
-    // scatter alive indicies to m_alive_indicies
-    detail::scatter_if(count_start, count_end,   // items to scatter
-                       m_alive_sum.begin(),      // map
-                       get<alive>(update_begin), // scattered if true
-                       m_alive_indices.begin());
 
     if (m_domain_has_been_set) {
       LOG(2, "neighbour_search_base: update_positions_impl:");
       cast().update_positions_impl(update_begin, update_end, new_n);
     }
     if (m_id_map) {
-      LOG(2, "neighbour_search_base: update_id_map:");
-      // if no new particles, no dead, no reorder, or no init than can assume
-      // that previous id map is correct
-      if (cast().ordered() || new_n > 0 || num_dead > 0 ||
-          m_id_map_key.size() == 0) {
-        m_id_map_key.resize(dead_and_alive_n - num_dead);
-        m_id_map_value.resize(dead_and_alive_n - num_dead);
+      update_id_map(new_n, num_dead, update_start_index, update_end_index,
+                    dead_and_alive_n);
+    }
 
-        // before update range
-        if (update_start_index > 0) {
-          detail::sequence(m_id_map_value.begin(),
-                           m_id_map_value.begin() + update_start_index);
-          detail::copy(get<id>(begin), get<id>(begin) + update_start_index,
-                       m_id_map_key.begin());
-        }
+    query_type &query = cast().get_query_impl();
+    query.m_id_map_key = iterator_to_raw_pointer(m_id_map_key.begin());
+    query.m_id_map_value = iterator_to_raw_pointer(m_id_map_value.begin());
+    query.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
+    query.m_particles_end = iterator_to_raw_pointer(m_particles_end);
 
-        // after update range
-        ASSERT(update_end_index == dead_and_alive_n,
-               "if not updateing last particle then should not get here");
+    return cast().ordered() || num_dead > 0;
+  }
 
-        // update range
-        /*
-        detail::transform(m_alive_indices.begin(),m_alive_indices.end(),
-                     m_id_map_value.begin()+update_start_index,
-                     [&](const int index) {
-                        const int index_into_update = index -
-        update_start_index; const int num_dead_before_index = index_into_update
-        - m_alive_sum[index_into_update]; return index - num_dead_before_index;
-                     });
-                     */
-        detail::sequence(m_id_map_value.begin() + update_start_index,
-                         m_id_map_value.end(), update_start_index);
-        auto raw_id = iterator_to_raw_pointer(get<id>(begin));
-        detail::transform(
-            m_alive_indices.begin(), m_alive_indices.end(),
-            m_id_map_key.begin() + update_start_index,
-            [=] CUDA_HOST_DEVICE(const int index) { return raw_id[index]; });
-        detail::sort_by_key(m_id_map_key.begin(), m_id_map_key.end(),
-                            m_id_map_value.begin());
-#ifndef __CUDA_ARCH__
-        if (4 <= ABORIA_LOG_LEVEL) {
-          print_id_map();
-        }
-#endif
-      }
+  bool update_alive(iterator begin, iterator end, iterator update_begin,
+                    iterator update_end) {
+
+    LOG(2, "neighbour_search_base: update_alive: updating "
+               << update_end - update_begin << " points");
+
+    const size_t previous_n = m_particles_end - m_particles_begin;
+    m_particles_begin = begin;
+    m_particles_end = end;
+    const size_t dead_and_alive_n = end - begin;
+
+    const int new_n = dead_and_alive_n - previous_n;
+
+    // make sure no new particles
+    CHECK(new_n == 0, "ERROR: new particles detected");
+
+    const size_t update_start_index = update_begin - begin;
+    const size_t update_end_index = update_end - begin;
+    const size_t update_n = update_end_index - update_start_index;
+    if (update_n == 0)
+      return false;
+
+    // m_alive_sum will hold a cummulative sum of the living
+    // num_dead holds total number of the dead
+    // num_alive_new holds total number of the living that are new particles
+    int num_dead =
+        update_alive_indicies(update_n, update_start_index, update_end_index);
+
+    LOG(2, "neighbour_search_base: update_alive: found " << num_dead
+                                                         << " dead points");
+
+    if (m_domain_has_been_set) {
+      LOG(2, "neighbour_search_base: update_alive_impl:");
+      cast().update_alive_impl(update_begin, update_end, new_n);
+    }
+    if (m_id_map) {
+      update_id_map(new_n, num_dead, update_start_index, update_end_index,
+                    dead_and_alive_n);
     }
 
     query_type &query = cast().get_query_impl();
@@ -596,7 +664,7 @@ protected:
   ///
   ///
   double m_n_particles_in_leaf;
-};
+}; // namespace Aboria
 
 ///
 /// @brief a lightweight query object that should be used for read-only access

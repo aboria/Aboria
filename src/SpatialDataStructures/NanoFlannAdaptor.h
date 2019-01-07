@@ -109,6 +109,19 @@ public:
     // init an empty tree
     std::vector<int> empty;
     m_kd_tree.buildIndex(empty.begin());
+
+    update_query();
+  }
+
+  //~KdtreeNanoflann() {}
+  KdtreeNanoflann(const KdtreeNanoflann &other)
+      : base_type(other), m_kd_tree(other.m_kd_tree, *this),
+        m_query(other.m_query) {
+
+    update_query();
+  }
+
+  void update_query() {
     this->m_query.m_root = m_kd_tree.get_root_node();
     this->m_query.m_dummy_root.child1 = this->m_query.m_root;
     this->m_query.m_dummy_root.child2 = this->m_query.m_root;
@@ -120,8 +133,6 @@ public:
     this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
     this->m_query.m_number_of_levels = m_kd_tree.size_levels();
   }
-
-  //~KdtreeNanoflann() {}
 
   static constexpr bool ordered() { return true; }
 
@@ -238,16 +249,20 @@ private:
 
     // std::swap(this->m_order,m_kd_tree.get_vind());
 
-    this->m_query.m_root = m_kd_tree.get_root_node();
-    this->m_query.m_dummy_root.child1 = this->m_query.m_root;
-    this->m_query.m_dummy_root.child2 = this->m_query.m_root;
-    this->m_query.m_dummy_root.node_type.sub.divfeat = 0;
-    this->m_query.m_dummy_root.node_type.sub.divlow =
-        this->m_query.m_bounds.bmin[0];
-    this->m_query.m_dummy_root.node_type.sub.divhigh =
-        this->m_query.m_bounds.bmin[0];
-    this->m_query.m_number_of_buckets = m_kd_tree.size_nodes();
-    this->m_query.m_number_of_levels = m_kd_tree.size_levels();
+    update_query();
+
+    print_tree(m_kd_tree.get_root_node());
+  }
+
+  void update_alive_impl(iterator update_begin, iterator update_end,
+                         const int new_n, const bool call_set_domain = true) {
+
+    m_kd_tree.updateIndex(update_begin - this->m_particles_begin,
+                          this->m_alive_sum.begin(), this->m_alive_sum.end());
+
+    // std::swap(this->m_order,m_kd_tree.get_vind());
+
+    update_query();
 
     print_tree(m_kd_tree.get_root_node());
   }

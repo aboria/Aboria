@@ -88,6 +88,27 @@ public:
       : base_type(),
         m_size_calculated_with_n(std::numeric_limits<size_t>::max()),
         m_serial(detail::concurrent_processes<Traits>() == 1) {}
+  ///
+  /// @brief copy an existing structure
+  ///
+  CellList(const CellList &other)
+      : base_type(other), m_buckets(other.m_buckets),
+        m_linked_list(other.m_linked_list),
+        m_linked_list_reverse(other.m_linked_list_reverse),
+        m_dirty_buckets(other.m_dirty_buckets),
+        m_deleted_buckets(other.m_deleted_buckets),
+        m_copied_buckets(other.m_copied_buckets), m_query(other.m_query),
+        m_use_dirty_cells(other.m_use_dirty_cells),
+        m_size_calculated_with_n(other.m_size_calculated_with_n),
+        m_serial(other.m_serial), m_size(other.m_size),
+        m_bucket_side_length(other.m_bucket_side_length),
+        m_point_to_bucket_index(other.m_point_to_bucket_index) {
+
+    // update query pointers
+    this->m_query.m_buckets_begin = iterator_to_raw_pointer(m_buckets.begin());
+    this->m_query.m_linked_list_begin =
+        iterator_to_raw_pointer(this->m_linked_list.begin());
+  }
 
   ///
   /// @brief This structure is not ordered. That is, the order of the particles

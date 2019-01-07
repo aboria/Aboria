@@ -744,6 +744,67 @@ public:
     TS_ASSERT_EQUALS(root, false);
   }
 
+  template <template <typename, typename> class Vector,
+            template <typename> class SearchMethod>
+  void helper_copy_data_structure() {
+    using Particles_t = Particles<std::tuple<>, 2, Vector, SearchMethod>;
+    using position = typename Particles_t::position;
+
+    const int N = 100;
+    const int nbucket = 5;
+    Particles_t particles(N);
+    std::normal_distribution<double> normal(0.5, 0.2);
+    for (size_t i = 0; i < particles.size(); ++i) {
+      auto &gen = get<generator>(particles)[i];
+      get<position>(particles)[i] = vdouble2(normal(gen), normal(gen));
+    }
+    particles.init_neighbour_search(vdouble2::Constant(0),
+                                    vdouble2::Constant(1),
+                                    vdouble2::Constant(false), nbucket);
+
+    // copy the particles
+    Particles_t particles2 = particles;
+    auto i = particles.get_query().get_subtree();
+    auto j = particles2.get_query().get_subtree();
+
+    // should have same data structure
+    for (; i != false; ++i, ++j) {
+      auto ci = i.get_child_iterator();
+      auto cj = j.get_child_iterator();
+
+      const auto &i_bounds = particles.get_query().get_bounds(ci);
+      const auto &j_bounds = particles2.get_query().get_bounds(cj);
+      for (int d = 0; d < 2; ++d) {
+        TS_ASSERT_EQUALS(i_bounds.bmin[d], j_bounds.bmin[d]);
+        TS_ASSERT_EQUALS(i_bounds.bmax[d], j_bounds.bmax[d]);
+      }
+      const bool i_is_leaf = particles.get_query().is_leaf_node(*ci);
+      const bool j_is_leaf = particles2.get_query().is_leaf_node(*cj);
+      TS_ASSERT_EQUALS(i_is_leaf, j_is_leaf);
+
+      if (i_is_leaf) {
+        auto pi = particles.get_query().get_bucket_particles(*ci);
+        auto pj = particles2.get_query().get_bucket_particles(*cj);
+        for (; pi != false; ++pi, ++pj) {
+          TS_ASSERT_EQUALS(get<id>(*pi), get<id>(*pj));
+          for (int d = 0; d < 2; ++d) {
+            TS_ASSERT_EQUALS(get<position>(*pi)[d], get<position>(*pj)[d]);
+          }
+          TS_ASSERT_DIFFERS(&(get<position>(*pi)[0]), &(get<position>(*pj)[0]));
+          TS_ASSERT_DIFFERS(&(get<id>(*pi)), &(get<id>(*pj)));
+        }
+      }
+    }
+
+    // check that j is also finished
+    TS_ASSERT_EQUALS(j != false, i != false);
+  }
+
+  void test_copy_data_structure() {
+    helper_copy_data_structure<std::vector, CellList>();
+    helper_copy_data_structure<std::vector, KdtreeNanoflann>();
+  }
+
   void test_visualise_data_structures() {
     draw_data_structure<CellList>();
     draw_data_structure<CellListOrdered>();
