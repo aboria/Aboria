@@ -85,6 +85,22 @@ public:
     this->m_query.m_number_of_levels = m_number_of_levels;
   }
 
+  Kdtree(const Kdtree &other)
+      : base_type(other), m_nodes_child(other.m_nodes_child),
+        m_nodes_split_dim(other.m_nodes_split_dim),
+        m_nodes_split_pos(other.m_nodes_split_pos),
+        m_particle_indicies(other.m_particle_indicies),
+        m_particle_node(other.m_particle_node),
+        m_number_of_levels(other.m_number_of_levels), m_query(other.m_query) {
+
+    this->m_query.m_nodes_child =
+        iterator_to_raw_pointer(m_nodes_child.begin());
+    this->m_query.m_nodes_split_dim =
+        iterator_to_raw_pointer(m_nodes_split_dim.begin());
+    this->m_query.m_nodes_split_pos =
+        iterator_to_raw_pointer(m_nodes_split_pos.begin());
+  }
+
   //~Kdtree() {}
 
   static constexpr bool ordered() { return true; }
