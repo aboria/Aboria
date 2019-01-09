@@ -815,6 +815,7 @@ public:
     draw_data_structure<Kdtree>();
     draw_data_structure<KdtreeNanoflann>();
     draw_data_structure<HyperOctree>();
+    draw_data_structure<Balltree>();
   }
 
   void test_breadth_first_iterator() {
