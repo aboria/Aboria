@@ -92,6 +92,23 @@ public:
     this->m_query.m_number_of_levels = m_number_of_levels;
   }
 
+  Balltree(const Balltree &other)
+      : base_type(other), m_nodes_first_child(other.m_nodes_first_child),
+        m_nodes_particles(other.m_nodes_particles),
+        m_nodes_centre(other.m_nodes_centre),
+        m_nodes_radius(other.m_nodes_radius),
+        m_particle_indicies(other.m_particle_indicies),
+        m_number_of_levels(other.m_number_of_levels), m_query(other.m_query) {
+
+    this->m_query.m_nodes_first_child =
+        iterator_to_raw_pointer(m_nodes_first_child.begin());
+    this->m_query.m_nodes_centre =
+        iterator_to_raw_pointer(m_nodes_centre.begin());
+    this->m_query.m_nodes_radius =
+        iterator_to_raw_pointer(m_nodes_radius.begin());
+    this->m_query.m_nodes_particles =
+        iterator_to_raw_pointer(m_nodes_particles.begin());
+  }
   //~Balltree() {}
 
   static constexpr bool ordered() { return true; }

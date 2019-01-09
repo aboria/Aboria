@@ -805,6 +805,8 @@ public:
     helper_copy_data_structure<std::vector, CellListOrdered>();
     helper_copy_data_structure<std::vector, KdtreeNanoflann>();
     helper_copy_data_structure<std::vector, Kdtree>();
+    helper_copy_data_structure<std::vector, HyperOctree>();
+    helper_copy_data_structure<std::vector, Balltree>();
   }
 
   void test_visualise_data_structures() {

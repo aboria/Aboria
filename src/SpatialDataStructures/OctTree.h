@@ -142,6 +142,19 @@ public:
     this->m_query.m_number_of_nodes = m_nodes.size();
   }
 
+  HyperOctree(const HyperOctree &other)
+      : base_type(other), max_points(other.max_points),
+        m_max_level(other.m_max_level),
+        m_number_of_levels(other.m_number_of_levels), m_tags(other.m_tags),
+        m_nodes(other.m_nodes), m_leaves(other.m_leaves),
+        m_query(other.m_query) {
+
+    this->m_query.m_nodes_begin =
+        iterator_to_raw_pointer(this->m_nodes.begin());
+    this->m_query.m_leaves_begin =
+        iterator_to_raw_pointer(this->m_leaves.begin());
+  }
+
   static constexpr bool ordered() { return true; }
 
   void build_tree();
