@@ -290,10 +290,10 @@ private:
   ///
   void update_positions_impl(iterator update_begin, iterator update_end,
                              const int num_new_particles_added,
-                             const bool call_set_domain = true) {
+                             const bool check_reset_domain = true) {
     // if call_set_domain == false then set_domain_impl() has already
     // been called, and returned true
-    const bool reset_domain = call_set_domain ? set_domain_impl() : true;
+    const bool reset_domain = check_reset_domain ? set_domain_impl() : false;
     const size_t n_update = update_end - update_begin;
     const size_t n_alive = this->m_alive_indices.size();
     const size_t n_dead_in_update = n_update - n_alive;
@@ -420,6 +420,12 @@ private:
 
     this->m_query.m_linked_list_begin =
         iterator_to_raw_pointer(this->m_linked_list.begin());
+  }
+
+  void update_alive_impl(iterator update_begin, iterator update_end,
+                         const bool call_set_domain = true) {
+    LOG(2, "BucketSearchSerial: update_alive, calling update_positons...");
+    update_positions_impl(update_begin, update_end, 0, false);
   }
 
   ///

@@ -255,7 +255,7 @@ private:
   }
 
   void update_alive_impl(iterator update_begin, iterator update_end,
-                         const int new_n, const bool call_set_domain = true) {
+                         const bool call_set_domain = true) {
 
     m_kd_tree.updateIndex(update_begin - this->m_particles_begin,
                           this->m_alive_sum.begin(), this->m_alive_sum.end());

@@ -106,6 +106,19 @@ public:
       : base_type(),
         m_size_calculated_with_n(std::numeric_limits<size_t>::max()) {}
 
+  CellListOrdered(const CellListOrdered &other)
+      : base_type(other), m_bucket_begin(other.m_bucket_begin),
+        m_bucket_end(other.m_bucket_end),
+        m_bucket_indices(other.m_bucket_indices), m_query(other.m_query),
+        m_bucket_side_length(other.m_bucket_side_length),
+        m_size_calculated_with_n(other.m_size_calculated_with_n),
+        m_point_to_bucket_index(other.m_point_to_bucket_index) {
+
+    this->m_query.m_bucket_begin =
+        iterator_to_raw_pointer(m_bucket_begin.begin());
+    this->m_query.m_bucket_end = iterator_to_raw_pointer(m_bucket_end.begin());
+  }
+
   static constexpr bool ordered() { return true; }
 
   struct delete_points_lambda;
@@ -259,6 +272,56 @@ private:
 #endif
   }
 
+  void update_alive_impl(iterator update_begin, iterator update_end) {
+
+    const size_t n = this->m_alive_indices.size();
+    m_bucket_indices.resize(n);
+    if (n > 0) {
+      // transform the points to their bucket indices
+
+      // m_alive_indicies contains all alive indicies
+      // gather all current bucket_indices (unchanged) by m_alive_indices
+      const int update_begin_index = update_begin - this->m_particles_begin;
+      m_tmp.resize(n);
+      detail::gather(this->m_alive_indices.begin(), this->m_alive_indices.end(),
+                     m_bucket_indices.begin() + update_begin_index,
+                     m_tmp.begin());
+      detail::copy(m_tmp.begin(), m_tmp.end(),
+                   m_bucket_indices.begin() + update_begin_index);
+      m_bucket_indices.resize(update_begin_index + n);
+    }
+
+    // find the beginning of each bucket's list of points
+    auto search_begin = Traits::make_counting_iterator(0);
+    detail::lower_bound(m_bucket_indices.begin(), m_bucket_indices.end(),
+                        search_begin, search_begin + m_size.prod(),
+                        m_bucket_begin.begin());
+
+    // find the end of each bucket's list of points
+    detail::upper_bound(m_bucket_indices.begin(), m_bucket_indices.end(),
+                        search_begin, search_begin + m_size.prod(),
+                        m_bucket_end.begin());
+
+#ifndef __CUDA_ARCH__
+    if (4 <= ABORIA_LOG_LEVEL) {
+      LOG(4, "\tbuckets:");
+      for (size_t i = 0; i < m_bucket_begin.size(); ++i) {
+        LOG(4, "\ti = " << i << " bucket contents = " << m_bucket_begin[i]
+                        << " to " << m_bucket_end[i]);
+      }
+      LOG(4, "\tend buckets");
+      LOG(4, "\tparticles:");
+      for (size_t i = 0; i < m_bucket_indices.size(); ++i) {
+        LOG(4, "\ti = " << i << " p = "
+                        << static_cast<const double_d &>(
+                               get<position>(*(this->m_particles_begin + i)))
+                        << " bucket = " << m_bucket_indices[i]);
+      }
+      LOG(4, "\tend particles:");
+    }
+#endif
+  }
+
   const CellListOrderedQuery<Traits> &get_query_impl() const { return m_query; }
 
   CellListOrderedQuery<Traits> &get_query_impl() { return m_query; }
@@ -270,6 +333,7 @@ private:
   vector_unsigned_int m_bucket_begin;
   vector_unsigned_int m_bucket_end;
   vector_unsigned_int m_bucket_indices;
+  vector_unsigned_int m_tmp;
   CellListOrderedQuery<Traits> m_query;
 
   double_d m_bucket_side_length;

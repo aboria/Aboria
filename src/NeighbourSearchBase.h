@@ -527,7 +527,7 @@ public:
 
     if (m_domain_has_been_set) {
       LOG(2, "neighbour_search_base: update_alive_impl:");
-      cast().update_alive_impl(update_begin, update_end, new_n);
+      cast().update_alive_impl(update_begin, update_end);
     }
     if (m_id_map) {
       update_id_map(new_n, num_dead, update_start_index, update_end_index,
