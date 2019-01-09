@@ -275,21 +275,21 @@ private:
   void update_alive_impl(iterator update_begin, iterator update_end) {
 
     const size_t n = this->m_alive_indices.size();
-    m_bucket_indices.resize(n);
+    const int update_begin_index = update_begin - this->m_particles_begin;
     if (n > 0) {
       // transform the points to their bucket indices
 
       // m_alive_indicies contains all alive indicies
       // gather all current bucket_indices (unchanged) by m_alive_indices
-      const int update_begin_index = update_begin - this->m_particles_begin;
       m_tmp.resize(n);
       detail::gather(this->m_alive_indices.begin(), this->m_alive_indices.end(),
-                     m_bucket_indices.begin() + update_begin_index,
-                     m_tmp.begin());
+                     m_bucket_indices.begin(), m_tmp.begin());
       detail::copy(m_tmp.begin(), m_tmp.end(),
                    m_bucket_indices.begin() + update_begin_index);
-      m_bucket_indices.resize(update_begin_index + n);
     }
+
+    // need to do this even if n==0
+    m_bucket_indices.resize(update_begin_index + n);
 
     // find the beginning of each bucket's list of points
     auto search_begin = Traits::make_counting_iterator(0);
@@ -312,10 +312,19 @@ private:
       LOG(4, "\tend buckets");
       LOG(4, "\tparticles:");
       for (size_t i = 0; i < m_bucket_indices.size(); ++i) {
-        LOG(4, "\ti = " << i << " p = "
-                        << static_cast<const double_d &>(
-                               get<position>(*(this->m_particles_begin + i)))
-                        << " bucket = " << m_bucket_indices[i]);
+        if (static_cast<int>(i) >= update_begin_index) {
+          LOG(4,
+              "\ti = " << i << " p = "
+                       << static_cast<const double_d &>(get<position>(
+                              *(this->m_particles_begin +
+                                this->m_alive_indices[i - update_begin_index])))
+                       << " bucket = " << m_bucket_indices[i]);
+        } else {
+          LOG(4, "\ti = " << i << " p = "
+                          << static_cast<const double_d &>(
+                                 get<position>(*(this->m_particles_begin + i)))
+                          << " bucket = " << m_bucket_indices[i]);
+        }
       }
       LOG(4, "\tend particles:");
     }

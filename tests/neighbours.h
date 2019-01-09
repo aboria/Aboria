@@ -1402,23 +1402,23 @@ public:
   }
 
   void test_std_vector_CellList(void) {
+    /*
     helper_d_test_list_random<std::vector, CellList>();
     helper_d_test_list_random_pair<std::vector, CellList>();
     helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
     helper_single_particle<std::vector, CellList>();
     helper_two_particles<std::vector, CellList>();
     helper_d_test_list_regular<std::vector, CellList>();
+    */
   }
 
   void test_std_vector_CellListOrdered(void) {
-    /*
     helper_d_test_list_random<std::vector, CellListOrdered>();
     helper_d_test_list_random_pair<std::vector, CellListOrdered>();
     helper_d_test_list_random_fast_bucketsearch<std::vector, CellListOrdered>();
     helper_single_particle<std::vector, CellListOrdered>();
     helper_two_particles<std::vector, CellListOrdered>();
     helper_d_test_list_regular<std::vector, CellListOrdered>();
-    */
   }
 
   void test_std_vector_Kdtree(void) {

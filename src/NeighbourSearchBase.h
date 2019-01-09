@@ -324,7 +324,8 @@ public:
     }
     */
 
-    CHECK(update_end_index == (m_particles_end - m_particles_begin) ||
+    CHECK(static_cast<int>(update_end_index) ==
+                  (m_particles_end - m_particles_begin) ||
               num_dead == 0,
           "cannot delete dead points if not updating the end of the vector");
 
@@ -522,16 +523,29 @@ public:
     int num_dead =
         update_alive_indicies(update_n, update_start_index, update_end_index);
 
-    LOG(2, "neighbour_search_base: update_alive: found " << num_dead
-                                                         << " dead points");
-
-    if (m_domain_has_been_set) {
-      LOG(2, "neighbour_search_base: update_alive_impl:");
-      cast().update_alive_impl(update_begin, update_end);
+    if (4 <= ABORIA_LOG_LEVEL) {
+      LOG(4, "\tupdate_start_index = " << update_start_index);
+      std::cout << "\tm_alive_indicies = ";
+      for (size_t i = 0; i < m_alive_indices.size(); ++i) {
+        std::cout << m_alive_indices[i] << " ";
+      }
+      std::cout << std::endl;
     }
-    if (m_id_map) {
-      update_id_map(new_n, num_dead, update_start_index, update_end_index,
-                    dead_and_alive_n);
+
+    // only do these if there are dead
+    if (num_dead != 0) {
+
+      LOG(2, "neighbour_search_base: update_alive: found " << num_dead
+                                                           << " dead points");
+
+      if (m_domain_has_been_set) {
+        LOG(2, "neighbour_search_base: update_alive_impl:");
+        cast().update_alive_impl(update_begin, update_end);
+      }
+      if (m_id_map) {
+        update_id_map(new_n, num_dead, update_start_index, update_end_index,
+                      dead_and_alive_n);
+      }
     }
 
     query_type &query = cast().get_query_impl();
@@ -540,7 +554,7 @@ public:
     query.m_particles_begin = iterator_to_raw_pointer(m_particles_begin);
     query.m_particles_end = iterator_to_raw_pointer(m_particles_end);
 
-    return cast().ordered() || num_dead > 0;
+    return num_dead > 0;
   }
 
   ///

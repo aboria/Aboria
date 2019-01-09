@@ -802,6 +802,7 @@ public:
 
   void test_copy_data_structure() {
     helper_copy_data_structure<std::vector, CellList>();
+    helper_copy_data_structure<std::vector, CellListOrdered>();
     helper_copy_data_structure<std::vector, KdtreeNanoflann>();
   }
 
