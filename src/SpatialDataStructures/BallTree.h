@@ -206,6 +206,74 @@ private:
     this->m_query.m_number_of_levels = m_number_of_levels;
   }
 
+  void update_alive_impl(iterator update_begin, iterator update_end) {
+    LOG(3, "update_alive_impl(balltree): updating build tree");
+
+    const int update_start_index = update_begin - this->m_particles_begin;
+
+    // update particle indicies for top node
+    for (int c = 0; c < 2; ++c) {
+      const int new_index = m_nodes_particles[0][c] >= update_start_index
+                                ? this->m_alive_sum[m_nodes_particles[0][c] -
+                                                    update_start_index] +
+                                      update_start_index
+                                : m_nodes_particles[0][c];
+      m_nodes_particles[0][c] = new_index;
+    }
+
+    // update particle indicies for all the rest
+    // also update if node is leaf or not, and remove empty children
+    for (auto i = m_query.breadth_first(); i != false; ++i) {
+      detail::for_each(i->begin(), i->end(), [&](const auto &ci) {
+        const int index = m_query.get_child_index(*ci);
+        for (int c = 0; c < 2; ++c) {
+          const int new_index =
+              m_nodes_particles[index][c] >= update_start_index
+                  ? this->m_alive_sum[m_nodes_particles[index][c] -
+                                      update_start_index] +
+                        update_start_index
+                  : m_nodes_particles[index][c];
+          m_nodes_particles[index][c] = new_index;
+          if (!m_query.is_leaf_node(*ci)) {
+            const int num_particles =
+                m_nodes_particles[index][1] - m_nodes_particles[index][0];
+            if (num_particles <= this->m_n_particles_in_leaf) {
+              // convert to leaf if new number of particles is below threshold
+              m_nodes_first_child[index] = -1;
+            } else {
+              // if any children empty erase them by copying the *other* child
+              // to this node
+              for (int c = 0; c < 2; ++c) {
+                const int child_index = m_nodes_first_child[index] + c;
+                if (m_nodes_particles[child_index][1] ==
+                    m_nodes_particles[child_index][0]) {
+                  const int other_child_index =
+                      m_nodes_first_child[index] + (1 - c);
+                  m_nodes_first_child[index] =
+                      m_nodes_first_child[other_child_index];
+                  m_nodes_centre[index] = m_nodes_centre[other_child_index];
+                  m_nodes_radius[index] = m_nodes_radius[other_child_index];
+                }
+              }
+            }
+          }
+        }
+      });
+
+      // filter out unchanged sub-trees
+      i.filter([&](const auto &ci) {
+        const int index = m_query.get_child_index(*ci);
+        return m_query.is_leaf_node(*ci) ||
+               m_nodes_particles[index][1] < update_start_index;
+      });
+    }
+#ifndef __CUDA_ARCH__
+    if (3 <= ABORIA_LOG_LEVEL) {
+      print_tree();
+    }
+#endif
+  }
+
   const BalltreeQuery<Traits> &get_query_impl() const { return m_query; }
 
   BalltreeQuery<Traits> &get_query_impl() { return m_query; }
@@ -648,6 +716,7 @@ private:
 /// structure
 ///
 template <typename Traits> struct BalltreeQuery {
+  friend class Balltree<Traits>;
   const static unsigned int dimension = Traits::dimension;
   const static unsigned int m_max_tree_depth = 32 - 2;
 
@@ -703,6 +772,7 @@ private:
     return b.parent - m_nodes_first_child;
   }
 
+protected:
   inline int get_child_index(reference b) const { return *b.parent + b.high; }
 
 public:

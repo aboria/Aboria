@@ -530,6 +530,11 @@ public:
         std::cout << m_alive_indices[i] << " ";
       }
       std::cout << std::endl;
+      std::cout << "\tm_alive_sum = ";
+      for (size_t i = 0; i < m_alive_sum.size(); ++i) {
+        std::cout << m_alive_sum[i] << " ";
+      }
+      std::cout << std::endl;
     }
 
     // only do these if there are dead

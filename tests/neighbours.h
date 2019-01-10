@@ -1402,14 +1402,12 @@ public:
   }
 
   void test_std_vector_CellList(void) {
-    /*
     helper_d_test_list_random<std::vector, CellList>();
     helper_d_test_list_random_pair<std::vector, CellList>();
     helper_d_test_list_random_fast_bucketsearch<std::vector, CellList>();
     helper_single_particle<std::vector, CellList>();
     helper_two_particles<std::vector, CellList>();
     helper_d_test_list_regular<std::vector, CellList>();
-    */
   }
 
   void test_std_vector_CellListOrdered(void) {
@@ -1422,7 +1420,6 @@ public:
   }
 
   void test_std_vector_Kdtree(void) {
-
     /*
     helper_d_test_list_random<std::vector, Kdtree>();
     helper_d_test_list_random_pair<std::vector, Kdtree>();
@@ -1431,21 +1428,17 @@ public:
   }
 
   void test_std_vector_Balltree(void) {
-    /*
     helper_d_test_list_random<std::vector, Balltree>();
     helper_d_test_list_random_pair<std::vector, Balltree>();
     helper_d_test_list_regular<std::vector, Balltree>();
-    */
   }
 
   void test_std_vector_KdtreeNanoflann(void) {
-    /*
 #if not defined(__CUDACC__)
     helper_d_test_list_random<std::vector, KdtreeNanoflann>();
     helper_d_test_list_random_pair<std::vector, KdtreeNanoflann>();
     helper_d_test_list_regular<std::vector, KdtreeNanoflann>();
 #endif
-*/
   }
 
   void test_std_vector_HyperOctree(void) {
