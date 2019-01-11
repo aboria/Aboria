@@ -47,39 +47,39 @@ MathJax.Hub.Config({
 <span class="keyword">class</span> <a class="link" href="LinearTransform.html" title="Class template LinearTransform">LinearTransform</a> <span class="special">{</span>
 <span class="keyword">public</span><span class="special">:</span>
   <span class="comment">// <a class="link" href="LinearTransform.html#Aboria.LinearTransformconstruct-copy-destruct">construct/copy/destruct</a></span>
-  <a class="link" href="LinearTransform.html#idp72238799876176-bb"><span class="identifier">LinearTransform</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
+  <a class="link" href="LinearTransform.html#idp46645675181936-bb"><span class="identifier">LinearTransform</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span><span class="special">)</span><span class="special">;</span>
 
-  <span class="comment">// <a class="link" href="LinearTransform.html#idp72238799868384-bb">public member functions</a></span>
-  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="LinearTransform.html#idp72238799868784-bb"><span class="identifier">get_eigen_vertices</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
-  <span class="identifier">double_d</span> <a class="link" href="LinearTransform.html#idp72238799870288-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
-  <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <a class="link" href="LinearTransform.html#idp72238799872832-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a><span class="special">&lt;</span> <span class="identifier">D</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <span class="comment">// <a class="link" href="LinearTransform.html#idp46645675174144-bb">public member functions</a></span>
+  <span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a class="link" href="LinearTransform.html#idp46645675174544-bb"><span class="identifier">get_eigen_vertices</span></a><span class="special">(</span><span class="special">)</span><span class="special">;</span>
+  <span class="identifier">double_d</span> <a class="link" href="LinearTransform.html#idp46645675176048-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
+  <a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <a class="link" href="LinearTransform.html#idp46645675178592-bb"><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span></a><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a><span class="special">&lt;</span> <span class="identifier">D</span> <span class="special">&gt;</span> <span class="special">&amp;</span><span class="special">)</span> <span class="keyword">const</span><span class="special">;</span>
 <span class="special">}</span><span class="special">;</span></pre></div>
 <div class="refsect1">
-<a name="idp71554536058288"></a><h2>Description</h2>
+<a name="idp47650249986128"></a><h2>Description</h2>
 <div class="refsect2">
-<a name="idp71554536058704"></a><h3>
+<a name="idp47650249986544"></a><h3>
 <a name="Aboria.LinearTransformconstruct-copy-destruct"></a><code class="computeroutput">LinearTransform</code> 
         public
        construct/copy/destruct</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1"><li class="listitem">
-<pre class="literallayout"><a name="idp72238799876176-bb"></a><span class="identifier">LinearTransform</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> point_transform<span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><a name="idp46645675181936-bb"></a><span class="identifier">LinearTransform</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">T</span> <span class="special">&amp;</span> point_transform<span class="special">)</span><span class="special">;</span></pre>
 <p>takes a user-defined transform <code class="computeroutput">point_transform</code> that is assumed to be linear. <code class="computeroutput">point_transform</code> only has to defined an <code class="computeroutput">operator()(const <code class="computeroutput"><a class="link" href="Vector.html" title="Class template Vector">Vector</a></code>&lt;double,D&gt;&amp;)</code> function </p>
 </li></ol></div>
 </div>
 <div class="refsect2">
-<a name="idp71554536070432"></a><h3>
-<a name="idp72238799868384-bb"></a><code class="computeroutput">LinearTransform</code> public member functions</h3>
+<a name="idp47650249998208"></a><h3>
+<a name="idp46645675174144-bb"></a><code class="computeroutput">LinearTransform</code> public member functions</h3>
 <div class="orderedlist"><ol class="orderedlist" type="1">
 <li class="listitem">
-<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp72238799868784-bb"></a><span class="identifier">get_eigen_vertices</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="keyword">const</span> <span class="identifier">bool_d</span> <span class="special">&amp;</span> <a name="idp46645675174544-bb"></a><span class="identifier">get_eigen_vertices</span><span class="special">(</span><span class="special">)</span><span class="special">;</span></pre>
 <p>the transform stores the bounding box vertex that is maximally extended from the centre by the transform, this getter returns this vertex </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><span class="identifier">double_d</span> <a name="idp72238799870288-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> v<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><span class="identifier">double_d</span> <a name="idp46645675176048-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <span class="identifier">double_d</span> <span class="special">&amp;</span> v<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>transforms the point <code class="computeroutput">the</code> the new coordinate system, returning the result </p>
 </li>
 <li class="listitem">
-<pre class="literallayout"><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <a name="idp72238799872832-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a><span class="special">&lt;</span> <span class="identifier">D</span> <span class="special">&gt;</span> <span class="special">&amp;</span> b<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
+<pre class="literallayout"><a class="link" href="Vector.html" title="Class template Vector">Vector</a><span class="special">&lt;</span> <span class="keyword">double</span><span class="special">,</span> <span class="identifier">D</span> <span class="special">&gt;</span> <a name="idp46645675178592-bb"></a><span class="keyword">operator</span><span class="special">(</span><span class="special">)</span><span class="special">(</span><span class="keyword">const</span> <a class="link" href="bbox.html" title="Struct template bbox">bbox</a><span class="special">&lt;</span> <span class="identifier">D</span> <span class="special">&gt;</span> <span class="special">&amp;</span> b<span class="special">)</span> <span class="keyword">const</span><span class="special">;</span></pre>
 <p>transforms the box <code class="computeroutput">to</code> the new coordinate system. Returns the side length of the axis-aligned box that bounds the transformed box. </p>
 </li>
 </ol></div>
