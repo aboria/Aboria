@@ -1,0 +1,18 @@
+To cite Aboria in publications, please use:
+
+Robinson, M., & Bruna, M. (2017). Particle-based and meshless methods with Aboria. SoftwareX, 6, 172-178.
+
+https://www.sciencedirect.com/science/article/pii/S2352711017300250
+
+A BibTeX entry for LaTeX users is
+
+@article{robinson2017particle,
+  title={Particle-based and meshless methods with Aboria},
+  author={Robinson, Martin and Bruna, Maria},
+  journal={SoftwareX},
+  volume={6},
+  pages={172--178},
+  year={2017},
+  publisher={Elsevier}
+}
+
