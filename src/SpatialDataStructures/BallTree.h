@@ -209,7 +209,10 @@ private:
   void update_alive_impl(iterator update_begin, iterator update_end) {
     LOG(3, "update_alive_impl(balltree): updating build tree");
 
-    const int update_start_index = update_begin - this->m_particles_begin;
+    // const int update_start_index = update_begin - this->m_particles_begin;
+    // TODO: putting const int here gives an internal compiler error (c++
+    // (Ubuntu 7.3.0-16ubuntu3) 7.3.0)
+    int update_start_index = update_begin - this->m_particles_begin;
 
     // update particle indicies for top node
     for (int c = 0; c < 2; ++c) {
