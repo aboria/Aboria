@@ -105,6 +105,13 @@ struct interpolative_decomposition {
                << " search_radius = " << search_radius);
 
     int n_children = 0;
+    /*
+    for (auto particle =
+             euclidean_search(m_finer_query, 0.5 * (bounds.bmin + bounds.bmax),
+                              0.5 * (bounds.bmax[0] - bounds.bmin[0]) +
+                                  2 * std::numeric_limits<double>::epsilon());
+         particle != false; ++particle) {
+         */
     for (auto b = m_finer_query.template get_buckets_near_point<-1>(
              0.5 * (bounds.bmin + bounds.bmax),
              0.5 * (bounds.bmax - bounds.bmin));
@@ -112,6 +119,9 @@ struct interpolative_decomposition {
       for (auto particle = m_finer_query.get_bucket_particles(*b);
            particle != false; ++particle) {
         const double_d &p = get<position>(*particle);
+        ASSERT_CUDA((p - 0.5 * (bounds.bmin + bounds.bmax)).norm() <=
+                    0.5 * (bounds.bmax[0] - bounds.bmin[0]) +
+                        2 * std::numeric_limits<double>::epsilon());
         if (bounds.is_in_inclusive(p)) {
           ++n_children;
         }
@@ -125,6 +135,13 @@ struct interpolative_decomposition {
     std::cout << "\tn_children = " << n_children << std::endl;
 
     int j = 0;
+    /*
+    for (auto particle =
+             euclidean_search(m_finer_query, 0.5 * (bounds.bmin + bounds.bmax),
+                              0.5 * (bounds.bmax[0] - bounds.bmin[0]) +
+                                  2 * std::numeric_limits<double>::epsilon());
+         particle != false; ++particle) {
+         */
     for (auto b = m_finer_query.template get_buckets_near_point<-1>(
              0.5 * (bounds.bmin + bounds.bmax),
              0.5 * (bounds.bmax - bounds.bmin));
@@ -162,8 +179,6 @@ struct interpolative_decomposition {
     // R11 is k x k (k is chosen indices)
     // R12 is k x (n-k)
     auto &indices = m_domain_indices[i];
-    matrix_type R11(indices.size(), indices.size());
-    matrix_type R12(indices.size(), n_children - indices.size());
 
     std::cout << "\tchosen_indicies = " << indices.size() << std::endl;
     storage_vector_type chosen_indices;
@@ -185,6 +200,10 @@ struct interpolative_decomposition {
       ASSERT_CUDA(A_index < children_indices.size());
       chosen_indices[j] = A_index;
     }
+    // chosen_indices.resize(n_children);
+    // for (int j = 0; j < n_children; ++j) {
+    //  chosen_indices[j] = j;
+    //}
     // store if index is chosen or not
     storage_vector_type chosen_indices2;
     chosen_indices2.resize(n_children);
@@ -193,32 +212,33 @@ struct interpolative_decomposition {
     }
 
     // loop over chosen columns
-    matrix_type U(n_children, indices.size());
-    matrix_type Q1(n_children, indices.size());
-    vector_type UdotU(indices.size());
+    matrix_type R11(chosen_indices.size(), chosen_indices.size());
+    matrix_type R12(chosen_indices.size(), n_children - chosen_indices.size());
+    matrix_type Q1(n_children, chosen_indices.size());
     R11.setZero();
-    for (int j = 0; j < indices.size(); ++j) {
+    for (int j = 0; j < chosen_indices.size(); ++j) {
       chosen_indices2[chosen_indices[j]] = j;
-      U.col(j) = A.col(chosen_indices[j]);
-      UdotU(j) = U.col(j).dot(U.col(j));
+      Q1.col(j) = A.col(chosen_indices[j]);
       for (int k = 0; k < j; ++k) {
-        U.col(j) -=
-            (U.col(k).dot(A.col(chosen_indices[j])) / UdotU(k)) * U.col(k);
+        // Modified Gram-Schmidt
+        Q1.col(j) -= (Q1.col(k).dot(Q1.col(j))) * Q1.col(k);
       }
-      Q1.col(j) = U.col(j) / (U.col(j).norm());
-      for (int k = j; k < indices.size(); ++k) {
+      Q1.col(j) = Q1.col(j) / (Q1.col(j).norm());
+
+      for (int k = j; k < chosen_indices.size(); ++k) {
         R11(j, k) = Q1.col(j).dot(A.col(chosen_indices[k]));
       }
     }
+
     // loop over all columns not chosen, store indices for later interpolation
     int n_not_chosen = 0;
     auto &children_indices_not_chosen = m_domain_children_indices[i];
-    children_indices_not_chosen.resize(n_children - indices.size());
+    children_indices_not_chosen.resize(n_children - chosen_indices.size());
     storage_vector_type not_chosen_indices;
-    not_chosen_indices.resize(n_children - indices.size());
+    not_chosen_indices.resize(n_children - chosen_indices.size());
     for (int j = 0; j < n_children; ++j) {
       if (chosen_indices2[j] == -1) {
-        for (int k = 0; k < indices.size(); ++k) {
+        for (int k = 0; k < chosen_indices.size(); ++k) {
           R12(k, n_not_chosen) = Q1.col(k).dot(A.col(j));
         }
         children_indices_not_chosen[n_not_chosen] = children_indices[j];
@@ -226,11 +246,17 @@ struct interpolative_decomposition {
         n_not_chosen++;
       }
     }
-    ASSERT_CUDA(n_not_chosen == n_children - indices.size());
+    ASSERT_CUDA(n_not_chosen == n_children - chosen_indices.size());
+
+    // auto qr = A.householderQr();
+    // matrix_type R = qr.matrixQR().template triangularView<Eigen::Upper>();
+    // matrix_type Q = qr.householderQ();
     // std::cout << "A is \n" << A << std::endl;
     // std::cout << "R11 is \n" << R11 << std::endl;
+    // std::cout << "R is \n" << R << std::endl;
     // std::cout << "R12 is \n" << R12 << std::endl;
     // std::cout << "Q1 is \n" << Q1 << std::endl;
+    // std::cout << "Q is \n" << Q << std::endl;
 
     // calculate T
     // T =  R11^-1 * R12
@@ -238,34 +264,33 @@ struct interpolative_decomposition {
     matrix = R11.colPivHouseholderQr().solve(R12);
 
     // form and check approximation
-    // matrix_type Q1(n_children, indices.size());
-    // for (int j = 0; j < indices.size(); ++j) {
+    // matrix_type Q1(n_children, chosen_indices.size());
+    // for (int j = 0; j < chosen_indices.size(); ++j) {
     //  const int permuted_index = P.indices()[chosen_indices[j]];
     //  Q1.col(j) = Q.col(permuted_index);
     //}
-    matrix_type IT = matrix_type::Zero(indices.size(), n_children);
+    matrix_type IT = matrix_type::Zero(chosen_indices.size(), n_children);
     matrix_type AP(n_children, n_children);
-    for (int j = 0; j < indices.size(); ++j) {
+    for (int j = 0; j < chosen_indices.size(); ++j) {
       // IT(j, chosen_indices[j]) = 1.0;
       IT(j, j) = 1.0;
       AP.col(j) = A.col(chosen_indices[j]);
     }
     for (int j = 0; j < n_not_chosen; ++j) {
-      IT.col(indices.size() + j) = matrix.col(j);
-      AP.col(j + indices.size()) = A.col(not_chosen_indices[j]);
+      IT.col(chosen_indices.size() + j) = matrix.col(j);
+      AP.col(j + chosen_indices.size()) = A.col(not_chosen_indices[j]);
     }
 
     // matrix_type approxA = Q1 * R11 * IT * P;
     matrix_type approxA = Q1 * R11 * IT;
-    // IT.block(0, 0, indices.size(), indices.size()) = R11;
-    // IT.block(0, indices.size(), indices.size(), n_not_chosen) = R12;
-    // matrix_type approxA = Q1 * IT;
-    // std::cout << "Q1 * R11 = \n" << Q1 * R11 << std::endl;
-    // std::cout << "AP = \n" << AP << std::endl;
+    // IT.block(0, 0, chosen_indices.size(), chosen_indices.size()) = R11;
+    // IT.block(0, chosen_indices.size(), chosen_indices.size(), n_not_chosen) =
+    // R12; matrix_type approxA = Q1 * IT; std::cout << "Q1 * R11 = \n" << Q1 *
+    // R11 << std::endl; std::cout << "AP = \n" << AP << std::endl;
     std::cout << "interpolative decomposition, norm of (approxA-A)/A is "
               << (approxA - AP).norm() / AP.norm() << std::endl;
   }
-};
+}; // namespace Aboria
 
 template <typename Operator, typename Query> struct schwartz_decomposition {
   static const unsigned int D = Query::dimension;
@@ -647,6 +672,24 @@ template <typename Source, typename Dest> struct apply_interpolation {
   Dest &dest;
   const Source &source;
   bool transpose;
+  mutable std::atomic_flag lock;
+
+  apply_interpolation(const storage_vector_type *m_row_indices,
+                      const storage_vector_type *m_col_indices,
+                      const matrix_type *m_domain_interpolation_matrix,
+                      Dest &dest, const Source &source, const bool transpose)
+      : m_row_indices(m_row_indices), m_col_indices(m_col_indices),
+        m_domain_interpolation_matrix(m_domain_interpolation_matrix),
+        dest(dest), source(source), transpose(transpose) {
+    lock.clear();
+  }
+
+  apply_interpolation(const apply_interpolation &other)
+      : m_row_indices(other.m_row_indices), m_col_indices(other.m_col_indices),
+        m_domain_interpolation_matrix(other.m_domain_interpolation_matrix),
+        dest(other.dest), source(other.source), transpose(other.transpose) {
+    lock.clear();
+  }
 
   void operator()(const int i) const {
     const storage_vector_type &col_indices = m_col_indices[i];
@@ -670,9 +713,16 @@ template <typename Source, typename Dest> struct apply_interpolation {
       domain_dest = matrix * domain_source;
     }
 
+    if (transpose) {
+      while (lock.test_and_set(std::memory_order_acquire)) // acquire lock
+        ;                                                  // spin
+    }
     // copy accumulate b values to big vector
     for (size_t j = 0; j < row_indices.size(); ++j) {
       dest[row_indices[j]] += domain_dest[j];
+    }
+    if (transpose) {
+      lock.clear(std::memory_order_release); // release lock
     }
   }
 }; // namespace Aboria
@@ -1402,15 +1452,17 @@ public:
                            const int index) { return source[id[index]]; });
       if (use_domain_interpolation_mat) {
         auto count = boost::make_counting_iterator(0);
+        /*
         detail::for_each(
             count, count + m_indicies[i + 1].size(),
-            apply_interpolation<Source, Dest>{
-                Aboria::iterator_to_raw_pointer(m_indicies[i + 1].begin()),
-                Aboria::iterator_to_raw_pointer(
-                    m_domain_children_indicies[i + 1].begin()),
-                Aboria::iterator_to_raw_pointer(
-                    m_domain_interpolation_matrix[i + 1].begin()),
-                dest, source, false});
+        apply_interpolation<Source, Dest>(
+            Aboria::iterator_to_raw_pointer(m_indicies[i + 1].begin()),
+            Aboria::iterator_to_raw_pointer(
+                m_domain_children_indicies[i + 1].begin()),
+            Aboria::iterator_to_raw_pointer(
+                m_domain_interpolation_matrix[i + 1].begin()),
+            dest, source, false));
+            */
       }
     }
   }
@@ -1470,15 +1522,17 @@ public:
               const int index) { dest[id[index]] += source[index]; });
       if (use_domain_interpolation_mat) {
         auto count = boost::make_counting_iterator(0);
+        /*
         detail::for_each(
             count, count + m_indicies[i].size(),
-            apply_interpolation<Source, Dest>{
-                Aboria::iterator_to_raw_pointer(
-                    m_domain_children_indicies[i].begin()),
-                Aboria::iterator_to_raw_pointer(m_indicies[i].begin()),
-                Aboria::iterator_to_raw_pointer(
-                    m_domain_interpolation_matrix[i].begin()),
-                dest, source, true});
+        apply_interpolation<Source, Dest>(
+            Aboria::iterator_to_raw_pointer(
+                m_domain_children_indicies[i].begin()),
+            Aboria::iterator_to_raw_pointer(m_indicies[i].begin()),
+            Aboria::iterator_to_raw_pointer(
+                m_domain_interpolation_matrix[i].begin()),
+            dest, source, true));
+            */
       }
     }
   }
