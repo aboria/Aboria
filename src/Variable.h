@@ -62,14 +62,14 @@ struct Variable {
     struct BOOST_PP_CAT(NAME,_description) {                            \
     	const char* name = NAME_STRING; \
     };                                                   \
-    typedef Variable<DATA_TYPE,BOOST_PP_CAT(NAME,_description)> NAME;   \
+    typedef Aboria::Variable<DATA_TYPE,BOOST_PP_CAT(NAME,_description)> NAME;   \
 
 #define ABORIA_VARIABLE_VECTOR(NAME,DATA_TYPE,NAME_STRING)      \
     struct BOOST_PP_CAT(NAME,_description) {                            \
     	const char* name = NAME_STRING; \
     };                                                   \
     template <unsigned int N> \
-    using NAME = Variable<Vector<DATA_TYPE,N>,BOOST_PP_CAT(NAME,_description)>;   \
+    using NAME = Aboria::Variable<Vector<DATA_TYPE,N>,BOOST_PP_CAT(NAME,_description)>;   \
 
 
 ABORIA_VARIABLE_VECTOR(position_d,double,"position")
