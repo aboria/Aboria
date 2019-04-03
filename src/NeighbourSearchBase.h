@@ -239,6 +239,8 @@ public:
     m_bounds.bmin = min_in;
     m_bounds.bmax = max_in;
     m_periodic = periodic_in;
+    CHECK(n_particles_in_leaf > 0,
+          "max number of particles in each leaf should be greater than 0")
     m_n_particles_in_leaf = n_particles_in_leaf;
     if (not_in_constructor) {
       cast().set_domain_impl();
