@@ -1237,6 +1237,7 @@ public:
         const query_t &finer_query =
             i == 1 ? a.get_query() : m_particles[i - 2].get_query();
 
+        /*
         detail::for_each(
             count, count + nodes.size(),
             interpolative_decomposition<typename kernel_t::function_type,
@@ -1249,6 +1250,7 @@ public:
                 Aboria::iterator_to_raw_pointer(children_indicies.begin()),
                 m_A[i - 1].get_first_kernel().get_kernel_function(), query,
                 finer_query, i, nodes.size() == 1});
+                */
       }
     }
   }

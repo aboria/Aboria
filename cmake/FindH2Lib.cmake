@@ -10,10 +10,10 @@
 
 find_path(H2Lib_INCLUDE_DIRS h2matrix.h
             PATH_SUFFIXES Library
-            PATHS ${H2Lib_ROOT} 
+            PATHS ${H2Lib_ROOT} $ENV{H2Lib_ROOT}
             )
 find_library(H2Lib_LIBRARIES libh2.a
-            PATHS ${H2Lib_ROOT} 
+            PATHS ${H2Lib_ROOT} $ENV{H2Lib_ROOT}
             )
 
 if (H2Lib_INCLUDE_DIRS AND H2Lib_LIBRARIES)
