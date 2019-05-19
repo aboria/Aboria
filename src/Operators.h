@@ -424,9 +424,11 @@ Operator create_h2_operator(const RowParticles &row_particles,
                             const PositionF &position_function,
                             const F &function, const double eta = 1.0,
                             const double beta = 1.0) {
-  const int max_tree_depth =
-      std::max(row_particles.get_query().number_of_levels(),
-               col_particles.get_query().number_of_levels());
+  int max_tree_depth = 0;
+  if (row_particles.size() > 0 && col_particles.size() > 0) {
+    max_tree_depth = std::max(row_particles.get_query().number_of_levels(),
+                              col_particles.get_query().number_of_levels());
+  }
   LOG(2, "Create h2 Operator: order = "
              << order << " eta = " << eta << " beta = " << beta
              << " max_tree_depth = " << max_tree_depth);

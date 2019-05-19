@@ -313,6 +313,11 @@ public:
               const Kernel &kernel, const double eta)
       : m_h2(nullptr, del_h2matrix), m_block(nullptr, del_block) {
 
+    if (row_particles.size() == 0 || col_particles.size() == 0) {
+      LOG(2, "H2LibMatrix: creating empty h2 matrix");
+      return;
+    }
+
     // generate h2 matrix
     LOG(2, "H2LibMatrix: creating h2 matrix using "
                << row_particles.size() << " row particles and "

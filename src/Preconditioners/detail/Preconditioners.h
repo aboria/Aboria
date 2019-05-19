@@ -47,12 +47,15 @@ OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifdef HAVE_EIGEN
 #include <unsupported/Eigen/SparseExtra>
+#endif
 
 #include "Operators.h"
 
 namespace Aboria {
 
 namespace detail {
+
+#ifdef HAVE_EIGEN
 template <typename Function, typename Dest, unsigned int NI, unsigned int NJ,
           typename Blocks, typename Rhs>
 void apply_function_to_diagonal_blocks(
@@ -103,6 +106,7 @@ void apply_function_to_diagonal_blocks(
   apply_function_to_diagonal_blocks(std::forward<Function>(function), mat,
                                     std::integral_constant<unsigned int, 0>());
 }
+#endif // HAVE_EIGEN
 
 template <typename T> struct storage_vector_type {
   T *m_data;
@@ -158,5 +162,4 @@ template <typename T> struct storage_vector_type {
 
 } // namespace Aboria
 
-#endif
 #endif

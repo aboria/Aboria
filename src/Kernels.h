@@ -143,7 +143,7 @@ public:
 protected:
   const RowElements *m_row_elements;
   const ColElements *m_col_elements;
-  const F m_function;
+  F m_function;
 };
 
 template <typename RowElements, typename ColElements, typename F>

@@ -863,8 +863,9 @@ public:
         m_fineA->get_first_kernel().get_row_elements().get_max_bucket_size();
     m_max_buffer_n =
         m_mult_buffer * std::pow(n, 1.0 / 3.0) * std::pow(nBucket, 2.0 / 3.0);
-    CHECK(m_max_buffer_n <= n,
-          "coarse size is larger than number of particles");
+    if (m_max_buffer_n > n) {
+      m_max_buffer_n = n;
+    }
   }
   void set_mult_buffer(size_t arg) {
     m_mult_buffer = arg;
@@ -1236,6 +1237,7 @@ public:
         const query_t &finer_query =
             i == 1 ? a.get_query() : m_particles[i - 2].get_query();
 
+        /*
         detail::for_each(
             count, count + nodes.size(),
             interpolative_decomposition<typename kernel_t::function_type,
@@ -1248,6 +1250,7 @@ public:
                 Aboria::iterator_to_raw_pointer(children_indicies.begin()),
                 m_A[i - 1].get_first_kernel().get_kernel_function(), query,
                 finer_query, i, nodes.size() == 1});
+                */
       }
     }
   }
